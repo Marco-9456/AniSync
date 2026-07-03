@@ -774,7 +774,9 @@ private fun DiscoverContent(
                         item(key = "recent_reviews_row", contentType = "review_row") {
                             RecentReviewsRow(
                                 reviews = recentReviews.take(10),
-                                onReviewClick = onReviewClick
+                                onReviewClick = onReviewClick,
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }

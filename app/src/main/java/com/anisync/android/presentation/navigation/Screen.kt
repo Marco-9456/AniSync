@@ -235,9 +235,12 @@ data class ForumMediaThreads(
 
 /**
  * Standalone review screen — used by deep-links.
+ *
+ * @param sourceScreen The screen that initiated navigation ("discover", "recent_reviews", …).
+ *                     Used to match shared element keys; deep links keep the default.
  */
 @Serializable
-data class ReviewDetail(val reviewId: Int)
+data class ReviewDetail(val reviewId: Int, val sourceScreen: String = "link")
 
 /**
  * Recent reviews list — AniList's newest reviews, filterable by media type.

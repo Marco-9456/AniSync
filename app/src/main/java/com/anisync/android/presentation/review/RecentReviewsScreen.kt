@@ -1,5 +1,8 @@
 package com.anisync.android.presentation.review
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,13 +35,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.ReviewCard
+import com.anisync.android.presentation.util.TransitionKeys
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun RecentReviewsScreen(
     onBackClick: () -> Unit,
     onReviewClick: (Int) -> Unit,
     onUserClick: (String) -> Unit,
-    viewModel: RecentReviewsViewModel = hiltViewModel()
+    viewModel: RecentReviewsViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
@@ -139,7 +146,10 @@ fun RecentReviewsScreen(
                                 review = review,
                                 onClick = { onReviewClick(review.id) },
                                 onUserClick = onUserClick,
-                                modifier = Modifier.animateItem()
+                                modifier = Modifier.animateItem(),
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                transitionPrefix = TransitionKeys.RECENT_REVIEWS
                             )
                         }
 

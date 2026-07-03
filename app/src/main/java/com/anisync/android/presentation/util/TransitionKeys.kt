@@ -39,6 +39,9 @@ object TransitionKeys {
     /** Media details screen prefix */
     const val MEDIA_DETAILS = "media_details"
 
+    /** Recent reviews list screen prefix */
+    const val RECENT_REVIEWS = "recent_reviews"
+
     /** Character details screen prefix */
     const val CHARACTER = "character"
 
@@ -164,9 +167,20 @@ object TransitionKeys {
     
     /**
      * Creates a shared element key for relation/related media covers.
-     * 
+     *
      * @param relationId The unique relation media identifier
      * @return Key in format: "relation_cover_{relationId}"
      */
     fun relationCover(relationId: Int): String = "relation_cover_$relationId"
+
+    /**
+     * Creates a shared element key for a review card's media banner.
+     * Prefixed per source screen (like [cover]) so the same review appearing on
+     * Discover and on the Recent Reviews list can't cross-match mid-transition.
+     *
+     * @param prefix The screen prefix (e.g. [DISCOVER], [RECENT_REVIEWS])
+     * @param reviewId The unique review identifier
+     * @return Key in format: "{prefix}_review_banner_{reviewId}"
+     */
+    fun reviewBanner(prefix: String, reviewId: Int): String = "${prefix}_review_banner_$reviewId"
 }

@@ -40,7 +40,7 @@ fun DiscoverListDetail(
             onSectionSeeAllClick = { title, sectionType, mediaType ->
                 navController.navigate(SectionGrid(title, sectionType, mediaType.name))
             },
-            onReviewClick = { navController.navigate(ReviewDetail(it)) },
+            onReviewClick = { navController.navigate(ReviewDetail(it, sourceScreen = "discover")) },
             onRecentReviewsSeeAllClick = { mediaType ->
                 navController.navigate(RecentReviews(mediaType.name))
             },

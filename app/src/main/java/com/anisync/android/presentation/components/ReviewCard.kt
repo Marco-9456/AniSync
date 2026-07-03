@@ -1,5 +1,8 @@
 package com.anisync.android.presentation.components
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.anisync.android.domain.MediaReview
+import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.TransitionKeys
 
 /**
  * Single review card shared by the Discover "Recent Reviews" carousel, the profile
@@ -46,7 +51,12 @@ import com.anisync.android.domain.MediaReview
  * @param fixedHeight When set (carousel), the card is exactly this tall and the footer
  *   is pinned to the bottom; when null (lists), the card wraps its content.
  * @param summaryMaxLines Defaults to 2 for fixed-height carousel cards, 3 for lists.
+ * @param sharedTransitionScope With [animatedVisibilityScope] and [transitionPrefix], the
+ *   banner becomes a shared element morphing into the review-detail hero banner.
+ * @param transitionPrefix Source-screen prefix for [TransitionKeys.reviewBanner]; must match
+ *   the `sourceScreen` passed on the `ReviewDetail` route.
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ReviewCard(
     review: MediaReview,
@@ -56,6 +66,9 @@ fun ReviewCard(
     showBanner: Boolean = true,
     fixedHeight: Dp? = null,
     summaryMaxLines: Int = if (fixedHeight != null) 2 else 3,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    transitionPrefix: String? = null,
 ) {
     val scoreColor = remember(review.score) {
         when {
@@ -84,27 +97,43 @@ fun ReviewCard(
                 .then(if (fixedHeight != null) Modifier.fillMaxHeight() else Modifier)
         ) {
             if (showBanner) {
+                // All four corners, not just the bottom pair: at rest the Card's own 16dp
+                // shape rounds the top anyway, but mid-flight the shared banner renders in
+                // the overlay OUTSIDE the Card's clip — bottom-only rounding left square
+                // top corners visible during the return transition.
+                val bannerShape = RoundedCornerShape(16.dp)
+                val bannerModifier =
+                    if (sharedTransitionScope != null && animatedVisibilityScope != null && transitionPrefix != null) {
+                        val spatialSpec = AppMotion.rememberSpatialSpec()
+                        with(sharedTransitionScope) {
+                            Modifier.sharedBounds(
+                                sharedContentState = rememberSharedContentState(
+                                    key = TransitionKeys.reviewBanner(transitionPrefix, review.id)
+                                ),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ -> spatialSpec },
+                                clipInOverlayDuringTransition = OverlayClip(bannerShape)
+                            )
+                        }
+                    } else {
+                        Modifier
+                    }
+
+                // clip BEFORE background: painting first left the square surfaceVariant
+                // corners visible behind the rounded image at the banner's bottom edge.
                 Box(
-                    modifier = Modifier
+                    modifier = bannerModifier
                         .fillMaxWidth()
                         .height(130.dp)
+                        .clip(bannerShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     if (headerImageUrl != null) {
                         AsyncImage(
                             model = headerImageUrl,
                             contentDescription = review.mediaTitle,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
 

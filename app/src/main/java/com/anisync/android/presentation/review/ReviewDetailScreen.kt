@@ -1,5 +1,8 @@
 package com.anisync.android.presentation.review
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -49,17 +52,22 @@ import com.anisync.android.presentation.components.ReviewAuthorBar
 import com.anisync.android.presentation.components.ReviewScorePill
 import com.anisync.android.presentation.components.ReviewVoteActions
 import com.anisync.android.presentation.components.TranslateIconButton
+import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.util.ShareUtils
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun ReviewDetailScreen(
     reviewId: Int,
     onBackClick: () -> Unit,
     onUserClick: (String) -> Unit,
     onMediaClick: (Int) -> Unit,
-    viewModel: ReviewDetailViewModel = hiltViewModel()
+    viewModel: ReviewDetailViewModel = hiltViewModel(),
+    sourceScreen: String = "link",
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -124,14 +132,34 @@ fun ReviewDetailScreen(
                         .verticalScroll(scrollState)
                         .padding(top = topContentPadding)
                 ) {
-                    // Inset hero banner with the score pill floating over it.
+                    // Inset hero banner with the score pill floating over it. When launched
+                    // from a review card (Discover / Recent Reviews), the card's banner
+                    // morphs into this box via shared bounds keyed on the source screen.
                     val bannerUrl = review.mediaBannerUrl ?: review.mediaCoverUrl
+                    val bannerShape = RoundedCornerShape(24.dp)
+                    val bannerSharedModifier =
+                        if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                            val spatialSpec = AppMotion.rememberSpatialSpec()
+                            with(sharedTransitionScope) {
+                                Modifier.sharedBounds(
+                                    sharedContentState = rememberSharedContentState(
+                                        key = TransitionKeys.reviewBanner(sourceScreen, reviewId)
+                                    ),
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    boundsTransform = { _, _ -> spatialSpec },
+                                    clipInOverlayDuringTransition = OverlayClip(bannerShape)
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp, vertical = 8.dp)
                             .height(200.dp)
-                            .clip(RoundedCornerShape(24.dp))
+                            .then(bannerSharedModifier)
+                            .clip(bannerShape)
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         if (bannerUrl != null) {
