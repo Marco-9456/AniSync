@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -204,7 +204,6 @@ private fun StatsMessageBox(isError: Boolean, onRetry: (() -> Unit)?) {
 // Rankings
 // ---------------------------------------------------------------------------
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RankingsSection(rankings: List<MediaRanking>, onRankingClick: (MediaRanking) -> Unit) {
     Column {
@@ -213,17 +212,20 @@ private fun RankingsSection(rankings: List<MediaRanking>, onRankingClick: (Media
             level = HeaderLevel.Section,
             padding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
         )
-        // Same pill design as the overview Information section (RankingInfoPill);
-        // tapping opens Discover search with this ranking's scope preset.
-        FlowRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            rankings.forEach { ranking ->
-                RankingInfoPill(ranking = ranking, onClick = { onRankingClick(ranking) })
+        // Same pill design AND layout as the overview Information section: pills
+        // spread across up to three horizontally-scrollable rows instead of a tall
+        // wrap. Tapping opens Discover search with this ranking's scope preset.
+        val perRow = (rankings.size + 2) / 3
+        rankings.chunked(perRow).forEachIndexed { index, rowRankings ->
+            if (index > 0) Spacer(Modifier.height(12.dp))
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(rowRankings, key = { it.context + it.season + it.year }) { ranking ->
+                    RankingInfoPill(ranking = ranking, onClick = { onRankingClick(ranking) })
+                }
             }
         }
     }
