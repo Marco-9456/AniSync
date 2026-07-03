@@ -290,6 +290,8 @@ private fun LazyListScope.profileFavoritesMediaList(
                         entry = entry,
                         mediaType = mediaType,
                         onClick = { onMediaClick(entry.mediaId) },
+                        // Favourites: show type + release year only (no viewer list status/score/progress).
+                        showViewerListData = false,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope,
                         transitionPrefix = transitionPrefix

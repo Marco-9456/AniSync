@@ -547,11 +547,15 @@ internal fun CastListCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = character.role.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                // Favourites pass a blank role (a global favourite has no single role) — skip the
+                // line entirely there; in Media Details the role is always present.
+                if (character.role.isNotBlank()) {
+                    Text(
+                        text = character.role.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             if (voiceActor != null) {
                 Spacer(Modifier.width(12.dp))

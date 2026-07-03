@@ -79,6 +79,10 @@ fun ProfileMediaListCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
+    // Favourites mode: AniList doesn't surface the viewer's list status/score/progress on
+    // favourites, so those chips (and the note) are hidden and the card shows only objective
+    // media data — type + release year.
+    showViewerListData: Boolean = true,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     transitionPrefix: String = TransitionKeys.LIBRARY
@@ -86,6 +90,10 @@ fun ProfileMediaListCard(
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val title = entry.getTitle(titleLanguage)
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
+    // Release year for favourites mode (mediaStartDate is a UTC epoch, see mapFuzzyDateToLong).
+    val releaseYear = entry.mediaStartDate?.let {
+        java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).year
+    }
     val cacheKey = TransitionKeys.imageCacheKey(transitionPrefix, entry.mediaId) +
         "-" + com.anisync.android.domain.LocalCoverQuality.current.name +
         TransitionKeys.coverVersion(entry.cover.url() ?: entry.coverUrl)
@@ -173,26 +181,31 @@ fun ProfileMediaListCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    MetaChip(
-                        label = entry.status.toLabel(mediaType),
-                        accent = entry.status.toColor()
-                    )
-                    ScoreChip(score = entry.score, format = entry.scoreFormat)
-                    if (entry.progress > 0 || (total ?: 0) > 0) {
-                        MetaChip(label = progressLabel(entry.progress, total, mediaType))
+                    if (showViewerListData) {
+                        MetaChip(
+                            label = entry.status.toLabel(mediaType),
+                            accent = entry.status.toColor()
+                        )
+                        ScoreChip(score = entry.score, format = entry.scoreFormat)
+                        if (entry.progress > 0 || (total ?: 0) > 0) {
+                            MetaChip(label = progressLabel(entry.progress, total, mediaType))
+                        }
                     }
                     entry.format?.takeIf { it != MediaFormat.UNKNOWN__ }?.let {
                         MetaChip(label = it.toLabel())
                     }
-                    if (entry.rewatches > 0) {
+                    if (showViewerListData && entry.rewatches > 0) {
                         MetaChip(
                             label = entry.rewatches.toString(),
                             leadingIcon = Icons.Default.Repeat
                         )
                     }
+                    if (!showViewerListData) {
+                        releaseYear?.let { MetaChip(label = it.toString()) }
+                    }
                 }
 
-                if (!entry.notes.isNullOrBlank()) {
+                if (showViewerListData && !entry.notes.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     NotePreview(
                         note = entry.notes,
