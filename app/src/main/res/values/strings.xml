@@ -585,7 +585,22 @@
     <string name="details_tab_overview">Overview</string>
     <string name="details_tab_characters">Characters</string>
     <string name="details_tab_staff">Staff</string>
+    <string name="details_tab_stats">Stats</string>
     <string name="details_tab_social">Social</string>
+    <!-- Media details Stats tab -->
+    <string name="media_stats_rankings">Rankings</string>
+    <string name="media_stats_activity_per_day">Recent Activity Per Day</string>
+    <string name="media_stats_score_progression">Airing Score Progression</string>
+    <string name="media_stats_watchers_progression">Airing Watchers Progression</string>
+    <string name="media_stats_status_distribution">Status Distribution</string>
+    <string name="media_stats_score_distribution">Score Distribution</string>
+    <string name="media_stats_peak_activity">Peak Activity</string>
+    <string name="media_stats_latest_score">Latest Episode Score</string>
+    <string name="media_stats_peak_watchers">Peak Watchers</string>
+    <string name="media_stats_total_entries">Total Entries</string>
+    <string name="media_stats_episode_byline">Episode %1$d</string>
+    <string name="media_stats_empty">No community statistics for this title yet.</string>
+    <string name="media_stats_error">Couldn\'t load statistics.</string>
     <string name="profile_activity_all">All</string>
     <string name="profile_activity_status">Status</string>
     <string name="profile_activity_messages">Messages</string>

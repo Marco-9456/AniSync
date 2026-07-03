@@ -99,6 +99,12 @@ class MediaDetailsViewModel @Inject constructor(
         listOf(com.anisync.android.type.StaffSort.RELEVANCE, com.anisync.android.type.StaffSort.ID)
     private var staffGeneration = 0
 
+    // ---- Community stats (Stats tab) ----
+    // Lazily fetched the first time the tab is opened; kept for the screen's lifetime.
+    private val _stats = MutableStateFlow(MediaStatsState())
+    val stats: StateFlow<MediaStatsState> = _stats.asStateFlow()
+    private var statsLoading = false
+
     val userScoreFormat: StateFlow<ScoreFormat> = appSettings.userScoreFormat
     
     val animeCustomLists: StateFlow<List<String>> = appSettings.animeListOrder
@@ -472,6 +478,36 @@ class MediaDetailsViewModel @Inject constructor(
         }
     }
 
+    /** Fetch the community stats the first time the Stats tab is opened. */
+    fun ensureStatsLoaded() {
+        if (statsLoading || _stats.value.initialized) return
+        loadStats()
+    }
+
+    /** Explicit retry from the Stats tab error state. */
+    fun retryStats() {
+        if (statsLoading) return
+        loadStats()
+    }
+
+    private fun loadStats() {
+        statsLoading = true
+        _stats.update { it.copy(isLoading = true, isError = false) }
+        viewModelScope.launch {
+            when (val result = detailsRepository.getMediaStats(mediaId)) {
+                is Result.Success -> _stats.value = MediaStatsState(
+                    stats = result.data,
+                    initialized = true
+                )
+
+                is Result.Error -> _stats.update {
+                    it.copy(isLoading = false, isError = true)
+                }
+            }
+            statsLoading = false
+        }
+    }
+
     /** Kick off the first page of the full staff list when the See-all grid opens. */
     fun ensureStaffLoaded() {
         if (staffPage == 0 && !staffLoading) loadMoreStaff()
@@ -537,5 +573,17 @@ data class PagedPeople<T>(
     val items: List<T> = emptyList(),
     val hasNextPage: Boolean = true,
     val isLoading: Boolean = false,
+    val initialized: Boolean = false
+)
+
+/**
+ * Lazy-loaded community statistics for the Stats tab. [initialized] flips true
+ * once a fetch succeeds (the data is then kept for the screen's lifetime);
+ * [isError] drives the tab's retry state after a failed fetch.
+ */
+data class MediaStatsState(
+    val stats: com.anisync.android.domain.MediaStats? = null,
+    val isLoading: Boolean = false,
+    val isError: Boolean = false,
     val initialized: Boolean = false
 )

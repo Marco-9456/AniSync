@@ -92,6 +92,14 @@ interface DetailsRepository {
     ): Result<Pair<List<StaffInfo>, Boolean>>
 
     /**
+     * Fetch the community statistics shown on the media Stats tab (rankings,
+     * recent activity trend, per-episode airing progression and the score/status
+     * distributions). Loaded lazily the first time the tab is opened — the base
+     * [MediaDetails] payload doesn't carry any of this.
+     */
+    suspend fun getMediaStats(mediaId: Int): Result<MediaStats>
+
+    /**
      * Rate a media review.
      */
     suspend fun rateReview(

@@ -5,6 +5,7 @@ import com.anisync.android.GetCharacterDetailsQuery
 import com.anisync.android.GetMediaCharactersQuery
 import com.anisync.android.GetMediaDetailsQuery
 import com.anisync.android.GetMediaStaffQuery
+import com.anisync.android.GetMediaStatsQuery
 import com.anisync.android.GetStaffDetailsQuery
 import com.anisync.android.GetStudioDetailsQuery
 import com.anisync.android.SaveMediaListEntryMutation
@@ -26,8 +27,15 @@ import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.ExternalLinkType
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.MediaAiringTrend
 import com.anisync.android.domain.MediaFollowingEntry
+import com.anisync.android.domain.MediaRanking
+import com.anisync.android.domain.MediaRankingType
 import com.anisync.android.domain.MediaReview
+import com.anisync.android.domain.MediaScoreSlice
+import com.anisync.android.domain.MediaStats
+import com.anisync.android.domain.MediaStatusSlice
+import com.anisync.android.domain.MediaTrendPoint
 import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
@@ -1144,6 +1152,76 @@ class DetailsRepositoryImpl @Inject constructor(
             }?.distinctBy { "${it.id}_${it.role}" } ?: emptyList()
 
             staff to (connection.pageInfo?.hasNextPage ?: false)
+        }
+    }
+
+    override suspend fun getMediaStats(mediaId: Int): Result<MediaStats> {
+        return safeApiCall {
+            val response = apolloClient.query(
+                GetMediaStatsQuery(id = Optional.present(mediaId))
+            )
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
+
+            val media = response.data?.Media ?: throw Exception("Media not found")
+
+            val rankings = media.rankings?.filterNotNull()?.mapNotNull { ranking ->
+                val type = when (ranking.type) {
+                    com.anisync.android.type.MediaRankType.RATED -> MediaRankingType.RATED
+                    com.anisync.android.type.MediaRankType.POPULAR -> MediaRankingType.POPULAR
+                    else -> return@mapNotNull null
+                }
+                MediaRanking(
+                    rank = ranking.rank,
+                    type = type,
+                    year = ranking.year,
+                    season = ranking.season?.rawValue,
+                    allTime = ranking.allTime ?: false,
+                    context = ranking.context
+                )
+            }.orEmpty()
+
+            val recentActivity = media.trends?.nodes?.filterNotNull()
+                ?.map { node -> MediaTrendPoint(dateSeconds = node.date.toLong(), activity = node.trending) }
+                ?.sortedBy { it.dateSeconds }
+                .orEmpty()
+
+            // The API records one trend row per day; only days an episode released carry
+            // an episode number. Dedupe defensively and order for the progression charts.
+            val airingProgression = media.airingTrends?.nodes?.filterNotNull()
+                ?.mapNotNull { node ->
+                    val episode = node.episode ?: return@mapNotNull null
+                    MediaAiringTrend(
+                        episode = episode,
+                        averageScore = node.averageScore,
+                        watching = node.inProgress
+                    )
+                }
+                ?.distinctBy { it.episode }
+                ?.sortedBy { it.episode }
+                .orEmpty()
+
+            val scoreDistribution = media.stats?.scoreDistribution?.filterNotNull()
+                ?.mapNotNull { slice ->
+                    val score = slice.score ?: return@mapNotNull null
+                    MediaScoreSlice(score = score, amount = slice.amount ?: 0)
+                }
+                .orEmpty()
+
+            val statusDistribution = media.stats?.statusDistribution?.filterNotNull()
+                ?.mapNotNull { slice ->
+                    val status = slice.status?.rawValue ?: return@mapNotNull null
+                    MediaStatusSlice(status = status, amount = slice.amount ?: 0)
+                }
+                .orEmpty()
+
+            MediaStats(
+                rankings = rankings,
+                recentActivity = recentActivity,
+                airingProgression = airingProgression,
+                scoreDistribution = scoreDistribution,
+                statusDistribution = statusDistribution
+            )
         }
     }
 }

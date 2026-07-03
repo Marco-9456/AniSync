@@ -1,0 +1,37 @@
+query GetMediaStats($id: Int) {
+    Media(id: $id) {
+        id
+        rankings {
+            id
+            rank
+            type
+            year
+            season
+            allTime
+            context
+        }
+        trends(sort: [ID_DESC], perPage: 25) {
+            nodes {
+                date
+                trending
+            }
+        }
+        airingTrends: trends(releasing: true, sort: [EPISODE_DESC], perPage: 25) {
+            nodes {
+                episode
+                averageScore
+                inProgress
+            }
+        }
+        stats {
+            scoreDistribution {
+                score
+                amount
+            }
+            statusDistribution {
+                status
+                amount
+            }
+        }
+    }
+}

@@ -44,6 +44,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -157,6 +158,7 @@ import com.anisync.android.presentation.details.components.RelationItem
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.details.components.ReviewsListSheet
 import com.anisync.android.presentation.details.components.StaffItem
+import com.anisync.android.presentation.details.components.mediaStatsTabContent
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
@@ -207,6 +209,7 @@ fun MediaDetailsScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val cast by viewModel.cast.collectAsStateWithLifecycle()
     val staff by viewModel.staff.collectAsStateWithLifecycle()
+    val mediaStats by viewModel.stats.collectAsStateWithLifecycle()
     val pullToRefreshState = rememberPullToRefreshState()
 
     val spatialSpec = AppMotion.rememberSpatialSpec()
@@ -597,6 +600,9 @@ fun MediaDetailsScreen(
                                 onEnsureStaffLoaded = viewModel::ensureStaffLoaded,
                                 onLoadMoreStaff = viewModel::loadMoreStaff,
                                 onStaffSortChange = viewModel::setStaffSort,
+                                mediaStats = mediaStats,
+                                onEnsureStatsLoaded = viewModel::ensureStatsLoaded,
+                                onRetryStats = viewModel::retryStats,
                                 onRelationClick = navigateToRelationDetails,
                                 onCharacterClick = navigateToCharacterDetails,
                                 onStaffClick = navigateToStaffDetails,
@@ -836,6 +842,7 @@ enum class DetailsTab(@StringRes val titleRes: Int) {
     OVERVIEW(R.string.details_tab_overview),
     CHARACTERS(R.string.details_tab_characters),
     STAFF(R.string.details_tab_staff),
+    STATS(R.string.details_tab_stats),
     SOCIAL(R.string.details_tab_social)
 }
 
@@ -843,6 +850,7 @@ private fun detailsTabIcon(tab: DetailsTab): ImageVector = when (tab) {
     DetailsTab.OVERVIEW -> Icons.Outlined.Info
     DetailsTab.CHARACTERS -> Icons.Default.Group
     DetailsTab.STAFF -> Icons.Default.Badge
+    DetailsTab.STATS -> Icons.Default.BarChart
     DetailsTab.SOCIAL -> Icons.Default.Forum
 }
 
@@ -882,6 +890,9 @@ fun DetailsPageContent(
     onEnsureStaffLoaded: () -> Unit,
     onLoadMoreStaff: () -> Unit,
     onStaffSortChange: (List<com.anisync.android.type.StaffSort>?) -> Unit,
+    mediaStats: MediaStatsState,
+    onEnsureStatsLoaded: () -> Unit,
+    onRetryStats: () -> Unit,
     onRelationClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
@@ -946,13 +957,15 @@ fun DetailsPageContent(
         details.staff.distinctBy { it.id }.take(10)
     }
 
-    // Only surface tabs that have something to show. Overview is always present; Social always
-    // offers the "start discussion" affordance, so neither ever collapses.
+    // Only surface tabs that have something to show. Overview is always present; Stats loads
+    // lazily (so its emptiness isn't knowable up front) and Social always offers the "start
+    // discussion" affordance, so none of those ever collapses.
     val availableTabs = remember(displayCharacters, displayStaff) {
         buildList {
             add(DetailsTab.OVERVIEW)
             if (displayCharacters.isNotEmpty()) add(DetailsTab.CHARACTERS)
             if (displayStaff.isNotEmpty()) add(DetailsTab.STAFF)
+            add(DetailsTab.STATS)
             add(DetailsTab.SOCIAL)
         }
     }
@@ -996,6 +1009,7 @@ fun DetailsPageContent(
         when (effectiveTab) {
             DetailsTab.CHARACTERS -> onEnsureCastLoaded()
             DetailsTab.STAFF -> onEnsureStaffLoaded()
+            DetailsTab.STATS -> onEnsureStatsLoaded()
             else -> {}
         }
     }
@@ -1270,6 +1284,15 @@ fun DetailsPageContent(
                         },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
+                    )
+                }
+
+                DetailsTab.STATS -> {
+                    mediaStatsTabContent(
+                        state = mediaStats,
+                        meanScore = details.meanScore,
+                        isManga = details.type == com.anisync.android.type.MediaType.MANGA,
+                        onRetry = onRetryStats
                     )
                 }
 
