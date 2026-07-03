@@ -2,7 +2,7 @@
 <resources>
     <string name="nav_library">Biblioteca</string>
     <string name="nav_discover">Explorar</string>
-    <string name="nav_feed">Actividad</string>
+    <string name="nav_feed">Alimento</string>
     <string name="nav_forum">Foro</string>
     <string name="nav_profile">Perfil</string>
     <string name="feed_filter_all">Todo</string>
@@ -14,7 +14,7 @@
     <string name="feed_empty_following">Sigue a personas para ver su actividad aquí.</string>
     <string name="feed_compose_title">Escribir un estado</string>
     <string name="feed_compose_placeholder">Comparte lo que tienes en mente…</string>
-    <string name="feed_compose_submit">Publicar</string>
+    <string name="feed_compose_submit">Correo</string>
     <string name="forum_browse_categories">Explorar categorías</string>
     <string name="forum_recent_discussions">Debates recientes</string>
     <string name="forum_create_thread">Nuevo hilo</string>
@@ -396,7 +396,7 @@
     <string name="dev_tools_locked_toast">Herramientas de desarrollador ocultas</string>
     <string name="font_playground_title">Tipografía</string>
     <string name="font_category_all">Todos</string>
-    <string name="font_category_display">Display</string>
+    <string name="font_category_display">Pantalla</string>
     <string name="font_category_title">Título</string>
     <string name="font_category_body">Cuerpo</string>
     <string name="debug_build_info">Información de compilación</string>
@@ -523,7 +523,7 @@
     <string name="section_recent_updates">Actualizaciones recientes</string>
     <string name="status_watching_count">Viendo %1$d</string>
     <string name="status_completed_count">Completados %1$d</string>
-    <string name="status_on_hold">En pausa</string>
+    <string name="status_on_hold">Pausado</string>
     <string name="status_on_hold_count">En pausa %1$d</string>
     <string name="status_dropped_count">Abandonados %1$d</string>
     <string name="content_description_profile_avatar">Avatar del perfil</string>
@@ -578,7 +578,7 @@
     <string name="media_status_finished">Finalizado</string>
     <string name="media_status_not_yet_released">Aún no publicado</string>
     <string name="media_status_cancelled">Cancelado</string>
-    <string name="media_status_hiatus">En pausa</string>
+    <string name="media_status_hiatus">Hiato</string>
     <string name="format_tv">TV</string>
     <string name="format_tv_short">TV corto</string>
     <string name="format_movie">Película</string>
@@ -587,7 +587,7 @@
     <string name="format_ona">ONA</string>
     <string name="format_music">Música</string>
     <string name="format_novel">Novela</string>
-    <string name="format_one_shot">One Shot</string>
+    <string name="format_one_shot">Un disparo</string>
     <string name="widget_weekly_calendar_description">Mira tu horario de anime de 7 días de un vistazo</string>
     <string name="widget_airing_today_description">Muestra los episodios de anime que se emiten hoy</string>
     <string name="widget_up_next_description">Acceso rápido a tu próximo episodio</string>
@@ -720,7 +720,7 @@
     <string name="delete">Eliminar</string>
     <string name="more_options">Más opciones</string>
     <string name="write">Escribir</string>
-    <string name="post">Publicar</string>
+    <string name="post">Correo</string>
     <string name="richtext_format_bold">Negrita</string>
     <string name="richtext_format_italic">Cursiva</string>
     <string name="richtext_format_strikethrough">Tachado</string>
@@ -764,7 +764,7 @@
     <string name="media_upload_catbox_account_connected">Conectado · %1$s</string>
     <string name="media_upload_catbox_account_anonymous">No conectado · las subidas son anónimas</string>
     <string name="media_upload_catbox_dialog_title">Cuenta de Catbox</string>
-    <string name="media_upload_catbox_userhash">Userhash</string>
+    <string name="media_upload_catbox_userhash">Hash de usuario</string>
     <string name="media_upload_catbox_userhash_hint">Encuéntralo en Administrar Cuenta en catbox.moe</string>
     <string name="media_upload_catbox_userhash_help">Vincula las subidas a tu cuenta de Catbox para que puedas verlas y eliminarlas más tarde. Déjalo vacío para subir de forma anónima.</string>
     <string name="media_upload_host_litterbox">Litterbox</string>
@@ -779,7 +779,7 @@
     <string name="media_upload_custom_url_hint">https://ejemplo.com/upload</string>
     <string name="media_upload_custom_field">Nombre del campo de archivo</string>
     <string name="media_upload_custom_auth">Cabecera de autenticación (opcional)</string>
-    <string name="media_upload_custom_auth_hint">Authorization: Bearer …</string>
+    <string name="media_upload_custom_auth_hint">Autorización: Portador …</string>
     <string name="media_upload_custom_json_path">Ruta JSON de respuesta (opcional)</string>
     <string name="media_upload_custom_json_path_hint">ej. data.url, vacío si la respuesta es la URL</string>
     <string name="media_upload_custom_help">Deja la ruta JSON vacía si el servidor devuelve la URL directamente en el cuerpo de la respuesta.</string>
@@ -824,7 +824,7 @@
     <string name="label_categories">Categorías</string>
     <string name="label_genres">Géneros</string>
     <string name="label_tags">Etiquetas</string>
-    <string name="label_spoilers">Spoilers</string>
+    <string name="label_spoilers">Saboteadores</string>
     <string name="label_spoiler">Spoiler</string>
     <string name="label_attributes">Atributos</string>
     <string name="label_all_languages">Todos los idiomas</string>
@@ -849,13 +849,13 @@
     <string name="sponsor_project">Patrocinar el proyecto</string>
     <string name="support_anisync">Apoyar %s</string>
     <string name="support_description">AniSync es un proyecto personal construido completamente en mi tiempo libre. Si disfrutas usando la aplicación, considera patrocinarla para ayudar a mantener el desarrollo en marcha.</string>
-    <string name="settings_sponsors">Patrocinadores</string>
-    <string name="settings_sponsors_desc">Personas apoyando el desarrollo de AniSync</string>
-    <string name="sponsors_title">Patrocinadores</string>
-    <string name="sponsors_hero_headline">Impulsado por ti</string>
-    <string name="sponsors_hero_body">AniSync es libre de anuncios y de código abierto. Si deseas ayudar, considera convertirte en patrocinador.</string>
-    <string name="sponsors_become_button">Convertirse en patrocinador</string>
-    <string name="sponsors_github_button">Patrocinadores</string>
+    <string name="settings_sponsors">Donar</string>
+    <string name="settings_sponsors_desc">Cómprame un café para aportar a AniSync</string>
+    <string name="sponsors_title">Donar</string>
+    <string name="sponsors_hero_headline">Cómprame un café</string>
+    <string name="sponsors_hero_body">AniSync es libre, sin anuncios y de código abierto; lo creé en mi tiempo libre. Si te alegra el día, puedes dejar una propina para apoyar su desarrollo. Las propinas son totalmente opcionales: no hay nada que comprar ni beneficios asociados. Los nombres que aparecen a continuación son simplemente mi agradecimiento a todos los que me han ayudado.</string>
+    <string name="sponsors_become_button">Compra un café</string>
+    <string name="sponsors_github_button">GitHub</string>
     <string name="sponsors_kofi_button">Ko-fi</string>
     <string name="sponsors_refresh">Actualizar</string>
     <string name="sponsors_updated_at">Actualizado %1$s</string>
@@ -1047,4 +1047,53 @@
     <string name="details_filter_role">Papel</string>
     <string name="details_filter_language">Idioma del actor de voz</string>
     <string name="details_label_synonyms">Sinónimos</string>
+    <string name="details_label_native">Nativo</string>
+    <string name="setting_amoled_desc">Utiliza fondos de color negro puro en el modo oscuro para ahorrar energía en las pantallas OLED</string>
+    <string name="setting_respect_profile_colors">Utilice colores perfilados</string>
+    <string name="setting_respect_profile_colors_desc">Personaliza la aplicación con el color elegido por el usuario al visitar su perfil. Los perfiles que utilicen el color predeterminado conservarán tu tema.</string>
+    <string name="settings_app_lock">Bloqueo app</string>
+    <string name="settings_app_lock_desc">Se requiere tu huella digital, reconocimiento facial o bloqueo de pantalla para abrir AniSync</string>
+    <string name="app_lock_title">Desbloquear AniSync</string>
+    <string name="app_lock_subtitle">Verifique que eres tú para continuar</string>
+    <string name="app_lock_message">AniSync está bloqueado</string>
+    <string name="app_lock_unlock">Desbloquear</string>
+    <string name="app_lock_unavailable">Primero configure un bloqueo de pantalla (PIN, patrón, contraseña o datos biométricos) en la configuración de su dispositivo</string>
+    <string name="settings_anilist_account">Ajustes de AniList</string>
+    <string name="settings_anilist_account_desc">Cuentas, contenido para adultos, idiomas, formato de puntuación</string>
+    <string name="library_view_title">Vista</string>
+    <string name="settings_open_in_web">Abrir por web</string>
+    <string name="options_conflict_intro">Estas opciones cambiaron en el sitio web de AniList y difieren de las de este dispositivo:</string>
+    <string name="options_conflict_field_values">Este dispositivo: %1$s · Sitio web: %2$s</string>
+    <string name="options_conflict_question">¿Desea conservar los cambios de este dispositivo o utilizar los del sitio web?</string>
+    <string name="options_conflict_keep_local">Conserva este dispositivo</string>
+    <string name="options_conflict_use_website">Utilice el sitio web</string>
+    <string name="account_add_desc">Inicia sesión en otra cuenta de AniList</string>
+    <string name="details_tab_overview">Descripción general</string>
+    <string name="details_tab_characters">Caracteres</string>
+    <string name="details_tab_staff">Personal</string>
+    <string name="profile_follows_you">Te sigue</string>
+    <string name="profile_mutual">Mutual</string>
+    <string name="statistics_activity_a11y">Mapa de calor de actividad con %1$d actividades durante el último año</string>
+    <plurals name="statistics_activity_count">
+        <item quantity="one">%d actividad</item>
+        <item quantity="many">%d actividades</item>
+        <item quantity="other">%d actividades</item>
+    </plurals>
+    <string name="richtext_preview_show">Mostrar vista previa</string>
+    <string name="richtext_preview_hide">Ocultar vista previa</string>
+    <string name="search_view_all_results">Ver todos los resultados de %1$d</string>
+    <string name="cd_pause">Pausa</string>
+    <string name="cd_fullscreen">Entrar en pantalla completa</string>
+    <string name="cd_exit_fullscreen">Salir de pantalla completa</string>
+    <string name="calendar_today">Hoy</string>
+    <string name="details_label_romaji">Números romanos</string>
+    <string name="details_label_english">Inglés</string>
+    <plurals name="calendar_airing_count">
+        <item quantity="one">%1$d ventilación</item>
+        <item quantity="many">%1$d ventilaciones</item>
+        <item quantity="other">%1$d ventilaciones</item>
+    </plurals>
+    <string name="pane_resize_handle">Redimensionar paneles</string>
+    <string name="pane_resize_cycle">Cambiar el ancho del panel de lista</string>
+    <string name="pane_resize_toggle">Contraer o expandir el panel de lista</string>
 </resources>
