@@ -601,6 +601,8 @@
     <string name="media_stats_episode_byline">Ep %1$d</string>
     <string name="media_stats_episode_eyebrow">Episode %1$d</string>
     <string name="media_stats_day_activity">Day Activity</string>
+    <string name="media_stats_score_bucket_eyebrow">Score %1$d</string>
+    <string name="media_stats_percent_of_ratings">%1$d%% of ratings</string>
     <string name="media_stats_empty">No community statistics for this title yet.</string>
     <string name="media_stats_error">Couldn\'t load statistics.</string>
     <string name="media_stats_activity_chart_a11y">Daily activity chart over %1$d days, peaking at %2$s on %3$s</string>

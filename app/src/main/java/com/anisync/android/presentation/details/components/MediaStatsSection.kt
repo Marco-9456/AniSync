@@ -948,6 +948,11 @@ private fun ScoreDistributionSection(slices: List<MediaScoreSlice>, meanScore: I
         }
     }
     val maxAmount = remember(buckets) { buckets.maxOf { it.amount }.coerceAtLeast(1) }
+    val total = remember(buckets) { buckets.sumOf { it.amount }.coerceAtLeast(1) }
+    // Tap a bar to inspect its bucket; the headline swaps from the mean score to it.
+    var selectedIndex by remember(slices) { mutableStateOf<Int?>(null) }
+    val selected = selectedIndex?.let(buckets::getOrNull)
+    val groupedFormat = rememberGroupedNumberFormat()
     // TalkBack summary for the histogram; per-bucket labels stay visual-only.
     val topBucket = remember(buckets) { buckets.maxBy { it.amount } }
     val chartDescription = stringResource(
@@ -973,7 +978,30 @@ private fun ScoreDistributionSection(slices: List<MediaScoreSlice>, meanScore: I
         ) {
             val onContainer = MaterialTheme.colorScheme.onTertiaryContainer
             Column(Modifier.padding(24.dp)) {
-                if (meanScore != null && meanScore > 0) {
+                if (selected != null) {
+                    Text(
+                        text = stringResource(R.string.media_stats_score_bucket_eyebrow, selected.score).uppercase(),
+                        style = expressive.statLabel,
+                        color = onContainer.copy(alpha = 0.7f)
+                    )
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = groupedFormat.format(selected.amount),
+                            style = expressive.statNumericMedium,
+                            color = onContainer
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.media_stats_percent_of_ratings,
+                                (selected.amount * 100f / total).toInt()
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = onContainer.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(bottom = 6.dp, start = 8.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(20.dp))
+                } else if (meanScore != null && meanScore > 0) {
                     Text(
                         text = stringResource(R.string.statistics_mean_score).uppercase(),
                         style = expressive.statLabel,
@@ -1002,7 +1030,7 @@ private fun ScoreDistributionSection(slices: List<MediaScoreSlice>, meanScore: I
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom
                 ) {
-                    buckets.forEach { bucket ->
+                    buckets.forEachIndexed { index, bucket ->
                         val animatedHeight = remember { Animatable(0f) }
                         val targetFraction = bucket.amount / maxAmount.toFloat()
                         LaunchedEffect(targetFraction) {
@@ -1011,9 +1039,28 @@ private fun ScoreDistributionSection(slices: List<MediaScoreSlice>, meanScore: I
                                 animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
                             )
                         }
+                        // Dim everything but the inspected bucket while a selection is active.
+                        val baseColor = when {
+                            bucket.amount == 0 -> onContainer.copy(alpha = 0.2f)
+                            bucket.score >= 80 -> onContainer
+                            bucket.score >= 50 -> onContainer.copy(alpha = 0.65f)
+                            else -> onContainer.copy(alpha = 0.4f)
+                        }
+                        val barColor = if (selectedIndex != null && selectedIndex != index) {
+                            baseColor.copy(alpha = baseColor.alpha * 0.35f)
+                        } else baseColor
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    selectedIndex = if (selectedIndex == index) null else index
+                                },
+                            verticalArrangement = Arrangement.Bottom
                         ) {
                             if (bucket.amount > 0) {
                                 Text(
@@ -1034,14 +1081,7 @@ private fun ScoreDistributionSection(slices: List<MediaScoreSlice>, meanScore: I
                                         if (bucket.amount > 0) animatedHeight.value.coerceAtLeast(0.02f) else 0.02f
                                     )
                                     .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                                    .background(
-                                        when {
-                                            bucket.amount == 0 -> onContainer.copy(alpha = 0.2f)
-                                            bucket.score >= 80 -> onContainer
-                                            bucket.score >= 50 -> onContainer.copy(alpha = 0.65f)
-                                            else -> onContainer.copy(alpha = 0.4f)
-                                        }
-                                    )
+                                    .background(barColor)
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
