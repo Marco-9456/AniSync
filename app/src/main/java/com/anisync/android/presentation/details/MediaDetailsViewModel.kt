@@ -217,10 +217,16 @@ class MediaDetailsViewModel @Inject constructor(
     }
 
     /**
-     * Refresh from network (called on init and can be called for pull-to-refresh).
+     * Explicit user-driven refresh (pull-to-refresh) — always hits the network.
+     * Besides the details themselves, revalidates the lazily-fetched tab data the
+     * screen is already holding: community stats (kept for the screen's lifetime
+     * otherwise) and the Social previews (loaded once on entry). All of those are
+     * stale-while-revalidate — current data stays on screen until replaced.
      */
-    /** Explicit user-driven refresh (pull-to-refresh) — always hits the network. */
     fun refresh() {
+        if (_stats.value.initialized && !statsLoading) loadStats()
+        loadFollowingPreview()
+        loadDiscussionsPreview()
         viewModelScope.launch {
             _isRefreshing.value = true
             try {
