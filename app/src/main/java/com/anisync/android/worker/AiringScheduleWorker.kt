@@ -23,6 +23,8 @@ import com.anisync.android.widget.UpNextWidget
 import com.anisync.android.widget.WeeklyCalendarWidget
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.cache.normalized.FetchPolicy
+import com.apollographql.apollo.cache.normalized.fetchPolicy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -81,7 +83,12 @@ class AiringScheduleWorker @AssistedInject constructor(
                         airingAtGreater = Optional.present(startOfDaySeconds.toInt()),
                         airingAtLesser = Optional.present(endOfWeekSeconds.toInt())
                     )
-                ).execute()
+                )
+                    // Query variables repeat within a day, so the implicit
+                    // CacheFirst default turned intraday refreshes into no-ops
+                    // and schedule changes (delays, swaps) were never picked up.
+                    .fetchPolicy(FetchPolicy.NetworkOnly)
+                    .execute()
 
                 if (response.hasErrors()) {
                     return Result.retry()

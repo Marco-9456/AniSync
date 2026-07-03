@@ -12,6 +12,8 @@ import com.anisync.android.data.util.ApiError
 import com.anisync.android.type.MediaSeason
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.cache.normalized.FetchPolicy
+import com.apollographql.apollo.cache.normalized.fetchPolicy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.Calendar
@@ -44,7 +46,11 @@ class TrendingWorker @AssistedInject constructor(
                     seasonYear = Optional.present(year),
                     perPage = Optional.present(10)
                 )
-            ).execute()
+            )
+                // This worker's whole job is refreshing trending; the implicit
+                // CacheFirst default made every run re-serve the first response.
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
 
             if (response.hasErrors()) {
                 Log.e("TrendingWorker", "API Error: ${response.errors?.firstOrNull()?.message}")

@@ -653,7 +653,12 @@ class DetailsRepositoryImpl @Inject constructor(
                     mediaId = mediaId,
                     page = page
                 )
-            ).execute()
+            )
+                // Without an explicit policy the normalized cache defaults to
+                // CacheFirst and the persistent SQLite tier serves the first
+                // response forever — new reviews would never show up.
+                .fetchPolicy(FetchPolicy.NetworkFirst)
+                .execute()
 
             if (response.hasErrors() || response.data == null) {
                 throw Exception(
@@ -696,7 +701,12 @@ class DetailsRepositoryImpl @Inject constructor(
                     page = page,
                     perPage = perPage
                 )
-            ).execute()
+            )
+                // Followed users' avatars/score/progress/notes change often;
+                // the implicit CacheFirst default pinned the first response in
+                // the persistent cache and it never refreshed.
+                .fetchPolicy(FetchPolicy.NetworkFirst)
+                .execute()
 
             if (response.hasErrors() || response.data == null) {
                 throw Exception(
