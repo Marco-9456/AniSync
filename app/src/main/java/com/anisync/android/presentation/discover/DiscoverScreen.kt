@@ -368,6 +368,7 @@ fun DiscoverScreen(
         ?: com.anisync.android.domain.GroupedSearchResults()
     val isSearching = successState2?.isSearching ?: false
     val searchError = successState2?.searchError
+    val searchPaging = successState2?.searchPaging ?: SearchPaging()
 
     val onCharacterItemClick: (Int) -> Unit = remember(onCharacterClick, searchBarState, coroutineScope, keyboardController) {
         { id ->
@@ -422,6 +423,8 @@ fun DiscoverScreen(
         searchError = searchError,
         viewMode = viewMode,
         activeCategory = activeCategory,
+        searchPaging = searchPaging,
+        onLoadMore = { viewModel.onAction(DiscoverAction.LoadMoreResults) },
         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(it)) },
         onFiltersChange = { viewModel.onAction(DiscoverAction.UpdateFilters(it)) },
         onLoadTaxonomy = { viewModel.onAction(DiscoverAction.LoadTaxonomy) },
@@ -848,6 +851,8 @@ private fun DiscoverSearchOverlay(
     searchError: String?,
     viewMode: com.anisync.android.data.DiscoverViewMode,
     activeCategory: ResultCategory,
+    searchPaging: SearchPaging,
+    onLoadMore: () -> Unit,
     onSearch: (String) -> Unit,
     onFiltersChange: (com.anisync.android.domain.SearchFilters) -> Unit,
     onLoadTaxonomy: () -> Unit,
@@ -895,6 +900,8 @@ private fun DiscoverSearchOverlay(
                 titleLanguage = titleLanguage,
                 viewMode = viewMode,
                 activeCategory = activeCategory,
+                searchPaging = searchPaging,
+                onLoadMore = onLoadMore,
                 onViewModeChange = onViewModeChange,
                 onCategoryChange = onCategoryChange,
                 onSearchItemClick = onSearchItemClick,
@@ -930,6 +937,8 @@ private fun SearchResultsContent(
     titleLanguage: com.anisync.android.data.TitleLanguage,
     viewMode: com.anisync.android.data.DiscoverViewMode,
     activeCategory: ResultCategory,
+    searchPaging: SearchPaging,
+    onLoadMore: () -> Unit,
     onViewModeChange: (com.anisync.android.data.DiscoverViewMode) -> Unit,
     onCategoryChange: (ResultCategory) -> Unit,
     onSearchItemClick: (Int) -> Unit,
@@ -1018,7 +1027,9 @@ private fun SearchResultsContent(
                                 onStaffClick = { onSelect(SearchTarget.Staff(it)) },
                                 onStudioClick = { onSelect(SearchTarget.Studio(it)) },
                                 onUserClick = onUserClick,
-                                selectedTarget = selectedTarget
+                                selectedTarget = selectedTarget,
+                                hasMoreResults = searchPaging.hasNextFor(activeCategory),
+                                onLoadMore = onLoadMore
                             )
                         },
                         detailPane = { target, onClose ->
@@ -1042,7 +1053,9 @@ private fun SearchResultsContent(
                         onCharacterClick = onCharacterClick,
                         onStaffClick = onStaffClick,
                         onStudioClick = onStudioClick,
-                        onUserClick = onUserClick
+                        onUserClick = onUserClick,
+                        hasMoreResults = searchPaging.hasNextFor(activeCategory),
+                        onLoadMore = onLoadMore
                     )
                 }
             }

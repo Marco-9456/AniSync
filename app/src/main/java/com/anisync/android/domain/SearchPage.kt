@@ -27,5 +27,9 @@ data class SearchEverythingResult(
     val manga: List<LibraryEntry> = emptyList(),
     val animeHasNextPage: Boolean = false,
     val mangaHasNextPage: Boolean = false,
+    val charactersHasNextPage: Boolean = false,
+    val staffHasNextPage: Boolean = false,
+    val usersHasNextPage: Boolean = false,
+    val studiosHasNextPage: Boolean = false,
     val grouped: GroupedSearchResults = GroupedSearchResults()
 )

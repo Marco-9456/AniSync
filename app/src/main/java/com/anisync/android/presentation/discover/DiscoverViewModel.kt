@@ -133,6 +133,7 @@ class DiscoverViewModel @Inject constructor(
             is DiscoverAction.OnSearchQueryChange -> onSearchQueryChange(action.query)
             is DiscoverAction.OnSearchActiveChange -> onSearchActiveChange(action.active)
             is DiscoverAction.OnSearch -> onSearch(action.query)
+            is DiscoverAction.LoadMoreResults -> loadMoreResults()
             is DiscoverAction.UpdateFilters -> updateFilters(action.filters)
             is DiscoverAction.ClearFilters -> clearFilters()
             is DiscoverAction.LoadTaxonomy -> loadTaxonomyIfNeeded()
@@ -192,6 +193,86 @@ class DiscoverViewModel @Inject constructor(
         val currentState = _uiState.value as? DiscoverUiState.Success ?: return
         _uiState.update { currentState.copy(searchQuery = query) }
         searchTrigger.value = SearchTriggerState(query, currentState.searchFilters.hashCode())
+    }
+
+    /**
+     * Appends the next page of the active category's results. Media buckets page
+     * independently; the four entity buckets share one request/page counter, so
+     * paging one entity category also grows the other three. A fresh search (new
+     * trigger) resets the paging state wholesale, which implicitly invalidates any
+     * in-flight append: the guard re-reads the state after the response and drops
+     * the page if the query/filters changed underneath it.
+     */
+    private fun loadMoreResults() {
+        val currentState = _uiState.value as? DiscoverUiState.Success ?: return
+        val paging = currentState.searchPaging
+        val category = currentState.activeCategory
+        if (paging.isLoadingMore || !paging.hasNextFor(category)) return
+
+        val wantAnime = category == ResultCategory.ANIME
+        val wantManga = category == ResultCategory.MANGA
+        val wantEntities = !wantAnime && !wantManga
+        val nextPage = when {
+            wantAnime -> paging.animePage + 1
+            wantManga -> paging.mangaPage + 1
+            else -> paging.entitiesPage + 1
+        }
+        val query = currentState.searchQuery
+        val filters = currentState.searchFilters
+
+        _uiState.update { currentState.copy(searchPaging = paging.copy(isLoadingMore = true)) }
+        viewModelScope.launch {
+            val result = searchRepository.searchEverything(
+                query = query,
+                filters = filters,
+                page = nextPage,
+                wantAnime = wantAnime,
+                wantManga = wantManga,
+                wantEntities = wantEntities
+            )
+
+            _uiState.update { existing ->
+                val st = existing as? DiscoverUiState.Success ?: return@update existing
+                // A newer search replaced the results while this page was in flight.
+                if (st.searchQuery != query || st.searchFilters != filters) return@update existing
+
+                when (result) {
+                    is Result.Error -> st.copy(
+                        searchPaging = st.searchPaging.copy(isLoadingMore = false)
+                    )
+
+                    is Result.Success -> {
+                        val data = result.data
+                        val grouped = st.groupedResults
+                        // Appended entities go through the same type projection as the
+                        // initial page so a type-pinned search can't resurrect buckets.
+                        val appended = data.grouped.projectFor(filters.searchType)
+                        st.copy(
+                            searchAnime = (st.searchAnime + data.anime).distinctBy { it.mediaId },
+                            searchManga = (st.searchManga + data.manga).distinctBy { it.mediaId },
+                            groupedResults = grouped.copy(
+                                characters = (grouped.characters + appended.characters).distinctBy { it.id },
+                                staff = (grouped.staff + appended.staff).distinctBy { it.id },
+                                users = (grouped.users + appended.users).distinctBy { it.id },
+                                studios = (grouped.studios + appended.studios).distinctBy { it.id }
+                            ),
+                            searchPaging = st.searchPaging.copy(
+                                isLoadingMore = false,
+                                animePage = if (wantAnime) nextPage else st.searchPaging.animePage,
+                                animeHasNext = if (wantAnime) data.animeHasNextPage else st.searchPaging.animeHasNext,
+                                mangaPage = if (wantManga) nextPage else st.searchPaging.mangaPage,
+                                mangaHasNext = if (wantManga) data.mangaHasNextPage else st.searchPaging.mangaHasNext,
+                                entitiesPage = if (wantEntities) nextPage else st.searchPaging.entitiesPage,
+                                charactersHasNext = if (wantEntities) data.charactersHasNextPage else st.searchPaging.charactersHasNext,
+                                staffHasNext = if (wantEntities) data.staffHasNextPage else st.searchPaging.staffHasNext,
+                                usersHasNext = if (wantEntities) data.usersHasNextPage else st.searchPaging.usersHasNext,
+                                studiosHasNext = if (wantEntities) data.studiosHasNextPage else st.searchPaging.studiosHasNext
+                            )
+                        )
+                    }
+                }
+            }
+        }
     }
 
     private fun updateFilters(filters: SearchFilters) {
@@ -296,6 +377,15 @@ class DiscoverViewModel @Inject constructor(
                                 searchError = error,
                                 activeCategory = st.activeCategory.clampedTo(
                                     availableCategories(animeEntries, mangaEntries, grouped)
+                                ),
+                                // Fresh search = page 1 of every bucket.
+                                searchPaging = SearchPaging(
+                                    animeHasNext = data?.animeHasNextPage ?: false,
+                                    mangaHasNext = data?.mangaHasNextPage ?: false,
+                                    charactersHasNext = data?.charactersHasNextPage ?: false,
+                                    staffHasNext = data?.staffHasNextPage ?: false,
+                                    usersHasNext = data?.usersHasNextPage ?: false,
+                                    studiosHasNext = data?.studiosHasNextPage ?: false
                                 )
                             )
                         } ?: existing

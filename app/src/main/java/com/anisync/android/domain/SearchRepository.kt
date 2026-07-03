@@ -29,6 +29,7 @@ interface SearchRepository {
     suspend fun searchEverything(
         query: String,
         filters: SearchFilters = SearchFilters(),
+        page: Int = 1,
         perPage: Int = 20,
         wantAnime: Boolean,
         wantManga: Boolean,

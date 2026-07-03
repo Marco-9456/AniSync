@@ -11,6 +11,7 @@ existing mappers port over unchanged. Fragments are intentionally NOT used yet
 """
 query SearchEverything(
   $search: String,
+  $page: Int = 1,
   $perPage: Int = 20,
   $wantAnime: Boolean!,
   $wantManga: Boolean!,
@@ -38,7 +39,7 @@ query SearchEverything(
   $countryOfOrigin: CountryCode,
   $isAdult: Boolean
 ) {
-  anime: Page(page: 1, perPage: $perPage) @include(if: $wantAnime) {
+  anime: Page(page: $page, perPage: $perPage) @include(if: $wantAnime) {
     pageInfo {
       total
       currentPage
@@ -73,7 +74,7 @@ query SearchEverything(
       ...MediaCardFields
     }
   }
-  manga: Page(page: 1, perPage: $perPage) @include(if: $wantManga) {
+  manga: Page(page: $page, perPage: $perPage) @include(if: $wantManga) {
     pageInfo {
       total
       currentPage
@@ -108,7 +109,10 @@ query SearchEverything(
       ...MediaCardFields
     }
   }
-  characters: Page(page: 1, perPage: 5) @include(if: $wantEntities) {
+  characters: Page(page: $page, perPage: $perPage) @include(if: $wantEntities) {
+    pageInfo {
+      hasNextPage
+    }
     characters(search: $search, sort: [FAVOURITES_DESC]) {
       id
       name {
@@ -122,7 +126,10 @@ query SearchEverything(
       favourites
     }
   }
-  staff: Page(page: 1, perPage: 5) @include(if: $wantEntities) {
+  staff: Page(page: $page, perPage: $perPage) @include(if: $wantEntities) {
+    pageInfo {
+      hasNextPage
+    }
     staff(search: $search, sort: [FAVOURITES_DESC]) {
       id
       name {
@@ -137,7 +144,10 @@ query SearchEverything(
       favourites
     }
   }
-  users: Page(page: 1, perPage: 5) @include(if: $wantEntities) {
+  users: Page(page: $page, perPage: $perPage) @include(if: $wantEntities) {
+    pageInfo {
+      hasNextPage
+    }
     users(search: $search, sort: [SEARCH_MATCH]) {
       id
       name
@@ -146,7 +156,10 @@ query SearchEverything(
       }
     }
   }
-  studios: Page(page: 1, perPage: 5) @include(if: $wantEntities) {
+  studios: Page(page: $page, perPage: $perPage) @include(if: $wantEntities) {
+    pageInfo {
+      hasNextPage
+    }
     studios(search: $search, sort: [SEARCH_MATCH]) {
       id
       name

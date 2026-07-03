@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +46,7 @@ import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.discover.ResultCategory
 import com.anisync.android.presentation.discover.SearchTarget
 import com.anisync.android.type.MediaFormat
@@ -79,6 +82,9 @@ fun SearchResultsPanels(
     modifier: Modifier = Modifier,
     // The result open in the two-pane detail (or null); its row shows the Material 3 selected state.
     selectedTarget: SearchTarget? = null,
+    // Pagination for the single-category view; the overview always shows page-1 previews.
+    hasMoreResults: Boolean = false,
+    onLoadMore: () -> Unit = {},
 ) {
     if (activeCategory == ResultCategory.ALL) {
         SearchOverviewPanels(
@@ -91,6 +97,7 @@ fun SearchResultsPanels(
             activeCategory, searchAnime, searchManga, groupedResults, titleLanguage,
             onMediaClick, onCharacterClick, onStaffClick, onStudioClick, onUserClick, modifier,
             selectedTarget,
+            hasMoreResults, onLoadMore,
         )
     }
 }
@@ -253,8 +260,21 @@ fun SearchCategoryResults(
     onUserClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     selectedTarget: SearchTarget? = null,
+    hasMoreResults: Boolean = false,
+    onLoadMore: () -> Unit = {},
 ) {
     val avatarShape = LocalAvatarShape.current
+    // Raw loaded count of the active category — keys the endless-scroll trigger so it
+    // re-arms after every append (never a filtered/derived count).
+    val loadedCount = when (activeCategory) {
+        ResultCategory.ANIME -> searchAnime.size
+        ResultCategory.MANGA -> searchManga.size
+        ResultCategory.CHARACTERS -> groupedResults.characters.size
+        ResultCategory.STAFF -> groupedResults.staff.size
+        ResultCategory.USERS -> groupedResults.users.size
+        ResultCategory.STUDIOS -> groupedResults.studios.size
+        ResultCategory.ALL -> 0
+    }
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val columns = (((maxWidth + PanelSpacing) / (PanelMinWidth + PanelSpacing)).toInt())
             .coerceIn(1, 3)
@@ -302,6 +322,23 @@ fun SearchCategoryResults(
                     }
                 }
                 ResultCategory.ALL -> Unit
+            }
+
+            // Endless scroll: the footer only composes once scrolled into view, at
+            // which point it requests the next page; keying on the raw loaded count
+            // re-arms it after every append until the bucket reports no more pages.
+            if (hasMoreResults) {
+                item(key = "load_more", span = { GridItemSpan(maxLineSpan) }) {
+                    LaunchedEffect(loadedCount) { onLoadMore() }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        AppCircularProgressIndicator()
+                    }
+                }
             }
         }
     }

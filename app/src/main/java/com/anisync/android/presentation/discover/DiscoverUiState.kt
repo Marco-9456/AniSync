@@ -15,6 +15,35 @@ import com.anisync.android.type.MediaType
  */
 enum class ResultCategory { ALL, ANIME, MANGA, CHARACTERS, STAFF, USERS, STUDIOS }
 
+/**
+ * Pagination bookkeeping for the universal search. Media buckets page
+ * independently; the four entity buckets ride one shared request (and thus one
+ * shared page counter), each keeping its own hasNext flag.
+ */
+@Stable
+data class SearchPaging(
+    val animePage: Int = 1,
+    val animeHasNext: Boolean = false,
+    val mangaPage: Int = 1,
+    val mangaHasNext: Boolean = false,
+    val entitiesPage: Int = 1,
+    val charactersHasNext: Boolean = false,
+    val staffHasNext: Boolean = false,
+    val usersHasNext: Boolean = false,
+    val studiosHasNext: Boolean = false,
+    val isLoadingMore: Boolean = false
+) {
+    fun hasNextFor(category: ResultCategory): Boolean = when (category) {
+        ResultCategory.ANIME -> animeHasNext
+        ResultCategory.MANGA -> mangaHasNext
+        ResultCategory.CHARACTERS -> charactersHasNext
+        ResultCategory.STAFF -> staffHasNext
+        ResultCategory.USERS -> usersHasNext
+        ResultCategory.STUDIOS -> studiosHasNext
+        ResultCategory.ALL -> false
+    }
+}
+
 sealed interface DiscoverUiState {
     data object Loading : DiscoverUiState
 
@@ -39,6 +68,7 @@ sealed interface DiscoverUiState {
         val searchError: String? = null,
         val viewMode: DiscoverViewMode = DiscoverViewMode.LIST,
         val activeCategory: ResultCategory = ResultCategory.ALL,
+        val searchPaging: SearchPaging = SearchPaging(),
         /**
          * Monotonic counter bumped when an external screen asks Discover to open its
          * search overlay with preset filters (see DiscoverSearchLauncher). The screen
@@ -56,6 +86,7 @@ sealed interface DiscoverAction {
     data class OnSearchQueryChange(val query: String) : DiscoverAction
     data class OnSearchActiveChange(val active: Boolean) : DiscoverAction
     data class OnSearch(val query: String) : DiscoverAction
+    data object LoadMoreResults : DiscoverAction
     data class UpdateFilters(val filters: SearchFilters) : DiscoverAction
     data object ClearFilters : DiscoverAction
     data object LoadTaxonomy : DiscoverAction

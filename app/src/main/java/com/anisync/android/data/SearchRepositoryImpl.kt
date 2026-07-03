@@ -187,17 +187,19 @@ class SearchRepositoryImpl @Inject constructor(
     override suspend fun searchEverything(
         query: String,
         filters: SearchFilters,
+        page: Int,
         perPage: Int,
         wantAnime: Boolean,
         wantManga: Boolean,
         wantEntities: Boolean
     ): Result<SearchEverythingResult> {
-        val key = "all:$query:${filters.hashCode()}:$perPage:$wantAnime:$wantManga:$wantEntities"
+        val key = "all:$query:${filters.hashCode()}:$page:$perPage:$wantAnime:$wantManga:$wantEntities"
         return dedupe(key) {
             safeApiCall {
                 val response = apolloClient.query(
                     SearchEverythingQuery(
                         search = if (query.isBlank()) Optional.absent() else Optional.present(query),
+                        page = Optional.present(page),
                         perPage = Optional.present(perPage),
                         wantAnime = wantAnime,
                         wantManga = wantManga,
@@ -324,6 +326,10 @@ class SearchRepositoryImpl @Inject constructor(
                     manga = mangaEntries,
                     animeHasNextPage = data?.anime?.pageInfo?.hasNextPage ?: false,
                     mangaHasNextPage = data?.manga?.pageInfo?.hasNextPage ?: false,
+                    charactersHasNextPage = data?.characters?.pageInfo?.hasNextPage ?: false,
+                    staffHasNextPage = data?.staff?.pageInfo?.hasNextPage ?: false,
+                    usersHasNextPage = data?.users?.pageInfo?.hasNextPage ?: false,
+                    studiosHasNextPage = data?.studios?.pageInfo?.hasNextPage ?: false,
                     grouped = GroupedSearchResults(
                         characters = characters,
                         staff = staff,
