@@ -122,69 +122,40 @@ fun LazyListScope.profileFavoritesTab(
         }
 
         ProfileFavoritesFilter.CHARACTERS -> {
-            val characters = profile.favoriteCharactersOverview
-            if (characters.isEmpty()) {
-                item(key = "fav_empty_characters", contentType = "empty") {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    PlaceholderTabContent(
-                        message = stringResource(R.string.profile_placeholder_favorites),
-                        modifier = modifier
-                    )
-                }
-            } else {
-                item(key = "fav_top_spacer_characters") { Spacer(modifier = Modifier.height(16.dp)) }
-
-                items(
-                    count = characters.size,
-                    key = { i -> "fav_char_${characters[i].id}" },
-                    contentType = { "fav_person_row" }
-                ) { i ->
-                    val character = characters[i]
-                    // Thumb + name + role (role from the character's top media appearance, see the
-                    // repository mapper). No voice actor: AniList returns it null on the favourites
-                    // character path, so the row shows the character only.
-                    CastListCard(
-                        character = character,
-                        voiceActor = null,
-                        onClick = { onCharacterClick(character.id) },
-                        onVoiceActorClick = {},
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                }
-                item(key = "fav_bottom_spacer_characters") { Spacer(modifier = Modifier.height(12.dp)) }
+            // Portrait + name only — a global favourite has no single role, and AniList omits
+            // per-media role/VA on the favourites path.
+            profileFavoritesPersonList(
+                items = profile.favoriteCharactersOverview,
+                keyPrefix = "characters",
+                idOf = { it.id },
+                modifier = modifier
+            ) { character ->
+                CastListCard(
+                    character = character,
+                    voiceActor = null,
+                    onClick = { onCharacterClick(character.id) },
+                    onVoiceActorClick = {},
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
             }
         }
 
         ProfileFavoritesFilter.STAFF -> {
-            val staff = profile.favoriteStaffOverview
-            if (staff.isEmpty()) {
-                item(key = "fav_empty_staff", contentType = "empty") {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    PlaceholderTabContent(
-                        message = stringResource(R.string.profile_placeholder_favorites),
-                        modifier = modifier
-                    )
-                }
-            } else {
-                item(key = "fav_top_spacer_staff") { Spacer(modifier = Modifier.height(16.dp)) }
-
-                items(
-                    count = staff.size,
-                    key = { i -> "fav_staff_${staff[i].id}" },
-                    contentType = { "fav_person_row" }
-                ) { i ->
-                    val member = staff[i]
-                    StaffListCard(
-                        staff = member.toStaffInfo(),
-                        onClick = { onStaffClick(member.id) },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                }
-                item(key = "fav_bottom_spacer_staff") { Spacer(modifier = Modifier.height(12.dp)) }
+            profileFavoritesPersonList(
+                items = profile.favoriteStaffOverview,
+                keyPrefix = "staff",
+                idOf = { it.id },
+                modifier = modifier
+            ) { member ->
+                StaffListCard(
+                    staff = member.toStaffInfo(),
+                    onClick = { onStaffClick(member.id) },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
             }
         }
 
@@ -243,9 +214,10 @@ private fun favoritesFilterIcon(filter: ProfileFavoritesFilter): ImageVector {
 }
 
 /**
- * Read-only list rows for the favourites Anime/Manga sub-tabs — the same [ProfileMediaListCard]
- * the Anime/Manga profile tabs use, minus the status filter. Chunked into [listColumns] so wide
- * windows fill the width (1-up on phones, up to 2-up on tablets).
+ * List rows for the favourites Anime/Manga sub-tabs, reusing [ProfileMediaListCard] in favourites
+ * mode (`showViewerListData = false`): cover, title, type, and release year only — no viewer list
+ * status/score/progress, which AniList doesn't surface for favourites. Chunked into [listColumns]
+ * so wide windows fill the width (1-up on phones, up to 2-up on tablets).
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 private fun LazyListScope.profileFavoritesMediaList(
@@ -304,6 +276,37 @@ private fun LazyListScope.profileFavoritesMediaList(
         }
         Spacer(modifier = Modifier.height(10.dp))
     }
+}
+
+/**
+ * Single-column list rows for the favourites Characters / Staff sub-tabs, reusing the Media Details
+ * cast/staff cards ([card]). [idOf] keys each row; [keyPrefix] namespaces the item keys.
+ */
+private fun <T> LazyListScope.profileFavoritesPersonList(
+    items: List<T>,
+    keyPrefix: String,
+    idOf: (T) -> Int,
+    modifier: Modifier,
+    card: @Composable (T) -> Unit
+) {
+    if (items.isEmpty()) {
+        item(key = "fav_empty_$keyPrefix", contentType = "empty") {
+            Spacer(modifier = Modifier.height(16.dp))
+            PlaceholderTabContent(
+                message = stringResource(R.string.profile_placeholder_favorites),
+                modifier = modifier
+            )
+        }
+        return
+    }
+
+    item(key = "fav_top_spacer_$keyPrefix") { Spacer(modifier = Modifier.height(16.dp)) }
+    items(
+        count = items.size,
+        key = { i -> "fav_${keyPrefix}_${idOf(items[i])}" },
+        contentType = { "fav_person_row" }
+    ) { i -> card(items[i]) }
+    item(key = "fav_bottom_spacer_$keyPrefix") { Spacer(modifier = Modifier.height(12.dp)) }
 }
 
 /** Adapt a favourited [StaffDetails] to the [StaffInfo] the shared [StaffListCard] renders. */

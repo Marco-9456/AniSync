@@ -58,6 +58,8 @@ import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.getTitle
+import java.time.Instant
+import java.time.ZoneOffset
 
 private val CoverWidth = 58.dp
 
@@ -92,7 +94,7 @@ fun ProfileMediaListCard(
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     // Release year for favourites mode (mediaStartDate is a UTC epoch, see mapFuzzyDateToLong).
     val releaseYear = entry.mediaStartDate?.let {
-        java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).year
+        Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).year
     }
     val cacheKey = TransitionKeys.imageCacheKey(transitionPrefix, entry.mediaId) +
         "-" + com.anisync.android.domain.LocalCoverQuality.current.name +
