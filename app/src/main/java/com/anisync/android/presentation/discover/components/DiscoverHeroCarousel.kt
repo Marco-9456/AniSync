@@ -6,8 +6,10 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -18,17 +20,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PageSize
+import androidx.compose.foundation.pager.PagerDefaults
+import androidx.compose.foundation.pager.PagerSnapDistance
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.carousel.CarouselDefaults
-import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel
-import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -68,11 +71,18 @@ private val HeroScrimBrush: Brush = Brush.verticalGradient(
 
 private const val MAX_HERO_ITEMS = 10
 
-@OptIn(
-    ExperimentalMaterial3Api::class,
-    ExperimentalMaterial3ExpressiveApi::class,
-    ExperimentalSharedTransitionApi::class
-)
+/**
+ * Hero pager for Trending Now.
+ *
+ * Deliberately a [HorizontalPager], NOT an M3 `HorizontalCenteredHeroCarousel`: the carousel
+ * lays every item out in a plain slot and then moves it onto its keyline at *draw* time
+ * (`placeWithLayer { translationX = ... }` in `Modifier.carouselItem`). Shared elements fly to
+ * layout/lookahead bounds, which never include that translation, so a cover returning from
+ * details landed beside the drawn item and snapped sideways at hand-off — worst at the first and
+ * last items, where the strategy shifts keylines. Pager pages are positioned purely by layout,
+ * so shared-element bounds always match the pixels.
+ */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun DiscoverHeroCarousel(
     items: List<LibraryEntry>,
@@ -87,12 +97,12 @@ fun DiscoverHeroCarousel(
     val context = LocalContext.current
     val coverQuality = LocalCoverQuality.current
 
-    val carouselState = rememberCarouselState(initialItem = 0) { items.size }
+    val pagerState = rememberPagerState(initialPage = 0) { items.size }
     val itemCount = items.size
 
-    val focusedIndex by remember(carouselState, itemCount) {
+    val focusedIndex by remember(pagerState, itemCount) {
         derivedStateOf {
-            if (itemCount <= 0) 0 else carouselState.currentItem.coerceIn(0, itemCount - 1)
+            if (itemCount <= 0) 0 else pagerState.currentPage.coerceIn(0, itemCount - 1)
         }
     }
 
@@ -101,45 +111,54 @@ fun DiscoverHeroCarousel(
             .fillMaxWidth()
             .semantics { contentDescription = "Trending carousel" }
     ) {
-        HorizontalCenteredHeroCarousel(
-            state = carouselState,
-            itemSpacing = 8.dp,
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            flingBehavior = CarouselDefaults.singleAdvanceFlingBehavior(state = carouselState),
-            // Cap each hero's width so a wide window shows SEVERAL heroes filling the row (M3) rather
-            // than stretching one item into a cropped strip. On a phone only one fits, as before.
-            maxItemWidth = 400.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(420.dp)
-        ) { index ->
-            val item = items[index]
-            val coverData = item.cover.url() ?: item.coverUrl
-            val cacheKey = remember(item.mediaId, coverQuality, coverData) {
-                TransitionKeys.imageCacheKey(
-                    TransitionKeys.DISCOVER,
-                    item.mediaId
-                ) + "-" + coverQuality.name + TransitionKeys.coverVersion(coverData)
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val horizontalPadding = 16.dp
+            // Cap each hero's width so a wide window shows SEVERAL heroes filling the row rather
+            // than stretching one item into a cropped strip. On a phone one page nearly fills the
+            // viewport, with neighbour slivers peeking like the old carousel.
+            val pageWidth = minOf(400.dp, maxWidth - 72.dp)
+
+            HorizontalPager(
+                state = pagerState,
+                pageSize = PageSize.Fixed(pageWidth),
+                pageSpacing = 8.dp,
+                contentPadding = PaddingValues(horizontal = horizontalPadding),
+                snapPosition = SnapPosition.Center,
+                flingBehavior = PagerDefaults.flingBehavior(
+                    state = pagerState,
+                    pagerSnapDistance = PagerSnapDistance.atMost(1)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(420.dp)
+            ) { index ->
+                val item = items[index]
+                val coverData = item.cover.url() ?: item.coverUrl
+                val cacheKey = remember(item.mediaId, coverQuality, coverData) {
+                    TransitionKeys.imageCacheKey(
+                        TransitionKeys.DISCOVER,
+                        item.mediaId
+                    ) + "-" + coverQuality.name + TransitionKeys.coverVersion(coverData)
+                }
+                val imageRequest = remember(coverData, cacheKey) {
+                    ImageRequest.Builder(context)
+                        .data(coverData)
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .placeholderMemoryCacheKey(cacheKey)
+                        .memoryCacheKey(cacheKey)
+                        .build()
+                }
+                HeroCarouselItem(
+                    item = item,
+                    index = index,
+                    total = itemCount,
+                    titleLanguage = titleLanguage,
+                    onClick = { onItemClick(item.mediaId) },
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    imageRequest = imageRequest
+                )
             }
-            val imageRequest = remember(coverData, cacheKey) {
-                ImageRequest.Builder(context)
-                    .data(coverData)
-                    .memoryCachePolicy(CachePolicy.ENABLED)
-                    .placeholderMemoryCacheKey(cacheKey)
-                    .memoryCacheKey(cacheKey)
-                    .build()
-            }
-            HeroCarouselItem(
-                item = item,
-                index = index,
-                total = itemCount,
-                titleLanguage = titleLanguage,
-                onClick = { onItemClick(item.mediaId) },
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-                imageRequest = imageRequest,
-                modifier = Modifier.maskClip(MaterialTheme.shapes.extraLarge)
-            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -192,9 +211,20 @@ private fun HeroCarouselItem(
         }
     }
 
-    Box(
-        modifier = modifier
+    // sharedBounds sits on the whole item (image + scrim + text), mirroring DiscoverMediaCard:
+    // the details header uses sharedBounds for this key, and an image-only sharedElement both
+    // mixed APIs on one key and let the flying cover render in the overlay ABOVE this card's
+    // own chip/rating/title until the spring settled.
+    val rootModifier = with(sharedTransitionScope) {
+        modifier
             .fillMaxSize()
+            .clip(itemShape)
+            .sharedBounds(
+                sharedContentState = rememberSharedContentState(key = coverKey),
+                animatedVisibilityScope = animatedVisibilityScope,
+                boundsTransform = { _, _ -> spatialSpec },
+                clipInOverlayDuringTransition = OverlayClip(itemShape)
+            )
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(
                 onClick = onClick,
@@ -202,22 +232,15 @@ private fun HeroCarouselItem(
                 onClickLabel = "View details"
             )
             .semantics(mergeDescendants = true) { contentDescription = a11yLabel }
-    ) {
-        with(sharedTransitionScope) {
-            AsyncImage(
-                model = imageRequest,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .sharedElement(
-                        sharedContentState = rememberSharedContentState(key = coverKey),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> spatialSpec },
-                        clipInOverlayDuringTransition = OverlayClip(itemShape)
-                    )
-            )
-        }
+    }
+
+    Box(modifier = rootModifier) {
+        AsyncImage(
+            model = imageRequest,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
 
         Box(
             modifier = Modifier
