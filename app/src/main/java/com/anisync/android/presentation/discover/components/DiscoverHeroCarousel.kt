@@ -81,6 +81,9 @@ private const val MAX_HERO_ITEMS = 10
  * details landed beside the drawn item and snapped sideways at hand-off — worst at the first and
  * last items, where the strategy shifts keylines. Pager pages are positioned purely by layout,
  * so shared-element bounds always match the pixels.
+ *
+ * Pager-hosted shared elements follow JunkFood02's carousel container-transform demo:
+ * https://gist.github.com/JunkFood02/fc6a03054009c4d1823f21da4488e3a3
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
