@@ -495,11 +495,23 @@ private fun WatchersProgressionSection(points: List<MediaAiringTrend>) {
     }
 }
 
-/** One slot per point; only ~8 evenly-spaced episode numbers get a label. */
+/**
+ * One slot per point, with only every step-th episode labelled. The step adapts
+ * to the label width (long-runners have 4-digit episode numbers — "1142" —
+ * which crowd far sooner than "12") and walks backward from the last index, so
+ * the newest episode is always labelled without a forced extra label landing
+ * next to a stepped one and colliding.
+ */
 private fun episodeAxisLabels(points: List<MediaAiringTrend>): List<String?> {
-    val step = ((points.size + 7) / 8).coerceAtLeast(1)
+    val maxDigits = points.maxOf { it.episode.toString().length }
+    val targetLabels = when {
+        maxDigits <= 2 -> 8
+        maxDigits == 3 -> 6
+        else -> 5
+    }
+    val step = ((points.size + targetLabels - 1) / targetLabels).coerceAtLeast(1)
     return points.mapIndexed { index, point ->
-        if (index % step == 0 || index == points.lastIndex) point.episode.toString() else null
+        if ((points.lastIndex - index) % step == 0) point.episode.toString() else null
     }
 }
 
@@ -571,17 +583,21 @@ private fun TrendLineChart(
             )
         }
 
-        // X labels.
-        xLabels.forEachIndexed { index, label ->
-            if (label == null) return@forEachIndexed
+        // X labels, drawn right-to-left so the newest point always keeps its
+        // label. Edge clamping can push neighbouring labels together, so any
+        // label that would overlap an already-drawn one is skipped.
+        var lastLabelStart = Float.POSITIVE_INFINITY
+        for (index in xLabels.indices.reversed()) {
+            val label = xLabels[index] ?: continue
             val layout = textMeasurer.measure(label, axisStyle)
+            val left = (x(index) - layout.size.width / 2f)
+                .coerceIn(gutter, size.width - layout.size.width)
+            if (left + layout.size.width > lastLabelStart - 6.dp.toPx()) continue
             drawText(
                 textLayoutResult = layout,
-                topLeft = Offset(
-                    (x(index) - layout.size.width / 2f).coerceIn(gutter, size.width - layout.size.width),
-                    size.height - layout.size.height
-                )
+                topLeft = Offset(left, size.height - layout.size.height)
             )
+            lastLabelStart = left
         }
 
         // Smooth path through the points (horizontal-midpoint cubics — no vertical overshoot).
