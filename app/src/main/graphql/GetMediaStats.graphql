@@ -19,6 +19,7 @@ query GetMediaStats($id: Int) {
         airingTrends: trends(releasing: true, sort: [EPISODE_DESC], perPage: 25) {
             nodes {
                 episode
+                date
                 averageScore
                 inProgress
             }

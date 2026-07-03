@@ -38,9 +38,14 @@ data class MediaTrendPoint(
     val activity: Int
 )
 
-/** Score/watcher snapshot recorded on the day an episode released (`trends(releasing: true)`). */
+/**
+ * Score/watcher snapshot for one released episode (`trends(releasing: true)`).
+ * The API records a row per day; this is the latest (most settled) row for the
+ * episode, and [dateSeconds] is the day it was recorded.
+ */
 data class MediaAiringTrend(
     val episode: Int,
+    val dateSeconds: Long,
     val averageScore: Int?,
     val watching: Int?
 )

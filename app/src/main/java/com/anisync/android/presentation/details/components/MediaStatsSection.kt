@@ -7,7 +7,10 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -40,7 +43,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,12 +55,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
@@ -83,6 +94,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlin.math.roundToInt
 
 /**
  * The media-detail Stats tab: community rankings, the recent sitewide activity
@@ -285,6 +297,9 @@ private fun ActivityPerDaySection(points: List<MediaTrendPoint>) {
     val maxActivity = (peak?.activity ?: 0).coerceAtLeast(1)
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
     val axisFormatter = remember { DateTimeFormatter.ofPattern("M/d") }
+    // Tap a bar to inspect that day; the headline swaps from the peak to it.
+    var selectedIndex by remember(points) { mutableStateOf<Int?>(null) }
+    val selected = selectedIndex?.let(points::getOrNull)
 
     Column {
         SectionHeader(
@@ -303,20 +318,24 @@ private fun ActivityPerDaySection(points: List<MediaTrendPoint>) {
         ) {
             Column(Modifier.padding(24.dp)) {
                 if (peak != null) {
+                    val headline = selected ?: peak
                     Text(
-                        text = stringResource(R.string.media_stats_peak_activity).uppercase(),
+                        text = stringResource(
+                            if (selected != null) R.string.media_stats_day_activity
+                            else R.string.media_stats_peak_activity
+                        ).uppercase(),
                         style = expressive.statLabel,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            text = formatCompactNumber(peak.activity),
+                            text = formatCompactNumber(headline.activity),
                             style = expressive.statNumericLarge,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = peak.dateSeconds.toUtcDate().format(dateFormatter),
+                            text = headline.dateSeconds.toUtcDate().format(dateFormatter),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 10.dp)
@@ -325,12 +344,23 @@ private fun ActivityPerDaySection(points: List<MediaTrendPoint>) {
                     Spacer(Modifier.height(16.dp))
                 }
 
+                // TalkBack gets the summary; the per-bar tap targets are visual-only.
+                val chartDescription = peak?.let {
+                    stringResource(
+                        R.string.media_stats_activity_chart_a11y,
+                        points.size,
+                        formatCompactNumber(it.activity),
+                        it.dateSeconds.toUtcDate().format(dateFormatter)
+                    )
+                }.orEmpty()
+
                 // Label roughly five evenly-spaced days along the axis.
                 val labelStep = remember(points) { (points.size + 4) / 5 }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(140.dp),
+                        .height(140.dp)
+                        .clearAndSetSemantics { contentDescription = chartDescription },
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                     verticalAlignment = Alignment.Bottom
                 ) {
@@ -343,9 +373,21 @@ private fun ActivityPerDaySection(points: List<MediaTrendPoint>) {
                                 animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
                             )
                         }
+                        // Dim everything but the inspected day while a selection is active.
+                        val barColor = MaterialTheme.colorScheme.primary.copy(
+                            alpha = if (selectedIndex == null || selectedIndex == index) 1f else 0.35f
+                        )
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    selectedIndex = if (selectedIndex == index) null else index
+                                }
                         ) {
                             Box(
                                 modifier = Modifier
@@ -358,7 +400,7 @@ private fun ActivityPerDaySection(points: List<MediaTrendPoint>) {
                                         .fillMaxWidth()
                                         .fillMaxHeight(animatedHeight.value.coerceAtLeast(0.02f))
                                         .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
-                                        .background(MaterialTheme.colorScheme.primary)
+                                        .background(barColor)
                                 )
                             }
                             Spacer(Modifier.height(6.dp))
@@ -393,6 +435,11 @@ private fun Long.toUtcDate(): LocalDate =
 private fun ScoreProgressionSection(points: List<MediaAiringTrend>) {
     val expressive = LocalExpressiveTypography.current
     val latest = points.last()
+    val dateFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
+    // Tap a point to inspect it; the headline swaps from the latest episode to it
+    // and the byline becomes the day that snapshot was recorded.
+    var selectedIndex by remember(points) { mutableStateOf<Int?>(null) }
+    val selected = selectedIndex?.let(points::getOrNull)
 
     Column {
         SectionHeader(
@@ -411,19 +458,23 @@ private fun ScoreProgressionSection(points: List<MediaAiringTrend>) {
         ) {
             Column(Modifier.padding(24.dp)) {
                 Text(
-                    text = stringResource(R.string.media_stats_latest_score).uppercase(),
+                    text = (
+                        if (selected != null) stringResource(R.string.media_stats_episode_eyebrow, selected.episode)
+                        else stringResource(R.string.media_stats_latest_score)
+                        ).uppercase(),
                     style = expressive.statLabel,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = latest.averageScore?.toString().orEmpty(),
+                        text = (selected ?: latest).averageScore?.toString().orEmpty(),
                         style = expressive.statNumericLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        text = stringResource(R.string.media_stats_episode_byline, latest.episode),
+                        text = selected?.dateSeconds?.toUtcDate()?.format(dateFormatter)
+                            ?: stringResource(R.string.media_stats_episode_byline, latest.episode),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 10.dp)
@@ -435,6 +486,15 @@ private fun ScoreProgressionSection(points: List<MediaAiringTrend>) {
                     xLabels = episodeAxisLabels(points),
                     lineColor = MaterialTheme.colorScheme.primary,
                     formatValue = { it.toInt().toString() },
+                    contentDescription = stringResource(
+                        R.string.media_stats_score_chart_a11y,
+                        points.first().episode,
+                        points.last().episode,
+                        points.minOf { it.averageScore ?: 0 },
+                        points.maxOf { it.averageScore ?: 0 }
+                    ),
+                    selectedIndex = selectedIndex,
+                    onSelect = { selectedIndex = it },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp)
@@ -448,6 +508,10 @@ private fun ScoreProgressionSection(points: List<MediaAiringTrend>) {
 private fun WatchersProgressionSection(points: List<MediaAiringTrend>) {
     val expressive = LocalExpressiveTypography.current
     val peak = points.maxBy { it.watching ?: 0 }
+    val dateFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
+    // Same tap-to-inspect contract as the score chart above.
+    var selectedIndex by remember(points) { mutableStateOf<Int?>(null) }
+    val selected = selectedIndex?.let(points::getOrNull)
 
     Column {
         SectionHeader(
@@ -466,19 +530,23 @@ private fun WatchersProgressionSection(points: List<MediaAiringTrend>) {
         ) {
             Column(Modifier.padding(24.dp)) {
                 Text(
-                    text = stringResource(R.string.media_stats_peak_watchers).uppercase(),
+                    text = (
+                        if (selected != null) stringResource(R.string.media_stats_episode_eyebrow, selected.episode)
+                        else stringResource(R.string.media_stats_peak_watchers)
+                        ).uppercase(),
                     style = expressive.statLabel,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = formatCompactNumber(peak.watching ?: 0),
+                        text = formatCompactNumber((selected ?: peak).watching ?: 0),
                         style = expressive.statNumericLarge,
                         color = MaterialTheme.colorScheme.tertiary
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        text = stringResource(R.string.media_stats_episode_byline, peak.episode),
+                        text = selected?.dateSeconds?.toUtcDate()?.format(dateFormatter)
+                            ?: stringResource(R.string.media_stats_episode_byline, peak.episode),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 10.dp)
@@ -490,6 +558,15 @@ private fun WatchersProgressionSection(points: List<MediaAiringTrend>) {
                     xLabels = episodeAxisLabels(points),
                     lineColor = MaterialTheme.colorScheme.tertiary,
                     formatValue = { formatCompactNumber(it.toInt()) },
+                    contentDescription = stringResource(
+                        R.string.media_stats_watchers_chart_a11y,
+                        points.first().episode,
+                        points.last().episode,
+                        formatCompactNumber(peak.watching ?: 0),
+                        peak.episode
+                    ),
+                    selectedIndex = selectedIndex,
+                    onSelect = { selectedIndex = it },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp)
@@ -526,6 +603,11 @@ private fun trendDomain(values: List<Float>): TrendDomain {
  * fit at a readable spacing (long-runners: 25 four-digit episodes), landing on
  * the newest point. When everything fits, the plot spreads across the full
  * width and reveals left-to-right on first composition.
+ *
+ * Tapping the plot selects the nearest point (tap it again to clear); the
+ * selection is marked with a dashed guideline and an emphasized dot, and the
+ * caller swaps its headline to the selected value. TalkBack reads the chart as
+ * one node via [contentDescription].
  */
 @Composable
 private fun TrendLineChart(
@@ -533,6 +615,9 @@ private fun TrendLineChart(
     xLabels: List<String?>,
     lineColor: Color,
     formatValue: (Float) -> String,
+    contentDescription: String,
+    selectedIndex: Int?,
+    onSelect: (Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (values.size < 2) return
@@ -543,10 +628,14 @@ private fun TrendLineChart(
     val textMeasurer = rememberTextMeasurer()
     val axisStyle = expressive.numericMono.copy(fontSize = 10.sp, color = labelColor)
     val domain = remember(values) { trendDomain(values) }
+    // Let the long-lived tap detector observe the latest selection/callback
+    // without restarting on every tap.
+    val currentSelected by rememberUpdatedState(selectedIndex)
+    val currentOnSelect by rememberUpdatedState(onSelect)
 
     val bottomGutter = 20.dp
 
-    BoxWithConstraints(modifier) {
+    BoxWithConstraints(modifier.clearAndSetSemantics { this.contentDescription = contentDescription }) {
         val yAxisWidth = 44.dp
         // Wide enough for a 4-digit episode label plus breathing room.
         val pointSpacing = 40.dp
@@ -601,6 +690,17 @@ private fun TrendLineChart(
                     modifier = Modifier
                         .width(plotWidth)
                         .fillMaxHeight()
+                        .pointerInput(values) {
+                            detectTapGestures { offset ->
+                                val inset = edgeInset.toPx()
+                                val innerW = size.width - inset * 2
+                                if (innerW <= 0f) return@detectTapGestures
+                                val index = ((offset.x - inset) / innerW * (values.size - 1))
+                                    .roundToInt()
+                                    .coerceIn(0, values.lastIndex)
+                                currentOnSelect(if (index == currentSelected) null else index)
+                            }
+                        }
                 ) {
                     val chartH = size.height - bottomGutter.toPx()
                     val inset = edgeInset.toPx()
@@ -676,6 +776,32 @@ private fun TrendLineChart(
                             )
                         }
                     }
+
+                    // Selection marker: dashed guideline through the point plus a
+                    // soft halo behind an emphasized dot. Drawn outside the reveal
+                    // clip — selection is user-initiated, after the sweep.
+                    selectedIndex?.let { sel ->
+                        if (sel <= values.lastIndex) {
+                            val center = Offset(x(sel), y(values[sel]))
+                            drawLine(
+                                color = lineColor.copy(alpha = 0.45f),
+                                start = Offset(center.x, 0f),
+                                end = Offset(center.x, chartH),
+                                strokeWidth = 1.5.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f))
+                            )
+                            drawCircle(
+                                color = lineColor.copy(alpha = 0.22f),
+                                radius = dotRadius + 7.dp.toPx(),
+                                center = center
+                            )
+                            drawCircle(
+                                color = lineColor,
+                                radius = dotRadius + 2.dp.toPx(),
+                                center = center
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -734,12 +860,14 @@ private fun StatusDistributionSection(slices: List<MediaStatusSlice>, isManga: B
                 )
                 Spacer(Modifier.height(16.dp))
 
-                // Proportional segmented bar.
+                // Proportional segmented bar. Decorative for TalkBack — the legend
+                // below carries the same numbers.
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(14.dp)
-                        .clip(RoundedCornerShape(7.dp)),
+                        .clip(RoundedCornerShape(7.dp))
+                        .clearAndSetSemantics { },
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     ordered.forEachIndexed { index, slice ->
@@ -820,6 +948,13 @@ private fun ScoreDistributionSection(slices: List<MediaScoreSlice>, meanScore: I
         }
     }
     val maxAmount = remember(buckets) { buckets.maxOf { it.amount }.coerceAtLeast(1) }
+    // TalkBack summary for the histogram; per-bucket labels stay visual-only.
+    val topBucket = remember(buckets) { buckets.maxBy { it.amount } }
+    val chartDescription = stringResource(
+        R.string.media_stats_score_dist_a11y,
+        topBucket.score,
+        formatCompactNumber(topBucket.amount)
+    )
 
     Column {
         SectionHeader(
@@ -862,7 +997,8 @@ private fun ScoreDistributionSection(slices: List<MediaScoreSlice>, meanScore: I
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp),
+                        .height(180.dp)
+                        .clearAndSetSemantics { contentDescription = chartDescription },
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom
                 ) {
@@ -941,6 +1077,7 @@ private val previewMediaStats = MediaStats(
     airingProgression = (1..13).map { ep ->
         MediaAiringTrend(
             episode = ep,
+            dateSeconds = 1_700_000_000L + ep * 7 * 86_400L,
             averageScore = 78 + (ep * 7) % 12,
             watching = 9_000 + ep * 1_450
         )

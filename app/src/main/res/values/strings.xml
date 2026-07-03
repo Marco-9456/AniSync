@@ -599,8 +599,14 @@
     <string name="media_stats_peak_watchers">Peak Watchers</string>
     <string name="media_stats_total_entries">Total Entries</string>
     <string name="media_stats_episode_byline">Ep %1$d</string>
+    <string name="media_stats_episode_eyebrow">Episode %1$d</string>
+    <string name="media_stats_day_activity">Day Activity</string>
     <string name="media_stats_empty">No community statistics for this title yet.</string>
     <string name="media_stats_error">Couldn\'t load statistics.</string>
+    <string name="media_stats_activity_chart_a11y">Daily activity chart over %1$d days, peaking at %2$s on %3$s</string>
+    <string name="media_stats_score_chart_a11y">Score by episode chart, episodes %1$d to %2$d, lowest score %3$d, highest score %4$d</string>
+    <string name="media_stats_watchers_chart_a11y">Watchers by episode chart, episodes %1$d to %2$d, peaking at %3$s around episode %4$d</string>
+    <string name="media_stats_score_dist_a11y">Score distribution histogram, most common score %1$d with %2$s ratings</string>
     <string name="profile_activity_all">All</string>
     <string name="profile_activity_status">Status</string>
     <string name="profile_activity_messages">Messages</string>

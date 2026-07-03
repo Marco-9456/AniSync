@@ -1196,18 +1196,21 @@ class DetailsRepositoryImpl @Inject constructor(
                 ?.sortedBy { it.dateSeconds }
                 .orEmpty()
 
-            // The API records one trend row per day; only days an episode released carry
-            // an episode number. Dedupe defensively and order for the progression charts.
+            // The API records one trend row per day and several days can carry the same
+            // episode number; keep the latest (most settled) row per episode and order
+            // for the progression charts.
             val airingProgression = media.airingTrends?.nodes?.filterNotNull()
                 ?.mapNotNull { node ->
                     val episode = node.episode ?: return@mapNotNull null
                     MediaAiringTrend(
                         episode = episode,
+                        dateSeconds = node.date.toLong(),
                         averageScore = node.averageScore,
                         watching = node.inProgress
                     )
                 }
-                ?.distinctBy { it.episode }
+                ?.groupBy { it.episode }
+                ?.map { (_, rows) -> rows.maxBy { it.dateSeconds } }
                 ?.sortedBy { it.episode }
                 .orEmpty()
 
