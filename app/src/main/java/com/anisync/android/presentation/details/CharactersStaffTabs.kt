@@ -155,20 +155,34 @@ fun LazyListScope.castTabContent(
 ) {
     item(key = "cast_filter_bar") { filterBar() }
 
+    // A person can sit on several rows at once (one VA voicing many characters; a character
+    // listed under two roles). Shared-element keys must be unique on screen, so only the first
+    // row with a given person id registers the morph; later duplicates render plain.
+    val firstCharacterRow = HashMap<Int, Int>(characters.size)
+    val firstVoiceActorRow = HashMap<Int, Int>(characters.size)
+    characters.forEachIndexed { index, character ->
+        firstCharacterRow.putIfAbsent(character.id, index)
+        character.voiceActorFor(language)?.let { firstVoiceActorRow.putIfAbsent(it.id, index) }
+    }
+
     when (viewMode) {
         PeopleViewMode.GRID -> {
-            val rows = characters.chunked(columns)
+            val rows = characters.withIndex().chunked(columns)
             itemsIndexedKeyed(rows, keyPrefix = "cast_grid_row") { row ->
                 PeopleGridRow {
-                    row.forEach { character ->
+                    row.forEach { (index, character) ->
+                        val voiceActor = character.voiceActorFor(language)
                         Box(modifier = Modifier.weight(1f)) {
                             CastGridCard(
                                 character = character,
-                                voiceActor = character.voiceActorFor(language),
+                                voiceActor = voiceActor,
                                 onClick = { onCharacterClick(character.id) },
                                 onVoiceActorClick = onVoiceActorClick,
                                 sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                characterImageShared = firstCharacterRow[character.id] == index,
+                                voiceActorImageShared =
+                                    voiceActor != null && firstVoiceActorRow[voiceActor.id] == index
                             )
                         }
                     }
@@ -183,13 +197,17 @@ fun LazyListScope.castTabContent(
                 key = { i -> "cast_list_${characters[i].id}_${characters[i].role}" }
             ) { i ->
                 val character = characters[i]
+                val voiceActor = character.voiceActorFor(language)
                 CastListCard(
                     character = character,
-                    voiceActor = character.voiceActorFor(language),
+                    voiceActor = voiceActor,
                     onClick = { onCharacterClick(character.id) },
                     onVoiceActorClick = onVoiceActorClick,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
+                    characterImageShared = firstCharacterRow[character.id] == i,
+                    voiceActorImageShared =
+                        voiceActor != null && firstVoiceActorRow[voiceActor.id] == i,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
             }
@@ -221,18 +239,24 @@ fun LazyListScope.staffTabContent(
 ) {
     item(key = "staff_filter_bar") { filterBar() }
 
+    // Same person appears once per role (distinctBy id_role upstream), so the staffImage(id)
+    // key would duplicate — only the first row per person registers the shared element.
+    val firstStaffRow = HashMap<Int, Int>(staff.size)
+    staff.forEachIndexed { index, member -> firstStaffRow.putIfAbsent(member.id, index) }
+
     when (viewMode) {
         PeopleViewMode.GRID -> {
-            val rows = staff.chunked(columns)
+            val rows = staff.withIndex().chunked(columns)
             itemsIndexedKeyed(rows, keyPrefix = "staff_grid_row") { row ->
                 PeopleGridRow {
-                    row.forEach { member ->
+                    row.forEach { (index, member) ->
+                        val shared = firstStaffRow[member.id] == index
                         Box(modifier = Modifier.weight(1f)) {
                             StaffItem(
                                 staff = member,
                                 onClick = { onStaffClick(member.id) },
                                 fillCell = true,
-                                sharedTransitionScope = sharedTransitionScope,
+                                sharedTransitionScope = sharedTransitionScope.takeIf { shared },
                                 animatedVisibilityScope = animatedVisibilityScope
                             )
                         }
@@ -250,7 +274,8 @@ fun LazyListScope.staffTabContent(
                 StaffListCard(
                     staff = staff[i],
                     onClick = { onStaffClick(staff[i].id) },
-                    sharedTransitionScope = sharedTransitionScope,
+                    sharedTransitionScope =
+                        sharedTransitionScope.takeIf { firstStaffRow[staff[i].id] == i },
                     animatedVisibilityScope = animatedVisibilityScope,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                 )
@@ -440,12 +465,14 @@ private fun CastGridCard(
     onVoiceActorClick: (Int) -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    characterImageShared: Boolean = true,
+    voiceActorImageShared: Boolean = true
 ) {
     val imageShape = RoundedCornerShape(16.dp)
     Column(modifier = modifier) {
         Box {
-            val imageBase = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+            val imageBase = if (characterImageShared && sharedTransitionScope != null && animatedVisibilityScope != null) {
                 with(sharedTransitionScope) {
                     Modifier
                         .fillMaxWidth()
@@ -477,7 +504,7 @@ private fun CastGridCard(
                 // The VA badge shares the same key as the Staff tab rows so it morphs
                 // into the staff details hero, matching the character image treatment.
                 val vaShared =
-                    if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                    if (voiceActorImageShared && sharedTransitionScope != null && animatedVisibilityScope != null) {
                         with(sharedTransitionScope) {
                             Modifier.sharedBounds(
                                 sharedContentState = rememberSharedContentState(
@@ -530,7 +557,9 @@ internal fun CastListCard(
     onVoiceActorClick: (Int) -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    characterImageShared: Boolean = true,
+    voiceActorImageShared: Boolean = true
 ) {
     val cardShape = RoundedCornerShape(14.dp)
     val thumbShape = RoundedCornerShape(10.dp)
@@ -552,7 +581,7 @@ internal fun CastListCard(
                 imageUrl = character.imageUrl,
                 shape = thumbShape,
                 transitionKey = TransitionKeys.characterImage(character.id),
-                sharedTransitionScope = sharedTransitionScope,
+                sharedTransitionScope = sharedTransitionScope.takeIf { characterImageShared },
                 animatedVisibilityScope = animatedVisibilityScope
             )
             Spacer(Modifier.width(12.dp))
@@ -603,7 +632,7 @@ internal fun CastListCard(
                     imageUrl = voiceActor.imageUrl,
                     shape = thumbShape,
                     transitionKey = TransitionKeys.staffImage(voiceActor.id),
-                    sharedTransitionScope = sharedTransitionScope,
+                    sharedTransitionScope = sharedTransitionScope.takeIf { voiceActorImageShared },
                     animatedVisibilityScope = animatedVisibilityScope,
                     contentDescription = voiceActor.nameUserPreferred,
                     modifier = Modifier.bouncyClickable(
