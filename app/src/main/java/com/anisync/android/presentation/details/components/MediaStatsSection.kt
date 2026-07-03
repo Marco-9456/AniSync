@@ -7,8 +7,10 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -16,11 +18,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -495,30 +499,33 @@ private fun WatchersProgressionSection(points: List<MediaAiringTrend>) {
     }
 }
 
-/**
- * One slot per point, with only every step-th episode labelled. The step adapts
- * to the label width (long-runners have 4-digit episode numbers — "1142" —
- * which crowd far sooner than "12") and walks backward from the last index, so
- * the newest episode is always labelled without a forced extra label landing
- * next to a stepped one and colliding.
- */
-private fun episodeAxisLabels(points: List<MediaAiringTrend>): List<String?> {
-    val maxDigits = points.maxOf { it.episode.toString().length }
-    val targetLabels = when {
-        maxDigits <= 2 -> 8
-        maxDigits == 3 -> 6
-        else -> 5
+/** Every point carries its episode label; the chart thins whatever doesn't fit. */
+private fun episodeAxisLabels(points: List<MediaAiringTrend>): List<String?> =
+    points.map { it.episode.toString() }
+
+/** Vertical range of a trend plot plus the three gridline values (max/mid/min). */
+private data class TrendDomain(val min: Float, val max: Float, val gridValues: List<Float>)
+
+private fun trendDomain(values: List<Float>): TrendDomain {
+    var lo = values.min()
+    var hi = values.max()
+    if (lo == hi) {
+        lo -= 1f
+        hi += 1f
     }
-    val step = ((points.size + targetLabels - 1) / targetLabels).coerceAtLeast(1)
-    return points.mapIndexed { index, point ->
-        if ((points.lastIndex - index) % step == 0) point.episode.toString() else null
-    }
+    // Pad the domain so the line doesn't kiss the card edges; gridlines stay on
+    // the true data extremes so their labels read as real values.
+    val pad = (hi - lo) * 0.12f
+    return TrendDomain(lo - pad, hi + pad, gridValues = listOf(hi, (lo + hi) / 2f, lo))
 }
 
 /**
  * Minimal smooth line chart: soft area fill, rounded stroke through every point,
- * three horizontal gridlines with value labels in a left gutter, and sparse
- * x labels below. Reveals left-to-right on first composition.
+ * three horizontal gridlines, and episode labels below. The y-axis labels stay
+ * pinned while the plot itself scrolls horizontally whenever the points don't
+ * fit at a readable spacing (long-runners: 25 four-digit episodes), landing on
+ * the newest point. When everything fits, the plot spreads across the full
+ * width and reveals left-to-right on first composition.
  */
 @Composable
 private fun TrendLineChart(
@@ -528,109 +535,148 @@ private fun TrendLineChart(
     formatValue: (Float) -> String,
     modifier: Modifier = Modifier
 ) {
+    if (values.size < 2) return
+
     val expressive = LocalExpressiveTypography.current
     val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val textMeasurer = rememberTextMeasurer()
     val axisStyle = expressive.numericMono.copy(fontSize = 10.sp, color = labelColor)
+    val domain = remember(values) { trendDomain(values) }
 
-    val reveal = remember { Animatable(0f) }
-    LaunchedEffect(values) {
-        reveal.snapTo(0f)
-        reveal.animateTo(1f, animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing))
-    }
+    val bottomGutter = 20.dp
 
-    Canvas(modifier = modifier) {
-        if (values.size < 2) return@Canvas
+    BoxWithConstraints(modifier) {
+        val yAxisWidth = 44.dp
+        // Wide enough for a 4-digit episode label plus breathing room.
+        val pointSpacing = 40.dp
+        val edgeInset = 12.dp
+        val viewportWidth = maxWidth - yAxisWidth
+        val neededWidth = pointSpacing * (values.size - 1) + edgeInset * 2
+        val scrollable = neededWidth > viewportWidth
+        val plotWidth = if (scrollable) neededWidth else viewportWidth
 
-        var minV = values.min()
-        var maxV = values.max()
-        if (minV == maxV) {
-            minV -= 1f
-            maxV += 1f
+        val scrollState = rememberScrollState()
+        // Land on the newest episode when the plot overflows.
+        LaunchedEffect(values, scrollable) {
+            if (scrollable) scrollState.scrollTo(scrollState.maxValue)
         }
-        // Pad the domain so the line doesn't kiss the card edges.
-        val pad = (maxV - minV) * 0.12f
-        minV -= pad
-        maxV += pad
-
-        val gutter = 44.dp.toPx()
-        val bottomGutter = 20.dp.toPx()
-        val chartW = size.width - gutter
-        val chartH = size.height - bottomGutter
-        val dotRadius = (if (values.size > 20) 2.5.dp else 3.5.dp).toPx()
-
-        fun x(index: Int) = gutter + chartW * index / (values.size - 1)
-        fun y(value: Float) = chartH * (1f - (value - minV) / (maxV - minV))
-
-        // Gridlines + y labels (max / mid / min).
-        val gridValues = listOf(maxV - pad, (minV + maxV) / 2f, minV + pad)
-        gridValues.forEach { gv ->
-            val gy = y(gv)
-            drawLine(
-                color = gridColor,
-                start = Offset(gutter, gy),
-                end = Offset(size.width, gy),
-                strokeWidth = 1.dp.toPx()
-            )
-            val layout = textMeasurer.measure(formatValue(gv), axisStyle)
-            drawText(
-                textLayoutResult = layout,
-                topLeft = Offset(
-                    gutter - layout.size.width - 8.dp.toPx(),
-                    (gy - layout.size.height / 2f).coerceIn(0f, chartH - layout.size.height)
-                )
-            )
-        }
-
-        // X labels, drawn right-to-left so the newest point always keeps its
-        // label. Edge clamping can push neighbouring labels together, so any
-        // label that would overlap an already-drawn one is skipped.
-        var lastLabelStart = Float.POSITIVE_INFINITY
-        for (index in xLabels.indices.reversed()) {
-            val label = xLabels[index] ?: continue
-            val layout = textMeasurer.measure(label, axisStyle)
-            val left = (x(index) - layout.size.width / 2f)
-                .coerceIn(gutter, size.width - layout.size.width)
-            if (left + layout.size.width > lastLabelStart - 6.dp.toPx()) continue
-            drawText(
-                textLayoutResult = layout,
-                topLeft = Offset(left, size.height - layout.size.height)
-            )
-            lastLabelStart = left
-        }
-
-        // Smooth path through the points (horizontal-midpoint cubics — no vertical overshoot).
-        val linePath = Path().apply {
-            moveTo(x(0), y(values[0]))
-            for (i in 1 until values.size) {
-                val midX = (x(i - 1) + x(i)) / 2f
-                cubicTo(midX, y(values[i - 1]), midX, y(values[i]), x(i), y(values[i]))
+        // The reveal sweep only makes sense when the whole plot is visible.
+        val reveal = remember { Animatable(0f) }
+        LaunchedEffect(values, scrollable) {
+            reveal.snapTo(if (scrollable) 1f else 0f)
+            if (!scrollable) {
+                reveal.animateTo(1f, animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing))
             }
         }
-        val areaPath = Path().apply {
-            addPath(linePath)
-            lineTo(x(values.lastIndex), chartH)
-            lineTo(x(0), chartH)
-            close()
-        }
 
-        clipRect(right = gutter + chartW * reveal.value) {
-            drawPath(
-                path = areaPath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(lineColor.copy(alpha = 0.30f), Color.Transparent),
-                    startY = 0f,
-                    endY = chartH
-                )
-            )
-            drawPath(
-                path = linePath,
-                color = lineColor,
-                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-            )
-            values.forEachIndexed { index, value ->
-                drawCircle(color = lineColor, radius = dotRadius, center = Offset(x(index), y(value)))
+        Row(Modifier.fillMaxSize()) {
+            // Pinned y-axis labels, aligned to the same domain as the plot.
+            Canvas(
+                modifier = Modifier
+                    .width(yAxisWidth)
+                    .fillMaxHeight()
+            ) {
+                val chartH = size.height - bottomGutter.toPx()
+                domain.gridValues.forEach { gv ->
+                    val gy = chartH * (1f - (gv - domain.min) / (domain.max - domain.min))
+                    val layout = textMeasurer.measure(formatValue(gv), axisStyle)
+                    drawText(
+                        textLayoutResult = layout,
+                        topLeft = Offset(
+                            size.width - layout.size.width - 8.dp.toPx(),
+                            (gy - layout.size.height / 2f).coerceIn(0f, chartH - layout.size.height)
+                        )
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .then(if (scrollable) Modifier.horizontalScroll(scrollState) else Modifier)
+            ) {
+                Canvas(
+                    modifier = Modifier
+                        .width(plotWidth)
+                        .fillMaxHeight()
+                ) {
+                    val chartH = size.height - bottomGutter.toPx()
+                    val inset = edgeInset.toPx()
+                    val innerW = size.width - inset * 2
+                    val dotRadius = (if (scrollable || values.size <= 20) 3.5.dp else 2.5.dp).toPx()
+
+                    fun x(index: Int) = inset + innerW * index / (values.size - 1)
+                    fun y(value: Float) =
+                        chartH * (1f - (value - domain.min) / (domain.max - domain.min))
+
+                    domain.gridValues.forEach { gv ->
+                        val gy = y(gv)
+                        drawLine(
+                            color = gridColor,
+                            start = Offset(0f, gy),
+                            end = Offset(size.width, gy),
+                            strokeWidth = 1.dp.toPx()
+                        )
+                    }
+
+                    // X labels, drawn right-to-left so the newest point always keeps
+                    // its label; anything that would overlap an already-drawn label
+                    // is skipped (this is what thins them in the fitted layout).
+                    var lastLabelStart = Float.POSITIVE_INFINITY
+                    for (index in xLabels.indices.reversed()) {
+                        val label = xLabels[index] ?: continue
+                        val layout = textMeasurer.measure(label, axisStyle)
+                        val left = (x(index) - layout.size.width / 2f)
+                            .coerceIn(0f, size.width - layout.size.width)
+                        if (left + layout.size.width > lastLabelStart - 6.dp.toPx()) continue
+                        drawText(
+                            textLayoutResult = layout,
+                            topLeft = Offset(left, size.height - layout.size.height)
+                        )
+                        lastLabelStart = left
+                    }
+
+                    // Smooth path through the points (horizontal-midpoint cubics — no
+                    // vertical overshoot).
+                    val linePath = Path().apply {
+                        moveTo(x(0), y(values[0]))
+                        for (i in 1 until values.size) {
+                            val midX = (x(i - 1) + x(i)) / 2f
+                            cubicTo(midX, y(values[i - 1]), midX, y(values[i]), x(i), y(values[i]))
+                        }
+                    }
+                    val areaPath = Path().apply {
+                        addPath(linePath)
+                        lineTo(x(values.lastIndex), chartH)
+                        lineTo(x(0), chartH)
+                        close()
+                    }
+
+                    clipRect(right = size.width * reveal.value) {
+                        drawPath(
+                            path = areaPath,
+                            brush = Brush.verticalGradient(
+                                colors = listOf(lineColor.copy(alpha = 0.30f), Color.Transparent),
+                                startY = 0f,
+                                endY = chartH
+                            )
+                        )
+                        drawPath(
+                            path = linePath,
+                            color = lineColor,
+                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                        )
+                        values.forEachIndexed { index, value ->
+                            drawCircle(
+                                color = lineColor,
+                                radius = dotRadius,
+                                center = Offset(x(index), y(value))
+                            )
+                        }
+                    }
+                }
             }
         }
     }
