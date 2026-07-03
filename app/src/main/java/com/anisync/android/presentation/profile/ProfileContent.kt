@@ -53,7 +53,6 @@ import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
 import com.anisync.android.presentation.util.profileGridColumns
-import com.anisync.android.presentation.util.profilePosterColumns
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
 import com.anisync.android.presentation.profile.sections.profileActivityTab
 import com.anisync.android.presentation.profile.sections.profileFavoritesTab
@@ -98,7 +97,6 @@ fun ProfileContent(
     val context = LocalContext.current
     val pullToRefreshState = rememberPullToRefreshState()
     val statsColumns = dashboardColumns()
-    val posterColumns = profilePosterColumns()
     // Portrait grids (favorite characters/staff, social following/followers) keep their 3-up phone
     // density and gain columns on wider windows; studio chips are wider so they start 2-up.
     val portraitColumns = profileGridColumns(baseMinSize = 150.dp)
@@ -127,7 +125,6 @@ fun ProfileContent(
             onLastReplyClick = onLastReplyClick,
             showAccountSwitcher = showAccountSwitcher,
             onAccountSwitchClick = onAccountSwitchClick,
-            posterColumns = posterColumns,
             portraitColumns = portraitColumns,
             studioColumns = studioColumns,
             statsColumns = statsColumns,
@@ -215,7 +212,6 @@ fun ProfileContent(
             onCommentClick = onCommentClick,
             onActivityClick = onActivityClick,
             onLastReplyClick = onLastReplyClick,
-            posterColumns = posterColumns,
             portraitColumns = portraitColumns,
             studioColumns = studioColumns,
             statsColumns = statsColumns
@@ -304,7 +300,6 @@ internal fun LazyListScope.profileSelectedTabContent(
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit,
     onActivityClick: (Int) -> Unit,
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
-    posterColumns: Int,
     portraitColumns: Int,
     studioColumns: Int,
     statsColumns: Int
