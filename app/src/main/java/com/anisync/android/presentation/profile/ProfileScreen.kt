@@ -226,6 +226,7 @@ private fun ProfileColorThemeOverride(
     }
     val themeMode by appSettings.themeMode.collectAsStateWithLifecycle()
     val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
+    val amoledEnabled by appSettings.amoledEnabled.collectAsStateWithLifecycle()
     val darkTheme = when (themeMode) {
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
@@ -234,6 +235,7 @@ private fun ProfileColorThemeOverride(
     AppTheme(
         darkTheme = darkTheme,
         dynamicColor = false,
+        amoled = amoledEnabled,
         seedColor = seed,
         paletteStyle = paletteStyle,
         content = content,
