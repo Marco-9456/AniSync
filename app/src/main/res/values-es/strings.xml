@@ -1096,4 +1096,11 @@
     <string name="pane_resize_handle">Redimensionar paneles</string>
     <string name="pane_resize_cycle">Cambiar el ancho del panel de lista</string>
     <string name="pane_resize_toggle">Contraer o expandir el panel de lista</string>
+    <string name="media_stats_rankings">Puntuaciones</string>
+    <string name="media_stats_activity_per_day">Actividad reciente por día</string>
+    <string name="media_stats_total_entries">Apuntes totales</string>
+    <string name="media_stats_day_activity">Actividad diaria</string>
+    <string name="media_stats_score_bucket_eyebrow">Puntuación %1$d</string>
+    <string name="media_stats_error">No pudo carga estadísticas.</string>
+    <string name="media_stats_activity_chart_a11y">Diagrama de actividad diaria sobre %1$d días, cima en %2$s en %3$s</string>
 </resources>
