@@ -59,6 +59,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -257,9 +258,15 @@ fun DiscoverScreen(
     // The expand animation can be cancelled while the tab-switch transition is still
     // settling (the effect often fires on the destination's very first frame), so
     // keep nudging until the bar actually reports Expanded.
+    // The request counter lives in the ViewModel and survives tab switches, while this
+    // composition (and its LaunchedEffect) is recreated on every return to Discover —
+    // so remember the last consumed request in saveable state, or the relaunched effect
+    // would keep re-opening the overlay on every re-entry for as long as the ViewModel lives.
     val searchOverlayRequest = (uiState as? DiscoverUiState.Success)?.searchOverlayRequest ?: 0L
+    var consumedSearchOverlayRequest by rememberSaveable { mutableLongStateOf(0L) }
     LaunchedEffect(searchOverlayRequest) {
-        if (searchOverlayRequest > 0L) {
+        if (searchOverlayRequest > consumedSearchOverlayRequest) {
+            consumedSearchOverlayRequest = searchOverlayRequest
             textFieldState.clearText()
             var attempts = 0
             while (searchBarState.currentValue != SearchBarValue.Expanded && attempts < 10) {
