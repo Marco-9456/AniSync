@@ -98,8 +98,7 @@ fun ActivityHeatmapSection(
 ) {
     if (days.isEmpty()) return
 
-    val today = remember { LocalDate.now() }
-    val model = remember(days) { buildHeatmapModel(days, today) }
+    val model = remember(days) { buildHeatmapModel(days) }
     var selected by remember(days) { mutableStateOf<HeatmapCell?>(null) }
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
 
@@ -210,7 +209,7 @@ fun ActivityHeatmapSection(
                                     val w = (offset.x / stridePx).toInt()
                                     val r = ((offset.y - monthPx) / stridePx).toInt()
                                     val cell = model.weeks.getOrNull(w)?.getOrNull(r)
-                                    if (cell != null && !cell.inFuture) {
+                                    if (cell != null && !cell.afterData) {
                                         selected = if (selected?.date == cell.date) null else cell
                                     }
                                 }
@@ -234,7 +233,7 @@ fun ActivityHeatmapSection(
                             val column = model.weeks[w]
                             for (r in 0 until DAYS_IN_WEEK) {
                                 val cell = column[r]
-                                if (cell.inFuture) continue
+                                if (cell.afterData) continue
                                 val x = w * stridePx
                                 val y = monthPx + r * stridePx
                                 drawRoundRect(
@@ -353,7 +352,8 @@ private data class HeatmapCell(
     val date: LocalDate,
     val amount: Int,
     val level: Int,
-    val inFuture: Boolean
+    /** Past AniList's last counted day — not drawn; absence of data, not zero activity. */
+    val afterData: Boolean
 )
 
 private data class HeatmapModel(
@@ -365,7 +365,7 @@ private data class HeatmapModel(
     val activeDays: Int
 )
 
-private fun buildHeatmapModel(days: List<ActivityHistoryDay>, today: LocalDate): HeatmapModel {
+private fun buildHeatmapModel(days: List<ActivityHistoryDay>): HeatmapModel {
     // Day buckets are stamped at midnight in AniList's server zone (23:00 UTC during BST),
     // so round to the nearest UTC day — truncating paints summer buckets one day early.
     val byDate = HashMap<LocalDate, ActivityHistoryDay>(days.size)
@@ -375,9 +375,11 @@ private fun buildHeatmapModel(days: List<ActivityHistoryDay>, today: LocalDate):
         if (existing == null || day.amount > existing.amount) byDate[date] = day
     }
 
-    val lastSunday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
-    val earliest = byDate.keys.minOrNull() ?: today
-    val earliestSunday = earliest.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+    // Grid ends at the last day AniList has counted (stats lag ~48h) — padding out to
+    // today draws empty cells the site doesn't show and reads as missing activity.
+    val end = byDate.keys.max()
+    val lastSunday = end.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
+    val earliestSunday = byDate.keys.min().with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
     val spanWeeks = (ChronoUnit.WEEKS.between(earliestSunday, lastSunday).toInt() + 1)
         .coerceIn(MIN_WEEKS, MAX_WEEKS)
     val startSunday = lastSunday.minusWeeks((spanWeeks - 1).toLong())
@@ -399,8 +401,8 @@ private fun buildHeatmapModel(days: List<ActivityHistoryDay>, today: LocalDate):
         val column = ArrayList<HeatmapCell>(DAYS_IN_WEEK)
         for (dow in 0 until DAYS_IN_WEEK) {
             val date = weekStart.plusDays(dow.toLong())
-            if (date.isAfter(today)) {
-                column += HeatmapCell(date, amount = 0, level = 0, inFuture = true)
+            if (date.isAfter(end)) {
+                column += HeatmapCell(date, amount = 0, level = 0, afterData = true)
             } else {
                 val entry = byDate[date]
                 val amount = entry?.amount ?: 0
@@ -408,7 +410,7 @@ private fun buildHeatmapModel(days: List<ActivityHistoryDay>, today: LocalDate):
                     total += amount
                     activeDays++
                 }
-                column += HeatmapCell(date, amount, entry?.level ?: 0, inFuture = false)
+                column += HeatmapCell(date, amount, entry?.level ?: 0, afterData = false)
             }
         }
         weeks += column
