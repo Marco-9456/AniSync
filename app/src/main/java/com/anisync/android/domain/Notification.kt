@@ -32,6 +32,19 @@ data class FollowingNotification(
  */
 enum class ActivityKind { TEXT, ANIME_LIST, MANGA_LIST, MESSAGE, UNKNOWN }
 
+/** Noun phrase for the activity subtype, shared by the inbox cards and system notifications. */
+fun ActivityKind?.noun(): String = when (this) {
+    ActivityKind.TEXT -> "status update"
+    ActivityKind.ANIME_LIST -> "anime list update"
+    ActivityKind.MANGA_LIST -> "manga list update"
+    ActivityKind.MESSAGE -> "message"
+    ActivityKind.UNKNOWN, null -> "post"
+}
+
+/** [noun] with the right indefinite article ("an anime list update", "a post"). */
+fun ActivityKind?.indefiniteNoun(): String =
+    noun().let { if (it.first() in "aeiou") "an $it" else "a $it" }
+
 data class ActivitySnapshot(
     val kind: ActivityKind,
     val text: String? = null,        // TextActivity body

@@ -37,6 +37,9 @@ import com.anisync.android.domain.ThreadCommentMentionNotification
 import com.anisync.android.domain.ThreadCommentReplyNotification
 import com.anisync.android.domain.ThreadCommentSubscribedNotification
 import com.anisync.android.domain.ThreadLikeNotification
+import com.anisync.android.domain.User
+import com.anisync.android.domain.indefiniteNoun
+import com.anisync.android.domain.noun
 import com.anisync.android.type.MediaType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -65,6 +68,7 @@ class NotificationWorker @AssistedInject constructor(
     companion object {
         private const val TAG = "NotificationWorker"
         private const val MAX_NOTIFICATION_PAGES = 3
+        private const val PAGE_SIZE = 20
 
         // Two-tier upcoming notification system
         private const val ADVANCE_NOTICE_HOURS = 12 // First notification: "Episode 1 airs tomorrow at X"
@@ -93,6 +97,7 @@ class NotificationWorker @AssistedInject constructor(
         val activeId = accountStore.activeAccount.value?.id
         val showLabel = accounts.size > 1
 
+        val watchingEnabled = notificationPreferences.watchingEnabled.value
         val anySocialEnabled = notificationPreferences.threadCommentReplyEnabled.value ||
             notificationPreferences.threadSubscribedEnabled.value ||
             notificationPreferences.threadCommentMentionEnabled.value ||
@@ -108,34 +113,52 @@ class NotificationWorker @AssistedInject constructor(
             val isActive = account.id == activeId
             try {
                 if (!preferencesRepository.hasNotificationsEverRun(ctx.id)) {
-                    // First time we see this account — establish baselines silently.
-                    performBaselineSync(ctx, isActive)
-                    preferencesRepository.markNotificationsHaveRun(ctx.id)
-                    Log.d(TAG, "Baseline sync done for ${ctx.name}")
+                    // First time we see this account — establish baselines silently. Only mark the
+                    // baseline done when it fully succeeded, otherwise a failed first fetch would
+                    // flood the user with that account's entire history on the next run.
+                    if (performBaselineSync(ctx, isActive)) {
+                        preferencesRepository.markNotificationsHaveRun(ctx.id)
+                        Log.d(TAG, "Baseline sync done for ${ctx.name}")
+                    } else {
+                        Log.w(TAG, "Baseline sync incomplete for ${ctx.name} — will retry next run")
+                    }
                     continue
                 }
 
-                // AniList feed (airing + social) — works for any account via its token.
-                if (notificationPreferences.watchingEnabled.value) {
-                    val planningMediaIds = if (isActive && notificationPreferences.planningEnabled.value) {
-                        libraryDao.getByType(ctx.id, MediaType.ANIME)
-                            .filter { it.status == LibraryStatus.PLANNING }
-                            .map { it.mediaId }
-                            .toSet()
-                    } else {
-                        emptySet()
+                // AniList feed (airing + social) — both checks read the same feed, so fetch the
+                // pages once per account and share the result.
+                if (watchingEnabled || anySocialEnabled) {
+                    val airingWatermark = preferencesRepository.getLastNotifiedId(ctx.id)
+                    val socialWatermark = preferencesRepository.getLastSocialNotifiedId(ctx.id)
+                    val stopBelowId = minOf(
+                        if (watchingEnabled) airingWatermark else Int.MAX_VALUE,
+                        if (anySocialEnabled) socialWatermark else Int.MAX_VALUE
+                    )
+                    val recent = fetchRecentNotifications(ctx, stopBelowId)
+
+                    if (watchingEnabled) {
+                        val planningMediaIds = if (isActive && notificationPreferences.planningEnabled.value) {
+                            libraryDao.getByType(ctx.id, MediaType.ANIME)
+                                .filter { it.status == LibraryStatus.PLANNING }
+                                .map { it.mediaId }
+                                .toSet()
+                        } else {
+                            emptySet()
+                        }
+                        notifyNewAiring(ctx, recent, airingWatermark, planningMediaIds)
                     }
-                    checkWatchingListNotifications(ctx, planningMediaIds)
-                }
-                if (anySocialEnabled) {
-                    checkSocialNotifications(ctx)
+                    if (anySocialEnabled) {
+                        notifyNewSocial(ctx, recent, socialWatermark)
+                    }
                 }
 
                 // Planning / upcoming "Episode 1" alerts depend on the locally-cached library,
-                // so they only run for the active account.
+                // so they only run for the active account. The "has started" check must run first:
+                // it consumes the upcoming-notified markers that checkUpcomingPlanningEpisodes
+                // prunes once an episode leaves the upcoming window.
                 if (isActive) {
-                    if (notificationPreferences.upcomingEnabled.value) checkUpcomingPlanningEpisodes(ctx)
                     if (notificationPreferences.planningEnabled.value) checkPlanningFirstEpisodes(ctx)
+                    if (notificationPreferences.upcomingEnabled.value) checkUpcomingPlanningEpisodes(ctx)
                 }
             } catch (e: ApiError.RateLimited) {
                 // Back off the whole worker; per-account dedup makes the retry idempotent.
@@ -155,182 +178,169 @@ class NotificationWorker @AssistedInject constructor(
     }
 
     /**
+     * safeApiCall folds ApiErrors into Result.Error, so rate-limit/auth conditions never reach
+     * doWork() as exceptions on their own — resurface the two it reacts to (retry / mark expired).
+     */
+    private fun DomainResult.Error.rethrowWorkerSignals() {
+        when (val e = exception) {
+            is ApiError.RateLimited, is ApiError.Unauthorized -> throw e
+            else -> Unit
+        }
+    }
+
+    /**
      * On an account's first run, fetch current state and set baselines WITHOUT notifying, so the
      * user isn't spammed with that account's historical notifications. Planning/upcoming baseline
      * runs only for the active account (it uses the locally-cached library).
+     *
+     * @return true when every baseline fetch succeeded.
      */
-    private suspend fun performBaselineSync(ctx: AcctCtx, isActive: Boolean) {
-        val repoResult = notificationRepository.getNotifications(1, ctx.token)
-        if (repoResult is DomainResult.Success) {
-            val allNotifications = repoResult.data
-            val latestAiringId = allNotifications
-                .filterIsInstance<AiringNotification>()
-                .maxOfOrNull { it.id } ?: 0
-            if (latestAiringId > 0) preferencesRepository.setLastNotifiedId(ctx.id, latestAiringId)
-            val latestSocialId = allNotifications
-                .filter { isSocialNotification(it) }
-                .maxOfOrNull { it.id } ?: 0
-            if (latestSocialId > 0) preferencesRepository.setLastSocialNotifiedId(ctx.id, latestSocialId)
+    private suspend fun performBaselineSync(ctx: AcctCtx, isActive: Boolean): Boolean {
+        var complete = true
+
+        when (val repoResult = notificationRepository.getNotifications(1, ctx.token)) {
+            is DomainResult.Success -> {
+                val allNotifications = repoResult.data
+                val latestAiringId = allNotifications
+                    .filterIsInstance<AiringNotification>()
+                    .maxOfOrNull { it.id } ?: 0
+                if (latestAiringId > 0) preferencesRepository.setLastNotifiedId(ctx.id, latestAiringId)
+                val latestSocialId = allNotifications
+                    .filter { isSocialNotification(it) }
+                    .maxOfOrNull { it.id } ?: 0
+                if (latestSocialId > 0) preferencesRepository.setLastSocialNotifiedId(ctx.id, latestSocialId)
+            }
+            is DomainResult.Error -> {
+                repoResult.rethrowWorkerSignals()
+                complete = false
+            }
         }
 
-        if (!isActive) return
+        if (!isActive) return complete
 
         val planningEntries = libraryDao.getByType(ctx.id, MediaType.ANIME)
             .filter { it.status == LibraryStatus.PLANNING }
         val planningMediaIds = planningEntries.map { it.mediaId }
 
-        val airedResult = notificationRepository.getFirstEpisodeAirings(planningMediaIds)
-        if (airedResult is DomainResult.Success) {
-            for (airing in airedResult.data) {
-                preferencesRepository.markPlanningMediaAsNotified(ctx.id, airing.mediaId)
-            }
-        }
-        val upcomingResult = notificationRepository.getUpcomingFirstEpisodes(planningMediaIds, ADVANCE_NOTICE_HOURS)
-        if (upcomingResult is DomainResult.Success) {
-            for (airing in upcomingResult.data) {
-                preferencesRepository.markUpcomingAiringNotified(ctx.id, airing.id)
-            }
-        }
-    }
-
-    private suspend fun checkWatchingListNotifications(ctx: AcctCtx, planningMediaIds: Set<Int>) {
-        val allNewAiring = mutableListOf<AiringNotification>()
-        val lastNotifiedId = preferencesRepository.getLastNotifiedId(ctx.id)
-        var currentPage = 1
-        var hasMore = true
-
-        while (hasMore && currentPage <= MAX_NOTIFICATION_PAGES) {
-            val repoResult = notificationRepository.getNotifications(currentPage, ctx.token)
-
-            when (repoResult) {
-                is DomainResult.Success -> {
-                    val notifications = repoResult.data
-
-                    val newOnThisPage = notifications
-                        .filterIsInstance<AiringNotification>()
-                        .filter { it.id > lastNotifiedId }
-                        // Skip Episode 1 for Planning items (handled by checkPlanningFirstEpisodes)
-                        .filter { notification ->
-                            val isEpisode1ForPlanning = notification.episode == 1 &&
-                                notification.media?.id in planningMediaIds
-                            !isEpisode1ForPlanning
-                        }
-
-                    val allAiringOnPage = notifications.filterIsInstance<AiringNotification>()
-                    val hasOlderAiring = allAiringOnPage.any { it.id <= lastNotifiedId }
-
-                    if (newOnThisPage.isEmpty() && hasOlderAiring) {
-                        hasMore = false
-                    } else if (newOnThisPage.isEmpty() && allAiringOnPage.isEmpty()) {
-                        currentPage++
-                        if (notifications.size < 20) hasMore = false
-                    } else {
-                        allNewAiring.addAll(newOnThisPage)
-                        currentPage++
-                        if (notifications.size < 20) hasMore = false
-                    }
-                }
-                is DomainResult.Error -> {
-                    Log.e(TAG, "Failed to fetch notifications page $currentPage for ${ctx.name}: ${repoResult.message}", repoResult.exception)
-                    hasMore = false
+        when (val airedResult = notificationRepository.getFirstEpisodeAirings(planningMediaIds)) {
+            is DomainResult.Success -> {
+                for (airing in airedResult.data) {
+                    preferencesRepository.markPlanningMediaAsNotified(ctx.id, airing.mediaId)
                 }
             }
-        }
-
-        if (allNewAiring.isNotEmpty()) {
-            val sortedAiring = allNewAiring.sortedBy { it.id }
-
-            // Apply the user-configured streaming delay (defer episodes not yet "due").
-            val delaySeconds = notificationPreferences.streamingDelayMinutes.value * 60L
-            val nowSeconds = System.currentTimeMillis() / 1000
-            val cutoff = if (delaySeconds > 0L) {
-                sortedAiring.firstOrNull { (nowSeconds - it.createdAt) < delaySeconds }?.id
-                    ?: Int.MAX_VALUE
-            } else {
-                Int.MAX_VALUE
-            }
-            val toEmit = sortedAiring.filter { it.id < cutoff }
-
-            for (notification in toEmit) {
-                showNotification(notification, ctx)
-            }
-            if (toEmit.size >= 3) {
-                showSummaryNotification(toEmit, ctx)
-            }
-            if (toEmit.isNotEmpty()) {
-                preferencesRepository.setLastNotifiedId(ctx.id, toEmit.maxOf { it.id })
+            is DomainResult.Error -> {
+                airedResult.rethrowWorkerSignals()
+                complete = false
             }
         }
+        when (val upcomingResult = notificationRepository.getUpcomingFirstEpisodes(planningMediaIds, ADVANCE_NOTICE_HOURS)) {
+            is DomainResult.Success -> {
+                for (airing in upcomingResult.data) {
+                    preferencesRepository.markUpcomingAiringNotified(ctx.id, airing.id)
+                }
+            }
+            is DomainResult.Error -> {
+                upcomingResult.rethrowWorkerSignals()
+                complete = false
+            }
+        }
+        return complete
     }
 
     /**
-     * Check for new social/forum notifications (thread replies, mentions, likes, subscriptions).
-     * Each type is gated behind its own preference toggle.
+     * Pulls the newest notification pages once per account. Stops as soon as a page reaches ids
+     * at/below [stopBelowId] (every consumer's watermark is covered), the feed runs short, or the
+     * page cap is hit.
      */
-    private suspend fun checkSocialNotifications(ctx: AcctCtx) {
-        val lastSocialId = preferencesRepository.getLastSocialNotifiedId(ctx.id)
-        val allNewSocial = mutableListOf<Notification>()
-        var currentPage = 1
-        var hasMore = true
-
-        while (hasMore && currentPage <= MAX_NOTIFICATION_PAGES) {
-            val repoResult = notificationRepository.getNotifications(currentPage, ctx.token)
-
-            when (repoResult) {
+    private suspend fun fetchRecentNotifications(ctx: AcctCtx, stopBelowId: Int): List<Notification> {
+        val fetched = mutableListOf<Notification>()
+        var page = 1
+        while (page <= MAX_NOTIFICATION_PAGES) {
+            when (val result = notificationRepository.getNotifications(page, ctx.token)) {
                 is DomainResult.Success -> {
-                    val notifications = repoResult.data
-
-                    val socialOnPage = notifications.filter { notification ->
-                        notification.id > lastSocialId && isSocialNotification(notification)
-                    }
-
-                    val olderSocialExists = notifications.any { notification ->
-                        notification.id <= lastSocialId && isSocialNotification(notification)
-                    }
-
-                    if (socialOnPage.isEmpty() && olderSocialExists) {
-                        hasMore = false
-                    } else if (socialOnPage.isEmpty()) {
-                        currentPage++
-                        if (notifications.size < 20) hasMore = false
-                    } else {
-                        allNewSocial.addAll(socialOnPage)
-                        currentPage++
-                        if (notifications.size < 20) hasMore = false
+                    fetched += result.data
+                    if (result.data.size < PAGE_SIZE || result.data.any { it.id <= stopBelowId }) {
+                        return fetched
                     }
                 }
                 is DomainResult.Error -> {
-                    Log.e(TAG, "Failed to fetch social notifications page $currentPage for ${ctx.name}: ${repoResult.message}", repoResult.exception)
-                    hasMore = false
+                    result.rethrowWorkerSignals()
+                    Log.e(TAG, "Failed to fetch notifications page $page for ${ctx.name}: ${result.message}", result.exception)
+                    return fetched
                 }
+            }
+            page++
+        }
+        return fetched
+    }
+
+    private suspend fun notifyNewAiring(
+        ctx: AcctCtx,
+        recent: List<Notification>,
+        lastNotifiedId: Int,
+        planningMediaIds: Set<Int>
+    ) {
+        val newAiring = recent
+            .filterIsInstance<AiringNotification>()
+            .filter { it.id > lastNotifiedId }
+            // Skip Episode 1 for Planning items (handled by checkPlanningFirstEpisodes)
+            .filterNot { it.episode == 1 && it.media?.id in planningMediaIds }
+            .sortedBy { it.id }
+        if (newAiring.isEmpty()) return
+
+        // Apply the user-configured streaming delay (defer episodes not yet "due").
+        val delaySeconds = notificationPreferences.streamingDelayMinutes.value * 60L
+        val nowSeconds = System.currentTimeMillis() / 1000
+        val cutoff = if (delaySeconds > 0L) {
+            newAiring.firstOrNull { (nowSeconds - it.createdAt) < delaySeconds }?.id
+                ?: Int.MAX_VALUE
+        } else {
+            Int.MAX_VALUE
+        }
+        val toEmit = newAiring.filter { it.id < cutoff }
+        if (toEmit.isEmpty()) return
+
+        for (notification in toEmit) {
+            showAiringNotification(notification, ctx)
+        }
+        if (toEmit.size >= 3) {
+            showSummaryNotification(toEmit, ctx)
+        }
+        preferencesRepository.setLastNotifiedId(ctx.id, toEmit.maxOf { it.id })
+    }
+
+    /**
+     * Surface new social/forum notifications (thread replies, mentions, likes, subscriptions).
+     * Each type is gated behind its own preference toggle; the watermark still advances past
+     * disabled types so re-enabling them doesn't replay history.
+     */
+    private suspend fun notifyNewSocial(ctx: AcctCtx, recent: List<Notification>, lastSocialId: Int) {
+        val newSocial = recent
+            .filter { it.id > lastSocialId && isSocialNotification(it) }
+            .sortedBy { it.id }
+        if (newSocial.isEmpty()) return
+
+        for (notification in newSocial) {
+            val shouldNotify = when (notification) {
+                is ThreadCommentReplyNotification -> notificationPreferences.threadCommentReplyEnabled.value
+                is ThreadCommentSubscribedNotification -> notificationPreferences.threadSubscribedEnabled.value
+                is ThreadCommentMentionNotification -> notificationPreferences.threadCommentMentionEnabled.value
+                is ThreadLikeNotification -> notificationPreferences.threadLikeEnabled.value
+                is ThreadCommentLikeNotification -> notificationPreferences.threadCommentLikeEnabled.value
+                is ActivityReplyNotification,
+                is ActivityReplySubscribedNotification -> notificationPreferences.activityReplyEnabled.value
+                is ActivityMentionNotification -> notificationPreferences.activityMentionEnabled.value
+                is ActivityLikeNotification,
+                is ActivityReplyLikeNotification -> notificationPreferences.activityLikeEnabled.value
+                is ActivityMessageNotification -> notificationPreferences.activityMessageEnabled.value
+                else -> false
+            }
+            if (shouldNotify) {
+                showSocialNotification(notification, ctx)
             }
         }
 
-        if (allNewSocial.isNotEmpty()) {
-            val sorted = allNewSocial.sortedBy { it.id }
-
-            for (notification in sorted) {
-                val shouldNotify = when (notification) {
-                    is ThreadCommentReplyNotification -> notificationPreferences.threadCommentReplyEnabled.value
-                    is ThreadCommentSubscribedNotification -> notificationPreferences.threadSubscribedEnabled.value
-                    is ThreadCommentMentionNotification -> notificationPreferences.threadCommentMentionEnabled.value
-                    is ThreadLikeNotification -> notificationPreferences.threadLikeEnabled.value
-                    is ThreadCommentLikeNotification -> notificationPreferences.threadCommentLikeEnabled.value
-                    is ActivityReplyNotification,
-                    is ActivityReplySubscribedNotification -> notificationPreferences.activityReplyEnabled.value
-                    is ActivityMentionNotification -> notificationPreferences.activityMentionEnabled.value
-                    is ActivityLikeNotification,
-                    is ActivityReplyLikeNotification -> notificationPreferences.activityLikeEnabled.value
-                    is ActivityMessageNotification -> notificationPreferences.activityMessageEnabled.value
-                    else -> false
-                }
-                if (shouldNotify) {
-                    showSocialNotification(notification, ctx)
-                }
-            }
-
-            preferencesRepository.setLastSocialNotifiedId(ctx.id, sorted.maxOf { it.id })
-        }
+        preferencesRepository.setLastSocialNotifiedId(ctx.id, newSocial.maxOf { it.id })
     }
 
     private fun isSocialNotification(notification: Notification): Boolean {
@@ -347,115 +357,88 @@ class NotificationWorker @AssistedInject constructor(
             notification is ActivityMessageNotification
     }
 
+    /** ` in "Thread title"` suffix, or nothing when the title is blank. */
+    private fun inThread(title: String): String =
+        title.takeIf { it.isNotBlank() }?.let { " in \"$it\"" }.orEmpty()
+
     /**
-     * Display a social/forum notification using the appropriate channel.
+     * Display a social/forum notification. Copy follows the messaging convention:
+     * title = who, text = what they did.
      */
     private suspend fun showSocialNotification(notification: Notification, ctx: AcctCtx) {
         val data = when (notification) {
-            is ThreadCommentReplyNotification -> {
-                val userName = notification.user?.name ?: "Someone"
-                SocialNotificationData(
-                    title = "💬 Reply on \"${notification.threadTitle}\"",
-                    content = "$userName ${notification.context}",
-                    channelId = NotificationChannels.THREAD_COMMENT_REPLY_CHANNEL_ID,
-                    threadId = notification.threadId,
-                    commentId = notification.commentId
-                )
-            }
-            is ThreadCommentSubscribedNotification -> {
-                val userName = notification.user?.name ?: "Someone"
-                SocialNotificationData(
-                    title = "🔔 Update on \"${notification.threadTitle}\"",
-                    content = "$userName ${notification.context}",
-                    channelId = NotificationChannels.THREAD_SUBSCRIBED_CHANNEL_ID,
-                    threadId = notification.threadId,
-                    commentId = notification.commentId
-                )
-            }
-            is ThreadCommentMentionNotification -> {
-                val userName = notification.user?.name ?: "Someone"
-                SocialNotificationData(
-                    title = "📢 Mentioned in \"${notification.threadTitle}\"",
-                    content = "$userName ${notification.context}",
-                    channelId = NotificationChannels.THREAD_COMMENT_MENTION_CHANNEL_ID,
-                    threadId = notification.threadId,
-                    commentId = notification.commentId
-                )
-            }
-            is ThreadLikeNotification -> {
-                val userName = notification.user?.name ?: "Someone"
-                SocialNotificationData(
-                    title = "❤️ Thread liked",
-                    content = "$userName liked your thread \"${notification.threadTitle}\"",
-                    channelId = NotificationChannels.THREAD_LIKE_CHANNEL_ID,
-                    threadId = notification.threadId,
-                    commentId = null
-                )
-            }
-            is ThreadCommentLikeNotification -> {
-                val userName = notification.user?.name ?: "Someone"
-                SocialNotificationData(
-                    title = "❤️ Comment liked",
-                    content = "$userName liked your comment in \"${notification.threadTitle}\"",
-                    channelId = NotificationChannels.THREAD_COMMENT_LIKE_CHANNEL_ID,
-                    threadId = notification.threadId,
-                    commentId = notification.commentId
-                )
-            }
-            is ActivityReplyNotification -> {
-                val userName = notification.user?.name ?: "Someone"
-                SocialNotificationData(
-                    title = "💬 Activity reply",
-                    content = "$userName ${notification.context}",
-                    channelId = NotificationChannels.ACTIVITY_REPLY_CHANNEL_ID,
-                    activityId = notification.activityId
-                )
-            }
-            is ActivityReplySubscribedNotification -> {
-                val userName = notification.user?.name ?: "Someone"
-                SocialNotificationData(
-                    title = "🔔 Activity update",
-                    content = "$userName ${notification.context}",
-                    channelId = NotificationChannels.ACTIVITY_REPLY_CHANNEL_ID,
-                    activityId = notification.activityId
-                )
-            }
-            is ActivityMentionNotification -> {
-                val userName = notification.user?.name ?: "Someone"
-                SocialNotificationData(
-                    title = "📢 Mentioned in activity",
-                    content = "$userName ${notification.context}",
-                    channelId = NotificationChannels.ACTIVITY_MENTION_CHANNEL_ID,
-                    activityId = notification.activityId
-                )
-            }
-            is ActivityLikeNotification -> {
-                val userName = notification.user?.name ?: "Someone"
-                SocialNotificationData(
-                    title = "❤️ Activity liked",
-                    content = "$userName ${notification.context}",
-                    channelId = NotificationChannels.ACTIVITY_LIKE_CHANNEL_ID,
-                    activityId = notification.activityId
-                )
-            }
-            is ActivityReplyLikeNotification -> {
-                val userName = notification.user?.name ?: "Someone"
-                SocialNotificationData(
-                    title = "❤️ Reply liked",
-                    content = "$userName ${notification.context}",
-                    channelId = NotificationChannels.ACTIVITY_LIKE_CHANNEL_ID,
-                    activityId = notification.activityId
-                )
-            }
-            is ActivityMessageNotification -> {
-                val userName = notification.user?.name ?: "Someone"
-                SocialNotificationData(
-                    title = "✉️ New message",
-                    content = "$userName ${notification.context}",
-                    channelId = NotificationChannels.ACTIVITY_MESSAGE_CHANNEL_ID,
-                    activityId = notification.activityId
-                )
-            }
+            is ThreadCommentReplyNotification -> SocialNotificationData(
+                user = notification.user,
+                content = "Replied to your comment${inThread(notification.threadTitle)}",
+                channelId = NotificationChannels.THREAD_COMMENT_REPLY_CHANNEL_ID,
+                threadId = notification.threadId,
+                commentId = notification.commentId
+            )
+            is ThreadCommentSubscribedNotification -> SocialNotificationData(
+                user = notification.user,
+                content = notification.threadTitle.takeIf { it.isNotBlank() }
+                    ?.let { "Commented in \"$it\"" } ?: "Commented in a thread you're subscribed to",
+                channelId = NotificationChannels.THREAD_SUBSCRIBED_CHANNEL_ID,
+                threadId = notification.threadId,
+                commentId = notification.commentId
+            )
+            is ThreadCommentMentionNotification -> SocialNotificationData(
+                user = notification.user,
+                content = "Mentioned you in a comment${inThread(notification.threadTitle)}",
+                channelId = NotificationChannels.THREAD_COMMENT_MENTION_CHANNEL_ID,
+                threadId = notification.threadId,
+                commentId = notification.commentId
+            )
+            is ThreadLikeNotification -> SocialNotificationData(
+                user = notification.user,
+                content = "Liked your thread" +
+                    notification.threadTitle.takeIf { it.isNotBlank() }?.let { " \"$it\"" }.orEmpty(),
+                channelId = NotificationChannels.THREAD_LIKE_CHANNEL_ID,
+                threadId = notification.threadId
+            )
+            is ThreadCommentLikeNotification -> SocialNotificationData(
+                user = notification.user,
+                content = "Liked your comment${inThread(notification.threadTitle)}",
+                channelId = NotificationChannels.THREAD_COMMENT_LIKE_CHANNEL_ID,
+                threadId = notification.threadId,
+                commentId = notification.commentId
+            )
+            is ActivityReplyNotification -> SocialNotificationData(
+                user = notification.user,
+                content = "Replied to your ${notification.activity?.kind.noun()}",
+                channelId = NotificationChannels.ACTIVITY_REPLY_CHANNEL_ID,
+                activityId = notification.activityId
+            )
+            is ActivityReplySubscribedNotification -> SocialNotificationData(
+                user = notification.user,
+                content = "Replied to a post you're subscribed to",
+                channelId = NotificationChannels.ACTIVITY_REPLY_CHANNEL_ID,
+                activityId = notification.activityId
+            )
+            is ActivityMentionNotification -> SocialNotificationData(
+                user = notification.user,
+                content = "Mentioned you in ${notification.activity?.kind.indefiniteNoun()}",
+                channelId = NotificationChannels.ACTIVITY_MENTION_CHANNEL_ID,
+                activityId = notification.activityId
+            )
+            is ActivityLikeNotification -> SocialNotificationData(
+                user = notification.user,
+                content = "Liked your ${notification.activity?.kind.noun()}",
+                channelId = NotificationChannels.ACTIVITY_LIKE_CHANNEL_ID,
+                activityId = notification.activityId
+            )
+            is ActivityReplyLikeNotification -> SocialNotificationData(
+                user = notification.user,
+                content = "Liked your reply",
+                channelId = NotificationChannels.ACTIVITY_LIKE_CHANNEL_ID,
+                activityId = notification.activityId
+            )
+            is ActivityMessageNotification -> SocialNotificationData(
+                user = notification.user,
+                content = "Sent you a message",
+                channelId = NotificationChannels.ACTIVITY_MESSAGE_CHANNEL_ID,
+                activityId = notification.activityId
+            )
             else -> return
         }
 
@@ -467,26 +450,12 @@ class NotificationWorker @AssistedInject constructor(
             else -> "anisync://notifications"
         }
 
-        val largeIcon: Bitmap? = when (notification) {
-            is ThreadCommentReplyNotification -> notification.user?.avatarUrl
-            is ThreadCommentSubscribedNotification -> notification.user?.avatarUrl
-            is ThreadCommentMentionNotification -> notification.user?.avatarUrl
-            is ThreadLikeNotification -> notification.user?.avatarUrl
-            is ThreadCommentLikeNotification -> notification.user?.avatarUrl
-            is ActivityReplyNotification -> notification.user?.avatarUrl
-            is ActivityReplySubscribedNotification -> notification.user?.avatarUrl
-            is ActivityMentionNotification -> notification.user?.avatarUrl
-            is ActivityLikeNotification -> notification.user?.avatarUrl
-            is ActivityReplyLikeNotification -> notification.user?.avatarUrl
-            is ActivityMessageNotification -> notification.user?.avatarUrl
-            else -> null
-        }?.let { loadImage(it) }
+        val largeIcon: Bitmap? = data.user?.avatarUrl?.let { loadImage(it) }
 
         val builder = NotificationCompat.Builder(applicationContext, data.channelId)
-            .setSmallIcon(getApplicationIcon())
-            .setContentTitle(data.title)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(data.user?.name ?: "Someone")
             .setContentText(data.content)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setWhen(notification.createdAt.toLong() * 1000L)
             .setShowWhen(true)
@@ -499,7 +468,7 @@ class NotificationWorker @AssistedInject constructor(
     }
 
     private data class SocialNotificationData(
-        val title: String,
+        val user: User?,
         val content: String,
         val channelId: String,
         val threadId: Int? = null,
@@ -519,35 +488,38 @@ class NotificationWorker @AssistedInject constructor(
         val mediaIds = planningEntries.map { it.mediaId }
         val currentTimeSeconds = System.currentTimeMillis() / 1000
 
-        val result = notificationRepository.getUpcomingFirstEpisodes(mediaIds, ADVANCE_NOTICE_HOURS)
-        if (result is DomainResult.Success) {
-            val upcomingAirings = result.data
-            val currentAiringIds = upcomingAirings.map { it.id }.toSet()
-            preferencesRepository.cleanupOldUpcomingAirings(ctx.id, currentAiringIds)
+        when (val result = notificationRepository.getUpcomingFirstEpisodes(mediaIds, ADVANCE_NOTICE_HOURS)) {
+            is DomainResult.Success -> {
+                val upcomingAirings = result.data
+                val currentAiringIds = upcomingAirings.map { it.id }.toSet()
+                preferencesRepository.cleanupOldUpcomingAirings(ctx.id, currentAiringIds)
 
-            for (airing in upcomingAirings) {
-                val hoursUntil = ((airing.airingAt - currentTimeSeconds) / 3600).toInt()
-                when {
-                    hoursUntil <= IMMINENT_NOTICE_HOURS -> {
-                        val imminentKey = "imminent_${airing.id}"
-                        if (!preferencesRepository.hasNotifiedWithKey(ctx.id, imminentKey)) {
-                            showImminentEpisodeNotification(airing, hoursUntil, ctx)
-                            preferencesRepository.markNotifiedWithKey(ctx.id, imminentKey)
-                            preferencesRepository.markUpcomingAiringNotified(ctx.id, airing.id)
+                for (airing in upcomingAirings) {
+                    val hoursUntil = ((airing.airingAt - currentTimeSeconds) / 3600).toInt()
+                    when {
+                        hoursUntil <= IMMINENT_NOTICE_HOURS -> {
+                            val imminentKey = "imminent_${airing.id}"
+                            if (!preferencesRepository.hasNotifiedWithKey(ctx.id, imminentKey)) {
+                                showImminentEpisodeNotification(airing, hoursUntil, ctx)
+                                preferencesRepository.markNotifiedWithKey(ctx.id, imminentKey)
+                                preferencesRepository.markUpcomingAiringNotified(ctx.id, airing.id)
+                            }
                         }
-                    }
-                    hoursUntil <= ADVANCE_NOTICE_HOURS -> {
-                        val advanceKey = "advance_${airing.id}"
-                        if (!preferencesRepository.hasNotifiedWithKey(ctx.id, advanceKey)) {
-                            showAdvanceEpisodeNotification(airing, ctx)
-                            preferencesRepository.markNotifiedWithKey(ctx.id, advanceKey)
-                            preferencesRepository.markUpcomingAiringNotified(ctx.id, airing.id)
+                        hoursUntil <= ADVANCE_NOTICE_HOURS -> {
+                            val advanceKey = "advance_${airing.id}"
+                            if (!preferencesRepository.hasNotifiedWithKey(ctx.id, advanceKey)) {
+                                showAdvanceEpisodeNotification(airing, ctx)
+                                preferencesRepository.markNotifiedWithKey(ctx.id, advanceKey)
+                                preferencesRepository.markUpcomingAiringNotified(ctx.id, airing.id)
+                            }
                         }
                     }
                 }
             }
-        } else if (result is DomainResult.Error) {
-            Log.e(TAG, "Failed to fetch upcoming episodes: ${result.message}", result.exception)
+            is DomainResult.Error -> {
+                result.rethrowWorkerSignals()
+                Log.e(TAG, "Failed to fetch upcoming episodes: ${result.message}", result.exception)
+            }
         }
     }
 
@@ -565,35 +537,38 @@ class NotificationWorker @AssistedInject constructor(
         if (unnotifiedIds.isEmpty()) return
 
         val upcomingNotifiedAiringIds = preferencesRepository.getNotifiedUpcomingAiringIds(ctx.id)
-        val result = notificationRepository.getFirstEpisodeAirings(unnotifiedIds)
 
-        if (result is DomainResult.Success) {
-            for (airing in result.data) {
-                if (airing.id in upcomingNotifiedAiringIds) {
+        when (val result = notificationRepository.getFirstEpisodeAirings(unnotifiedIds)) {
+            is DomainResult.Success -> {
+                for (airing in result.data) {
+                    if (airing.id in upcomingNotifiedAiringIds) {
+                        // Already told the user this premiere was coming — don't repeat it.
+                        preferencesRepository.markPlanningMediaAsNotified(ctx.id, airing.mediaId)
+                        continue
+                    }
+                    showPlanningFirstEpisodeNotification(airing, ctx)
                     preferencesRepository.markPlanningMediaAsNotified(ctx.id, airing.mediaId)
-                    continue
                 }
-                showPlanningFirstEpisodeNotification(airing, ctx)
-                preferencesRepository.markPlanningMediaAsNotified(ctx.id, airing.mediaId)
             }
-        } else if (result is DomainResult.Error) {
-            Log.e(TAG, "Failed to fetch planning first episodes: ${result.message}", result.exception)
+            is DomainResult.Error -> {
+                result.rethrowWorkerSignals()
+                Log.e(TAG, "Failed to fetch planning first episodes: ${result.message}", result.exception)
+            }
         }
     }
 
-    private suspend fun showNotification(notification: AiringNotification, ctx: AcctCtx) {
+    private suspend fun showAiringNotification(notification: AiringNotification, ctx: AcctCtx) {
         val notificationId = AIRING_NOTIFICATION_BASE_ID + notification.id
         val media = notification.media
-        val title = media?.title ?: "New Episode"
-        val content = "Episode ${notification.episode} has aired!"
+        val title = media?.title ?: "New episode"
+        val content = "Episode ${notification.episode} has aired"
 
         val largeIcon: Bitmap? = media?.coverUrl?.let { loadImage(it) }
 
         val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.AIRING_CHANNEL_ID)
-            .setSmallIcon(getApplicationIcon())
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(content)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             // Stamp with the airing moment (AniList createdAt) so it's consistent across devices
             // regardless of when each device's worker polled.
@@ -610,7 +585,7 @@ class NotificationWorker @AssistedInject constructor(
 
     private suspend fun showAdvanceEpisodeNotification(airing: AiringSchedule, ctx: AcctCtx) {
         val notificationId = UPCOMING_ADVANCE_NOTIFICATION_BASE_ID + airing.id
-        val title = "📅 Premiere Alert: ${airing.mediaTitle}"
+        val title = airing.mediaTitle
 
         val airingDate = java.util.Date(airing.airingAt * 1000)
         val timeFormat = DateFormat.getTimeFormat(applicationContext)
@@ -634,10 +609,9 @@ class NotificationWorker @AssistedInject constructor(
         val largeIcon: Bitmap? = airing.mediaCoverUrl?.let { loadImage(it) }
 
         val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.UPCOMING_CHANNEL_ID)
-            .setSmallIcon(getApplicationIcon())
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(content)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setGroup(groupKey(GROUP_KEY_PLANNING, ctx))
             .setContentIntent(deepLinkIntent("anisync://details/${airing.mediaId}", ctx, notificationId))
@@ -650,21 +624,20 @@ class NotificationWorker @AssistedInject constructor(
 
     private suspend fun showImminentEpisodeNotification(airing: AiringSchedule, hoursUntil: Int, ctx: AcctCtx) {
         val notificationId = UPCOMING_IMMINENT_NOTIFICATION_BASE_ID + airing.id
-        val title = "🔔 Starting Soon: ${airing.mediaTitle}"
+        val title = airing.mediaTitle
 
         val content = when {
-            hoursUntil < 1 -> "Episode 1 is airing in less than an hour!"
-            hoursUntil == 1 -> "Episode 1 is airing in about an hour!"
-            else -> "Episode 1 is airing in $hoursUntil hours!"
+            hoursUntil < 1 -> "Episode 1 airs in less than an hour"
+            hoursUntil == 1 -> "Episode 1 airs in about an hour"
+            else -> "Episode 1 airs in about $hoursUntil hours"
         }
 
         val largeIcon: Bitmap? = airing.mediaCoverUrl?.let { loadImage(it) }
 
         val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.UPCOMING_CHANNEL_ID)
-            .setSmallIcon(getApplicationIcon())
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(content)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setGroup(groupKey(GROUP_KEY_PLANNING, ctx))
             .setContentIntent(deepLinkIntent("anisync://details/${airing.mediaId}", ctx, notificationId))
@@ -677,7 +650,7 @@ class NotificationWorker @AssistedInject constructor(
 
     private suspend fun showPlanningFirstEpisodeNotification(airing: AiringSchedule, ctx: AcctCtx) {
         val notificationId = PLANNING_NOTIFICATION_BASE_ID + airing.mediaId
-        val title = "${airing.mediaTitle} has started!"
+        val title = airing.mediaTitle
         val content = "Episode 1 is now available"
 
         // "Add to Watching" action button
@@ -685,6 +658,7 @@ class NotificationWorker @AssistedInject constructor(
             action = AddToWatchingReceiver.ACTION_ADD_TO_WATCHING
             putExtra(AddToWatchingReceiver.EXTRA_MEDIA_ID, airing.mediaId)
             putExtra(AddToWatchingReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(AddToWatchingReceiver.EXTRA_NOTIFICATION_TAG, notificationTag(ctx))
             putExtra(AddToWatchingReceiver.EXTRA_MEDIA_TITLE, airing.mediaTitle)
         }
         val addToWatchingPendingIntent = PendingIntent.getBroadcast(
@@ -697,10 +671,9 @@ class NotificationWorker @AssistedInject constructor(
         val largeIcon: Bitmap? = airing.mediaCoverUrl?.let { loadImage(it) }
 
         val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.PLANNING_CHANNEL_ID)
-            .setSmallIcon(getApplicationIcon())
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(content)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setWhen(airing.airingAt * 1000L)
             .setShowWhen(true)
@@ -718,22 +691,24 @@ class NotificationWorker @AssistedInject constructor(
     }
 
     private fun showSummaryNotification(notifications: List<AiringNotification>, ctx: AcctCtx) {
+        val summaryTitle = "${notifications.size} new episodes aired"
         val inboxStyle = NotificationCompat.InboxStyle()
-            .setBigContentTitle("${notifications.size} new episodes aired")
+            .setBigContentTitle(summaryTitle)
             .setSummaryText(if (ctx.showLabel) ctx.name else "AniSync")
 
         for (notification in notifications) {
             val title = notification.media?.title ?: "Anime"
-            inboxStyle.addLine("Ep ${notification.episode}: $title")
+            inboxStyle.addLine("$title — Episode ${notification.episode}")
         }
 
         val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.AIRING_CHANNEL_ID)
-            .setSmallIcon(getApplicationIcon())
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(summaryTitle)
             .setStyle(inboxStyle)
             .setGroup(groupKey(GROUP_KEY_AIRING, ctx))
             .setGroupSummary(true)
             .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(deepLinkIntent("anisync://notifications", ctx, SUMMARY_ID))
 
         post(ctx, SUMMARY_ID, builder)
     }
@@ -755,6 +730,8 @@ class NotificationWorker @AssistedInject constructor(
         )
     }
 
+    private fun notificationTag(ctx: AcctCtx) = "acct_${ctx.id}"
+
     /**
      * Posts under a per-account tag so the same AniList notification id from two accounts can't
      * overwrite each other in the tray, and labels the account when more than one is signed in.
@@ -762,7 +739,7 @@ class NotificationWorker @AssistedInject constructor(
     private fun post(ctx: AcctCtx, id: Int, builder: NotificationCompat.Builder) {
         if (ctx.showLabel) builder.setSubText(ctx.name)
         val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify("acct_${ctx.id}", id, builder.build())
+        nm.notify(notificationTag(ctx), id, builder.build())
     }
 
     private suspend fun loadImage(url: String): Bitmap? {
@@ -778,9 +755,5 @@ class NotificationWorker @AssistedInject constructor(
         } else {
             null
         }
-    }
-
-    private fun getApplicationIcon(): Int {
-        return R.drawable.ic_notification
     }
 }

@@ -63,6 +63,8 @@ import com.anisync.android.domain.ThreadCommentSubscribedNotification
 import com.anisync.android.domain.ThreadLikeNotification
 import com.anisync.android.domain.UnknownNotification
 import com.anisync.android.domain.User
+import com.anisync.android.domain.indefiniteNoun
+import com.anisync.android.domain.noun
 import com.anisync.android.presentation.notifications.NotificationEntry
 import com.anisync.android.presentation.notifications.NotificationTarget
 import com.anisync.android.presentation.util.selectedPaneItem
@@ -230,10 +232,14 @@ private fun SubtitleSlots(payload: GroupPayload) {
  * Strips AniList rich-text HTML to a plain text excerpt. Drops embedded
  * images, videos and AniList link cards — those would overflow the card
  * and add visual noise. Whitespace is collapsed so a short multi-paragraph
- * comment reads as a single tidy line.
+ * comment reads as a single tidy line. Spoiler spans are removed entirely:
+ * `.text()` would otherwise print their hidden content in the preview.
  */
-private fun htmlToPlainExcerpt(html: String): String =
-    Jsoup.parse(html).text().trim()
+private fun htmlToPlainExcerpt(html: String): String {
+    val document = Jsoup.parse(html)
+    document.select("span.markdown_spoiler").remove()
+    return document.text().trim()
+}
 
 @Composable
 private fun NotificationLeading(
@@ -571,16 +577,10 @@ private fun combineActors(actors: List<User>, verb: String): String {
  * AniList serves a generic "activity" string for all three subtypes, but the
  * activity union itself tells us whether the post is a text status, a list
  * update, or a DM — surface that distinction directly in the headline.
+ * "a" as the possessive picks the right indefinite article ("an anime list update").
  */
-private fun activityNoun(activity: ActivitySnapshot?, possessive: String): String {
-    return when (activity?.kind) {
-        ActivityKind.TEXT -> "$possessive status update"
-        ActivityKind.ANIME_LIST -> "$possessive anime list update"
-        ActivityKind.MANGA_LIST -> "$possessive manga list update"
-        ActivityKind.MESSAGE -> "$possessive message"
-        ActivityKind.UNKNOWN, null -> "$possessive post"
-    }
-}
+private fun activityNoun(activity: ActivitySnapshot?, possessive: String): String =
+    if (possessive == "a") activity?.kind.indefiniteNoun() else "$possessive ${activity?.kind.noun()}"
 
 /**
  * Splits an activity snapshot into the two subtitle slots — list activities

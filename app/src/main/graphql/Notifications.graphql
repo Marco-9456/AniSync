@@ -2,7 +2,8 @@ query GetNotifications(
   $page: Int = 1,
   $perPage: Int = 20,
   $typeIn: [NotificationType] = null,
-  $resetCount: Boolean = true
+  # Default false: resetting the unread count is a deliberate act of the inbox screen only.
+  $resetCount: Boolean = false
 ) {
   Page(page: $page, perPage: $perPage) {
     pageInfo {

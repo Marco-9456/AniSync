@@ -193,6 +193,10 @@ class MainActivity : AppCompatActivity() {
                                 "PerfMetrics",
                                 "Notification scheduled in ${scheduleTime}ms via IO Thread"
                             )
+                        } else {
+                            // Disabled or logged out — stop the periodic poll instead of letting
+                            // it wake up every 15 minutes to find no usable accounts.
+                            notificationScheduler.cancel()
                         }
                     }
             }

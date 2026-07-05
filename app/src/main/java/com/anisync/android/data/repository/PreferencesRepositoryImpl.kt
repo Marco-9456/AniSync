@@ -88,6 +88,19 @@ class PreferencesRepositoryImpl @Inject constructor(
                 .putStringSet(k, validIds.map { it.toString() }.toSet())
                 .apply()
         }
+
+        // Prune the advance_/imminent_ dedup keys of airings that left the upcoming window too.
+        // They're never consulted again once the airing is out of the window, and without this the
+        // set only shrinks via the size cap, which evicts arbitrary entries (StringSet is unordered)
+        // and can re-fire alerts whose key got dropped.
+        val keysKey = key(KEY_NOTIFICATION_KEYS, accountId)
+        val notificationKeys = prefs.getStringSet(keysKey, emptySet()) ?: emptySet()
+        val validKeys = notificationKeys.filterTo(mutableSetOf()) { entry ->
+            entry.substringAfterLast('_').toIntOrNull() in currentValidIds
+        }
+        if (validKeys.size != notificationKeys.size) {
+            prefs.edit().putStringSet(keysKey, validKeys).apply()
+        }
     }
 
     override suspend fun hasNotificationsEverRun(accountId: Int): Boolean = withContext(Dispatchers.IO) {
