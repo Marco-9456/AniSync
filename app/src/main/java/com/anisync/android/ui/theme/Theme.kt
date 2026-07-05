@@ -1,4 +1,6 @@
 package com.anisync.android.ui.theme
+import android.content.ComponentCallbacks
+import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
@@ -11,10 +13,15 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.anisync.android.data.ThemeMode
 import com.materialkolor.PaletteStyle
 import com.materialkolor.rememberDynamicColorScheme
 
@@ -277,10 +284,50 @@ internal fun ColorScheme.toAmoled(): ColorScheme = copy(
     surfaceContainerLowest = Color.Black,
     surfaceContainerLow = surfaceContainerLowest,
     surfaceContainer = surfaceContainerLow,
-    surfaceContainerHigh = surfaceContainerLow,
-    surfaceContainerHighest = surfaceContainer,
+    surfaceContainerHigh = surfaceContainer,
+    surfaceContainerHighest = surfaceContainerHigh,
 )
 
+/**
+ * Whether the *system* is in dark theme. Not [isSystemInDarkTheme]: AppCompatDelegate overrides
+ * the activity's uiMode to the persisted night mode, and an activity created under a forced mode
+ * never receives uiMode config dispatches again — so both the value and the change signal must
+ * come from the application context, which the delegate never touches.
+ */
+@Composable
+private fun isSystemActuallyDark(): Boolean {
+    val appContext = LocalContext.current.applicationContext
+    fun read(configuration: Configuration): Boolean =
+        (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+
+    var isDark by remember(appContext) {
+        mutableStateOf(read(appContext.resources.configuration))
+    }
+    DisposableEffect(appContext) {
+        val callbacks = object : ComponentCallbacks {
+            override fun onConfigurationChanged(newConfig: Configuration) {
+                isDark = read(newConfig)
+            }
+
+            override fun onLowMemory() = Unit
+        }
+        appContext.registerComponentCallbacks(callbacks)
+        onDispose { appContext.unregisterComponentCallbacks(callbacks) }
+    }
+    return isDark
+}
+
+/**
+ * Resolves the user's [ThemeMode] to the effective dark-theme flag. The single source of truth
+ * for "is the app dark?" — never re-derive it from [isSystemInDarkTheme].
+ */
+@Composable
+fun ThemeMode.resolveDarkTheme(): Boolean = when (this) {
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+    ThemeMode.SYSTEM -> isSystemActuallyDark()
+}
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -337,8 +384,10 @@ fun AppTheme(
         androidx.compose.runtime.SideEffect {
             val window = (view.context as android.app.Activity).window
             val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, view)
-            // In light mode, use dark status bar icons; in dark mode, use light icons
+            // Both bars: enableEdgeToEdge() styles them from the system theme once at creation,
+            // which goes stale when the in-app theme differs or changes without a recreate.
             insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 

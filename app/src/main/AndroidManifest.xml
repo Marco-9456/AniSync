@@ -33,11 +33,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AniSync"
         tools:targetApi="31">
+        <!-- uiMode is handled in Compose: theme-mode switches and system dark flips swap the theme
+             in place instead of recreating the activity. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:label="@string/app_name"
+            android:configChanges="uiMode"
             android:theme="@style/Theme.AniSync.Starting"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

@@ -93,7 +93,9 @@ fun PhonePreview(
     amoled: Boolean = false
 ) {
     val context = LocalContext.current
-    val appSettings = remember { AppSettings(context) }
+    // Own instance so @Preview renders without LocalAppSettings; app context avoids pinning the
+    // Activity in the composition.
+    val appSettings = remember { AppSettings(context.applicationContext) }
 
     // OPTIMIZATION: Memoize the dynamic color scheme creation.
     // Generating dynamic schemes can be expensive; we only want to do this if the context or mode changes.

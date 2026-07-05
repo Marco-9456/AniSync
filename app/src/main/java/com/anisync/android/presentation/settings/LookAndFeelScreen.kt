@@ -4,7 +4,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,6 +76,7 @@ import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.AppModalBottomSheet
+import com.anisync.android.ui.theme.resolveDarkTheme
 
 private val StreamingServices = StreamingService.entries
 private val CoverQualities = CoverQuality.entries
@@ -109,14 +109,7 @@ fun LookAndFeelScreen(
     var showNavBarStyleSheet by rememberSaveable { mutableStateOf(false) }
     var showAvatarShapeDialog by rememberSaveable { mutableStateOf(false) }
 
-    val isSystemDark = isSystemInDarkTheme()
-    val isDarkMode = remember(themeMode, isSystemDark) {
-        when (themeMode) {
-            ThemeMode.DARK -> true
-            ThemeMode.LIGHT -> false
-            ThemeMode.SYSTEM -> isSystemDark
-        }
-    }
+    val isDarkMode = themeMode.resolveDarkTheme()
 
     if (showStreamingServiceSheet) {
         StreamingServiceSelectionSheet(

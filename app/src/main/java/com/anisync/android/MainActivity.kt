@@ -21,7 +21,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -58,7 +57,6 @@ import androidx.lifecycle.lifecycleScope
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AuthRepository
-import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.account.AccountManager
 import com.anisync.android.data.update.UpdateManager
 import com.anisync.android.data.update.UpdateState
@@ -75,6 +73,7 @@ import com.anisync.android.presentation.util.LocalLinkPreviewProvider
 import com.anisync.android.presentation.util.rememberAdaptiveInfo
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.ui.theme.PresetPalettes
+import com.anisync.android.ui.theme.resolveDarkTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -224,47 +223,22 @@ class MainActivity : AppCompatActivity() {
             }
 
             setContent {
-                val themeMode by appSettings.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
-                val amoledEnabled by appSettings.amoledEnabled.collectAsStateWithLifecycle(initialValue = false)
-                val selectedPaletteId by appSettings.selectedPaletteId.collectAsStateWithLifecycle(
-                    initialValue = "dynamic"
-                )
-                val customSeedColor by appSettings.customSeedColor.collectAsStateWithLifecycle(
-                    initialValue = null
-                )
-                val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle(
-                    initialValue = com.materialkolor.PaletteStyle.TonalSpot
-                )
-                val coverQuality by appSettings.coverQuality.collectAsStateWithLifecycle(
-                    initialValue = com.anisync.android.data.CoverQuality.LARGE
-                )
-                val gridColumnsAuto by appSettings.gridColumnsAuto.collectAsStateWithLifecycle(
-                    initialValue = true
-                )
-                val gridColumnCount by appSettings.gridColumnCount.collectAsStateWithLifecycle(
-                    initialValue = com.anisync.android.data.AppSettings.DEFAULT_GRID_COLUMNS
-                )
-                val typographyOverrides by appSettings.typographyOverrides.collectAsStateWithLifecycle(
-                    initialValue = com.anisync.android.ui.theme.TypographyOverrides.None
-                )
-                val avatarShape by appSettings.avatarShape.collectAsStateWithLifecycle(
-                    initialValue = com.anisync.android.data.AvatarShape.CLOVER_8_LEAF
-                )
-                val avatarBackgroundEnabled by appSettings.avatarBackgroundEnabled.collectAsStateWithLifecycle(
-                    initialValue = true
-                )
-                val disableAvatarShapeProfile by appSettings.disableAvatarShapeProfile.collectAsStateWithLifecycle(
-                    initialValue = false
-                )
-                val isSystemDark = isSystemInDarkTheme()
+                // StateFlows: no initialValue, so the first frame shows the persisted value
+                // instead of flashing the defaults.
+                val themeMode by appSettings.themeMode.collectAsStateWithLifecycle()
+                val amoledEnabled by appSettings.amoledEnabled.collectAsStateWithLifecycle()
+                val selectedPaletteId by appSettings.selectedPaletteId.collectAsStateWithLifecycle()
+                val customSeedColor by appSettings.customSeedColor.collectAsStateWithLifecycle()
+                val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
+                val coverQuality by appSettings.coverQuality.collectAsStateWithLifecycle()
+                val gridColumnsAuto by appSettings.gridColumnsAuto.collectAsStateWithLifecycle()
+                val gridColumnCount by appSettings.gridColumnCount.collectAsStateWithLifecycle()
+                val typographyOverrides by appSettings.typographyOverrides.collectAsStateWithLifecycle()
+                val avatarShape by appSettings.avatarShape.collectAsStateWithLifecycle()
+                val avatarBackgroundEnabled by appSettings.avatarBackgroundEnabled.collectAsStateWithLifecycle()
+                val disableAvatarShapeProfile by appSettings.disableAvatarShapeProfile.collectAsStateWithLifecycle()
 
-                val useDarkTheme = remember(themeMode, isSystemDark) {
-                    when (themeMode) {
-                        ThemeMode.LIGHT -> false
-                        ThemeMode.DARK -> true
-                        ThemeMode.SYSTEM -> isSystemDark
-                    }
-                }
+                val useDarkTheme = themeMode.resolveDarkTheme()
 
                 val seedColor = remember(selectedPaletteId, customSeedColor) {
                     when (selectedPaletteId) {
@@ -316,8 +290,10 @@ class MainActivity : AppCompatActivity() {
                                   .fillMaxSize()
                                   .windowInsetsPadding(WindowInsets.statusBars)
                           ) {
+                            // Cold Flow — seed from the account store so a logged-in cold start
+                            // doesn't flash LoginScreen for a frame.
                             val isLoggedIn by authRepository.isLoggedIn.collectAsStateWithLifecycle(
-                                initialValue = false
+                                initialValue = accountManager.activeAccount.value != null
                             )
 
                             // Session expired dialog
@@ -373,9 +349,7 @@ class MainActivity : AppCompatActivity() {
                             }
 
                             // Blocking loader while an account add/switch/remove is in flight.
-                            val isAccountBusy by accountManager.isBusy.collectAsStateWithLifecycle(
-                                initialValue = false
-                            )
+                            val isAccountBusy by accountManager.isBusy.collectAsStateWithLifecycle()
                             if (isAccountBusy) {
                                 Box(
                                     modifier = Modifier

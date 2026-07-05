@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -57,10 +56,10 @@ import androidx.compose.ui.platform.LocalContext
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
 import com.anisync.android.util.launchUrl
-import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.AppLinksPromptDialog
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.decorativeAvatarShape
+import com.anisync.android.ui.theme.resolveDarkTheme
 
 /** AniSync's Weblate project — community translation. Opened from the Settings top bar. */
 private const val WEBLATE_URL = "https://hosted.weblate.org/engage/anisync/"
@@ -122,7 +121,7 @@ fun SettingsScreen(
             }
         }
     ) {
-        val isDark = isSystemInDarkTheme() || uiState.themeMode == ThemeMode.DARK
+        val isDark = uiState.themeMode.resolveDarkTheme()
 
         OutlinedTextField(
             value = searchQuery,

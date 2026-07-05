@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.settings
 
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
@@ -26,6 +25,7 @@ import com.anisync.android.presentation.settings.components.PaletteStyleSelector
 import com.anisync.android.presentation.settings.components.PhonePreview
 import com.anisync.android.ui.theme.PresetPalettes
 import com.anisync.android.ui.theme.ThemePalette
+import com.anisync.android.ui.theme.resolveDarkTheme
 
 /**
  * Theme subscreen — the app's full theming hub: live preview, color scheme + palette style, custom
@@ -45,21 +45,17 @@ fun ThemeScreen(
     val customSeedColor = uiState.customSeedColor
     val paletteStyle = uiState.paletteStyle
 
-    val isSystemDark = isSystemInDarkTheme()
-    val isDarkMode = remember(themeMode, isSystemDark) {
-        when (themeMode) {
-            ThemeMode.DARK -> true
-            ThemeMode.LIGHT -> false
-            ThemeMode.SYSTEM -> isSystemDark
-        }
-    }
+    val isDarkMode = themeMode.resolveDarkTheme()
 
     val supportsDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val palettes = remember(customSeedColor, supportsDynamicColor) {
         val presets = if (supportsDynamicColor) {
             PresetPalettes.all
         } else {
-            PresetPalettes.all.filter { !it.isDynamic }
+            // Pre-Android-12 "dynamic" resolves to the static brand scheme; keep it selectable as
+            // "Default" — hiding it made the fallback effect below rewrite the persisted setting.
+            listOf(PresetPalettes.Dynamic.copy(name = "Default")) +
+                PresetPalettes.all.filter { !it.isDynamic }
         }
         if (customSeedColor != null) {
             listOf(ThemePalette("custom", "Custom", customSeedColor!!)) + presets

@@ -42,6 +42,13 @@ enum class ThemeMode {
     SYSTEM
 }
 
+/** Maps a [ThemeMode] to the matching AppCompat night-mode constant. */
+fun ThemeMode.toNightMode(): Int = when (this) {
+    ThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+    ThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
+    ThemeMode.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+}
+
 /**
  * Layout mode used by the discover search results overlay. Persisted so the
  * user's preferred density (rows vs grid of posters) survives app restarts.
@@ -568,11 +575,14 @@ class AppSettings @Inject constructor(
     }
 
     /**
-     * Set the app theme mode.
+     * Set the app theme mode. Main thread only: it re-syncs AppCompat's night mode (seeded at
+     * process start in AniSyncApplication) — without this, SYSTEM keeps reading a stale uiMode
+     * override after the user ever forced Light/Dark and stops following the system theme.
      */
     fun setThemeMode(mode: ThemeMode) {
         _themeMode.value = mode
         prefs.edit().putInt(KEY_THEME_MODE, mode.ordinal).apply()
+        AppCompatDelegate.setDefaultNightMode(mode.toNightMode())
     }
 
     /** Enable or disable the AMOLED ("pure black") dark theme. */
@@ -1043,11 +1053,7 @@ companion object {
             val mode = ThemeMode.entries.getOrElse(
                 prefs.getInt(KEY_THEME_MODE, ThemeMode.SYSTEM.ordinal)
             ) { ThemeMode.SYSTEM }
-            return when (mode) {
-                ThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
-                ThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
-                ThemeMode.SYSTEM -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-            }
+            return mode.toNightMode()
         }
 
         private const val PREFS_NAME = "anisync_settings"

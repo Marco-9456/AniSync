@@ -35,11 +35,10 @@ import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.login.AniListAuth
 import com.anisync.android.presentation.profile.components.AccountSwitcherSheet
-import androidx.compose.foundation.isSystemInDarkTheme
-import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.ui.theme.aniListProfileSeedColor
+import com.anisync.android.ui.theme.resolveDarkTheme
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -227,11 +226,7 @@ private fun ProfileColorThemeOverride(
     val themeMode by appSettings.themeMode.collectAsStateWithLifecycle()
     val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
     val amoledEnabled by appSettings.amoledEnabled.collectAsStateWithLifecycle()
-    val darkTheme = when (themeMode) {
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-    }
+    val darkTheme = themeMode.resolveDarkTheme()
     AppTheme(
         darkTheme = darkTheme,
         dynamicColor = false,
