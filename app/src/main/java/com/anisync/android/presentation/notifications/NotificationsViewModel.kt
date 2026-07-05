@@ -2,6 +2,7 @@ package com.anisync.android.presentation.notifications
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.data.NotificationBadgeStore
 import com.anisync.android.domain.GetNotificationsUseCase
 import com.anisync.android.domain.Notification
 import com.anisync.android.domain.NotificationFilter
@@ -19,7 +20,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
-    private val getNotifications: GetNotificationsUseCase
+    private val getNotifications: GetNotificationsUseCase,
+    private val badgeStore: NotificationBadgeStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationsUiState())
@@ -38,6 +40,10 @@ class NotificationsViewModel @Inject constructor(
     private val snapshots = mutableMapOf<NotificationFilter, FilterSnapshot>()
 
     init {
+        // Clear the unread badge on any entry into the inbox (profile bell, deep link, system
+        // notification tap) — not just the profile path. The ALL first-page load below asks the
+        // server to reset its count too, so the next badge refresh agrees.
+        badgeStore.clearOptimistically()
         load(reset = true, isInitial = true)
     }
 
@@ -79,13 +85,13 @@ class NotificationsViewModel @Inject constructor(
                     entries = cached.entries,
                     hasNextPage = cached.hasNextPage,
                     isLoading = false,
-                    isRefreshing = true,
+                    isRefreshing = false,
                     isPaginating = false,
                     errorMessage = null
                 )
             }
-            // Silent background refresh; UI shows cached data immediately.
-            load(reset = true, isInitial = false, refreshing = true)
+            // Silent background refresh; UI shows cached data immediately, no spinner.
+            load(reset = true, isInitial = false, quiet = true)
         } else {
             nextPage = 1
             _uiState.update {
@@ -104,17 +110,19 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    private fun load(reset: Boolean, isInitial: Boolean, refreshing: Boolean = false) {
+    private fun load(reset: Boolean, isInitial: Boolean, refreshing: Boolean = false, quiet: Boolean = false) {
         loadJob?.cancel()
         if (reset) nextPage = 1
 
-        _uiState.update {
-            it.copy(
-                isLoading = isInitial,
-                isRefreshing = refreshing,
-                isPaginating = !isInitial && !refreshing,
-                errorMessage = null
-            )
+        if (!quiet) {
+            _uiState.update {
+                it.copy(
+                    isLoading = isInitial,
+                    isRefreshing = refreshing,
+                    isPaginating = !isInitial && !refreshing,
+                    errorMessage = null
+                )
+            }
         }
 
         val filter = _uiState.value.filter

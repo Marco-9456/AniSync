@@ -318,6 +318,9 @@
     <string name="notification_group_airing">Airing</string>
     <string name="notification_group_forum">Forum</string>
     <string name="notification_group_activity">Activity</string>
+    <string name="notification_group_other">Other</string>
+    <string name="notification_follows">New Followers</string>
+    <string name="notification_follows_desc">When someone starts following you</string>
     <string name="notification_channel_watching">Watching List</string>
     <string name="notification_channel_watching_desc">New episodes for shows you\'re watching</string>
     <string name="notification_channel_planning">Planning List</string>

@@ -96,4 +96,7 @@
     <string name="notification_thread_comment_reply">Ответы на комментарий</string>
     <string name="notification_thread_comment_reply_desc">Когда кто-то ответил на Ваш комментарий</string>
     <string name="control_notifications">Уведомления</string>
+    <string name="notification_group_other">Прочее</string>
+    <string name="notification_follows">Новые подписчики</string>
+    <string name="notification_follows_desc">Когда кто-то подписывается на вас</string>
 </resources>

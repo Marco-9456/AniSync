@@ -282,6 +282,9 @@
     <string name="notification_thread_comment_like_desc">உங்கள் கருத்தை யாராவது விரும்பும்போது</string>
     <string name="notification_group_airing">ஒளிபரப்பு</string>
     <string name="notification_group_forum">மன்றம்</string>
+    <string name="notification_group_other">மற்றவை</string>
+    <string name="notification_follows">புதிய பின்தொடர்பவர்கள்</string>
+    <string name="notification_follows_desc">யாராவது உங்களைப் பின்தொடரத் தொடங்கும்போது</string>
     <string name="notification_group_activity">செய்கைப்பாடு</string>
     <string name="notification_channel_watching">பார்க்கும் பட்டியல்</string>
     <string name="notification_channel_watching_desc">நீங்கள் பார்க்கும் நிகழ்ச்சிகளுக்கான புதிய அத்தியாயங்கள்</string>

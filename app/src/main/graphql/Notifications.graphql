@@ -19,16 +19,7 @@ query GetNotifications(
         contexts
         createdAt
         media {
-          id
-          title {
-            userPreferred
-          }
-          coverImage {
-            medium
-            large
-            extraLarge
-          }
-          type
+          ...NotifMedia
         }
       }
       ... on FollowingNotification {
@@ -37,12 +28,7 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
       }
       ... on ActivityLikeNotification {
@@ -52,39 +38,10 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
         activity {
-          __typename
-          ... on TextActivity {
-            id
-            text(asHtml: true)
-          }
-          ... on ListActivity {
-            id
-            type
-            status
-            progress
-            media {
-              id
-              title { userPreferred }
-              coverImage {
-                medium
-                large
-                extraLarge
-              }
-              type
-            }
-          }
-          ... on MessageActivity {
-            id
-            message(asHtml: true)
-          }
+          ...NotifActivity
         }
       }
       ... on ActivityReplyNotification {
@@ -94,39 +51,10 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
         activity {
-          __typename
-          ... on TextActivity {
-            id
-            text(asHtml: true)
-          }
-          ... on ListActivity {
-            id
-            type
-            status
-            progress
-            media {
-              id
-              title { userPreferred }
-              coverImage {
-                medium
-                large
-                extraLarge
-              }
-              type
-            }
-          }
-          ... on MessageActivity {
-            id
-            message(asHtml: true)
-          }
+          ...NotifActivity
         }
       }
       ... on ActivityReplySubscribedNotification {
@@ -136,39 +64,10 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
         activity {
-          __typename
-          ... on TextActivity {
-            id
-            text(asHtml: true)
-          }
-          ... on ListActivity {
-            id
-            type
-            status
-            progress
-            media {
-              id
-              title { userPreferred }
-              coverImage {
-                medium
-                large
-                extraLarge
-              }
-              type
-            }
-          }
-          ... on MessageActivity {
-            id
-            message(asHtml: true)
-          }
+          ...NotifActivity
         }
       }
       ... on ActivityReplyLikeNotification {
@@ -178,39 +77,10 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
         activity {
-          __typename
-          ... on TextActivity {
-            id
-            text(asHtml: true)
-          }
-          ... on ListActivity {
-            id
-            type
-            status
-            progress
-            media {
-              id
-              title { userPreferred }
-              coverImage {
-                medium
-                large
-                extraLarge
-              }
-              type
-            }
-          }
-          ... on MessageActivity {
-            id
-            message(asHtml: true)
-          }
+          ...NotifActivity
         }
       }
       ... on ActivityMentionNotification {
@@ -220,39 +90,10 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
         activity {
-          __typename
-          ... on TextActivity {
-            id
-            text(asHtml: true)
-          }
-          ... on ListActivity {
-            id
-            type
-            status
-            progress
-            media {
-              id
-              title { userPreferred }
-              coverImage {
-                medium
-                large
-                extraLarge
-              }
-              type
-            }
-          }
-          ... on MessageActivity {
-            id
-            message(asHtml: true)
-          }
+          ...NotifActivity
         }
       }
       ... on ActivityMessageNotification {
@@ -262,12 +103,7 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
         message {
           id
@@ -280,12 +116,7 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
         thread {
           id
@@ -302,12 +133,7 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
         thread {
           id
@@ -324,12 +150,7 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
         thread {
           id
@@ -346,12 +167,7 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
         thread {
           id
@@ -364,12 +180,7 @@ query GetNotifications(
         context
         createdAt
         user {
-          id
-          isBlocked
-          name
-          avatar {
-            large
-          }
+          ...NotifUser
         }
         thread {
           id
@@ -387,16 +198,7 @@ query GetNotifications(
         context
         createdAt
         media {
-          id
-          title {
-            userPreferred
-          }
-          coverImage {
-            medium
-            large
-            extraLarge
-          }
-          type
+          ...NotifMedia
         }
       }
       ... on MediaDataChangeNotification {
@@ -407,16 +209,7 @@ query GetNotifications(
         reason
         createdAt
         media {
-          id
-          title {
-            userPreferred
-          }
-          coverImage {
-            medium
-            large
-            extraLarge
-          }
-          type
+          ...NotifMedia
         }
       }
       ... on MediaMergeNotification {
@@ -428,16 +221,7 @@ query GetNotifications(
         reason
         createdAt
         media {
-          id
-          title {
-            userPreferred
-          }
-          coverImage {
-            medium
-            large
-            extraLarge
-          }
-          type
+          ...NotifMedia
         }
       }
       ... on MediaDeletionNotification {
@@ -449,5 +233,48 @@ query GetNotifications(
         createdAt
       }
     }
+  }
+}
+
+fragment NotifUser on User {
+  id
+  isBlocked
+  name
+  avatar {
+    large
+  }
+}
+
+fragment NotifMedia on Media {
+  id
+  title {
+    userPreferred
+  }
+  coverImage {
+    medium
+    large
+    extraLarge
+  }
+  type
+}
+
+fragment NotifActivity on ActivityUnion {
+  __typename
+  ... on TextActivity {
+    id
+    text(asHtml: true)
+  }
+  ... on ListActivity {
+    id
+    type
+    status
+    progress
+    media {
+      ...NotifMedia
+    }
+  }
+  ... on MessageActivity {
+    id
+    message(asHtml: true)
   }
 }

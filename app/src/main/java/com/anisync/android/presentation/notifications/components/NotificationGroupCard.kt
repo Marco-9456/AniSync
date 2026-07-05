@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MergeType
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material3.Card
@@ -29,7 +31,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -83,9 +89,16 @@ fun NotificationGroupCard(
     selectedTarget: NotificationTarget? = null
 ) {
     val payload = entry.toPayload()
+    // Moderation notes (data change / merge / deletion reasons) can be long; the card expands in
+    // place instead of navigating, and the cover thumb keeps the media-details click.
+    var expanded by rememberSaveable(entry.key) { mutableStateOf(false) }
     Card(
         onClick = {
-            payload.handleClick(onMediaClick, onUserClick, onActivityClick, onThreadClick)
+            if (payload.expandableNote) {
+                expanded = !expanded
+            } else {
+                payload.handleClick(onMediaClick, onUserClick, onActivityClick, onThreadClick)
+            }
         },
         modifier = modifier
             .fillMaxWidth()
@@ -104,6 +117,7 @@ fun NotificationGroupCard(
             MediaCardBody(
                 entry = entry,
                 payload = payload,
+                expanded = expanded,
                 onMediaClick = onMediaClick
             )
         } else {
@@ -111,6 +125,7 @@ fun NotificationGroupCard(
             SocialCardBody(
                 entry = entry,
                 payload = payload,
+                expanded = expanded,
                 onMediaClick = onMediaClick,
                 onUserClick = onUserClick
             )
@@ -118,10 +133,22 @@ fun NotificationGroupCard(
     }
 }
 
+/** Chevron shown on expandable-note cards next to the timestamp. */
+@Composable
+private fun ExpandChevron(expanded: Boolean) {
+    Icon(
+        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.size(18.dp)
+    )
+}
+
 @Composable
 private fun MediaCardBody(
     entry: NotificationEntry,
     payload: GroupPayload,
+    expanded: Boolean,
     onMediaClick: (Int) -> Unit
 ) {
     Row(
@@ -141,14 +168,20 @@ private fun MediaCardBody(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            SubtitleSlots(payload = payload)
+            SubtitleSlots(payload = payload, expanded = expanded)
         }
         Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = formatRelative(entry.representative.createdAt.toLong()),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = formatRelative(entry.representative.createdAt.toLong()),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (payload.expandableNote) {
+                Spacer(modifier = Modifier.height(4.dp))
+                ExpandChevron(expanded)
+            }
+        }
     }
 }
 
@@ -156,6 +189,7 @@ private fun MediaCardBody(
 private fun SocialCardBody(
     entry: NotificationEntry,
     payload: GroupPayload,
+    expanded: Boolean,
     onMediaClick: (Int) -> Unit,
     onUserClick: (String) -> Unit
 ) {
@@ -173,6 +207,10 @@ private fun SocialCardBody(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (payload.expandableNote) {
+                Spacer(modifier = Modifier.width(6.dp))
+                ExpandChevron(expanded)
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -185,7 +223,7 @@ private fun SocialCardBody(
             overflow = TextOverflow.Ellipsis
         )
 
-        SubtitleSlots(payload = payload)
+        SubtitleSlots(payload = payload, expanded = expanded)
     }
 }
 
@@ -197,13 +235,14 @@ private fun SocialCardBody(
  * stays compact and predictable.
  */
 @Composable
-private fun SubtitleSlots(payload: GroupPayload) {
+private fun SubtitleSlots(payload: GroupPayload, expanded: Boolean = false) {
     val plain = payload.subtitlePlain
     val bodyExcerpt = payload.subtitleHtml
         ?.takeIf { it.isNotBlank() }
         ?.let { remember(it) { htmlToPlainExcerpt(it) } }
         ?.takeIf { it.isNotBlank() }
     if (plain == null && bodyExcerpt == null) return
+    val maxLines = if (expanded) Int.MAX_VALUE else 2
 
     if (plain != null) {
         Spacer(modifier = Modifier.height(6.dp))
@@ -211,7 +250,7 @@ private fun SubtitleSlots(payload: GroupPayload) {
             text = plain,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
+            maxLines = maxLines,
             overflow = TextOverflow.Ellipsis
         )
     }
@@ -222,7 +261,7 @@ private fun SubtitleSlots(payload: GroupPayload) {
             text = bodyExcerpt,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
+            maxLines = maxLines,
             overflow = TextOverflow.Ellipsis
         )
     }
@@ -342,7 +381,9 @@ private data class GroupPayload(
     val mediaId: Int? = null,
     val threadId: Int? = null,
     val threadCommentId: Int? = null,
-    val userName: String? = null
+    val userName: String? = null,
+    /** Card click expands the note in place instead of navigating (moderation reasons). */
+    val expandableNote: Boolean = false
 ) {
     fun handleClick(
         onMediaClick: (Int) -> Unit,
@@ -478,26 +519,31 @@ private fun NotificationEntry.toPayload(): GroupPayload {
         )
         is MediaDataChangeNotification -> GroupPayload(
             headline = rep.media?.title ?: "A title on your list",
-            subtitlePlain = rep.reason.ifBlank { rep.context.ifBlank { "had data updated" } },
+            subtitlePlain = rep.context.trim().ifBlank { "had data updated" },
+            // Moderation note rides the body slot so the card can expand to show all of it.
+            subtitleHtml = rep.reason.takeIf { it.isNotBlank() },
             leadingMediaCover = rep.media?.coverUrl,
             fallbackIcon = Icons.Default.Edit,
-            mediaId = rep.mediaId
+            mediaId = rep.mediaId,
+            expandableNote = rep.reason.isNotBlank()
         )
         is MediaMergeNotification -> {
             val merged = rep.deletedMediaTitles.joinToString(", ").ifBlank { "Entries" }
             val target = rep.media?.title ?: "another entry"
             GroupPayload(
                 headline = "$merged merged into $target",
-                subtitlePlain = rep.reason.ifBlank { null },
+                subtitleHtml = rep.reason.takeIf { it.isNotBlank() },
                 leadingMediaCover = rep.media?.coverUrl,
                 fallbackIcon = Icons.AutoMirrored.Filled.MergeType,
-                mediaId = rep.mediaId
+                mediaId = rep.mediaId,
+                expandableNote = rep.reason.isNotBlank()
             )
         }
         is MediaDeletionNotification -> GroupPayload(
             headline = "${rep.deletedMediaTitle} was removed from the site",
-            subtitlePlain = rep.reason.ifBlank { null },
-            fallbackIcon = Icons.Default.Delete
+            subtitleHtml = rep.reason.takeIf { it.isNotBlank() },
+            fallbackIcon = Icons.Default.Delete,
+            expandableNote = rep.reason.isNotBlank()
         )
         is UnknownNotification -> GroupPayload(headline = "New notification")
     }

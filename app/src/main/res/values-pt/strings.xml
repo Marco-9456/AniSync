@@ -243,6 +243,9 @@
     <string name="notification_thread_comment_like_desc">Quando alguém curte o seu comentário</string>
     <string name="notification_group_airing">Em exibição</string>
     <string name="notification_group_forum">Fórum</string>
+    <string name="notification_group_other">Outros</string>
+    <string name="notification_follows">Novos seguidores</string>
+    <string name="notification_follows_desc">Quando alguém começa a seguir você</string>
     <string name="notification_group_activity">Atividade</string>
     <string name="notification_channel_watching">Lista de Vistos</string>
     <string name="notification_channel_watching_desc">Novos episódios para programas que está a ver</string>
