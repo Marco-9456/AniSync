@@ -1103,4 +1103,6 @@
     <string name="media_stats_score_bucket_eyebrow">Puntuación %1$d</string>
     <string name="media_stats_error">No pudo carga estadísticas.</string>
     <string name="media_stats_activity_chart_a11y">Diagrama de actividad diaria sobre %1$d días, cima en %2$s en %3$s</string>
+    <string name="media_stats_latest_score">Puntuación del último episodio</string>
+    <string name="stat_hashtag">Hashtag</string>
 </resources>
