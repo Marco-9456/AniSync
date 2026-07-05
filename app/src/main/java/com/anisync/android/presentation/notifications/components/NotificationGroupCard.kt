@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.notifications.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -102,6 +103,7 @@ fun NotificationGroupCard(
         },
         modifier = modifier
             .fillMaxWidth()
+            .animateContentSize()
             .selectedPaneItem(payload.isSelectedBy(selectedTarget), MaterialTheme.shapes.large),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
@@ -133,15 +135,26 @@ fun NotificationGroupCard(
     }
 }
 
-/** Chevron shown on expandable-note cards next to the timestamp. */
+/** Explicit expand/collapse affordance under an expandable note — the whole card toggles it. */
 @Composable
-private fun ExpandChevron(expanded: Boolean) {
-    Icon(
-        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.size(18.dp)
-    )
+private fun ExpandAffordance(expanded: Boolean) {
+    Row(
+        modifier = Modifier.padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = if (expanded) "Show less" else "Show more",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
 }
 
 @Composable
@@ -169,19 +182,16 @@ private fun MediaCardBody(
                 overflow = TextOverflow.Ellipsis
             )
             SubtitleSlots(payload = payload, expanded = expanded)
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = formatRelative(entry.representative.createdAt.toLong()),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
             if (payload.expandableNote) {
-                Spacer(modifier = Modifier.height(4.dp))
-                ExpandChevron(expanded)
+                ExpandAffordance(expanded)
             }
         }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = formatRelative(entry.representative.createdAt.toLong()),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -207,10 +217,6 @@ private fun SocialCardBody(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (payload.expandableNote) {
-                Spacer(modifier = Modifier.width(6.dp))
-                ExpandChevron(expanded)
-            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -224,6 +230,9 @@ private fun SocialCardBody(
         )
 
         SubtitleSlots(payload = payload, expanded = expanded)
+        if (payload.expandableNote) {
+            ExpandAffordance(expanded)
+        }
     }
 }
 
