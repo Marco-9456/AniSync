@@ -801,6 +801,7 @@
     <string name="statistics_activity_less">Less</string>
     <string name="statistics_activity_more">More</string>
     <string name="statistics_activity_a11y">Activity heatmap with %1$d activities over the past year</string>
+    <string name="statistics_activity_update_info">AniList updates your stats automatically every 48 hours</string>
     <plurals name="statistics_activity_count">
         <item quantity="one">%d activity</item>
         <item quantity="other">%d activities</item>

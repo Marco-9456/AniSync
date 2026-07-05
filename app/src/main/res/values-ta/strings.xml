@@ -667,6 +667,7 @@
     <string name="statistics_activity_less">குறைவாக</string>
     <string name="statistics_activity_more">மேலும்</string>
     <string name="statistics_activity_a11y">கடந்த ஆண்டில் %1$d செயல்பாடுகளுடன் செயல்பாட்டு வெப்ப வரைபடம்</string>
+    <string name="statistics_activity_update_info">ஒவ்வொரு 48 மணி நேரத்திற்கும் AniList உங்கள் புள்ளிவிவரங்களைத் தானாகப் புதுப்பிக்கிறது</string>
     <plurals name="statistics_activity_count">
         <item quantity="one">%d செயல்பாடு</item>
         <item quantity="other">%d செயல்பாடுகள்</item>

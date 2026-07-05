@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -19,20 +20,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,8 +68,8 @@ import com.anisync.android.R
 import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
+import kotlinx.coroutines.launch
 import java.time.DayOfWeek
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -74,6 +83,7 @@ import java.util.Locale
 private const val MIN_WEEKS = 18
 private const val MAX_WEEKS = 53
 private const val DAYS_IN_WEEK = 7
+private const val SECONDS_PER_DAY = 86_400L
 
 /**
  * GitHub-style activity calendar for an AniList profile. Each cell is a day; the color
@@ -129,11 +139,40 @@ fun ActivityHeatmapSection(
                         model.activeDays
                     )
                 }
-                Text(
-                    text = headline,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = headline,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    val tooltipState = rememberTooltipState()
+                    val scope = rememberCoroutineScope()
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                            TooltipAnchorPosition.Above
+                        ),
+                        tooltip = {
+                            PlainTooltip {
+                                Text(stringResource(R.string.statistics_activity_update_info))
+                            }
+                        },
+                        state = tooltipState
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = stringResource(
+                                R.string.statistics_activity_update_info
+                            ),
+                            tint = labelColor,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable { scope.launch { tooltipState.show() } }
+                                .padding(2.dp)
+                                .size(16.dp)
+                        )
+                    }
+                }
 
                 Spacer(Modifier.height(16.dp))
 
@@ -327,10 +366,11 @@ private data class HeatmapModel(
 )
 
 private fun buildHeatmapModel(days: List<ActivityHistoryDay>, today: LocalDate): HeatmapModel {
-    // AniList day buckets are UTC-anchored Unix timestamps; group on the same boundary.
+    // Day buckets are stamped at midnight in AniList's server zone (23:00 UTC during BST),
+    // so round to the nearest UTC day — truncating paints summer buckets one day early.
     val byDate = HashMap<LocalDate, ActivityHistoryDay>(days.size)
     for (day in days) {
-        val date = Instant.ofEpochSecond(day.date).atZone(ZoneOffset.UTC).toLocalDate()
+        val date = LocalDate.ofEpochDay(Math.floorDiv(day.date + SECONDS_PER_DAY / 2, SECONDS_PER_DAY))
         val existing = byDate[date]
         if (existing == null || day.amount > existing.amount) byDate[date] = day
     }

@@ -1026,6 +1026,7 @@
     <string name="statistics_activity_less">Menos</string>
     <string name="statistics_activity_more">Mais</string>
     <string name="statistics_activity_a11y">Mapa de calor com %1$d atividades no último ano</string>
+    <string name="statistics_activity_update_info">O AniList atualiza suas estatísticas automaticamente a cada 48 horas</string>
     <plurals name="statistics_activity_count">
         <item quantity="one">%d atividade</item>
         <item quantity="many">%d atividades</item>
