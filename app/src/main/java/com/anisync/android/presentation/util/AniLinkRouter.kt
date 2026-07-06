@@ -52,6 +52,9 @@ val LocalLinkPreviewProvider = staticCompositionLocalOf<LinkPreviewProvider?> { 
  * | `anilist.co/character/{id}[/{slug}]` | `onCharacterClick(id)` |
  * | Everything else | `uriHandler.openUri(url)` |
  *
+ * Trailing slashes, query strings, fragments, and a `www.` host prefix are tolerated on all
+ * patterns — AniList's canonical share URLs end with a slash.
+ *
  * Usage:
  * ```kotlin
  * val linkRouter = rememberAniLinkRouter()
@@ -63,59 +66,61 @@ class AniLinkRouter(
     private val uriHandler: UriHandler
 ) {
     companion object {
-        // Regex patterns ordered from most specific to least specific.
+        // Regex patterns ordered from most specific to least specific. They match against a
+        // normalized URL (query/fragment stripped, trailing slash trimmed) — AniList's own
+        // canonical URLs end with a slash, so matching the raw string would miss them.
 
         /** `anilist.co/forum/thread/123/comment/456` */
         private val THREAD_COMMENT_REGEX = Regex(
-            """https?://anilist\.co/forum/thread/(\d+)/comment/(\d+)""",
+            """https?://(?:www\.)?anilist\.co/forum/thread/(\d+)/comment/(\d+)""",
             RegexOption.IGNORE_CASE
         )
 
         /** `anilist.co/forum/thread/123` or `anilist.co/forum/thread/123/some-title` */
         private val THREAD_REGEX = Regex(
-            """https?://anilist\.co/forum/thread/(\d+)(?:/[^/]*)?$""",
+            """https?://(?:www\.)?anilist\.co/forum/thread/(\d+)(?:/[^/]*)?$""",
             RegexOption.IGNORE_CASE
         )
 
         /** `anilist.co/anime/16498` or `anilist.co/anime/16498/attack-on-titan` */
         private val ANIME_REGEX = Regex(
-            """https?://anilist\.co/anime/(\d+)(?:/[^/]*)?$""",
+            """https?://(?:www\.)?anilist\.co/anime/(\d+)(?:/[^/]*)?$""",
             RegexOption.IGNORE_CASE
         )
 
         /** `anilist.co/manga/30002` or `anilist.co/manga/30002/berserk` */
         private val MANGA_REGEX = Regex(
-            """https?://anilist\.co/manga/(\d+)(?:/[^/]*)?$""",
+            """https?://(?:www\.)?anilist\.co/manga/(\d+)(?:/[^/]*)?$""",
             RegexOption.IGNORE_CASE
         )
 
         /** `anilist.co/character/40882` or `anilist.co/character/40882/levi` */
         private val CHARACTER_REGEX = Regex(
-            """https?://anilist\.co/character/(\d+)(?:/[^/]*)?$""",
+            """https?://(?:www\.)?anilist\.co/character/(\d+)(?:/[^/]*)?$""",
             RegexOption.IGNORE_CASE
         )
 
         /** `anilist.co/staff/95075` or `anilist.co/staff/95075/tanaka-mayumi` */
         private val STAFF_REGEX = Regex(
-            """https?://anilist\.co/staff/(\d+)(?:/[^/]*)?$""",
+            """https?://(?:www\.)?anilist\.co/staff/(\d+)(?:/[^/]*)?$""",
             RegexOption.IGNORE_CASE
         )
 
         /** `anilist.co/user/Josh` or `anilist.co/user/Josh/stats` */
         private val USER_REGEX = Regex(
-            """https?://anilist\.co/user/([^/?#]+)(?:/[^/?#]*)?/?(?:\?.*)?$""",
+            """https?://(?:www\.)?anilist\.co/user/([^/?#]+)(?:/[^/?#]*)?$""",
             RegexOption.IGNORE_CASE
         )
 
         /** `anilist.co/review/12345` or `anilist.co/review/12345/slug` */
         private val REVIEW_REGEX = Regex(
-            """https?://anilist\.co/review/(\d+)(?:/[^/]*)?$""",
+            """https?://(?:www\.)?anilist\.co/review/(\d+)(?:/[^/]*)?$""",
             RegexOption.IGNORE_CASE
         )
 
         /** `anilist.co/activity/98765` or `anilist.co/activity/98765/slug` */
         private val ACTIVITY_REGEX = Regex(
-            """https?://anilist\.co/activity/(\d+)(?:/[^/]*)?$""",
+            """https?://(?:www\.)?anilist\.co/activity/(\d+)(?:/[^/]*)?$""",
             RegexOption.IGNORE_CASE
         )
     }
@@ -124,7 +129,8 @@ class AniLinkRouter(
      * Attempt to navigate in-app for recognized AniList URLs.
      * Falls back to the browser for all other URLs.
      */
-    fun navigate(url: String) {
+    fun navigate(rawUrl: String) {
+        val url = rawUrl.substringBefore('?').substringBefore('#').trimEnd('/')
         // Thread comment (most specific — must be checked before thread)
         THREAD_COMMENT_REGEX.find(url)?.let { match ->
             val threadId = match.groupValues[1].toIntOrNull()
@@ -207,9 +213,9 @@ class AniLinkRouter(
             }
         }
 
-        // Fallback: open in browser
+        // Fallback: open in browser (the original URL — query/fragment may matter there)
         try {
-            uriHandler.openUri(url)
+            uriHandler.openUri(rawUrl)
         } catch (_: Exception) {
             // Silently ignore malformed or unresolvable URIs
         }

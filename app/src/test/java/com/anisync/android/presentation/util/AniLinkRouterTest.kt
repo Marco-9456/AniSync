@@ -127,6 +127,88 @@ class AniLinkRouterTest {
     }
 
     @Test
+    fun `anime url with trailing slash routes to onMediaClick`() {
+        // AniList's canonical share URLs end with a slash (regression: these fell to the browser).
+        var mediaId: Int? = null
+        val handler = navigate(
+            "https://anilist.co/anime/150672/Oshi-No-Ko/",
+            AniLinkCallbacks(onMediaClick = { mediaId = it })
+        )
+        assertEquals(150672, mediaId)
+        assertNull(handler.openedUri)
+    }
+
+    @Test
+    fun `anime url without slug with trailing slash routes to onMediaClick`() {
+        var mediaId: Int? = null
+        navigate(
+            "https://anilist.co/anime/99750/",
+            AniLinkCallbacks(onMediaClick = { mediaId = it })
+        )
+        assertEquals(99750, mediaId)
+    }
+
+    @Test
+    fun `manga url with query string routes to onMediaClick`() {
+        var mediaId: Int? = null
+        navigate(
+            "https://anilist.co/manga/30002/berserk/?ref=share",
+            AniLinkCallbacks(onMediaClick = { mediaId = it })
+        )
+        assertEquals(30002, mediaId)
+    }
+
+    @Test
+    fun `anime url with www host routes to onMediaClick`() {
+        var mediaId: Int? = null
+        navigate(
+            "https://www.anilist.co/anime/16498/attack-on-titan",
+            AniLinkCallbacks(onMediaClick = { mediaId = it })
+        )
+        assertEquals(16498, mediaId)
+    }
+
+    @Test
+    fun `character url with trailing slash routes to onCharacterClick`() {
+        var characterId: Int? = null
+        navigate(
+            "https://anilist.co/character/40882/levi/",
+            AniLinkCallbacks(onCharacterClick = { characterId = it })
+        )
+        assertEquals(40882, characterId)
+    }
+
+    @Test
+    fun `forum thread url with trailing slash routes to onThreadClick`() {
+        var captured: Pair<Int, Int?>? = null
+        navigate(
+            "https://anilist.co/forum/thread/123/some-title/",
+            AniLinkCallbacks(onThreadClick = { threadId, commentId -> captured = threadId to commentId })
+        )
+        assertEquals(123 to null, captured)
+    }
+
+    @Test
+    fun `user url with trailing slash routes to onUserClick`() {
+        var username: String? = null
+        navigate(
+            "https://anilist.co/user/Josh/",
+            AniLinkCallbacks(onUserClick = { username = it })
+        )
+        assertEquals("Josh", username)
+    }
+
+    @Test
+    fun `anime url with fragment routes to onMediaClick`() {
+        var mediaId: Int? = null
+        navigate(
+            "https://anilist.co/anime/16498#reviews",
+            AniLinkCallbacks(onMediaClick = { mediaId = it })
+        )
+        assertEquals(16498, mediaId)
+    }
+
+    @Test
     fun `unrecognized url falls back to browser`() {
         var anyCallbackFired = false
         val handler = navigate(
@@ -138,6 +220,15 @@ class AniLinkRouterTest {
         )
         assertEquals("https://example.com/some/page", handler.openedUri)
         assertEquals(false, anyCallbackFired)
+    }
+
+    @Test
+    fun `browser fallback keeps the original url including query`() {
+        val handler = navigate(
+            "https://anilist.co/search/anime?genres=Action",
+            AniLinkCallbacks(onMediaClick = { })
+        )
+        assertEquals("https://anilist.co/search/anime?genres=Action", handler.openedUri)
     }
 
     @Test
