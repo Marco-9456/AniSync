@@ -574,6 +574,9 @@ fun AniSyncNavHost(
                     onWriteReviewClick = { mediaId, mediaTitle ->
                         navController.navigate(WriteReview(mediaId, mediaTitle))
                     },
+                    onReviewClick = { reviewId ->
+                        navController.navigate(ReviewDetail(reviewId, sourceScreen = "media_details"))
+                    },
                     onDiscussionClick = { threadId, threadTitle ->
                         navController.navigate(ForumThreadDetail(threadId, threadTitle))
                     },

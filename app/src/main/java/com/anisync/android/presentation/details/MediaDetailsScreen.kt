@@ -130,7 +130,6 @@ import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.MediaFollowingEntry
-import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
@@ -154,7 +153,6 @@ import com.anisync.android.presentation.details.components.UserNotesCard
 import com.anisync.android.presentation.details.components.RecommendMediaSheet
 import com.anisync.android.presentation.details.components.RecommendationItem
 import com.anisync.android.presentation.details.components.RelationItem
-import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.details.components.ReviewsListSheet
 import com.anisync.android.presentation.details.components.StaffItem
 import com.anisync.android.presentation.details.components.mediaStatsTabContent
@@ -166,6 +164,9 @@ import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.presentation.share.MediaShareCard
+import com.anisync.android.presentation.share.ShareImageSheet
+import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.getTitle
 
 
@@ -186,6 +187,7 @@ fun MediaDetailsScreen(
     onRelatedSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onRecommendationsSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onWriteReviewClick: (Int, String) -> Unit = { _, _ -> },
+    onReviewClick: (Int) -> Unit = {},
     onDiscussionClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
     onViewAllDiscussions: (mediaId: Int, mediaTitle: String) -> Unit = { _, _ -> },
     onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?) -> Unit = { _, _, _ -> },
@@ -214,6 +216,7 @@ fun MediaDetailsScreen(
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    var showShareImageSheet by rememberSaveable { mutableStateOf(false) }
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     // Hoisted to the screen (alongside listState) so the selected tab survives a character/staff
     // round-trip. When the details content flashes through Loading on re-entry (the cached flow
@@ -663,6 +666,11 @@ fun MediaDetailsScreen(
                                         state.details.getTitle(titleLanguage)
                                     )
                                 },
+                                onReviewClick = { reviewId ->
+                                    shouldKeepChromeOverlayForReturn = true
+                                    hasObservedDetailsReEnter = false
+                                    onReviewClick(reviewId)
+                                },
                                 onEditNotes = viewModel::openEditSheet,
                                 discussions = discussions,
                                 onDiscussionClick = { threadId, threadTitle ->
@@ -688,8 +696,7 @@ fun MediaDetailsScreen(
                                 onRecommendMedia = viewModel::recommendMedia,
                                 onUserClick = onUserClick,
                                 onFavouriteClick = viewModel::toggleFavourite,
-                                onShareClick = { viewModel.shareMedia(context) },
-                                onRateReview = viewModel::rateReview,
+                                onShareClick = { showShareImageSheet = true },
                                 onRateRecommendation = viewModel::rateRecommendation,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope,
@@ -739,6 +746,17 @@ fun MediaDetailsScreen(
                         viewModel.closeEditSheet()
                     }
                 )
+            }
+        }
+
+        if (showShareImageSheet) {
+            (uiState as? DetailsUiState.Success)?.details?.let { details ->
+                ShareImageSheet(
+                    onDismiss = { showShareImageSheet = false },
+                    caption = AniListUrls.mediaUrl(details.id, details.type)
+                ) {
+                    MediaShareCard(details = details)
+                }
             }
         }
     }
@@ -939,6 +957,7 @@ fun DetailsPageContent(
     onRelatedSeeAllClick: () -> Unit,
     onRecommendationsSeeAllClick: () -> Unit,
     onWriteReviewClick: () -> Unit,
+    onReviewClick: (Int) -> Unit,
     onEditNotes: () -> Unit,
     discussions: List<ForumThread>,
     onDiscussionClick: (Int, String) -> Unit,
@@ -948,7 +967,6 @@ fun DetailsPageContent(
     onUserClick: (String) -> Unit,
     onFavouriteClick: () -> Unit,
     onShareClick: () -> Unit,
-    onRateReview: (Int, com.anisync.android.type.ReviewRating) -> Unit,
     onRateRecommendation: (Int, com.anisync.android.type.RecommendationRating) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -986,7 +1004,6 @@ fun DetailsPageContent(
         listOfNotNull(details.coverUrl, details.bannerUrl)
     }
 
-    var selectedReview by remember { mutableStateOf<MediaReview?>(null) }
     var showAllReviewsSheet by remember { mutableStateOf(false) }
     var showAllFollowingSheet by remember { mutableStateOf(false) }
     var showRecommendSheet by remember { mutableStateOf(false) }
@@ -1433,7 +1450,7 @@ fun DetailsPageContent(
                         ) { review ->
                             ReviewCard(
                                 review = review,
-                                onClick = { selectedReview = review },
+                                onClick = { onReviewClick(review.id) },
                                 onUserClick = onUserClick,
                                 showBanner = false,
                                 modifier = Modifier
@@ -1510,55 +1527,6 @@ fun DetailsPageContent(
         }
     }
 
-    // Sync selectedReview with the latest data from details.reviews when API refreshed
-    LaunchedEffect(details.reviews) {
-        selectedReview?.let { current ->
-            val updated = details.reviews.find { it.id == current.id }
-            if (updated != null && updated != current) {
-                selectedReview = updated
-            }
-        }
-    }
-
-    selectedReview?.let { review ->
-        ReviewDetailsSheet(
-            review = review,
-            onRateReview = { reviewId, rating ->
-                onRateReview(reviewId, rating)
-                // Optimistic UI update
-                val oldRating = review.userRating
-                val newRatingStr = if (rating.name == "NO_VOTE") null else rating.name
-
-                var updatedRating = review.rating
-                var updatedAmount = review.ratingAmount
-
-                // Remove old vote effect
-                when (oldRating) {
-                    "UP_VOTE" -> updatedRating -= 1
-                    "DOWN_VOTE" -> updatedRating += 1
-                }
-                // Remove old vote from total if transitioning to NO_VOTE
-                if (oldRating != null && newRatingStr == null) updatedAmount -= 1
-                // Add new vote to total if transitioning from NO_VOTE
-                if (oldRating == null && newRatingStr != null) updatedAmount += 1
-
-                // Add new vote effect
-                when (newRatingStr) {
-                    "UP_VOTE" -> updatedRating += 1
-                    "DOWN_VOTE" -> updatedRating -= 1
-                }
-
-                selectedReview = review.copy(
-                    userRating = newRatingStr,
-                    rating = updatedRating,
-                    ratingAmount = updatedAmount
-                )
-            },
-            onUserClick = onUserClick,
-            onDismiss = { selectedReview = null }
-        )
-    }
-
     if (showCharSortSheet) {
         SettingsPickerSheet(
             title = stringResource(R.string.sort),
@@ -1604,7 +1572,10 @@ fun DetailsPageContent(
         ReviewsListSheet(
             mediaId = details.id,
             onDismiss = { showAllReviewsSheet = false },
-            onReviewClick = { selectedReview = it },
+            onReviewClick = {
+                showAllReviewsSheet = false
+                onReviewClick(it.id)
+            },
             onUserClick = onUserClick
         )
     }
