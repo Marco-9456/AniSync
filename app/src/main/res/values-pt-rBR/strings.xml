@@ -1029,7 +1029,7 @@
     <string name="statistics_activity_less">Menos</string>
     <string name="statistics_activity_more">Mais</string>
     <string name="statistics_activity_a11y">Mapa de calor com %1$d atividades no último ano</string>
-    <string name="statistics_activity_update_info">O AniList atualiza suas estatísticas automaticamente a cada 48 horas</string>
+    <string name="statistics_activity_update_info">O AniList atualiza seus status automaticamente a cada 48 horas</string>
     <plurals name="statistics_activity_count">
         <item quantity="one">%d atividade</item>
         <item quantity="many">%d atividades</item>
@@ -1097,4 +1097,27 @@
     <string name="app_lock_message">AniSync está bloqueado</string>
     <string name="app_lock_unlock">Desbloquear</string>
     <string name="app_lock_unavailable">Configure um bloqueio de tela (PIN, padrão, senha ou biometria) nas configurações do seu dispositivo primeiro</string>
+    <string name="details_tab_stats">Estatísticas</string>
+    <string name="media_stats_rankings">Rankings</string>
+    <string name="media_stats_activity_per_day">Atividades recentes por dia</string>
+    <string name="media_stats_score_progression">Evolução da nota</string>
+    <string name="media_stats_watchers_progression">Evolução dos espectadores</string>
+    <string name="media_stats_status_distribution">Distribuição dos Status</string>
+    <string name="media_stats_score_distribution">Distribuição das notas</string>
+    <string name="media_stats_peak_activity">Pico de atividade</string>
+    <string name="media_stats_latest_score">Nota do último episódio</string>
+    <string name="media_stats_peak_watchers">Pico de espectadores</string>
+    <string name="media_stats_total_entries">Total de itens</string>
+    <string name="media_stats_episode_byline">Ep %1$d</string>
+    <string name="media_stats_episode_eyebrow">Episódio %1$d</string>
+    <string name="media_stats_day_activity">Atividade no dia</string>
+    <string name="media_stats_score_bucket_eyebrow">Nota %1$d</string>
+    <string name="stat_hashtag">Hashtag</string>
+    <string name="media_stats_percent_of_ratings">%1$d%% das avaliações</string>
+    <string name="media_stats_empty">Ainda sem estatísticas da comunidade para esse título.</string>
+    <string name="media_stats_error">Não foi possível carregar as estatísticas.</string>
+    <string name="media_stats_activity_chart_a11y">Grafico de atividade diária nos últimos %1$d dias, com pico de %2$s em %3$s</string>
+    <string name="media_stats_score_chart_a11y">Gráfico de nota por episódio, entre os episódios %1$d a %2$d, nota mais baixa de %3$d, mais alta de %4$d</string>
+    <string name="media_stats_watchers_chart_a11y">Gráfico de espectadores por episódio, entre os episódios %1$d a %2$d, com pico de %3$s no episódio %4$d</string>
+    <string name="media_stats_score_dist_a11y">Histograma de distribuição da nota, nota mais comum de %1$d com %2$s avaliações</string>
 </resources>
