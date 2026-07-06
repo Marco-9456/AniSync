@@ -377,6 +377,11 @@ class AppSettings @Inject constructor(
     )
     val gridColumnCount: StateFlow<Int> = _gridColumnCount.asStateFlow()
 
+    // Show the user's saved score on Library list/grid cards. Persisted like the other Library view
+    // options so the choice survives restarts.
+    private val _showScoreOnCards = MutableStateFlow(prefs.getBoolean(KEY_SHOW_SCORE_ON_CARDS, true))
+    val showScoreOnCards: StateFlow<Boolean> = _showScoreOnCards.asStateFlow()
+
     // Two-pane list/detail split, stored as the list pane's width fraction so a resized split
     // survives app restarts (M3 panes guidance). Only real split widths are written here; the
     // fully-collapsed state is a transient per-session toggle, not a width preference.
@@ -841,6 +846,12 @@ class AppSettings @Inject constructor(
         prefs.edit().putInt(KEY_GRID_COLUMN_COUNT, coerced).apply()
     }
 
+    /** Toggle the saved-score badge on Library list/grid cards. */
+    fun setShowScoreOnCards(show: Boolean) {
+        _showScoreOnCards.value = show
+        prefs.edit().putBoolean(KEY_SHOW_SCORE_ON_CARDS, show).apply()
+    }
+
     /** Persist the two-pane list/detail split as the list pane's width fraction (coerced to 0..1). */
     fun setPaneListFraction(fraction: Float) {
         val coerced = fraction.coerceIn(0f, 1f)
@@ -1120,6 +1131,7 @@ companion object {
         private const val KEY_LIBRARY_GRID_VIEW = "library_grid_view"
         private const val KEY_GRID_COLUMNS_AUTO = "grid_columns_auto"
         private const val KEY_GRID_COLUMN_COUNT = "grid_column_count"
+        private const val KEY_SHOW_SCORE_ON_CARDS = "show_score_on_cards"
         const val MIN_GRID_COLUMNS = 2
         const val MAX_GRID_COLUMNS = 8
         const val DEFAULT_GRID_COLUMNS = 3

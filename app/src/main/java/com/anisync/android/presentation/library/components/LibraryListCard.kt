@@ -61,7 +61,9 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.presentation.components.CompletedCardConfig
+import com.anisync.android.presentation.components.ScoreChip
 import com.anisync.android.presentation.components.LibraryCardConfig
 import com.anisync.android.presentation.components.WatchingCardConfig
 import com.anisync.android.presentation.util.AppMotion
@@ -84,6 +86,8 @@ fun LibraryListCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     config: LibraryCardConfig = WatchingCardConfig,
+    showScore: Boolean = false,
+    scoreFormat: ScoreFormat = ScoreFormat.POINT_10_DECIMAL,
     onIncrement: (() -> Unit)? = null,
     onDecrement: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
@@ -242,12 +246,17 @@ fun LibraryListCard(
                 )
 
                 // Badges and Airing Info
-                if (config.showBehindBadge || config.showAiringInfo) {
+                val showScoreChip = showScore && (entry.score ?: 0.0) > 0.0
+                if (showScoreChip || config.showBehindBadge || config.showAiringInfo) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
+                        if (showScoreChip) {
+                            ScoreChip(score = entry.score, format = scoreFormat)
+                        }
+
                         if (config.showBehindBadge && entry.status == LibraryStatus.CURRENT) {
                             val nextAiring = entry.nextAiringEpisode
                             val latest: Int? = if (nextAiring != null) nextAiring - 1 else total

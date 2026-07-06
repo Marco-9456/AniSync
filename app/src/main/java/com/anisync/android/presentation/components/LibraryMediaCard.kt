@@ -33,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -72,6 +73,8 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.domain.formatScore
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.TransitionKeys
@@ -140,6 +143,8 @@ fun LibraryMediaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     config: LibraryCardConfig = WatchingCardConfig,
+    showScore: Boolean = false,
+    scoreFormat: ScoreFormat = ScoreFormat.POINT_10_DECIMAL,
     onIncrement: (() -> Unit)? = null,
     onDecrement: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
@@ -296,6 +301,16 @@ fun LibraryMediaCard(
                         .align(Alignment.BottomStart)
                         .padding(12.dp)
                 )
+
+                if (showScore && (entry.score ?: 0.0) > 0.0) {
+                    ScorePosterBadge(
+                        score = entry.score,
+                        format = scoreFormat,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                    )
+                }
             }
 
             // Content section
@@ -525,6 +540,40 @@ fun LibraryMediaCard(
                 }
             }
         }
+    }
+}
+
+/**
+ * Score badge overlaid on the poster's top corner. Uses its own dark scrim + white text because it
+ * sits on the cover image, not a surface (so [ScoreChip] doesn't fit). The leading star is dropped
+ * for POINT_5 / POINT_3, which already read as stars / smileys.
+ */
+@Composable
+private fun ScorePosterBadge(score: Double?, format: ScoreFormat, modifier: Modifier = Modifier) {
+    val showStar = format != ScoreFormat.POINT_5 && format != ScoreFormat.POINT_3
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Black.copy(alpha = 0.55f))
+            .padding(horizontal = 6.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        if (showStar) {
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = null,
+                tint = Color(0xFFFFC107),
+                modifier = Modifier.size(11.dp)
+            )
+        }
+        Text(
+            text = formatScore(score, format),
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
+        )
     }
 }
 

@@ -668,6 +668,8 @@ fun LibraryScreen(
                                                 } else null,
                                                 onEdit = { handleEdit(entry) },
                                                 config = cardConfig,
+                                                showScore = uiState.showScoreOnCards,
+                                                scoreFormat = uiState.userScoreFormat,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
                                                 titleLanguage = titleLanguage,
@@ -713,6 +715,8 @@ fun LibraryScreen(
                                                 } else null,
                                                 onEdit = { handleEdit(entry) },
                                                 config = cardConfig,
+                                                showScore = uiState.showScoreOnCards,
+                                                scoreFormat = uiState.userScoreFormat,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
                                                 titleLanguage = titleLanguage,
@@ -864,9 +868,11 @@ fun LibraryScreen(
         isGridView = uiState.isGridView,
         autoColumns = LocalGridColumnsAuto.current,
         columnCount = LocalGridColumnCount.current,
+        showScore = uiState.showScoreOnCards,
         onSetGridView = { viewModel.onAction(LibraryAction.SetGridView(it)) },
         onSetAutoColumns = { appSettings.setGridColumnsAuto(it) },
         onSetColumnCount = { appSettings.setGridColumnCount(it) },
+        onSetShowScore = { appSettings.setShowScoreOnCards(it) },
         onDismiss = { showViewOptionsSheet = false }
     )
 
