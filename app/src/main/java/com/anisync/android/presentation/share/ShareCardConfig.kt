@@ -208,10 +208,18 @@ private fun ShareFrame(
             .background(Brush.verticalGradient(listOf(scheme.surfaceBright, scheme.surfaceDim))),
         contentAlignment = Alignment.Center,
     ) {
+        // Soft lift, not a heavy drop: reduced elevation + translucent shadow colors, otherwise
+        // the card reads as heavily outlined on the light gradient.
         Box(
             Modifier
                 .padding(FrameMargin)
-                .shadow(elevation = 18.dp, shape = ShareCardShape, clip = false)
+                .shadow(
+                    elevation = 8.dp,
+                    shape = ShareCardShape,
+                    clip = false,
+                    ambientColor = Color.Black.copy(alpha = 0.35f),
+                    spotColor = Color.Black.copy(alpha = 0.35f),
+                )
         ) {
             card()
         }
