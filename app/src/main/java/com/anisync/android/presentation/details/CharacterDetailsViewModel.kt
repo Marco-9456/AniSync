@@ -111,10 +111,4 @@ class CharacterDetailsViewModel @Inject constructor(
             }
         }
     }
-
-    fun shareCharacter(context: android.content.Context) {
-        val details = (_uiState.value as? CharacterDetailsUiState.Success)?.details ?: return
-        val name = details.name
-        com.anisync.android.util.ShareUtils.shareCharacter(context, name, characterId)
-    }
 }

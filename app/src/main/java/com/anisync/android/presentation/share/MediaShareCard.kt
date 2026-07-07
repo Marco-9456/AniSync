@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -68,6 +70,22 @@ fun MediaShareCard(
     // Community average, rendered in the viewer's own score scale; suppressed by the privacy toggle.
     val scoreText = if (config.showScore) formatCommunityScore(details.score, scoreFormat) else null
     val showScoreStar = scoreFormat != ScoreFormat.POINT_5 && scoreFormat != ScoreFormat.POINT_3
+
+    if (config.template == ShareCardTemplate.HERO) {
+        MediaHeroCard(
+            details = details,
+            isManga = isManga,
+            coverUrl = coverUrl,
+            accent = accent,
+            onAccent = onAccent,
+            scoreText = scoreText,
+            showScoreStar = showScoreStar,
+            showProgress = config.showProgress,
+            handle = handle,
+            modifier = modifier,
+        )
+        return
+    }
 
     ShareCardScaffold(modifier = modifier, handle = handle) {
         ShareCardBannerBox(
@@ -212,6 +230,128 @@ fun MediaShareCard(
             }
 
             MediaStatusStrip(details = details, isManga = isManga, showProgress = config.showProgress)
+        }
+    }
+}
+
+/**
+ * The "Poster" media template: the cover art full-bleed at 2:3 with the title, meta and genres set
+ * into its bottom scrim, then the same adaptive status strip. A bolder, artwork-first alternative to
+ * the standard stat-sheet card.
+ */
+@Composable
+private fun MediaHeroCard(
+    details: MediaDetails,
+    isManga: Boolean,
+    coverUrl: String?,
+    accent: Color,
+    onAccent: Color,
+    scoreText: String?,
+    showScoreStar: Boolean,
+    showProgress: Boolean,
+    handle: String?,
+    modifier: Modifier = Modifier,
+) {
+    ShareCardScaffold(modifier = modifier, handle = handle) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)) {
+            if (coverUrl != null) {
+                AsyncImage(
+                    model = coverUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer))
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0.45f to Color.Transparent,
+                            1f to Color.Black.copy(alpha = 0.88f)
+                        )
+                    )
+            )
+            if (scoreText != null) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(14.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(accent)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (showScoreStar) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = onAccent,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                    }
+                    Text(
+                        text = scoreText,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = onAccent
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                val meta = listOfNotNull(
+                    details.format,
+                    details.seasonYear?.toString() ?: details.year?.toString(),
+                    details.studio?.name ?: details.studios.firstOrNull()?.name
+                ).joinToString(" · ")
+                if (meta.isNotBlank()) {
+                    Text(
+                        text = meta.uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(2.dp))
+                }
+                Text(
+                    text = details.titleUserPreferred,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+                val genres = details.genres.take(3)
+                if (genres.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        genres.forEach { genre ->
+                            Text(
+                                text = genre,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White,
+                                maxLines = 1,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color.White.copy(alpha = 0.22f))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        Box(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            MediaStatusStrip(details = details, isManga = isManga, showProgress = showProgress)
         }
     }
 }

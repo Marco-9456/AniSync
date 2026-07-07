@@ -65,6 +65,9 @@ import com.anisync.android.presentation.details.components.ExpandableBiography
 import com.anisync.android.presentation.details.components.FeaturedMediaItem
 import com.anisync.android.presentation.details.components.NameCard
 import com.anisync.android.presentation.details.components.VoicedCharacterItem
+import com.anisync.android.presentation.share.ShareImageSheet
+import com.anisync.android.presentation.share.StaffShareCard
+import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.getTitle
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.util.getName
@@ -84,7 +87,7 @@ fun StaffDetailsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    var showShareSheet by rememberSaveable { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
@@ -130,7 +133,7 @@ fun StaffDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.shareStaff(context) }) {
+                    IconButton(onClick = { showShareSheet = true }) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = stringResource(R.string.cd_share),
@@ -199,6 +202,20 @@ fun StaffDetailsScreen(
                         message = state.message,
                         onRetry = viewModel::loadStaffDetails,
                         onBackClick = onBackClick
+                    )
+                }
+            }
+        }
+
+        if (showShareSheet) {
+            (uiState as? StaffDetailsUiState.Success)?.details?.let { details ->
+                ShareImageSheet(
+                    onDismiss = { showShareSheet = false },
+                    caption = AniListUrls.staffUrl(details.id)
+                ) {
+                    StaffShareCard(
+                        details = details,
+                        displayName = details.getName(titleLanguage)
                     )
                 }
             }

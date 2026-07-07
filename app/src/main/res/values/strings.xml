@@ -1309,4 +1309,7 @@
     <string name="share_toggle_score">Score</string>
     <string name="share_toggle_progress">Progress</string>
     <string name="share_caption_hint">Add a caption (optional)</string>
+    <string name="share_person_character">Character</string>
+    <string name="share_person_staff">Staff</string>
+    <string name="share_known_for">Known for</string>
 </resources>

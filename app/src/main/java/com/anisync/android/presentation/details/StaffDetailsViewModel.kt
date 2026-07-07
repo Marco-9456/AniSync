@@ -177,10 +177,4 @@ class StaffDetailsViewModel @Inject constructor(
             }
         }
     }
-
-    fun shareStaff(context: android.content.Context) {
-        val details = (_uiState.value as? StaffDetailsUiState.Success)?.details ?: return
-        val name = details.name
-        com.anisync.android.util.ShareUtils.shareStaff(context, name, staffId)
-    }
 }

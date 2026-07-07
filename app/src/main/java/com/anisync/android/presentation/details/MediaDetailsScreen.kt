@@ -165,6 +165,7 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.presentation.share.MediaShareCard
+import com.anisync.android.presentation.share.ShareCardTemplate
 import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.share.parseCoverColor
 import com.anisync.android.util.AniListUrls
@@ -757,6 +758,7 @@ fun MediaDetailsScreen(
                     caption = AniListUrls.mediaUrl(details.id, details.type),
                     seedColor = parseCoverColor(details.coverColor),
                     supportsPrivacy = true,
+                    templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
                 ) {
                     MediaShareCard(details = details, scoreFormat = userScoreFormat)
                 }
