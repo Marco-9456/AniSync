@@ -211,7 +211,7 @@ fun StaffDetailsScreen(
             (uiState as? StaffDetailsUiState.Success)?.details?.let { details ->
                 ShareImageSheet(
                     onDismiss = { showShareSheet = false },
-                    caption = AniListUrls.staffUrl(details.id)
+                    link = AniListUrls.staffUrl(details.id)
                 ) {
                     StaffShareCard(
                         details = details,

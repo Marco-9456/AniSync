@@ -40,7 +40,7 @@ fun ProfileStatsShareCard(
     modifier: Modifier = Modifier,
 ) {
     if (LocalShareCardConfig.current.template == ShareCardTemplate.HERO) {
-        RecapShareCard(profile = profile, stats = stats, modifier = modifier)
+        RecapShareCard(profile = profile, stats = stats, type = type, modifier = modifier)
         return
     }
     val expressive = LocalExpressiveTypography.current
@@ -139,27 +139,35 @@ fun ProfileStatsShareCard(
 }
 
 /**
- * The "Recap" stats template: one Wrapped-style card across **both** libraries — combined title
- * count as the hero figure, a 2×2 tile grid (days, episodes, chapters, mean score), the top genres
- * merged across anime+manga, and the most-watched studio.
+ * The "Recap" stats template: a Wrapped-style card for the **selected library** (anime or manga,
+ * matching the Stats tab toggle) — headline title count, a 2×2 tile grid, the library's top genres,
+ * and a spotlight line (most-watched studio for anime, most-read author for manga).
  */
 @Composable
 private fun RecapShareCard(
     profile: UserProfile,
     stats: StatisticsUiModel,
+    type: ProfileStatsType,
     modifier: Modifier = Modifier,
 ) {
     val expressive = LocalExpressiveTypography.current
+    val isAnime = type == ProfileStatsType.ANIME
     val anime = stats.animeStats
     val manga = stats.mangaStats
-    val totalTitles = anime.totalCount + (manga?.totalCount ?: 0)
-    // Merge the two genre distributions by summed count so the recap reflects the whole library.
-    val topGenres = (anime.genreDistribution + manga?.genreDistribution.orEmpty())
-        .groupBy { it.genre }
-        .map { (genre, entries) -> genre to entries.sumOf { it.count } }
-        .sortedByDescending { it.second }
-        .take(3)
-    val topStudio = anime.studioDistribution.firstOrNull()
+
+    val totalTitles = if (isAnime) anime.totalCount else (manga?.totalCount ?: 0)
+    val topGenres = (if (isAnime) anime.genreDistribution else manga?.genreDistribution.orEmpty()).take(3)
+    val completed = (if (isAnime) anime.statusDistribution else manga?.statusDistribution.orEmpty())
+        .firstOrNull { it.status.equals("COMPLETED", ignoreCase = true) }?.count
+    // Spotlight: the studio you watched most vs the author you read most.
+    val spotlightLabel = stringResource(
+        if (isAnime) R.string.share_recap_top_studio else R.string.share_recap_top_staff
+    )
+    val spotlightName = if (isAnime) {
+        anime.studioDistribution.firstOrNull()?.studioName
+    } else {
+        manga?.staffDistribution?.firstOrNull()?.name
+    }
 
     ShareCardScaffold(modifier = modifier, handle = profile.name) {
         ShareCardBannerBox(bannerUrl = profile.bannerUrl, height = 108.dp, scrimAlpha = 0.78f) {
@@ -204,7 +212,9 @@ private fun RecapShareCard(
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    text = stringResource(R.string.share_recap_titles),
+                    text = stringResource(
+                        if (isAnime) R.string.share_stats_unit_anime else R.string.share_stats_unit_manga
+                    ),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 12.dp)
@@ -214,13 +224,26 @@ private fun RecapShareCard(
             Spacer(Modifier.height(16.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ShareStatTile(formatDecimal(anime.daysWatched), stringResource(R.string.share_stats_days), Modifier.weight(1f))
-                ShareStatTile(formatCompactNumber(anime.episodesWatched), stringResource(R.string.share_stats_episodes), Modifier.weight(1f))
+                if (isAnime) {
+                    ShareStatTile(formatDecimal(anime.daysWatched), stringResource(R.string.share_stats_days), Modifier.weight(1f))
+                    ShareStatTile(formatCompactNumber(anime.episodesWatched), stringResource(R.string.share_stats_episodes), Modifier.weight(1f))
+                } else {
+                    ShareStatTile(formatCompactNumber(manga?.chaptersRead ?: 0), stringResource(R.string.share_stats_chapters), Modifier.weight(1f))
+                    ShareStatTile(formatCompactNumber(manga?.volumesRead ?: 0), stringResource(R.string.share_stats_volumes), Modifier.weight(1f))
+                }
             }
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ShareStatTile(formatCompactNumber(manga?.chaptersRead ?: 0), stringResource(R.string.share_stats_chapters), Modifier.weight(1f))
-                ShareStatTile(formatDecimal(anime.meanScore), stringResource(R.string.share_stats_mean), Modifier.weight(1f))
+                ShareStatTile(
+                    formatCompactNumber(completed ?: 0),
+                    stringResource(R.string.share_recap_completed),
+                    Modifier.weight(1f)
+                )
+                ShareStatTile(
+                    formatDecimal(if (isAnime) anime.meanScore else (manga?.meanScore ?: 0.0)),
+                    stringResource(R.string.share_stats_mean),
+                    Modifier.weight(1f)
+                )
             }
 
             if (topGenres.isNotEmpty()) {
@@ -232,20 +255,20 @@ private fun RecapShareCard(
                 )
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    topGenres.forEach { (genre, _) -> ShareChip(genre) }
+                    topGenres.forEach { g -> ShareChip(g.genre) }
                 }
             }
 
-            if (topStudio != null) {
+            if (spotlightName != null) {
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = stringResource(R.string.share_recap_top_studio).uppercase(),
+                    text = spotlightLabel.uppercase(),
                     style = expressive.statLabel,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = topStudio.studioName,
+                    text = spotlightName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,

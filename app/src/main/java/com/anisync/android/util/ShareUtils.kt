@@ -191,22 +191,6 @@ object ShareUtils {
     }
 
     /**
-     * Shares character content using Android's share sheet.
-     */
-    fun shareCharacter(context: Context, name: String, characterId: Int) {
-        val url = AniListUrls.characterUrl(characterId)
-        shareText(context, "$name\n$url")
-    }
-
-    /**
-     * Shares staff content using Android's share sheet.
-     */
-    fun shareStaff(context: Context, name: String, staffId: Int) {
-        val url = AniListUrls.staffUrl(staffId)
-        shareText(context, "$name\n$url")
-    }
-
-    /**
      * Shares studio content using Android's share sheet.
      */
     fun shareStudio(context: Context, name: String, studioId: Int) {

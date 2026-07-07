@@ -254,7 +254,7 @@ fun ProfileContent(
         uiState.statsData?.let { stats ->
             ShareImageSheet(
                 onDismiss = { statsShareVisible = false },
-                caption = profileUrl,
+                link = profileUrl,
                 templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
                 templateLabel = { tmpl ->
                     stringResource(
@@ -278,7 +278,7 @@ fun ProfileContent(
         if (entries.isNotEmpty()) {
             ShareImageSheet(
                 onDismiss = { favouritesShareVisible = false },
-                caption = profileUrl,
+                link = profileUrl,
                 templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
                 templateLabel = { tmpl ->
                     stringResource(

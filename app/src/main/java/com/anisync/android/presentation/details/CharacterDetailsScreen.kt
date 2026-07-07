@@ -223,7 +223,7 @@ fun CharacterDetailsScreen(
             (uiState as? CharacterDetailsUiState.Success)?.details?.let { details ->
                 ShareImageSheet(
                     onDismiss = { showShareSheet = false },
-                    caption = AniListUrls.characterUrl(details.id)
+                    link = AniListUrls.characterUrl(details.id)
                 ) {
                     CharacterShareCard(
                         details = details,

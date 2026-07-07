@@ -1254,7 +1254,6 @@
 
     <!-- Share-as-image cards -->
     <string name="share_as_image">Share image</string>
-    <string name="share_image_preview_title">Preview</string>
     <string name="share_action_save">Save</string>
     <string name="share_action_copy">Copy</string>
     <string name="share_action_share">Share</string>
@@ -1317,6 +1316,7 @@
     <string name="share_template_grid">Grid</string>
     <string name="share_template_ranked">Ranked</string>
     <string name="share_recap_eyebrow">All-time recap</string>
-    <string name="share_recap_titles">titles</string>
+    <string name="share_recap_completed">Completed</string>
     <string name="share_recap_top_studio">Most watched studio</string>
+    <string name="share_recap_top_staff">Most read author</string>
 </resources>

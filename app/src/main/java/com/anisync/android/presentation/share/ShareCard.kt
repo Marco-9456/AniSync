@@ -81,7 +81,8 @@ internal val ShareCardShapeFramed = RoundedCornerShape(32.dp)
  * Bottom sheet that previews a [card] exactly as it will be shared and lets the user **customize** it
  * live — theme, aspect (compact / square / story), an optional baked caption, and (when
  * [supportsPrivacy]) whether the score/progress show. Then it offers: save the PNG to the gallery,
- * copy the [caption] link, or open the system share sheet with the image.
+ * copy the [link] to the clipboard, or open the system share sheet with the image (the user's
+ * caption + [link] ride along as the share text).
  *
  * Layout keeps the preview and the action row **pinned**; only the customization controls scroll.
  * Every tweak is therefore visible on the card the instant it's made.
@@ -94,7 +95,7 @@ internal val ShareCardShapeFramed = RoundedCornerShape(32.dp)
 @Composable
 fun ShareImageSheet(
     onDismiss: () -> Unit,
-    caption: String? = null,
+    link: String? = null,
     seedColor: Color? = null,
     supportsPrivacy: Boolean = false,
     templates: List<ShareCardTemplate> = emptyList(),
@@ -126,7 +127,7 @@ fun ShareImageSheet(
     }
 
     // The caption baked onto the card also rides along as the shared text, above the link.
-    val shareText = listOfNotNull(config.caption.trim().ifBlank { null }, caption).joinToString("\n\n")
+    val shareText = listOfNotNull(config.caption.trim().ifBlank { null }, link).joinToString("\n\n")
         .ifBlank { null }
 
     // Full height from the start: the pinned preview/actions layout needs the whole sheet.
@@ -218,7 +219,7 @@ fun ShareImageSheet(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ) {
                     // Copy just the link — no capture needed; pastes cleanly into the Feed composer.
-                    caption?.let { ShareUtils.copyText(context, it) }
+                    link?.let { ShareUtils.copyText(context, it) }
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     Toast.makeText(context, R.string.share_copied, Toast.LENGTH_SHORT).show()
                 }

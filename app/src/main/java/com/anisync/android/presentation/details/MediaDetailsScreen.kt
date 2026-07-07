@@ -755,7 +755,7 @@ fun MediaDetailsScreen(
             (uiState as? DetailsUiState.Success)?.details?.let { details ->
                 ShareImageSheet(
                     onDismiss = { showShareImageSheet = false },
-                    caption = AniListUrls.mediaUrl(details.id, details.type),
+                    link = AniListUrls.mediaUrl(details.id, details.type),
                     seedColor = parseCoverColor(details.coverColor),
                     supportsPrivacy = true,
                     templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
