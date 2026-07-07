@@ -48,9 +48,11 @@ fun LibraryViewOptionsSheet(
     isGridView: Boolean,
     autoColumns: Boolean,
     columnCount: Int,
+    showScore: Boolean,
     onSetGridView: (Boolean) -> Unit,
     onSetAutoColumns: (Boolean) -> Unit,
     onSetColumnCount: (Int) -> Unit,
+    onSetShowScore: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     if (!visible) return
@@ -163,6 +165,28 @@ fun LibraryViewOptionsSheet(
                 steps = AppSettings.MAX_GRID_COLUMNS - AppSettings.MIN_GRID_COLUMNS - 1,
                 enabled = sliderEnabled
             )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Score badge — applies to both layouts, so it's not gated on grid mode.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.library_view_show_score),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(R.string.library_view_show_score_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = showScore,
+                    onCheckedChange = onSetShowScore
+                )
+            }
         }
     }
 }

@@ -34,6 +34,7 @@ data class LibraryUiState(
     /** The search category chip currently selected; [LIBRARY_ALL_TAB_ID] shows everything. */
     val activeSearchCategory: String = LIBRARY_ALL_TAB_ID,
     val showPrivateEntries: Boolean = true,
+    val showScoreOnCards: Boolean = true,
     val isGridView: Boolean = true,
     val initialTabId: String? = null,
     val isLoading: Boolean = true,

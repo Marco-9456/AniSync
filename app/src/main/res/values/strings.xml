@@ -404,6 +404,8 @@
     <string name="library_view_automatic_desc">Fit the number of columns to the screen size</string>
     <string name="library_view_columns">Columns</string>
     <string name="library_view_columns_value">%1$d columns</string>
+    <string name="library_view_show_score">Show score</string>
+    <string name="library_view_show_score_desc">Show your rating on list and grid cards</string>
     <string name="list_detail_select_prompt">Select a title to see details</string>
     <string name="cover_quality_extra_large">Extra large</string>
     <string name="cover_quality_extra_large_desc">Maximum sharpness everywhere. Best on Wi-Fi.</string>

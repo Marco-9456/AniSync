@@ -99,6 +99,10 @@ class LibraryViewModel @Inject constructor(
             _uiState.update { it.copy(userScoreFormat = format) }
         }.launchIn(viewModelScope)
 
+        appSettings.showScoreOnCards.onEach { show ->
+            _uiState.update { it.copy(showScoreOnCards = show) }
+        }.launchIn(viewModelScope)
+
         observeLibraryData()
     }
 
