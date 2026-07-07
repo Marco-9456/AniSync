@@ -399,7 +399,12 @@ fun AppTheme(
     }
 
     CompositionLocalProvider(
-        LocalExpressiveTypography provides expressiveTypography
+        LocalExpressiveTypography provides expressiveTypography,
+        LocalAppThemeSpec provides AppThemeSpec(
+            dynamicColor = dynamicColor,
+            seedColor = seedColor,
+            paletteStyle = paletteStyle
+        )
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -412,15 +417,31 @@ fun AppTheme(
 }
 
 /**
- * A color scheme for a **share card**, decoupled from the app's active theme so an exported image
- * can be light / dark / AMOLED / artwork-seeded regardless of the in-app setting. Lives here (not in
- * the share package) so it can reach the file-private base schemes and [toAmoled].
- *
- * @param seed when non-null, generates a MaterialKolor scheme from the artwork color; otherwise uses
- *   the app's static light/dark scheme. AMOLED is our Seal-style container shift, dark-only.
+ * The palette inputs [AppTheme] resolved its scheme from, minus the light/dark polarity. Lets a
+ * consumer (share cards) re-derive **the same palette** in a *forced* polarity instead of falling
+ * back to the static brand scheme.
+ */
+@Immutable
+data class AppThemeSpec(
+    val dynamicColor: Boolean,
+    val seedColor: Color?,
+    val paletteStyle: PaletteStyle,
+)
+
+val LocalAppThemeSpec = androidx.compose.runtime.staticCompositionLocalOf {
+    AppThemeSpec(dynamicColor = false, seedColor = null, paletteStyle = PaletteStyle.TonalSpot)
+}
+
+/**
+ * A color scheme for a **share card**: the app's own palette (user seed > Android dynamic > static,
+ * via [LocalAppThemeSpec]) re-derived in the forced [dark] polarity, so Light/Dark/AMOLED cards
+ * differ from the in-app look only by brightness — never by hue. [seed] (artwork color) overrides
+ * the palette entirely for the COVER theme. AMOLED is our Seal-style container shift, dark-only.
+ * Lives here (not in the share package) so it can reach the file-private base schemes and [toAmoled].
  */
 @Composable
 fun shareCardColorScheme(dark: Boolean, amoled: Boolean = false, seed: Color? = null): ColorScheme {
+    val spec = LocalAppThemeSpec.current
     val base = when {
         seed != null -> rememberDynamicColorScheme(
             seedColor = seed,
@@ -428,6 +449,16 @@ fun shareCardColorScheme(dark: Boolean, amoled: Boolean = false, seed: Color? = 
             isAmoled = false,
             style = PaletteStyle.TonalSpot
         )
+        spec.seedColor != null -> rememberDynamicColorScheme(
+            seedColor = spec.seedColor,
+            isDark = dark,
+            isAmoled = false,
+            style = spec.paletteStyle
+        )
+        spec.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
         dark -> darkScheme
         else -> lightScheme
     }
