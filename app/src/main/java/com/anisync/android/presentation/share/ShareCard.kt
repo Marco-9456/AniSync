@@ -1,6 +1,5 @@
 package com.anisync.android.presentation.share
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,9 +25,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,8 +45,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -56,7 +58,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.util.ShareUtils
-import dev.shreyaspatil.capturable.capturable
 import dev.shreyaspatil.capturable.controller.rememberCaptureController
 import kotlinx.coroutines.launch
 
@@ -67,25 +68,42 @@ import kotlinx.coroutines.launch
 val ShareCardWidth = 340.dp
 
 /** Rounded outer shape shared by all share cards (matches the app's 28dp hero radius). */
-private val ShareCardShape = RoundedCornerShape(28.dp)
+internal val ShareCardShape = RoundedCornerShape(28.dp)
+
+/** Slightly larger radius for the Square/Story backdrop frame the card sits inside. */
+internal val ShareCardShapeFramed = RoundedCornerShape(32.dp)
 
 /**
- * Bottom sheet that previews a [card] exactly as it will be shared, then offers: save the PNG to
- * the gallery, copy the [caption] link to the clipboard, or open the system share sheet with the
- * PNG. Showing the live card first doubles as the load gate — Coil covers are decoded by the time
- * the user acts, so the exported image is never blank.
+ * Bottom sheet that previews a [card] exactly as it will be shared and lets the user **customize** it
+ * live — theme, aspect (compact / square / story), an optional baked caption, and (when
+ * [supportsPrivacy]) whether the score/progress show. Then it offers: save the PNG to the gallery,
+ * copy the [caption] link, or open the system share sheet with the image.
+ *
+ * The live preview doubles as the load gate: Coil covers are decoded by the time the user acts, so
+ * the export is never blank. [seedColor] (artwork color) enables the COVER theme and tints the
+ * backdrop; [backdropUrl] is the blurred image behind the framed formats; [templates] populates the
+ * style picker.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun ShareImageSheet(
     onDismiss: () -> Unit,
     caption: String? = null,
+    seedColor: Color? = null,
+    backdropUrl: String? = null,
+    supportsPrivacy: Boolean = false,
+    templates: List<ShareCardTemplate> = emptyList(),
     card: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
     val controller = rememberCaptureController()
     var busy by remember { mutableStateOf(false) }
+    var statusRes by remember { mutableStateOf<Int?>(null) }
+    var config by remember {
+        mutableStateOf(ShareCardConfig(template = templates.firstOrNull() ?: ShareCardTemplate.STANDARD))
+    }
 
     // Capture once per tap, then run [block] over the bitmap. Guards against concurrent taps.
     fun runAction(block: suspend (androidx.compose.ui.graphics.ImageBitmap) -> Unit) {
@@ -102,10 +120,15 @@ fun ShareImageSheet(
         }
     }
 
+    // The caption baked onto the card also rides along as the shared text, above the link.
+    val shareText = listOfNotNull(config.caption.trim().ifBlank { null }, caption).joinToString("\n\n")
+        .ifBlank { null }
+
     com.anisync.android.presentation.components.AppModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 20.dp),
@@ -120,23 +143,33 @@ fun ShareImageSheet(
                     .padding(bottom = 16.dp)
             )
 
-            // Height-capped + scrollable so a tall card still leaves the action row visible.
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 440.dp)
-                    .verticalScroll(rememberScrollState()),
-                contentAlignment = Alignment.TopCenter
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(ShareCardWidth)
-                        .clip(ShareCardShape)
-                        .capturable(controller)
-                ) {
-                    card()
-                }
-            }
+            ShareCaptureArea(
+                controller = controller,
+                config = config,
+                seedColor = seedColor,
+                backdropUrl = backdropUrl,
+                card = card,
+            )
+
+            Spacer(Modifier.height(20.dp))
+
+            ShareCustomizeControls(
+                config = config,
+                onConfig = { config = it },
+                coverAvailable = seedColor != null,
+                supportsPrivacy = supportsPrivacy,
+                templates = templates,
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = config.caption,
+                onValueChange = { config = config.copy(caption = it.take(80)) },
+                label = { Text(stringResource(R.string.share_caption_hint)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(Modifier.height(20.dp))
 
@@ -147,62 +180,67 @@ fun ShareImageSheet(
                 SheetAction(
                     icon = Icons.Filled.Download,
                     label = stringResource(R.string.share_action_save),
-                    enabled = !busy,
+                    busy = busy,
                     container = MaterialTheme.colorScheme.surfaceContainerHighest,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ) {
                     runAction { bmp ->
                         val ok = ShareUtils.saveCardToGallery(context, bmp)
-                        Toast.makeText(
-                            context,
-                            context.getString(
-                                if (ok) R.string.share_saved_to_gallery else R.string.share_save_failed
-                            ),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        statusRes = if (ok) R.string.share_saved_to_gallery else R.string.share_save_failed
+                        if (ok) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
                 }
                 SheetAction(
                     icon = Icons.Filled.ContentCopy,
                     label = stringResource(R.string.share_action_copy),
-                    enabled = !busy,
+                    busy = busy,
                     container = MaterialTheme.colorScheme.surfaceContainerHighest,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ) {
                     // Copy just the link — no capture needed; pastes cleanly into the Feed composer.
                     caption?.let { ShareUtils.copyText(context, it) }
-                    Toast.makeText(context, R.string.share_copied, Toast.LENGTH_SHORT).show()
+                    statusRes = R.string.share_copied
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 }
                 SheetAction(
                     icon = Icons.Filled.Share,
                     label = stringResource(R.string.share_action_share),
-                    enabled = !busy,
+                    busy = busy,
                     container = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
                     runAction { bmp ->
-                        ShareUtils.shareBitmap(context, bmp, caption)
+                        ShareUtils.shareBitmap(context, bmp, shareText)
                         onDismiss()
                     }
                 }
+            }
+
+            if (statusRes != null) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = stringResource(statusRes!!),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
 }
 
-/** One icon-over-label action tile in the share sheet's action row. */
+/** One icon-over-label action tile in the share sheet's action row. Shows a spinner while busy. */
 @Composable
 private fun RowScope.SheetAction(
     icon: ImageVector,
     label: String,
-    enabled: Boolean,
+    busy: Boolean,
     container: Color,
     contentColor: Color,
     onClick: () -> Unit,
 ) {
     Surface(
         onClick = onClick,
-        enabled = enabled,
+        enabled = !busy,
         shape = RoundedCornerShape(18.dp),
         color = container,
         contentColor = contentColor,
@@ -215,9 +253,17 @@ private fun RowScope.SheetAction(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.height(4.dp))
-            Text(text = label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+            if (busy) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = contentColor
+                )
+            } else {
+                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.height(4.dp))
+                Text(text = label, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+            }
         }
     }
 }
@@ -262,7 +308,8 @@ fun ShareCardBannerBox(
 /**
  * Opaque, rounded, self-contained surface every share card sits on. Opaque matters: the PNG
  * is composited over arbitrary chat/story backgrounds, so no theme transparency may leak
- * through. Ends with the shared AniSync footer so every exported image is attributed.
+ * through. Renders the optional user [caption] then the shared AniSync footer, so every exported
+ * image is captioned + attributed.
  *
  * [handle] is the AniList username shown in the footer (omitted when unknown).
  */
@@ -272,6 +319,7 @@ fun ShareCardScaffold(
     handle: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val caption = LocalShareCardConfig.current.caption.trim()
     Column(
         modifier = modifier
             .width(ShareCardWidth)
@@ -279,8 +327,26 @@ fun ShareCardScaffold(
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
     ) {
         content()
+        if (caption.isNotBlank()) ShareCardCaption(caption)
         ShareCardFooter(handle = handle)
     }
+}
+
+/** The user's baked one-liner, set just above the footer. */
+@Composable
+private fun ShareCardCaption(caption: String) {
+    Text(
+        text = caption,
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Medium,
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = 3,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(top = 4.dp, bottom = 16.dp)
+    )
 }
 
 /** AniSync wordmark + monochrome mark + optional @handle. Kept consistent across all cards. */

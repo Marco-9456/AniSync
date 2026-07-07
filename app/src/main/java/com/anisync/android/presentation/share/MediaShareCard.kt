@@ -2,6 +2,8 @@ package com.anisync.android.presentation.share
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,9 +39,10 @@ import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.domain.formatCommunityScore
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.util.formatCompactNumber
-import com.anisync.android.presentation.util.formatDecimal
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 
@@ -49,24 +52,29 @@ import com.anisync.android.ui.theme.LocalExpressiveTypography
  * viewer's own list state — progress while watching, a neutral count while planning/completed,
  * or the media's release status (incl. upcoming/TBA) when it isn't on their list at all.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MediaShareCard(
     details: MediaDetails,
+    scoreFormat: ScoreFormat,
     handle: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    val config = LocalShareCardConfig.current
     val isManga = details.type == MediaType.MANGA
     val coverUrl = details.coverUrl ?: details.cover.url()
-    val score = details.score
     val accent = parseCoverColor(details.coverColor) ?: MaterialTheme.colorScheme.primary
     val onAccent = if (accent.luminance() > 0.5f) Color.Black else Color.White
+    // Community average, rendered in the viewer's own score scale; suppressed by the privacy toggle.
+    val scoreText = if (config.showScore) formatCommunityScore(details.score, scoreFormat) else null
+    val showScoreStar = scoreFormat != ScoreFormat.POINT_5 && scoreFormat != ScoreFormat.POINT_3
 
     ShareCardScaffold(modifier = modifier, handle = handle) {
         ShareCardBannerBox(
             bannerUrl = details.bannerUrl ?: coverUrl,
             height = 168.dp
         ) {
-            if (score != null && score > 0) {
+            if (scoreText != null) {
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -76,16 +84,17 @@ fun MediaShareCard(
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = null,
-                        tint = onAccent,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    // Out of 10 to match the app's own header star rating (85 → "8.5").
+                    if (showScoreStar) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = onAccent,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                    }
                     Text(
-                        text = formatDecimal(score / 10.0),
+                        text = scoreText,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = onAccent
@@ -194,12 +203,15 @@ fun MediaShareCard(
 
             val genres = details.genres.take(3)
             if (genres.isNotEmpty()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     genres.forEach { genre -> ShareChip(genre) }
                 }
             }
 
-            MediaStatusStrip(details = details, isManga = isManga)
+            MediaStatusStrip(details = details, isManga = isManga, showProgress = config.showProgress)
         }
     }
 }
@@ -237,7 +249,7 @@ private fun MiniStat(icon: ImageVector, value: String, label: String, accent: Co
  * or a release year / TBA). Never shows "0 / 25" for a planned-but-unstarted entry.
  */
 @Composable
-private fun MediaStatusStrip(details: MediaDetails, isManga: Boolean) {
+private fun MediaStatusStrip(details: MediaDetails, isManga: Boolean, showProgress: Boolean) {
     val status = details.listStatus
     val onList = status != null && status != LibraryStatus.UNKNOWN
     val total = if (isManga) details.chapters else details.episodes
@@ -249,7 +261,8 @@ private fun MediaStatusStrip(details: MediaDetails, isManga: Boolean) {
         // The viewer's own tracked status — a filled, coloured pill.
         leftLabel = stringResource(listStatusLabel(status!!, isManga))
         val progress = details.listProgress ?: 0
-        rightText = when (status) {
+        // The progress toggle hides the personal "3 / 25" figure but keeps the status label.
+        rightText = if (!showProgress) null else when (status) {
             LibraryStatus.CURRENT, LibraryStatus.REPEATING, LibraryStatus.PAUSED, LibraryStatus.DROPPED ->
                 "$progress / ${total?.toString() ?: "?"} $unit"
             LibraryStatus.COMPLETED, LibraryStatus.PLANNING ->
@@ -321,7 +334,7 @@ private fun mediaReleaseLabel(status: String): Int = when (status) {
 }
 
 /** Parses AniList's `#RRGGBB` cover color; null when absent or malformed. */
-private fun parseCoverColor(hex: String?): Color? {
+internal fun parseCoverColor(hex: String?): Color? {
     if (hex.isNullOrBlank()) return null
     return try {
         Color(android.graphics.Color.parseColor(hex))

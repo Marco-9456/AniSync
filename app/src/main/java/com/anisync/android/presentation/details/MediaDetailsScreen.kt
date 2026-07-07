@@ -166,6 +166,7 @@ import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.presentation.share.MediaShareCard
 import com.anisync.android.presentation.share.ShareImageSheet
+import com.anisync.android.presentation.share.parseCoverColor
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.getTitle
 
@@ -753,9 +754,12 @@ fun MediaDetailsScreen(
             (uiState as? DetailsUiState.Success)?.details?.let { details ->
                 ShareImageSheet(
                     onDismiss = { showShareImageSheet = false },
-                    caption = AniListUrls.mediaUrl(details.id, details.type)
+                    caption = AniListUrls.mediaUrl(details.id, details.type),
+                    seedColor = parseCoverColor(details.coverColor),
+                    backdropUrl = details.bannerUrl ?: details.coverUrl,
+                    supportsPrivacy = true,
                 ) {
-                    MediaShareCard(details = details)
+                    MediaShareCard(details = details, scoreFormat = userScoreFormat)
                 }
             }
         }

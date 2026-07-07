@@ -96,10 +96,10 @@ object ShareUtils {
      * File I/O runs off the main thread; the chooser launch hops back to it.
      */
     suspend fun shareBitmap(context: Context, bitmap: ImageBitmap, text: String? = null) {
-        val uri = withContext(Dispatchers.IO) { writeShareablePng(context, bitmap) }
+        val (uri, mime) = withContext(Dispatchers.IO) { writeShareableImage(context, bitmap) }
 
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "image/png"
+            type = mime
             putExtra(Intent.EXTRA_STREAM, uri)
             text?.let { putExtra(Intent.EXTRA_TEXT, it) }
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -151,14 +151,25 @@ object ShareUtils {
             }
         }
 
-    /** One reusable cache PNG (overwritten each call) exposed as a FileProvider URI. */
-    private fun writeShareablePng(context: Context, bitmap: ImageBitmap): Uri {
+    /**
+     * One reusable cache image (overwritten each call) exposed as a FileProvider URI. Uses WEBP
+     * lossless on API 30+ — smaller than PNG while still preserving the card's rounded transparent
+     * corners — and falls back to PNG below. Returns the URI with its MIME type.
+     */
+    private fun writeShareableImage(context: Context, bitmap: ImageBitmap): Pair<Uri, String> {
         val dir = File(context.cacheDir, "shared").apply { mkdirs() }
-        val file = File(dir, "anisync_share.png")
+        val useWebp = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+        val file = File(dir, if (useWebp) "anisync_share.webp" else "anisync_share.png")
+        val bmp = bitmap.asAndroidBitmap()
         file.outputStream().use { out ->
-            bitmap.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, out)
+            if (useWebp) {
+                bmp.compress(Bitmap.CompressFormat.WEBP_LOSSLESS, 100, out)
+            } else {
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
         }
-        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        return uri to (if (useWebp) "image/webp" else "image/png")
     }
 
     /**

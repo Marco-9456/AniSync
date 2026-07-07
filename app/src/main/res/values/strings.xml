@@ -1291,4 +1291,22 @@
     <string name="share_fav_eyebrow">Favourites</string>
     <string name="share_fav_heading_anime">Favourite Anime</string>
     <string name="share_fav_heading_manga">Favourite Manga</string>
+    <!-- Share-card customization sheet -->
+    <string name="share_customize_theme">Theme</string>
+    <string name="share_customize_format">Format</string>
+    <string name="share_customize_template">Style</string>
+    <string name="share_customize_show">Show</string>
+    <string name="share_theme_auto">Auto</string>
+    <string name="share_theme_light">Light</string>
+    <string name="share_theme_dark">Dark</string>
+    <string name="share_theme_amoled">AMOLED</string>
+    <string name="share_theme_cover">Cover</string>
+    <string name="share_format_compact">Compact</string>
+    <string name="share_format_square">Square</string>
+    <string name="share_format_story">Story</string>
+    <string name="share_template_standard">Card</string>
+    <string name="share_template_hero">Poster</string>
+    <string name="share_toggle_score">Score</string>
+    <string name="share_toggle_progress">Progress</string>
+    <string name="share_caption_hint">Add a caption (optional)</string>
 </resources>

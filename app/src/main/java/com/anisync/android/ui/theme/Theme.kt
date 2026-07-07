@@ -411,3 +411,26 @@ fun AppTheme(
     }
 }
 
+/**
+ * A color scheme for a **share card**, decoupled from the app's active theme so an exported image
+ * can be light / dark / AMOLED / artwork-seeded regardless of the in-app setting. Lives here (not in
+ * the share package) so it can reach the file-private base schemes and [toAmoled].
+ *
+ * @param seed when non-null, generates a MaterialKolor scheme from the artwork color; otherwise uses
+ *   the app's static light/dark scheme. AMOLED is our Seal-style container shift, dark-only.
+ */
+@Composable
+fun shareCardColorScheme(dark: Boolean, amoled: Boolean = false, seed: Color? = null): ColorScheme {
+    val base = when {
+        seed != null -> rememberDynamicColorScheme(
+            seedColor = seed,
+            isDark = dark,
+            isAmoled = false,
+            style = PaletteStyle.TonalSpot
+        )
+        dark -> darkScheme
+        else -> lightScheme
+    }
+    return if (amoled && dark) base.toAmoled() else base
+}
+
