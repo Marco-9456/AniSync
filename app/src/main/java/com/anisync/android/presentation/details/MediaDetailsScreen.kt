@@ -756,7 +756,6 @@ fun MediaDetailsScreen(
                     onDismiss = { showShareImageSheet = false },
                     caption = AniListUrls.mediaUrl(details.id, details.type),
                     seedColor = parseCoverColor(details.coverColor),
-                    backdropUrl = details.bannerUrl ?: details.coverUrl,
                     supportsPrivacy = true,
                 ) {
                     MediaShareCard(details = details, scoreFormat = userScoreFormat)

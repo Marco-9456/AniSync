@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.share
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -12,30 +11,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -43,8 +38,8 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.ui.theme.shareCardColorScheme
 import dev.shreyaspatil.capturable.capturable
 import dev.shreyaspatil.capturable.controller.CaptureController
@@ -74,10 +69,13 @@ data class ShareCardConfig(
 val LocalShareCardConfig = compositionLocalOf { ShareCardConfig() }
 
 /** Extra width the framed formats add around the [ShareCardWidth] card for backdrop margins. */
-private val FrameMargin = 16.dp
+private val FrameMargin = 20.dp
 
 /** Fixed export width in px. Density is overridden so the PNG is this crisp on every device. */
 private const val ExportWidthPx = 1080f
+
+/** Preview cap so the card + controls both stay on screen without scrolling the card away. */
+private val PreviewMaxHeight = 280.dp
 
 /**
  * Renders [card] exactly as it will be exported — under the chosen [ShareCardTheme], inside the
@@ -94,7 +92,6 @@ fun ShareCaptureArea(
     controller: CaptureController,
     config: ShareCardConfig,
     seedColor: Color?,
-    backdropUrl: String?,
     modifier: Modifier = Modifier,
     card: @Composable () -> Unit,
 ) {
@@ -105,7 +102,7 @@ fun ShareCaptureArea(
         ShareCardWidth + FrameMargin * 2
     }
     val captureDensity = ExportWidthPx / frameWidthDp.value
-    val maxPreviewHeightPx = with(displayDensity) { 380.dp.toPx() }
+    val maxPreviewHeightPx = with(displayDensity) { PreviewMaxHeight.toPx() }
 
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
@@ -125,7 +122,7 @@ fun ShareCaptureArea(
             ) {
                 ShareCardThemeScope(config.theme, seedColor) {
                     CompositionLocalProvider(LocalShareCardConfig provides config) {
-                        ShareFrame(config.format, frameWidthDp, backdropUrl, card)
+                        ShareFrame(config.format, frameWidthDp, card)
                     }
                 }
             }
@@ -183,62 +180,48 @@ fun ShareCardThemeScope(theme: ShareCardTheme, seedColor: Color?, content: @Comp
 }
 
 /**
- * Sits [card] on a full-bleed backdrop for the SQUARE / STORY formats: a blurred, scrimmed copy of
- * [backdropUrl] (or a scheme gradient when absent). COMPACT renders the card bare so its rounded
- * corners stay transparent for chat bubbles.
+ * Sits [card] on a full-bleed backdrop for the SQUARE / STORY formats: a soft theme-derived gradient
+ * (so it reads right in light, dark and AMOLED) with the card floating above it on a shadow. COMPACT
+ * renders the card bare so its rounded corners stay transparent for chat bubbles.
+ *
+ * The gradient is built from the *card's* scheme (this runs inside [ShareCardThemeScope]), so it
+ * tracks the chosen theme automatically — no image, no blur, nothing to leak into the capture.
  */
 @Composable
 private fun ShareFrame(
     format: ShareCardFormat,
     frameWidth: Dp,
-    backdropUrl: String?,
     card: @Composable () -> Unit,
 ) {
     if (format == ShareCardFormat.COMPACT) {
         card()
         return
     }
+    val scheme = MaterialTheme.colorScheme
     val minHeight = if (format == ShareCardFormat.SQUARE) frameWidth else frameWidth * 16f / 9f
     Box(
         modifier = Modifier
             .width(frameWidth)
             .heightIn(min = minHeight)
-            .clip(ShareCardShapeFramed),
+            .clip(ShareCardShapeFramed)
+            .background(Brush.verticalGradient(listOf(scheme.surfaceBright, scheme.surfaceDim))),
         contentAlignment = Alignment.Center,
     ) {
-        if (backdropUrl != null) {
-            AsyncImage(
-                model = backdropUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(28.dp),
-            )
-            Box(
-                Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(
-                        0f to Color.Black.copy(alpha = 0.45f),
-                        1f to Color.Black.copy(alpha = 0.65f),
-                    )
-                )
-            )
-        } else {
-            Box(
-                Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(
-                        0f to MaterialTheme.colorScheme.surfaceContainerHigh,
-                        1f to MaterialTheme.colorScheme.surfaceDim,
-                    )
-                )
-            )
+        Box(
+            Modifier
+                .padding(FrameMargin)
+                .shadow(elevation = 18.dp, shape = ShareCardShape, clip = false)
+        ) {
+            card()
         }
-        Box(Modifier.padding(FrameMargin)) { card() }
     }
 }
 
 /**
  * The customization row shown under the live preview: theme + format (+ template) pickers and the
- * per-card privacy toggles. [coverAvailable] gates the COVER theme (needs an artwork seed);
- * [templates] drives the style picker; [supportsPrivacy] the score/progress toggles.
+ * per-card privacy toggles, all built on the app's [SegmentedTabGroup]. [coverAvailable] gates the
+ * COVER theme (needs an artwork seed); [templates] drives the style picker; [supportsPrivacy] the
+ * score/progress toggles.
  */
 @Composable
 fun ShareCustomizeControls(
@@ -249,52 +232,41 @@ fun ShareCustomizeControls(
     templates: List<ShareCardTemplate>,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Theme — a scrollable pill row so five options never crowd on a narrow sheet.
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ControlRow(label = stringResource(R.string.share_customize_theme)) {
-            val themes = buildList {
-                addAll(listOf(ShareCardTheme.AUTO, ShareCardTheme.LIGHT, ShareCardTheme.DARK, ShareCardTheme.AMOLED))
-                if (coverAvailable) add(ShareCardTheme.COVER)
-            }
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                themes.forEach { t ->
-                    FilterChip(
-                        selected = config.theme == t,
-                        onClick = { onConfig(config.copy(theme = t)) },
-                        label = { Text(themeLabel(t)) },
-                    )
+            val themes = remember(coverAvailable) {
+                buildList {
+                    addAll(listOf(ShareCardTheme.AUTO, ShareCardTheme.LIGHT, ShareCardTheme.DARK, ShareCardTheme.AMOLED))
+                    if (coverAvailable) add(ShareCardTheme.COVER)
                 }
             }
+            SegmentedTabGroup(
+                options = themes,
+                selected = config.theme,
+                onSelect = { onConfig(config.copy(theme = it)) },
+                label = { themeLabel(it) },
+            )
         }
 
-        // Format — a segmented control (three short, mutually exclusive options).
         ControlRow(label = stringResource(R.string.share_customize_format)) {
-            val formats = ShareCardFormat.entries
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                formats.forEachIndexed { i, f ->
-                    SegmentedButton(
-                        selected = config.format == f,
-                        onClick = { onConfig(config.copy(format = f)) },
-                        shape = SegmentedButtonDefaults.itemShape(i, formats.size),
-                    ) { Text(formatLabel(f)) }
-                }
-            }
+            SegmentedTabGroup(
+                options = ShareCardFormat.entries,
+                selected = config.format,
+                onSelect = { onConfig(config.copy(format = it)) },
+                label = { formatLabel(it) },
+                fillEqually = true,
+            )
         }
 
         if (templates.size > 1) {
             ControlRow(label = stringResource(R.string.share_customize_template)) {
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    templates.forEachIndexed { i, tmpl ->
-                        SegmentedButton(
-                            selected = config.template == tmpl,
-                            onClick = { onConfig(config.copy(template = tmpl)) },
-                            shape = SegmentedButtonDefaults.itemShape(i, templates.size),
-                        ) { Text(templateLabel(tmpl)) }
-                    }
-                }
+                SegmentedTabGroup(
+                    options = templates,
+                    selected = config.template,
+                    onSelect = { onConfig(config.copy(template = it)) },
+                    label = { templateLabel(it) },
+                    fillEqually = true,
+                )
             }
         }
 

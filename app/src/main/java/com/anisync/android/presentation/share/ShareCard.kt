@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.share
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -79,10 +80,12 @@ internal val ShareCardShapeFramed = RoundedCornerShape(32.dp)
  * [supportsPrivacy]) whether the score/progress show. Then it offers: save the PNG to the gallery,
  * copy the [caption] link, or open the system share sheet with the image.
  *
+ * Layout keeps the preview and the action row **pinned**; only the customization controls scroll.
+ * Every tweak is therefore visible on the card the instant it's made.
+ *
  * The live preview doubles as the load gate: Coil covers are decoded by the time the user acts, so
- * the export is never blank. [seedColor] (artwork color) enables the COVER theme and tints the
- * backdrop; [backdropUrl] is the blurred image behind the framed formats; [templates] populates the
- * style picker.
+ * the export is never blank. [seedColor] (artwork color) enables the COVER theme; [templates]
+ * populates the style picker.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
@@ -90,7 +93,6 @@ fun ShareImageSheet(
     onDismiss: () -> Unit,
     caption: String? = null,
     seedColor: Color? = null,
-    backdropUrl: String? = null,
     supportsPrivacy: Boolean = false,
     templates: List<ShareCardTemplate> = emptyList(),
     card: @Composable () -> Unit,
@@ -100,7 +102,6 @@ fun ShareImageSheet(
     val haptic = LocalHapticFeedback.current
     val controller = rememberCaptureController()
     var busy by remember { mutableStateOf(false) }
-    var statusRes by remember { mutableStateOf<Int?>(null) }
     var config by remember {
         mutableStateOf(ShareCardConfig(template = templates.firstOrNull() ?: ShareCardTemplate.STANDARD))
     }
@@ -124,54 +125,56 @@ fun ShareImageSheet(
     val shareText = listOfNotNull(config.caption.trim().ifBlank { null }, caption).joinToString("\n\n")
         .ifBlank { null }
 
-    com.anisync.android.presentation.components.AppModalBottomSheet(onDismissRequest = onDismiss) {
+    // Full height from the start: the pinned preview/actions layout needs the whole sheet.
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    com.anisync.android.presentation.components.AppModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
                 .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.share_image_preview_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            )
-
+            // Pinned: the live preview. Every control change repaints it in place.
             ShareCaptureArea(
                 controller = controller,
                 config = config,
                 seedColor = seedColor,
-                backdropUrl = backdropUrl,
                 card = card,
-            )
-
-            Spacer(Modifier.height(20.dp))
-
-            ShareCustomizeControls(
-                config = config,
-                onConfig = { config = it },
-                coverAvailable = seedColor != null,
-                supportsPrivacy = supportsPrivacy,
-                templates = templates,
             )
 
             Spacer(Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = config.caption,
-                onValueChange = { config = config.copy(caption = it.take(80)) },
-                label = { Text(stringResource(R.string.share_caption_hint)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Only this middle section scrolls; preview and actions stay on screen.
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                ShareCustomizeControls(
+                    config = config,
+                    onConfig = { config = it },
+                    coverAvailable = seedColor != null,
+                    supportsPrivacy = supportsPrivacy,
+                    templates = templates,
+                )
 
-            Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(14.dp))
+
+                OutlinedTextField(
+                    value = config.caption,
+                    onValueChange = { config = config.copy(caption = it.take(80)) },
+                    label = { Text(stringResource(R.string.share_caption_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -186,8 +189,14 @@ fun ShareImageSheet(
                 ) {
                     runAction { bmp ->
                         val ok = ShareUtils.saveCardToGallery(context, bmp)
-                        statusRes = if (ok) R.string.share_saved_to_gallery else R.string.share_save_failed
                         if (ok) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        Toast.makeText(
+                            context,
+                            context.getString(
+                                if (ok) R.string.share_saved_to_gallery else R.string.share_save_failed
+                            ),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
                 SheetAction(
@@ -199,8 +208,8 @@ fun ShareImageSheet(
                 ) {
                     // Copy just the link — no capture needed; pastes cleanly into the Feed composer.
                     caption?.let { ShareUtils.copyText(context, it) }
-                    statusRes = R.string.share_copied
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    Toast.makeText(context, R.string.share_copied, Toast.LENGTH_SHORT).show()
                 }
                 SheetAction(
                     icon = Icons.Filled.Share,
@@ -214,15 +223,6 @@ fun ShareImageSheet(
                         onDismiss()
                     }
                 }
-            }
-
-            if (statusRes != null) {
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    text = stringResource(statusRes!!),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
             }
         }
     }

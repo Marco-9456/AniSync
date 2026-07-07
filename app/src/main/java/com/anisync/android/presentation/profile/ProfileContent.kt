@@ -253,8 +253,7 @@ fun ProfileContent(
         uiState.statsData?.let { stats ->
             ShareImageSheet(
                 onDismiss = { statsShareVisible = false },
-                caption = profileUrl,
-                backdropUrl = profile.bannerUrl
+                caption = profileUrl
             ) {
                 ProfileStatsShareCard(
                     profile = profile,
@@ -271,8 +270,7 @@ fun ProfileContent(
         if (entries.isNotEmpty()) {
             ShareImageSheet(
                 onDismiss = { favouritesShareVisible = false },
-                caption = profileUrl,
-                backdropUrl = profile.bannerUrl
+                caption = profileUrl
             ) {
                 FavouritesShareCard(
                     heading = stringResource(
