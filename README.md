@@ -9,21 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="#features">Features</a> &middot;
-  <a href="#screenshots">Screenshots</a> &middot;
-  <a href="#tech-stack">Tech Stack</a> &middot;
-  <a href="#getting-started">Getting Started</a> &middot;
-  <a href="#documentation">Documentation</a> &middot;
-  <a href="#contributing">Contributing</a>
-</p>
-
-<p align="center">
   <a href="https://www.android.com/"><img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat&logo=android&logoColor=white" alt="Platform"></a>
   <a href="https://developer.android.com/about/versions/oreo/"><img src="https://img.shields.io/badge/Min%20SDK-26-blue?style=flat" alt="Min SDK"></a>
   <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?style=flat&logo=kotlin&logoColor=white" alt="Kotlin"></a>
   <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=flat&logo=jetpackcompose&logoColor=white" alt="Compose"></a>
-  <a href="https://developer.android.com/studio/releases/platforms"><img src="https://img.shields.io/badge/Target%20SDK-36-blue?style=flat" alt="Target SDK"></a>
-  <a href="https://developer.android.com/studio/releases/build-tools"><img src="https://img.shields.io/badge/Compile%20SDK-36-blue?style=flat" alt="Compile SDK"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue?style=flat" alt="License"></a>
 </p>
 
@@ -40,219 +29,51 @@
   <a href="https://github.com/sponsors/Marco-9456"><img src="https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=flat&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors"></a>
 </p>
 
-## :heart: Supporters
-
-Thanks to everyone who chips in to support AniSync. [Support the project →](https://github.com/sponsors/Marco-9456)
-
-### Generous Supporters
-<!-- sponsors-generous -->_Be the first 💞 — <a href="https://github.com/sponsors/Marco-9456">support AniSync with a tip</a>_<!-- sponsors-generous -->
-
-### Supporters
-<!-- sponsors-backer -->_<a href="https://github.com/sponsors/Marco-9456">Support AniSync with a tip</a>_<!-- sponsors-backer -->
-
-### Coffee Supporters
-<!-- sponsors-sponsor -->_<a href="https://github.com/sponsors/Marco-9456">Support AniSync with a tip</a>_<!-- sponsors-sponsor -->
-
----
-
-## Overview
-
-AniSync is a native Android app for [AniList.co](https://anilist.co) — the anime and manga tracking platform. It provides a beautiful, **offline-first** experience for managing your watchlist, discovering new content, and staying connected with the anime community.
-
-The app covers everything from basic progress tracking to advanced features like home screen widgets, forum discussions, and detailed statistics.
+AniSync is a native Android app for [AniList.co](https://anilist.co) — a fast, offline-first way to track your anime and manga, discover new stuff, and keep up with the community. No browser tab required.
 
 > [!NOTE]
 > AniSync is not affiliated with AniList. It's a third-party client built for the AniList community.
 
 ---
 
-## :sparkles: Why AniSync
-
-- **Offline-First** — Your library and data work without an internet connection, syncing when you're back online.
-- **Beautiful UI** — Modern Material 3 design with smooth animations and dynamic theming.
-- **Smart Notifications** — Know exactly when your favorite shows air, plus stay updated on forum activity.
-- **Home Screen Widgets** — Quick access to your anime schedule right from your launcher.
-- **Privacy-Focused** — Your credentials are encrypted locally using AES-256-GCM.
-
----
-
-## Features
-
-### :books: Library Management
-
-Track your anime and manga with full flexibility. Choose from multiple statuses (Watching, Planning, Completed, Dropped, Paused, Repeating), rate your entries on a scale, add personal notes, and organize everything into custom lists. Sort by title, progress, score, airing date, or last updated — ascending or descending.
-
-### :mag: Discovery & Search
-
-Browse what's trending, what's popular this season, upcoming releases, and titles marked TBA. The advanced search lets you filter by 18 genres, release year, season, format (TV, Movie, OVA, ONA, Special, Music), and airing status. Find exactly what you're looking for.
-
-### :movie_camera: Media Details
-
-Every anime and manga page gives you the full picture. See cover art and banners, read descriptions, view episode/chapter counts, and check community scores. Dive deeper with character casts and their voice actors, staff information (directors, studios, producers), and related media (sequels, prequels, side stories).
-
-Watch trailers directly in the app using the built-in video player. Browse community reviews and recommendations, then explore streaming links to find where to watch.
-
-### :performing_arts: Character & Staff Browser
-
-Characters and staff members have their own dedicated pages. View parsed biographies with spoiler handling, key attributes, and media appearances. Filter voice actors by language to find your preferred dub.
-
-### :speech_balloon: Forum
-
-Engage with the AniList community through full forum integration. Browse threads by category, read discussions with nested replies, and participate with markdown support. Like posts, bookmark threads for later, and subscribe to get notified of new replies.
-
-### :bar_chart: Statistics
-
-Get detailed insights into your anime and manga habits. See total time watched, episodes completed, chapters read, and mean scores. Explore breakdowns by genre, format, score distribution, and release year.
-
-### :wrench: Home Screen Widgets
-
-Access your anime schedule without opening the app. Multiple widget types show upcoming episodes with countdown timers, today's airing timeline, a 7-day calendar view, or trending anime at a glance. Configure each widget to show your personal list or all anime.
-
-### :bell: Notification System
-
-Never miss an episode. AniSync sends two-tier notifications — an advance alert 12 hours before air time, then an imminent reminder 2 hours before. Planning list shows? Get notified when they premiere. Forum notifications keep you updated on replies, mentions, and subscriptions.
-
----
-
 ## :camera: Screenshots
 
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" width="200" alt="Screenshot 1">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.jpg" width="200" alt="Screenshot 2">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.jpg" width="200" alt="Screenshot 3">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.jpg" width="200" alt="Screenshot 4">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.jpg" width="200" alt="Screenshot 5">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.jpg" width="200" alt="Screenshot 6">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7.jpg" width="200" alt="Screenshot 7">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/8.jpg" width="200" alt="Screenshot 8">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/9.jpg" width="200" alt="Screenshot 9">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/10.jpg" width="200" alt="Screenshot 10">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/11.jpg" width="200" alt="Screenshot 11">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/12.jpg" width="200" alt="Screenshot 12">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/13.jpg" width="200" alt="Screenshot 13">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/14.jpg" width="200" alt="Screenshot 14">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/15.jpg" width="200" alt="Screenshot 15">
+  <img src=".github/Screenshots.svg" width="100%" alt="AniSync app screenshots">
+</p>
+
+### Shareable cards
+
+<p align="center">
+  <img src=".github/Shareable-cards.svg" width="100%" alt="AniSync shareable cards">
 </p>
 
 ---
 
-## Tech Stack
+## :sparkles: Features
 
-| Category | Technology |
-| --- | --- |
-| **Language** | Kotlin 2.2.21 |
-| **UI Framework** | Jetpack Compose with Material 3 |
-| **Architecture** | MVVM + Clean Architecture (Use Cases) |
-| **Dependency Injection** | Hilt / Dagger |
-| **Navigation** | Navigation Compose (Type-safe routes) |
-| **Networking** | Apollo GraphQL 4.x |
-| **Local Database** | Room with KSP |
-| **Theming** | MaterialKolor (dynamic palette styles & seed colors) |
-| **Image Loading** | Coil |
-| **Video Playback** | ExoPlayer with custom Material 3 UI |
-| **Background Work** | WorkManager |
-| **Widgets** | Jetpack Glance |
-| **Serialization** | Kotlinx Serialization |
-| **Security** | EncryptedSharedPreferences (AES-256-GCM) |
-| **Min SDK** | 26 (Android 8.0 Oreo) |
-| **Target SDK** | 36 (Android 16) |
+Everything you'd want from an AniList client, in one app:
+
+- **Tracking** — obviously. Statuses, scores, progress, notes, and custom lists for your anime and manga.
+- **Search & Discovery** — trending, seasonal, and upcoming titles, plus proper filters for when you know exactly what you're after.
+- **Media Details** — characters, voice actors, staff, trailers, reviews, recommendations, and where to watch.
+- **Feed** — see what your friends are watching and judge them accordingly.
+- **Forums** — browse, post, like, and subscribe without ever leaving the app.
+- **Stats** — nice charts that prove you watch too much anime.
+- **Widgets & Notifications** — airing schedules on your home screen and reminders before episodes drop.
+- **Offline-First** — your library works without internet and syncs when you're back online.
 
 ---
 
-## Getting Started
+## :scroll: Changelog
 
-### Prerequisites
-
-- Android Studio Ladybug (2024.2.1) or newer
-- JDK 17
-- Android SDK with API 26+
-
-### Building the Project
-
-1. Clone the repository:
-```bash
-git clone https://github.com/Marco-9456/AniSync.git
-cd AniSync
-```
-
-2. Open in Android Studio and wait for Gradle sync to complete.
-
-3. Run the app on a device or emulator (API 26+).
-
-> [!TIP]
-> You don't need any API keys or additional configuration. The app uses AniList's public GraphQL API and handles authentication via OAuth.
-
-### Build Variants
-
-| Variant | Package ID | Description |
-| --- | --- | --- |
-| `debug` | `com.anisync.android.debug` | Development build with debug features |
-| `stable` | `com.anisync.android` | Production build with ProGuard |
-
-> [!NOTE]
-> Both variants can be installed side-by-side for testing.
-
----
-
-## Documentation
-
-Comprehensive documentation lives in the `docs/` folder:
-
-| Document | Description |
-| --- | --- |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture, patterns, and layer responsibilities |
-| [DATABASE.md](docs/DATABASE.md) | Room database schema, migrations, and caching strategy |
-| [API.md](docs/API.md) | GraphQL integration, authentication, and API reference |
-| [NAVIGATION.md](docs/NAVIGATION.md) | Screen flows, navigation graph, and deep links |
-| [WIDGETS.md](docs/WIDGETS.md) | Widget architecture and notification system |
-| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contribution guidelines and code style |
-| [CHANGELOG.md](docs/CHANGELOG.md) | Version history and release notes |
-
-### Quick Links
-
-- **Adding a new screen?** → See [NAVIGATION.md](docs/NAVIGATION.md)
-- **Changing database schema?** → See [DATABASE.md](docs/DATABASE.md)
-- **Understanding data flow?** → See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- **Working with widgets?** → See [WIDGETS.md](docs/WIDGETS.md)
-
----
-
-## Project Structure
-
-```
-AniSync/
-├── app/
-│   ├── src/main/
-│   │   ├── java/com/anisync/android/
-│   │   │   ├── data/           # Data layer (repositories, local DB)
-│   │   │   ├── di/             # Hilt dependency injection modules
-│   │   │   ├── domain/         # Domain layer (models, interfaces, use cases)
-│   │   │   ├── presentation/   # UI layer (screens, ViewModels)
-│   │   │   ├── ui/theme/       # Compose theme (colors, typography)
-│   │   │   ├── util/           # Utility functions
-│   │   │   ├── widget/         # Glance widgets
-│   │   │   └── worker/         # WorkManager jobs
-│   │   ├── graphql/            # GraphQL queries and mutations
-│   │   └── res/                # Resources (layouts, strings, drawables)
-│   └── schemas/                # Room schema exports (for migrations)
-├── docs/                       # Documentation
-└── gradle/                     # Gradle configuration
-```
+Curious what's new (or what broke and got fixed)? Check the [CHANGELOG](docs/CHANGELOG.md) or the [releases page](https://github.com/Marco-9456/AniSync/releases).
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
-
-### :runner: Quick Start for Contributors
-
-- [ ] Fork the repository
-- [ ] Create a feature branch (`git checkout -b feature/amazing-feature`)
-- [ ] Make your changes
-- [ ] Run tests and lint (`./gradlew check`)
-- [ ] Commit with a descriptive message
-- [ ] Push to your fork and create a Pull Request
+Contributions are welcome! Read [CONTRIBUTING.md](docs/CONTRIBUTING.md), fork, branch, and open a PR.
 
 ---
 
@@ -276,6 +97,25 @@ This project's source code is licensed under the **GNU General Public License v3
 
 ---
 
-<p align="center">
-Made with care for anime fans :cherry_blossom:
-</p>
+## The FAQ
+
+* *Why isn't the app on the Play Store?*
+  * I need MONEY <img src="https://files.catbox.moe/uqa4ad.jpg" width="50" alt="DUTCH"> — and a new laptop or rent matters more to me than handing it to Google.
+* *Where do I actually get it, then?*
+  * F-Droid or the GitHub releases page — the badges up top link straight to both. That's it. No sketchy APK mirror sites, please.
+* *Is it free? Any ads or tracking?*
+  * Completely free and open source under GPLv3. No ads, no trackers, no analytics, no telemetry — I don't collect anything about you.
+* *Is it safe to log in?*
+  * Yep. Login goes through AniList's official OAuth, so the app never sees your password. Your access token is encrypted on-device with AES-256-GCM and only ever talks to AniList's API — nothing else.
+* *Why isn't the app on the AniList clients list?*
+  * It's a bit complicated, but long story short: a mod told me the app wasn't getting added because the release thread was AI-generated. I rewrote it, let them know, and then didn't hear anything for quite a while. When I followed up recently, the same mod now says the app is vibecoded, so they won't add it. I asked right away how they reached that conclusion — and never heard back again.
+
+  Getting told your first open-source project is "vibecoded" stung, not gonna lie. But whatever. If a mod with actual front-end and back-end experience reviews the app down the line and changes their mind, great; if not, no hard feelings either. I still love AniList :)
+* *Why another AniList client? Aren't there enough?*
+  * Maybe! But I wanted one that felt genuinely native and looked like a proper Material 3 app. Building it turned out to be way more fun than I expected, so here we are.
+* *Found a bug or want a feature?*
+  * Open an issue on GitHub. I actually read them and usually reply fast (see the vibecoded saga above). No promises on every feature, but good ideas tend to make it in.
+* *Can I help translate?*
+  * Please do — AniSync is on Weblate (badge's up top). Pick your language and go, no coding required.
+* *Will it ever come to iOS?*
+  * Probably not. Compose Multiplatform exists, but I don't want to touch it — every multiplatform app I've tried ran noticeably worse than native Android, since the iOS side wasn't native. Unless I actually learn Swift and SwiftUI (not happening any time soon), it's staying Android-only.
