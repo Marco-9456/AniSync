@@ -1246,4 +1246,44 @@
     <string name="rail_collapse">Collapse navigation</string>
     <string name="rail_expanded">Navigation expanded</string>
     <string name="rail_collapsed">Navigation collapsed</string>
+
+    <!-- Share-as-image cards -->
+    <string name="share_as_image">Share image</string>
+    <string name="share_image_preview_title">Preview</string>
+    <string name="share_action_save">Save</string>
+    <string name="share_action_copy">Copy</string>
+    <string name="share_action_share">Share</string>
+    <string name="share_saved_to_gallery">Saved to gallery</string>
+    <string name="share_save_failed">Couldn\'t save image</string>
+    <string name="share_copied">Link copied</string>
+    <string name="share_card_source">AniList</string>
+    <string name="share_card_brand" translatable="false">AniSync</string>
+    <string name="share_stats_eyebrow_anime">Anime stats</string>
+    <string name="share_stats_eyebrow_manga">Manga stats</string>
+    <string name="share_stats_unit_anime">anime</string>
+    <string name="share_stats_unit_manga">manga</string>
+    <string name="share_stats_days">Days</string>
+    <string name="share_stats_episodes">Episodes</string>
+    <string name="share_stats_chapters">Chapters</string>
+    <string name="share_stats_volumes">Volumes</string>
+    <string name="share_stats_mean">Score</string>
+    <string name="share_stats_top_genres">Top genres</string>
+    <string name="share_media_episodes">episodes</string>
+    <string name="share_media_chapters">chapters</string>
+    <string name="share_media_popularity">popularity</string>
+    <string name="share_media_favourites">favourites</string>
+    <string name="share_media_ep_number">Ep %1$d</string>
+    <string name="share_media_tba">TBA</string>
+    <!-- Release status shown ONLY when the title is not on the viewer's list; worded to read as
+         the show's airing state, never as a personal tracking status. -->
+    <string name="share_media_status_finished">Finished airing</string>
+    <string name="share_media_status_airing">Airing now</string>
+    <string name="share_media_status_upcoming">Upcoming</string>
+    <string name="share_media_status_cancelled">Cancelled</string>
+    <string name="share_media_status_hiatus">On hiatus</string>
+    <string name="share_review_score">%1$d/100</string>
+    <string name="share_review_byline">Review by</string>
+    <string name="share_fav_eyebrow">Favourites</string>
+    <string name="share_fav_heading_anime">Favourite Anime</string>
+    <string name="share_fav_heading_manga">Favourite Manga</string>
 </resources>

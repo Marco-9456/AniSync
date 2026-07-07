@@ -4,12 +4,14 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -24,8 +26,10 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -33,6 +37,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -60,6 +68,9 @@ import com.anisync.android.presentation.profile.sections.profileMediaTab
 import com.anisync.android.presentation.profile.sections.profileReviewsTab
 import com.anisync.android.presentation.profile.sections.profileSocialTab
 import com.anisync.android.presentation.profile.sections.profileStatsTab
+import com.anisync.android.presentation.share.FavouritesShareCard
+import com.anisync.android.presentation.share.ProfileStatsShareCard
+import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.ShareUtils
 
@@ -101,6 +112,10 @@ fun ProfileContent(
     // density and gain columns on wider windows; studio chips are wider so they start 2-up.
     val portraitColumns = profileGridColumns(baseMinSize = 150.dp)
     val studioColumns = profileGridColumns(baseMinSize = 240.dp, compactColumns = 2)
+
+    // Share-as-image sheets for the Stats and Favourites tabs, hosted at screen scope below.
+    var statsShareVisible by remember { mutableStateOf(false) }
+    var favouritesShareVisible by remember { mutableStateOf(false) }
 
     if (LocalAdaptiveInfo.current.supportsTwoPane) {
         ProfileWideLayout(
@@ -214,7 +229,10 @@ fun ProfileContent(
             onLastReplyClick = onLastReplyClick,
             portraitColumns = portraitColumns,
             studioColumns = studioColumns,
-            statsColumns = statsColumns
+            statsColumns = statsColumns,
+            showShareActions = true,
+            onShareStats = { statsShareVisible = true },
+            onShareFavourites = { favouritesShareVisible = true }
         )
     }
     }
@@ -227,6 +245,45 @@ fun ProfileContent(
                 onAction(ProfileAction.SetBiographySheetVisible(false))
             }
         )
+    }
+
+    val profileUrl = "https://anilist.co/user/${profile.name}"
+
+    if (statsShareVisible) {
+        uiState.statsData?.let { stats ->
+            ShareImageSheet(
+                onDismiss = { statsShareVisible = false },
+                caption = profileUrl
+            ) {
+                ProfileStatsShareCard(
+                    profile = profile,
+                    stats = stats,
+                    type = uiState.selectedStatsType
+                )
+            }
+        }
+    }
+
+    if (favouritesShareVisible) {
+        val isAnime = uiState.selectedFavoritesFilter == ProfileFavoritesFilter.ANIME
+        val entries = if (isAnime) profile.favoriteAnime else profile.favoriteMangaOverview
+        if (entries.isNotEmpty()) {
+            ShareImageSheet(
+                onDismiss = { favouritesShareVisible = false },
+                caption = profileUrl
+            ) {
+                FavouritesShareCard(
+                    heading = stringResource(
+                        if (isAnime) R.string.share_fav_heading_anime
+                        else R.string.share_fav_heading_manga
+                    ),
+                    eyebrow = stringResource(R.string.share_fav_eyebrow),
+                    entries = entries,
+                    bannerUrl = profile.bannerUrl,
+                    handle = profile.name
+                )
+            }
+        }
     }
 
     uiState.selectedReview?.let { review ->
@@ -302,7 +359,10 @@ internal fun LazyListScope.profileSelectedTabContent(
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     portraitColumns: Int,
     studioColumns: Int,
-    statsColumns: Int
+    statsColumns: Int,
+    showShareActions: Boolean = false,
+    onShareStats: () -> Unit = {},
+    onShareFavourites: () -> Unit = {}
 ) {
     when (uiState.selectedTab) {
         ProfileTab.OVERVIEW -> {
@@ -394,6 +454,16 @@ internal fun LazyListScope.profileSelectedTabContent(
         }
 
         ProfileTab.FAVORITES -> {
+            val favShareable = when (uiState.selectedFavoritesFilter) {
+                ProfileFavoritesFilter.ANIME -> profile.favoriteAnime.isNotEmpty()
+                ProfileFavoritesFilter.MANGA -> profile.favoriteMangaOverview.isNotEmpty()
+                else -> false
+            }
+            if (showShareActions && favShareable) {
+                item(key = "favourites_share_action") {
+                    ShareTabAction(onClick = onShareFavourites)
+                }
+            }
             profileFavoritesTab(
                 profile = profile,
                 selectedFilter = uiState.selectedFavoritesFilter,
@@ -420,6 +490,11 @@ internal fun LazyListScope.profileSelectedTabContent(
         }
 
         ProfileTab.STATS -> {
+            if (showShareActions && uiState.statsData != null) {
+                item(key = "stats_share_action") {
+                    ShareTabAction(onClick = onShareStats)
+                }
+            }
             profileStatsTab(
                 uiState = uiState,
                 onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
@@ -428,6 +503,27 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onStudioClick = onStudioClick,
                 statsColumns = statsColumns
             )
+        }
+    }
+}
+
+/** Right-aligned "Share as image" affordance rendered above a shareable profile tab's content. */
+@Composable
+private fun ShareTabAction(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 12.dp),
+        horizontalArrangement = Arrangement.End
+    ) {
+        FilledTonalButton(onClick = onClick) {
+            Icon(
+                imageVector = Icons.Outlined.Image,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.share_as_image))
         }
     }
 }

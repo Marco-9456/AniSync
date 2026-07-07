@@ -30,6 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +55,8 @@ import com.anisync.android.presentation.components.ReviewAuthorBar
 import com.anisync.android.presentation.components.ReviewScorePill
 import com.anisync.android.presentation.components.ReviewVoteActions
 import com.anisync.android.presentation.components.TranslateIconButton
+import com.anisync.android.presentation.share.ReviewShareCard
+import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.ui.theme.emphasis
@@ -71,6 +76,7 @@ fun ReviewDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showShareImage by remember { mutableStateOf(false) }
 
     LaunchedEffect(reviewId) { viewModel.load(reviewId) }
 
@@ -88,7 +94,8 @@ fun ReviewDetailScreen(
             )
             IconButton(
                 onClick = {
-                    ShareUtils.shareText(context, "https://anilist.co/review/$reviewId")
+                    if (uiState.review != null) showShareImage = true
+                    else ShareUtils.shareText(context, "https://anilist.co/review/$reviewId")
                 }
             ) {
                 Icon(
@@ -125,6 +132,15 @@ fun ReviewDetailScreen(
             uiState.review != null -> {
                 val review = uiState.review!!
                 val mediaId = uiState.mediaId
+
+                if (showShareImage) {
+                    ShareImageSheet(
+                        onDismiss = { showShareImage = false },
+                        caption = "https://anilist.co/review/$reviewId"
+                    ) {
+                        ReviewShareCard(review = review)
+                    }
+                }
 
                 Column(
                     modifier = Modifier

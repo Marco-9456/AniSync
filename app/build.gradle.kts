@@ -275,6 +275,7 @@ dependencies {
     implementation(libs.reorderable)
     implementation(libs.okhttp)
     implementation(libs.androidx.biometric)
+    implementation(libs.capturable)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
