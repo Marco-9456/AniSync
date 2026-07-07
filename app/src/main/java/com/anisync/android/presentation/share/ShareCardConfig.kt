@@ -93,6 +93,7 @@ fun ShareCaptureArea(
     config: ShareCardConfig,
     seedColor: Color?,
     modifier: Modifier = Modifier,
+    maxPreviewHeight: Dp = PreviewMaxHeight,
     card: @Composable () -> Unit,
 ) {
     val displayDensity = LocalDensity.current
@@ -102,7 +103,7 @@ fun ShareCaptureArea(
         ShareCardWidth + FrameMargin * 2
     }
     val captureDensity = ExportWidthPx / frameWidthDp.value
-    val maxPreviewHeightPx = with(displayDensity) { PreviewMaxHeight.toPx() }
+    val maxPreviewHeightPx = with(displayDensity) { maxPreviewHeight.toPx() }
 
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),

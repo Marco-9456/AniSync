@@ -925,31 +925,25 @@ class DetailsRepositoryImpl @Inject constructor(
 
             val alternativeNames = staffData.name?.alternative?.filterNotNull() ?: emptyList()
 
-            val pageInfo = staffData.characterMedia?.pageInfo
+            val pageInfo = staffData.characters?.pageInfo
             val hasNextPage = pageInfo?.hasNextPage ?: false
 
-            val characterMap =
-                linkedMapOf<Int, MutableList<Pair<GetStaffDetailsQuery.Edge, GetStaffDetailsQuery.Character>>>()
-            staffData.characterMedia?.edges?.filterNotNull()?.forEach { edge ->
-                edge.characters?.filterNotNull()?.forEach { character ->
-                    val charId = character.id ?: return@forEach
-                    characterMap.getOrPut(charId) { mutableListOf() }.add(edge to character)
-                }
-            }
-
-            val voicedCharacters = characterMap.map { (charId, entries) ->
-                val firstChar = entries.first().second
+            // One edge per character, already server-ordered by the characters' own favourites
+            // (FAVOURITES_DESC); edge.media carries the roles, so no client-side regrouping.
+            val voicedCharacters = staffData.characters?.edges?.filterNotNull()?.mapNotNull { edge ->
+                val character = edge.node ?: return@mapNotNull null
+                val charId = character.id ?: return@mapNotNull null
                 VoicedCharacter(
                     characterId = charId,
-                    characterName = firstChar.name?.full ?: "Unknown",
-                    characterNameNative = firstChar.name?.native,
-                    characterNameUserPreferred = firstChar.name?.userPreferred
-                        ?: firstChar.name?.full ?: "Unknown",
-                    characterImageUrl = firstChar.image?.medium,
-                    mediaAppearances = entries.mapNotNull { (edge, _) ->
-                        val node = edge.node ?: return@mapNotNull null
+                    characterName = character.name?.full ?: "Unknown",
+                    characterNameNative = character.name?.native,
+                    characterNameUserPreferred = character.name?.userPreferred
+                        ?: character.name?.full ?: "Unknown",
+                    characterImageUrl = character.image?.medium,
+                    mediaAppearances = edge.media?.filterNotNull()?.mapNotNull { node ->
+                        val mediaId = node.id ?: return@mapNotNull null
                         CharacterMediaAppearance(
-                            mediaId = node.id ?: 0,
+                            mediaId = mediaId,
                             mediaTitle = node.title?.userPreferred ?: "Unknown",
                             mediaTitleRomaji = node.title?.romaji,
                             mediaTitleEnglish = node.title?.english,
@@ -957,15 +951,15 @@ class DetailsRepositoryImpl @Inject constructor(
                             coverUrl = node.coverImage?.large,
                             cover = com.anisync.android.domain.CoverImage.of(node.coverImage?.medium, node.coverImage?.large, node.coverImage?.extraLarge),
                             startYear = node.startDate?.year,
-                            characterRole = edge.characterRole?.name,
+                            characterRole = edge.role?.name,
                             popularity = node.popularity,
                             averageScore = node.averageScore,
                             favourites = node.favourites,
                             isOnList = node.mediaListEntry?.id != null
                         )
-                    }
+                    }.orEmpty()
                 )
-            }
+            } ?: emptyList()
 
             val serverIsFav = staffData.isFavourite ?: false
             favouriteOverrideStore.clearIfMatches(FavouriteEntity.STAFF, id, serverIsFav)

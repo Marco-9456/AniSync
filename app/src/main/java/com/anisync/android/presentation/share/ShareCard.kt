@@ -2,11 +2,13 @@ package com.anisync.android.presentation.share
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -87,7 +90,7 @@ internal val ShareCardShapeFramed = RoundedCornerShape(32.dp)
  * the export is never blank. [seedColor] (artwork color) enables the COVER theme; [templates]
  * populates the style picker.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun ShareImageSheet(
     onDismiss: () -> Unit,
@@ -140,11 +143,17 @@ fun ShareImageSheet(
                 .padding(bottom = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Pinned: the live preview. Every control change repaints it in place.
+            // Pinned: the live preview. Every control change repaints it in place. While the
+            // keyboard is up (caption editing) it shrinks instead of squashing the field away.
+            val previewMaxHeight by animateDpAsState(
+                targetValue = if (WindowInsets.isImeVisible) 136.dp else 280.dp,
+                label = "previewMaxHeight"
+            )
             ShareCaptureArea(
                 controller = controller,
                 config = config,
                 seedColor = seedColor,
+                maxPreviewHeight = previewMaxHeight,
                 card = card,
             )
 
