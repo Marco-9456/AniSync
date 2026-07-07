@@ -70,6 +70,7 @@ import com.anisync.android.presentation.profile.sections.profileSocialTab
 import com.anisync.android.presentation.profile.sections.profileStatsTab
 import com.anisync.android.presentation.share.FavouritesShareCard
 import com.anisync.android.presentation.share.ProfileStatsShareCard
+import com.anisync.android.presentation.share.ShareCardTemplate
 import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.ShareUtils
@@ -253,7 +254,14 @@ fun ProfileContent(
         uiState.statsData?.let { stats ->
             ShareImageSheet(
                 onDismiss = { statsShareVisible = false },
-                caption = profileUrl
+                caption = profileUrl,
+                templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
+                templateLabel = { tmpl ->
+                    stringResource(
+                        if (tmpl == ShareCardTemplate.STANDARD) R.string.share_template_stats
+                        else R.string.share_template_recap
+                    )
+                }
             ) {
                 ProfileStatsShareCard(
                     profile = profile,
@@ -270,7 +278,14 @@ fun ProfileContent(
         if (entries.isNotEmpty()) {
             ShareImageSheet(
                 onDismiss = { favouritesShareVisible = false },
-                caption = profileUrl
+                caption = profileUrl,
+                templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
+                templateLabel = { tmpl ->
+                    stringResource(
+                        if (tmpl == ShareCardTemplate.STANDARD) R.string.share_template_grid
+                        else R.string.share_template_ranked
+                    )
+                }
             ) {
                 FavouritesShareCard(
                     heading = stringResource(

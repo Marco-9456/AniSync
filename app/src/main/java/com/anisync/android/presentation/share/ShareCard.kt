@@ -95,6 +95,7 @@ fun ShareImageSheet(
     seedColor: Color? = null,
     supportsPrivacy: Boolean = false,
     templates: List<ShareCardTemplate> = emptyList(),
+    templateLabel: (@Composable (ShareCardTemplate) -> String)? = null,
     card: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -161,6 +162,7 @@ fun ShareImageSheet(
                     coverAvailable = seedColor != null,
                     supportsPrivacy = supportsPrivacy,
                     templates = templates,
+                    templateLabel = templateLabel,
                 )
 
                 Spacer(Modifier.height(14.dp))

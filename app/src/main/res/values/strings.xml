@@ -1312,4 +1312,11 @@
     <string name="share_person_character">Character</string>
     <string name="share_person_staff">Staff</string>
     <string name="share_known_for">Known for</string>
+    <string name="share_template_stats">Stats</string>
+    <string name="share_template_recap">Recap</string>
+    <string name="share_template_grid">Grid</string>
+    <string name="share_template_ranked">Ranked</string>
+    <string name="share_recap_eyebrow">All-time recap</string>
+    <string name="share_recap_titles">titles</string>
+    <string name="share_recap_top_studio">Most watched studio</string>
 </resources>

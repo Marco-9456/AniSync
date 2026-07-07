@@ -221,7 +221,8 @@ private fun ShareFrame(
  * The customization row shown under the live preview: theme + format (+ template) pickers and the
  * per-card privacy toggles, all built on the app's [SegmentedTabGroup]. [coverAvailable] gates the
  * COVER theme (needs an artwork seed); [templates] drives the style picker; [supportsPrivacy] the
- * score/progress toggles.
+ * score/progress toggles. [templateLabel] renames the style options per card type (Card/Poster,
+ * Stats/Recap, Grid/Ranked); null falls back to the generic labels.
  */
 @Composable
 fun ShareCustomizeControls(
@@ -231,6 +232,7 @@ fun ShareCustomizeControls(
     supportsPrivacy: Boolean,
     templates: List<ShareCardTemplate>,
     modifier: Modifier = Modifier,
+    templateLabel: (@Composable (ShareCardTemplate) -> String)? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ControlRow(label = stringResource(R.string.share_customize_theme)) {
@@ -264,7 +266,7 @@ fun ShareCustomizeControls(
                     options = templates,
                     selected = config.template,
                     onSelect = { onConfig(config.copy(template = it)) },
-                    label = { templateLabel(it) },
+                    label = { templateLabel?.invoke(it) ?: defaultTemplateLabel(it) },
                     fillEqually = true,
                 )
             }
@@ -336,7 +338,7 @@ private fun formatLabel(format: ShareCardFormat): String = stringResource(
 )
 
 @Composable
-private fun templateLabel(template: ShareCardTemplate): String = stringResource(
+private fun defaultTemplateLabel(template: ShareCardTemplate): String = stringResource(
     when (template) {
         ShareCardTemplate.STANDARD -> R.string.share_template_standard
         ShareCardTemplate.HERO -> R.string.share_template_hero
