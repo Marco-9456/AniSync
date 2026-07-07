@@ -30,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -65,8 +64,10 @@ fun MediaShareCard(
     val config = LocalShareCardConfig.current
     val isManga = details.type == MediaType.MANGA
     val coverUrl = details.coverUrl ?: details.cover.url()
-    val accent = parseCoverColor(details.coverColor) ?: MaterialTheme.colorScheme.primary
-    val onAccent = if (accent.luminance() > 0.5f) Color.Black else Color.White
+    // Accent comes from the card's own scheme so it tracks the selected theme; under the COVER
+    // theme primary is already artwork-seeded, so the poster tint survives exactly there.
+    val accent = MaterialTheme.colorScheme.primary
+    val onAccent = MaterialTheme.colorScheme.onPrimary
     // Community average, rendered in the viewer's own score scale; suppressed by the privacy toggle.
     val scoreText = if (config.showScore) formatCommunityScore(details.score, scoreFormat) else null
     val showScoreStar = scoreFormat != ScoreFormat.POINT_5 && scoreFormat != ScoreFormat.POINT_3
@@ -76,8 +77,6 @@ fun MediaShareCard(
             details = details,
             isManga = isManga,
             coverUrl = coverUrl,
-            accent = accent,
-            onAccent = onAccent,
             scoreText = scoreText,
             showScoreStar = showScoreStar,
             showProgress = config.showProgress,
@@ -244,14 +243,14 @@ private fun MediaHeroCard(
     details: MediaDetails,
     isManga: Boolean,
     coverUrl: String?,
-    accent: Color,
-    onAccent: Color,
     scoreText: String?,
     showScoreStar: Boolean,
     showProgress: Boolean,
     handle: String?,
     modifier: Modifier = Modifier,
 ) {
+    val accent = MaterialTheme.colorScheme.primary
+    val onAccent = MaterialTheme.colorScheme.onPrimary
     ShareCardScaffold(modifier = modifier, handle = handle) {
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)) {
             if (coverUrl != null) {
