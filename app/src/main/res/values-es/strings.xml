@@ -559,7 +559,7 @@
     <string name="login_description">Inicia sesión para acceder a tu biblioteca y descubrir nuevos favoritos.</string>
     <string name="login_continue_with_anilist">Continuar con AniList</string>
     <string name="login_terms">Al continuar, aceptas nuestros Términos de servicio.</string>
-    <string name="cd_login">Iniciar sesión</string>
+    <string name="cd_login">Acceso</string>
     <string name="filter">Filtro</string>
     <string name="filter_clear_all">Borrar todos</string>
     <string name="filter_genres">Géneros</string>
@@ -1104,5 +1104,20 @@
     <string name="media_stats_error">No pudo carga estadísticas.</string>
     <string name="media_stats_activity_chart_a11y">Diagrama de actividad diaria sobre %1$d días, cima en %2$s en %3$s</string>
     <string name="media_stats_latest_score">Puntuación del último episodio</string>
-    <string name="stat_hashtag">Hashtag</string>
+    <string name="stat_hashtag">Etiquetado hash</string>
+    <string name="details_tab_stats">Estads</string>
+    <string name="media_stats_score_progression">Progresión de puntuado de ventilación</string>
+    <string name="media_stats_status_distribution">Distribución de estado</string>
+    <string name="media_stats_score_distribution">Distribución de puntuación</string>
+    <string name="media_stats_peak_activity">Actividad máxima</string>
+    <string name="media_stats_peak_watchers">Vigías máximos</string>
+    <string name="media_stats_episode_byline">Ep %1$d</string>
+    <string name="media_stats_episode_eyebrow">Episodio %1$d</string>
+    <string name="media_stats_percent_of_ratings">%1$d%% de calificaciones</string>
+    <string name="media_stats_empty">Aún no hay estadísticas de la comunidad para este título.</string>
+    <string name="media_stats_score_chart_a11y">Tabla de puntuación por episodio, episodios %1$d a %2$d, puntuación más baja %3$d, puntuación más alta %4$d</string>
+    <string name="media_stats_watchers_chart_a11y">Gráfico de espectadores por episodio, episodios %1$d a %2$d, con un pico de %3$s alrededor del episodio %4$d</string>
+    <string name="media_stats_score_dist_a11y">Histograma de distribución de puntuaciones, puntuación más común %1$d con calificaciones %2$s</string>
+    <string name="statistics_activity_update_info">AniList actualiza tus estadísticas automáticamente cada 48 horas</string>
+    <string name="media_stats_watchers_progression">Emisión de la progresión de los espectadores</string>
 </resources>
