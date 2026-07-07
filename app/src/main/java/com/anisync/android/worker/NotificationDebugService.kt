@@ -57,14 +57,14 @@ class NotificationDebugService @Inject constructor(
 
     /**
      * Send a test "Watching" notification.
-     * Simulates: "Episode X has aired!" for a show in the watching list.
+     * Simulates: "Episode X has aired" for a show in the watching list.
      */
     fun sendTestWatchingNotification() {
         scope.launch {
             val notificationId = DEBUG_WATCHING_ID
             val title = SAMPLE_TITLE
             val episode = (1..24).random()
-            val content = "Episode $episode has aired!"
+            val content = "Episode $episode has aired"
 
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://notifications"))
             val pendingIntent = PendingIntent.getActivity(
@@ -80,7 +80,6 @@ class NotificationDebugService @Inject constructor(
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(content)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
                 .setGroup(GROUP_KEY_AIRING)
                 .setContentIntent(pendingIntent)
@@ -96,12 +95,12 @@ class NotificationDebugService @Inject constructor(
 
     /**
      * Send a test "Planning" notification.
-     * Simulates: "Episode 1 is now available!" for a show in the planning list.
+     * Simulates: "Episode 1 is now available" for a show in the planning list.
      */
     fun sendTestPlanningNotification() {
         scope.launch {
             val notificationId = DEBUG_PLANNING_ID
-            val title = "$SAMPLE_TITLE has started!"
+            val title = SAMPLE_TITLE
             val content = "Episode 1 is now available"
 
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://details/$SAMPLE_MEDIA_ID"))
@@ -132,7 +131,6 @@ class NotificationDebugService @Inject constructor(
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(content)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
                 .setGroup(GROUP_KEY_PLANNING)
                 .setContentIntent(pendingIntent)
@@ -158,8 +156,8 @@ class NotificationDebugService @Inject constructor(
     fun sendTestAdvanceNotification() {
         scope.launch {
             val notificationId = DEBUG_ADVANCE_ID
-            val title = "📅 Premiere Alert: $SAMPLE_TITLE"
-            
+            val title = SAMPLE_TITLE
+
             // Simulate airing time as tomorrow at a random afternoon hour
             val calendar = Calendar.getInstance().apply {
                 add(Calendar.DAY_OF_YEAR, 1)
@@ -186,7 +184,6 @@ class NotificationDebugService @Inject constructor(
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(content)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
                 .setGroup(GROUP_KEY_PLANNING)
                 .setContentIntent(pendingIntent)
@@ -202,18 +199,18 @@ class NotificationDebugService @Inject constructor(
 
     /**
      * Send a test "Imminent" notification (2h or less before premiere).
-     * Simulates: "Episode 1 is airing in 2 hours!"
+     * Simulates: "Episode 1 airs in about 2 hours"
      */
     fun sendTestImminentNotification() {
         scope.launch {
             val notificationId = DEBUG_IMMINENT_ID
-            val title = "🔔 Starting Soon: $SAMPLE_TITLE"
-            
+            val title = SAMPLE_TITLE
+
             val hoursUntil = (0..2).random()
             val content = when (hoursUntil) {
-                0 -> "Episode 1 is airing in less than an hour!"
-                1 -> "Episode 1 is airing in about an hour!"
-                else -> "Episode 1 is airing in $hoursUntil hours!"
+                0 -> "Episode 1 airs in less than an hour"
+                1 -> "Episode 1 airs in about an hour"
+                else -> "Episode 1 airs in about $hoursUntil hours"
             }
 
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://details/$SAMPLE_MEDIA_ID"))
@@ -230,7 +227,6 @@ class NotificationDebugService @Inject constructor(
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(content)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setGroup(GROUP_KEY_PLANNING)
                 .setContentIntent(pendingIntent)

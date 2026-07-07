@@ -68,6 +68,10 @@ class NotificationPreferences @Inject constructor(
     private val _activityMessageEnabled = MutableStateFlow(prefs.getBoolean(KEY_ACTIVITY_MESSAGE_ENABLED, true))
     val activityMessageEnabled: StateFlow<Boolean> = _activityMessageEnabled.asStateFlow()
 
+    // Activity - new followers
+    private val _followsEnabled = MutableStateFlow(prefs.getBoolean(KEY_FOLLOWS_ENABLED, true))
+    val followsEnabled: StateFlow<Boolean> = _followsEnabled.asStateFlow()
+
     // Streaming availability delay (minutes) for "episode aired" notifications.
     // Lets users on streaming sites that post episodes after the official airing time
     // postpone the notification so it lines up with when the episode is actually watchable.
@@ -136,6 +140,11 @@ class NotificationPreferences @Inject constructor(
         prefs.edit().putBoolean(KEY_ACTIVITY_MESSAGE_ENABLED, enabled).apply()
     }
 
+    fun setFollowsEnabled(enabled: Boolean) {
+        _followsEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_FOLLOWS_ENABLED, enabled).apply()
+    }
+
     fun setStreamingDelayMinutes(minutes: Int) {
         val clamped = minutes.coerceIn(MIN_STREAMING_DELAY_MINUTES, MAX_STREAMING_DELAY_MINUTES)
         _streamingDelayMinutes.value = clamped
@@ -158,6 +167,7 @@ class NotificationPreferences @Inject constructor(
         setActivityMentionEnabled(true)
         setActivityLikeEnabled(true)
         setActivityMessageEnabled(true)
+        setFollowsEnabled(true)
         setStreamingDelayMinutes(0)
     }
 
@@ -175,6 +185,7 @@ class NotificationPreferences @Inject constructor(
         private const val KEY_ACTIVITY_MENTION_ENABLED = "activity_mention_enabled"
         private const val KEY_ACTIVITY_LIKE_ENABLED = "activity_like_enabled"
         private const val KEY_ACTIVITY_MESSAGE_ENABLED = "activity_message_enabled"
+        private const val KEY_FOLLOWS_ENABLED = "follows_enabled"
         private const val KEY_STREAMING_DELAY_MINUTES = "streaming_delay_minutes"
         const val MIN_STREAMING_DELAY_MINUTES = 0
         const val MAX_STREAMING_DELAY_MINUTES = 180

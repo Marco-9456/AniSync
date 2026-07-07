@@ -34,6 +34,7 @@ class AddToWatchingReceiver : BroadcastReceiver() {
         const val ACTION_ADD_TO_WATCHING = "com.anisync.android.ACTION_ADD_TO_WATCHING"
         const val EXTRA_MEDIA_ID = "extra_media_id"
         const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
+        const val EXTRA_NOTIFICATION_TAG = "extra_notification_tag"
         const val EXTRA_MEDIA_TITLE = "extra_media_title"
         private const val TAG = "AddToWatchingReceiver"
     }
@@ -43,6 +44,8 @@ class AddToWatchingReceiver : BroadcastReceiver() {
 
         val mediaId = intent.getIntExtra(EXTRA_MEDIA_ID, -1)
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
+        // The worker posts under a per-account tag; cancelling without it never matches.
+        val notificationTag = intent.getStringExtra(EXTRA_NOTIFICATION_TAG)
         val mediaTitle = intent.getStringExtra(EXTRA_MEDIA_TITLE) ?: "Anime"
 
         if (mediaId == -1) {
@@ -53,7 +56,7 @@ class AddToWatchingReceiver : BroadcastReceiver() {
         // Dismiss the notification immediately
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (notificationId != -1) {
-            notificationManager.cancel(notificationId)
+            notificationManager.cancel(notificationTag, notificationId)
         }
 
         // Use goAsync() to extend the BroadcastReceiver's lifecycle for the coroutine

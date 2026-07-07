@@ -77,6 +77,7 @@ fun NotificationsScreen(
     val activityMentionEnabled = uiState.activityMentionEnabled
     val activityLikeEnabled = uiState.activityLikeEnabled
     val activityMessageEnabled = uiState.activityMessageEnabled
+    val followsEnabled = uiState.followsEnabled
     val streamingDelayMinutes = uiState.streamingDelayMinutes
 
     var hasSystemPermission by rememberSaveable { mutableStateOf(true) }
@@ -287,6 +288,14 @@ fun NotificationsScreen(
                     checked = activityMessageEnabled,
                     enabled = isNotificationsEnabled,
                     onCheckedChange = { viewModel.onAction(SettingsAction.SetActivityMessageEnabled(it)) }
+                )
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_follows),
+                    subtitle = stringResource(R.string.notification_follows_desc),
+                    checked = followsEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetFollowsEnabled(it)) }
                 )
             }
         }

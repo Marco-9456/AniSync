@@ -489,6 +489,9 @@
     <string name="notification_channel_watching_desc">Neue Folgen für Serien, die du ansiehst</string>
     <string name="notification_group_airing">Austrahlung</string>
     <string name="notification_group_forum">Forum</string>
+    <string name="notification_group_other">Sonstiges</string>
+    <string name="notification_follows">Neue Follower</string>
+    <string name="notification_follows_desc">Wenn dir jemand folgt</string>
     <string name="notification_thread_comment_like">Kommentar-Likes</string>
     <string name="notification_thread_comment_like_desc">Wenn jemand deinen Kommentar liked</string>
     <string name="notification_thread_comment_mention">Erwähnungen</string>

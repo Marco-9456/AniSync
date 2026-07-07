@@ -137,9 +137,10 @@ class SettingsViewModel @Inject constructor(
                 notificationPreferences.activityReplyEnabled,
                 notificationPreferences.activityMentionEnabled,
                 notificationPreferences.activityLikeEnabled,
-                notificationPreferences.activityMessageEnabled
-            ) { reply, mention, like, message ->
-                listOf<Any>(reply, mention, like, message)
+                notificationPreferences.activityMessageEnabled,
+                notificationPreferences.followsEnabled
+            ) { reply, mention, like, message, follows ->
+                listOf<Any>(reply, mention, like, message, follows)
             }
         ) { airing, forum, activity ->
             airing + forum + activity
@@ -185,6 +186,7 @@ class SettingsViewModel @Inject constructor(
             activityMentionEnabled = notifications[11] as Boolean,
             activityLikeEnabled = notifications[12] as Boolean,
             activityMessageEnabled = notifications[13] as Boolean,
+            followsEnabled = notifications[14] as Boolean,
             isAutoUpdateEnabled = updatesAndNav.autoUpdate,
             isPrereleaseAllowed = updatesAndNav.allowPrerelease,
             navBarStyle = updatesAndNav.navBarStyle,
@@ -288,6 +290,10 @@ class SettingsViewModel @Inject constructor(
             )
 
             is SettingsAction.SetActivityMessageEnabled -> notificationPreferences.setActivityMessageEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetFollowsEnabled -> notificationPreferences.setFollowsEnabled(
                 action.enabled
             )
 

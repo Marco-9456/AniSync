@@ -1,6 +1,7 @@
 package com.anisync.android.worker
 
 import android.content.Context
+import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
@@ -29,6 +30,9 @@ class NotificationScheduler @Inject constructor(
 
         val workRequest = PeriodicWorkRequestBuilder<NotificationWorker>(REPEAT_INTERVAL_MINUTES, TimeUnit.MINUTES)
             .setInitialDelay(REPEAT_INTERVAL_MINUTES, TimeUnit.MINUTES)
+            // The worker retries on AniList rate limits; wait out the limit window instead of
+            // hammering again seconds later (default backoff starts at 30s).
+            .setBackoffCriteria(BackoffPolicy.LINEAR, 5, TimeUnit.MINUTES)
             .setConstraints(constraints)
             .build()
 

@@ -489,6 +489,9 @@
     <string name="notification_channel_watching_desc">حلقات جديدة للعروض التي تشاهدها</string>
     <string name="notification_group_airing">البث</string>
     <string name="notification_group_forum">المنتدى</string>
+    <string name="notification_group_other">أخرى</string>
+    <string name="notification_follows">متابعون جدد</string>
+    <string name="notification_follows_desc">عندما يبدأ شخص ما بمتابعتك</string>
     <string name="notification_thread_comment_like">إعجابات التعليقات</string>
     <string name="notification_thread_comment_like_desc">عندما يعجب أحدهم بتعليقك</string>
     <string name="notification_thread_comment_mention">الإشارات</string>
