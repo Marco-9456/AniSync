@@ -1,8 +1,12 @@
 package com.anisync.android.presentation.share
 
+import android.os.Build
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -16,10 +20,12 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -37,6 +43,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,12 +60,16 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.util.ShareUtils
@@ -78,11 +89,11 @@ internal val ShareCardShape = RoundedCornerShape(28.dp)
 internal val ShareCardShapeFramed = RoundedCornerShape(32.dp)
 
 /**
- * Bottom sheet that previews a [card] exactly as it will be shared and lets the user **customize** it
- * live — theme, aspect (compact / square / story), an optional baked caption, and (when
- * [supportsPrivacy]) whether the score/progress show. Then it offers: save the PNG to the gallery,
- * copy the [link] to the clipboard, or open the system share sheet with the image (the user's
- * caption + [link] ride along as the share text).
+ * Share customizer entry point: previews a [card] exactly as it will be shared and lets the user
+ * **customize** it live — theme, aspect (compact / square / story), an optional baked caption, and
+ * (when [supportsPrivacy]) whether the score/progress show. Then it offers: save the PNG to the
+ * gallery, copy the [link] to the clipboard, or open the system share sheet with the image (the
+ * user's caption + [link] ride along as the share text).
  *
  * Layout keeps the preview and the action row **pinned**; only the customization controls scroll.
  * Every tweak is therefore visible on the card the instant it's made.
@@ -91,7 +102,13 @@ internal val ShareCardShapeFramed = RoundedCornerShape(32.dp)
  * the export is never blank. [seedColor] (artwork color) enables the COVER theme; [templates]
  * populates the style picker.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalLayoutApi::class)
+/**
+ * UI experiment: when true the customizer opens as a full-screen overlay over a blurred app
+ * (window blur-behind, API 31+), instead of the modal bottom sheet. Flip back to false to
+ * restore the sheet — both hosts share [ShareCustomizerContent].
+ */
+private const val UseOverlayPresentation = true
+
 @Composable
 fun ShareImageSheet(
     onDismiss: () -> Unit,
@@ -100,6 +117,154 @@ fun ShareImageSheet(
     supportsPrivacy: Boolean = false,
     templates: List<ShareCardTemplate> = emptyList(),
     templateLabel: (@Composable (ShareCardTemplate) -> String)? = null,
+    card: @Composable () -> Unit,
+) {
+    if (UseOverlayPresentation) {
+        ShareImageOverlay(onDismiss, link, seedColor, supportsPrivacy, templates, templateLabel, card)
+    } else {
+        ShareImageBottomSheet(onDismiss, link, seedColor, supportsPrivacy, templates, templateLabel, card)
+    }
+}
+
+/** The classic host: a full-height modal bottom sheet. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ShareImageBottomSheet(
+    onDismiss: () -> Unit,
+    link: String?,
+    seedColor: Color?,
+    supportsPrivacy: Boolean,
+    templates: List<ShareCardTemplate>,
+    templateLabel: (@Composable (ShareCardTemplate) -> String)?,
+    card: @Composable () -> Unit,
+) {
+    // Full height from the start: the pinned preview/actions layout needs the whole sheet.
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    com.anisync.android.presentation.components.AppModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            ShareCustomizerContent(
+                onDismiss = onDismiss,
+                link = link,
+                seedColor = seedColor,
+                supportsPrivacy = supportsPrivacy,
+                templates = templates,
+                templateLabel = templateLabel,
+                previewMaxHeight = 280.dp,
+                card = card,
+            )
+        }
+    }
+}
+
+/**
+ * The experimental host: a full-screen dialog whose window blurs the app behind it, with the
+ * customizer floating on a translucent, theme-tinted veil. Tapping the veil dismisses; taps on
+ * the content are consumed. Falls back to a heavier dim when window blur is unavailable.
+ */
+@Composable
+private fun ShareImageOverlay(
+    onDismiss: () -> Unit,
+    link: String?,
+    seedColor: Color?,
+    supportsPrivacy: Boolean,
+    templates: List<ShareCardTemplate>,
+    templateLabel: (@Composable (ShareCardTemplate) -> String)?,
+    card: @Composable () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    ) {
+        val view = LocalView.current
+        val context = LocalContext.current
+        // Cross-window blur is a device capability (OEMs/power-saving disable it); when it's off,
+        // FLAG_BLUR_BEHIND is silently ignored, so compensate with a much heavier veil + dim.
+        var blurActive by remember { mutableStateOf(false) }
+        DisposableEffect(view) {
+            val window = (view.parent as? DialogWindowProvider)?.window
+            val canBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                context.getSystemService(WindowManager::class.java)?.isCrossWindowBlurEnabled == true
+            blurActive = canBlur
+            if (window != null) {
+                if (canBlur) {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+                    window.attributes = window.attributes.apply { blurBehindRadius = 90 }
+                    window.setDimAmount(0.2f)
+                } else {
+                    window.setDimAmount(0.45f)
+                }
+            }
+            onDispose { }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                // Theme-tinted veil over the blur so text keeps contrast on any wallpaper/screen.
+                .background(
+                    MaterialTheme.colorScheme.surface.copy(alpha = if (blurActive) 0.5f else 0.88f)
+                )
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss
+                )
+                .systemBarsPadding()
+                .imePadding(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    // Consume taps so interacting with the controls never falls through to dismiss.
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {}
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ShareCustomizerContent(
+                    onDismiss = onDismiss,
+                    link = link,
+                    seedColor = seedColor,
+                    supportsPrivacy = supportsPrivacy,
+                    templates = templates,
+                    templateLabel = templateLabel,
+                    previewMaxHeight = 360.dp,
+                    card = card,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The customizer itself — live preview pinned on top, scrollable controls + caption in the middle,
+ * action row pinned at the bottom — shared verbatim by both presentation hosts. Must live inside a
+ * height-bounded Column ([ColumnScope] receiver) so the middle section can flex-shrink.
+ */
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalLayoutApi::class)
+@Composable
+private fun ColumnScope.ShareCustomizerContent(
+    onDismiss: () -> Unit,
+    link: String?,
+    seedColor: Color?,
+    supportsPrivacy: Boolean,
+    templates: List<ShareCardTemplate>,
+    templateLabel: (@Composable (ShareCardTemplate) -> String)?,
+    previewMaxHeight: Dp,
     card: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -130,33 +295,19 @@ fun ShareImageSheet(
     val shareText = listOfNotNull(config.caption.trim().ifBlank { null }, link).joinToString("\n\n")
         .ifBlank { null }
 
-    // Full height from the start: the pinned preview/actions layout needs the whole sheet.
-    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    com.anisync.android.presentation.components.AppModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Pinned: the live preview. Every control change repaints it in place. While the
-            // keyboard is up (caption editing) it shrinks instead of squashing the field away.
-            val previewMaxHeight by animateDpAsState(
-                targetValue = if (WindowInsets.isImeVisible) 136.dp else 280.dp,
-                label = "previewMaxHeight"
-            )
-            ShareCaptureArea(
-                controller = controller,
-                config = config,
-                seedColor = seedColor,
-                maxPreviewHeight = previewMaxHeight,
-                card = card,
-            )
+    // Pinned: the live preview. Every control change repaints it in place. While the
+    // keyboard is up (caption editing) it shrinks instead of squashing the field away.
+    val animatedPreviewHeight by animateDpAsState(
+        targetValue = if (WindowInsets.isImeVisible) 136.dp else previewMaxHeight,
+        label = "previewMaxHeight"
+    )
+    ShareCaptureArea(
+        controller = controller,
+        config = config,
+        seedColor = seedColor,
+        maxPreviewHeight = animatedPreviewHeight,
+        card = card,
+    )
 
             Spacer(Modifier.height(16.dp))
 
@@ -236,8 +387,6 @@ fun ShareImageSheet(
                     }
                 }
             }
-        }
-    }
 }
 
 /** One icon-over-label action tile in the share sheet's action row. Shows a spinner while busy. */
