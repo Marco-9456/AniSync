@@ -14,18 +14,15 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -36,7 +33,6 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -99,14 +95,11 @@ internal val ShareCardShapeFramed = RoundedCornerShape(32.dp)
  * The live preview doubles as the load gate: Coil covers are decoded by the time the user acts, so
  * the export is never blank. [seedColor] (artwork color) enables the COVER theme; [templates]
  * populates the style picker.
+ *
+ * Presented as a full-screen dialog whose window blurs the app behind it, with the customizer
+ * floating on a translucent, theme-tinted veil. Tapping the veil dismisses; taps on the content
+ * are consumed. Falls back to a heavier dim when window blur is unavailable.
  */
-/**
- * UI experiment: when true the customizer opens as a full-screen overlay over a blurred app
- * (window blur-behind, API 31+), instead of the modal bottom sheet. Flip back to false to
- * restore the sheet — both hosts share [ShareCustomizerContent].
- */
-private const val UseOverlayPresentation = true
-
 @Composable
 fun ShareImageSheet(
     onDismiss: () -> Unit,
@@ -115,72 +108,6 @@ fun ShareImageSheet(
     supportsPrivacy: Boolean = false,
     templates: List<ShareCardTemplate> = emptyList(),
     templateLabel: (@Composable (ShareCardTemplate) -> String)? = null,
-    card: @Composable () -> Unit,
-) {
-    if (UseOverlayPresentation) {
-        ShareImageOverlay(onDismiss, link, seedColor, supportsPrivacy, templates, templateLabel, card)
-    } else {
-        ShareImageBottomSheet(onDismiss, link, seedColor, supportsPrivacy, templates, templateLabel, card)
-    }
-}
-
-/** The classic host: a full-height modal bottom sheet. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ShareImageBottomSheet(
-    onDismiss: () -> Unit,
-    link: String?,
-    seedColor: Color?,
-    supportsPrivacy: Boolean,
-    templates: List<ShareCardTemplate>,
-    templateLabel: (@Composable (ShareCardTemplate) -> String)?,
-    card: @Composable () -> Unit,
-) {
-    // Full height from the start: the pinned preview/actions layout needs the whole sheet.
-    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    com.anisync.android.presentation.components.AppModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-    ) {
-        // One scrolling flow: the preview scrolls with the controls; the keyboard just pushes
-        // the sheet up and the focused caption field auto-scrolls into view.
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .imePadding()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            ShareCustomizerContent(
-                onDismiss = onDismiss,
-                link = link,
-                seedColor = seedColor,
-                supportsPrivacy = supportsPrivacy,
-                templates = templates,
-                templateLabel = templateLabel,
-                previewMaxHeight = 340.dp,
-                card = card,
-            )
-        }
-    }
-}
-
-/**
- * The experimental host: a full-screen dialog whose window blurs the app behind it, with the
- * customizer floating on a translucent, theme-tinted veil. Tapping the veil dismisses; taps on
- * the content are consumed. Falls back to a heavier dim when window blur is unavailable.
- */
-@Composable
-private fun ShareImageOverlay(
-    onDismiss: () -> Unit,
-    link: String?,
-    seedColor: Color?,
-    supportsPrivacy: Boolean,
-    templates: List<ShareCardTemplate>,
-    templateLabel: (@Composable (ShareCardTemplate) -> String)?,
     card: @Composable () -> Unit,
 ) {
     Dialog(
