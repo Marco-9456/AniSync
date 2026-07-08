@@ -136,7 +136,7 @@ fun ReviewDetailScreen(
                 if (showShareImage) {
                     ShareImageSheet(
                         onDismiss = { showShareImage = false },
-                        caption = "https://anilist.co/review/$reviewId"
+                        link = "https://anilist.co/review/$reviewId"
                     ) {
                         ReviewShareCard(review = review)
                     }

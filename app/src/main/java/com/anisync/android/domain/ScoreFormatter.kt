@@ -1,5 +1,7 @@
 package com.anisync.android.domain
 
+import kotlin.math.roundToInt
+
 enum class ScoreFormat {
     POINT_100,      // 0-100 integer
     POINT_10_DECIMAL, // 0-10 with 1 decimal (e.g., "7.5")
@@ -29,6 +31,26 @@ fun formatScore(score: Double?, format: ScoreFormat): String {
             score >= 2.0 -> ":|"
             score >= 1.0 -> ":("
             else -> "–"
+        }
+    }
+}
+
+/**
+ * Formats a 0–100 community **average** score into the viewer's chosen [format], so a share card's
+ * score badge reads in the same scale the user rates in (a POINT_5 user sees stars, not "8.3").
+ * Returns null when there's no score to show.
+ */
+fun formatCommunityScore(averageScore: Int?, format: ScoreFormat): String? {
+    if (averageScore == null || averageScore <= 0) return null
+    return when (format) {
+        ScoreFormat.POINT_100 -> averageScore.toString()
+        ScoreFormat.POINT_10 -> (averageScore / 10.0).roundToInt().toString()
+        ScoreFormat.POINT_10_DECIMAL -> formatOneDecimal(averageScore / 10.0)
+        ScoreFormat.POINT_5 -> STAR_STRINGS[(averageScore / 20.0).roundToInt().coerceIn(0, 5)]
+        ScoreFormat.POINT_3 -> when {
+            averageScore >= 67 -> ":)"
+            averageScore >= 34 -> ":|"
+            else -> ":("
         }
     }
 }

@@ -47,4 +47,38 @@ class ScoreFormatterTest {
         assertEquals(":|", formatScore(2.0, ScoreFormat.POINT_3))
         assertEquals(":)", formatScore(3.0, ScoreFormat.POINT_3))
     }
+
+    // formatCommunityScore: a 0-100 community average re-scaled into the viewer's own format,
+    // used by the share cards' score badge.
+
+    @Test
+    fun `community score hides when absent or zero`() {
+        for (format in ScoreFormat.entries) {
+            assertEquals(null, formatCommunityScore(null, format))
+            assertEquals(null, formatCommunityScore(0, format))
+        }
+    }
+
+    @Test
+    fun `community score converts the 0-100 average into each numeric scale`() {
+        assertEquals("87", formatCommunityScore(87, ScoreFormat.POINT_100))
+        assertEquals("9", formatCommunityScore(87, ScoreFormat.POINT_10))
+        assertEquals("8", formatCommunityScore(83, ScoreFormat.POINT_10))
+        assertEquals("8.7", formatCommunityScore(87, ScoreFormat.POINT_10_DECIMAL))
+    }
+
+    @Test
+    fun `community score rounds to the nearest star count`() {
+        assertEquals("★★★★", formatCommunityScore(87, ScoreFormat.POINT_5))
+        assertEquals("★★★★★", formatCommunityScore(90, ScoreFormat.POINT_5))
+        assertEquals("★★", formatCommunityScore(45, ScoreFormat.POINT_5))
+    }
+
+    @Test
+    fun `community score maps thirds of the scale onto smileys`() {
+        assertEquals(":)", formatCommunityScore(67, ScoreFormat.POINT_3))
+        assertEquals(":|", formatCommunityScore(66, ScoreFormat.POINT_3))
+        assertEquals(":|", formatCommunityScore(34, ScoreFormat.POINT_3))
+        assertEquals(":(", formatCommunityScore(33, ScoreFormat.POINT_3))
+    }
 }

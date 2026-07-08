@@ -7,17 +7,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -30,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.presentation.components.AppModalBottomSheet
+import com.anisync.android.presentation.components.SegmentedTabGroup
 import kotlin.math.roundToInt
 
 /**
@@ -79,37 +75,17 @@ fun LibraryViewOptionsSheet(
 
             Spacer(Modifier.height(16.dp))
 
-            // List / Grid choice.
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                SegmentedButton(
-                    selected = !isGridView,
-                    onClick = { onSetGridView(false) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.ViewAgenda,
-                            contentDescription = null,
-                            modifier = Modifier.size(SegmentedButtonDefaults.IconSize)
-                        )
-                    }
-                ) {
-                    Text(stringResource(R.string.library_view_list))
-                }
-                SegmentedButton(
-                    selected = isGridView,
-                    onClick = { onSetGridView(true) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.GridView,
-                            contentDescription = null,
-                            modifier = Modifier.size(SegmentedButtonDefaults.IconSize)
-                        )
-                    }
-                ) {
-                    Text(stringResource(R.string.library_view_grid))
-                }
-            }
+            // List / Grid choice — the app's connected ToggleButton group (same as tab switchers).
+            SegmentedTabGroup(
+                options = listOf(false, true),
+                selected = isGridView,
+                onSelect = onSetGridView,
+                label = { grid ->
+                    stringResource(if (grid) R.string.library_view_grid else R.string.library_view_list)
+                },
+                icon = { grid -> if (grid) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda },
+                fillEqually = true,
+            )
 
             Spacer(Modifier.height(24.dp))
 

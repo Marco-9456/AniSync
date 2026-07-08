@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -43,7 +44,8 @@ fun FavouritesShareCard(
     modifier: Modifier = Modifier,
 ) {
     val expressive = LocalExpressiveTypography.current
-    val covers = entries.take(6)
+    val ranked = LocalShareCardConfig.current.template == ShareCardTemplate.HERO
+    val covers = entries.take(if (ranked) 5 else 6)
 
     ShareCardScaffold(modifier = modifier, handle = handle) {
         ShareCardBannerBox(bannerUrl = bannerUrl, height = 92.dp, scrimAlpha = 0.78f) {
@@ -69,20 +71,73 @@ fun FavouritesShareCard(
             }
         }
 
-        Column(modifier = Modifier.padding(16.dp)) {
-            covers.chunked(3).forEach { rowEntries ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    rowEntries.forEach { entry ->
-                        CoverTile(entry = entry, modifier = Modifier.weight(1f))
+        if (ranked) {
+            // "Ranked" template: a numbered top-5 list, order = the profile's favourite order.
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                covers.forEachIndexed { index, entry -> RankedRow(rank = index + 1, entry = entry) }
+            }
+        } else {
+            Column(modifier = Modifier.padding(16.dp)) {
+                covers.chunked(3).forEach { rowEntries ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        rowEntries.forEach { entry ->
+                            CoverTile(entry = entry, modifier = Modifier.weight(1f))
+                        }
+                        // Pad the final row so a lone cover keeps the same tile width.
+                        repeat(3 - rowEntries.size) { Spacer(Modifier.weight(1f)) }
                     }
-                    // Pad the final row so a lone cover keeps the same tile width.
-                    repeat(3 - rowEntries.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
+    }
+}
+
+/** One row of the ranked template: big rank numeral, small cover, title. */
+@Composable
+private fun RankedRow(rank: Int, entry: LibraryEntry) {
+    val expressive = LocalExpressiveTypography.current
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = rank.toString(),
+            style = expressive.statNumericMedium,
+            fontWeight = FontWeight.Bold,
+            color = if (rank == 1) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+            modifier = Modifier.width(34.dp)
+        )
+        Spacer(Modifier.width(10.dp))
+        Box(
+            modifier = Modifier
+                .width(44.dp)
+                .height(62.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            val coverUrl = entry.coverUrl ?: entry.cover.url()
+            if (coverUrl != null) {
+                AsyncImage(
+                    model = coverUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = entry.titleUserPreferred,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

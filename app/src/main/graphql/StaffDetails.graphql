@@ -30,13 +30,27 @@ query GetStaffDetails($id: Int!, $page: Int = 1, $staffMediaPage: Int = 1) {
         primaryOccupations
         yearsActive
         homeTown
-        characterMedia(page: $page, sort: [START_DATE_DESC], perPage: 25) {
+        # The characters connection (NOT characterMedia): sortable by the characters' own
+        # favourites, so "known for" surfaces the VA's most iconic roles. characterMedia can
+        # only sort by media, which is why the AniList site grid orders feel irrelevant here.
+        characters(page: $page, sort: [FAVOURITES_DESC], perPage: 25) {
             pageInfo {
                 hasNextPage
             }
             edges {
-                characterRole
+                role
                 node {
+                    id
+                    name {
+                        full
+                        native
+                        userPreferred
+                    }
+                    image {
+                        medium
+                    }
+                }
+                media {
                     id
                     title {
                         userPreferred
@@ -45,9 +59,9 @@ query GetStaffDetails($id: Int!, $page: Int = 1, $staffMediaPage: Int = 1) {
                         native
                     }
                     coverImage {
-                      medium
-                      large
-                      extraLarge
+                        medium
+                        large
+                        extraLarge
                     }
                     startDate {
                         year
@@ -58,17 +72,6 @@ query GetStaffDetails($id: Int!, $page: Int = 1, $staffMediaPage: Int = 1) {
                     favourites
                     mediaListEntry {
                         id
-                    }
-                }
-                characters {
-                    id
-                    name {
-                        full
-                        native
-                        userPreferred
-                    }
-                    image {
-                        medium
                     }
                 }
             }

@@ -1253,8 +1253,8 @@
     <string name="rail_collapsed">Navigation collapsed</string>
 
     <!-- Share-as-image cards -->
-    <string name="share_as_image">Share image</string>
-    <string name="share_image_preview_title">Preview</string>
+    <string name="share_stats_card">Share stats</string>
+    <string name="share_favourites_card">Share favourites</string>
     <string name="share_action_save">Save</string>
     <string name="share_action_copy">Copy</string>
     <string name="share_action_share">Share</string>
@@ -1291,4 +1291,33 @@
     <string name="share_fav_eyebrow">Favourites</string>
     <string name="share_fav_heading_anime">Favourite Anime</string>
     <string name="share_fav_heading_manga">Favourite Manga</string>
+    <!-- Share-card customization sheet -->
+    <string name="share_customize_theme">Theme</string>
+    <string name="share_customize_format">Format</string>
+    <string name="share_customize_template">Style</string>
+    <string name="share_customize_show">Show</string>
+    <string name="share_theme_auto">Auto</string>
+    <string name="share_theme_light">Light</string>
+    <string name="share_theme_dark">Dark</string>
+    <string name="share_theme_amoled">AMOLED</string>
+    <string name="share_theme_cover">Cover</string>
+    <string name="share_format_compact">Compact</string>
+    <string name="share_format_square">Square</string>
+    <string name="share_format_story">Story</string>
+    <string name="share_template_standard">Card</string>
+    <string name="share_template_hero">Poster</string>
+    <string name="share_toggle_score">Score</string>
+    <string name="share_toggle_progress">Progress</string>
+    <string name="share_caption_hint">Add a caption (optional)</string>
+    <string name="share_person_character">Character</string>
+    <string name="share_person_staff">Staff</string>
+    <string name="share_known_for">Known for</string>
+    <string name="share_template_stats">Stats</string>
+    <string name="share_template_recap">Recap</string>
+    <string name="share_template_grid">Grid</string>
+    <string name="share_template_ranked">Ranked</string>
+    <string name="share_recap_eyebrow">All-time recap</string>
+    <string name="share_recap_completed">Completed</string>
+    <string name="share_recap_top_studio">Most watched studio</string>
+    <string name="share_recap_top_staff">Most read author</string>
 </resources>

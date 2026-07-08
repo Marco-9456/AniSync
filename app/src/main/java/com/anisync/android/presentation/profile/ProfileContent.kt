@@ -70,6 +70,7 @@ import com.anisync.android.presentation.profile.sections.profileSocialTab
 import com.anisync.android.presentation.profile.sections.profileStatsTab
 import com.anisync.android.presentation.share.FavouritesShareCard
 import com.anisync.android.presentation.share.ProfileStatsShareCard
+import com.anisync.android.presentation.share.ShareCardTemplate
 import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.ShareUtils
@@ -253,7 +254,14 @@ fun ProfileContent(
         uiState.statsData?.let { stats ->
             ShareImageSheet(
                 onDismiss = { statsShareVisible = false },
-                caption = profileUrl
+                link = profileUrl,
+                templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
+                templateLabel = { tmpl ->
+                    stringResource(
+                        if (tmpl == ShareCardTemplate.STANDARD) R.string.share_template_stats
+                        else R.string.share_template_recap
+                    )
+                }
             ) {
                 ProfileStatsShareCard(
                     profile = profile,
@@ -270,7 +278,14 @@ fun ProfileContent(
         if (entries.isNotEmpty()) {
             ShareImageSheet(
                 onDismiss = { favouritesShareVisible = false },
-                caption = profileUrl
+                link = profileUrl,
+                templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
+                templateLabel = { tmpl ->
+                    stringResource(
+                        if (tmpl == ShareCardTemplate.STANDARD) R.string.share_template_grid
+                        else R.string.share_template_ranked
+                    )
+                }
             ) {
                 FavouritesShareCard(
                     heading = stringResource(
@@ -461,7 +476,10 @@ internal fun LazyListScope.profileSelectedTabContent(
             }
             if (showShareActions && favShareable) {
                 item(key = "favourites_share_action") {
-                    ShareTabAction(onClick = onShareFavourites)
+                    ShareTabAction(
+                        label = stringResource(R.string.share_favourites_card),
+                        onClick = onShareFavourites
+                    )
                 }
             }
             profileFavoritesTab(
@@ -492,7 +510,10 @@ internal fun LazyListScope.profileSelectedTabContent(
         ProfileTab.STATS -> {
             if (showShareActions && uiState.statsData != null) {
                 item(key = "stats_share_action") {
-                    ShareTabAction(onClick = onShareStats)
+                    ShareTabAction(
+                        label = stringResource(R.string.share_stats_card),
+                        onClick = onShareStats
+                    )
                 }
             }
             profileStatsTab(
@@ -507,9 +528,13 @@ internal fun LazyListScope.profileSelectedTabContent(
     }
 }
 
-/** Right-aligned "Share as image" affordance rendered above a shareable profile tab's content. */
+/** Right-aligned share affordance rendered above a shareable profile tab's content. */
 @Composable
-private fun ShareTabAction(onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ShareTabAction(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -523,7 +548,7 @@ private fun ShareTabAction(onClick: () -> Unit, modifier: Modifier = Modifier) {
                 modifier = Modifier.size(18.dp)
             )
             Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.share_as_image))
+            Text(label)
         }
     }
 }

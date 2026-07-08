@@ -80,7 +80,10 @@ import com.anisync.android.presentation.details.components.ExpandableBiography
 import com.anisync.android.presentation.details.components.FeaturedMediaItem
 import com.anisync.android.presentation.details.components.NameCard
 import com.anisync.android.presentation.details.components.VoiceActorCard
+import com.anisync.android.presentation.share.CharacterShareCard
+import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.getName
 import com.anisync.android.util.getTitle
 import kotlinx.coroutines.launch
@@ -99,7 +102,7 @@ fun CharacterDetailsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    var showShareSheet by rememberSaveable { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
@@ -145,7 +148,7 @@ fun CharacterDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.shareCharacter(context) }) {
+                    IconButton(onClick = { showShareSheet = true }) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = stringResource(R.string.cd_share),
@@ -211,6 +214,20 @@ fun CharacterDetailsScreen(
                         message = state.message,
                         onRetry = viewModel::loadCharacterDetails,
                         onBackClick = onBackClick
+                    )
+                }
+            }
+        }
+
+        if (showShareSheet) {
+            (uiState as? CharacterDetailsUiState.Success)?.details?.let { details ->
+                ShareImageSheet(
+                    onDismiss = { showShareSheet = false },
+                    link = AniListUrls.characterUrl(details.id)
+                ) {
+                    CharacterShareCard(
+                        details = details,
+                        displayName = details.getName(titleLanguage)
                     )
                 }
             }
