@@ -1253,7 +1253,8 @@
     <string name="rail_collapsed">Navigation collapsed</string>
 
     <!-- Share-as-image cards -->
-    <string name="share_as_image">Share image</string>
+    <string name="share_stats_card">Share stats</string>
+    <string name="share_favourites_card">Share favourites</string>
     <string name="share_action_save">Save</string>
     <string name="share_action_copy">Copy</string>
     <string name="share_action_share">Share</string>
