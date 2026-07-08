@@ -1185,6 +1185,7 @@ enum class StaffNameLanguage {
  * App UI locale options for in-app language switching.
  * Each entry maps to a BCP 47 language tag.
  * [displayName] is shown in native script so users can always identify their language.
+ * Persisted by ordinal — append new entries at the end, never reorder.
  */
 enum class AppLocale(val tag: String, val displayName: String) {
     SYSTEM("", "System Default"),
@@ -1193,5 +1194,9 @@ enum class AppLocale(val tag: String, val displayName: String) {
     ARABIC("ar", "العربية"),
     SPANISH("es", "Español"),
     PORTUGUESE_BR("pt-BR", "Português (Brasil)"),
-    PORTUGUESE("pt", "Português")
+    PORTUGUESE("pt", "Português"),
+    FRENCH("fr", "Français"),
+    PERSIAN("fa", "فارسی"),
+    RUSSIAN("ru", "Русский"),
+    TAMIL("ta", "தமிழ்")
 }

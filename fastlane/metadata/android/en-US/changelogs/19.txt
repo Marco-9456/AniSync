@@ -1,0 +1,22 @@
+Added:
+- Shareable cards: turn a media page, your stats, a review, your favourites, or a character/staff page into a branded card with a live customizer (themes, formats, privacy toggles) and crisp export.
+- Community Stats tab on media pages: rankings, activity, airing score and watcher charts, status and score distributions, all tap-to-inspect.
+- Characters and Staff split into full tabs with grid/list views, filters, server-side sort, and a voice-actor language picker.
+- Library: category-aware search with an All tab and per-tab counts; your score shows on list and grid cards.
+- App lock via biometric or device credential.
+- New-follower push notifications, plus mutual / follows-you badges on profiles.
+- Language picker now lists every bundled language: adds Tamil, Russian, and the new French and Persian translations.
+
+Changed:
+- Inline video player redesigned: auto-hiding controls, a real scrubber, adaptive framing, and rotation-proof fullscreen.
+- Notifications stack per target and use channel groups; media moderation notes expand in place.
+- Discover search results gain endless scroll and a list/grid toggle.
+- Smoother shared-element transitions across Discover, details, reviews, and staff.
+
+Fixed:
+- The app follows the system theme again.
+- Media details auto-refresh when stale; covers, the Social tab, and reviews no longer serve stale data.
+- Profile activity paginates reliably; heatmap accuracy and refresh fixes.
+- Cold-start splash matches dynamic color and dark theme.
+- Library date picker off-by-one; correct year on recommend/forum rows.
+- AniList links with a trailing slash open in-app.

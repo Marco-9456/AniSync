@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-07-09
+
+### Added
+
+- **Shareable Cards** - Turn a media page, your stats, a review, your favourites, or a character/staff page into a branded card and save, copy, or share it. A full-screen customizer offers Auto/Light/Dark/AMOLED/Cover themes, Compact/Square/Story formats with a gradient frame, template variants (Poster media card, all-time Recap stats, Ranked favourites), an optional caption, and hide-score/hide-progress privacy toggles. Cards capture at a fixed resolution for a crisp WEBP export on every screen density.
+- **Media Stats Tab** - A community Stats tab on media pages: rank chips, recent activity per day, airing score and watchers progression charts, and status/score distributions. Charts across details are tap-to-inspect with TalkBack summaries, and rankings, genres, tags, and the hashtag open a Discover search.
+- **Characters & Staff Tabs** - The Cast/Staff rails are replaced by full paginated Characters and Staff tabs with grid/list views, role filter, server-side Relevance/Name sort, and a voice-actor language picker; VA thumbnails open the staff page. (#83)
+- **Library Search & All Tab** - Category-aware search with a chip per matching list, an "All" tab that browses every status list merged, per-tab count badges, and matching across every title variant and notes. (#91)
+- **Score on Library Cards** - Your score shows on Library list and grid cards.
+- **App Lock** - Optional lock behind the device screen lock (biometric or PIN/pattern/password); locks on cold start and background return, and hides the recents preview on Android 13+. (#86)
+- **New-Follower Notifications** - Push notifications for new followers with their own channel and toggle, deep-linking to the follower's profile.
+- **Mutual / Follows-You Indicator** - Profiles badge whether a user follows you back. (#81)
+- **More Languages** - The in-app language picker now lists every bundled language, adding Tamil and Russian plus the new French and Persian translations. Thanks to @Ether3566 (French) and حمید سامانی (Persian). Updated Spanish and Portuguese (Brazil) translations.
+
+### Changed
+
+- **Video Player Redesign** - The inline rich-text video player gains auto-hiding controls, a drag-to-seek scrubber with time labels, adaptive letterboxed framing for portrait/ultrawide clips, and an immersive fullscreen activity that survives rotation while keeping position and mute.
+- **Notification Stacking & Channel Groups** - One tray entry per target that updates in place (batched actors, a social group summary, premiere alerts replacing advance ones), notification channels organized into Airing/Forum/Activity/Other groups, media moderation notes that expand in place, and the unread badge clears from any inbox entry.
+- **Discover Search Results** - Endless scroll and a per-category list/grid toggle.
+- **Favourites Sub-Tabs** - List views alongside grids, with objective metadata (media type and release year, staff occupation).
+- **Shared-Element Motion** - Review banners morph into the detail hero, VA images morph into staff details, detail routes fade so the morphs own the motion, and Discover sections keep their morphs on the tapped card.
+
+### Fixed
+
+- **System Theme** - The app follows the system theme again, resolving dark mode from one source.
+- **Stale Media Data** - Media details auto-refresh when stale, cover artwork updates instead of staying pinned to the old image, the Social tab and reviews stop serving stale cache, and pull-to-refresh revalidates stats and social previews.
+- **Profile Activity & Heatmap** - Activity paginates by type server-side from a single footer trigger (#89), the heatmap refreshes instead of serving stale cache (#88), heatmap days no longer shift by one and the range ends at AniList's last counted day, and list-activity cards restore their header gap. (#90)
+- **Library Dates & Rows** - Picked dates anchor to UTC so they don't land a day off (#85), recommend/forum media rows show the correct year, and the rewatching list uses the same cards as watching. (#80)
+- **Details Navigation** - Tab and scroll position are kept when returning from a character/staff page, filtered Characters/Staff/media lists no longer stall pagination, and the app bar behaves during pull-to-refresh.
+- **Splash Screen** - The cold-start splash matches dynamic color on Android 12+ and honors dark theme. (#84)
+- **Discover** - The search overlay no longer re-opens on every return to the tab, and Trending hero covers land on their card when returning.
+- **Links** - AniList URLs with a trailing slash route in-app.
+- **Rich Text** - Rich content inside `<code>` styling wrappers parses correctly while real code keeps monospace.
+- **Adaptive Layouts** - Sheets anchor to their pane on wide windows, and reviews open in the Discover detail pane.
+- **Notifications Worker** - Background polling recovers from API errors instead of misclassifying them.
+- **AMOLED** - Visited profiles keep pure blacks when profile-color tinting applies.
+- **Staff Pages** - Voiced characters sort by character favourites, and the share sheet no longer squashes when the keyboard opens.
+
 ## [3.0.0] - 2026-06-27
 
 ### Added
