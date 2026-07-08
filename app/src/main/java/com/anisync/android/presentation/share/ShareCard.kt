@@ -4,7 +4,6 @@ import android.os.Build
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -21,12 +19,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -95,8 +93,8 @@ internal val ShareCardShapeFramed = RoundedCornerShape(32.dp)
  * gallery, copy the [link] to the clipboard, or open the system share sheet with the image (the
  * user's caption + [link] ride along as the share text).
  *
- * Layout keeps the preview and the action row **pinned**; only the customization controls scroll.
- * Every tweak is therefore visible on the card the instant it's made.
+ * Preview, controls, caption and actions form one scrolling flow — the card scrolls along rather
+ * than pinning or resizing (no size jump when the keyboard opens).
  *
  * The live preview doubles as the load gate: Coil covers are decoded by the time the user acts, so
  * the export is never blank. [seedColor] (artwork color) enables the COVER theme; [templates]
@@ -144,10 +142,14 @@ private fun ShareImageBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
+        // One scrolling flow: the preview scrolls with the controls; the keyboard just pushes
+        // the sheet up and the focused caption field auto-scrolls into view.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .windowInsetsPadding(WindowInsets.navigationBars)
+                .imePadding()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -159,7 +161,7 @@ private fun ShareImageBottomSheet(
                 supportsPrivacy = supportsPrivacy,
                 templates = templates,
                 templateLabel = templateLabel,
-                previewMaxHeight = 280.dp,
+                previewMaxHeight = 340.dp,
                 card = card,
             )
         }
@@ -223,9 +225,13 @@ private fun ShareImageOverlay(
                 .imePadding(),
             contentAlignment = Alignment.Center
         ) {
+            // One scrolling flow (card included); width-capped so tablets get a centered column,
+            // not edge-to-edge controls.
             Column(
                 modifier = Modifier
+                    .widthIn(max = 480.dp)
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp, vertical = 16.dp)
                     // Consume taps so interacting with the controls never falls through to dismiss.
                     .clickable(
@@ -242,7 +248,7 @@ private fun ShareImageOverlay(
                     supportsPrivacy = supportsPrivacy,
                     templates = templates,
                     templateLabel = templateLabel,
-                    previewMaxHeight = 360.dp,
+                    previewMaxHeight = 420.dp,
                     card = card,
                 )
             }
@@ -251,13 +257,14 @@ private fun ShareImageOverlay(
 }
 
 /**
- * The customizer itself — live preview pinned on top, scrollable controls + caption in the middle,
- * action row pinned at the bottom — shared verbatim by both presentation hosts. Must live inside a
- * height-bounded Column ([ColumnScope] receiver) so the middle section can flex-shrink.
+ * The customizer itself — preview, controls, caption and actions in **one scrolling flow** (the
+ * card scrolls along like any other element; nothing pins or resizes when the keyboard opens —
+ * focusing the caption simply scrolls it into view). Shared verbatim by both presentation hosts,
+ * which wrap it in their own scroll container.
  */
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun ColumnScope.ShareCustomizerContent(
+private fun ShareCustomizerContent(
     onDismiss: () -> Unit,
     link: String?,
     seedColor: Color?,
@@ -295,47 +302,34 @@ private fun ColumnScope.ShareCustomizerContent(
     val shareText = listOfNotNull(config.caption.trim().ifBlank { null }, link).joinToString("\n\n")
         .ifBlank { null }
 
-    // Pinned: the live preview. Every control change repaints it in place. While the
-    // keyboard is up (caption editing) it shrinks instead of squashing the field away.
-    val animatedPreviewHeight by animateDpAsState(
-        targetValue = if (WindowInsets.isImeVisible) 136.dp else previewMaxHeight,
-        label = "previewMaxHeight"
-    )
     ShareCaptureArea(
         controller = controller,
         config = config,
         seedColor = seedColor,
-        maxPreviewHeight = animatedPreviewHeight,
+        maxPreviewHeight = previewMaxHeight,
         card = card,
     )
 
             Spacer(Modifier.height(16.dp))
 
-            // Only this middle section scrolls; preview and actions stay on screen.
-            Column(
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                ShareCustomizeControls(
-                    config = config,
-                    onConfig = { config = it },
-                    coverAvailable = seedColor != null,
-                    supportsPrivacy = supportsPrivacy,
-                    templates = templates,
-                    templateLabel = templateLabel,
-                )
+            ShareCustomizeControls(
+                config = config,
+                onConfig = { config = it },
+                coverAvailable = seedColor != null,
+                supportsPrivacy = supportsPrivacy,
+                templates = templates,
+                templateLabel = templateLabel,
+            )
 
-                Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(14.dp))
 
-                OutlinedTextField(
-                    value = config.caption,
-                    onValueChange = { config = config.copy(caption = it.take(80)) },
-                    label = { Text(stringResource(R.string.share_caption_hint)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            OutlinedTextField(
+                value = config.caption,
+                onValueChange = { config = config.copy(caption = it.take(80)) },
+                label = { Text(stringResource(R.string.share_caption_hint)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(Modifier.height(16.dp))
 
