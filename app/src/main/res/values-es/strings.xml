@@ -1122,8 +1122,6 @@
     <string name="media_stats_watchers_progression">Emisión de la progresión de los espectadores</string>
     <string name="library_view_show_score">Mostrar puntuacion</string>
     <string name="library_view_show_score_desc">Mostrar tu valoración en lista y en tabla</string>
-    <string name="share_as_image">Compartir imagen</string>
-    <string name="share_image_preview_title">Vista previa</string>
     <string name="share_action_save">Guardar</string>
     <string name="share_action_copy">Copiar</string>
     <string name="share_action_share">Compartir</string>
