@@ -1,3 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="nav_library">倉庫</string>
+    <string name="nav_discover">探索</string>
+    <string name="nav_feed">推流</string>
+    <string name="nav_forum">論壇</string>
+    <string name="nav_profile">主頁</string>
+    <string name="feed_filter_all">全部</string>
+    <string name="feed_filter_status">動態</string>
+    <string name="feed_scope_following">我的關注</string>
+    <string name="feed_scope_global">全球</string>
+    <string name="feed_filter_list">列表</string>
+    <string name="feed_empty_global">無活動-下拉以刷新！</string>
+    <string name="feed_empty_following">新增關注以在這查看他們的活動^_^</string>
+    <string name="feed_compose_title">編輯動態</string>
+    <string name="feed_compose_placeholder">在這裡寫下你的奇思妙想~</string>
+    <string name="feed_compose_submit">發佈</string>
+    <string name="forum_browse_categories">瀏覽分類</string>
+    <string name="forum_recent_discussions">近期討論</string>
+    <string name="forum_reply">回覆</string>
+    <string name="forum_write_reply">撰寫回覆</string>
 </resources>
