@@ -767,7 +767,7 @@
     <string name="media_upload_catbox_userhash">Hash de usuario</string>
     <string name="media_upload_catbox_userhash_hint">Encuéntralo en Administrar Cuenta en catbox.moe</string>
     <string name="media_upload_catbox_userhash_help">Vincula las subidas a tu cuenta de Catbox para que puedas verlas y eliminarlas más tarde. Déjalo vacío para subir de forma anónima.</string>
-    <string name="media_upload_host_litterbox">Litterbox</string>
+    <string name="media_upload_host_litterbox">Cajita</string>
     <string name="media_upload_host_litterbox_desc">Alojamiento temporal en la misma red que Catbox</string>
     <string name="media_upload_host_custom">Servidor personalizado</string>
     <string name="media_upload_host_custom_desc">Cualquier servicio que acepte un multipart POST</string>
@@ -1072,7 +1072,7 @@
     <string name="details_tab_characters">Caracteres</string>
     <string name="details_tab_staff">Personal</string>
     <string name="profile_follows_you">Te sigue</string>
-    <string name="profile_mutual">Mutual</string>
+    <string name="profile_mutual">Mutuo</string>
     <string name="statistics_activity_a11y">Mapa de calor de actividad con %1$d actividades durante el último año</string>
     <plurals name="statistics_activity_count">
         <item quantity="one">%d actividad</item>
@@ -1170,7 +1170,7 @@
     <string name="share_format_square">Cuadrado</string>
     <string name="share_format_story">Historia</string>
     <string name="share_template_standard">Carta</string>
-    <string name="share_template_hero">Poster</string>
+    <string name="share_template_hero">Cartel</string>
     <string name="share_toggle_score">Puntuación</string>
     <string name="share_toggle_progress">Progreso</string>
     <string name="share_person_character">Personaje</string>
@@ -1179,8 +1179,8 @@
     <string name="share_recap_top_staff">Autores más leidos</string>
     <string name="share_caption_hint">Añadir descripción (opcional)</string>
     <string name="share_known_for">Conocido por</string>
-    <string name="share_template_stats">Estadísticas</string>
-    <string name="share_template_recap">Resumen</string>
+    <string name="share_template_stats">Estads</string>
+    <string name="share_template_recap">Recapitular</string>
     <string name="share_template_grid">Cuadrícula</string>
     <string name="share_template_ranked">Clasificación</string>
     <string name="share_recap_eyebrow">Resumen histórico</string>
