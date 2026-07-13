@@ -1,10 +1,10 @@
 # AniWorld parser fixtures
 
-These fixtures are small, synthetic, sanitized HTML documents derived only from the DOM contract observed on 2026-07-13 at `https://aniworld.to/animekalender`. They contain no player, video, streamhoster, authentication, cookie, or user data. Tests never contact AniWorld.
+These fixtures are small, synthetic, sanitized HTML documents derived only from the DOM contract observed on 2026-07-13 and rechecked on 2026-07-14 at `https://aniworld.to/animekalender`. They contain no player, video, streamhoster, authentication, cookie, or user data. Tests never contact AniWorld.
 
-- Observation date: 2026-07-13
+- Observation dates: 2026-07-13 and 2026-07-14
 - Source URL: `https://aniworld.to/animekalender`
-- Parser version: 1
+- Parser version: 2
 - Sanitization: titles, links, covers, unrelated navigation, scripts, trackers, and all streaming/player sections were removed or replaced with fictional values.
 
 | Fixture | Purpose | SHA-256 |
@@ -21,5 +21,6 @@ These fixtures are small, synthetic, sanitized HTML documents derived only from 
 | `aniworld_calendar_multi_episode.html` | Sanitized parser case for `multi_episode` | `46dfa24f63935787f37145be7eb696c2ea6eca966c206227100dcb2b99febe3e` |
 | `aniworld_calendar_multi_time.html` | Sanitized parser case for `multi_time` | `0d7d061d15280816ee89621d4898c8fc317a39d262be65c147652dd35f33c385` |
 | `aniworld_calendar_reference.html` | Sanitized parser case for `reference` | `a5f5ecc2c5271d7ed8a37a7af3adb4e7705dcea3387a7d28dfab0162c606f59e` |
+| `aniworld_calendar_security_words_valid.html` | Valid calendar despite unrelated security words and CDN markers | `e780f315daac4f21f6e00eafb0eec41e2296e2a771bb4ad7fb6bf05a059e591e` |
 | `aniworld_calendar_same_time_bilingual.html` | Sanitized parser case for `same_time_bilingual` | `a06c44d4a2c1fa9dde8747d2ed57e12f5625ae3215d5721709563ba1f65ba695` |
 | `aniworld_calendar_unknown_language.html` | Sanitized parser case for `unknown_language` | `990f2f7e1032bd50e2bbd4b55f99755a106f7c7823f3af14167928dcd7390333` |

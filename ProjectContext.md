@@ -41,6 +41,7 @@ AniList owns media identity, title variants/synonyms, cover, score, account, lis
 - Matching follows accepted snapshot persistence. Matching/candidate failures are diagnostic and never destroy an accepted calendar snapshot.
 - Re-fetching the same document updates its fetched timestamp and sync diagnostics without replacing releases.
 - Sync state records attempt/success/error, HTTP status, range, parser/matcher versions, and parsed/matched/ambiguous/unmatched counts.
+- Runtime diagnostics use the `AniWorldCalendar` log tag and record request/refresh state, status, host/path without query, content type, response size, SHA-256, sanitized title, and bounded failure reason. Response bodies, cookies, query values, and tokens are never logged.
 
 ## Calendar Rules
 
@@ -94,3 +95,5 @@ Order: persisted safe/manual mapping, exact normalized title variant (user prefe
 - 2026-07-13: Treat `Europe/Berlin`, snapshot-bounded navigation, explicit manual refresh, valid-empty acceptance, and approximate-time semantics as fixed V1 policy.
 - 2026-07-13: Preserve old snapshots through refresh failure; matching failure remains diagnostic after accepted persistence.
 - 2026-07-13: Keep the upstream lint debt in a generated baseline while enforcing zero new lint issues.
+- 2026-07-14: Treat complete required calendar structure as authoritative even when generic security terms or CDN hostnames occur. Classify a challenge only when required calendar structure is incomplete and strong structural signatures are present; do not solve or bypass challenges.
+- 2026-07-14: Raise the parser version to 2 for the corrected challenge classification and add privacy-bounded runtime diagnostics.

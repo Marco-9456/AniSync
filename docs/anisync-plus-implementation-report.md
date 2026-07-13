@@ -1,6 +1,6 @@
 # AniSync Plus Implementierungs- und Prüfbericht
 
-Stand: 2026-07-13. Dieser Bericht beschreibt nur beobachteten Repositoryzustand und tatsächlich ausgeführte Prüfungen. Die historische Auditdatei `docs/anisync-plus-phase1-forensic-audit.md` wurde nicht inhaltlich verändert.
+Stand: 2026-07-14. Dieser Bericht beschreibt nur beobachteten Repositoryzustand und tatsächlich ausgeführte Prüfungen. Die historische Auditdatei `docs/anisync-plus-phase1-forensic-audit.md` wurde nicht inhaltlich verändert.
 
 ## A. Status
 
@@ -10,7 +10,7 @@ Stand: 2026-07-13. Dieser Bericht beschreibt nur beobachteten Repositoryzustand 
 | --- | --- | --- |
 | Forensischer Auditpayload | COMPLETE | 31.755 Bytes, 946 Zeilen, erwarteter SHA-256 exakt |
 | Separates Kalender-Modul/DB | COMPLETE | `:anisyncplus-calendar`, `anisync_plus_calendar.db`, exportiertes Room-Schema |
-| Parser/Konsolidierung/DST | COMPLETE | lokale Fixtures, 36 grüne Modultests insgesamt |
+| Parser/Konsolidierung/DST | COMPLETE | lokale Fixtures, 41 grüne Modultests insgesamt |
 | Matching/Mapping | COMPLETE | persistierte Mappings, konservative Schwellen, Diagnostiktests |
 | Atomarer Cache/Refresh | COMPLETE | Transaktions- und Fehlererhaltungstests |
 | Kalenderintegration | COMPLETE | cache-only Startup, expliziter Refresh, Status/Range/Retry, kein AniList-Fallback |
@@ -18,7 +18,7 @@ Stand: 2026-07-13. Dieser Bericht beschreibt nur beobachteten Repositoryzustand 
 | Settings/Diagnostik | COMPLETE | eigene Preferences, Kategorie/Route, Refresh und Statusdaten |
 | Branding/Parallel-ID | COMPLETE | App-ID/Labels/APK mit `aapt` verifiziert |
 | PR-/Push-/Release-CI | COMPLETE | Wrapper, Tests/Lint/Build, exakte Artefakte, persistente Signierung |
-| Unit/Robolectric | COMPLETE | 36 Modul + 184 App = 220 Tests, 0 Fehler |
+| Unit/Robolectric | COMPLETE | 41 Modul + 184 App = 225 Tests, 0 Fehler |
 | Lint | COMPLETE | keine neuen Befunde; auditierte Upstream-Baseline gefiltert |
 | Stable-Debug APK | COMPLETE | gebaut, Paket/Label/Hash geprüft |
 | Device/Emulator UI | nicht verfügbar | durch Robolectric und lokale Build-/Metadatenprüfung ersetzt |
@@ -49,6 +49,7 @@ Stand: 2026-07-13. Dieser Bericht beschreibt nur beobachteten Repositoryzustand 
 | `3d58d847` | PR/Push/Tag/manuelle GitHub-Workflows |
 | `ac242dc5` | lokalisierte Kalenderstatusmeldungen |
 | `c2a77df2` | gemeinsamer Library-Minuten-Ticker für Grid und Liste |
+| `6eaef188` | strukturelle Challenge-Erkennung und sichere AniWorld-Laufzeitdiagnostik |
 
 ## C. Implementierte Funktionen
 
@@ -61,7 +62,7 @@ Startup, Navigation, Tests und CI überspringen den Netzwerkpfad vollständig.
 ### Parser und Cache
 
 - Ein Abruf der Kalenderseite pro manuellem Refresh.
-- Block-/Challenge-Erkennung ohne Umgehungsversuch.
+- Strukturelle Block-/Challenge-Erkennung im Parser ohne HTML-Wortscan im Client und ohne Umgehungsversuch.
 - Explizite DOM-, Datum-, Zeit-, Sprach- und Installmentregeln.
 - `Europe/Berlin`, DST-Gap-Fehler und früher Offset bei Overlap.
 - DE-Sub/DE-Dub-Zusammenführung nur bei gleicher vollständiger Releaseidentität.
@@ -70,7 +71,13 @@ Startup, Navigation, Tests und CI überspringen den Netzwerkpfad vollständig.
 - Atomare Aktivierung, alter Snapshot bei HTTP/Parse/Validierung/DB-Fehler.
 - Unverändertes Dokument aktualisiert Fetchzeit statt Releasezeilen zu duplizieren.
 - Mappings überleben Snapshotwechsel; Matchingfehler zerstören keinen akzeptierten Snapshot.
-- Syncdiagnostik: Attempt/Success/Error/HTTP/Range/Counts/Versionen.
+- Syncdiagnostik: Attempt/Success/Error/HTTP/Range/Counts/Versionen sowie datensparsame Logcat-Diagnosen ohne Body, Cookies, Querywerte oder Tokens.
+
+### Regression vom 2026-07-14
+
+Das bereitgestellte Debuglog enthielt keine AniWorld-Request-, Response- oder Parserzeilen und zeigte keinen zugehörigen Crash. Eine getrennte Metadatenprüfung mit den App-Headern reproduzierte jedoch die Ursache eindeutig: AniWorld lieferte HTTP 200 und vollständige Kalenderstruktur, während eine reguläre Stylesheet-URL auf `cdnjs.cloudflare.com` den bisherigen pauschalen Wortscan auslöste.
+
+Der HTTP-Client klassifiziert deshalb keine HTML-Begriffe mehr. Der Parser akzeptiert vollständige Kalenderstruktur vorrangig und erkennt eine Challenge nur bei unvollständiger Pflichtstruktur plus starker struktureller Signatur. Ein lokaler Smoke-Test der dabei gespeicherten aktuellen Antwort ergab 15 Tagesabschnitte, 340 Releases, 184 sichtbare deutsche Releases und Parser-Version 2. Tests und CI selbst bleiben vollständig fixture-basiert und führen keine AniWorld-Anfrage aus.
 
 ### Matching
 
@@ -129,7 +136,7 @@ Startup, Navigation, Tests und CI überspringen den Netzwerkpfad vollständig.
 | `wc -l docs/anisync-plus-phase1-forensic-audit.md` | 0 | 946 |
 | `sha256sum docs/anisync-plus-phase1-forensic-audit.md` | 0 | `88305f414ad8f6407e3a991c24b910653ecff009580313f05e57e20cfe8a05b7` |
 | `./gradlew tasks --all` mit lokalem JDK/SDK | 0 | reale Tasks inventarisiert |
-| `:anisyncplus-calendar:testDebugUnitTest` | 0 | 36 Tests, 0 Fehler |
+| `:anisyncplus-calendar:testDebugUnitTest` | 0 | 41 Tests, 0 Fehler |
 | `testStableDebugUnitTest` | 0 | 184 Tests, 0 Fehler |
 | `:app:compileStableDebugKotlin :app:hiltJavaCompileStableDebug` | 0 | Kotlin/KSP/Room/Hilt kompiliert, keine Duplicate Bindings |
 | `lintStableDebug` | 0 | keine neuen Issues; 1237 Errors, 582 Warnings, 2 Hints der auditierten Baseline gefiltert |
@@ -182,7 +189,7 @@ Diese Punkte ändern nicht den V1-Codeabschluss; sie erfordern externe Infrastru
 
 ### Neue isolierte Bereiche
 
-- Gesamtes `:anisyncplus-calendar` Modul inklusive API, Domain, Network, Parser, Matching, Room, Repository, Schema, Tests und 14 lokalen Fixtures.
+- Gesamtes `:anisyncplus-calendar` Modul inklusive API, Domain, Network, Parser, Matching, Room, Repository, Schema, Tests und 15 lokalen Fixtures.
 - Neue Appadapter, Hilt-Modul, Settingsscreen/ViewModel und gezielte App-Tests.
 - Neue PR-/Push-CI und Lintbaseline.
 - Historischer Audit und aktualisierte Architektur-/Parser-/Implementierungsdokumente.
@@ -193,7 +200,7 @@ Breite Refactors, Packageverschiebungen und Änderungen an `anisync.db` wurden v
 
 - Pfad: `app/build/outputs/apk/stable/debug/AniSyncPlus-v3.1.0-debug-universal-debug.apk`
 - Größe: 43.420.653 Bytes
-- SHA-256: `178bb099b088f466490840c0d04231bb0009f0d6890f81ddcac6d9a57dc0eb08`
+- SHA-256: `68ad0bdf8a9777d4634bdb9729d154fcc9c741182dbb490b51f4209708783597`
 - Package: `de.mrxxxxx.anisyncplus.debug`
 - Version: `19 / 3.1.0-debug`
 - minSdk/targetSdk: `26 / 36`

@@ -1,6 +1,6 @@
 # AniWorld Parser Contract
 
-Observed source contract recorded on 2026-07-13 and implemented by `JsoupAniWorldCalendarParser`. The original observation used one metadata-only request to `https://aniworld.to/animekalender`; no video, hoster, player, authentication, CAPTCHA, or bypass behavior was inspected. Production fetches occur only at explicit app runtime refresh. Tests and CI use local fixtures exclusively.
+Observed source contract recorded on 2026-07-13, rechecked on 2026-07-14, and implemented by `JsoupAniWorldCalendarParser`. The observations used metadata-only requests to `https://aniworld.to/animekalender`; no video, hoster, player, authentication, CAPTCHA, or bypass behavior was inspected. Production fetches occur only at explicit app runtime refresh. Tests and CI use local fixtures exclusively.
 
 ## Required Document Structure
 
@@ -11,7 +11,9 @@ Observed source contract recorded on 2026-07-13 and implemented by `JsoupAniWorl
 - The card is resolved through `[data-calendar-entry]`, then observed Bootstrap card classes, then the title parent.
 - Source identity prefers the slug following `/anime/stream/`; otherwise it uses the normalized source title.
 
-Missing root/day structure is a hard parse failure. Known block/challenge text such as Cloudflare, CAPTCHA, Access Denied, or Just a moment is a distinct block-page failure. The client never attempts to solve or bypass it.
+Complete required calendar structure is authoritative. A valid root with day sections remains parseable when generic terms such as Cloudflare, CAPTCHA, Access Denied, or Just a moment occur in titles, text, element IDs, or ordinary CDN URLs. This prevents the false positive observed on 2026-07-14, when valid calendar HTML referenced `cdnjs.cloudflare.com`.
+
+If the root or its day sections are missing, the parser checks only strong challenge signatures: challenge-specific titles, forms/widgets, challenge script URLs, a Cloudflare Ray ID, or explicit human-verification text. A strong signature produces a distinct block-page failure with a bounded reason; otherwise the precise missing-structure failure is retained. The HTTP client validates status, HTML content type, size limit, and non-empty body but does not classify HTML words. Neither client nor parser attempts to solve or bypass a challenge.
 
 ## Fields
 
@@ -86,4 +88,4 @@ A valid page may contain zero releases and replace the cache. Missing required s
 
 ## Local Fixture Matrix
 
-Checked-in fixtures cover reference parsing, bilingual same-time merge, different-time split, multiple episodes, film/special, unknown language, missing fields, valid empty, block page, missing structure, invalid date/time, and Berlin DST gap/overlap. The fixtures contain synthetic metadata only and make no network request.
+Checked-in fixtures cover reference parsing, bilingual same-time merge, different-time split, multiple episodes, film/special, unknown language, missing fields, valid empty, block page, missing structure, invalid date/time, Berlin DST gap/overlap, and valid calendar structure containing misleading security/CDN terms. The fixtures contain synthetic metadata only and make no network request.

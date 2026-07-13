@@ -1,6 +1,6 @@
 # AniSync Plus Calendar Architecture
 
-This document describes the implementation on branch `codex/anisyncplus-complete-implementation` as verified on 2026-07-13.
+This document describes the implementation on branch `codex/anisyncplus-complete-implementation` as verified through 2026-07-14.
 
 ## Module Boundary
 
@@ -46,8 +46,8 @@ One `RoomAniWorldCalendarRepository` instance implements the calendar repository
 ## Refresh Sequence
 
 1. Record a sync attempt in the separate database.
-2. Fetch exactly the AniWorld calendar page with the dedicated OkHttp client.
-3. Detect HTTP/block responses and parse the HTML off the main thread.
+2. Fetch exactly the AniWorld calendar page with the dedicated OkHttp client; validate HTTP status, content type, bounded size, and non-empty body.
+3. Parse the HTML off the main thread; when required calendar structure is incomplete, classify only strong challenge structures.
 4. Validate day sections, range, SHA-256, parser version, snapshot IDs, release range, and unique local IDs.
 5. Atomically activate a new snapshot and releases, or update `fetchedAt` for an unchanged document.
 6. Resolve new/unconfirmed source keys through stored mappings and bounded AniList candidates.
@@ -74,6 +74,7 @@ Room transaction `activateSnapshot` inserts the validated replacement, inserts i
 ## Parsing and Time
 
 - Required container: `#seriesContainer`; required day nodes: `section.calendarList`.
+- Complete required calendar structure takes precedence over generic security words and ordinary CDN URLs. Strong challenge titles, forms/widgets, scripts, Ray IDs, or human-verification text are classified only when required structure is incomplete.
 - Each `h3.seriesTitle` anchors one source card.
 - Dates are parsed from German headings as `dd.MM.uuuu`.
 - Time accepts optional `~` plus `HH:mm Uhr`.
@@ -125,13 +126,13 @@ Manga and non-CURRENT entries are returned unchanged. Airing Soon compares AniWo
 
 ## Dependency Injection and Settings
 
-`AniWorldCalendarModule` provides the separate Room database/DAO, dedicated source client, parser, matcher, repository, and all three public repository interfaces. App adapters bridge Apollo and active-account Room state. Stable-Debug Hilt compilation proves there is one upstream `CalendarRepository` binding and no duplicate AniWorld binding.
+`AniWorldCalendarModule` provides the separate Room database/DAO, dedicated source client, parser, matcher, repository, and all three public repository interfaces. App adapters bridge Apollo and active-account Room state. Stable-Debug Hilt compilation proves there is one upstream `CalendarRepository` binding and no duplicate AniWorld binding. Privacy-bounded request and refresh diagnostics use the `AniWorldCalendar` log tag; they omit response bodies, cookies, URL query values, and tokens.
 
 `AniSyncPlusSettings` uses its own `anisync_plus_settings` SharedPreferences namespace. The settings category is registered after App Links and before Updates in compact and two-pane navigation and exposes enable/filter-memory toggles, manual refresh, range/status/error/count diagnostics, timezone, and parser/matcher versions.
 
 ## Test Strategy
 
-- 36 module tests: parser fixtures, client behavior, normalization/matching, Room transactions, refresh preservation, resolver and account-flow behavior.
+- 41 module tests: parser fixtures, client behavior and diagnostic privacy, normalization/matching, Room transactions, refresh preservation, resolver and account-flow behavior.
 - 184 app tests: existing suite plus adapter, filter/persistence/range, library targeting/no-fallback, and sorting tests.
 - Robolectric substitutes for unavailable device instrumentation for database/settings/policy paths.
 - CI and local gates never make live AniWorld requests.
