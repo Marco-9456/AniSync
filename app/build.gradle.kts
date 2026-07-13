@@ -227,6 +227,7 @@ ksp {
 }
 
 dependencies {
+    implementation(project(":anisyncplus-calendar"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.appcompat)

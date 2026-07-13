@@ -1,0 +1,494 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "574412e263895cc4042d3b27634f9fb5",
+    "entities": [
+      {
+        "tableName": "aniworld_snapshots",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`snapshotId` TEXT NOT NULL, `fetchedAtEpochMillis` INTEGER NOT NULL, `rangeStartEpochDay` INTEGER NOT NULL, `rangeEndEpochDay` INTEGER NOT NULL, `documentSha256` TEXT NOT NULL, `parserVersion` TEXT NOT NULL, `entryCount` INTEGER NOT NULL, `germanVisibleEntryCount` INTEGER NOT NULL, `sourceUrl` TEXT NOT NULL, PRIMARY KEY(`snapshotId`))",
+        "fields": [
+          {
+            "fieldPath": "snapshotId",
+            "columnName": "snapshotId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAtEpochMillis",
+            "columnName": "fetchedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rangeStartEpochDay",
+            "columnName": "rangeStartEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rangeEndEpochDay",
+            "columnName": "rangeEndEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "documentSha256",
+            "columnName": "documentSha256",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parserVersion",
+            "columnName": "parserVersion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entryCount",
+            "columnName": "entryCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "germanVisibleEntryCount",
+            "columnName": "germanVisibleEntryCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceUrl",
+            "columnName": "sourceUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "snapshotId"
+          ]
+        }
+      },
+      {
+        "tableName": "aniworld_release_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`localId` TEXT NOT NULL, `snapshotId` TEXT NOT NULL, `sourceSeriesKey` TEXT NOT NULL, `sourceSlug` TEXT, `sourceUrl` TEXT, `rawTitle` TEXT NOT NULL, `normalizedTitle` TEXT NOT NULL, `sourceDateEpochDay` INTEGER NOT NULL, `sourceLocalTimeMinutes` INTEGER, `sourceZoneId` TEXT NOT NULL, `resolvedInstantEpochSeconds` INTEGER, `isApproximate` INTEGER NOT NULL, `releaseKind` TEXT NOT NULL, `seasonNumber` INTEGER, `episodeNumber` INTEGER, `installmentNumber` INTEGER, `rawInstallmentToken` TEXT, `language` TEXT NOT NULL, `rawLanguageMarkers` TEXT NOT NULL, `parserVersion` TEXT NOT NULL, `sourceOrder` INTEGER NOT NULL, `diagnosticStatus` TEXT NOT NULL, PRIMARY KEY(`localId`, `snapshotId`), FOREIGN KEY(`snapshotId`) REFERENCES `aniworld_snapshots`(`snapshotId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "localId",
+            "columnName": "localId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "snapshotId",
+            "columnName": "snapshotId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceSeriesKey",
+            "columnName": "sourceSeriesKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceSlug",
+            "columnName": "sourceSlug",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceUrl",
+            "columnName": "sourceUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "rawTitle",
+            "columnName": "rawTitle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "normalizedTitle",
+            "columnName": "normalizedTitle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceDateEpochDay",
+            "columnName": "sourceDateEpochDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceLocalTimeMinutes",
+            "columnName": "sourceLocalTimeMinutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "sourceZoneId",
+            "columnName": "sourceZoneId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resolvedInstantEpochSeconds",
+            "columnName": "resolvedInstantEpochSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "isApproximate",
+            "columnName": "isApproximate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "releaseKind",
+            "columnName": "releaseKind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seasonNumber",
+            "columnName": "seasonNumber",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "episodeNumber",
+            "columnName": "episodeNumber",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "installmentNumber",
+            "columnName": "installmentNumber",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "rawInstallmentToken",
+            "columnName": "rawInstallmentToken",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "language",
+            "columnName": "language",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rawLanguageMarkers",
+            "columnName": "rawLanguageMarkers",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parserVersion",
+            "columnName": "parserVersion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceOrder",
+            "columnName": "sourceOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "diagnosticStatus",
+            "columnName": "diagnosticStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "localId",
+            "snapshotId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_aniworld_release_entries_snapshotId",
+            "unique": false,
+            "columnNames": [
+              "snapshotId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_aniworld_release_entries_snapshotId` ON `${TABLE_NAME}` (`snapshotId`)"
+          },
+          {
+            "name": "index_aniworld_release_entries_sourceSeriesKey",
+            "unique": false,
+            "columnNames": [
+              "sourceSeriesKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_aniworld_release_entries_sourceSeriesKey` ON `${TABLE_NAME}` (`sourceSeriesKey`)"
+          },
+          {
+            "name": "index_aniworld_release_entries_snapshotId_sourceDateEpochDay",
+            "unique": false,
+            "columnNames": [
+              "snapshotId",
+              "sourceDateEpochDay"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_aniworld_release_entries_snapshotId_sourceDateEpochDay` ON `${TABLE_NAME}` (`snapshotId`, `sourceDateEpochDay`)"
+          },
+          {
+            "name": "index_aniworld_release_entries_snapshotId_language",
+            "unique": false,
+            "columnNames": [
+              "snapshotId",
+              "language"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_aniworld_release_entries_snapshotId_language` ON `${TABLE_NAME}` (`snapshotId`, `language`)"
+          },
+          {
+            "name": "index_aniworld_release_entries_snapshotId_resolvedInstantEpochSeconds",
+            "unique": false,
+            "columnNames": [
+              "snapshotId",
+              "resolvedInstantEpochSeconds"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_aniworld_release_entries_snapshotId_resolvedInstantEpochSeconds` ON `${TABLE_NAME}` (`snapshotId`, `resolvedInstantEpochSeconds`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "aniworld_snapshots",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "snapshotId"
+            ],
+            "referencedColumns": [
+              "snapshotId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "aniworld_media_mappings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sourceSeriesKey` TEXT NOT NULL, `aniListMediaId` INTEGER, `status` TEXT NOT NULL, `confidence` REAL, `reason` TEXT NOT NULL, `matcherVersion` TEXT NOT NULL, `isManual` INTEGER NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, `candidateCount` INTEGER NOT NULL, `secondBestScore` REAL, `scoreMargin` REAL, `aniListTitle` TEXT, `coverImageUrl` TEXT, `averageScore` INTEGER, PRIMARY KEY(`sourceSeriesKey`))",
+        "fields": [
+          {
+            "fieldPath": "sourceSeriesKey",
+            "columnName": "sourceSeriesKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aniListMediaId",
+            "columnName": "aniListMediaId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "confidence",
+            "columnName": "confidence",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "reason",
+            "columnName": "reason",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "matcherVersion",
+            "columnName": "matcherVersion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isManual",
+            "columnName": "isManual",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "createdAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "candidateCount",
+            "columnName": "candidateCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "secondBestScore",
+            "columnName": "secondBestScore",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "scoreMargin",
+            "columnName": "scoreMargin",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "aniListTitle",
+            "columnName": "aniListTitle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "coverImageUrl",
+            "columnName": "coverImageUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "averageScore",
+            "columnName": "averageScore",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sourceSeriesKey"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_aniworld_media_mappings_aniListMediaId",
+            "unique": false,
+            "columnNames": [
+              "aniListMediaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_aniworld_media_mappings_aniListMediaId` ON `${TABLE_NAME}` (`aniListMediaId`)"
+          },
+          {
+            "name": "index_aniworld_media_mappings_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_aniworld_media_mappings_status` ON `${TABLE_NAME}` (`status`)"
+          }
+        ]
+      },
+      {
+        "tableName": "aniworld_sync_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`singletonId` INTEGER NOT NULL, `lastAttemptAtEpochMillis` INTEGER, `lastSuccessAtEpochMillis` INTEGER, `lastErrorType` TEXT, `lastErrorMessage` TEXT, `httpStatus` INTEGER, `parsedCount` INTEGER NOT NULL, `visibleGermanCount` INTEGER NOT NULL, `matchedCount` INTEGER NOT NULL, `ambiguousCount` INTEGER NOT NULL, `unmatchedCount` INTEGER NOT NULL, `activeSnapshotId` TEXT, `rangeStartEpochDay` INTEGER, `rangeEndEpochDay` INTEGER, `parserVersion` TEXT NOT NULL, `matcherVersion` TEXT NOT NULL, PRIMARY KEY(`singletonId`))",
+        "fields": [
+          {
+            "fieldPath": "singletonId",
+            "columnName": "singletonId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastAttemptAtEpochMillis",
+            "columnName": "lastAttemptAtEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastSuccessAtEpochMillis",
+            "columnName": "lastSuccessAtEpochMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastErrorType",
+            "columnName": "lastErrorType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastErrorMessage",
+            "columnName": "lastErrorMessage",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "httpStatus",
+            "columnName": "httpStatus",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "parsedCount",
+            "columnName": "parsedCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "visibleGermanCount",
+            "columnName": "visibleGermanCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "matchedCount",
+            "columnName": "matchedCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ambiguousCount",
+            "columnName": "ambiguousCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unmatchedCount",
+            "columnName": "unmatchedCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeSnapshotId",
+            "columnName": "activeSnapshotId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "rangeStartEpochDay",
+            "columnName": "rangeStartEpochDay",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "rangeEndEpochDay",
+            "columnName": "rangeEndEpochDay",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "parserVersion",
+            "columnName": "parserVersion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "matcherVersion",
+            "columnName": "matcherVersion",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "singletonId"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '574412e263895cc4042d3b27634f9fb5')"
+    ]
+  }
+}

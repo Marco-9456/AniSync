@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "AniSync"
 include(":app")
+include(":anisyncplus-calendar")
