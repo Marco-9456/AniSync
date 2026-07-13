@@ -82,6 +82,7 @@ import com.anisync.android.util.getTitle
 fun LibraryListCard(
     entry: LibraryEntry,
     mediaType: MediaType,
+    nowEpochSec: Long = 0L,
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -269,11 +270,16 @@ fun LibraryListCard(
                             }
                         }
 
-                        if (config.showAiringInfo && entry.dynamicTimeUntilAiring != null && entry.nextAiringEpisode != null) {
+                        val remainingSeconds = entry.nextAiringEpisodeTime
+                            ?.minus(nowEpochSec)
+                            ?.coerceAtLeast(0L)
+                            ?.coerceAtMost(Int.MAX_VALUE.toLong())
+                            ?.toInt()
+                        if (config.showAiringInfo && remainingSeconds != null && entry.nextAiringEpisode != null) {
                             val airingText = stringResource(
                                 R.string.airing_episode_in,
-                                entry.nextAiringEpisode ?: 0,
-                                formatTimeUntilAiring(entry.dynamicTimeUntilAiring ?: 0)
+                                entry.nextAiringEpisode,
+                                formatTimeUntilAiring(remainingSeconds)
                             )
                             Text(
                                 text = if (entry.nextAiringIsApproximate) {

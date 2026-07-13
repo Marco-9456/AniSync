@@ -79,6 +79,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -131,6 +132,7 @@ import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -190,6 +192,13 @@ fun LibraryScreen(
 
     var showSortMenu by rememberSaveable { mutableStateOf(false) }
     var showViewOptionsSheet by rememberSaveable { mutableStateOf(false) }
+    var nowEpochSec by remember { mutableLongStateOf(System.currentTimeMillis() / 1000L) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000L)
+            nowEpochSec = System.currentTimeMillis() / 1000L
+        }
+    }
 
     val tabs = remember(uiState.tabOrder, uiState.hiddenListNames, uiState.customListNames) {
         // "All" now lives in the tab order like every other tab, so it reorders/hides through the
@@ -659,6 +668,7 @@ fun LibraryScreen(
                                             LibraryMediaCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
+                                                nowEpochSec = nowEpochSec,
                                                 onClick = { navigateToMediaDetails(entry.mediaId) },
                                                 onIncrement = if (hasQuickProgress) {
                                                     { handleIncrement(entry.mediaId) }
@@ -706,6 +716,7 @@ fun LibraryScreen(
                                             LibraryListCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
+                                                nowEpochSec = nowEpochSec,
                                                 onClick = { navigateToMediaDetails(entry.mediaId) },
                                                 onIncrement = if (hasQuickProgress) {
                                                     { handleIncrement(entry.mediaId) }
