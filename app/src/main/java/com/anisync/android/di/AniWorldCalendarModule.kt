@@ -1,6 +1,7 @@
 package com.anisync.android.di
 
 import android.content.Context
+import android.util.Log
 import com.anisync.android.data.anisyncplus.AniWorldAniListCandidateProvider
 import com.anisync.android.data.anisyncplus.AniWorldLibraryStateProvider
 import androidx.room.Room
@@ -51,7 +52,8 @@ object AniWorldCalendarModule {
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)
             .callTimeout(30, TimeUnit.SECONDS)
-            .build()
+            .build(),
+        diagnosticLogger = { message -> Log.i(ANIWORLD_LOG_TAG, message) }
     )
 
     @Provides
@@ -82,7 +84,8 @@ object AniWorldCalendarModule {
         matcher = matcher,
         candidateProvider = candidateProvider,
         libraryStateProvider = libraryStateProvider,
-        clock = Clock.systemUTC()
+        clock = Clock.systemUTC(),
+        diagnosticLogger = { message -> Log.i(ANIWORLD_LOG_TAG, message) }
     )
 
     @Provides
@@ -93,4 +96,6 @@ object AniWorldCalendarModule {
 
     @Provides
     fun provideEffectiveReleaseRepository(impl: RoomAniWorldCalendarRepository): EffectiveReleaseRepository = impl
+
+    private const val ANIWORLD_LOG_TAG = "AniWorldCalendar"
 }

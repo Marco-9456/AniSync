@@ -20,12 +20,19 @@ import javax.inject.Inject
 class JsoupAniWorldCalendarParser @Inject constructor() : AniWorldCalendarParser {
     override fun parse(html: String, fetchedAt: Instant): AniWorldParsedDocument {
         val document = Jsoup.parse(html)
-        val challengeText = (document.title() + " " + document.body()?.text().orEmpty()).lowercase()
-        if (BLOCK_MARKERS.any(challengeText::contains)) throw AniWorldParseException.BlockPage()
-
-        val container = document.selectFirst("#seriesContainer") ?: throw AniWorldParseException.MissingContainer()
+        val container = document.selectFirst("#seriesContainer") ?: run {
+            AniWorldChallengeDetector.reason(document)?.let { reason ->
+                throw AniWorldParseException.BlockPage(reason)
+            }
+            throw AniWorldParseException.MissingContainer()
+        }
         val sections = container.select("section.calendarList")
-        if (sections.isEmpty()) throw AniWorldParseException.MissingDaySections()
+        if (sections.isEmpty()) {
+            AniWorldChallengeDetector.reason(document)?.let { reason ->
+                throw AniWorldParseException.BlockPage(reason)
+            }
+            throw AniWorldParseException.MissingDaySections()
+        }
 
         val documentHash = sha256(html)
         val snapshotId = "aw-${documentHash.take(24)}"
@@ -231,6 +238,5 @@ class JsoupAniWorldCalendarParser @Inject constructor() : AniWorldCalendarParser
         val EPISODE_REGEX = Regex("S(\\d{1,2})E(\\d{1,4})", RegexOption.IGNORE_CASE)
         val FILM_REGEX = Regex("Film(?:\\s*(\\d+))?", RegexOption.IGNORE_CASE)
         val SPECIAL_REGEX = Regex("Special(?:\\s*(\\d+))?", RegexOption.IGNORE_CASE)
-        val BLOCK_MARKERS = listOf("just a moment", "cf-chl-", "cloudflare", "access denied", "captcha")
     }
 }

@@ -144,7 +144,7 @@ data class AniWorldSyncState(
     val matcherVersion: String = MATCHER_VERSION
 )
 
-const val PARSER_VERSION = "1"
+const val PARSER_VERSION = "2"
 const val MATCHER_VERSION = "1"
 const val SOURCE_ZONE_ID = "Europe/Berlin"
 const val SOURCE_URL = "https://aniworld.to/animekalender"

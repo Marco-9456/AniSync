@@ -103,11 +103,36 @@ class JsoupAniWorldCalendarParserTest {
 
     @Test
     fun `block page is rejected separately from DOM change`() {
-        assertThrows(AniWorldParseException.BlockPage::class.java) {
+        val block = assertThrows(AniWorldParseException.BlockPage::class.java) {
             parse("aniworld_calendar_block_page.html")
         }
+        assertTrue(block.message.orEmpty().contains("challenge_title_just_a_moment"))
         assertThrows(AniWorldParseException.MissingContainer::class.java) {
             parse("aniworld_calendar_dom_changed.html")
+        }
+    }
+
+    @Test
+    fun `valid calendar structure wins over benign and strong marker words`() {
+        val result = parse("aniworld_calendar_security_words_valid.html")
+
+        assertEquals(1, result.daySectionCount)
+        assertEquals(1, result.visibleGermanCount)
+        assertEquals("Access Denied: Captcha Cloudflare", result.releases.single().rawTitle)
+    }
+
+    @Test
+    fun `challenge structure is classified only when calendar structure is incomplete`() {
+        val challenge = assertThrows(AniWorldParseException.BlockPage::class.java) {
+            parser.parse(
+                "<div id=\"seriesContainer\"></div><form id=\"challenge-form\"></form>",
+                fetchedAt
+            )
+        }
+        assertTrue(challenge.message.orEmpty().contains("cloudflare_challenge_element"))
+
+        assertThrows(AniWorldParseException.MissingContainer::class.java) {
+            parser.parse("<p>Access Denied CAPTCHA Cloudflare</p>", fetchedAt)
         }
     }
 

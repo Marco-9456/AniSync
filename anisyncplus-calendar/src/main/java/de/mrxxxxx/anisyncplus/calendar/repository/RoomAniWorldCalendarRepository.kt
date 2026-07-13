@@ -19,7 +19,8 @@ class RoomAniWorldCalendarRepository @Inject constructor(
     private val libraryStateProvider: AniListLibraryStateProvider,
     private val clock: Clock = Clock.systemUTC(),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val parserDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val parserDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val diagnosticLogger: (String) -> Unit = {}
 ) : AniWorldCalendarRepository, AniWorldRefreshCoordinator, EffectiveReleaseRepository {
 
     override fun observeSnapshot(): Flow<EffectiveCalendarSnapshot?> = combine(
@@ -95,6 +96,7 @@ class RoomAniWorldCalendarRepository @Inject constructor(
 
     override suspend fun refresh(): AniWorldRefreshResult {
         val attemptAt = clock.instant()
+        diagnostic("refresh_start attemptAt=$attemptAt")
         try {
             updateAttempt(attemptAt)
         } catch (throwable: Throwable) {
@@ -151,6 +153,11 @@ class RoomAniWorldCalendarRepository @Inject constructor(
         val counts = try {
             matchAcceptedSnapshot(parsed)
         } catch (throwable: Throwable) {
+            diagnostic(
+                "refresh_accepted_matching_failed snapshot=${parsed.snapshotId} " +
+                    "type=${throwable::class.simpleName ?: "UnknownError"} " +
+                    "message=${(throwable.message ?: "Title matching failed").replace(Regex("[\\r\\n\\t]+"), " ").take(MAX_ERROR_LENGTH)}"
+            )
             withContext(ioDispatcher) {
                 dao.upsertSyncState(
                     acceptedState.copy(
@@ -170,6 +177,10 @@ class RoomAniWorldCalendarRepository @Inject constructor(
                 )
             )
         }
+        diagnostic(
+            "refresh_success snapshot=${parsed.snapshotId} visibleGerman=${parsed.visibleGermanCount} " +
+                "matched=${counts.matched} ambiguous=${counts.ambiguous} unmatched=${counts.unmatched}"
+        )
         return AniWorldRefreshResult.Success(parsed.snapshotId, parsed.visibleGermanCount)
     }
 
@@ -279,6 +290,10 @@ class RoomAniWorldCalendarRepository @Inject constructor(
         val errorType = throwable::class.simpleName ?: "UnknownError"
         val message = throwable.message ?: errorType
         val httpStatus = knownHttpStatus ?: (throwable as? AniWorldClientException.HttpStatus)?.status
+        diagnostic(
+            "refresh_failure type=$errorType httpStatus=${httpStatus ?: "none"} " +
+                "message=${message.replace(Regex("[\\r\\n\\t]+"), " ").take(MAX_ERROR_LENGTH)}"
+        )
         runCatching {
             withContext(ioDispatcher) {
                 val previous = dao.syncState() ?: emptySyncStateEntity()
@@ -293,6 +308,10 @@ class RoomAniWorldCalendarRepository @Inject constructor(
             }
         }
         return AniWorldRefreshResult.Failure(errorType, message, httpStatus)
+    }
+
+    private fun diagnostic(message: String) {
+        runCatching { diagnosticLogger(message) }
     }
 
     private data class MatchCounts(val matched: Int, val ambiguous: Int, val unmatched: Int)

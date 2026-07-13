@@ -6,6 +6,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -31,13 +32,14 @@ class OkHttpAniWorldCalendarClientTest {
 
     @Test
     fun `fetch sends bounded calendar-only HTML request`() = runTest {
+        val diagnostics = mutableListOf<String>()
         server.enqueue(
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "text/html; charset=utf-8")
                 .setBody("<html><body><div id=\"seriesContainer\"></div></body></html>")
         )
-        val response = client().fetch()
+        val response = client(diagnostics::add).fetch()
         val request = server.takeRequest()
 
         assertEquals(200, response.httpStatus)
@@ -46,6 +48,12 @@ class OkHttpAniWorldCalendarClientTest {
         assertEquals("de-DE,de;q=0.9", request.getHeader("Accept-Language"))
         assertTrue(request.getHeader("User-Agent").orEmpty().startsWith("AniSyncPlus/"))
         assertEquals("text/html,application/xhtml+xml", request.getHeader("Accept"))
+        assertTrue(diagnostics.any { "request_start" in it })
+        assertTrue(
+            diagnostics.any {
+                "response_ok status=200" in it && Regex("sha256=[0-9a-f]{64}").containsMatchIn(it)
+            }
+        )
     }
 
     @Test
@@ -58,17 +66,62 @@ class OkHttpAniWorldCalendarClientTest {
     }
 
     @Test
-    fun `non HTML and block pages are rejected`() = runTest {
+    fun `non HTML is rejected`() = runTest {
         server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("{}"))
         assertThrows(AniWorldClientException.InvalidContentType::class.java) {
             kotlinx.coroutines.test.runTest { client().fetch() }
         }
+    }
+
+    @Test
+    fun `HTML client accepts challenge content for structural parser classification`() = runTest {
         server.enqueue(
             MockResponse().setHeader("Content-Type", "text/html").setBody("<title>Just a moment...</title>")
         )
-        assertThrows(AniWorldClientException.BlockPage::class.java) {
-            kotlinx.coroutines.test.runTest { client().fetch() }
-        }
+        assertEquals(200, client().fetch().httpStatus)
+    }
+
+    @Test
+    fun `benign cloudflare and captcha words in a valid page are accepted`() = runTest {
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "text/html; charset=utf-8")
+                .setBody(
+                    """
+                    <html><head>
+                      <title>Animekalender</title>
+                      <link href="https://cdnjs.cloudflare.com/library.css">
+                    </head><body>
+                      <p>Captcha is a fictional anime title.</p>
+                      <div id="seriesContainer"><section class="calendarList"></section></div>
+                    </body></html>
+                    """.trimIndent()
+                )
+        )
+
+        val response = client().fetch()
+
+        assertTrue("cdnjs.cloudflare.com" in response.html)
+    }
+
+    @Test
+    fun `diagnostics omit URL query values`() = runTest {
+        val diagnostics = mutableListOf<String>()
+        server.enqueue(
+            MockResponse()
+                .setHeader("Content-Type", "text/html")
+                .setBody("<div id=\"seriesContainer\"></div>")
+        )
+        val client = OkHttpAniWorldCalendarClient(
+            client = OkHttpClient(),
+            sourceUrl = server.url("/animekalender?token=must-not-be-logged").toString(),
+            clock = Clock.fixed(instant, ZoneOffset.UTC),
+            diagnosticLogger = diagnostics::add
+        )
+
+        client.fetch()
+
+        assertFalse(diagnostics.any { "must-not-be-logged" in it || "token=" in it })
     }
 
     @Test
@@ -83,9 +136,10 @@ class OkHttpAniWorldCalendarClientTest {
         }
     }
 
-    private fun client() = OkHttpAniWorldCalendarClient(
+    private fun client(diagnostics: (String) -> Unit = {}) = OkHttpAniWorldCalendarClient(
         client = OkHttpClient(),
         sourceUrl = server.url("/animekalender").toString(),
-        clock = Clock.fixed(instant, ZoneOffset.UTC)
+        clock = Clock.fixed(instant, ZoneOffset.UTC),
+        diagnosticLogger = diagnostics
     )
 }
