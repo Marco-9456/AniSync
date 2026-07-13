@@ -16,7 +16,7 @@ This document records the current repository state inspected on 2026-07-13. Phas
 - Gradle wrapper distribution: Gradle 9.3.1. Version catalog: AGP 9.1.0, Kotlin 2.2.21, KSP 2.3.2, Room 2.8.4, Apollo 4.4.3, Jsoup 1.22.2, OkHttp 4.12.0.
 - Product flavors: `stable` default and `preview`; debug adds `.debug` application id suffix and app name `AniSync Debug`.
 - APK rename task outputs names like `AniSync-v<version>-<abi>-<buildType>.apk` with flavor suffix for non-stable.
-- `.github` currently contains issue templates, funding/logo, and Weblate config; no CI build workflow was found.
+- `.github/workflows` contains manual APK and signed-release workflows plus the upstream sponsor workflow. At the implementation baseline the APK workflows build but do not run unit tests or lint, configure Gradle 8.13 despite invoking the 9.3.1 wrapper, and collect APKs through broad searches.
 
 ## Calendar Code Map
 - `CalendarRepositoryImpl` calls AniList `AiringScheduleQuery`, paginates max 10 pages of 50, filters adult media via `AppSettings.showAdultContent`, maps media/list fields to `AiringEpisode`, and sorts by `airingAt`.
@@ -44,8 +44,8 @@ Target AniSync Plus behavior: filter off shows all AniWorld entries; filter on s
 
 ## Settings Structure
 - `AppSettings` is a singleton backed by `SharedPreferences` file `anisync_settings`, exposing many `StateFlow`s. It also imports DataStore preference keys only for Glance widget state updates; app settings are not generally DataStore-based.
-- Settings hub is `SettingsScreen` with card-based categories and search. Current order in the hub: Look & Feel, AniList, Notifications, Storage, Media Upload, Updates, Sponsors, About, and Developer Tools when unlocked.
-- A future AniSync Plus category should be inserted immediately before Updates and also before About. The prompt says before Updates and About; current Sponsors sits between Updates and About, so placement should be confirmed in UI review if strict ordering conflicts with current Sponsors position.
+- Settings hub is `SettingsScreen` with card-based categories and search. Current order in the hub: Look & Feel, AniList, Notifications, Storage, Media Upload, App Links, Updates, Sponsors, About, and Developer Tools when unlocked.
+- `SettingsCategory` is declared in `SettingsListDetail.kt`, not in a standalone `SettingsCategory.kt`. The AniSync Plus category belongs immediately after App Links and before Updates.
 
 ## Room / Local Database
 - Current Room DB is `AppDatabase` version 22 named `anisync.db` in `DatabaseModule`.
@@ -74,7 +74,7 @@ The requested search terms were run with `rg`. Relevant findings:
 - `CalendarRepository`, `CalendarViewModel`, `LibraryMediaCard`, `LibraryListCard`, `SettingsCategory`, `AppSettings`, `applicationId`, `namespace`, `app_name`: all located and mapped in this analysis.
 
 ## CI / Tests
-- Existing tests are Android/JUnit sources under `app/src/test` and likely include ViewModel/mapper/Room-style tests; no CI workflow currently runs them.
+- Existing tests are Android/JUnit sources under `app/src/test` and `app/src/androidTest`. `MigrationTest.kt` is an instrumentation test whose actual migration assertions are commented templates, so it does not verify all migrations. No APK workflow currently runs unit tests, lint, or instrumentation tests.
 - Later CI should run `./gradlew testDebugUnitTest`, `./gradlew lintDebug`, and `./gradlew assembleDebug`, adjusted for actual flavor task names if AGP exposes stableDebug variants. It must upload the universal debug APK as `AniSyncPlus-debug-apk` and must not call AniWorld.
 
 ## Recommended Implementation Phases
@@ -88,9 +88,5 @@ The requested search terms were run with `rg`. Relevant findings:
 8. Apply branding/application id and GitHub Actions APK workflow.
 9. Iterate from user screenshots.
 
-## Open Technical Questions
-- Confirm final application id.
-- Confirm AniWorld source timezone handling; DOM does not explicitly state timezone.
-- Confirm settings category placement relative to existing Sponsors if the strict instruction is before Updates and About.
-- Confirm placeholder visual for unmatched entries.
-- Confirm whether AniWorld feature defaults enabled.
+## Superseding V1 Decisions
+The implementation master prompt fixes the former open questions: application id `de.mrxxxxx.anisyncplus`, source timezone and grouping `Europe/Berlin`, category placement immediately before Updates, existing Material/theme placeholder visuals, and AniWorld enabled by default. See `ProjectContext.md` for the complete decision log.
