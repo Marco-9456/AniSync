@@ -48,6 +48,9 @@ abstract class AniWorldCalendarDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun upsertSyncState(syncState: AniWorldSyncStateEntity)
 
+    @Query("UPDATE aniworld_snapshots SET fetchedAtEpochMillis = :fetchedAtEpochMillis WHERE snapshotId = :snapshotId")
+    abstract suspend fun updateSnapshotFetchedAt(snapshotId: String, fetchedAtEpochMillis: Long)
+
     @Query("DELETE FROM aniworld_snapshots WHERE snapshotId != :activeSnapshotId")
     protected abstract suspend fun deleteInactiveSnapshots(activeSnapshotId: String)
 

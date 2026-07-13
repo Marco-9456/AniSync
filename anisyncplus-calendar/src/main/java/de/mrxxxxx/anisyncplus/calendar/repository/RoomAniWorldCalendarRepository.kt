@@ -95,7 +95,11 @@ class RoomAniWorldCalendarRepository @Inject constructor(
 
     override suspend fun refresh(): AniWorldRefreshResult {
         val attemptAt = clock.instant()
-        updateAttempt(attemptAt)
+        try {
+            updateAttempt(attemptAt)
+        } catch (throwable: Throwable) {
+            return recordFailure(throwable, attemptAt)
+        }
         val response = try {
             client.fetch()
         } catch (throwable: Throwable) {
@@ -129,6 +133,7 @@ class RoomAniWorldCalendarRepository @Inject constructor(
                     matcherVersion = MATCHER_VERSION
                 )
                 if (previous.activeSnapshotId == parsed.snapshotId) {
+                    dao.updateSnapshotFetchedAt(parsed.snapshotId, response.fetchedAt.toEpochMilli())
                     dao.upsertSyncState(success)
                 } else {
                     dao.activateSnapshot(
@@ -143,7 +148,19 @@ class RoomAniWorldCalendarRepository @Inject constructor(
             return recordFailure(throwable, attemptAt, response.httpStatus)
         }
 
-        val counts = matchAcceptedSnapshot(parsed)
+        val counts = try {
+            matchAcceptedSnapshot(parsed)
+        } catch (throwable: Throwable) {
+            withContext(ioDispatcher) {
+                dao.upsertSyncState(
+                    acceptedState.copy(
+                        lastErrorType = "MatchingError",
+                        lastErrorMessage = (throwable.message ?: "Title matching failed").take(MAX_ERROR_LENGTH)
+                    )
+                )
+            }
+            return AniWorldRefreshResult.Success(parsed.snapshotId, parsed.visibleGermanCount)
+        }
         withContext(ioDispatcher) {
             dao.upsertSyncState(
                 acceptedState.copy(
