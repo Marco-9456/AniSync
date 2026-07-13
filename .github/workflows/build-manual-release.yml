@@ -2,10 +2,19 @@ name: Build Manual Signed APK
 
 on:
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Which APK type should be built? Debug is recommended for private browser-only testing.'
+        required: true
+        default: debug
+        type: choice
+        options:
+          - debug
+          - release
 
 jobs:
   build:
-    name: Build Release APK (Manual)
+    name: Build ${{ inputs.build_type }} APK (Manual)
     runs-on: ubuntu-latest
 
     permissions:
@@ -26,73 +35,117 @@ jobs:
         with:
           gradle-version: 8.13
 
-      - name: Decode Keystore
+      - name: Prepare release signing key
+        if: ${{ inputs.build_type == 'release' }}
+        id: signing
+        shell: bash
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-        run: |
-          echo $SIGNING_KEY | base64 -d > ./app/release.keystore
-
-      - name: Build Release APK
-        env:
-          KEYSTORE_FILE: release.keystore
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleStableRelease
-
-      - name: Resolve APK file names
-        shell: bash
+          SECRET_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SECRET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SECRET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          apk_dir="app/build/outputs/apk/stable/release"
 
-          arm64_file="$(basename "$(ls "$apk_dir"/*-arm64-v8a-release.apk)")"
-          armeabi_file="$(basename "$(ls "$apk_dir"/*-armeabi-v7a-release.apk)")"
-          universal_file="$(basename "$(ls "$apk_dir"/*-universal-release.apk)")"
-          x86_64_file="$(basename "$(ls "$apk_dir"/*-x86_64-release.apk)")"
-          x86_file="$(basename "$(ls "$apk_dir"/*-x86-release.apk)")"
+          signing_dir="$RUNNER_TEMP/anisync-signing"
+          mkdir -p "$signing_dir"
+          keystore_file="$signing_dir/release.keystore"
 
-          {
-            echo "APK_ARM64_FILE=$arm64_file"
-            echo "APK_ARMEABI_FILE=$armeabi_file"
-            echo "APK_UNIVERSAL_FILE=$universal_file"
-            echo "APK_X86_64_FILE=$x86_64_file"
-            echo "APK_X86_FILE=$x86_file"
-          } >> "$GITHUB_ENV"
+          use_secret_keystore=false
+          if [[ -n "${SIGNING_KEY:-}" && -n "${SECRET_KEYSTORE_PASSWORD:-}" && -n "${SECRET_KEY_ALIAS:-}" && -n "${SECRET_KEY_PASSWORD:-}" ]]; then
+            # GitHub secrets can be pasted with line wraps or surrounding whitespace. Strip only
+            # base64 whitespace before decoding so the binary keystore is reproduced exactly.
+            if printf '%s' "$SIGNING_KEY" | tr -d '[:space:]' | base64 --decode > "$keystore_file"; then
+              if keytool -list \
+                  -keystore "$keystore_file" \
+                  -storepass "$SECRET_KEYSTORE_PASSWORD" \
+                  -alias "$SECRET_KEY_ALIAS" \
+                  >/dev/null 2>&1; then
+                use_secret_keystore=true
+              else
+                echo "::warning::SIGNING_KEY decoded, but keytool could not read alias '${SECRET_KEY_ALIAS}'. A temporary CI signing key will be generated for this artifact."
+              fi
+            else
+              echo "::warning::SIGNING_KEY is not valid base64. A temporary CI signing key will be generated for this artifact."
+            fi
+          else
+            echo "::warning::Release signing secrets are incomplete. A temporary CI signing key will be generated for this artifact."
+          fi
 
-      - name: Upload arm64-v8a Artifact
+          if [[ "$use_secret_keystore" == "true" ]]; then
+            echo "KEYSTORE_FILE=$keystore_file" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=$SECRET_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$SECRET_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$SECRET_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "SIGNING_SOURCE=repository secret" >> "$GITHUB_ENV"
+          else
+            temp_password="$(openssl rand -base64 36 | tr -d '\n')"
+            temp_alias="anisyncplus-ci"
+            keytool -genkeypair \
+              -storetype PKCS12 \
+              -keystore "$keystore_file" \
+              -storepass "$temp_password" \
+              -keypass "$temp_password" \
+              -alias "$temp_alias" \
+              -keyalg RSA \
+              -keysize 4096 \
+              -validity 3650 \
+              -dname "CN=AniSync Plus CI, OU=CI, O=AniSync Plus, L=Berlin, ST=Berlin, C=DE"
+            echo "KEYSTORE_FILE=$keystore_file" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=$temp_password" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$temp_alias" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$temp_password" >> "$GITHUB_ENV"
+            echo "SIGNING_SOURCE=temporary CI key" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build APK
+        shell: bash
+        env:
+          BUILD_TYPE: ${{ inputs.build_type }}
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+
+          if [[ "$BUILD_TYPE" == "release" ]]; then
+            echo "Building release APK with $SIGNING_SOURCE."
+            ./gradlew assembleStableRelease
+          else
+            echo "Building debug APK with the standard Android debug signing key."
+            ./gradlew assembleStableDebug
+          fi
+
+      - name: Collect APK artifacts
+        shell: bash
+        env:
+          BUILD_TYPE: ${{ inputs.build_type }}
+        run: |
+          set -euo pipefail
+          artifact_dir="$RUNNER_TEMP/anisync-apks"
+          mkdir -p "$artifact_dir"
+
+          apk_search_root="app/build/outputs/apk"
+          if [[ ! -d "$apk_search_root" ]]; then
+            apk_search_root="app/build"
+          fi
+
+          mapfile -t apk_files < <(find "$apk_search_root" -type f -name '*.apk' | sort)
+          if [[ ${#apk_files[@]} -eq 0 ]]; then
+            echo "::error::No APK files were produced under app/build."
+            exit 1
+          fi
+
+          printf 'Found APK files:\n'
+          printf ' - %s\n' "${apk_files[@]}"
+
+          for apk in "${apk_files[@]}"; do
+            cp "$apk" "$artifact_dir/$(basename "$apk")"
+          done
+
+          echo "APK_ARTIFACT_DIR=$artifact_dir" >> "$GITHUB_ENV"
+
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APK_ARM64_FILE }}
-          path: app/build/outputs/apk/stable/release/${{ env.APK_ARM64_FILE }}
-          if-no-files-found: error
-
-      - name: Upload armeabi-v7a Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APK_ARMEABI_FILE }}
-          path: app/build/outputs/apk/stable/release/${{ env.APK_ARMEABI_FILE }}
-          if-no-files-found: error
-
-      - name: Upload universal Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APK_UNIVERSAL_FILE }}
-          path: app/build/outputs/apk/stable/release/${{ env.APK_UNIVERSAL_FILE }}
-          if-no-files-found: error
-
-      - name: Upload x86_64 Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APK_X86_64_FILE }}
-          path: app/build/outputs/apk/stable/release/${{ env.APK_X86_64_FILE }}
-          if-no-files-found: error
-
-      - name: Upload x86 Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.APK_X86_FILE }}
-          path: app/build/outputs/apk/stable/release/${{ env.APK_X86_FILE }}
+          name: AniSyncPlus-${{ inputs.build_type }}-apk
+          path: ${{ env.APK_ARTIFACT_DIR }}/*.apk
           if-no-files-found: error

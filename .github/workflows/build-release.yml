@@ -29,32 +29,118 @@ jobs:
         with:
           gradle-version: 8.13
 
-      - name: Decode Keystore
+      - name: Prepare release signing key
+        id: signing
+        shell: bash
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SECRET_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SECRET_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SECRET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          IS_TAG_RELEASE: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
-          echo $SIGNING_KEY | base64 -d > ./app/release.keystore
+          set -euo pipefail
+
+          signing_dir="$RUNNER_TEMP/anisync-signing"
+          mkdir -p "$signing_dir"
+          keystore_file="$signing_dir/release.keystore"
+
+          use_secret_keystore=false
+          if [[ -n "${SIGNING_KEY:-}" && -n "${SECRET_KEYSTORE_PASSWORD:-}" && -n "${SECRET_KEY_ALIAS:-}" && -n "${SECRET_KEY_PASSWORD:-}" ]]; then
+            # GitHub secrets can be pasted with line wraps or surrounding whitespace. Strip only
+            # base64 whitespace before decoding so the binary keystore is reproduced exactly.
+            if printf '%s' "$SIGNING_KEY" | tr -d '[:space:]' | base64 --decode > "$keystore_file"; then
+              if keytool -list \
+                  -keystore "$keystore_file" \
+                  -storepass "$SECRET_KEYSTORE_PASSWORD" \
+                  -alias "$SECRET_KEY_ALIAS" \
+                  >/dev/null 2>&1; then
+                use_secret_keystore=true
+              else
+                echo "::warning::SIGNING_KEY decoded, but keytool could not read alias '${SECRET_KEY_ALIAS}'. A temporary CI signing key will be generated for this artifact."
+              fi
+            else
+              echo "::warning::SIGNING_KEY is not valid base64. A temporary CI signing key will be generated for this artifact."
+            fi
+          else
+            echo "::warning::Release signing secrets are incomplete. A temporary CI signing key will be generated for this artifact."
+          fi
+
+          if [[ "$use_secret_keystore" != "true" && "${IS_TAG_RELEASE:-false}" == "true" ]]; then
+            echo "::error::Valid release signing secrets are required for tag-triggered GitHub releases."
+            exit 1
+          fi
+
+          if [[ "$use_secret_keystore" == "true" ]]; then
+            echo "KEYSTORE_FILE=$keystore_file" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=$SECRET_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$SECRET_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$SECRET_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "SIGNING_SOURCE=repository secret" >> "$GITHUB_ENV"
+          else
+            temp_password="$(openssl rand -base64 36 | tr -d '\n')"
+            temp_alias="anisyncplus-ci"
+            keytool -genkeypair \
+              -storetype PKCS12 \
+              -keystore "$keystore_file" \
+              -storepass "$temp_password" \
+              -keypass "$temp_password" \
+              -alias "$temp_alias" \
+              -keyalg RSA \
+              -keysize 4096 \
+              -validity 3650 \
+              -dname "CN=AniSync Plus CI, OU=CI, O=AniSync Plus, L=Berlin, ST=Berlin, C=DE"
+            echo "KEYSTORE_FILE=$keystore_file" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=$temp_password" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$temp_alias" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$temp_password" >> "$GITHUB_ENV"
+            echo "SIGNING_SOURCE=temporary CI key" >> "$GITHUB_ENV"
+          fi
 
       - name: Build Release APK
-        env:
-          KEYSTORE_FILE: release.keystore
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           chmod +x gradlew
+          echo "Building with $SIGNING_SOURCE."
           ./gradlew assembleStableRelease
+
+      - name: Collect release APK artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact_dir="$RUNNER_TEMP/anisync-release-apks"
+          mkdir -p "$artifact_dir"
+
+          apk_search_root="app/build/outputs/apk"
+          if [[ ! -d "$apk_search_root" ]]; then
+            apk_search_root="app/build"
+          fi
+
+          mapfile -t apk_files < <(find "$apk_search_root" -type f -name '*.apk' | sort)
+          if [[ ${#apk_files[@]} -eq 0 ]]; then
+            echo "::error::No APK files were produced under app/build."
+            exit 1
+          fi
+
+          printf 'Found APK files:\n'
+          printf ' - %s\n' "${apk_files[@]}"
+
+          for apk in "${apk_files[@]}"; do
+            cp "$apk" "$artifact_dir/$(basename "$apk")"
+          done
+
+          echo "RELEASE_APK_ARTIFACT_DIR=$artifact_dir" >> "$GITHUB_ENV"
 
       - name: Upload Release Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: app/build/outputs/apk/stable/release/*.apk
+          path: ${{ env.RELEASE_APK_ARTIFACT_DIR }}/*.apk
+          if-no-files-found: error
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           generate_release_notes: true
-          files: app/build/outputs/apk/stable/release/*.apk
+          files: ${{ env.RELEASE_APK_ARTIFACT_DIR }}/*.apk
           token: ${{ secrets.MY_PAT_TOKEN }}
