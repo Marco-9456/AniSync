@@ -568,4 +568,6 @@
     <string name="statistics_taste_focused">Dein Geschmack ist fokussiert</string>
     <string name="statistics_taste_balanced">Ausgewogener Geschmack</string>
     <string name="statistics_taste_eclectic">Breit gefächerter Geschmack</string>
+    <string name="calendar_last_updated">Zuletzt aktualisiert: %1$s (Europa/Berlin)</string>
+    <string name="calendar_refresh_in_progress">AniWorld-Kalender wird aktualisiert…</string>
 </resources>

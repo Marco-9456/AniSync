@@ -9,4 +9,6 @@
     <string name="feed_filter_status">وضعیت</string>
     <string name="feed_filter_list">لیست</string>
     <string name="feed_scope_global">جهانی</string>
+    <string name="calendar_last_updated">آخرین به‌روزرسانی: %1$s (اروپا/برلین)</string>
+    <string name="calendar_refresh_in_progress">در حال به‌روزرسانی تقویم AniWorld…</string>
 </resources>

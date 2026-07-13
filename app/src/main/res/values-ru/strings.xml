@@ -99,4 +99,6 @@
     <string name="notification_group_other">Прочее</string>
     <string name="notification_follows">Новые подписчики</string>
     <string name="notification_follows_desc">Когда кто-то подписывается на вас</string>
+    <string name="calendar_last_updated">Последнее обновление: %1$s (Европа/Берлин)</string>
+    <string name="calendar_refresh_in_progress">Обновление календаря AniWorld…</string>
 </resources>

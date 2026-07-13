@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- app_name is defined in build.gradle.kts per build type -->
 
     <!-- Navigation -->
@@ -1233,8 +1233,8 @@
     <!-- Airing calendar -->
     <string name="calendar_title">Airing Calendar</string>
     <string name="calendar_available_range">AniWorld data: %1$s – %2$s</string>
-    <string name="calendar_last_updated">Last updated: %1$s (Europe/Berlin)</string>
-    <string name="calendar_refresh_in_progress">Refreshing AniWorld calendar…</string>
+    <string name="calendar_last_updated" tools:ignore="MissingTranslation">Last updated: %1$s (Europe/Berlin)</string>
+    <string name="calendar_refresh_in_progress" tools:ignore="MissingTranslation">Refreshing AniWorld calendar…</string>
     <string name="calendar_open">Airing calendar</string>
     <string name="calendar_following_only">Show only shows on your list</string>
     <string name="calendar_previous_week">Previous week</string>

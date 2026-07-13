@@ -915,4 +915,6 @@
     <string name="dev_tools_lock_dialog_message">A entrada Ferramentas para desenvolvedores será removida das Configurações. Pode reativá-lo no Sobre tocando o rótulo de versão sete vezes.</string>
     <string name="dev_tools_lock_dialog_confirm">Ocultar</string>
     <string name="dev_tools_lock_dialog_cancel">Cancelar</string>
+    <string name="calendar_last_updated">Última atualização: %1$s (Europa/Berlim)</string>
+    <string name="calendar_refresh_in_progress">A atualizar o calendário AniWorld…</string>
 </resources>

@@ -1155,4 +1155,6 @@
     <string name="share_fav_eyebrow">Favoritos</string>
     <string name="share_fav_heading_anime">Anime favorito</string>
     <string name="share_fav_heading_manga">Manga favorito</string>
+    <string name="calendar_last_updated">Última actualización: %1$s (Europa/Berlín)</string>
+    <string name="calendar_refresh_in_progress">Actualizando el calendario de AniWorld…</string>
 </resources>

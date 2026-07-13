@@ -570,4 +570,6 @@
     <string name="statistics_taste_eclectic">ذوق متنوع وواسع</string>
     <string name="feed_filter_all">الكل</string>
     <string name="feed_filter_status">الحالة</string>
+    <string name="calendar_last_updated">آخر تحديث: %1$s (أوروبا/برلين)</string>
+    <string name="calendar_refresh_in_progress">جارٍ تحديث تقويم AniWorld…</string>
 </resources>

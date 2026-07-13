@@ -187,4 +187,6 @@
     <string name="empty_no_related">Aucun média associé n\'a été trouvé</string>
     <string name="action_favorite">Favoris</string>
     <string name="action_share">Partager</string>
+    <string name="calendar_last_updated">Dernière mise à jour : %1$s (Europe/Berlin)</string>
+    <string name="calendar_refresh_in_progress">Actualisation du calendrier AniWorld…</string>
 </resources>
