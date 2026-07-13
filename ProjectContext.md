@@ -77,3 +77,5 @@ Calendar filter off/on, calendar card with time/episode/status/score, Watching l
 
 ## Change Log
 - 2026-07-13: Created initial project context and forensic documentation set.
+- 2026-07-13: Fixed GitHub Actions release signing preparation to validate decoded keystores, use absolute temporary keystore paths, and generate a temporary CI key for manual artifacts when secrets are missing or invalid. Tag-triggered releases still require valid signing secrets.
+- 2026-07-13: Changed the manual APK workflow to default to a debug APK for browser-only testing, keep release as an explicit option, and collect APK artifacts from `app/build` instead of assuming one AGP output directory.
