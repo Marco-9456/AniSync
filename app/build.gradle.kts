@@ -3,6 +3,7 @@
 import com.android.build.api.artifact.ArtifactTransformationRequest
 import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.FilterConfiguration
+import com.android.build.api.variant.ResValue
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.FileInputStream
 import java.util.Properties
@@ -64,7 +65,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.anisync.android"
+        applicationId = "de.mrxxxxx.anisyncplus"
         minSdk = 26
         targetSdk = 36
         versionCode = 19
@@ -75,7 +76,7 @@ android {
             useSupportLibrary = true
         }
 
-        resValue("string", "app_name", "AniSync")
+        resValue("string", "app_name", "AniSync Plus")
     }
 
     // Strip AGP-injected dependency-metadata signing block so F-Droid's
@@ -111,6 +112,15 @@ android {
             }
 
             val channelFlavor = variant.productFlavors.firstOrNull { it.first == "channel" }?.second
+            val variantAppName = when {
+                channelFlavor == "preview" -> "AniSync Plus Preview"
+                variant.buildType == "debug" -> "AniSync Plus Debug"
+                else -> "AniSync Plus"
+            }
+            variant.resValues.put(
+                variant.makeResValueKey("string", "app_name"),
+                ResValue(variantAppName, "AniSync Plus variant label")
+            )
             val flavorSuffixValue =
                 channelFlavor
                     ?.takeIf { it != "stable" }
@@ -121,7 +131,7 @@ android {
                 variant.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 
             val renameApksTask = tasks.register<RenameApksTask>("rename${variantNameTitle}Apks") {
-                appName.set("AniSync")
+                appName.set("AniSyncPlus")
                 flavorSuffix.set(flavorSuffixValue)
                 buildTypeName.set(variant.buildType)
                 fallbackVersionName.set(versionNameFallback)
@@ -176,7 +186,7 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             isDebuggable = true
-            resValue("string", "app_name", "AniSync Debug")
+            resValue("string", "app_name", "AniSync Plus Debug")
             buildConfigField("Boolean", "IS_DEBUG_BUILD", "true")
         }
     }
@@ -195,7 +205,7 @@ android {
             applicationIdSuffix = ".preview"
             versionNameSuffix = "-preview"
             // This renames the app on the phone's home screen so you can tell them apart!
-            resValue("string", "app_name", "AniSync Preview")
+            resValue("string", "app_name", "AniSync Plus Preview")
         }
     }
 
@@ -208,6 +218,11 @@ android {
         buildConfig = true
         resValues = true
     }
+    lint {
+        // Captures the audited upstream backlog; lintStableDebug fails on every new finding.
+        baseline = file("lint-baseline.xml")
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
