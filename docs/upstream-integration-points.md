@@ -1,28 +1,49 @@
 # Upstream Integration Points for AniSync Plus
 
-| File | Current purpose | Minimal future change | Conflict risk | Lower-conflict alternative |
-| --- | --- | --- | --- | --- |
-| `settings.gradle.kts` | Includes only `:app`. | Add `include(":anisyncplus-calendar")`. | Low | Keep all new code in `:app`, but this worsens upstream conflicts. |
-| `build.gradle.kts` | Root plugin aliases. | Possibly add library/apollo/ksp aliases if module needs them. | Low | Reuse existing aliases only. |
-| `app/build.gradle.kts` | App namespace, applicationId, flavors, APK renaming, dependencies. | Add dependency on new module; later change app id/name/APK base. | Medium | Isolate branding in one commit and keep dependency addition minimal. |
-| `app/src/main/AndroidManifest.xml` | App manifest, activities, providers, links. | Audit/adjust provider authorities, app links/OAuth redirects for parallel install. | Medium | Use Gradle placeholders where possible. |
-| `app/src/main/java/com/anisync/android/data/CalendarRepositoryImpl.kt` | Fetches AniList airing schedule pages and maps to `AiringEpisode`. | Stop using as visible data source for target calendar or wrap behind effective source. | Medium | Keep class intact and add separate AniSync Plus repository injected only into calendar VM. |
-| `app/src/main/java/com/anisync/android/domain/CalendarRepository.kt` | Calendar repository contract for AniList schedule. | May need adapter or new effective contract. | Medium | Add new interface instead of changing existing one. |
-| `app/src/main/java/com/anisync/android/domain/AiringEpisode.kt` | Domain model for AniList airing cards. | Avoid overloading with AniWorld; use new effective model. | Medium | Map effective releases to UI-specific model in ViewModel. |
-| `app/src/main/java/com/anisync/android/presentation/calendar/CalendarViewModel.kt` | Week/month loading, raw episode cache, filter, grouping. | Replace source/grouping/filter semantics with effective AniWorld cache and CURRENT filter. | High | Add a small `CalendarReleasePresenter` to reduce direct edits. |
-| `app/src/main/java/com/anisync/android/presentation/calendar/CalendarUiState.kt` | Calendar state/actions incl. `followingOnly`. | Add cache/sync metadata and maybe rename semantics only in UI labels. | Medium | Keep property name but document it maps to Watching filter. |
-| `app/src/main/java/com/anisync/android/presentation/calendar/CalendarScreen.kt` | Week/month UI, filter button, pull-to-refresh. | Show last refresh/error/empty cache, call manual refresh, preserve layout. | High | Add small status composable and keep card/list layout. |
-| `app/src/main/java/com/anisync/android/presentation/calendar/components/AiringEpisodeCard.kt` | Calendar card showing AniList title/cover/score/status/time. | Add AniWorld episode/language lines, 24h release time, unmatched placeholder behavior. | High | Create `EffectiveAiringEpisodeCard` only if minimal conditional changes become too invasive. |
-| `app/src/main/graphql/AiringSchedule.graphql` | AniList airing schedule query. | Likely no change; may become unused for calendar target. | Low | Leave for widgets/notifications or upstream behavior if retained. |
-| `app/src/main/graphql/com/anisync/UserLibrary.graphql` | Library query includes `nextAiringEpisode`. | Keep for existing data but do not use as target fallback. | Low | No query change in V1. |
-| `app/src/main/java/com/anisync/android/data/LibraryRepositoryImpl.kt` | Maps AniList library data to Room. | Keep storing AniList airing fields; add matcher input path if needed. | Medium | Matcher reads observed library Flow instead of altering repository. |
-| `app/src/main/java/com/anisync/android/domain/LibraryEntry.kt` | Library domain entry and dynamic airing calculation. | Add effective release externally rather than mutating core entry if possible. | Medium | UI state wrapper `LibraryItemUiModel(entry, effectiveRelease)`. |
-| `app/src/main/java/com/anisync/android/presentation/library/LibraryViewModel.kt` | Filters/sorts/grouping library entries and persists sort. | Inject resolver for Watching release UI and Airing Soon sort. | High | Apply resolver only after existing filter/search step in one localized block. |
-| `app/src/main/java/com/anisync/android/presentation/components/LibraryMediaCard.kt` | Grid card with behind badge and rotating airing text. | Use effective AniWorld release for CURRENT airing text/behind count. | High | Pass preformatted release/behind UI slots via config/model. |
-| `app/src/main/java/com/anisync/android/presentation/library/components/LibraryListCard.kt` | List card with behind badge and airing text. | Same as grid card. | High | Share a common release badge composable/model. |
-| `app/src/main/java/com/anisync/android/presentation/library/LibraryScreen.kt` | Renders grid/list cards and controls. | Pass effective release state to cards if ViewModel wrapper chosen. | Medium | Keep card signatures stable by enriching config only. |
-| `app/src/main/java/com/anisync/android/data/AppSettings.kt` | SharedPreferences-backed central settings. | Prefer not to enlarge; possibly only read app sort until new settings store exists. | Medium | New `AniSyncPlusSettings` with own prefs namespace. |
-| `app/src/main/java/com/anisync/android/presentation/settings/SettingsScreen.kt` | Settings hub and search/category cards. | Add AniSync Plus category immediately before Updates/About. | Medium | Separate category card and screen with minimal enum/navigation additions. |
-| `app/src/main/java/com/anisync/android/presentation/settings/SettingsListDetail.kt` | Declares `SettingsCategory` and maps categories to list-detail pane routes. | Add AniSync Plus route/category. | Medium | Use existing navigation pattern exactly. |
-| `app/src/main/res/values/strings.xml` | UI strings. | Add AniSync Plus labels/messages. | Medium | Keep string additions grouped. |
-| `.github/workflows/build-manual-release.yml`, `.github/workflows/build-release.yml` | Existing manual/debug/release APK workflows; initially no test/lint gates and a conflicting explicit Gradle version. | Use the repository wrapper, add unit/lint/assemble gates, exact provenance naming, and persistent-secret release signing. | Low | Keep CI changes in a separate themed commit. |
+This table records the implemented changes against the AniSync baseline. New feature code is kept in `:anisyncplus-calendar` or new app files where possible; original files were edited only at verified integration points.
+
+| Original file/surface | Implemented change | Compatibility rationale |
+| --- | --- | --- |
+| `settings.gradle.kts` | Includes `:anisyncplus-calendar`. | One low-conflict module include; app remains the root product. |
+| Root `build.gradle.kts`, version catalog | Enables Android library/KSP dependencies already aligned with app versions. | No parallel toolchain or fixed foreign Gradle version. |
+| `app/build.gradle.kts` | App ID/labels/APK base, module and test dependencies, lint baseline, per-variant label values. | Kotlin namespace/packages remain unchanged; flavor structure is preserved. |
+| `CalendarRepositoryImpl.kt` | Replaces internal AniList schedule fetch with a cache-only effective AniWorld adapter. | Existing `CalendarRepository` contract and single DI binding remain intact. |
+| `AiringEpisode.kt` | Adds defaulted AniWorld source date/time, approximate, kind, language, navigation/time-presence fields. | Existing constructors remain source-compatible because additions have defaults. |
+| `CalendarViewModel.kt` | Observes snapshot/sync metadata, invokes explicit refresh coordinator, persists filter policy, bounds navigation, groups by source day. | Existing actions/week/month state pattern retained. |
+| `CalendarUiState.kt` | Adds refresh/sync/range/error metadata. | Additive immutable fields with defaults. |
+| `CalendarScreen.kt` | Displays range/last refresh/active status/error Retry, disables out-of-range navigation, supplies one shared countdown ticker. | Existing compact and two-pane structure retained. |
+| `AiringEpisodeCard.kt` | Shows source 24-hour time, approximate/language/kind, placeholder and safe navigation. | Reuses upstream Material/theme components; no binary asset. |
+| `Search.graphql` | Adds synonyms to bounded title-candidate results. | Existing search operation retained; only one returned field added. |
+| `LibraryEntry.kt` | Adds defaulted latest released episode and approximate marker. | Upstream persistence/entity schema is unchanged; fields are runtime projection data. |
+| `LibraryViewModel.kt` | Combines shared resolver flows only for Anime/CURRENT, clears target fallback fields, fixes null-last sorting. | Manga and all non-CURRENT paths return unchanged upstream entries. |
+| `LibraryMediaCard.kt` | Uses latest AniWorld released episode and absolute next time; removes per-card status coroutine. | Grid layout keeps its existing card/config contract and uses a screen-level ticker. |
+| `LibraryListCard.kt` | Uses latest AniWorld episode, absolute next time, and approximate marker. | List layout and actions remain unchanged. |
+| `LibraryScreen.kt` | Owns one minute ticker passed to grid and list cards. | No sorting or resolver work is performed by the ticker. |
+| `Screen.kt`, `NavHost.kt` | Adds the AniSync Plus settings route. | Follows existing sealed route/navigation pattern. |
+| `SettingsScreen.kt`, `SettingsListDetail.kt` | Registers AniSync Plus after App Links and before Updates in both layouts. | Existing categories and two-pane behavior remain intact. |
+| `values*/strings.xml` | Adds/updates feature and refresh-status strings in supported locales. | No existing keys removed. |
+| Existing APK workflows | Uses wrapper, persistent signing requirements, exact current APK selection and provenance names. | Tag/manual entry points preserved while unsafe temporary signing is removed. |
+| `gradle.properties` | Raises local/CI daemon heap from 2 GiB to 4 GiB after observed APK packaging OOM. | No dependency/toolchain behavior changes. |
+| `gradlew` | Executable bit restored. | Makes documented wrapper commands directly runnable. |
+
+## New Isolated App Files
+
+- `data/anisyncplus/AniSyncPlusSettings.kt`
+- `data/anisyncplus/AniWorldAniListAdapters.kt`
+- `di/AniWorldCalendarModule.kt`
+- `presentation/settings/AniSyncPlusSettingsScreen.kt`
+- `presentation/settings/AniSyncPlusSettingsViewModel.kt`
+- adapter, calendar policy, and library projection tests
+
+## Deliberately Unchanged Upstream Paths
+
+- `AiringSchedule.graphql` and AniList airing fields remain for non-target widgets, notifications, details, and upstream compatibility.
+- `LibraryRepositoryImpl`, `LibraryEntryEntity`, and `anisync.db` still ingest/store upstream data; Anime/CURRENT presentation overwrites target release fields from AniWorld and explicitly clears them when absent.
+- Existing provider authorities already use `${applicationId}`, so no manifest provider edit was necessary.
+- Existing custom `anisync` callback scheme and HTTPS App Links remain because changing them requires external AniList/app-link registration.
+- Kotlin namespace/package `com.anisync.android` is unchanged.
+- Widgets, notifications, manga, and non-CURRENT library statuses retain upstream behavior.
+
+## Expected Merge Hotspots
+
+Highest conflict risk remains the calendar screen/ViewModel/card, library ViewModel/cards/screen, settings hubs, and app Gradle configuration. New parser/cache/matcher/repository files have low upstream conflict risk because they live in the isolated module. The implementation commits keep documentation, core, app integration, branding/lint, CI, localization, library ticker, and final report as separate themes.

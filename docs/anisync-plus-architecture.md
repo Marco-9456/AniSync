@@ -1,66 +1,137 @@
-# AniSync Plus Target Architecture Proposal
+# AniSync Plus Calendar Architecture
 
-## Recommended Module
-Add `:anisyncplus-calendar` after approval. Do not implement in Phase 1.
+This document describes the implementation on branch `codex/anisyncplus-complete-implementation` as verified on 2026-07-13.
 
-Suggested packages:
-- `api/`: stable interfaces consumed by `:app`.
-- `data/network/`: one AniWorld calendar page client using existing OkHttp patterns where practical.
-- `data/parser/`: Jsoup parser, language parser, consolidation, local fixtures for tests.
-- `data/local/`: separate Room DB, entities, DAO, migrations/schema.
-- `data/repository/`: cache-backed repository and refresh orchestration.
-- `domain/model/`: release, language, matching status, sync state models.
-- `domain/matcher/`: title normalization and AniList matching.
-- `domain/resolver/`: effective release resolver for calendar and library.
-- `settings/`: AniSync Plus settings store or feature settings interface.
+## Module Boundary
 
-## Benefits
-- Keeps most new code outside upstream `:app`, improving upstream mergeability.
-- Allows parser/matcher/local database unit tests without Compose/UI dependencies.
-- Makes a single effective release resolver shareable by calendar and library.
-- Avoids changing current `AppDatabase` schema for AniWorld cache.
+`:app` depends on the Android library `:anisyncplus-calendar`; the calendar module never depends on app presentation, GraphQL-generated models, account storage, or upstream Room entities.
 
-## Costs / Risks
-- Android library module setup adds Gradle and Hilt/KSP configuration.
-- Hilt bindings across module boundaries require explicit `@Module` placement and exported interfaces.
-- Room in a second module needs its own schema location and migrations; care is needed to avoid duplicate generated class/package conflicts.
-- The module must not depend on `:app` presentation classes, or a dependency cycle will form.
+`:anisyncplus-calendar` owns:
 
-## Dependency Direction
-Preferred: `:app -> :anisyncplus-calendar`. The new module should expose domain/API interfaces and implementation bindings. It may depend on AndroidX Room, Hilt, OkHttp/Jsoup, coroutines, and carefully selected AniList domain DTO interfaces. If it needs full `LibraryEntry`, prefer passing small matcher input models from `:app` to avoid depending on app UI or generated GraphQL classes.
+- source/domain contracts and effective release models;
+- the one-page OkHttp client for `https://aniworld.to/animekalender`;
+- Jsoup parsing, Berlin time resolution, diagnostics, and consolidation;
+- title normalization and conservative matching;
+- a separate Room snapshot/mapping/sync database;
+- atomic refresh orchestration;
+- the shared effective snapshot, next-release, and latest-episode resolver flows.
 
-## Proposed Database
-Database name: `anisync_plus_calendar.db`.
+`:app` owns:
 
-Tables:
-1. `aniworld_release_entries`
-   - local stable key, snapshot id/version, AniWorld title, normalized title, slug/link, source link, source date/time text, calendar date, source local time, source timezone, optional instant, season, episode, language booleans/internal flags, approximate flag, AniList media id nullable, matching status, fetchedAt, parserVersion.
-2. `aniworld_media_mappings`
-   - normalized AniWorld title/slug, AniList media id nullable, status, confidence/reason, manually confirmed flag reserved for future, timestamps.
-3. `aniworld_sync_state`
-   - last attempt/success/error, parsed/matched/unmatched/ambiguous counts, document hash, parser version, stored range start/end.
+- bounded AniList candidate lookup through the existing Apollo client;
+- active-account library state through existing account/Room infrastructure;
+- Hilt construction and bindings;
+- settings, calendar presentation, and Watching-library projection;
+- compatibility mapping into upstream `AiringEpisode` and `LibraryEntry` models.
 
-Snapshot replacement should run in one Room transaction. Never delete the previous snapshot until the new parse validates as non-empty or intentionally empty by a documented rule.
+This direction keeps new source parsing and persistence isolated while minimizing edits to upstream surfaces.
 
-## Repository Interfaces (Proposed)
-- `AniWorldCalendarRepository.observeCalendar(): Flow<AniWorldCalendarSnapshot>`
-- `AniWorldCalendarRepository.refreshCalendar(): Flow<RefreshProgress>` or suspend result with rich error details.
-- `EffectiveReleaseRepository.observeCalendar(filter: CalendarFilter): Flow<List<EffectiveCalendarDay>>`
-- `EffectiveReleaseRepository.observeNextGermanRelease(mediaIds: Set<Int>): Flow<Map<Int, EffectiveRelease>>`
-- `LibraryReleaseResolver.resolve(entry, now): EffectiveLibraryRelease?`
+## Stable Contracts
 
-## Integration Strategy
-1. Add module and parser/local tests only.
-2. Add Hilt bindings and repository API without changing visible UI behavior.
-3. Switch calendar data source behind a minimal adapter; preserve existing screen layout and navigation.
-4. Switch Watching library release text and Airing Soon sort to the resolver.
-5. Add settings category and debug diagnostics.
-6. Apply branding/application id/CI APK artifact in separate commits.
+The module exposes interfaces in `calendar/api/Contracts.kt`:
 
-## Test Matrix
-- Parser fixtures for DE-Sub, DE-Dub, same-time merge, different-time split, multiple episodes same time, reference case, unknown language, missing time/episode, empty DOM.
-- Title normalizer/matcher unit tests for punctuation, apostrophes, unicode, season notation, ambiguity.
-- Room DAO transaction tests for snapshot replace and failed refresh preservation.
-- Resolver tests for no cache/no match/no future German release and earliest German release selection.
-- Library sorting tests for AniWorld Airing Soon ordering and untimed entries after timed entries.
-- Existing app checks: `testDebugUnitTest`, `lintDebug`, `assembleDebug` when environment allows.
+- `AniWorldCalendarClient.fetch()`
+- `AniWorldCalendarParser.parse(html, fetchedAt)`
+- `AniWorldCalendarRepository.observeSnapshot()`, `observeSyncState()`, and `refresh()`
+- `AniWorldRefreshCoordinator.refresh()`
+- `AniWorldTitleMatcher.match(release, candidates)`
+- `AniWorldMatchCandidateProvider.candidatesFor(rawTitle)`
+- `AniListLibraryStateProvider.observeStates()`
+- `EffectiveReleaseRepository.observeSnapshot()`
+- `EffectiveReleaseRepository.observeNextGermanReleases(mediaIds)`
+- `EffectiveReleaseRepository.observeLatestReleasedGermanEpisodes(mediaIds, now)`
+
+One `RoomAniWorldCalendarRepository` instance implements the calendar repository, refresh coordinator, and effective resolver, so calendar and library cannot diverge in release calculation.
+
+## Refresh Sequence
+
+1. Record a sync attempt in the separate database.
+2. Fetch exactly the AniWorld calendar page with the dedicated OkHttp client.
+3. Detect HTTP/block responses and parse the HTML off the main thread.
+4. Validate day sections, range, SHA-256, parser version, snapshot IDs, release range, and unique local IDs.
+5. Atomically activate a new snapshot and releases, or update `fetchedAt` for an unchanged document.
+6. Resolve new/unconfirmed source keys through stored mappings and bounded AniList candidates.
+7. Persist mappings and aggregate matching diagnostics.
+8. Emit the effective snapshot combined with active-account library status.
+
+HTTP, parser, validation, and database failures return `Failure`, record bounded diagnostics where possible, and leave the active snapshot untouched. A matching failure occurs after accepted snapshot persistence; it records `MatchingError` but returns refresh success because valid AniWorld data remains usable as unmatched content.
+
+A structurally valid document with day sections and zero releases is accepted. A page without the required calendar structure is rejected.
+
+## Database
+
+Database file: `anisync_plus_calendar.db`, schema version 1.
+
+| Table | Purpose |
+| --- | --- |
+| `aniworld_snapshots` | Active document identity, fetch time, range, hash, parser version, section count |
+| `aniworld_release_entries` | Parsed source release facts and diagnostics keyed by snapshot/local ID |
+| `aniworld_media_mappings` | Persistent source-series to AniList match state and candidate diagnostics |
+| `aniworld_sync_state` | Attempt/success/error, HTTP status, counts, versions, active snapshot and range |
+
+Room transaction `activateSnapshot` inserts the validated replacement, inserts its releases, changes active sync state, and removes stale snapshot rows. Mapping rows are outside snapshot ownership and survive replacement. DAO queries use indices on snapshot/source/date/instant/mapping fields recorded in the exported schema.
+
+## Parsing and Time
+
+- Required container: `#seriesContainer`; required day nodes: `section.calendarList`.
+- Each `h3.seriesTitle` anchors one source card.
+- Dates are parsed from German headings as `dd.MM.uuuu`.
+- Time accepts optional `~` plus `HH:mm Uhr`.
+- Episode accepts `SxxExx`; film and special tokens remain distinct release kinds.
+- Only explicit image/source/alt/title markers classify language.
+- DE-Sub and DE-Dub consolidate only when source identity, day, time, kind, season, and installment are equal.
+- The source zone is the fixed product policy `Europe/Berlin`.
+- DST gaps fail parsing; overlaps choose the earlier valid offset and retain a diagnostic.
+- Missing time remains null. No instant or countdown is invented.
+
+The detailed observable DOM contract is in `docs/aniworld-parser-contract.md`. Tests use only checked-in HTML fixtures.
+
+## Matching
+
+The normalizer lowercases with `Locale.ROOT`, decomposes Unicode, removes combining marks/punctuation, normalizes apostrophes/dashes, and collapses whitespace. Candidate title variants include user-preferred, English, Romaji, native, and synonyms.
+
+A unique exact normalized title is accepted, with season used to disambiguate duplicate exact titles. Similarity uses normalized Levenshtein distance with:
+
+- automatic match threshold 0.92;
+- ambiguity threshold 0.85;
+- minimum best/second-best margin 0.08;
+- season bonus 0.02 and mismatch penalty 0.12.
+
+Persisted MATCHED or manually confirmed mappings take precedence. Ambiguous and unmatched entries never receive AniList identity, cover, or navigation.
+
+## Calendar Projection
+
+`CalendarRepositoryImpl` remains the single upstream `CalendarRepository` binding, but now maps only the local effective AniWorld snapshot. It performs no network request and returns an empty success when disabled, no snapshot exists, or the request has no overlap. It filters to the intersection of request and snapshot range.
+
+The ViewModel:
+
+- observes cache and sync flows on startup;
+- invokes the refresh coordinator only for explicit Refresh/Retry actions;
+- groups by AniWorld source epoch day in Berlin;
+- applies following-only to effective releases marked CURRENT;
+- persists filter state only when configured;
+- bounds week/month actions to snapshot overlap;
+- shares one minute ticker from the screen for all visible countdown cards.
+
+## Watching Projection
+
+`LibraryViewModel` observes the same effective repository. The pure projection updates only Anime/CURRENT entries:
+
+- next episode/time/approximate from earliest future timed German release;
+- latest released numerical episode for the behind badge;
+- explicit nulls when AniWorld data is unavailable, preventing AniList fallback.
+
+Manga and non-CURRENT entries are returned unchanged. Airing Soon compares AniWorld timestamps and forces nulls last in both directions.
+
+## Dependency Injection and Settings
+
+`AniWorldCalendarModule` provides the separate Room database/DAO, dedicated source client, parser, matcher, repository, and all three public repository interfaces. App adapters bridge Apollo and active-account Room state. Stable-Debug Hilt compilation proves there is one upstream `CalendarRepository` binding and no duplicate AniWorld binding.
+
+`AniSyncPlusSettings` uses its own `anisync_plus_settings` SharedPreferences namespace. The settings category is registered after App Links and before Updates in compact and two-pane navigation and exposes enable/filter-memory toggles, manual refresh, range/status/error/count diagnostics, timezone, and parser/matcher versions.
+
+## Test Strategy
+
+- 36 module tests: parser fixtures, client behavior, normalization/matching, Room transactions, refresh preservation, resolver and account-flow behavior.
+- 184 app tests: existing suite plus adapter, filter/persistence/range, library targeting/no-fallback, and sorting tests.
+- Robolectric substitutes for unavailable device instrumentation for database/settings/policy paths.
+- CI and local gates never make live AniWorld requests.

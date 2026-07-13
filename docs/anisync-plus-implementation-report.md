@@ -1,74 +1,201 @@
-# AniSync Plus Implementation Report
+# AniSync Plus Implementierungs- und Prüfbericht
 
-This report records only repository state and commands that were actually observed during the implementation run beginning 2026-07-13. It is updated as work progresses. The immutable historical audit is `docs/anisync-plus-phase1-forensic-audit.md`.
+Stand: 2026-07-13. Dieser Bericht beschreibt nur beobachteten Repositoryzustand und tatsächlich ausgeführte Prüfungen. Die historische Auditdatei `docs/anisync-plus-phase1-forensic-audit.md` wurde nicht inhaltlich verändert.
 
-## Ausgangszustand
+## A. Status
+
+`COMPLETE` für den im Master-Prompt definierten V1-Codeumfang und die lokal möglichen Pflichtgates.
+
+| Bereich | Status | Nachweis |
+| --- | --- | --- |
+| Forensischer Auditpayload | COMPLETE | 31.755 Bytes, 946 Zeilen, erwarteter SHA-256 exakt |
+| Separates Kalender-Modul/DB | COMPLETE | `:anisyncplus-calendar`, `anisync_plus_calendar.db`, exportiertes Room-Schema |
+| Parser/Konsolidierung/DST | COMPLETE | lokale Fixtures, 36 grüne Modultests insgesamt |
+| Matching/Mapping | COMPLETE | persistierte Mappings, konservative Schwellen, Diagnostiktests |
+| Atomarer Cache/Refresh | COMPLETE | Transaktions- und Fehlererhaltungstests |
+| Kalenderintegration | COMPLETE | cache-only Startup, expliziter Refresh, Status/Range/Retry, kein AniList-Fallback |
+| Watching Library | COMPLETE | Anime/CURRENT-only, Grid und Liste, Countdown/Behind/Sort, kein Ziel-Fallback |
+| Settings/Diagnostik | COMPLETE | eigene Preferences, Kategorie/Route, Refresh und Statusdaten |
+| Branding/Parallel-ID | COMPLETE | App-ID/Labels/APK mit `aapt` verifiziert |
+| PR-/Push-/Release-CI | COMPLETE | Wrapper, Tests/Lint/Build, exakte Artefakte, persistente Signierung |
+| Unit/Robolectric | COMPLETE | 36 Modul + 184 App = 220 Tests, 0 Fehler |
+| Lint | COMPLETE | keine neuen Befunde; auditierte Upstream-Baseline gefiltert |
+| Stable-Debug APK | COMPLETE | gebaut, Paket/Label/Hash geprüft |
+| Device/Emulator UI | nicht verfügbar | durch Robolectric und lokale Build-/Metadatenprüfung ersetzt |
+| Signierter Stable Release | nicht lokal ausführbar | persistente Secrets fehlen; Workflow muss deshalb hart fehlschlagen |
+
+## B. Repositoryzustand
 
 - Startbranch: `main`
 - Start-HEAD: `1c69ce5ce5ed6fd6c4ebfdd213245c5dabc38e93`
 - Arbeitsbranch: `codex/anisyncplus-complete-implementation`
-- Upstream-Merge-Base: `8f1029db05b09dc612d3af061a01b0e0774d1531`
-- Ahead/Behind gegen `upstream/main`: 5/0
-- Vorhandene Änderungen vor dem Audit-Dekodieren: keine
-- Danach zunächst einzige Änderung: neue historische Auditdatei
-- Remotes: `origin` = `xxxxxxxxxxssxx/AniSyncPlus`, `upstream` = `Marco-9456/AniSync`
+- Verifizierter Upstream-Merge-Base: `8f1029db05b09dc612d3af061a01b0e0774d1531`
+- Start-Ahead/Behind gegen `upstream/main`: 5/0
+- `origin`: `xxxxxxxxxxssxx/AniSyncPlus`
+- `upstream`: `Marco-9456/AniSync`
+- Ausgangs-Worktree vor Auditdekodierung: sauber
+- PR #1 und #3: gemergte Dokument-/Workflow-Baseline
+- PR #2: extern offen, nicht gemergt und inhaltlich durch diese Implementierung überholt; keine externe Mutation durchgeführt
 
-### Pull Requests
+### Implementierungscommits
 
-| PR | Verifizierter Zustand | Inhalt | Entscheidung |
-| --- | --- | --- | --- |
-| #1 | gemergt | sechs Planungs-/Kontextdateien, kein Featurecode | Baseline |
-| #2 | offen, nicht gemergt | drei überholte Workflow-/Kontextänderungen, kein Featurecode | nicht mergen; in diesem Bericht als überholt dokumentiert |
-| #3 | gemergt | zwei Workflows und `ProjectContext.md`, kein Featurecode | Baseline |
+| Commit | Thema |
+| --- | --- |
+| `2b2d60a0` | Auditdatei und Korrektur überholter Planungsbehauptungen |
+| `19404abd` | Parser, Client, Matcher, Room-Cache, Resolver und Fixtures |
+| `f9149460` | Refresh-/DB-/Matching-Fehlerhärtung |
+| `4c86b90c` | Kalender-, Library-, Settings- und DI-Appintegration |
+| `e27068f9` | App-Branding, Lint-Baseline, Buildspeicher |
+| `3d58d847` | PR/Push/Tag/manuelle GitHub-Workflows |
+| `ac242dc5` | lokalisierte Kalenderstatusmeldungen |
+| `c2a77df2` | gemeinsamer Library-Minuten-Ticker für Grid und Liste |
 
-### Dokumentbehauptungen gegen Code
+## C. Implementierte Funktionen
 
-| Dokumentbehauptung | Tatsächlicher Pfad | Tatsächlicher Code | Status | Korrektur |
-| --- | --- | --- | --- | --- |
-| Keine CI-Build-Workflows | `.github/workflows/build-manual-release.yml`, `build-release.yml` | beide bauen APKs | falsch | Planungsdokumente korrigiert; fehlende Gates separat implementieren |
-| `SettingsCategory.kt` existiert | `app/src/main/java/com/anisync/android/presentation/settings/SettingsListDetail.kt` | `enum class SettingsCategory` ab Zeile 102 | falsch | realen Pfad dokumentiert |
-| Settings ohne App Links | `SettingsScreen.kt` | App-Links-Karte zwischen Media Upload und Updates | unvollständig | Reihenfolge korrigiert |
-| Fork sei privat | GitHub-PR-/Repositoryzugriff | Repository öffentlich erreichbar | falsch/externer Zustand | `ProjectContext.md` nennt den verifizierten Zustand |
-| Room-Migrationen seien abgedeckt | `app/src/androidTest/.../MigrationTest.kt` | wesentliche Migrationstests kommentierte Vorlagen | überschätzt | Testlücke dokumentiert |
-| AniWorld-Funktionen seien implementiert | keine Produktionspfade | Kalender/Watching nutzen AniList-Airing-Felder | falsch | vollständige Implementierung erforderlich |
-| Workflowänderungen lieferten Feature-Beta | nur Workflow-/Dokumentdiff | kein Kotlin-/Room-/Manifestfeature | falsch | PR-Matrix und Audit beibehalten |
-| Gradle 8.13 sei Workflowtoolchain | `gradle/wrapper/gradle-wrapper.properties` | Wrapper 9.3.1 wird durch `./gradlew` verwendet | irreführend | explizite Fremdversion entfernen |
-| Temporärer Releasekey ermögliche Betaupdates | Workflow-Keygenerierung | Schlüssel wechselt pro Lauf | falsch | updatefähige Releasejobs müssen ohne Secrets hart fehlschlagen |
+### Laufzeitdatenfluss
 
-## Architekturentscheidungen
+`Pull-to-refresh/Retry/Settings Refresh -> dedizierter OkHttp-Client -> Jsoup-Parser -> Strukturvalidierung -> atomarer Room-Snapshot -> persistiertes/beschränktes Matching -> gemeinsamer EffectiveRelease-Flow -> Kalender + Anime/CURRENT-Library`
 
-Noch in Bearbeitung. Jede Entscheidung wird nach Verifikation von Modul-, Hilt-, Room- und Testtoolchain mit Problem, Alternative, Lösung, betroffenen Dateien und Tests ergänzt.
+Startup, Navigation, Tests und CI überspringen den Netzwerkpfad vollständig.
 
-## Geänderte Dateien
+### Parser und Cache
 
-### Historische Dokumentation
+- Ein Abruf der Kalenderseite pro manuellem Refresh.
+- Block-/Challenge-Erkennung ohne Umgehungsversuch.
+- Explizite DOM-, Datum-, Zeit-, Sprach- und Installmentregeln.
+- `Europe/Berlin`, DST-Gap-Fehler und früher Offset bei Overlap.
+- DE-Sub/DE-Dub-Zusammenführung nur bei gleicher vollständiger Releaseidentität.
+- Gültig leere Seite akzeptiert; strukturell leere/geänderte Seite abgelehnt.
+- SHA-basierter Snapshot/Release-Identifier.
+- Atomare Aktivierung, alter Snapshot bei HTTP/Parse/Validierung/DB-Fehler.
+- Unverändertes Dokument aktualisiert Fetchzeit statt Releasezeilen zu duplizieren.
+- Mappings überleben Snapshotwechsel; Matchingfehler zerstören keinen akzeptierten Snapshot.
+- Syncdiagnostik: Attempt/Success/Error/HTTP/Range/Counts/Versionen.
 
-- `docs/anisync-plus-phase1-forensic-audit.md` — aus dem vorgegebenen Payload dekodiert; Inhalt unverändert, SHA-256 verifiziert.
+### Matching
 
-### Korrigierte Planungsdateien
+- Bounded AniList-Anime-Suche mit maximal 10 Kandidaten nur während manuellem Refresh.
+- Titelvarianten: preferred, English, Romaji, native, synonyms.
+- Normalisierung für Unicode, Apostrophe, Bindestriche, Satzzeichen und Leerraum.
+- Exakt-/Staffelauflösung vor Similarity.
+- Auto-Match >= 0,92 und Abstand >= 0,08; nicht eindeutige Ergebnisse bleiben ambiguous.
+- Cover/ID/Navigation nur für sichere Matches.
+- Unmatched deutsche Releases bleiben bei Filter aus sichtbar.
 
-- `ProjectContext.md` — reale Baseline und verbindliche V1-Entscheidungen.
-- `docs/anisync-plus-forensic-analysis.md` — CI-, Settings- und Migrationstestbehauptungen korrigiert.
-- `docs/upstream-integration-points.md` — realer Settings-Pfad und vorhandene Workflows.
+### Kalender
 
-### Geänderte Upstream-Dateien
+- Sofortiger lokaler Cache; kein automatischer AniWorld-Hintergrundrefresh.
+- Woche und Monat lesen denselben Snapshotflow.
+- Range, letzter erfolgreicher Refresh, aktiver Sync und letzter Fehler sichtbar.
+- Fehler mit erhaltenem Cache als Banner inklusive Retry.
+- Navigation außerhalb des Snapshotbereichs deaktiviert; Teilüberlappung auf Schnittmenge begrenzt.
+- Filter aus: alle sichtbaren deutschen Releases.
+- Filter an: sicher gematcht und aktives Konto `CURRENT`.
+- Persistenz exakt nach Remember-Setting; Defaults enabled/remember off/filter off.
+- Berlin-Quelltag, 24-Stunden-Zeit, approximate, Sprache, Episode/Film/Special/Unknown.
+- Fehlende Zeit/Episode bleibt fehlend; kein erfundener Countdown.
+- Material-Placeholder und deaktivierte Detailnavigation bei unmatched.
+- Ein einziger Minuten-Ticker für alle Kalenderkarten.
 
-Noch keine.
+### Watching Library
 
-## Testnachweise
+- Resolverprojektion nur für Anime/CURRENT.
+- Manga und andere Statusobjekte unverändert.
+- Frühester zukünftiger zeitlich bestimmter deutscher Release für Countdown/Airing Soon.
+- Letzte bereits veröffentlichte numerische Episode für Behind.
+- Film/Special/Unknown ohne erfundenen Behind-Badge.
+- Fehlender AniWorld-Wert löscht Ziel-AniList-Airingwerte explizit.
+- Nullwerte bei Airing Soon in beiden Richtungen zuletzt.
+- Grid- und Listenkarte verwenden denselben AniWorld-Stand.
+- Ein einziger Minuten-Ticker im `LibraryScreen`; kein Coroutine-/Timer pro sichtbarer Karte.
 
-| Befehl | Exitcode | Ergebnis | Relevante Ausgabe |
-| --- | ---: | --- | --- |
-| Audit-Pythonblock aus Master-Prompt | 0 | erfolgreich | 31.755 Bytes; SHA-256 `88305f414ad8f6407e3a991c24b910653ecff009580313f05e57e20cfe8a05b7` |
-| `sha256sum docs/anisync-plus-phase1-forensic-audit.md` | 0 | erfolgreich | erwarteter Hash exakt bestätigt |
-| `wc -l docs/anisync-plus-phase1-forensic-audit.md` | 0 | erfolgreich | 946 Zeilen; vollständig bis EOF gelesen |
-| `git fetch --all --prune` | 0 | erfolgreich | Origin aktualisiert |
-| `git remote get-url upstream` | 2 | erwarteter Baselinebefund | Remote fehlte |
-| `git fetch upstream --prune` | 0 | erfolgreich | `upstream/main` und Tags abgerufen |
-| `./gradlew tasks --all` | 126 | fehlgeschlagen | `gradlew: Permission denied` |
-| `sh gradlew tasks --all` | 1 | Umgebungsblocker | `JAVA_HOME is not set and no 'java' command could be found` |
+### Settings, Branding und CI
 
-## Restgrenzen
+- Eigener Preferences-Namespace `anisync_plus_settings`.
+- Neue Kategorie nach App Links und vor Updates in kompakt/two-pane.
+- Enable, Filtermerken, Refresh, Status, Attempt/Success, Range, Counts, Fehler, Zone und Parser-/Matcher-Version.
+- `de.mrxxxxx.anisyncplus` mit Debug-/Preview-Suffixen; Kotlin-Pakete unverändert.
+- Variantenlabels und APK-Basename `AniSyncPlus`.
+- PR-/Push-CI mit Wrapper, Modultests, App-Tests, Lint und Stable-Debug-Build.
+- Tagrelease nur `v*`, minimale Berechtigung, `github.token`, zwingende persistente Secrets, Fingerprint.
+- Debugartefakt explizit `non-upgrade-channel`, SHA und Run-Nummer im Artefaktnamen.
+- Keine Live-AniWorld-Anfragen in Tests oder Actions.
 
-- In der Ausgangsumgebung ist kein JDK vorhanden. Auswirkung: Gradle-Taskinventur und alle Buildgates sind bis zur Bereitstellung eines JDK 17 unbestätigt. Nächste Maßnahme: vorhandenes JDK suchen oder ein lokales JDK 17 bereitstellen, danach Wrapper-Tasks erneut ausführen.
-- PR #2 bleibt extern offen. Er wird nicht gemergt und ist hier als überholt dokumentiert; das Schließen wäre eine separate GitHub-Mutation.
+## D. Befehle und Ergebnisse
+
+| Befehl/Prüfung | Exit | Ergebnis |
+| --- | ---: | --- |
+| Audit-Dekodierung aus Master-Prompt | 0 | 31.755 Bytes erzeugt |
+| `wc -l docs/anisync-plus-phase1-forensic-audit.md` | 0 | 946 |
+| `sha256sum docs/anisync-plus-phase1-forensic-audit.md` | 0 | `88305f414ad8f6407e3a991c24b910653ecff009580313f05e57e20cfe8a05b7` |
+| `./gradlew tasks --all` mit lokalem JDK/SDK | 0 | reale Tasks inventarisiert |
+| `:anisyncplus-calendar:testDebugUnitTest` | 0 | 36 Tests, 0 Fehler |
+| `testStableDebugUnitTest` | 0 | 184 Tests, 0 Fehler |
+| `:app:compileStableDebugKotlin :app:hiltJavaCompileStableDebug` | 0 | Kotlin/KSP/Room/Hilt kompiliert, keine Duplicate Bindings |
+| `lintStableDebug` | 0 | keine neuen Issues; 1237 Errors, 582 Warnings, 2 Hints der auditierten Baseline gefiltert |
+| `assembleStableDebug` | 0 | Universal- und ABI-APKs erzeugt |
+| `assemblePreviewDebug` | 0 | Preview-APK erzeugt |
+| `aapt dump badging` Stable Debug | 0 | `de.mrxxxxx.anisyncplus.debug`, `AniSync Plus Debug`, min 26, target 36 |
+| `aapt dump badging` Preview Debug | 0 | `de.mrxxxxx.anisyncplus.preview.debug`, `AniSync Plus Preview` |
+| `git diff --check` | 0 | keine Whitespacefehler |
+
+Der erste vollständige Lintlauf offenbarte den großen upstream vorhandenen Übersetzungs-/Qualitätsrückstand. Dieser wurde in `app/lint-baseline.xml` eingefroren; danach erkannte Lint zwei neu hinzugefügte Statusübersetzungen und später eine versehentliche Alt-Persisch-Aktivierung. Beide wurden im Code/Ressourcenbestand behoben. Der abschließende Lauf meldet keine neuen Befunde.
+
+Ein früher Stable-Debug-Packaginglauf scheiterte mit 2 GiB Gradle-Heap in `ApkFlinger.close`. Nach Erhöhung auf 4 GiB war der Build reproduzierbar erfolgreich. Es wurde keine Produktlogik zur Umgehung geändert.
+
+## E. Nicht gelöste bzw. externe Punkte
+
+- Kein Android-Gerät/Emulator stand zur Verfügung; deshalb keine visuelle Screenshot-, Installations- oder Interaktionsabnahme. Die geforderte nachweisbare Robolectric-Alternative ist grün.
+- Kein persistenter Release-Keystore/Secretsatz war lokal verfügbar. Ein signierter Stable Release wurde bewusst nicht mit einem temporären Schlüssel erzeugt.
+- Das Custom-Scheme `anisync` und bestehende HTTPS App Links sind extern registrierte Identitäten. Die neue Application ID erlaubt parallele Installation, aber deterministisches OAuth-Routing neben upstream benötigt einen separat registrierten AniList-Callback/Client.
+- GitHub Actions wurden lokal syntaktisch/inhaltlich geprüft, aber ohne Push nicht auf GitHub ausgeführt.
+- PR #2 bleibt extern offen; Schließen/Mergen war nicht Teil der autorisierten Repositoryänderung.
+- Die Abschluss-TODO-Suche fand nur vier Beispielzeilen in `docs/CONTRIBUTING.md` und den bereits vorhandenen Discover-Navigations-TODO in `TrendingWidget.kt`; keiner betrifft AniWorld oder eine Zieloberfläche.
+- Die 1237/582/2 Upstream-Lintbefunde bleiben als explizite Baseline-Schuld bestehen. Neue Befunde werden nicht akzeptiert.
+
+Diese Punkte ändern nicht den V1-Codeabschluss; sie erfordern externe Infrastruktur, Secrets oder ein Gerät.
+
+## F. Auswirkungen auf Upstream
+
+### Geänderte ursprüngliche Dateien
+
+| Datei(en) | Dokumentierte Änderung |
+| --- | --- |
+| `.github/workflows/build-manual-release.yml`, `build-release.yml` | Wrapper, genaue Artefaktwahl, persistente Signierung, keine temporären Keys |
+| `ProjectContext.md` | verbindlicher finaler Iststand und externe Grenzen |
+| `app/build.gradle.kts` | App-ID/Labels/APK, Tests, Lintbaseline |
+| `app/src/main/graphql/Search.graphql` | Synonyme für Matchingkandidaten |
+| `CalendarRepositoryImpl.kt` | cache-only AniWorld-Adapter ohne AniList-Fallback |
+| `AiringEpisode.kt` | additive defaulted AniWorld-Präsentationsfelder |
+| `LibraryEntry.kt` | additive runtime Felder latest/approximate |
+| `CalendarScreen.kt`, `CalendarUiState.kt`, `CalendarViewModel.kt` | Range/Status/Refresh/Filter/Navigation/Quelltag |
+| `AiringEpisodeCard.kt` | AniWorld-Karte, Placeholder, sichere Navigation |
+| `LibraryViewModel.kt` | gemeinsame Resolverprojektion und Sortierung |
+| `LibraryMediaCard.kt`, `LibraryListCard.kt`, `LibraryScreen.kt` | AniWorld Behind/Countdown in Grid/Liste, zentraler Ticker |
+| `NavHost.kt`, `Screen.kt` | AniSync-Plus-Settingsroute |
+| `SettingsListDetail.kt`, `SettingsScreen.kt` | Kategorie in beiden Layouts |
+| `values/strings.xml` und `values-{ar,de,es,fa,fr,pt,pt-rBR,ru,ta}/strings.xml` | Feature-/Statusstrings und Übersetzungen |
+| Root `build.gradle.kts`, `gradle/libs.versions.toml`, `settings.gradle.kts` | Android-Library-Modultoolchain und Include |
+| `gradle.properties` | 4-GiB-Heap nach beobachtetem Packaging-OOM |
+| `gradlew` | ausführbares Wrapper-Bit |
+| `docs/anisync-plus-forensic-analysis.md`, `docs/upstream-integration-points.md` | falsche Baselinebehauptungen korrigiert und Istintegration dokumentiert |
+
+### Neue isolierte Bereiche
+
+- Gesamtes `:anisyncplus-calendar` Modul inklusive API, Domain, Network, Parser, Matching, Room, Repository, Schema, Tests und 14 lokalen Fixtures.
+- Neue Appadapter, Hilt-Modul, Settingsscreen/ViewModel und gezielte App-Tests.
+- Neue PR-/Push-CI und Lintbaseline.
+- Historischer Audit und aktualisierte Architektur-/Parser-/Implementierungsdokumente.
+
+Breite Refactors, Packageverschiebungen und Änderungen an `anisync.db` wurden vermieden. AniList-Airingfelder bleiben für Nichtzielbereiche bestehen.
+
+## G. APK
+
+- Pfad: `app/build/outputs/apk/stable/debug/AniSyncPlus-v3.1.0-debug-universal-debug.apk`
+- Größe: 43.420.653 Bytes
+- SHA-256: `178bb099b088f466490840c0d04231bb0009f0d6890f81ddcac6d9a57dc0eb08`
+- Package: `de.mrxxxxx.anisyncplus.debug`
+- Version: `19 / 3.1.0-debug`
+- minSdk/targetSdk: `26 / 36`
+- Label: `AniSync Plus Debug`
+- Kanal: Debug, ausdrücklich kein updatefähiger Releasekanal
