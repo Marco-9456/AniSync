@@ -1,0 +1,70 @@
+name: Pull request and push CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+      - 'codex/**'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle from wrapper
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Commit metadata
+        run: |
+          git rev-parse HEAD
+          git log -1 --format='%h %cI %s'
+
+      - name: Remove prior build outputs
+        run: rm -rf app/build anisyncplus-calendar/build
+
+      - name: Calendar module tests
+        run: ./gradlew :anisyncplus-calendar:testDebugUnitTest
+
+      - name: Stable Debug unit tests
+        run: ./gradlew testStableDebugUnitTest
+
+      - name: Stable Debug lint
+        run: ./gradlew lintStableDebug
+
+      - name: Stable Debug APK
+        run: ./gradlew assembleStableDebug
+
+      - name: Select exact universal APK
+        id: apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t apks < <(find app/build/outputs/apk/stable/debug -maxdepth 1 -type f -name 'AniSyncPlus-*-universal-debug.apk' -print)
+          [[ ${#apks[@]} -eq 1 ]] || { printf 'Expected one universal APK, found %s\n' "${#apks[@]}"; exit 1; }
+          short_sha="${GITHUB_SHA::8}"
+          target="$RUNNER_TEMP/AniSyncPlus-${short_sha}-run${GITHUB_RUN_NUMBER}-non-upgrade-channel.apk"
+          cp "${apks[0]}" "$target"
+          echo "path=$target" >> "$GITHUB_OUTPUT"
+
+      - name: Upload non-upgrade debug artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AniSyncPlus-${{ github.sha }}-run${{ github.run_number }}-non-upgrade-channel
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
