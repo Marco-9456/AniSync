@@ -24,5 +24,13 @@ data class AiringEpisode(
     val isOnList: Boolean,
     /** The viewer's list status for this media, if on their list. */
     val listStatus: LibraryStatus?,
-    val isAdult: Boolean
+    val isAdult: Boolean,
+    /** AniWorld source day; used for Berlin grouping even when the source time is missing. */
+    val sourceDateEpochDay: Long? = null,
+    val sourceLocalTimeMinutes: Int? = null,
+    val isApproximate: Boolean = false,
+    val releaseKind: String = "EPISODE",
+    val languageLabel: String? = null,
+    val isDetailsAvailable: Boolean = true,
+    val hasSourceTime: Boolean = true
 )

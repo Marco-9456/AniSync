@@ -364,6 +364,12 @@ object SettingsOpenSourceLicenses
 object SettingsAcknowledgments
 
 /**
+ * AniSync Plus calendar source and diagnostics.
+ */
+@Serializable
+object SettingsAniSyncPlus
+
+/**
  * App updates screen.
  */
 @Serializable

@@ -258,8 +258,7 @@ fun LibraryListCard(
                         }
 
                         if (config.showBehindBadge && entry.status == LibraryStatus.CURRENT) {
-                            val nextAiring = entry.nextAiringEpisode
-                            val latest: Int? = if (nextAiring != null) nextAiring - 1 else total
+                            val latest = entry.latestReleasedEpisode
 
                             if (latest != null && entry.progress < latest) {
                                 StatusBadge(
@@ -271,12 +270,17 @@ fun LibraryListCard(
                         }
 
                         if (config.showAiringInfo && entry.dynamicTimeUntilAiring != null && entry.nextAiringEpisode != null) {
+                            val airingText = stringResource(
+                                R.string.airing_episode_in,
+                                entry.nextAiringEpisode ?: 0,
+                                formatTimeUntilAiring(entry.dynamicTimeUntilAiring ?: 0)
+                            )
                             Text(
-                                text = stringResource(
-                                    R.string.airing_episode_in,
-                                    entry.nextAiringEpisode ?: 0,
-                                    formatTimeUntilAiring(entry.dynamicTimeUntilAiring ?: 0)
-                                ),
+                                text = if (entry.nextAiringIsApproximate) {
+                                    stringResource(R.string.calendar_countdown_approximate, airingText)
+                                } else {
+                                    airingText
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 fontSize = 10.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,

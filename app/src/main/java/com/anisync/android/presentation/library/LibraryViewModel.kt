@@ -14,6 +14,8 @@ import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
 import com.anisync.android.presentation.util.LIBRARY_FAVORITES_TAB_ID
 import com.anisync.android.util.getTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.mrxxxxx.anisyncplus.calendar.api.EffectiveReleaseRepository
+import de.mrxxxxx.anisyncplus.calendar.domain.EffectiveRelease
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -28,10 +30,12 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -40,7 +44,8 @@ class LibraryViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val profileRepository: ProfileRepository,
     private val appSettings: AppSettings,
-    private val toastManager: ToastManager
+    private val toastManager: ToastManager,
+    private val effectiveReleaseRepository: EffectiveReleaseRepository
 ) : ViewModel() {
 
     companion object {
@@ -195,6 +200,30 @@ class LibraryViewModel @Inject constructor(
                         val favorites =
                             profile?.favoriteAnime?.filter { it.type == type } ?: emptyList()
                         Triple(libraryEntries, favorites, listOrder to hiddenLists)
+                    }.flatMapLatest { base ->
+                        if (type != com.anisync.android.type.MediaType.ANIME) {
+                            flowOf(base)
+                        } else {
+                            val currentIds = base.first.asSequence()
+                                .filter { it.status == LibraryStatus.CURRENT }
+                                .map { it.mediaId }
+                                .toSet()
+                            combine(
+                                effectiveReleaseRepository.observeNextGermanReleases(currentIds),
+                                effectiveReleaseRepository.observeLatestReleasedGermanEpisodes(
+                                    currentIds,
+                                    Instant.now()
+                                )
+                            ) { nextByMedia, latestByMedia ->
+                                val resolved = applyAniWorldLibraryReleases(
+                                    type,
+                                    base.first,
+                                    nextByMedia,
+                                    latestByMedia
+                                )
+                                Triple(resolved, base.second, base.third)
+                            }
+                        }
                     }
                 }
                 .combine(
@@ -252,13 +281,7 @@ class LibraryViewModel @Inject constructor(
                             Comparator { a, b ->
                                 val ka = a.entry.nextAiringEpisodeTime
                                 val kb = b.entry.nextAiringEpisodeTime
-                                val cmp = when {
-                                    ka == null && kb == null -> 0
-                                    ka == null -> 1
-                                    kb == null -> -1
-                                    else -> ka.compareTo(kb)
-                                }
-                                val withDir = if (ascending) cmp else -cmp
+                                val withDir = compareAiringSoon(ka, kb, ascending)
                                 if (withDir != 0) withDir else titleCmp.compare(a, b)
                             }
                         )
@@ -598,6 +621,37 @@ class LibraryViewModel @Inject constructor(
     private fun showResultError(result: Result.Error) {
         toastManager.showResultError(result)
     }
+}
+
+internal fun applyAniWorldLibraryReleases(
+    mediaType: com.anisync.android.type.MediaType,
+    entries: List<LibraryEntry>,
+    nextByMedia: Map<Int, EffectiveRelease>,
+    latestByMedia: Map<Int, Int>
+): List<LibraryEntry> {
+    if (mediaType != com.anisync.android.type.MediaType.ANIME) return entries
+    return entries.map { entry ->
+        if (entry.status != LibraryStatus.CURRENT) {
+            entry
+        } else {
+            val next = nextByMedia[entry.mediaId]
+            entry.copy(
+                nextAiringEpisode = next?.episodeNumber,
+                timeUntilAiring = null,
+                nextAiringEpisodeTime = next?.instant?.epochSecond,
+                latestReleasedEpisode = latestByMedia[entry.mediaId],
+                nextAiringIsApproximate = next?.isApproximate == true
+            )
+        }
+    }
+}
+
+internal fun compareAiringSoon(left: Long?, right: Long?, ascending: Boolean): Int = when {
+    left == null && right == null -> 0
+    left == null -> 1
+    right == null -> -1
+    ascending -> left.compareTo(right)
+    else -> right.compareTo(left)
 }
 
 /**

@@ -20,7 +20,12 @@ data class CalendarUiState(
     val followingOnly: Boolean = false,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
+    val isSyncing: Boolean = false,
     val error: String? = null,
+    val lastSyncError: String? = null,
+    val availableRangeStart: LocalDate? = null,
+    val availableRangeEnd: LocalDate? = null,
+    val lastSuccessfulRefresh: java.time.Instant? = null,
     val month: CalendarMonthState? = null
 )
 

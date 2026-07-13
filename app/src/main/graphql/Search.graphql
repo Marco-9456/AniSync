@@ -66,6 +66,7 @@ query SearchMedia(
         english
         native
       }
+      synonyms
       coverImage {
         medium
         large

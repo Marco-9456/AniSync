@@ -364,6 +364,26 @@
     <string name="settings_account_desc">Profile, logout</string>
     <string name="settings_about">About</string>
     <string name="settings_version">Version %1$s</string>
+    <string name="settings_anisync_plus">AniSync Plus</string>
+    <string name="settings_anisync_plus_desc">AniWorld calendar and source diagnostics</string>
+    <string name="anisync_plus_calendar_enabled">Enable AniWorld calendar</string>
+    <string name="anisync_plus_calendar_enabled_desc">Use the local AniWorld snapshot for calendar and watching data</string>
+    <string name="anisync_plus_remember_filter">Remember calendar filter</string>
+    <string name="anisync_plus_remember_filter_desc">Restore “Watching only” when the calendar opens</string>
+    <string name="anisync_plus_sync">Calendar refresh</string>
+    <string name="anisync_plus_refresh">Refresh AniWorld manually</string>
+    <string name="anisync_plus_refreshing">Refreshing…</string>
+    <string name="anisync_plus_never">Never</string>
+    <string name="anisync_plus_last_success">Last successful refresh</string>
+    <string name="anisync_plus_available_range">Available data range</string>
+    <string name="anisync_plus_counts">German / Matched / Ambiguous / Unmatched</string>
+    <string name="anisync_plus_last_error">Last error</string>
+    <string name="anisync_plus_none">None</string>
+    <string name="anisync_plus_no_cache">No successful snapshot</string>
+    <string name="anisync_plus_technical">Source details</string>
+    <string name="anisync_plus_source_zone">Source time zone</string>
+    <string name="anisync_plus_parser_version">Parser version</string>
+    <string name="anisync_plus_matcher_version">Matcher version</string>
     <string name="settings_updates">Updates</string>
     <string name="settings_updates_desc">Check for new versions</string>
     <string name="settings_links">Links</string>
@@ -1212,6 +1232,9 @@
 
     <!-- Airing calendar -->
     <string name="calendar_title">Airing Calendar</string>
+    <string name="calendar_available_range">AniWorld data: %1$s – %2$s</string>
+    <string name="calendar_last_updated">Last updated: %1$s (Europe/Berlin)</string>
+    <string name="calendar_refresh_in_progress">Refreshing AniWorld calendar…</string>
     <string name="calendar_open">Airing calendar</string>
     <string name="calendar_following_only">Show only shows on your list</string>
     <string name="calendar_previous_week">Previous week</string>
@@ -1226,6 +1249,11 @@
         <item quantity="other">%1$d airings</item>
     </plurals>
     <string name="calendar_episode_number">Episode %1$d</string>
+    <string name="calendar_release_film">Film</string>
+    <string name="calendar_release_special">Special</string>
+    <string name="calendar_release_unknown">Release</string>
+    <string name="calendar_time_missing">Time unavailable</string>
+    <string name="calendar_countdown_approximate">approx. %1$s</string>
     <string name="calendar_aired">Aired</string>
     <string name="calendar_airs_in">in %1$s</string>
     <string name="calendar_chip_watching">Watching</string>

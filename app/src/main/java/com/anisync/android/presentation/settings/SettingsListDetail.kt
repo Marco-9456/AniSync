@@ -29,6 +29,7 @@ import com.anisync.android.presentation.navigation.Login
 import com.anisync.android.presentation.navigation.SettingsAbout
 import com.anisync.android.presentation.navigation.SettingsAcknowledgments
 import com.anisync.android.presentation.navigation.SettingsAniList
+import com.anisync.android.presentation.navigation.SettingsAniSyncPlus
 import com.anisync.android.presentation.navigation.SettingsDeveloperTools
 import com.anisync.android.presentation.navigation.SettingsFontPlayground
 import com.anisync.android.presentation.navigation.SettingsLanguage
@@ -105,6 +106,7 @@ enum class SettingsCategory {
     Notifications,
     Storage,
     MediaUpload,
+    AniSyncPlus,
     Updates,
     Sponsors,
     About,
@@ -117,6 +119,7 @@ private fun SettingsCategory.toPaneRoute(): Any = when (this) {
     SettingsCategory.Notifications -> SettingsNotifications
     SettingsCategory.Storage -> SettingsStorage
     SettingsCategory.MediaUpload -> SettingsMediaUpload
+    SettingsCategory.AniSyncPlus -> SettingsAniSyncPlus
     SettingsCategory.Updates -> SettingsUpdates
     SettingsCategory.Sponsors -> SettingsSponsors
     SettingsCategory.About -> SettingsAbout
@@ -196,6 +199,7 @@ private fun SettingsDetailPane(
         composable<SettingsNotifications> { NotificationsScreen(onBackClick = popOrClose) }
         composable<SettingsStorage> { StorageScreen(onBackClick = popOrClose) }
         composable<SettingsMediaUpload> { MediaUploadSettingsScreen(onBackClick = popOrClose) }
+        composable<SettingsAniSyncPlus> { AniSyncPlusSettingsScreen(onBackClick = popOrClose) }
         composable<SettingsUpdates> { UpdatesScreen(onBackClick = popOrClose) }
         composable<SettingsSponsors> { SponsorsScreen(onBackClick = popOrClose) }
         composable<SettingsAbout> {

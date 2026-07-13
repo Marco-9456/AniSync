@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Notifications
@@ -202,6 +203,13 @@ fun SettingsScreen(
                 onClick = { showAppLinksDialog = true }
             ),
             CategoryData(
+                key = "anisync_plus",
+                title = stringResource(R.string.settings_anisync_plus),
+                subtitle = stringResource(R.string.settings_anisync_plus_desc),
+                icon = Icons.Outlined.CalendarMonth,
+                onClick = { onCategorySelected(SettingsCategory.AniSyncPlus) }
+            ),
+            CategoryData(
                 key = "updates",
                 title = stringResource(R.string.settings_updates),
                 subtitle = stringResource(R.string.settings_updates_desc),
@@ -373,6 +381,7 @@ private fun SettingsCategory.cardKey(): String = when (this) {
     SettingsCategory.Notifications -> "notifications"
     SettingsCategory.Storage -> "storage"
     SettingsCategory.MediaUpload -> "media_upload"
+    SettingsCategory.AniSyncPlus -> "anisync_plus"
     SettingsCategory.Updates -> "updates"
     SettingsCategory.Sponsors -> "sponsors"
     SettingsCategory.About -> "about"

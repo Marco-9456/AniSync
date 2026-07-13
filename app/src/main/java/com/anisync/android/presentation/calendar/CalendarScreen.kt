@@ -47,7 +47,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -148,6 +150,18 @@ fun CalendarScreen(
     }
 
     val isCurrentWeek = uiState.weekStart == weekStartOf(today)
+    val canPrevWeek = rangeOverlaps(
+        uiState.weekStart.minusWeeks(1),
+        uiState.weekStart.minusDays(1),
+        uiState.availableRangeStart,
+        uiState.availableRangeEnd
+    )
+    val canNextWeek = rangeOverlaps(
+        uiState.weekStart.plusWeeks(1),
+        uiState.weekStart.plusWeeks(2).minusDays(1),
+        uiState.availableRangeStart,
+        uiState.availableRangeEnd
+    )
 
     // Match the document-editor chrome (RichTextScaffold): a flat, page-toned app bar that blends
     // seamlessly into the surfaceContainer gutter, instead of an elevated surface bar with a shadow.
@@ -198,6 +212,8 @@ fun CalendarScreen(
                         WeekSelector(
                             weekStart = uiState.weekStart,
                             isCurrentWeek = isCurrentWeek,
+                            prevEnabled = canPrevWeek,
+                            nextEnabled = canNextWeek,
                             onPrev = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 viewModel.onAction(CalendarAction.PrevWeek)
@@ -209,7 +225,11 @@ fun CalendarScreen(
                             onThisWeek = { viewModel.onAction(CalendarAction.ThisWeek) }
                         )
 
-                        if (uiState.days.size == DAYS_IN_WEEK) {
+                    }
+
+                    CalendarSourceStatus(uiState = uiState)
+
+                    if (!isWide && uiState.days.size == DAYS_IN_WEEK) {
                             WeekDayStrip(
                                 days = uiState.days,
                                 selectedIndex = pagerState.currentPage,
@@ -219,7 +239,6 @@ fun CalendarScreen(
                                     coroutineScope.launch { pagerState.animateScrollToPage(index) }
                                 }
                             )
-                        }
                     }
                 }
         }
@@ -250,7 +269,9 @@ fun CalendarScreen(
                         nowEpochSec = nowEpochSec,
                         today = today,
                         onAction = viewModel::onAction,
-                        onMediaClick = onMediaClick
+                        onMediaClick = onMediaClick,
+                        availableRangeStart = uiState.availableRangeStart,
+                        availableRangeEnd = uiState.availableRangeEnd
                     )
                 }
             } else {
@@ -308,6 +329,88 @@ fun CalendarScreen(
                     }
                 }
             }
+
+            val retainedError = uiState.error ?: uiState.month?.error ?: uiState.lastSyncError
+            val hasCachedContent = if (isWide) {
+                uiState.month?.days?.any { it.episodes.isNotEmpty() } == true
+            } else {
+                uiState.days.any { it.episodes.isNotEmpty() }
+            }
+            if (retainedError != null && hasCachedContent) {
+                CalendarRefreshErrorBanner(
+                    message = retainedError,
+                    onRetry = {
+                        viewModel.onAction(
+                            if (isWide) CalendarAction.RetryMonth else CalendarAction.Retry
+                        )
+                    },
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarSourceStatus(uiState: CalendarUiState) {
+    val berlinZone = remember { ZoneId.of("Europe/Berlin") }
+    val formatter = remember {
+        DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").withZone(berlinZone)
+    }
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
+        uiState.availableRangeStart?.let { rangeStart ->
+            Text(
+                text = stringResource(
+                    R.string.calendar_available_range,
+                    rangeStart,
+                    uiState.availableRangeEnd ?: rangeStart
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        uiState.lastSuccessfulRefresh?.let { lastRefresh ->
+            Text(
+                text = stringResource(R.string.calendar_last_updated, formatter.format(lastRefresh)),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (uiState.isSyncing) {
+            Text(
+                text = stringResource(R.string.calendar_refresh_in_progress),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarRefreshErrorBanner(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        shape = RoundedCornerShape(12.dp),
+        tonalElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = message,
+                modifier = Modifier.weight(1f).padding(vertical = 12.dp),
+                style = MaterialTheme.typography.bodySmall
+            )
+            TextButton(onClick = onRetry) {
+                Text(stringResource(R.string.retry))
+            }
         }
     }
 }
@@ -363,6 +466,8 @@ private fun CalendarMonthTwoPane(
     today: LocalDate,
     onAction: (CalendarAction) -> Unit,
     onMediaClick: (Int) -> Unit,
+    availableRangeStart: LocalDate?,
+    availableRangeEnd: LocalDate?,
     modifier: Modifier = Modifier
 ) {
     val appSettings = LocalAppSettings.current
@@ -417,7 +522,9 @@ private fun CalendarMonthTwoPane(
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onAction(CalendarAction.SelectDay(date))
                 },
-                onAction = onAction
+                onAction = onAction,
+                availableRangeStart = availableRangeStart,
+                availableRangeEnd = availableRangeEnd
             )
         },
         trailing = {
@@ -443,12 +550,16 @@ private fun MonthGridPane(
     today: LocalDate,
     onSelectDay: (LocalDate) -> Unit,
     onAction: (CalendarAction) -> Unit,
+    availableRangeStart: LocalDate?,
+    availableRangeEnd: LocalDate?,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize().padding(8.dp)) {
         MonthHeader(
             monthAnchor = month.monthAnchor,
             isCurrentMonth = month.monthAnchor == today.withDayOfMonth(1),
+            prevEnabled = monthOverlaps(month.monthAnchor.minusMonths(1), availableRangeStart, availableRangeEnd),
+            nextEnabled = monthOverlaps(month.monthAnchor.plusMonths(1), availableRangeStart, availableRangeEnd),
             onPrev = { onAction(CalendarAction.PrevMonth) },
             onNext = { onAction(CalendarAction.NextMonth) },
             onThisMonth = { onAction(CalendarAction.ThisMonth) }
@@ -498,6 +609,7 @@ private fun MonthGridPane(
                                 inMonth = YearMonth.from(day.date) == anchorMonth,
                                 isToday = day.date == today,
                                 selected = day.date == month.selectedDate,
+                                enabled = dateInRange(day.date, availableRangeStart, availableRangeEnd),
                                 onClick = { onSelectDay(day.date) },
                                 modifier = Modifier
                                     .weight(1f)
@@ -515,6 +627,8 @@ private fun MonthGridPane(
 private fun MonthHeader(
     monthAnchor: LocalDate,
     isCurrentMonth: Boolean,
+    prevEnabled: Boolean,
+    nextEnabled: Boolean,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onThisMonth: () -> Unit
@@ -526,7 +640,7 @@ private fun MonthHeader(
             .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onPrev) {
+        IconButton(onClick = onPrev, enabled = prevEnabled) {
             Icon(
                 imageVector = Icons.Filled.ChevronLeft,
                 contentDescription = stringResource(R.string.calendar_previous_month)
@@ -557,7 +671,7 @@ private fun MonthHeader(
                 )
             }
         }
-        IconButton(onClick = onNext) {
+        IconButton(onClick = onNext, enabled = nextEnabled) {
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = stringResource(R.string.calendar_next_month)
@@ -594,6 +708,7 @@ private fun MonthDayCell(
     inMonth: Boolean,
     isToday: Boolean,
     selected: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -636,7 +751,7 @@ private fun MonthDayCell(
                 .fillMaxSize()
                 .clip(RoundedCornerShape(14.dp))
                 .background(containerColor)
-                .selectable(selected = selected, role = Role.Tab, onClick = onClick)
+                .selectable(selected = selected, enabled = enabled, role = Role.Tab, onClick = onClick)
                 .semantics(mergeDescendants = true) { contentDescription = cellDescription }
                 .padding(vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -790,6 +905,8 @@ private fun EmptyDay(followingOnly: Boolean) {
 private fun WeekSelector(
     weekStart: LocalDate,
     isCurrentWeek: Boolean,
+    prevEnabled: Boolean,
+    nextEnabled: Boolean,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onThisWeek: () -> Unit
@@ -800,7 +917,7 @@ private fun WeekSelector(
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onPrev) {
+        IconButton(onClick = onPrev, enabled = prevEnabled) {
             Icon(
                 imageVector = Icons.Filled.ChevronLeft,
                 contentDescription = stringResource(R.string.calendar_previous_week)
@@ -831,7 +948,7 @@ private fun WeekSelector(
                 )
             }
         }
-        IconButton(onClick = onNext) {
+        IconButton(onClick = onNext, enabled = nextEnabled) {
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = stringResource(R.string.calendar_next_week)
@@ -953,6 +1070,29 @@ private fun DayCell(
 }
 
 // --- pure date helpers ---
+
+internal fun rangeOverlaps(
+    start: LocalDate,
+    end: LocalDate,
+    availableStart: LocalDate?,
+    availableEnd: LocalDate?
+): Boolean = availableStart != null && availableEnd != null &&
+    start <= availableEnd && availableStart <= end
+
+private fun monthOverlaps(
+    monthAnchor: LocalDate,
+    availableStart: LocalDate?,
+    availableEnd: LocalDate?
+): Boolean {
+    val month = YearMonth.from(monthAnchor)
+    return rangeOverlaps(month.atDay(1), month.atEndOfMonth(), availableStart, availableEnd)
+}
+
+private fun dateInRange(
+    date: LocalDate,
+    availableStart: LocalDate?,
+    availableEnd: LocalDate?
+): Boolean = availableStart != null && availableEnd != null && date in availableStart..availableEnd
 
 private fun weekStartOf(date: LocalDate): LocalDate =
     date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))

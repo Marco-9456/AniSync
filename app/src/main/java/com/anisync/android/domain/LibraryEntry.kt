@@ -36,6 +36,9 @@ data class LibraryEntry(
     val nextAiringEpisode: Int? = null,
     val timeUntilAiring: Int? = null,
     val nextAiringEpisodeTime: Long? = null, // Absolute timestamp (seconds since epoch)
+    /** AniWorld-only effective fields for Anime/CURRENT. Null means no safe source value. */
+    val latestReleasedEpisode: Int? = null,
+    val nextAiringIsApproximate: Boolean = false,
     val mediaStatus: String? = null,
     val averageScore: Int? = null,
     val score: Double? = 0.0,

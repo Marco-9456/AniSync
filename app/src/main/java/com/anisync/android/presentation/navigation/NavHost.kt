@@ -61,6 +61,7 @@ import com.anisync.android.presentation.review.WriteReviewScreen
 import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
 import com.anisync.android.presentation.settings.AniListSettingsScreen
+import com.anisync.android.presentation.settings.AniSyncPlusSettingsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
 import com.anisync.android.presentation.settings.FontSettingsScreen
 import com.anisync.android.presentation.settings.LanguageScreen
@@ -1297,6 +1298,17 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 AcknowledgmentsScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            composable<SettingsAniSyncPlus>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                AniSyncPlusSettingsScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }
