@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_library">Libreria</string>
+    <string name="nav_discover">Scopri</string>
+    <string name="nav_feed">Feed</string>
+    <string name="nav_forum">Forum</string>
+    <string name="nav_profile">Profilo</string>
+    <string name="feed_filter_all">Tutto</string>
+    <string name="feed_filter_status">Stato</string>
+    <string name="feed_filter_list">Lista</string>
+    <string name="feed_scope_global">Globale</string>
+    <string name="feed_scope_following">Seguiti</string>
+    <string name="feed_empty_global">Ancora nessuna attività — tira per aggiornare.</string>
+    <string name="feed_empty_following">Segui persone per vedere qui la loro attività.</string>
+    <string name="feed_compose_title">Scrivi uno stato</string>
+    <string name="feed_compose_placeholder">Condividi quello che pensi…</string>
+    <string name="feed_compose_submit">Pubblica</string>
+    <string name="forum_browse_categories">Sfoglia categorie</string>
+    <string name="forum_recent_discussions">Discussioni recenti</string>
+    <string name="forum_create_thread">Nuova discussione</string>
+    <string name="forum_post_thread">Pubblica discussione</string>
+    <string name="forum_reply">Rispondi</string>
+</resources>
