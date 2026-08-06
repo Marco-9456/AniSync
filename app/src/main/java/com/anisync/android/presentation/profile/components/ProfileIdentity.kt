@@ -162,8 +162,10 @@ fun ProfileBannerSurface(
  * The identity column: display name, level + donator badges, moderator role chips, and the
  * active/joined meta. Self-contained (no avatar or banner) so it drops into both the compact header
  * card and the wide identity pane.
+ *
+ * Composed from [ProfileDisplayName] and [ProfileIdentityDetails], which the wide pane also stacks
+ * itself so it can collapse the details away under a pinned name as the bio scrolls.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProfileIdentityInfo(
     profile: UserProfile,
@@ -174,6 +176,44 @@ fun ProfileIdentityInfo(
     /** Whether this user follows the authenticated viewer back. */
     followsViewer: Boolean = false
 ) {
+    Column(modifier = modifier) {
+        ProfileDisplayName(name = profile.name)
+        ProfileIdentityDetails(
+            profile = profile,
+            isOwnProfile = isOwnProfile,
+            viewerFollows = viewerFollows,
+            followsViewer = followsViewer
+        )
+    }
+}
+
+/** The display name alone, so a host can pin it while the rest of the identity collapses. */
+@Composable
+fun ProfileDisplayName(name: String, modifier: Modifier = Modifier) {
+    Text(
+        text = name,
+        style = MaterialTheme.typography.displaySmall.copy(
+            fontWeight = FontWeight.ExtraBold
+        ),
+        color = MaterialTheme.colorScheme.onBackground,
+        modifier = modifier
+    )
+}
+
+/**
+ * Everything under the display name: level + donator badges, the mutual-follow chip, moderator role
+ * chips, and the active/joined meta. Split out from [ProfileIdentityInfo] so the wide identity pane
+ * can collapse this block on its own.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ProfileIdentityDetails(
+    profile: UserProfile,
+    isOwnProfile: Boolean,
+    modifier: Modifier = Modifier,
+    viewerFollows: Boolean = false,
+    followsViewer: Boolean = false
+) {
     val joinedDate = remember(profile.createdAt) {
         profile.createdAt?.let {
             val sdf = SimpleDateFormat("MMM yyyy", Locale.getDefault())
@@ -182,14 +222,6 @@ fun ProfileIdentityInfo(
     }
 
     Column(modifier = modifier) {
-        Text(
-            text = profile.name,
-            style = MaterialTheme.typography.displaySmall.copy(
-                fontWeight = FontWeight.ExtraBold
-            ),
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
         Spacer(modifier = Modifier.height(4.dp))
 
         FlowRow(
