@@ -2,28 +2,22 @@ package com.anisync.android.presentation.components
 
 import com.anisync.android.domain.url
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -44,11 +38,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,7 +57,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import kotlinx.coroutines.delay
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.TitleLanguage
@@ -117,18 +106,6 @@ val CompletedCardConfig = LibraryCardConfig(
     showBehindBadge = false,
     showMetadata = false
 )
-
-private const val STATUS_ROTATE_INTERVAL_MS = 3000L
-
-/**
- * One rotating status chip shown under the cover: either the "episodes behind" badge or the
- * next-airing countdown. On a narrow grid card both can't sit side by side without squeezing the
- * airing time out of view, so we cross-fade between them instead.
- */
-private sealed interface CardStatusSlot {
-    data class Behind(val text: String) : CardStatusSlot
-    data class Airing(val text: String) : CardStatusSlot
-}
 
 /**
  * A reusable media card for library screens.
@@ -338,59 +315,29 @@ fun LibraryMediaCard(
                             )
                         } else null
 
-                    // Both pieces would overflow a narrow grid card and push the airing time out of
-                    // view, so when both are present rotate between them with a cross-fade.
-                    val slots = remember(behindText, airingText) {
-                        buildList {
-                            behindText?.let { add(CardStatusSlot.Behind(it)) }
-                            airingText?.let { add(CardStatusSlot.Airing(it)) }
-                        }
-                    }
-
-                    var slotIndex by remember { mutableIntStateOf(0) }
-                    LaunchedEffect(slots.size) {
-                        slotIndex = 0
-                        if (slots.size > 1) {
-                            while (true) {
-                                delay(STATUS_ROTATE_INTERVAL_MS)
-                                slotIndex = (slotIndex + 1) % slots.size
-                            }
-                        }
-                    }
-
-                    Box(
-                        contentAlignment = Alignment.CenterStart,
-                        modifier = Modifier.height(20.dp) // Reserve fixed height matching badge/text
+                    // Both stay on screen. They sit side by side while the card is wide enough and
+                    // drop onto a second line when a many-column grid makes it too narrow, rather
+                    // than the badge clipping the countdown out of view. The min height keeps card
+                    // heights aligned across the grid when neither piece applies.
+                    FlowRow(
+                        itemVerticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        maxLines = 2,
+                        modifier = Modifier.heightIn(min = 20.dp)
                     ) {
-                        val current = if (slots.isEmpty()) null else slots[slotIndex % slots.size]
-                        AnimatedContent(
-                            targetState = current,
-                            // Only animate when the kind of chip changes, not when the airing label ticks.
-                            contentKey = { it?.let { slot -> slot::class } },
-                            transitionSpec = {
-                                val anim = tween<Float>(durationMillis = 320)
-                                (fadeIn(anim) + slideInVertically(tween(320)) { it / 2 }) togetherWith
-                                    (fadeOut(anim) + slideOutVertically(tween(320)) { -it / 2 }) using
-                                    SizeTransform(clip = false)
-                            },
-                            label = "StatusRotator"
-                        ) { slot ->
-                            when (slot) {
-                                is CardStatusSlot.Behind -> StatusBadge(
-                                    slot.text,
-                                    MaterialTheme.colorScheme.error,
-                                    MaterialTheme.colorScheme.onError
-                                )
-                                is CardStatusSlot.Airing -> Text(
-                                    text = slot.text,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontSize = 10.sp,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                null -> Spacer(Modifier.size(0.dp))
-                            }
+                        if (behindText != null) {
+                            StatusBadge(
+                                behindText,
+                                MaterialTheme.colorScheme.error,
+                                MaterialTheme.colorScheme.onError
+                            )
+                        }
+                        if (airingText != null) {
+                            AiringCountdownText(
+                                text = airingText,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -617,7 +564,6 @@ private fun mockEntry(
     )
 }
 
-// Simplified mock StatusBadge for preview context if it's not available in this file scope
 @Composable
 private fun StatusBadge(text: String, containerColor: Color, contentColor: Color) {
     Surface(
@@ -627,8 +573,15 @@ private fun StatusBadge(text: String, containerColor: Color, contentColor: Color
     ) {
         Text(
             text = text,
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-            style = MaterialTheme.typography.labelSmall
+            modifier = Modifier
+                .padding(horizontal = 4.dp, vertical = 2.dp)
+                .scrollWhenTooWide(),
+            style = MaterialTheme.typography.labelSmall,
+            // A many-column grid can squeeze the badge past its text; scroll it instead of
+            // stacking letters down the card.
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Clip
         )
     }
 }
@@ -674,6 +627,26 @@ private fun PreviewLibraryCardUpToDate() {
             .width(200.dp)) {
             LibraryMediaCard(
                 entry = mockEntry(progress = 11, total = 24, nextAiring = 12),
+                mediaType = MediaType.ANIME,
+                titleLanguage = TitleLanguage.ROMAJI,
+                onClick = {},
+                config = WatchingCardConfig,
+                onIncrement = {},
+                onDecrement = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Anime - Behind (Narrow)", showBackground = true)
+@Composable
+private fun PreviewLibraryCardWatchingBehindNarrow() {
+    PreviewMediaCardTheme {
+        Box(modifier = Modifier
+            .padding(16.dp)
+            .width(140.dp)) {
+            LibraryMediaCard(
+                entry = mockEntry(progress = 108, total = 1200, nextAiring = 120),
                 mediaType = MediaType.ANIME,
                 titleLanguage = TitleLanguage.ROMAJI,
                 onClick = {},
