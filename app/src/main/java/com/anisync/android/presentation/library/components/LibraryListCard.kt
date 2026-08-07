@@ -62,6 +62,7 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.presentation.components.AiringCountdownText
 import com.anisync.android.presentation.components.CompletedCardConfig
 import com.anisync.android.presentation.components.ScoreChip
 import com.anisync.android.presentation.components.LibraryCardConfig
@@ -271,17 +272,13 @@ fun LibraryListCard(
                         }
 
                         if (config.showAiringInfo && entry.dynamicTimeUntilAiring != null && entry.nextAiringEpisode != null) {
-                            Text(
+                            AiringCountdownText(
                                 text = stringResource(
                                     R.string.airing_episode_in,
                                     entry.nextAiringEpisode ?: 0,
                                     formatTimeUntilAiring(entry.dynamicTimeUntilAiring ?: 0)
                                 ),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -458,7 +455,10 @@ private fun StatusBadge(text: String, containerColor: Color, contentColor: Color
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            fontSize = 10.sp
+            fontSize = 10.sp,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Clip
         )
     }
 }
