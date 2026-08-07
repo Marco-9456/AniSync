@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_preview_bg"
-    android:backgroundTint="#262A36"
+    android:backgroundTint="@color/widget_preview_bg"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -19,14 +19,14 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:background="@drawable/widget_preview_poster_bg"
-            android:backgroundTint="#B8CFFF">
+            android:backgroundTint="@color/widget_preview_accent">
 
             <ImageView
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_gravity="center"
                 android:src="@drawable/calendar_view_week_24px"
-                android:tint="#002D6D" />
+                android:tint="@color/widget_preview_on_accent" />
         </FrameLayout>
 
         <TextView
@@ -35,7 +35,7 @@
             android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:text="Weekly Schedule"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/widget_preview_text"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -44,11 +44,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/widget_preview_pill_bg"
-            android:backgroundTint="#3E4354"
+            android:backgroundTint="@color/widget_preview_placeholder"
             android:paddingHorizontal="14dp"
             android:paddingVertical="6dp"
             android:text="All"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/widget_preview_text"
             android:textSize="12sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -66,7 +66,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@drawable/widget_preview_poster_bg"
-            android:backgroundTint="#B8CFFF"
+            android:backgroundTint="@color/widget_preview_accent"
             android:gravity="center"
             android:orientation="vertical"
             android:paddingVertical="8dp">
@@ -75,14 +75,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="T"
-                android:textColor="#002D6D"
+                android:textColor="@color/widget_preview_on_accent"
                 android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="16"
-                android:textColor="#002D6D"
+                android:textColor="@color/widget_preview_on_accent"
                 android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -99,14 +99,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="F"
-                android:textColor="#CAC4D0"
+                android:textColor="@color/widget_preview_text_variant"
                 android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="17"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_preview_text"
                 android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -123,14 +123,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="S"
-                android:textColor="#CAC4D0"
+                android:textColor="@color/widget_preview_text_variant"
                 android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="18"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_preview_text"
                 android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -147,14 +147,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="S"
-                android:textColor="#CAC4D0"
+                android:textColor="@color/widget_preview_text_variant"
                 android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="19"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_preview_text"
                 android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -171,14 +171,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="M"
-                android:textColor="#CAC4D0"
+                android:textColor="@color/widget_preview_text_variant"
                 android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="20"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_preview_text"
                 android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -195,14 +195,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="T"
-                android:textColor="#CAC4D0"
+                android:textColor="@color/widget_preview_text_variant"
                 android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="21"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_preview_text"
                 android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -219,14 +219,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="W"
-                android:textColor="#CAC4D0"
+                android:textColor="@color/widget_preview_text_variant"
                 android:textSize="12sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="22"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_preview_text"
                 android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -238,7 +238,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:background="@drawable/widget_preview_card_bg"
-        android:backgroundTint="#1C1F28"
+        android:backgroundTint="@color/widget_preview_card"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:padding="12dp">
@@ -248,7 +248,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="15:00"
-            android:textColor="#B8CFFF"
+            android:textColor="@color/widget_preview_accent"
             android:textSize="12sp"
             android:textStyle="bold" />
 
@@ -269,7 +269,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Dr. STONE SCIENCE\nFUTURE Cour 3"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/widget_preview_text"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -279,11 +279,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/widget_preview_pill_bg"
-                android:backgroundTint="#5B407C"
+                android:backgroundTint="@color/widget_preview_badge"
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="4dp"
                 android:text="EPISODE 3"
-                android:textColor="#EEDCFF"
+                android:textColor="@color/widget_preview_on_badge"
                 android:textSize="10sp"
                 android:textStyle="bold"
                 android:textAllCaps="true" />

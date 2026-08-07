@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget palette, dark, no dynamic colour. The app's dark scheme from ui/theme/Color.kt. -->
+<resources>
+    <color name="widget_background">#12140E</color>
+    <color name="widget_surface">#12140E</color>
+    <color name="widget_surface_variant">#44483D</color>
+    <color name="widget_on_surface">#E2E3D8</color>
+    <color name="widget_on_surface_variant">#C5C8BA</color>
+    <color name="widget_outline">#8F9285</color>
+    <color name="widget_primary">#B1D18A</color>
+    <color name="widget_on_primary">#1F3701</color>
+    <color name="widget_primary_container">#354E16</color>
+    <color name="widget_on_primary_container">#CDEDA3</color>
+    <color name="widget_secondary_container">#404A33</color>
+    <color name="widget_on_secondary_container">#DCE7C8</color>
+    <color name="widget_tertiary_container">#1F4E4B</color>
+    <color name="widget_on_tertiary_container">#BCECE7</color>
+</resources>

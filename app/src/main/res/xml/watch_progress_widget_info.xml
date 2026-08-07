@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Resizes from 2x1 up to 4x3. The row count follows the height the launcher reports, so the same
+  instance shows one series at 2x1 and the full ranked list at 4x3.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_watch_progress_description"
+    android:minWidth="140dp"
+    android:minHeight="100dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/widget_preview_watch_progress"
+    android:previewLayout="@layout/widget_preview_watch_progress"
+    android:widgetCategory="home_screen" />

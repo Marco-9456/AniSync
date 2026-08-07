@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Badge and chip background. Tinted per use with setInt(..., "setColorFilter", ...). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="100dp" />
+    <solid android:color="@color/widget_primary_container" />
+</shape>

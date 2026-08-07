@@ -759,6 +759,78 @@
     <string name="widget_up_next_description">Quick access to your next episode</string>
     <string name="widget_quick_update_description">Update episode progress quickly</string>
     <string name="widget_trending_description">See what\'s trending in anime</string>
+    <string name="widget_watch_progress_description">See how close your series are to finishing</string>
+
+    <!-- Widget titles, also the labels shown in the widget picker -->
+    <string name="widget_up_next_title">Up Next</string>
+    <string name="widget_airing_today_title">Airing Today</string>
+    <string name="widget_calendar_title">Weekly Schedule</string>
+    <string name="widget_trending_title">Trending Now</string>
+    <string name="widget_watch_progress_title">Watch Progress</string>
+
+    <!-- Shared widget labels -->
+    <string name="widget_filter_all">All</string>
+    <string name="widget_filter_mine">My List</string>
+    <string name="widget_episode_short">Ep %1$d</string>
+    <string name="widget_episode_long">Episode %1$d</string>
+    <string name="widget_error_title">Can\'t show this right now</string>
+    <string name="widget_error_action">Tap to retry</string>
+
+    <!-- Widget countdowns -->
+    <string name="widget_time_airing_now">Airing now</string>
+    <string name="widget_time_in_days">In %1$dd %2$dh</string>
+    <string name="widget_time_in_hours">In %1$dh %2$dm</string>
+    <string name="widget_time_in_minutes">In %1$dm</string>
+
+    <!-- Up Next widget -->
+    <string name="widget_up_next_empty_title">You\'re all caught up</string>
+    <string name="widget_up_next_empty_body">Nothing from your list airing soon</string>
+
+    <!-- Airing Today widget -->
+    <string name="widget_airing_today_empty_all">Nothing airing today</string>
+    <string name="widget_airing_today_empty_all_hint">Check back tomorrow</string>
+    <string name="widget_airing_today_empty_mine">Nothing from your list today</string>
+    <string name="widget_airing_today_empty_mine_hint">Switch to All to see everything airing</string>
+
+    <!-- Weekly Calendar widget -->
+    <string name="widget_calendar_empty_all">No episodes scheduled</string>
+    <string name="widget_calendar_empty_mine">No favorites airing</string>
+    <string name="widget_calendar_empty_hint">Try selecting another day</string>
+
+    <!-- Trending widget -->
+    <string name="widget_trending_rank" translatable="false">#%1$d</string>
+    <string name="widget_trending_score">%1$d%% score</string>
+    <string name="widget_trending_empty_title">No trending data yet</string>
+    <string name="widget_trending_empty_body">Open AniSync to load it</string>
+
+    <!-- Watch Progress widget -->
+    <string name="widget_type_anime">Anime</string>
+    <string name="widget_type_manga">Manga</string>
+    <string name="widget_wp_left">%1$d left</string>
+    <string name="widget_wp_left_manga">%1$d ch left</string>
+    <string name="widget_wp_ongoing">Ongoing</string>
+    <string name="widget_wp_progress" translatable="false">%1$d / %2$d</string>
+    <string name="widget_wp_read">%1$d read</string>
+    <string name="widget_wp_current_ep">Ep %1$d</string>
+    <string name="widget_wp_empty_title">Nothing in progress</string>
+    <string name="widget_wp_empty_body">Series you are watching appear here, closest to finishing first.</string>
+    <string name="widget_wp_empty_body_manga">Series you are reading appear here, closest to finishing first.</string>
+
+    <!-- Widget content descriptions -->
+    <string name="a11y_widget_filter_all">Show everything airing</string>
+    <string name="a11y_widget_filter_mine">Show only your list</string>
+    <string name="a11y_widget_open_discover">Open Discover</string>
+    <string name="a11y_widget_type_anime">Show anime</string>
+    <string name="a11y_widget_type_manga">Show manga</string>
+    <string name="a11y_widget_day">%1$s %2$d</string>
+    <string name="a11y_widget_day_selected">%1$s %2$d, selected</string>
+    <string name="a11y_widget_up_next_row">%1$s, episode %2$d, %3$s</string>
+    <string name="a11y_widget_airing_row">%1$s, episode %2$d, airs at %3$s</string>
+    <string name="a11y_widget_trending_row">Number %1$d, %2$s</string>
+    <string name="a11y_wp_card_anime">%1$s, %2$d of %3$d episodes, %4$d left</string>
+    <string name="a11y_wp_card_manga">%1$s, %2$d of %3$d chapters, %4$d left</string>
+    <string name="a11y_wp_card_unknown">%1$s, episode %2$d, total unknown</string>
+    <string name="a11y_wp_card_unknown_manga">%1$s, %2$d chapters read, total unknown</string>
 
     <!-- Widget Configuration -->
     <string name="widget_config_title">Configure Widget</string>

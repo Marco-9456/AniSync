@@ -6,4 +6,23 @@
       in the dark surface so a dark-themed device never flashes a bright panel on launch (issue #84).
     -->
     <color name="splash_background">#F9FAEF</color>
+
+    <!--
+      Widget picker preview palette.
+
+      The previews are static XML, so they cannot read GlanceTheme and cannot follow the device's
+      dynamic colour. These are the AniSync design-system values, kept here as named resources so
+      the five previews stay in step instead of each carrying its own literals.
+    -->
+    <color name="widget_preview_bg">#202020</color>
+    <color name="widget_preview_card">#292B2A</color>
+    <color name="widget_preview_accent">#B7CAC6</color>
+    <color name="widget_preview_on_accent">#1F2B28</color>
+    <color name="widget_preview_accent_container">#324B47</color>
+    <color name="widget_preview_badge">#51615E</color>
+    <color name="widget_preview_on_badge">#D5E5E0</color>
+    <color name="widget_preview_text">#E2E3E0</color>
+    <color name="widget_preview_text_variant">#BFC9C6</color>
+    <color name="widget_preview_text_muted">#8A9390</color>
+    <color name="widget_preview_placeholder">#3F4948</color>
 </resources>
