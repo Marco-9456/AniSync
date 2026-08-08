@@ -84,7 +84,17 @@ class MigrationTest {
             Migrations.MIGRATION_22_23
         )
 
-        // Two accounts must be able to hold the same schedule id with different watching flags.
+        // The existing row survives, parked under the signed-out owner until the first reconcile
+        // claims it. Dropping it instead would leave upgrading users with blank widgets until a
+        // full network refresh completed.
+        db.query("SELECT ownerId, titleUserPreferred FROM airing_schedule WHERE id = 1").use { cursor ->
+            assertEquals(1, cursor.count)
+            cursor.moveToFirst()
+            assertEquals(-1, cursor.getInt(0))
+            assertEquals("Test Anime", cursor.getString(1))
+        }
+
+        // Two accounts have to be able to hold the same schedule id with different watching flags.
         db.execSQL(
             """
             INSERT INTO airing_schedule (
@@ -96,16 +106,17 @@ class MigrationTest {
             """.trimIndent()
         )
 
-        db.query("SELECT ownerId, isWatching FROM airing_schedule WHERE id = 1 ORDER BY ownerId")
-            .use { cursor ->
-                assertEquals(2, cursor.count)
-                cursor.moveToFirst()
-                assertEquals(10, cursor.getInt(0))
-                assertEquals(1, cursor.getInt(1))
-                cursor.moveToNext()
-                assertEquals(20, cursor.getInt(0))
-                assertEquals(0, cursor.getInt(1))
-            }
+        db.query(
+            "SELECT ownerId, isWatching FROM airing_schedule WHERE id = 1 AND ownerId > 0 ORDER BY ownerId"
+        ).use { cursor ->
+            assertEquals(2, cursor.count)
+            cursor.moveToFirst()
+            assertEquals(10, cursor.getInt(0))
+            assertEquals(1, cursor.getInt(1))
+            cursor.moveToNext()
+            assertEquals(20, cursor.getInt(0))
+            assertEquals(0, cursor.getInt(1))
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

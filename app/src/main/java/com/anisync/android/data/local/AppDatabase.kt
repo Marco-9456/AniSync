@@ -23,8 +23,10 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *   - airing_schedule is now account scoped:
  *     • ownerId joined the primary key, matching library_entries since v18, so a
  *       switch no longer has to wipe the table and isWatching stops meaning
- *       whichever account was last active. Manual migration, rows are not carried
- *       over because they have no owner to attribute them to.
+ *       whichever account was last active. Manual migration. Existing rows are
+ *       carried over under ownerId -1 and claimed by the signed-in account in
+ *       AccountManager.reconcileActiveAccount, so upgrading users do not stare at
+ *       empty widgets while a network refresh runs.
  *
  * v19 (Jun 2026):
  *   - Added field to user_profile:

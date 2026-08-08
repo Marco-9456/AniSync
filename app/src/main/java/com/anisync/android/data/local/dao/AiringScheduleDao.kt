@@ -18,6 +18,15 @@ interface AiringScheduleDao {
     suspend fun clearAll(ownerId: Int)
 
     /**
+     * Claims rows left unowned by the v23 migration for the signed-in account.
+     *
+     * `OR REPLACE` because the account may already have refreshed its own rows for the same
+     * schedule ids, in which case the fresher ones win.
+     */
+    @Query("UPDATE OR REPLACE airing_schedule SET ownerId = :toOwnerId WHERE ownerId = :fromOwnerId")
+    suspend fun reassignOwner(fromOwnerId: Int, toOwnerId: Int)
+
+    /**
      * Get episodes airing between startTime and endTime.
      */
     @Query("SELECT * FROM airing_schedule WHERE ownerId = :ownerId AND airingAt >= :startTime AND airingAt <= :endTime ORDER BY airingAt ASC")

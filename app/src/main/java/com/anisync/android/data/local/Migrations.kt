@@ -76,13 +76,17 @@ object Migrations {
      * be active, so switching accounts had to wipe it. `ownerId` joins the primary key, matching
      * how `library_entries` has been scoped since v18.
      *
-     * Existing rows are not carried over. They carry no owner, and guessing one would mislabel
-     * another account's watching flags. The table is a network cache that `AiringScheduleWorker`
-     * repopulates on its next run.
+     * Existing rows are carried over under [NO_OWNER] rather than dropped.
+     *
+     * Dropping them is tempting, since the table is a rebuildable cache and the old rows carry no
+     * owner. It is also wrong: `AiringScheduleWorker` needs a network round trip over three pages
+     * to refill it, so every upgrading user would open the app to blank widgets and wait. The rows
+     * are kept and `AccountManager.reconcileActiveAccount` re-tags them to the signed-in account on
+     * first start, which is the same thing v18 did for legacy `library_entries`.
      */
     val MIGRATION_22_23 = object : Migration(22, 23) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("DROP TABLE IF EXISTS `airing_schedule`")
+            db.execSQL("ALTER TABLE `airing_schedule` RENAME TO `airing_schedule_old`")
             db.execSQL(
                 "CREATE TABLE IF NOT EXISTS `airing_schedule` (" +
                     "`id` INTEGER NOT NULL, " +
@@ -101,8 +105,20 @@ object Migrations {
                 "CREATE INDEX IF NOT EXISTS `index_airing_schedule_ownerId_airingAt` " +
                     "ON `airing_schedule` (`ownerId`, `airingAt`)"
             )
+            db.execSQL(
+                "INSERT INTO `airing_schedule` (" +
+                    "`id`, `ownerId`, `mediaId`, `airingAt`, `episode`, `titleUserPreferred`, " +
+                    "`coverUrl`, `format`, `isWatching`, `streamingSeriesUrl`) " +
+                    "SELECT `id`, $NO_OWNER, `mediaId`, `airingAt`, `episode`, " +
+                    "`titleUserPreferred`, `coverUrl`, `format`, `isWatching`, " +
+                    "`streamingSeriesUrl` FROM `airing_schedule_old`"
+            )
+            db.execSQL("DROP TABLE `airing_schedule_old`")
         }
     }
+
+    /** Signed out owner, and where rows from the unscoped table wait. */
+    private const val NO_OWNER = -1
 
     /**
      * Array of all manual migrations.
