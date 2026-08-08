@@ -789,6 +789,7 @@
     <string name="widget_up_next_empty_body">Nothing from your list airing soon</string>
 
     <!-- Airing Today widget -->
+    <string name="widget_airing_at">Airing at %1$s</string>
     <string name="widget_airing_today_empty_all">Nothing airing today</string>
     <string name="widget_airing_today_empty_all_hint">Check back tomorrow</string>
     <string name="widget_airing_today_empty_mine">Nothing from your list today</string>

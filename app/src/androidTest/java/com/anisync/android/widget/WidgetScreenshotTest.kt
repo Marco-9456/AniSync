@@ -206,6 +206,9 @@ class WidgetScreenshotTest {
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = list.layoutParams
+            // Inherit the list's visibility. Airing Today hides the list and shows a hero card at
+            // short sizes, and a substituted column that ignored that would draw rows through it.
+            visibility = list.visibility
         }
         rows.forEach { column.addView(it.apply(context, column)) }
 

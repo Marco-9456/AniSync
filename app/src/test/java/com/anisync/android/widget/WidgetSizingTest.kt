@@ -11,9 +11,8 @@ import org.junit.Test
 /**
  * The arithmetic behind how much a widget draws.
  *
- * Pure JVM, no Android needed. Worth pinning because both mistakes here are silent: too many rows
- * means content clipped off the bottom with no error anywhere, and too few means a widget that
- * looks broken at a size nobody tested.
+ * Plain JVM, no Android. Worth pinning because both mistakes are silent: too many rows clips content
+ * off the bottom with no error, too few leaves a widget looking broken at a size nobody tried.
  */
 class WidgetSizingTest {
 
@@ -26,7 +25,7 @@ class WidgetSizingTest {
 
     @Test
     fun fit_countsWholeRowsOnly() {
-        // 300 - 64 = 236 usable, which is two 90dp rows and change, not two and a half.
+        // 300 - 64 = 236 usable, so two 90dp rows and a bit, not two and a half.
         val rows = WidgetRows.fit(SizeFCompat(300f, 300f), rowHeightDp = 90, chromeDp = 64, max = 10)
         assertEquals(2, rows)
     }
@@ -46,7 +45,7 @@ class WidgetSizingTest {
 
     @Test
     fun ladder_staysWithinThePlatformLimit() {
-        // RemoteViews rejects more than 16 sized entries outright.
+        // RemoteViews rejects more than 16 sized entries.
         assertTrue(WidgetSizes.ladder(minHeightDp = 100).size <= 16)
         assertTrue(WidgetSizes.ladder(minHeightDp = 150).size <= 16)
     }
@@ -60,7 +59,7 @@ class WidgetSizingTest {
 
     @Test
     fun ladder_neverEmptyEvenForATallMinimum() {
-        // A minimum past every rung still has to declare one size, or updateAppWidget throws.
+        // A minimum past every rung still has to declare one size or updateAppWidget throws.
         assertTrue(WidgetSizes.ladder(minHeightDp = 9_000).isNotEmpty())
     }
 
@@ -68,7 +67,11 @@ class WidgetSizingTest {
     fun narrowAndShort_matchTheRungsTheyGuard() {
         assertTrue(WidgetSizes.isNarrow(SizeFCompat(180f, 300f)))
         assertFalse(WidgetSizes.isNarrow(SizeFCompat(300f, 300f)))
+
+        // Short covers the 100 and 150 rungs. Neither fits a header, a filter row and a whole card,
+        // which is why Airing Today drops its chrome for a hero there.
         assertTrue(WidgetSizes.isShort(SizeFCompat(300f, 100f)))
-        assertFalse(WidgetSizes.isShort(SizeFCompat(300f, 150f)))
+        assertTrue(WidgetSizes.isShort(SizeFCompat(300f, 150f)))
+        assertFalse(WidgetSizes.isShort(SizeFCompat(300f, 200f)))
     }
 }

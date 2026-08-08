@@ -16,7 +16,6 @@ import com.anisync.android.widget.core.WidgetImageBudget
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntents
 import com.anisync.android.widget.core.WidgetProgressRenderer
-import com.anisync.android.widget.core.WidgetRows
 import com.anisync.android.widget.core.WidgetSizes
 import com.anisync.android.widget.core.WidgetState
 import com.anisync.android.widget.core.activeOwnerId
@@ -42,6 +41,9 @@ class WatchProgressWidgetProvider :
 
     override val declaredSizes = WidgetSizes.ladder(minHeightDp = 100)
 
+    override val listViewId = R.id.widget_list
+    override val listEmptyViewId = R.id.widget_empty
+
     override suspend fun snapshot(context: Context, appWidgetId: Int): Snapshot {
         val deps = context.widgetDeps()
         val type = if (WidgetState.getString(context, appWidgetId, STATE_TYPE, ANIME) == MANGA) {
@@ -63,7 +65,6 @@ class WatchProgressWidgetProvider :
                     .thenBy { it.remaining ?: Int.MAX_VALUE }
                     .thenByDescending { it.entry.lastUpdated }
             )
-            .take(MAX_ROWS)
 
         return Snapshot(rows, type)
     }
@@ -109,51 +110,46 @@ class WatchProgressWidgetProvider :
             R.id.chip_manga,
             context.getString(R.string.a11y_widget_type_manga)
         )
-
         views.setViewVisibility(
             R.id.widget_title,
             if (WidgetSizes.isNarrow(size)) View.GONE else View.VISIBLE
         )
 
-        if (snapshot.rows.isEmpty()) {
-            views.setViewVisibility(R.id.widget_list, View.GONE)
-            views.setViewVisibility(R.id.widget_empty, View.VISIBLE)
-            views.setTextViewText(
-                R.id.widget_empty_body,
-                context.getString(
-                    if (isManga) R.string.widget_wp_empty_body_manga
-                    else R.string.widget_wp_empty_body
-                )
+        val isEmpty = snapshot.rows.isEmpty()
+        views.setViewVisibility(R.id.widget_empty, if (isEmpty) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_list, if (isEmpty) View.GONE else View.VISIBLE)
+        views.setTextViewText(
+            R.id.widget_empty_body,
+            context.getString(
+                if (isManga) R.string.widget_wp_empty_body_manga else R.string.widget_wp_empty_body
             )
-            return views
-        }
+        )
 
-        views.setViewVisibility(R.id.widget_empty, View.GONE)
-        views.setViewVisibility(R.id.widget_list, View.VISIBLE)
-        views.removeAllViews(R.id.widget_list)
-
-        val rowCount = WidgetRows.fit(size, ROW_HEIGHT_DP, CHROME_DP, MAX_ROWS)
-        // The bar spans the card minus the cover, its margin, and the card padding.
-        val barWidthDp = (size.width - BAR_INSET_DP).toInt().coerceAtLeast(MIN_BAR_WIDTH_DP)
-        snapshot.rows.take(rowCount).forEach { item ->
-            views.addView(
-                R.id.widget_list,
-                row(context, appWidgetId, item, snapshot.type, covers, colors, barWidthDp)
-            )
-        }
+        views.setPendingIntentTemplate(
+            R.id.widget_list,
+            WidgetIntents.mediaTemplate(context, appWidgetId)
+        )
         return views
     }
 
-    private fun row(
+    override fun items(
         context: Context,
         appWidgetId: Int,
+        snapshot: Snapshot,
+        covers: Map<Int, Bitmap?>
+    ): List<RemoteViews> {
+        val colors = WidgetColors.of(context)
+        val isManga = snapshot.type == MediaType.MANGA
+        return snapshot.rows.map { row -> item(context, row, isManga, covers, colors) }
+    }
+
+    private fun item(
+        context: Context,
         row: Row,
-        type: MediaType,
+        isManga: Boolean,
         covers: Map<Int, Bitmap?>,
-        colors: WidgetColors,
-        barWidthDp: Int
+        colors: WidgetColors
     ): RemoteViews {
-        val isManga = type == MediaType.MANGA
         val entry = row.entry
         val progressFraction = row.total
             ?.takeIf { it > 0 }
@@ -188,7 +184,7 @@ class WatchProgressWidgetProvider :
             entry.progress
         )
 
-        return RemoteViews(context.packageName, R.layout.widget_watch_progress_item).apply {
+        return RemoteViews(context.packageName, R.layout.widget_item_progress).apply {
             setTextViewText(R.id.item_title, entry.titleUserPreferred)
             setTextViewText(R.id.item_remaining, remainingLabel)
             setTextViewText(R.id.item_meta, meta)
@@ -196,10 +192,12 @@ class WatchProgressWidgetProvider :
                 R.id.item_bar,
                 WidgetProgressRenderer.bar(
                     context = context,
-                    widthDp = barWidthDp,
+                    // Rasterised at a fixed width and stretched by scaleType fitXY, because a row
+                    // in a collection does not know how wide the widget is.
+                    widthDp = BAR_RENDER_WIDTH_DP,
                     heightDp = BAR_HEIGHT_DP,
                     progress = progressFraction,
-                    trackColor = colors.surface,
+                    trackColor = colors.surfaceVariant,
                     fillColor = colors.primary,
                     airedFraction = airedFraction,
                     dotColor = colors.tertiaryContainer
@@ -207,10 +205,7 @@ class WatchProgressWidgetProvider :
             )
             covers[entry.mediaId]?.let { setImageViewBitmap(R.id.item_cover, it) }
             setContentDescription(R.id.item_root, describe(context, row, isManga))
-            setOnClickPendingIntent(
-                R.id.item_root,
-                WidgetIntents.openMedia(context, appWidgetId, entry.mediaId)
-            )
+            setOnClickFillInIntent(R.id.item_root, WidgetIntents.openMediaFillIn(entry.mediaId))
         }
     }
 
@@ -240,14 +235,10 @@ class WatchProgressWidgetProvider :
         const val ANIME = "ANIME"
         const val MANGA = "MANGA"
 
-        const val MAX_ROWS = 8
-        const val COVER_WIDTH_DP = 40
-        const val ROW_HEIGHT_DP = 84
-        const val CHROME_DP = 64
+        const val COVER_WIDTH_DP = 52
         const val BAR_HEIGHT_DP = 6
 
-        /** Card padding, cover, and the gap between them, doubled for both sides of the widget. */
-        const val BAR_INSET_DP = 94
-        const val MIN_BAR_WIDTH_DP = 60
+        /** Wide enough that stretching never softens the rounded ends. */
+        const val BAR_RENDER_WIDTH_DP = 240
     }
 }

@@ -14,6 +14,7 @@ import com.anisync.android.widget.core.WidgetColors
 import com.anisync.android.widget.core.WidgetImageBudget
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntents
+import com.anisync.android.widget.core.WidgetMediaRow
 import com.anisync.android.widget.core.WidgetSizes
 import com.anisync.android.widget.core.WidgetState
 import com.anisync.android.widget.core.WidgetTime
@@ -135,27 +136,21 @@ class WeeklyCalendarWidgetProvider :
         // Follows the device's 12/24 hour setting. The time is a pill here rather than a fixed
         // column, so an AM/PM suffix has room.
         val time = WidgetTime.clock(context, episode.airingAt)
-        val episodeLabel = context.getString(R.string.widget_episode_long, episode.episode)
-        RemoteViews(context.packageName, R.layout.widget_weekly_calendar_item).apply {
-            setTextViewText(R.id.item_time, time)
-            setTextViewText(R.id.item_title, episode.titleUserPreferred)
-            setTextViewText(R.id.item_episode, episodeLabel)
-            setViewVisibility(
-                R.id.item_bookmark,
-                if (episode.isWatching) View.VISIBLE else View.GONE
+        WidgetMediaRow.build(
+            context = context,
+            title = episode.titleUserPreferred,
+            subtitle = context.getString(R.string.widget_episode_long, episode.episode),
+            trailing = time,
+            mediaId = episode.mediaId,
+            cover = covers[episode.id],
+            onMyList = episode.isWatching,
+            contentDescription = context.getString(
+                R.string.a11y_widget_airing_row,
+                episode.titleUserPreferred,
+                episode.episode,
+                time
             )
-            covers[episode.id]?.let { setImageViewBitmap(R.id.item_cover, it) }
-            setContentDescription(
-                R.id.item_root,
-                context.getString(
-                    R.string.a11y_widget_airing_row,
-                    episode.titleUserPreferred,
-                    episode.episode,
-                    time
-                )
-            )
-            setOnClickFillInIntent(R.id.item_root, WidgetIntents.openMediaFillIn(episode.mediaId))
-        }
+        )
     }
 
     private fun dayCell(

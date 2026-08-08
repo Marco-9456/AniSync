@@ -14,7 +14,7 @@ import com.anisync.android.widget.core.WidgetColors
 import com.anisync.android.widget.core.WidgetImageBudget
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntents
-import com.anisync.android.widget.core.WidgetRows
+import com.anisync.android.widget.core.WidgetMediaRow
 import com.anisync.android.widget.core.WidgetSizes
 import com.anisync.android.widget.core.WidgetState
 import com.anisync.android.widget.core.WidgetTime
@@ -34,9 +34,19 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
         val episodes: List<AiringScheduleEntity>,
         val myListOnly: Boolean,
         val nowSeconds: Long
-    )
+    ) {
+        /**
+         * What the hero card shows: the next episode still to air, or the last one once the day is
+         * over. Showing nothing on a day that has entries would be the wrong answer.
+         */
+        val next: AiringScheduleEntity?
+            get() = episodes.firstOrNull { it.airingAt > nowSeconds } ?: episodes.lastOrNull()
+    }
 
     override val declaredSizes = WidgetSizes.ladder(minHeightDp = 100)
+
+    override val listViewId = R.id.widget_list
+    override val listEmptyViewId = R.id.widget_empty
 
     override suspend fun snapshot(context: Context, appWidgetId: Int): Snapshot {
         val deps = context.widgetDeps()
@@ -46,16 +56,13 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
         val end = start + WidgetTime.DAY
 
         val dao = deps.airingScheduleDao()
+        // No cap. The list scrolls, so the whole day is shown.
         val episodes = if (myListOnly) {
             dao.getAiringBetweenForUser(ownerId, start, end)
         } else {
             dao.getAiringBetween(ownerId, start, end)
         }
-        return Snapshot(
-            episodes = episodes.take(MAX_ROWS),
-            myListOnly = myListOnly,
-            nowSeconds = System.currentTimeMillis() / 1000
-        )
+        return Snapshot(episodes, myListOnly, System.currentTimeMillis() / 1000)
     }
 
     override fun coverRequests(context: Context, snapshot: Snapshot) =
@@ -88,23 +95,26 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
             R.id.chip_mine,
             WidgetIntents.setState(context, javaClass, appWidgetId, STATE_MY_LIST, "true")
         )
-        views.setContentDescription(
-            R.id.chip_all,
-            context.getString(R.string.a11y_widget_filter_all)
-        )
-        views.setContentDescription(
-            R.id.chip_mine,
-            context.getString(R.string.a11y_widget_filter_mine)
-        )
-
+        views.setContentDescription(R.id.chip_all, context.getString(R.string.a11y_widget_filter_all))
+        views.setContentDescription(R.id.chip_mine, context.getString(R.string.a11y_widget_filter_mine))
         views.setViewVisibility(
             R.id.widget_title,
             if (WidgetSizes.isNarrow(size)) View.GONE else View.VISIBLE
         )
 
-        if (snapshot.episodes.isEmpty()) {
-            views.setViewVisibility(R.id.widget_list, View.GONE)
-            views.setViewVisibility(R.id.widget_empty, View.VISIBLE)
+        val isEmpty = snapshot.episodes.isEmpty()
+        // At short sizes a list is a header and one clipped row. The shipped widget gave the whole
+        // surface to a single card here and dropped the chrome with it, which is what this does.
+        val short = WidgetSizes.isShort(size)
+        val hero = !isEmpty && short
+        views.setViewVisibility(R.id.widget_header, if (short) View.GONE else View.VISIBLE)
+        views.setViewVisibility(R.id.widget_filters, if (short) View.GONE else View.VISIBLE)
+
+        views.setViewVisibility(R.id.widget_empty, if (isEmpty) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_hero, if (hero) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_list, if (!isEmpty && !hero) View.VISIBLE else View.GONE)
+
+        if (isEmpty) {
             views.setTextViewText(
                 R.id.widget_empty_title,
                 context.getString(
@@ -122,51 +132,79 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
             return views
         }
 
-        views.setViewVisibility(R.id.widget_empty, View.GONE)
-        views.setViewVisibility(R.id.widget_list, View.VISIBLE)
-        views.removeAllViews(R.id.widget_list)
-
-        val rows = WidgetRows.fit(size, ROW_HEIGHT_DP, CHROME_DP, MAX_ROWS)
-        snapshot.episodes.take(rows).forEach { episode ->
-            views.addView(R.id.widget_list, row(context, appWidgetId, episode, covers))
+        if (hero) {
+            snapshot.next?.let { bindHero(context, views, appWidgetId, it, covers) }
         }
+
+        views.setPendingIntentTemplate(
+            R.id.widget_list,
+            WidgetIntents.mediaTemplate(context, appWidgetId)
+        )
         return views
     }
 
-    private fun row(
+    override fun items(
         context: Context,
+        appWidgetId: Int,
+        snapshot: Snapshot,
+        covers: Map<Int, Bitmap?>
+    ): List<RemoteViews> = snapshot.episodes.map { episode ->
+        val time = WidgetTime.clock(context, episode.airingAt)
+        WidgetMediaRow.build(
+            context = context,
+            title = episode.titleUserPreferred,
+            subtitle = context.getString(R.string.widget_episode_long, episode.episode),
+            trailing = time,
+            mediaId = episode.mediaId,
+            cover = covers[episode.id],
+            onMyList = episode.isWatching,
+            contentDescription = context.getString(
+                R.string.a11y_widget_airing_row,
+                episode.titleUserPreferred,
+                episode.episode,
+                time
+            )
+        )
+    }
+
+    private fun bindHero(
+        context: Context,
+        views: RemoteViews,
         appWidgetId: Int,
         episode: AiringScheduleEntity,
         covers: Map<Int, Bitmap?>
-    ): RemoteViews {
+    ) {
         val time = WidgetTime.clock(context, episode.airingAt)
-        val episodeLabel = context.getString(R.string.widget_episode_long, episode.episode)
-        return RemoteViews(context.packageName, R.layout.widget_airing_today_item).apply {
-            setTextViewText(R.id.item_title, episode.titleUserPreferred)
-            setTextViewText(R.id.item_episode, episodeLabel)
-            setTextViewText(R.id.item_time, time)
-            covers[episode.id]?.let { setImageViewBitmap(R.id.item_cover, it) }
-            setContentDescription(
-                R.id.item_root,
-                context.getString(
-                    R.string.a11y_widget_airing_row,
-                    episode.titleUserPreferred,
-                    episode.episode,
-                    time
-                )
+        views.setTextViewText(R.id.hero_time, context.getString(R.string.widget_airing_at, time))
+        views.setTextViewText(R.id.hero_title, episode.titleUserPreferred)
+        views.setTextViewText(
+            R.id.hero_episode,
+            context.getString(R.string.widget_episode_badge, episode.episode)
+        )
+        views.setViewVisibility(
+            R.id.hero_bookmark,
+            if (episode.isWatching) View.VISIBLE else View.GONE
+        )
+        covers[episode.id]?.let { views.setImageViewBitmap(R.id.hero_cover, it) }
+        views.setContentDescription(
+            R.id.widget_hero,
+            context.getString(
+                R.string.a11y_widget_airing_row,
+                episode.titleUserPreferred,
+                episode.episode,
+                time
             )
-            setOnClickPendingIntent(
-                R.id.item_root,
-                WidgetIntents.openMedia(context, appWidgetId, episode.mediaId)
-            )
-        }
+        )
+        // Not part of the collection, so this one carries its own PendingIntent rather than a
+        // fill-in against the list's template.
+        views.setOnClickPendingIntent(
+            R.id.widget_hero,
+            WidgetIntents.openMedia(context, appWidgetId, episode.mediaId)
+        )
     }
 
     private companion object {
         const val STATE_MY_LIST = "my_list_only"
-        const val MAX_ROWS = 12
-        const val COVER_WIDTH_DP = 36
-        const val ROW_HEIGHT_DP = 72
-        const val CHROME_DP = 64
+        const val COVER_WIDTH_DP = 64
     }
 }

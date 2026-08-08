@@ -29,11 +29,17 @@ object WidgetSizes {
      */
     fun isNarrow(size: SizeFCompat): Boolean = size.width < WIDE_WIDTH
 
-    /** True on the shortest rung, where a header would leave no room for a single row. */
+    /**
+     * True where the chrome would leave no room for a whole row.
+     *
+     * A header and a filter row cost about 96dp together, and a card is around 98dp. Below this a
+     * widget showing both is showing a header and a sliver, so the short layouts drop the chrome
+     * and show one card instead.
+     */
     fun isShort(size: SizeFCompat): Boolean = size.height < SHORT_HEIGHT
 
     private const val WIDE_WIDTH = 300f
-    private const val SHORT_HEIGHT = 150f
+    private const val SHORT_HEIGHT = 200f
     private val WIDTHS = listOf(180, WIDE_WIDTH.toInt())
     private val HEIGHTS = listOf(100, 150, 200, 250, 300, 350, 400)
     private const val MAX_SIZES = 16
