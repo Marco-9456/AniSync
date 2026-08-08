@@ -17,7 +17,7 @@
     <LinearLayout
         android:id="@+id/widget_header"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="56dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp">
@@ -49,17 +49,43 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <!--
-          One pill that toggles, not two chips. The shipped widget showed the current filter and
-          swapped it on tap, so the control is a single target reading "All" or "My List".
-        -->
+    </LinearLayout>
+
+    <!--
+      Two chips rather than one toggling pill: both states are visible at once, so the control reads
+      as a choice instead of a button whose label happens to be the current value.
+
+      On their own row because they do not fit beside an 18sp title at any width this widget is
+      likely to be placed at. Sharing the line meant the title ellipsised to "Weekly Sch…" instead,
+      which is a worse trade than one short row.
+    -->
+    <LinearLayout
+        android:id="@+id/widget_filters"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end|center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp">
+
         <TextView
-            android:id="@+id/widget_filter"
+            android:id="@+id/chip_all"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="6dp"
+            android:text="@string/widget_filter_all"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/chip_mine"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:paddingHorizontal="14dp"
-            android:paddingVertical="8dp"
+            android:paddingVertical="6dp"
+            android:text="@string/widget_filter_mine"
             android:textSize="12sp"
             android:textStyle="bold" />
     </LinearLayout>

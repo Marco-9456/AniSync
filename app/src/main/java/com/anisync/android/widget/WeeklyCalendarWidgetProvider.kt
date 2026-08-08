@@ -9,6 +9,7 @@ import androidx.core.util.SizeFCompat
 import com.anisync.android.R
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.widget.core.AniSyncWidgetProvider
+import com.anisync.android.widget.core.WidgetChips
 import com.anisync.android.widget.core.WidgetColors
 import com.anisync.android.widget.core.WidgetImageBudget
 import com.anisync.android.widget.core.WidgetImageLoader
@@ -79,40 +80,18 @@ class WeeklyCalendarWidgetProvider :
         val views = RemoteViews(context.packageName, R.layout.widget_weekly_calendar)
         val colors = WidgetColors.of(context)
 
-        // One pill showing the active filter, tapped to swap it, as the shipped widget had.
-        views.setTextViewText(
-            R.id.widget_filter,
-            context.getString(
-                if (snapshot.myListOnly) R.string.widget_filter_mine else R.string.widget_filter_all
-            )
-        )
-        views.setInt(
-            R.id.widget_filter,
-            "setBackgroundResource",
-            if (snapshot.myListOnly) R.drawable.widget_pill_bg_accent
-            else R.drawable.widget_pill_bg_muted
-        )
-        views.setTextColor(
-            R.id.widget_filter,
-            if (snapshot.myListOnly) colors.onPrimary else colors.onSurfaceVariant
+        WidgetChips.apply(views, context, R.id.chip_all, !snapshot.myListOnly, colors)
+        WidgetChips.apply(views, context, R.id.chip_mine, snapshot.myListOnly, colors)
+        views.setOnClickPendingIntent(
+            R.id.chip_all,
+            WidgetIntents.setState(context, javaClass, appWidgetId, STATE_MY_LIST, "false")
         )
         views.setOnClickPendingIntent(
-            R.id.widget_filter,
-            WidgetIntents.setState(
-                context,
-                javaClass,
-                appWidgetId,
-                STATE_MY_LIST,
-                (!snapshot.myListOnly).toString()
-            )
+            R.id.chip_mine,
+            WidgetIntents.setState(context, javaClass, appWidgetId, STATE_MY_LIST, "true")
         )
-        views.setContentDescription(
-            R.id.widget_filter,
-            context.getString(
-                if (snapshot.myListOnly) R.string.a11y_widget_filter_mine
-                else R.string.a11y_widget_filter_all
-            )
-        )
+        views.setContentDescription(R.id.chip_all, context.getString(R.string.a11y_widget_filter_all))
+        views.setContentDescription(R.id.chip_mine, context.getString(R.string.a11y_widget_filter_mine))
         views.setViewVisibility(
             R.id.widget_title,
             if (WidgetSizes.isNarrow(size)) View.GONE else View.VISIBLE
@@ -153,8 +132,10 @@ class WeeklyCalendarWidgetProvider :
         snapshot: Snapshot,
         covers: Map<Int, Bitmap?>
     ): List<RemoteViews> = snapshot.episodes.map { episode ->
-        val time = WidgetTime.clock24(episode.airingAt)
-        val episodeLabel = context.getString(R.string.widget_episode_badge, episode.episode)
+        // Follows the device's 12/24 hour setting. The time is a pill here rather than a fixed
+        // column, so an AM/PM suffix has room.
+        val time = WidgetTime.clock(context, episode.airingAt)
+        val episodeLabel = context.getString(R.string.widget_episode_long, episode.episode)
         RemoteViews(context.packageName, R.layout.widget_weekly_calendar_item).apply {
             setTextViewText(R.id.item_time, time)
             setTextViewText(R.id.item_title, episode.titleUserPreferred)

@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  One episode card: airing time, poster, title, episode badge, and the bookmark that marks a series
-  already on the account's list. Matches the shipped Glance card, which was 16dp horizontal / 6dp
-  vertical outside the card and 12dp inside it.
+  One episode card.
+
+  Cover on the left, title above its metadata, airing time as a pill on the right. Sized to the
+  shipped card's proportions rather than the tighter row this started as: 12dp inside the card and a
+  52x74 poster, so the card carries its weight against the day strip above it.
+
+  The poster's corners are rounded into the bitmap by WidgetImageLoader, not by this layout. A
+  rounded background drawable sits behind the bitmap and does nothing to it, and clipToOutline is
+  not a remotable property.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -19,20 +25,10 @@
         android:orientation="horizontal"
         android:padding="12dp">
 
-        <TextView
-            android:id="@+id/item_time"
-            android:layout_width="48dp"
-            android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:textColor="@color/widget_primary"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
         <ImageView
             android:id="@+id/item_cover"
-            android:layout_width="56dp"
-            android:layout_height="80dp"
-            android:layout_marginStart="12dp"
+            android:layout_width="52dp"
+            android:layout_height="74dp"
             android:background="@drawable/widget_poster_bg"
             android:contentDescription="@null"
             android:scaleType="centerCrop" />
@@ -40,7 +36,7 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -55,7 +51,7 @@
                 android:textStyle="bold" />
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:gravity="center_vertical"
@@ -65,12 +61,10 @@
                     android:id="@+id/item_episode"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/widget_badge_tertiary_bg"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="4dp"
-                    android:textColor="@color/widget_on_tertiary_container"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_on_surface_variant"
+                    android:textSize="12sp" />
 
                 <ImageView
                     android:id="@+id/item_bookmark"
@@ -83,5 +77,18 @@
                     android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/item_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_pill_bg"
+            android:maxLines="1"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="5dp"
+            android:textColor="@color/widget_on_primary_container"
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </LinearLayout>
 </FrameLayout>
