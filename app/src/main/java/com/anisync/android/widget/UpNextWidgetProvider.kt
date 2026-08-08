@@ -50,7 +50,8 @@ class UpNextWidgetProvider : AniSyncWidgetProvider<UpNextWidgetProvider.Snapshot
         WidgetImageBudget.posterSize(
             context = context,
             displayWidthDp = COVER_WIDTH_DP,
-            imageCount = snapshot.episodes.size
+            imageCount = snapshot.episodes.size,
+            variantCount = declaredSizes.size
         )
 
     override fun build(

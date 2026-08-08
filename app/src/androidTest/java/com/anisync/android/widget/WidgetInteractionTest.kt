@@ -15,15 +15,16 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 
 /**
  * Binds real widget instances and drives their taps end to end.
  *
- * This is the test the Glance implementation could not have: its unit harness does not render and
- * cannot click, which is exactly the surface that kept breaking. Here each widget is bound to a
- * real `AppWidgetHost`, the tap `PendingIntent` is fired the way the launcher fires it, and the
- * assertion is on the state and the views the host is handed back.
+ * The Glance version could not have this test. Its unit harness does not render and cannot click,
+ * which is exactly the part that kept breaking. Here each widget is bound to a real AppWidgetHost,
+ * the tap PendingIntent is fired the way the launcher fires it, and we assert on the state and the
+ * views the host gets back.
  *
  * Requires bind permission:
  *
@@ -64,8 +65,8 @@ class WidgetInteractionTest {
     fun calendarDayTaps_inRapidSuccession_settleOnTheLastOne() {
         val id = bind(WeeklyCalendarWidgetProvider::class.java)
 
-        // No waiting between sends. This is the "tapping the same control repeatedly" case, where
-        // the previous implementation could leave the day strip and the list disagreeing.
+        // No waiting between sends. This is the mash-the-same-button case, where the old version
+        // could leave the day strip and the list disagreeing.
         (0..6).forEach { day ->
             WidgetIntents
                 .setState(context, WeeklyCalendarWidgetProvider::class.java, id, DAY, "$day")
@@ -125,10 +126,39 @@ class WidgetInteractionTest {
             val views = requireNotNull(host.lastPublished(id)) {
                 "${provider.simpleName} published nothing"
             }
-            // apply() throws on a view type RemoteViews does not allow, which is the failure mode
-            // that otherwise only shows up as a blank widget on someone's home screen.
+            // apply() throws on a view type RemoteViews will not take. Otherwise that only shows up
+            // as a blank widget on someone home screen.
             views.apply(context, FrameLayout(context))
         }
+    }
+
+    /**
+     * The data path behind the API 26 to 30 fallback.
+     *
+     * Below API 31 the rows do not ride inside the RemoteViews. The host binds
+     * WidgetCollectionService and its factory calls loadItems to rebuild them from scratch in
+     * whatever process it is in. If that comes back empty those devices get a header and an empty
+     * list, with no error anywhere.
+     *
+     * Covers the rebuild, not the binding. A host only binds the service once it really inflates the
+     * list, which the recording host here does not do.
+     */
+    @Test
+    fun collectionRowsRebuildFromScratch() {
+        val provider = WeeklyCalendarWidgetProvider()
+        val id = bind(WeeklyCalendarWidgetProvider::class.java)
+
+        val rebuilt = runBlocking { provider.loadItems(context, id) }
+        val direct = runBlocking {
+            val snapshot = provider.snapshot(context, id)
+            provider.items(context, id, snapshot, emptyMap())
+        }
+
+        assertEquals(
+            "The service would serve a different number of rows than the widget shows",
+            direct.size,
+            rebuilt.size
+        )
     }
 
     @Test
@@ -146,11 +176,11 @@ class WidgetInteractionTest {
     }
 
     /**
-     * The case the whole rewrite exists for.
+     * The case the rewrite exists for.
      *
-     * Under Doze, Glance's session times out after five seconds and the next tap has to enqueue a
-     * WorkManager job to rebuild it. Here the tap is a broadcast the provider answers directly, so
-     * the budget is the same idle or not.
+     * Under Doze the Glance session times out after five seconds and the next tap has to enqueue a
+     * WorkManager job to rebuild it. Here the tap is a broadcast the provider answers itself, so the
+     * budget is the same idle or not.
      */
     @Test
     fun tapAfterDeviceIdle_stillApplies() {
@@ -178,7 +208,7 @@ class WidgetInteractionTest {
         } finally {
             shell("dumpsys deviceidle unforce")
             shell("dumpsys battery reset")
-            // Leaving idle is not instant, and the next test would inherit the throttling.
+            // Coming out of idle takes a moment, and the next test would inherit the throttling.
             val deadline = System.currentTimeMillis() + AWAIT_TIMEOUT_MS
             while (System.currentTimeMillis() < deadline &&
                 shell("dumpsys deviceidle get deep").contains("IDLE")
@@ -204,12 +234,11 @@ class WidgetInteractionTest {
     }
 
     /**
-     * Fires a state-changing tap and returns how long until that state was actually applied.
+     * Fires a state changing tap and returns how long until that state actually applied.
      *
-     * Waiting on "the host got an update" is not precise enough for these: a periodic refresh or a
-     * queued resize can trip that latch while the tap is still in flight, and the assertion then
-     * reads state the tap has not written. Polling the state itself is what the acceptance bar
-     * actually says, so it is what gets measured.
+     * Waiting on "the host got an update" is too loose here. A periodic refresh or a queued resize
+     * can trip that latch while the tap is still in flight, and then we assert on state the tap never
+     * wrote. Polling the state itself is what we actually promised, so that is what we measure.
      */
     private fun fireAndAwaitState(action: () -> Unit, applied: () -> Boolean): Long {
         val start = System.nanoTime()
@@ -225,13 +254,13 @@ class WidgetInteractionTest {
     /**
      * Waits for a burst of taps to reach [expected].
      *
-     * Polling for "the value stopped changing" is wrong here: the gap between two deliveries looks
-     * exactly like the end of the burst. Broadcasts to one receiver are ordered and each handler
-     * commits before it renders, so the burst is finished when the last value has landed.
+     * Polling for "the value stopped changing" does not work: the gap between two deliveries looks
+     * the same as the end of the burst. Broadcasts to one receiver are ordered and each handler
+     * commits before it renders, so the burst is done once the last value lands.
      */
     private fun awaitValue(appWidgetId: Int, key: String, expected: Int) {
-        // Generous on purpose. This test is about which value wins, not how fast one tap lands,
-        // and seven renders back to back is more work than any single tap does.
+        // Generous on purpose. This is about which value wins, not how fast one tap lands, and seven
+        // renders back to back is more work than a single tap.
         val deadline = System.currentTimeMillis() + BURST_TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
             if (WidgetState.getInt(context, appWidgetId, key, -1) == expected) return
@@ -251,7 +280,7 @@ class WidgetInteractionTest {
         const val DAY = "selected_day"
         const val TYPE = "media_type"
 
-        /** The acceptance bar, with slack for instrumentation overhead. */
+        /** The bar we promised, plus slack for instrumentation overhead. */
         const val TAP_BUDGET_MS = 1_000L
         const val AWAIT_TIMEOUT_MS = 5_000L
         const val BURST_TIMEOUT_MS = 20_000L

@@ -40,7 +40,8 @@ class TrendingWidgetProvider : AniSyncWidgetProvider<TrendingWidgetProvider.Snap
         WidgetImageBudget.posterSize(
             context = context,
             displayWidthDp = COVER_WIDTH_DP,
-            imageCount = snapshot.media.size
+            imageCount = snapshot.media.size,
+            variantCount = declaredSizes.size
         )
 
     override fun build(

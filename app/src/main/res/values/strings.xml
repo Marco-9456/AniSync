@@ -812,7 +812,11 @@
     <string name="widget_wp_left">%1$d left</string>
     <string name="widget_wp_left_manga">%1$d ch left</string>
     <string name="widget_wp_ongoing">Ongoing</string>
-    <!-- Replaces the progress bar for a series with no published total. -->
+    <!-- A series with no published total measures against what has aired so far instead. -->
+    <string name="widget_wp_behind">%1$d behind</string>
+    <string name="widget_wp_caught_up">Caught up</string>
+    <string name="widget_wp_progress_aired" translatable="false">%1$d / %2$d aired</string>
+    <!-- Replaces the progress bar when there is no total and no broadcast schedule either. -->
     <string name="widget_wp_ongoing_anime">%1$d watched, still airing</string>
     <string name="widget_wp_ongoing_manga">%1$d read, still running</string>
     <string name="widget_wp_syncing_manga">Open AniSync once to sync your manga</string>

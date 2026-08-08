@@ -231,8 +231,11 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
             if (listViewId != 0) {
                 WidgetCollection.notifyChanged(context, appWidgetId, listViewId)
             }
+        } catch (t: IllegalArgumentException) {
+            // The widget was removed between the info check above and this call. Nothing to draw
+            // on and nothing wrong, so it does not get an error card or a stack trace.
+            Log.d(TAG, "Skipped ${javaClass.simpleName}/$appWidgetId, no longer bound")
         } catch (t: Throwable) {
-            // An oversized RemoteViews throws here rather than failing silently on the host side.
             Log.e(TAG, "Update rejected for ${javaClass.simpleName}/$appWidgetId", t)
             publishError(context, manager, appWidgetId)
         }

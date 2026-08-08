@@ -87,7 +87,8 @@ class WatchProgressWidgetProvider :
         WidgetImageBudget.posterSize(
             context = context,
             displayWidthDp = COVER_WIDTH_DP,
-            imageCount = snapshot.rows.size
+            imageCount = snapshot.rows.size,
+            variantCount = declaredSizes.size
         )
 
     override fun build(
@@ -164,15 +165,22 @@ class WatchProgressWidgetProvider :
         colors: WidgetColors
     ): RemoteViews {
         val entry = row.entry
-        val progressFraction = row.total
+
+        // Episodes released so far. For a series with no announced length this is the only end the
+        // bar can measure against, and it is arguably the more useful one anyway: what it shows is
+        // whether the account is caught up, not how far through an unknown whole it is.
+        val aired = entry.nextAiringEpisode?.minus(1)?.takeIf { it > 0 }
+        val scale = row.total ?: aired
+        val againstAired = row.total == null && aired != null
+
+        val progressFraction = scale
             ?.takeIf { it > 0 }
             ?.let { (entry.progress.toFloat() / it).coerceIn(0f, 1f) }
             ?: 0f
 
-        // The aired marker only means something for anime that is still broadcasting, and only when
-        // the account is actually behind it.
-        val airedFraction = if (!isManga) {
-            val aired = entry.nextAiringEpisode?.minus(1)
+        // The marker sits where the latest aired episode falls. Pointless when the bar already ends
+        // there, which is exactly the unknown-total case.
+        val airedFraction = if (!isManga && !againstAired) {
             val total = row.total
             if (aired != null && total != null && total > 0 && aired > entry.progress) {
                 (aired.toFloat() / total).coerceIn(0f, 1f)
@@ -183,29 +191,38 @@ class WatchProgressWidgetProvider :
             null
         }
 
-        val remainingLabel = row.remaining?.let {
-            context.getString(
+        val behind = aired?.minus(entry.progress)?.coerceAtLeast(0)
+        val remainingLabel = when {
+            row.remaining != null -> context.getString(
                 if (isManga) R.string.widget_wp_left_manga else R.string.widget_wp_left,
-                it
+                row.remaining
             )
-        } ?: context.getString(R.string.widget_wp_ongoing)
+            // No end to count down to, so count against what is out instead.
+            behind != null && behind > 0 -> context.getString(R.string.widget_wp_behind, behind)
+            behind != null -> context.getString(R.string.widget_wp_caught_up)
+            else -> context.getString(R.string.widget_wp_ongoing)
+        }
 
-        val meta = row.total?.let {
-            context.getString(R.string.widget_wp_progress, entry.progress, it)
-        } ?: context.getString(
-            if (isManga) R.string.widget_wp_read else R.string.widget_wp_current_ep,
-            entry.progress
-        )
+        val meta = when {
+            row.total != null ->
+                context.getString(R.string.widget_wp_progress, entry.progress, row.total)
+            againstAired ->
+                context.getString(R.string.widget_wp_progress_aired, entry.progress, aired)
+            else -> context.getString(
+                if (isManga) R.string.widget_wp_read else R.string.widget_wp_current_ep,
+                entry.progress
+            )
+        }
 
         return RemoteViews(context.packageName, R.layout.widget_item_progress).apply {
             setTextViewText(R.id.item_title, entry.titleUserPreferred)
             setTextViewText(R.id.item_remaining, remainingLabel)
             setTextViewText(R.id.item_meta, meta)
 
-            if (row.total == null) {
-                // An ongoing series has no end to measure against, so a bar would be permanently
-                // empty, which reads as broken rather than as unknown. The row drops the bar and
-                // leans on the count instead, which is the only real information there is.
+            if (scale == null) {
+                // Nothing to measure against at all: no announced total and no broadcast schedule,
+                // which in practice means manga. A bar here could only ever read empty, which looks
+                // broken rather than unknown, so the row shows the count instead.
                 setViewVisibility(R.id.item_bar, View.GONE)
                 setViewVisibility(R.id.item_ongoing, View.VISIBLE)
                 setTextViewText(
