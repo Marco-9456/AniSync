@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Up Next. No state of its own, so no chip row: header, then the scrolling list.
--->
+<!-- Up Next. No state of its own, so no chip row: header, then the list. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
@@ -18,11 +16,13 @@
         android:paddingHorizontal="16dp">
 
         <FrameLayout
+            android:id="@+id/widget_icon_plate"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:background="@drawable/widget_icon_plate_bg">
 
             <ImageView
+                android:id="@+id/widget_icon"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center"
@@ -69,6 +69,7 @@
             android:paddingHorizontal="16dp">
 
             <ImageView
+                android:id="@+id/widget_empty_icon"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:contentDescription="@null"
@@ -76,6 +77,7 @@
                 android:tint="@color/widget_on_surface_variant" />
 
             <TextView
+                android:id="@+id/widget_empty_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -85,6 +87,7 @@
                 android:textSize="16sp" />
 
             <TextView
+                android:id="@+id/widget_empty_body"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"

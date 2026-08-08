@@ -18,6 +18,7 @@ import com.anisync.android.widget.core.WidgetIntents
 import com.anisync.android.widget.core.WidgetProgressRenderer
 import com.anisync.android.widget.core.WidgetSizes
 import com.anisync.android.widget.core.WidgetState
+import com.anisync.android.widget.core.WidgetTheme
 import com.anisync.android.widget.core.activeOwnerId
 import com.anisync.android.widget.core.widgetDeps
 import com.anisync.android.worker.LibrarySyncWorker
@@ -100,6 +101,7 @@ class WatchProgressWidgetProvider :
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_watch_progress)
         val colors = WidgetColors.of(context)
+        WidgetTheme.applyChrome(views, colors)
         val isManga = snapshot.type == MediaType.MANGA
 
         WidgetChips.apply(views, context, R.id.chip_anime, !isManga, colors)
@@ -215,6 +217,12 @@ class WatchProgressWidgetProvider :
         }
 
         return RemoteViews(context.packageName, R.layout.widget_item_progress).apply {
+            WidgetTheme.card(this, R.id.item_root, colors)
+            WidgetTheme.poster(this, R.id.item_cover, colors)
+            WidgetTheme.text(this, R.id.item_title, colors.onSurface, colors)
+            WidgetTheme.text(this, R.id.item_meta, colors.onSurfaceVariant, colors)
+            WidgetTheme.badge(this, R.id.item_remaining, colors.primaryContainer, colors.onPrimaryContainer, colors)
+            WidgetTheme.badge(this, R.id.item_ongoing, colors.surfaceVariant, colors.onSurfaceVariant, colors)
             setTextViewText(R.id.item_title, entry.titleUserPreferred)
             setTextViewText(R.id.item_remaining, remainingLabel)
             setTextViewText(R.id.item_meta, meta)

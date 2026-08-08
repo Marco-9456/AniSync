@@ -9,10 +9,12 @@ import androidx.core.util.SizeFCompat
 import com.anisync.android.R
 import com.anisync.android.data.local.entity.TrendingEntity
 import com.anisync.android.widget.core.AniSyncWidgetProvider
+import com.anisync.android.widget.core.WidgetColors
 import com.anisync.android.widget.core.WidgetImageBudget
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntents
 import com.anisync.android.widget.core.WidgetSizes
+import com.anisync.android.widget.core.WidgetTheme
 import com.anisync.android.widget.core.widgetDeps
 
 /**
@@ -52,6 +54,8 @@ class TrendingWidgetProvider : AniSyncWidgetProvider<TrendingWidgetProvider.Snap
         covers: Map<Int, Bitmap?>
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_trending)
+        val colors = WidgetColors.of(context)
+        WidgetTheme.applyChrome(views, colors)
         views.setOnClickPendingIntent(
             R.id.widget_search,
             WidgetIntents.openDiscover(context, appWidgetId)
@@ -81,34 +85,43 @@ class TrendingWidgetProvider : AniSyncWidgetProvider<TrendingWidgetProvider.Snap
         appWidgetId: Int,
         snapshot: Snapshot,
         covers: Map<Int, Bitmap?>
-    ): List<RemoteViews> = snapshot.media.map { media ->
-        RemoteViews(context.packageName, R.layout.widget_item_trending).apply {
-            setTextViewText(R.id.item_title, media.titleUserPreferred)
-            setTextViewText(
-                R.id.item_rank,
-                context.getString(R.string.widget_trending_rank, media.rank)
-            )
-            val score = media.averageScore
-            // Score and star travel together. A lone star next to nothing reads as a broken row.
-            val scoreVisibility = if (score != null) View.VISIBLE else View.GONE
-            setViewVisibility(R.id.item_score, scoreVisibility)
-            setViewVisibility(R.id.item_star, scoreVisibility)
-            if (score != null) {
+    ): List<RemoteViews> {
+        val colors = WidgetColors.of(context)
+        return snapshot.media.map { media ->
+            RemoteViews(context.packageName, R.layout.widget_item_trending).apply {
+                WidgetTheme.card(this, R.id.item_root, colors)
+                WidgetTheme.poster(this, R.id.item_cover, colors)
+                WidgetTheme.text(this, R.id.item_title, colors.onSurface, colors)
+                WidgetTheme.text(this, R.id.item_score, colors.onSurfaceVariant, colors)
+                WidgetTheme.icon(this, R.id.item_star, colors.primary, colors)
+                WidgetTheme.badge(this, R.id.item_rank, colors.primary, colors.onPrimary, colors)
+                setTextViewText(R.id.item_title, media.titleUserPreferred)
                 setTextViewText(
-                    R.id.item_score,
-                    context.getString(R.string.widget_trending_score, score)
+                    R.id.item_rank,
+                    context.getString(R.string.widget_trending_rank, media.rank)
                 )
+                val score = media.averageScore
+                // Score and star travel together. A lone star beside nothing reads as a broken row.
+                val scoreVisibility = if (score != null) View.VISIBLE else View.GONE
+                setViewVisibility(R.id.item_score, scoreVisibility)
+                setViewVisibility(R.id.item_star, scoreVisibility)
+                if (score != null) {
+                    setTextViewText(
+                        R.id.item_score,
+                        context.getString(R.string.widget_trending_score, score)
+                    )
+                }
+                covers[media.id]?.let { setImageViewBitmap(R.id.item_cover, it) }
+                setContentDescription(
+                    R.id.item_root,
+                    context.getString(
+                        R.string.a11y_widget_trending_row,
+                        media.rank,
+                        media.titleUserPreferred
+                    )
+                )
+                setOnClickFillInIntent(R.id.item_root, WidgetIntents.openMediaFillIn(media.id))
             }
-            covers[media.id]?.let { setImageViewBitmap(R.id.item_cover, it) }
-            setContentDescription(
-                R.id.item_root,
-                context.getString(
-                    R.string.a11y_widget_trending_row,
-                    media.rank,
-                    media.titleUserPreferred
-                )
-            )
-            setOnClickFillInIntent(R.id.item_root, WidgetIntents.openMediaFillIn(media.id))
         }
     }
 

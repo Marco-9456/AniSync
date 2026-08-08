@@ -1,6 +1,7 @@
 package com.anisync.android.widget.core
 
 import android.content.Context
+import com.anisync.android.data.AppSettings
 import com.anisync.android.data.account.AccountStore
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.dao.LibraryDao
@@ -23,6 +24,9 @@ interface WidgetEntryPoint {
     fun trendingDao(): TrendingDao
     fun libraryDao(): LibraryDao
     fun accountStore(): AccountStore
+
+    /** Read for the theme: seed colour, palette style, light/dark and AMOLED. */
+    fun appSettings(): AppSettings
 }
 
 fun Context.widgetDeps(): WidgetEntryPoint =

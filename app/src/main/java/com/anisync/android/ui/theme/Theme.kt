@@ -1,5 +1,6 @@
 package com.anisync.android.ui.theme
 import android.content.ComponentCallbacks
+import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -23,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.anisync.android.data.ThemeMode
 import com.materialkolor.PaletteStyle
+import com.materialkolor.dynamicColorScheme
 import com.materialkolor.rememberDynamicColorScheme
 
 private val lightScheme = lightColorScheme(
@@ -465,3 +467,41 @@ fun shareCardColorScheme(dark: Boolean, amoled: Boolean = false, seed: Color? = 
     return if (amoled && dark) base.toAmoled() else base
 }
 
+
+/**
+ * The app's colour scheme, resolved without a composition, for the home-screen widgets.
+ *
+ * Widgets render in a broadcast receiver with no Compose runtime, so they cannot call [AppTheme] or
+ * any of the `remember`-prefixed builders. This mirrors the same priority chain (user seed, then
+ * Android dynamic, then the static brand scheme) so a widget and the app agree on hue rather than
+ * merely resembling each other.
+ *
+ * Lives here because [toAmoled] and the base schemes are private to this file.
+ */
+fun widgetColorScheme(
+    context: Context,
+    dark: Boolean,
+    amoled: Boolean,
+    seedColor: Color?,
+    paletteStyle: PaletteStyle,
+    dynamicColor: Boolean,
+): ColorScheme {
+    val base = when {
+        // isAmoled stays off here for the same reason AppTheme leaves it off: MaterialKolor's own
+        // variant blackens only background and surface, which looks patchy next to our containers.
+        seedColor != null -> dynamicColorScheme(
+            seedColor = seedColor,
+            isDark = dark,
+            isAmoled = false,
+            style = paletteStyle
+        )
+
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+            if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+
+        dark -> darkScheme
+        else -> lightScheme
+    }
+    // AMOLED is dark-only, matching AppTheme.
+    return if (amoled && dark) base.toAmoled() else base
+}

@@ -17,6 +17,7 @@ import com.anisync.android.widget.core.WidgetIntents
 import com.anisync.android.widget.core.WidgetMediaRow
 import com.anisync.android.widget.core.WidgetSizes
 import com.anisync.android.widget.core.WidgetState
+import com.anisync.android.widget.core.WidgetTheme
 import com.anisync.android.widget.core.WidgetTime
 import com.anisync.android.widget.core.activeOwnerId
 import com.anisync.android.widget.core.widgetDeps
@@ -85,6 +86,7 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_airing_today)
         val colors = WidgetColors.of(context)
+        WidgetTheme.applyChrome(views, colors)
 
         WidgetChips.apply(views, context, R.id.chip_all, !snapshot.myListOnly, colors)
         WidgetChips.apply(views, context, R.id.chip_mine, snapshot.myListOnly, colors)
@@ -159,6 +161,7 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
             trailing = time,
             mediaId = episode.mediaId,
             cover = covers[episode.id],
+            colors = WidgetColors.of(context),
             contentDescription = context.getString(
                 R.string.a11y_widget_airing_row,
                 episode.titleUserPreferred,

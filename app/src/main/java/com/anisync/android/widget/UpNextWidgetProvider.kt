@@ -9,19 +9,21 @@ import androidx.core.util.SizeFCompat
 import com.anisync.android.R
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.widget.core.AniSyncWidgetProvider
+import com.anisync.android.widget.core.WidgetColors
 import com.anisync.android.widget.core.WidgetImageBudget
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntents
 import com.anisync.android.widget.core.WidgetMediaRow
 import com.anisync.android.widget.core.WidgetSizes
+import com.anisync.android.widget.core.WidgetTheme
 import com.anisync.android.widget.core.WidgetTime
 import com.anisync.android.widget.core.activeOwnerId
 import com.anisync.android.widget.core.widgetDeps
 
 /**
- * Up Next: the next episodes from the account's watching list.
+ * Up Next: the next episodes from the watching list.
  *
- * No state of its own, so a tap only ever opens media details.
+ * No state of its own, so a tap here only ever opens media details.
  */
 class UpNextWidgetProvider : AniSyncWidgetProvider<UpNextWidgetProvider.Snapshot>() {
 
@@ -62,6 +64,8 @@ class UpNextWidgetProvider : AniSyncWidgetProvider<UpNextWidgetProvider.Snapshot
         covers: Map<Int, Bitmap?>
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_up_next)
+        val colors = WidgetColors.of(context)
+        WidgetTheme.applyChrome(views, colors)
         views.setViewVisibility(
             R.id.widget_header,
             if (WidgetSizes.isShort(size)) View.GONE else View.VISIBLE
@@ -92,6 +96,7 @@ class UpNextWidgetProvider : AniSyncWidgetProvider<UpNextWidgetProvider.Snapshot
             trailing = countdown,
             mediaId = episode.mediaId,
             cover = covers[episode.id],
+            colors = WidgetColors.of(context),
             contentDescription = context.getString(
                 R.string.a11y_widget_up_next_row,
                 episode.titleUserPreferred,
