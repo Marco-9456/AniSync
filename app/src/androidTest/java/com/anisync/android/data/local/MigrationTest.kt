@@ -3,6 +3,7 @@ package com.anisync.android.data.local
 import androidx.room.testing.MigrationTestHelper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,6 +53,59 @@ class MigrationTest {
             // Database created successfully
             close()
         }
+    }
+
+    /**
+     * v22 to v23 gave `airing_schedule` an `ownerId` in its primary key.
+     *
+     * This one matters more than most: `DatabaseModule` still builds with
+     * `fallbackToDestructiveMigration`, so a migration that does not produce exactly the schema
+     * Room expects wipes the user's data rather than crashing. `runMigrationsAndValidate` is the
+     * check that would otherwise never happen.
+     */
+    @Test
+    fun migrate22To23_scopesAiringScheduleByOwner() {
+        helper.createDatabase(TEST_DB, 22).apply {
+            execSQL(
+                """
+                INSERT INTO airing_schedule (
+                    id, mediaId, airingAt, episode, titleUserPreferred,
+                    coverUrl, format, isWatching, streamingSeriesUrl
+                ) VALUES (1, 100, 1700000000, 3, 'Test Anime', NULL, 'TV', 1, NULL)
+                """.trimIndent()
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(
+            TEST_DB,
+            23,
+            true,
+            Migrations.MIGRATION_22_23
+        )
+
+        // Two accounts must be able to hold the same schedule id with different watching flags.
+        db.execSQL(
+            """
+            INSERT INTO airing_schedule (
+                id, ownerId, mediaId, airingAt, episode, titleUserPreferred,
+                coverUrl, format, isWatching, streamingSeriesUrl
+            ) VALUES
+                (1, 10, 100, 1700000000, 3, 'Test Anime', NULL, 'TV', 1, NULL),
+                (1, 20, 100, 1700000000, 3, 'Test Anime', NULL, 'TV', 0, NULL)
+            """.trimIndent()
+        )
+
+        db.query("SELECT ownerId, isWatching FROM airing_schedule WHERE id = 1 ORDER BY ownerId")
+            .use { cursor ->
+                assertEquals(2, cursor.count)
+                cursor.moveToFirst()
+                assertEquals(10, cursor.getInt(0))
+                assertEquals(1, cursor.getInt(1))
+                cursor.moveToNext()
+                assertEquals(20, cursor.getInt(0))
+                assertEquals(0, cursor.getInt(1))
+            }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

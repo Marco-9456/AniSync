@@ -215,6 +215,13 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    // Ships the exported Room schemas into the androidTest APK. Without them MigrationTestHelper
+    // fails on FileNotFoundException before it ever reaches a migration, which is why the migration
+    // tests have never actually guarded anything. They matter here more than in most projects,
+    // because DatabaseModule still builds with fallbackToDestructiveMigration, so a missing
+    // migration wipes user data instead of crashing.
+    sourceSets.getByName("androidTest").assets.srcDirs("$projectDir/schemas")
 }
 
 kotlin {
@@ -227,6 +234,7 @@ kotlin {
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
+
 
 dependencies {
     implementation(libs.androidx.core.ktx)
