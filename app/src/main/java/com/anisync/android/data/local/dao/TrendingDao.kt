@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.anisync.android.data.local.entity.TrendingEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TrendingDao {
@@ -16,4 +17,8 @@ interface TrendingDao {
 
     @Query("SELECT * FROM trending_media ORDER BY rank ASC LIMIT :limit")
     suspend fun getTopTrending(limit: Int): List<TrendingEntity>
+
+    /** Reactive form of [getTopTrending]. */
+    @Query("SELECT * FROM trending_media ORDER BY rank ASC LIMIT :limit")
+    fun observeTopTrending(limit: Int): Flow<List<TrendingEntity>>
 }

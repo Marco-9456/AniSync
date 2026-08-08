@@ -1,16 +1,13 @@
 package com.anisync.android.worker
 
 import android.content.Context
-import androidx.glance.appwidget.updateAll
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.anisync.android.widget.AiringTodayWidget
-import com.anisync.android.widget.UpNextWidget
-import com.anisync.android.widget.WeeklyCalendarWidget
+import com.anisync.android.widget.core.WidgetRefresh
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
@@ -30,11 +27,8 @@ class WidgetRefreshWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            // Update all time-sensitive widgets
-            UpNextWidget().updateAll(appContext)
-            AiringTodayWidget().updateAll(appContext)
-            WeeklyCalendarWidget().updateAll(appContext)
-            
+            // Countdowns go stale by themselves, so repaint everything.
+            WidgetRefresh.all(appContext)
             Result.success()
         } catch (e: Exception) {
             e.printStackTrace()

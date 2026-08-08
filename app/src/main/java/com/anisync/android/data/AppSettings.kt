@@ -6,10 +6,6 @@ import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.anisync.android.R
 import com.anisync.android.domain.FeedFilter
 import com.anisync.android.domain.FeedScope
@@ -19,7 +15,8 @@ import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.FontAxisOverrides
 import com.anisync.android.ui.theme.TypeCategory
 import com.anisync.android.ui.theme.TypographyOverrides
-import com.anisync.android.widget.UpNextWidget
+import com.anisync.android.widget.UpNextWidgetProvider
+import com.anisync.android.widget.core.WidgetRefresh
 import com.materialkolor.PaletteStyle
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -696,9 +693,7 @@ class AppSettings @Inject constructor(
         prefs.edit().putInt(KEY_PREFERRED_STREAMING_SERVICE, service.ordinal).apply()
         
         // Refresh Up Next widget to show the new icon
-        scope.launch {
-            refreshUpNextWidget()
-        }
+        refreshUpNextWidget()
     }
     
     // ==========================================================================
@@ -995,30 +990,9 @@ class AppSettings @Inject constructor(
         ) { StreamingService.NONE }
     }
     
-    /**
-     * Refresh all Up Next widget instances.
-     * Uses updateAppWidgetState to trigger a state change, ensuring the widget re-renders.
-     */
-    private suspend fun refreshUpNextWidget() {
-        try {
-            val manager = GlanceAppWidgetManager(context)
-            val widgetIds = manager.getGlanceIds(UpNextWidget::class.java)
-            val timestampKey = stringPreferencesKey("last_refresh_timestamp")
-            
-            widgetIds.forEach { glanceId ->
-                // Update widget state with a timestamp to force a refresh
-                // This is needed because Glance caches state and won't re-render
-                // if it thinks nothing has changed
-                updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                    prefs.toMutablePreferences().apply {
-                        this[timestampKey] = System.currentTimeMillis().toString()
-                    }
-                }
-                UpNextWidget().update(context, glanceId)
-            }
-        } catch (e: Exception) {
-            // Silently fail - widget might not be placed
-        }
+    /** Repaints every placed Up Next widget, for settings it renders (the streaming service icon). */
+    private fun refreshUpNextWidget() {
+        runCatching { WidgetRefresh.refresh(context, UpNextWidgetProvider::class.java) }
     }
     
     /**

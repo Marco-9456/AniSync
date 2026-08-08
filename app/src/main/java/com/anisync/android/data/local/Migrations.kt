@@ -1,6 +1,7 @@
 package com.anisync.android.data.local
 
 import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Database migrations for AniSync.
@@ -64,19 +65,55 @@ import androidx.room.migration.Migration
  */
 object Migrations {
 
-    /**
-     * Array of all manual migrations.
-     * These are automatically applied by Room in order.
-     */
-    val ALL_MIGRATIONS: Array<Migration> = arrayOf(
-        // Add manual migrations here as they are created, e.g.:
-        // MIGRATION_1_2,
-        // MIGRATION_3_4,
-    )
-
     // ═══════════════════════════════════════════════════════════════════════════
     //                           MIGRATION DEFINITIONS
     // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * v22 to v23: account-scope `airing_schedule`.
+     *
+     * The table was global while `isWatching` was denormalised from whichever account happened to
+     * be active, so switching accounts had to wipe it. `ownerId` joins the primary key, matching
+     * how `library_entries` has been scoped since v18.
+     *
+     * Existing rows are not carried over. They carry no owner, and guessing one would mislabel
+     * another account's watching flags. The table is a network cache that `AiringScheduleWorker`
+     * repopulates on its next run.
+     */
+    val MIGRATION_22_23 = object : Migration(22, 23) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("DROP TABLE IF EXISTS `airing_schedule`")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `airing_schedule` (" +
+                    "`id` INTEGER NOT NULL, " +
+                    "`ownerId` INTEGER NOT NULL, " +
+                    "`mediaId` INTEGER NOT NULL, " +
+                    "`airingAt` INTEGER NOT NULL, " +
+                    "`episode` INTEGER NOT NULL, " +
+                    "`titleUserPreferred` TEXT NOT NULL, " +
+                    "`coverUrl` TEXT, " +
+                    "`format` TEXT, " +
+                    "`isWatching` INTEGER NOT NULL, " +
+                    "`streamingSeriesUrl` TEXT, " +
+                    "PRIMARY KEY(`id`, `ownerId`))"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_airing_schedule_ownerId_airingAt` " +
+                    "ON `airing_schedule` (`ownerId`, `airingAt`)"
+            )
+        }
+    }
+
+    /**
+     * Array of all manual migrations.
+     * These are automatically applied by Room in order.
+     *
+     * Declared after the migrations it holds, because an `object` initialises top to bottom and a
+     * forward reference would land a null in the array.
+     */
+    val ALL_MIGRATIONS: Array<Migration> = arrayOf(
+        MIGRATION_22_23,
+    )
 
     // ─────────────────────────────────────────────────────────────────────────────
     // EXAMPLE: Adding a new column (uncomment and modify when needed)

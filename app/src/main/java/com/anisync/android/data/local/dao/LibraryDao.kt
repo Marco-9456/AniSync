@@ -44,6 +44,20 @@ interface LibraryDao {
     suspend fun getMostRecentWatching(ownerId: Int): LibraryEntryEntity?
 
     /**
+     * Entries the account is part-way through, for the Watch Progress widget.
+     *
+     * REPEATING is included alongside CURRENT because a rewatch still has an ending to count down
+     * to. Ordering (fewest remaining first, unknown totals last) is applied by the caller, which
+     * knows whether the relevant total is `totalEpisodes` or `totalChapters`.
+     */
+    @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND mediaType = :type AND status IN ('CURRENT', 'REPEATING')")
+    suspend fun getInProgress(ownerId: Int, type: MediaType): List<LibraryEntryEntity>
+
+    /** Reactive version of [getInProgress]. */
+    @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND mediaType = :type AND status IN ('CURRENT', 'REPEATING')")
+    fun observeInProgress(ownerId: Int, type: MediaType): Flow<List<LibraryEntryEntity>>
+
+    /**
      * Get a single entry by mediaId for a specific account.
      */
     @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND mediaId = :mediaId LIMIT 1")

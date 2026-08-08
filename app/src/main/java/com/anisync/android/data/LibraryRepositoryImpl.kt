@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import android.content.Context
 import com.anisync.android.GetUserLibraryQuery
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.data.local.dao.LibraryDao
@@ -19,7 +20,9 @@ import com.anisync.android.data.account.AccountStore
 import com.anisync.android.util.AniListTextEncoder.encodeForAniList
 import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaType
+import com.anisync.android.widget.core.WidgetRefresh
 import com.apollographql.apollo.ApolloClient
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
@@ -47,7 +50,8 @@ class LibraryRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val libraryDao: LibraryDao,
     private val appSettings: AppSettings,
-    private val accountStore: AccountStore
+    private val accountStore: AccountStore,
+    @param:ApplicationContext private val context: Context
 ) : LibraryRepository {
 
     private fun currentOwnerId(): Int = accountStore.activeAccount.value?.id ?: NO_OWNER
@@ -264,6 +268,9 @@ class LibraryRepositoryImpl @Inject constructor(
         } else {
             libraryDao.updateProgress(owner, mediaId, progress)
         }
+        // Watch Progress and Up Next both count off this row, and their 30 minute period would
+        // otherwise leave the home screen showing a stale count right after an increment.
+        runCatching { WidgetRefresh.all(context) }
         return Result.Success(Unit)
     }
 

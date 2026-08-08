@@ -1,7 +1,6 @@
 package com.anisync.android.worker
 
 import android.content.Context
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
@@ -18,9 +17,10 @@ import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.data.util.ApiError
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.widget.AiringTodayWidget
-import com.anisync.android.widget.UpNextWidget
-import com.anisync.android.widget.WeeklyCalendarWidget
+import com.anisync.android.widget.AiringTodayWidgetProvider
+import com.anisync.android.widget.UpNextWidgetProvider
+import com.anisync.android.widget.WeeklyCalendarWidgetProvider
+import com.anisync.android.widget.core.WidgetRefresh
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.apollo.cache.normalized.FetchPolicy
@@ -74,6 +74,8 @@ class AiringScheduleWorker @AssistedInject constructor(
             var page = 1
             var hasNextPage = true
             val preferredStreamingService = appSettings.getPreferredStreamingServiceDirect()
+            // -1 is the signed-out owner sentinel the library rows already use.
+            val ownerId = accountStore.activeAccount.value?.id ?: -1
 
             while (page <= 3 && hasNextPage) {
                 val response = apolloClient.query(
@@ -105,7 +107,7 @@ class AiringScheduleWorker @AssistedInject constructor(
                     val mId = media.id ?: return@mapNotNull null
 
                     // Check if user is actively watching this anime (only CURRENT status, not PLANNING)
-                    val libraryEntry = libraryDao.getEntry(accountStore.activeAccount.value?.id ?: -1, mId)
+                    val libraryEntry = libraryDao.getEntry(ownerId, mId)
                     val isWatching = libraryEntry?.status == LibraryStatus.CURRENT
 
                     val streamingSeriesUrl = selectStreamingSeriesUrl(
@@ -115,6 +117,7 @@ class AiringScheduleWorker @AssistedInject constructor(
 
                     AiringScheduleEntity(
                         id = sId,
+                        ownerId = ownerId,
                         mediaId = mId,
                         airingAt = schedule.airingAt?.toLong() ?: 0L,
                         episode = schedule.episode ?: 0,
@@ -131,20 +134,13 @@ class AiringScheduleWorker @AssistedInject constructor(
                 page++
             }
 
-            airingScheduleDao.clearAll() // Simple cache strategy: replace all
+            airingScheduleDao.clearAll(ownerId) // Simple cache strategy: replace this account's rows
             airingScheduleDao.insertAll(entities)
 
-            // Update Widgets
-            val manager = GlanceAppWidgetManager(appContext)
-            manager.getGlanceIds(AiringTodayWidget::class.java).forEach { id ->
-                AiringTodayWidget().update(appContext, id)
-            }
-            manager.getGlanceIds(UpNextWidget::class.java).forEach { id ->
-                UpNextWidget().update(appContext, id)
-            }
-            manager.getGlanceIds(WeeklyCalendarWidget::class.java).forEach { id ->
-                WeeklyCalendarWidget().update(appContext, id)
-            }
+            // The three schedule-driven widgets read this table straight from Room.
+            WidgetRefresh.refresh(appContext, AiringTodayWidgetProvider::class.java)
+            WidgetRefresh.refresh(appContext, UpNextWidgetProvider::class.java)
+            WidgetRefresh.refresh(appContext, WeeklyCalendarWidgetProvider::class.java)
 
             Result.success()
         } catch (e: ApiError.RateLimited) {

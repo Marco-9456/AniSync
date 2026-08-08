@@ -2,46 +2,46 @@ package com.anisync.android.widget.core
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Size
 import androidx.core.graphics.drawable.toBitmap
 import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 
 /**
- * Centralized image loading utilities for widgets.
- * Part of the core package for shared widget infrastructure.
+ * Image loading for widgets.
+ *
+ * Two rules that do not apply elsewhere in the app:
+ *
+ *  - **No hardware bitmaps.** A `Config.HARDWARE` bitmap has no pixel data in the client process
+ *    and cannot be written into the `RemoteViews` parcel, so it renders as nothing. Coil enables
+ *    them by default from API 28, which makes this an easy blank-image bug to ship.
+ *  - **Sizes come from [WidgetImageBudget]**, never a constant, because the platform caps the
+ *    total bitmap memory of one widget update and that cap is split across every image on screen.
  */
 object WidgetImageLoader {
 
-    private fun getImageLoader(context: Context) = context.applicationContext.imageLoader
+    private fun loader(context: Context) = context.applicationContext.imageLoader
 
-    /**
-     * Load a bitmap from a URL for use in widgets.
-     *
-     * @param context Application context
-     * @param url Image URL to load
-     * @param width Desired width in pixels
-     * @param height Desired height in pixels
-     * @param skipCache If true, bypasses cache (useful when image may have changed)
-     * @return Loaded Bitmap or null if loading failed
-     */
     suspend fun loadBitmap(
         context: Context,
         url: String?,
-        width: Int = 200,
-        height: Int = 300,
+        size: Size,
         skipCache: Boolean = false
     ): Bitmap? {
         if (url.isNullOrBlank()) return null
 
         return withContext(Dispatchers.IO) {
             try {
-                val loader = getImageLoader(context)
                 val request = ImageRequest.Builder(context)
                     .data(url)
-                    .size(width, height)
+                    .size(size.width, size.height)
+                    .allowHardware(false)
                     .apply {
                         if (skipCache) {
                             memoryCachePolicy(CachePolicy.DISABLED)
@@ -50,11 +50,36 @@ object WidgetImageLoader {
                     }
                     .build()
 
-                val result = loader.execute(request)
-                result.drawable?.toBitmap()
-            } catch (e: Exception) {
+                loader(context).execute(request).drawable?.toBitmap()
+            } catch (_: Exception) {
                 null
             }
         }
     }
+
+    /**
+     * Load a batch of covers in parallel, keyed by caller id.
+     *
+     * The batch is what makes budgeting possible: the per-image size falls out of how many are
+     * being loaded, so a day with thirty episodes decodes thirty small covers rather than thirty
+     * full-size ones and blowing the update.
+     */
+    suspend fun loadCovers(
+        context: Context,
+        requests: List<CoverRequest>,
+        size: Size
+    ): Map<Int, Bitmap?> {
+        if (requests.isEmpty()) return emptyMap()
+        return supervisorScope {
+            requests
+                .map { request ->
+                    async(Dispatchers.IO) { request.id to loadBitmap(context, request.url, size) }
+                }
+                .awaitAll()
+                .toMap()
+        }
+    }
+
+    /** One cover to fetch. [id] is whatever the caller keys its UI list by. */
+    data class CoverRequest(val id: Int, val url: String?)
 }
