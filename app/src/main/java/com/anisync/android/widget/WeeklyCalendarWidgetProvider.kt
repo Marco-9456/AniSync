@@ -9,12 +9,10 @@ import androidx.core.util.SizeFCompat
 import com.anisync.android.R
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.widget.core.AniSyncWidgetProvider
-import com.anisync.android.widget.core.WidgetChips
 import com.anisync.android.widget.core.WidgetColors
 import com.anisync.android.widget.core.WidgetImageBudget
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntents
-import com.anisync.android.widget.core.WidgetRows
 import com.anisync.android.widget.core.WidgetSizes
 import com.anisync.android.widget.core.WidgetState
 import com.anisync.android.widget.core.WidgetTime
@@ -24,10 +22,10 @@ import com.anisync.android.widget.core.widgetDeps
 /**
  * Weekly Calendar: a seven day strip over the schedule for the selected day.
  *
- * This is the widget the old implementation got most visibly wrong. It captured the episode list in
- * `provideGlance` before composition, so tapping a day recomposed the strip instantly against the
- * previous day's episodes and only corrected itself when a second update landed. Here the day is
- * committed, then read back, then queried, then rendered, once.
+ * This is the widget the old Glance implementation got most visibly wrong. It captured the episode
+ * list in `provideGlance` before composition, so tapping a day recomposed the strip instantly
+ * against the previous day's episodes and only corrected itself when a second update landed. Here
+ * the day is committed, then read back, then queried, then rendered, once.
  */
 class WeeklyCalendarWidgetProvider :
     AniSyncWidgetProvider<WeeklyCalendarWidgetProvider.Snapshot>() {
@@ -38,7 +36,10 @@ class WeeklyCalendarWidgetProvider :
         val myListOnly: Boolean
     )
 
-    override val declaredSizes = WidgetSizes.ladder(minHeightDp = 150)
+    override val declaredSizes = WidgetSizes.ladder(minHeightDp = 250)
+
+    override val listViewId = R.id.widget_list
+    override val listEmptyViewId = R.id.widget_empty
 
     override suspend fun snapshot(context: Context, appWidgetId: Int): Snapshot {
         val deps = context.widgetDeps()
@@ -49,12 +50,13 @@ class WeeklyCalendarWidgetProvider :
         val start = WidgetTime.startOfDay(selectedDay)
         val end = start + WidgetTime.DAY
         val dao = deps.airingScheduleDao()
+        // No cap. The list scrolls, so the whole day is shown rather than whatever happened to fit.
         val episodes = if (myListOnly) {
             dao.getAiringBetweenForUser(ownerId, start, end)
         } else {
             dao.getAiringBetween(ownerId, start, end)
         }
-        return Snapshot(episodes.take(MAX_ROWS), selectedDay, myListOnly)
+        return Snapshot(episodes, selectedDay, myListOnly)
     }
 
     override fun coverRequests(context: Context, snapshot: Snapshot) =
@@ -77,18 +79,44 @@ class WeeklyCalendarWidgetProvider :
         val views = RemoteViews(context.packageName, R.layout.widget_weekly_calendar)
         val colors = WidgetColors.of(context)
 
-        WidgetChips.apply(views, context, R.id.chip_all, !snapshot.myListOnly, colors)
-        WidgetChips.apply(views, context, R.id.chip_mine, snapshot.myListOnly, colors)
-        views.setOnClickPendingIntent(
-            R.id.chip_all,
-            WidgetIntents.setState(context, javaClass, appWidgetId, STATE_MY_LIST, "false")
+        // One pill showing the active filter, tapped to swap it, as the shipped widget had.
+        views.setTextViewText(
+            R.id.widget_filter,
+            context.getString(
+                if (snapshot.myListOnly) R.string.widget_filter_mine else R.string.widget_filter_all
+            )
+        )
+        views.setInt(
+            R.id.widget_filter,
+            "setBackgroundResource",
+            if (snapshot.myListOnly) R.drawable.widget_pill_bg_accent
+            else R.drawable.widget_pill_bg_muted
+        )
+        views.setTextColor(
+            R.id.widget_filter,
+            if (snapshot.myListOnly) colors.onPrimary else colors.onSurfaceVariant
         )
         views.setOnClickPendingIntent(
-            R.id.chip_mine,
-            WidgetIntents.setState(context, javaClass, appWidgetId, STATE_MY_LIST, "true")
+            R.id.widget_filter,
+            WidgetIntents.setState(
+                context,
+                javaClass,
+                appWidgetId,
+                STATE_MY_LIST,
+                (!snapshot.myListOnly).toString()
+            )
         )
-        views.setContentDescription(R.id.chip_all, context.getString(R.string.a11y_widget_filter_all))
-        views.setContentDescription(R.id.chip_mine, context.getString(R.string.a11y_widget_filter_mine))
+        views.setContentDescription(
+            R.id.widget_filter,
+            context.getString(
+                if (snapshot.myListOnly) R.string.a11y_widget_filter_mine
+                else R.string.a11y_widget_filter_all
+            )
+        )
+        views.setViewVisibility(
+            R.id.widget_title,
+            if (WidgetSizes.isNarrow(size)) View.GONE else View.VISIBLE
+        )
 
         views.removeAllViews(R.id.widget_days)
         repeat(DAYS) { offset ->
@@ -98,33 +126,55 @@ class WeeklyCalendarWidgetProvider :
             )
         }
 
-        views.setViewVisibility(
-            R.id.widget_title,
-            if (WidgetSizes.isNarrow(size)) View.GONE else View.VISIBLE
+        views.setTextViewText(
+            R.id.widget_empty_title,
+            context.getString(
+                if (snapshot.myListOnly) R.string.widget_calendar_empty_mine
+                else R.string.widget_calendar_empty_all
+            )
         )
+        // setEmptyView already swaps these once the host has bound the adapter. Setting them here
+        // too means the correct one is showing in the very first frame, before that happens.
+        val isEmpty = snapshot.episodes.isEmpty()
+        views.setViewVisibility(R.id.widget_empty, if (isEmpty) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widget_list, if (isEmpty) View.GONE else View.VISIBLE)
 
-        if (snapshot.episodes.isEmpty()) {
-            views.setViewVisibility(R.id.widget_list, View.GONE)
-            views.setViewVisibility(R.id.widget_empty, View.VISIBLE)
-            views.setTextViewText(
-                R.id.widget_empty_title,
+        // One template for every row. Each row fills in which series it opens.
+        views.setPendingIntentTemplate(
+            R.id.widget_list,
+            WidgetIntents.mediaTemplate(context, appWidgetId)
+        )
+        return views
+    }
+
+    override fun items(
+        context: Context,
+        appWidgetId: Int,
+        snapshot: Snapshot,
+        covers: Map<Int, Bitmap?>
+    ): List<RemoteViews> = snapshot.episodes.map { episode ->
+        val time = WidgetTime.clock24(episode.airingAt)
+        val episodeLabel = context.getString(R.string.widget_episode_badge, episode.episode)
+        RemoteViews(context.packageName, R.layout.widget_weekly_calendar_item).apply {
+            setTextViewText(R.id.item_time, time)
+            setTextViewText(R.id.item_title, episode.titleUserPreferred)
+            setTextViewText(R.id.item_episode, episodeLabel)
+            setViewVisibility(
+                R.id.item_bookmark,
+                if (episode.isWatching) View.VISIBLE else View.GONE
+            )
+            covers[episode.id]?.let { setImageViewBitmap(R.id.item_cover, it) }
+            setContentDescription(
+                R.id.item_root,
                 context.getString(
-                    if (snapshot.myListOnly) R.string.widget_calendar_empty_mine
-                    else R.string.widget_calendar_empty_all
+                    R.string.a11y_widget_airing_row,
+                    episode.titleUserPreferred,
+                    episode.episode,
+                    time
                 )
             )
-            return views
+            setOnClickFillInIntent(R.id.item_root, WidgetIntents.openMediaFillIn(episode.mediaId))
         }
-
-        views.setViewVisibility(R.id.widget_empty, View.GONE)
-        views.setViewVisibility(R.id.widget_list, View.VISIBLE)
-        views.removeAllViews(R.id.widget_list)
-
-        val rows = WidgetRows.fit(size, ROW_HEIGHT_DP, CHROME_DP, MAX_ROWS)
-        snapshot.episodes.take(rows).forEach { episode ->
-            views.addView(R.id.widget_list, row(context, appWidgetId, episode, covers))
-        }
-        return views
     }
 
     private fun dayCell(
@@ -135,15 +185,17 @@ class WeeklyCalendarWidgetProvider :
         colors: WidgetColors
     ): RemoteViews {
         val isSelected = offset == selected
-        val name = WidgetTime.shortWeekday(offset)
+        val letter = WidgetTime.narrowWeekday(offset)
         val number = WidgetTime.dayOfMonth(offset)
         return RemoteViews(context.packageName, R.layout.widget_weekly_calendar_day).apply {
-            setTextViewText(R.id.day_name, name)
+            setTextViewText(R.id.day_name, letter)
             setTextViewText(R.id.day_number, number.toString())
+            // Unselected cells carry no background, so the strip reads as one row rather than
+            // seven buttons. Only the selected day gets a filled pill.
             setInt(
                 R.id.day_root,
                 "setBackgroundResource",
-                if (isSelected) R.drawable.widget_pill_bg_accent else R.drawable.widget_pill_bg_muted
+                if (isSelected) R.drawable.widget_day_cell_bg else 0
             )
             setTextColor(R.id.day_name, if (isSelected) colors.onPrimary else colors.onSurfaceVariant)
             setTextColor(R.id.day_number, if (isSelected) colors.onPrimary else colors.onSurface)
@@ -151,7 +203,7 @@ class WeeklyCalendarWidgetProvider :
                 R.id.day_root,
                 context.getString(
                     if (isSelected) R.string.a11y_widget_day_selected else R.string.a11y_widget_day,
-                    name,
+                    WidgetTime.shortWeekday(offset),
                     number
                 )
             )
@@ -168,42 +220,10 @@ class WeeklyCalendarWidgetProvider :
         }
     }
 
-    private fun row(
-        context: Context,
-        appWidgetId: Int,
-        episode: AiringScheduleEntity,
-        covers: Map<Int, Bitmap?>
-    ): RemoteViews {
-        val time = WidgetTime.clock(context, episode.airingAt)
-        val episodeLabel = context.getString(R.string.widget_episode_long, episode.episode)
-        return RemoteViews(context.packageName, R.layout.widget_airing_today_item).apply {
-            setTextViewText(R.id.item_title, episode.titleUserPreferred)
-            setTextViewText(R.id.item_episode, episodeLabel)
-            setTextViewText(R.id.item_time, time)
-            covers[episode.id]?.let { setImageViewBitmap(R.id.item_cover, it) }
-            setContentDescription(
-                R.id.item_root,
-                context.getString(
-                    R.string.a11y_widget_airing_row,
-                    episode.titleUserPreferred,
-                    episode.episode,
-                    time
-                )
-            )
-            setOnClickPendingIntent(
-                R.id.item_root,
-                WidgetIntents.openMedia(context, appWidgetId, episode.mediaId)
-            )
-        }
-    }
-
     private companion object {
         const val STATE_DAY = "selected_day"
         const val STATE_MY_LIST = "my_list_only"
         const val DAYS = 7
-        const val MAX_ROWS = 12
-        const val COVER_WIDTH_DP = 36
-        const val ROW_HEIGHT_DP = 72
-        const val CHROME_DP = 108
+        const val COVER_WIDTH_DP = 56
     }
 }

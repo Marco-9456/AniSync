@@ -171,6 +171,16 @@
         </provider>
 
         <!--
+          Serves widget list rows to the launcher on API 26 to 30. BIND_REMOTEVIEWS is what stops
+          any app other than the system from binding to it. From API 31 the rows travel inside the
+          RemoteViews and nothing binds here at all.
+        -->
+        <service
+            android:name=".widget.core.WidgetCollectionService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <!--
           Home-screen widgets.
 
           Each provider handles both APPWIDGET_UPDATE and its own tap broadcasts. The tap actions

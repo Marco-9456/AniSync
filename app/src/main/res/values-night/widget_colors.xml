@@ -2,7 +2,8 @@
 <!-- Widget palette, dark, no dynamic colour. The app's dark scheme from ui/theme/Color.kt. -->
 <resources>
     <color name="widget_background">#12140E</color>
-    <color name="widget_surface">#12140E</color>
+    <!-- One step up from the background so cards read as cards. See the light variant. -->
+    <color name="widget_surface">#1E201A</color>
     <color name="widget_surface_variant">#44483D</color>
     <color name="widget_on_surface">#E2E3D8</color>
     <color name="widget_on_surface_variant">#C5C8BA</color>

@@ -9,7 +9,12 @@
 -->
 <resources>
     <color name="widget_background">#F9FAEF</color>
-    <color name="widget_surface">#F9FAEF</color>
+    <!--
+      Deliberately not surfaceLight. The app's surface and background are the same value, which is
+      fine for a scrolling screen and wrong for a widget, where cards sit directly on the background
+      and would vanish into it.
+    -->
+    <color name="widget_surface">#FFFFFF</color>
     <color name="widget_surface_variant">#E1E4D5</color>
     <color name="widget_on_surface">#1A1C16</color>
     <color name="widget_on_surface_variant">#44483D</color>

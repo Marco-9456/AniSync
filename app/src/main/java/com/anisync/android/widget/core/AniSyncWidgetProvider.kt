@@ -59,7 +59,10 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
     /** Decode size for those covers, from [WidgetImageBudget], never a constant. */
     internal abstract fun coverSize(context: Context, snapshot: S): Size
 
-    /** Builds the views for one declared size. Called once per size, per render. */
+    /**
+     * Builds the chrome for one declared size: header, controls, empty state. Called once per
+     * size, per render. The scrolling rows are [items], attached separately.
+     */
     internal abstract fun build(
         context: Context,
         appWidgetId: Int,
@@ -67,6 +70,42 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
         snapshot: S,
         covers: Map<Int, Bitmap?>
     ): RemoteViews
+
+    /**
+     * The scrolling rows, or empty for a widget that has no list.
+     *
+     * Size-independent on purpose. A row looks the same at every widget size, so one set of rows is
+     * attached to every size variant rather than rebuilt per rung.
+     */
+    internal open fun items(
+        context: Context,
+        appWidgetId: Int,
+        snapshot: S,
+        covers: Map<Int, Bitmap?>
+    ): List<RemoteViews> = emptyList()
+
+    /** The `ListView` [items] feed, or 0 when the widget has no list. */
+    internal open val listViewId: Int get() = 0
+
+    /** Shown by the list itself when it has no rows. Ignored when [listViewId] is 0. */
+    internal open val listEmptyViewId: Int get() = 0
+
+    /**
+     * Rebuilds the rows from scratch, for [WidgetCollectionService] on API 26 to 30.
+     *
+     * Takes its own snapshot rather than reusing the render's, because the host can bind to the
+     * service long after that render, in a freshly started process.
+     */
+    internal suspend fun loadItems(context: Context, appWidgetId: Int): List<RemoteViews> {
+        val snapshot = snapshot(context, appWidgetId)
+        val requests = coverRequests(context, snapshot)
+        val covers = if (requests.isEmpty()) {
+            emptyMap()
+        } else {
+            WidgetImageLoader.loadCovers(context, requests, coverSize(context, snapshot))
+        }
+        return items(context, appWidgetId, snapshot, covers)
+    }
 
     final override fun onUpdate(
         context: Context,
@@ -150,7 +189,14 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
         }
 
         publish(context, manager, appWidgetId, snapshot, emptyMap())
-        val loaded = WidgetImageLoader.loadCovers(context, requests, size)
+        // Bounded, because this runs inside the broadcast. Broadcasts to one receiver are
+        // serialised, so a render that waits indefinitely on covers does not just delay itself, it
+        // delays the next tap behind it. Under Doze there is no network at all and every request
+        // would otherwise sit here until Coil's own timeout. Missing covers arrive on the next
+        // update; a tap that feels stuck does not get a second chance.
+        val loaded = withTimeoutOrNull(COVER_LOAD_BUDGET_MS) {
+            WidgetImageLoader.loadCovers(context, requests, size)
+        } ?: return
         publish(context, manager, appWidgetId, snapshot, loaded)
     }
 
@@ -162,8 +208,28 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
         covers: Map<Int, Bitmap?>
     ) {
         try {
+            val rows = if (listViewId != 0) {
+                items(context, appWidgetId, snapshot, covers)
+            } else {
+                emptyList()
+            }
             manager.updateAppWidget(appWidgetId, declaredSizes) { size ->
-                build(context, appWidgetId, size, snapshot, covers)
+                build(context, appWidgetId, size, snapshot, covers).also { views ->
+                    if (listViewId != 0) {
+                        WidgetCollection.attach(
+                            views = views,
+                            context = context,
+                            appWidgetId = appWidgetId,
+                            listViewId = listViewId,
+                            provider = javaClass,
+                            items = rows,
+                            emptyViewId = listEmptyViewId
+                        )
+                    }
+                }
+            }
+            if (listViewId != 0) {
+                WidgetCollection.notifyChanged(context, appWidgetId, listViewId)
             }
         } catch (t: Throwable) {
             // An oversized RemoteViews throws here rather than failing silently on the host side.
@@ -198,6 +264,12 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
          * holds the first frame.
          */
         const val FAST_COVER_TIMEOUT_MS = 120L
+
+        /**
+         * Ceiling on the whole cover pass, so one render cannot hold the receiver and delay the
+         * tap queued behind it.
+         */
+        const val COVER_LOAD_BUDGET_MS = 2_500L
     }
 }
 

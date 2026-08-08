@@ -1,73 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Weekly Calendar.
+  Weekly Calendar. Reproduces the shipped Glance layout: 16dp header with the icon plate and a
+  single filter pill, a seven day strip, then a scrolling list of episode cards.
 
-  Two independent bits of state, the selected day and the All / My List filter. Both are written by
-  the tap and read back before the list below is built, in the same pass, so the highlighted day
-  always matches the episodes under it.
+  The header is a fixed height rather than wrap_content. Letting it wrap meant the icon, the title
+  and the pill all negotiated for one line on every resize, and the title lost, which is what made
+  the header look squashed as the widget got narrower.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
-    android:orientation="vertical"
-    android:padding="12dp">
+    android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/widget_header"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="64dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingBottom="8dp">
+        android:paddingHorizontal="16dp">
 
         <FrameLayout
-            android:layout_width="30dp"
-            android:layout_height="30dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="@drawable/widget_icon_plate_bg">
 
             <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
                 android:src="@drawable/calendar_view_week_24px"
-                android:tint="@color/widget_on_primary_container" />
+                android:tint="@color/widget_on_primary" />
         </FrameLayout>
 
         <TextView
             android:id="@+id/widget_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
+            android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="@string/widget_calendar_title"
             android:textColor="@color/widget_on_surface"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
+        <!--
+          One pill that toggles, not two chips. The shipped widget showed the current filter and
+          swapped it on tap, so the control is a single target reading "All" or "My List".
+        -->
         <TextView
-            android:id="@+id/chip_all"
+            android:id="@+id/widget_filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp"
-            android:text="@string/widget_filter_all"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/chip_mine"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp"
-            android:text="@string/widget_filter_mine"
-            android:textSize="11sp"
+            android:layout_marginStart="8dp"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="8dp"
+            android:textSize="12sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -76,39 +69,61 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingBottom="8dp" />
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp" />
 
-    <LinearLayout
-        android:id="@+id/widget_list"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical" />
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1">
 
-    <LinearLayout
-        android:id="@+id/widget_empty"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:paddingHorizontal="16dp"
-        android:visibility="gone">
+        <!--
+          A real scrolling list. ScrollView is not permitted inside RemoteViews, so the only way to
+          show more rows than fit is an adapter-backed view fed by WidgetCollection.
+        -->
+        <ListView
+            android:id="@+id/widget_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:paddingBottom="12dp"
+            android:scrollbars="none" />
 
-        <TextView
-            android:id="@+id/widget_empty_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <LinearLayout
+            android:id="@+id/widget_empty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:gravity="center"
-            android:textColor="@color/widget_on_surface"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:gravity="center"
-            android:text="@string/widget_calendar_empty_hint"
-            android:textColor="@color/widget_on_surface_variant"
-            android:textSize="11sp" />
-    </LinearLayout>
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="@null"
+                android:src="@drawable/calendar_view_week_24px"
+                android:tint="@color/widget_on_surface_variant" />
+
+            <TextView
+                android:id="@+id/widget_empty_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:textColor="@color/widget_on_surface"
+                android:textSize="16sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:text="@string/widget_calendar_empty_hint"
+                android:textColor="@color/widget_on_surface_variant"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </FrameLayout>
 </LinearLayout>

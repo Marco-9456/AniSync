@@ -54,7 +54,33 @@ object WidgetTime {
         add(Calendar.DAY_OF_YEAR, dayOffset)
     }.timeInMillis / 1000
 
-    /** Short weekday name, "Mon", for the calendar day strip. */
+    /**
+     * Wall-clock airing time, always 24 hour.
+     *
+     * The calendar card uses a fixed 48dp time column, so it cannot take the extra width an AM/PM
+     * suffix needs. The airing-today row, which has room, uses [clock] and follows the device
+     * setting instead.
+     */
+    fun clock24(airingAtSeconds: Long): String =
+        SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(airingAtSeconds * 1000))
+
+    /**
+     * Single-letter weekday, "M", for the calendar day strip.
+     *
+     * Falls back to the first character of the short name in locales where the narrow form is not
+     * defined, which is what `TextStyle.NARROW` does anyway.
+     */
+    fun narrowWeekday(dayOffset: Int): String {
+        val calendar = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, dayOffset) }
+        return calendar.getDisplayName(
+            Calendar.DAY_OF_WEEK,
+            Calendar.SHORT,
+            Locale.getDefault()
+        )?.take(1)?.uppercase(Locale.getDefault())
+            ?: shortWeekday(dayOffset).take(1).uppercase(Locale.getDefault())
+    }
+
+    /** Short weekday name, "Mon", used for the day strip's content description. */
     fun shortWeekday(dayOffset: Int): String {
         val calendar = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, dayOffset) }
         return SimpleDateFormat("EEE", Locale.getDefault()).format(calendar.time)

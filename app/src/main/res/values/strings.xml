@@ -773,6 +773,8 @@
     <string name="widget_filter_mine">My List</string>
     <string name="widget_episode_short">Ep %1$d</string>
     <string name="widget_episode_long">Episode %1$d</string>
+    <!-- Pill on the calendar card. Upper case in the shipped design. -->
+    <string name="widget_episode_badge">EPISODE %1$d</string>
     <string name="widget_error_title">Can\'t show this right now</string>
     <string name="widget_error_action">Tap to retry</string>
 
@@ -796,6 +798,7 @@
     <string name="widget_calendar_empty_all">No episodes scheduled</string>
     <string name="widget_calendar_empty_mine">No favorites airing</string>
     <string name="widget_calendar_empty_hint">Try selecting another day</string>
+    <string name="widget_calendar_on_my_list">On My List</string>
 
     <!-- Trending widget -->
     <string name="widget_trending_rank" translatable="false">#%1$d</string>

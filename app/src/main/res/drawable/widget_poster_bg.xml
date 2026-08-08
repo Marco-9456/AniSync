@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Behind a cover, so a card that is still waiting on its image is not a hole. -->
+<!-- Behind a cover, so a card waiting on its image is not a hole. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <corners android:radius="8dp" />
-    <solid android:color="@color/widget_outline" />
+    <solid android:color="@color/widget_surface_variant" />
 </shape>
