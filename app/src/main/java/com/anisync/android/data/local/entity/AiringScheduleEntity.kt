@@ -7,9 +7,8 @@ import androidx.room.Index
 /**
  * One airing-schedule row, scoped to the account that cached it.
  *
- * [isWatching] is denormalised from the account's library, so the same AniList schedule id means
- * different things to different accounts. That is why [ownerId] is part of the primary key rather
- * than a plain column.
+ * [isWatching] is denormalised from the account library, so one AniList schedule id means different
+ * things to different accounts. Hence [ownerId] in the primary key rather than a plain column.
  */
 @Entity(
     tableName = "airing_schedule",
@@ -26,7 +25,14 @@ data class AiringScheduleEntity(
     val titleUserPreferred: String,
     val coverUrl: String?,
     val format: String?, // TV, MOVIE, etc.
-    val isWatching: Boolean, // Denormalized field to filter by "My List" easily
+    /**
+     * Whether the account was watching this when the row was written, taken from mediaListEntry.
+     *
+     * Correct at fetch time and stale afterwards, since adding or dropping a series in the app does
+     * not rewrite the schedule cache. The My List filter therefore treats this as one of two
+     * signals rather than the answer. See `AiringScheduleDao.getAiringBetweenForUser`.
+     */
+    val isWatching: Boolean,
     @ColumnInfo(name = "streamingSeriesUrl")
     val streamingSeriesUrl: String? = null
 )

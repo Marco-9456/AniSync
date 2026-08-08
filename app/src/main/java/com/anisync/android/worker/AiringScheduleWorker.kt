@@ -17,6 +17,7 @@ import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.data.util.ApiError
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.type.MediaListStatus
 import com.anisync.android.widget.AiringTodayWidgetProvider
 import com.anisync.android.widget.UpNextWidgetProvider
 import com.anisync.android.widget.WeeklyCalendarWidgetProvider
@@ -41,6 +42,14 @@ class AiringScheduleWorker @AssistedInject constructor(
 
     companion object {
         private const val INITIAL_WORK_NAME = "AiringScheduleWorkerInitial"
+
+        /**
+         * Pages of 50 to pull, enough to cover a full week of global airings.
+         *
+         * The loop still stops early on `hasNextPage`, so quiet weeks cost fewer requests, and the
+         * interceptor's token bucket paces whatever is left.
+         */
+        private const val MAX_PAGES = 10
 
         fun enqueueImmediate(context: Context) {
             val request = OneTimeWorkRequestBuilder<AiringScheduleWorker>()
@@ -74,10 +83,13 @@ class AiringScheduleWorker @AssistedInject constructor(
             var page = 1
             var hasNextPage = true
             val preferredStreamingService = appSettings.getPreferredStreamingServiceDirect()
-            // -1 is the signed-out owner sentinel the library rows already use.
+            // -1 is the signed out owner sentinel the library rows already use.
             val ownerId = accountStore.activeAccount.value?.id ?: -1
 
-            while (page <= 3 && hasNextPage) {
+            // Sorted by TIME, so a low cap truncates the far end of the week rather than thinning
+            // it evenly. Three pages was about 150 airings, roughly the first two days globally,
+            // which is why a watchlist spread across the week only partly showed up.
+            while (page <= MAX_PAGES && hasNextPage) {
                 val response = apolloClient.query(
                     AiringScheduleQuery(
                         page = Optional.present(page),
@@ -106,9 +118,16 @@ class AiringScheduleWorker @AssistedInject constructor(
                     val sId = schedule.id ?: return@mapNotNull null
                     val mId = media.id ?: return@mapNotNull null
 
-                    // Check if user is actively watching this anime (only CURRENT status, not PLANNING)
-                    val libraryEntry = libraryDao.getEntry(ownerId, mId)
-                    val isWatching = libraryEntry?.status == LibraryStatus.CURRENT
+                    // The viewer's own list status comes back with the query, so prefer it over a
+                    // local lookup. The local library may not have synced yet, and this worker
+                    // clears and rewrites the whole table, so trusting an empty library marked
+                    // every row as not-watching and emptied the My List filter.
+                    val listStatus = media.mediaListEntry?.status
+                    val isWatching = when (listStatus) {
+                        MediaListStatus.CURRENT, MediaListStatus.REPEATING -> true
+                        null -> libraryDao.getEntry(ownerId, mId)?.status == LibraryStatus.CURRENT
+                        else -> false
+                    }
 
                     val streamingSeriesUrl = selectStreamingSeriesUrl(
                         externalLinks = media.externalLinks,
@@ -137,7 +156,7 @@ class AiringScheduleWorker @AssistedInject constructor(
             airingScheduleDao.clearAll(ownerId) // Simple cache strategy: replace this account's rows
             airingScheduleDao.insertAll(entities)
 
-            // The three schedule-driven widgets read this table straight from Room.
+            // The three schedule widgets read this table straight from Room.
             WidgetRefresh.refresh(appContext, AiringTodayWidgetProvider::class.java)
             WidgetRefresh.refresh(appContext, UpNextWidgetProvider::class.java)
             WidgetRefresh.refresh(appContext, WeeklyCalendarWidgetProvider::class.java)

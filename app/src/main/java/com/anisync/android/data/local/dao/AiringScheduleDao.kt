@@ -13,15 +13,15 @@ interface AiringScheduleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(schedules: List<AiringScheduleEntity>)
 
-    /** Drops one account's cached schedule. The other accounts' rows survive. */
+    /** Drops one account cached schedule. Other accounts keep theirs. */
     @Query("DELETE FROM airing_schedule WHERE ownerId = :ownerId")
     suspend fun clearAll(ownerId: Int)
 
     /**
-     * Claims rows left unowned by the v23 migration for the signed-in account.
+     * Claims the rows the v23 migration left unowned for the signed in account.
      *
-     * `OR REPLACE` because the account may already have refreshed its own rows for the same
-     * schedule ids, in which case the fresher ones win.
+     * OR REPLACE because the account may already have refreshed its own rows for the same ids, in
+     * which case the fresher ones win.
      */
     @Query("UPDATE OR REPLACE airing_schedule SET ownerId = :toOwnerId WHERE ownerId = :fromOwnerId")
     suspend fun reassignOwner(fromOwnerId: Int, toOwnerId: Int)
@@ -33,16 +33,56 @@ interface AiringScheduleDao {
     suspend fun getAiringBetween(ownerId: Int, startTime: Long, endTime: Long): List<AiringScheduleEntity>
 
     /**
-     * Get episodes airing between startTime and endTime, ONLY for anime the user is watching (isWatching = 1).
+     * Episodes airing in a window, for series the account is actually watching.
+     *
+     * Either signal counts, they cover each other blind spots.
+     *
+     * isWatching comes from the mediaListEntry AniList returned when the schedule was fetched, so it
+     * holds up even if the local library never synced. The join handles the other case, a series
+     * added, dropped or finished in the app since that fetch, which the cached flag knows nothing
+     * about. Going by the flag alone emptied the My List filter whenever a schedule refresh landed
+     * before the library loaded.
+     *
+     * REPEATING counts with CURRENT, a rewatch is still watching.
      */
-    @Query("SELECT * FROM airing_schedule WHERE ownerId = :ownerId AND airingAt >= :startTime AND airingAt <= :endTime AND isWatching = 1 ORDER BY airingAt ASC")
+    @Query(
+        """
+        SELECT s.* FROM airing_schedule AS s
+        WHERE s.ownerId = :ownerId
+            AND s.airingAt >= :startTime AND s.airingAt <= :endTime
+            AND (
+                s.isWatching = 1
+                OR EXISTS (
+                    SELECT 1 FROM library_entries AS l
+                    WHERE l.ownerId = s.ownerId AND l.mediaId = s.mediaId
+                        AND l.status IN ('CURRENT', 'REPEATING')
+                )
+            )
+        ORDER BY s.airingAt ASC
+        """
+    )
     suspend fun getAiringBetweenForUser(ownerId: Int, startTime: Long, endTime: Long): List<AiringScheduleEntity>
 
-    /** Reactive form of [getAiringBetween], for in-app screens that follow the cache. */
+    /** Reactive version of [getAiringBetween], for screens that follow the cache. */
     @Query("SELECT * FROM airing_schedule WHERE ownerId = :ownerId AND airingAt >= :startTime AND airingAt <= :endTime ORDER BY airingAt ASC")
     fun observeAiringBetween(ownerId: Int, startTime: Long, endTime: Long): Flow<List<AiringScheduleEntity>>
 
-    /** Reactive form of [getAiringBetweenForUser]. */
-    @Query("SELECT * FROM airing_schedule WHERE ownerId = :ownerId AND airingAt >= :startTime AND airingAt <= :endTime AND isWatching = 1 ORDER BY airingAt ASC")
+    /** Reactive version of [getAiringBetweenForUser]. */
+    @Query(
+        """
+        SELECT s.* FROM airing_schedule AS s
+        WHERE s.ownerId = :ownerId
+            AND s.airingAt >= :startTime AND s.airingAt <= :endTime
+            AND (
+                s.isWatching = 1
+                OR EXISTS (
+                    SELECT 1 FROM library_entries AS l
+                    WHERE l.ownerId = s.ownerId AND l.mediaId = s.mediaId
+                        AND l.status IN ('CURRENT', 'REPEATING')
+                )
+            )
+        ORDER BY s.airingAt ASC
+        """
+    )
     fun observeAiringBetweenForUser(ownerId: Int, startTime: Long, endTime: Long): Flow<List<AiringScheduleEntity>>
 }

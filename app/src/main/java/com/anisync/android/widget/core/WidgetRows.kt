@@ -13,7 +13,13 @@ import kotlin.math.floor
  */
 object WidgetSizes {
 
-    /** Two widths, so a narrow column and a full-width widget both get a fair layout. */
+    /**
+     * Three widths and five heights, fifteen of the sixteen entries the platform allows.
+     *
+     * Weighted towards width on purpose. Height granularity stopped mattering much once the lists
+     * scrolled, since a taller widget shows more of the same list rather than needing a different
+     * layout, whereas width decides whether a title fits beside its filter chips.
+     */
     fun ladder(minHeightDp: Int): List<SizeFCompat> {
         val heights = HEIGHTS.filter { it >= minHeightDp }.ifEmpty { listOf(minHeightDp) }
         return WIDTHS.flatMap { width -> heights.map { SizeFCompat(width.toFloat(), it.toFloat()) } }
@@ -40,8 +46,8 @@ object WidgetSizes {
 
     private const val WIDE_WIDTH = 300f
     private const val SHORT_HEIGHT = 200f
-    private val WIDTHS = listOf(180, WIDE_WIDTH.toInt())
-    private val HEIGHTS = listOf(100, 150, 200, 250, 300, 350, 400)
+    private val WIDTHS = listOf(180, WIDE_WIDTH.toInt(), 380)
+    private val HEIGHTS = listOf(100, 150, 200, 300, 400)
     private const val MAX_SIZES = 16
 }
 

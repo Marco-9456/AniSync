@@ -2,16 +2,14 @@
 <!--
   One media row: cover, title, a metadata line, and a trailing pill.
 
-  Shared by Up Next, Airing Today and the Weekly Calendar. All three show the same thing, a series
-  with a time against it, so they share a row rather than each carrying a near-copy that drifts.
-  The trailing pill is the countdown in one and the airing time in the others, and the bookmark is
-  hidden where it means nothing.
+  Shared by Up Next, Airing Today and the Weekly Calendar. All three show a series with a time next
+  to it, so one row instead of three near-copies that drift apart. The trailing pill is a countdown
+  in one and the airing time in the others, and the bookmark hides where it means nothing.
 
-  Sized to the shipped card's proportions: 12dp inside the card and a 52x74 poster.
+  Same proportions as the old card: 12dp padding and a 52x74 poster.
 
-  The poster's corners are rounded into the bitmap by WidgetImageLoader, not by this layout. A
-  rounded background drawable sits behind the bitmap and does nothing to it, and clipToOutline is
-  not a remotable property.
+  Poster corners are rounded into the bitmap by WidgetImageLoader, not here. A rounded background
+  drawable behind the bitmap does nothing to it, and clipToOutline is not remotable.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -53,32 +51,15 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
-            <LinearLayout
+            <TextView
+                android:id="@+id/item_episode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/item_episode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="@color/widget_on_surface_variant"
-                    android:textSize="12sp" />
-
-                <ImageView
-                    android:id="@+id/item_bookmark"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:layout_marginStart="8dp"
-                    android:contentDescription="@string/widget_calendar_on_my_list"
-                    android:src="@drawable/ic_bookmark_24px"
-                    android:tint="@color/widget_primary"
-                    android:visibility="gone" />
-            </LinearLayout>
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/widget_on_surface_variant"
+                android:textSize="12sp" />
         </LinearLayout>
 
         <TextView

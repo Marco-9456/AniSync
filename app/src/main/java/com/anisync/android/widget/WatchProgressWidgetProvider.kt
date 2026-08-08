@@ -20,6 +20,7 @@ import com.anisync.android.widget.core.WidgetSizes
 import com.anisync.android.widget.core.WidgetState
 import com.anisync.android.widget.core.activeOwnerId
 import com.anisync.android.widget.core.widgetDeps
+import com.anisync.android.worker.LibrarySyncWorker
 
 /**
  * Watch Progress: the series closest to finishing, fewest episodes or chapters remaining first.
@@ -37,7 +38,7 @@ class WatchProgressWidgetProvider :
         val remaining: Int?
     )
 
-    data class Snapshot(val rows: List<Row>, val type: MediaType)
+    data class Snapshot(val rows: List<Row>, val type: MediaType, val syncing: Boolean = false)
 
     override val declaredSizes = WidgetSizes.ladder(minHeightDp = 100)
 
@@ -66,7 +67,15 @@ class WatchProgressWidgetProvider :
                     .thenByDescending { it.entry.lastUpdated }
             )
 
-        return Snapshot(rows, type)
+        // Nothing cached for this type usually means the app has never opened its tab, not that the
+        // account has nothing in progress. Ask for a sync and say so, rather than claiming the list
+        // is empty. Deduped per type, so rendering repeatedly does not restart the fetch.
+        val syncing = rows.isEmpty()
+        if (syncing) {
+            runCatching { LibrarySyncWorker.enqueue(context, type) }
+        }
+
+        return Snapshot(rows, type, syncing)
     }
 
     override fun coverRequests(context: Context, snapshot: Snapshot) =
@@ -121,7 +130,11 @@ class WatchProgressWidgetProvider :
         views.setTextViewText(
             R.id.widget_empty_body,
             context.getString(
-                if (isManga) R.string.widget_wp_empty_body_manga else R.string.widget_wp_empty_body
+                when {
+                    snapshot.syncing && isManga -> R.string.widget_wp_syncing_manga
+                    isManga -> R.string.widget_wp_empty_body_manga
+                    else -> R.string.widget_wp_empty_body
+                }
             )
         )
 
@@ -188,21 +201,41 @@ class WatchProgressWidgetProvider :
             setTextViewText(R.id.item_title, entry.titleUserPreferred)
             setTextViewText(R.id.item_remaining, remainingLabel)
             setTextViewText(R.id.item_meta, meta)
-            setImageViewBitmap(
-                R.id.item_bar,
-                WidgetProgressRenderer.bar(
-                    context = context,
-                    // Rasterised at a fixed width and stretched by scaleType fitXY, because a row
-                    // in a collection does not know how wide the widget is.
-                    widthDp = BAR_RENDER_WIDTH_DP,
-                    heightDp = BAR_HEIGHT_DP,
-                    progress = progressFraction,
-                    trackColor = colors.surfaceVariant,
-                    fillColor = colors.primary,
-                    airedFraction = airedFraction,
-                    dotColor = colors.tertiaryContainer
+
+            if (row.total == null) {
+                // An ongoing series has no end to measure against, so a bar would be permanently
+                // empty, which reads as broken rather than as unknown. The row drops the bar and
+                // leans on the count instead, which is the only real information there is.
+                setViewVisibility(R.id.item_bar, View.GONE)
+                setViewVisibility(R.id.item_ongoing, View.VISIBLE)
+                setTextViewText(
+                    R.id.item_ongoing,
+                    context.getString(
+                        if (isManga) R.string.widget_wp_ongoing_manga
+                        else R.string.widget_wp_ongoing_anime,
+                        entry.progress
+                    )
                 )
-            )
+            } else {
+                setViewVisibility(R.id.item_bar, View.VISIBLE)
+                setViewVisibility(R.id.item_ongoing, View.GONE)
+                setImageViewBitmap(
+                    R.id.item_bar,
+                    WidgetProgressRenderer.bar(
+                        context = context,
+                        // Rasterised at a fixed width and stretched by scaleType fitXY, because a
+                        // row in a collection does not know how wide the widget is.
+                        widthDp = BAR_RENDER_WIDTH_DP,
+                        heightDp = BAR_HEIGHT_DP,
+                        progress = progressFraction,
+                        trackColor = colors.surfaceVariant,
+                        fillColor = colors.primary,
+                        airedFraction = airedFraction,
+                        dotColor = colors.tertiaryContainer
+                    )
+                )
+            }
+
             covers[entry.mediaId]?.let { setImageViewBitmap(R.id.item_cover, it) }
             setContentDescription(R.id.item_root, describe(context, row, isManga))
             setOnClickFillInIntent(R.id.item_root, WidgetIntents.openMediaFillIn(entry.mediaId))

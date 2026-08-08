@@ -143,7 +143,6 @@ class WeeklyCalendarWidgetProvider :
             trailing = time,
             mediaId = episode.mediaId,
             cover = covers[episode.id],
-            onMyList = episode.isWatching,
             contentDescription = context.getString(
                 R.string.a11y_widget_airing_row,
                 episode.titleUserPreferred,

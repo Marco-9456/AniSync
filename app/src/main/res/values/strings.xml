@@ -799,7 +799,6 @@
     <string name="widget_calendar_empty_all">No episodes scheduled</string>
     <string name="widget_calendar_empty_mine">No favorites airing</string>
     <string name="widget_calendar_empty_hint">Try selecting another day</string>
-    <string name="widget_calendar_on_my_list">On My List</string>
 
     <!-- Trending widget -->
     <string name="widget_trending_rank" translatable="false">#%1$d</string>
@@ -813,6 +812,10 @@
     <string name="widget_wp_left">%1$d left</string>
     <string name="widget_wp_left_manga">%1$d ch left</string>
     <string name="widget_wp_ongoing">Ongoing</string>
+    <!-- Replaces the progress bar for a series with no published total. -->
+    <string name="widget_wp_ongoing_anime">%1$d watched, still airing</string>
+    <string name="widget_wp_ongoing_manga">%1$d read, still running</string>
+    <string name="widget_wp_syncing_manga">Open AniSync once to sync your manga</string>
     <string name="widget_wp_progress" translatable="false">%1$d / %2$d</string>
     <string name="widget_wp_read">%1$d read</string>
     <string name="widget_wp_current_ep">Ep %1$d</string>

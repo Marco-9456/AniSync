@@ -107,8 +107,9 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
         // surface to a single card here and dropped the chrome with it, which is what this does.
         val short = WidgetSizes.isShort(size)
         val hero = !isEmpty && short
+        // The chips live in the header, so hiding it takes the filter with it. That is the right
+        // trade at this size: a hero card plus a filter row leaves no room for the card.
         views.setViewVisibility(R.id.widget_header, if (short) View.GONE else View.VISIBLE)
-        views.setViewVisibility(R.id.widget_filters, if (short) View.GONE else View.VISIBLE)
 
         views.setViewVisibility(R.id.widget_empty, if (isEmpty) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_hero, if (hero) View.VISIBLE else View.GONE)
@@ -157,7 +158,6 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
             trailing = time,
             mediaId = episode.mediaId,
             cover = covers[episode.id],
-            onMyList = episode.isWatching,
             contentDescription = context.getString(
                 R.string.a11y_widget_airing_row,
                 episode.titleUserPreferred,
@@ -180,10 +180,6 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
         views.setTextViewText(
             R.id.hero_episode,
             context.getString(R.string.widget_episode_badge, episode.episode)
-        )
-        views.setViewVisibility(
-            R.id.hero_bookmark,
-            if (episode.isWatching) View.VISIBLE else View.GONE
         )
         covers[episode.id]?.let { views.setImageViewBitmap(R.id.hero_cover, it) }
         views.setContentDescription(

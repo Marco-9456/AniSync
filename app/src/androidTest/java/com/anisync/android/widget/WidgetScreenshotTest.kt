@@ -114,7 +114,9 @@ class WidgetScreenshotTest {
 
         deps.libraryDao().insertAll(
             SEED_MEDIA.mapIndexed { index, media ->
-                val total = media.episodes ?: (12 + index * 4)
+                // The API's own null episode count is kept for the entries that have one, so the
+                // screenshots exercise the no-known-total row rather than only the tidy case.
+                val total = media.episodes
                 LibraryEntryEntity(
                     id = 700_000 + index,
                     ownerId = owner,
@@ -125,7 +127,7 @@ class WidgetScreenshotTest {
                     titleUserPreferred = media.title,
                     coverUrl = media.cover,
                     // Close to the end, which is what Watch Progress is meant to surface.
-                    progress = (total - (index + 1)).coerceAtLeast(0),
+                    progress = total?.let { (it - (index + 1)).coerceAtLeast(0) } ?: (40 + index),
                     totalEpisodes = total,
                     totalChapters = null,
                     totalVolumes = null,
