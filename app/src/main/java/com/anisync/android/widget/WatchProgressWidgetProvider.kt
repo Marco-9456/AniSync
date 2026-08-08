@@ -132,13 +132,13 @@ class WatchProgressWidgetProvider :
         views.setViewVisibility(R.id.widget_list, View.VISIBLE)
         views.removeAllViews(R.id.widget_list)
 
-        val rows = WidgetRows.fit(size, ROW_HEIGHT_DP, CHROME_DP, MAX_ROWS)
+        val rowCount = WidgetRows.fit(size, ROW_HEIGHT_DP, CHROME_DP, MAX_ROWS)
         // The bar spans the card minus the cover, its margin, and the card padding.
         val barWidthDp = (size.width - BAR_INSET_DP).toInt().coerceAtLeast(MIN_BAR_WIDTH_DP)
-        snapshot.rows.take(rows).forEach { row ->
+        snapshot.rows.take(rowCount).forEach { item ->
             views.addView(
                 R.id.widget_list,
-                row(context, appWidgetId, row, snapshot.type, covers, colors, barWidthDp)
+                row(context, appWidgetId, item, snapshot.type, covers, colors, barWidthDp)
             )
         }
         return views
