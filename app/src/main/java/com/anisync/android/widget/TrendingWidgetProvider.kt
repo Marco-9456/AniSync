@@ -20,8 +20,8 @@ import com.anisync.android.widget.core.widgetDeps
 /**
  * Trending: the top ten trending anime.
  *
- * Not account scoped, because trending is the same list for everyone. The search affordance opens
- * Discover, which is the one piece of this widget that used to be an empty TODO.
+ * Not account scoped, trending is the same list for everyone. The search button opens Discover,
+ * which used to be an empty TODO.
  */
 class TrendingWidgetProvider : AniSyncWidgetProvider<TrendingWidgetProvider.Snapshot>() {
 
@@ -56,6 +56,7 @@ class TrendingWidgetProvider : AniSyncWidgetProvider<TrendingWidgetProvider.Snap
         val views = RemoteViews(context.packageName, R.layout.widget_trending)
         val colors = WidgetColors.of(context)
         WidgetTheme.applyChrome(views, colors)
+        WidgetTheme.iconButton(views, R.id.widget_search, R.id.widget_search_icon, colors)
         views.setOnClickPendingIntent(
             R.id.widget_search,
             WidgetIntents.openDiscover(context, appWidgetId)
@@ -101,7 +102,7 @@ class TrendingWidgetProvider : AniSyncWidgetProvider<TrendingWidgetProvider.Snap
                     context.getString(R.string.widget_trending_rank, media.rank)
                 )
                 val score = media.averageScore
-                // Score and star travel together. A lone star beside nothing reads as a broken row.
+                // Star and score go together. A star on its own looks like a broken row.
                 val scoreVisibility = if (score != null) View.VISIBLE else View.GONE
                 setViewVisibility(R.id.item_score, scoreVisibility)
                 setViewVisibility(R.id.item_star, scoreVisibility)

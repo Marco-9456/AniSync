@@ -36,6 +36,45 @@ object WidgetTheme {
         text(views, R.id.widget_empty_body, colors.onSurfaceVariant, colors)
     }
 
+    /**
+     * A circular or pill-shaped button in the header, such as Trending's search affordance.
+     */
+    fun iconButton(
+        views: RemoteViews,
+        @IdRes buttonId: Int,
+        @IdRes iconId: Int,
+        colors: WidgetColors
+    ) {
+        tintBackground(views, buttonId, colors.surfaceVariant)
+        icon(views, iconId, colors.onSurfaceVariant, colors)
+    }
+
+    /**
+     * A day in the calendar strip.
+     *
+     * The unselected state carries no background at all, so the strip reads as one row rather than
+     * seven buttons. Only the selected day is filled, and it is filled with the app's primary
+     * rather than the drawable's resource colour, which is what made it look unrelated to
+     * everything around it.
+     */
+    fun daySelection(
+        views: RemoteViews,
+        @IdRes rootId: Int,
+        @IdRes nameId: Int,
+        @IdRes numberId: Int,
+        selected: Boolean,
+        colors: WidgetColors
+    ) {
+        views.setInt(
+            rootId,
+            "setBackgroundResource",
+            if (selected) R.drawable.widget_day_cell_bg else 0
+        )
+        if (selected) tintBackground(views, rootId, colors.primary)
+        views.setTextColor(nameId, if (selected) colors.onPrimary else colors.onSurfaceVariant)
+        views.setTextColor(numberId, if (selected) colors.onPrimary else colors.onSurface)
+    }
+
     /** The widget panel itself. */
     fun panel(views: RemoteViews, @IdRes viewId: Int, colors: WidgetColors) =
         tintBackground(views, viewId, colors.background)

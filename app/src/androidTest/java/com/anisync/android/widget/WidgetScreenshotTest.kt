@@ -100,6 +100,9 @@ class WidgetScreenshotTest {
             }
         )
 
+        // Cleared first, because rank is what orders this table and inserting on top of whatever
+        // the device already cached produces two rows claiming to be number one.
+        deps.trendingDao().clearAll()
         deps.trendingDao().insertAll(
             SEED_MEDIA.mapIndexed { index, media ->
                 TrendingEntity(
@@ -161,7 +164,10 @@ class WidgetScreenshotTest {
         }
         val rows = provider.items(context, FAKE_ID, snapshot, covers)
 
-        provider.declaredSizes.forEach { size ->
+        // Declared sizes plus a couple of taller ones. The ladder tops out at 200dp because a
+        // scrolling widget needs no layout beyond that, but a 200dp still frame only fits one row,
+        // which is not enough to look at a list.
+        (provider.declaredSizes + INSPECTION_SIZES).forEach { size ->
             val views = provider.build(context, FAKE_ID, size, snapshot, covers)
             val file = File(outDir, "$name-${size.width.toInt()}x${size.height.toInt()}.png")
             writePng(views, size, file, rows, provider.listViewId)
@@ -232,6 +238,9 @@ class WidgetScreenshotTest {
 
         /** Survives the post-run uninstall. Pull with `adb pull /data/local/tmp/widget-shots`. */
         const val PULL_DIR = "/data/local/tmp/widget-shots"
+
+        /** Not declared sizes. Rendered only so a list can be seen several rows deep. */
+        val INSPECTION_SIZES = listOf(SizeFCompat(320f, 420f), SizeFCompat(400f, 560f))
 
         /**
          * Real AniList media, so the screenshots show real posters and a tap opens a real page.

@@ -65,11 +65,15 @@ object WidgetProgressRenderer {
     }
 
     /**
-     * A progress bar, optionally carrying the aired marker.
+     * A progress bar in up to three zones: watched, aired but unwatched, and not yet out.
      *
-     * @param airedFraction position of the latest aired episode, or null when there is nothing to
-     *   mark. The caller omits it when the viewer is caught up and for manga, which has no
-     *   broadcast schedule.
+     * The middle zone replaces what used to be a dot sitting on top of the fill. A small circle in
+     * a third colour, drawn over a filled bar, was both hard to see and easy to mistake for a
+     * rendering fault. A band reads immediately, needs no legend, and answers the question the
+     * widget exists for, which is how much there is to catch up on.
+     *
+     * @param airedFraction where the latest released episode falls, or null when there is nothing
+     *   to distinguish: manga, a finished series, or a viewer who is already caught up.
      */
     fun bar(
         context: Context,
@@ -79,40 +83,41 @@ object WidgetProgressRenderer {
         trackColor: Int,
         fillColor: Int,
         airedFraction: Float? = null,
-        dotColor: Int = fillColor
+        airedColor: Int = fillColor
     ): Bitmap {
         val w = context.widgetPx(widthDp)
-        val barPx = context.widgetPx(heightDp)
-        val dot = (barPx * DOT_SCALE).toInt().coerceAtLeast(2)
-        // The dot overhangs the bar, so the bitmap is as tall as the taller of the two.
-        val h = maxOf(barPx, dot)
+        val h = context.widgetPx(heightDp)
         val bitmap = createBitmap(w, h)
         val canvas = Canvas(bitmap)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
 
-        val barH = barPx.toFloat()
-        val top = (h - barH) / 2f
-        val radius = barH / 2f
+        val radius = h / 2f
+        val full = RectF(0f, 0f, w.toFloat(), h.toFloat())
 
         paint.color = trackColor
-        canvas.drawRoundRect(RectF(0f, top, w.toFloat(), top + barH), radius, radius, paint)
+        canvas.drawRoundRect(full, radius, radius, paint)
 
-        val fillW = (w * progress.coerceIn(0f, 1f)).coerceAtLeast(if (progress > 0f) barH else 0f)
-        if (fillW > 0f) {
-            paint.color = fillColor
-            canvas.drawRoundRect(RectF(0f, top, fillW, top + barH), radius, radius, paint)
+        // Aired first, so the watched zone paints over its left edge and the two meet cleanly.
+        airedFraction?.let { aired ->
+            val airedW = w * aired.coerceIn(0f, 1f)
+            if (airedW > 0f) {
+                paint.color = airedColor
+                canvas.drawRoundRect(RectF(0f, 0f, airedW, h.toFloat()), radius, radius, paint)
+            }
         }
 
-        if (airedFraction != null) {
-            val r = dot / 2f
-            val cx = (w * airedFraction.coerceIn(0f, 1f)).coerceIn(r, w - r)
-            paint.color = dotColor
-            canvas.drawCircle(cx, h / 2f, r, paint)
+        val fillW = (w * progress.coerceIn(0f, 1f)).coerceAtLeast(if (progress > 0f) h.toFloat() else 0f)
+        if (fillW > 0f) {
+            paint.color = fillColor
+            canvas.drawRoundRect(RectF(0f, 0f, fillW, h.toFloat()), radius, radius, paint)
         }
         return bitmap
     }
 
+    /** [color] at [alpha], for the aired-but-unwatched band. */
+    fun withAlpha(color: Int, alpha: Int): Int =
+        (color and 0x00FFFFFF) or ((alpha.coerceIn(0, 255)) shl 24)
+
     /** Twelve o'clock. Android's sweep origin is three o'clock. */
     private const val START_ANGLE = -90f
-    private const val DOT_SCALE = 1.25f
 }

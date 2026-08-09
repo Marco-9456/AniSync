@@ -249,14 +249,18 @@ class WatchProgressWidgetProvider :
                     WidgetProgressRenderer.bar(
                         context = context,
                         // Rasterised at a fixed width and stretched by scaleType fitXY, because a
-                        // row in a collection does not know how wide the widget is.
+                        // row in a collection does not know how wide the widget is. Rendered wide
+                        // so the common case shrinks it, which hides the cap distortion that
+                        // stretching a narrow bitmap would show.
                         widthDp = BAR_RENDER_WIDTH_DP,
                         heightDp = BAR_HEIGHT_DP,
                         progress = progressFraction,
                         trackColor = colors.surfaceVariant,
                         fillColor = colors.primary,
                         airedFraction = airedFraction,
-                        dotColor = colors.tertiaryContainer
+                        // The same hue as the fill, faded. A distinct colour needs explaining;
+                        // a lighter shade of "watched" reads as "watchable" on its own.
+                        airedColor = WidgetProgressRenderer.withAlpha(colors.primary, AIRED_ALPHA)
                     )
                 )
             }
@@ -296,7 +300,10 @@ class WatchProgressWidgetProvider :
         const val COVER_WIDTH_DP = 52
         const val BAR_HEIGHT_DP = 6
 
+        /** How visible the aired-but-unwatched band is against the track. */
+        const val AIRED_ALPHA = 110
+
         /** Wide enough that stretching never softens the rounded ends. */
-        const val BAR_RENDER_WIDTH_DP = 240
+        const val BAR_RENDER_WIDTH_DP = 480
     }
 }

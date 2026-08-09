@@ -1,32 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Picker preview for Trending.
+
+  Static XML with sample content, mirroring widget_trending.xml. It reuses the real drawables and
+  @color/widget_* resources rather than a frozen preview palette, so it follows light and dark and,
+  on API 31+, the system colour.
+
+  It cannot follow the user's chosen seed the way the live widget does: the picker inflates this
+  without ever running our code, so there is nothing to tint it with.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_preview_bg"
-    android:backgroundTint="@color/widget_preview_bg"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:background="@drawable/widget_bg"
+    android:orientation="vertical">
 
-    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp">
 
-        <!-- Icon with rounded square background -->
         <FrameLayout
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:background="@drawable/widget_preview_poster_bg"
-            android:backgroundTint="@color/widget_preview_accent">
+            android:background="@drawable/widget_icon_plate_bg">
 
             <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:layout_gravity="center"
+                android:contentDescription="@null"
                 android:src="@drawable/local_fire_department_24px"
-                android:tint="@color/widget_preview_on_accent" />
+                android:tint="@color/widget_on_primary" />
         </FrameLayout>
 
         <TextView
@@ -34,168 +41,30 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="Trending Now"
-            android:textColor="@color/widget_preview_text"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/widget_trending_title"
+            android:textColor="@color/widget_on_surface"
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <!-- Search Button Background -->
         <FrameLayout
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:background="@drawable/widget_preview_poster_bg"
-            android:backgroundTint="@color/widget_preview_placeholder">
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_icon_plate_muted_bg">
 
             <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:layout_gravity="center"
+                android:contentDescription="@null"
                 android:src="@drawable/ic_search_24px"
-                android:tint="@color/widget_preview_text" />
+                android:tint="@color/widget_on_surface_variant" />
         </FrameLayout>
     </LinearLayout>
 
-    <!-- Card 1 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/widget_preview_card_bg"
-        android:backgroundTint="@color/widget_preview_card"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="12dp">
+    <include layout="@layout/widget_preview_row_ranked" />
 
-        <FrameLayout
-            android:layout_width="48dp"
-            android:layout_height="72dp">
-
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/widget_preview_poster_bg"
-                android:contentDescription="@null" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/widget_preview_pill_bg"
-                android:backgroundTint="@color/widget_preview_accent"
-                android:layout_margin="0dp"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"
-                android:text="#1"
-                android:textColor="@color/widget_preview_on_accent"
-                android:textSize="10sp"
-                android:textStyle="bold" />
-        </FrameLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="One Piece"
-                android:textColor="@color/widget_preview_text"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="★ "
-                    android:textColor="@color/widget_preview_accent"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="87% Score"
-                    android:textColor="@color/widget_preview_text_variant"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- Card 2 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/widget_preview_card_bg"
-        android:backgroundTint="@color/widget_preview_card"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="12dp">
-
-        <FrameLayout
-            android:layout_width="48dp"
-            android:layout_height="72dp">
-
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/widget_preview_poster_bg"
-                android:contentDescription="@null" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/widget_preview_pill_bg"
-                android:backgroundTint="@color/widget_preview_accent"
-                android:layout_margin="0dp"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"
-                android:text="#2"
-                android:textColor="@color/widget_preview_on_accent"
-                android:textSize="10sp"
-                android:textStyle="bold" />
-        </FrameLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Frieren: Beyond\nJourney's End Season 2"
-                android:textColor="@color/widget_preview_text"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="★ "
-                    android:textColor="@color/widget_preview_accent"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="88% Score"
-                    android:textColor="@color/widget_preview_text_variant"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-    </LinearLayout>
+    <include layout="@layout/widget_preview_row_ranked" />
 </LinearLayout>

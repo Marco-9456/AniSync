@@ -827,6 +827,17 @@
     <string name="widget_wp_empty_body">Series you are watching appear here, closest to finishing first.</string>
     <string name="widget_wp_empty_body_manga">Series you are reading appear here, closest to finishing first.</string>
 
+    <!-- Placeholder content for the widget picker previews, never shown in a live widget. -->
+    <string name="widget_preview_title" translatable="false">Vinland Saga Season 2</string>
+    <string name="widget_preview_episode" translatable="false">Episode 12</string>
+    <string name="widget_preview_time" translatable="false">9:00 AM</string>
+    <string name="widget_preview_score" translatable="false">92% score</string>
+    <string name="widget_preview_rank" translatable="false">#1</string>
+    <string name="widget_preview_left" translatable="false">2 left</string>
+    <string name="widget_preview_progress" translatable="false">10 / 12</string>
+    <string name="widget_preview_day_letter" translatable="false">M</string>
+    <string name="widget_preview_day_number" translatable="false">8</string>
+
     <!-- Widget content descriptions -->
     <string name="a11y_widget_filter_all">Show everything airing</string>
     <string name="a11y_widget_filter_mine">Show only your list</string>

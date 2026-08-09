@@ -2,9 +2,9 @@
 <!--
   Airing Today.
 
-  Two shapes in one layout. At the short rung the widget shows a single hero card for the next
-  episode, because a list of two clipped rows is worse than one readable one. Everywhere else it is
-  the scrolling list. The provider swaps between widget_hero and the list container.
+  Two shapes in one file. At the short rung it shows one hero card for the next episode, since two
+  clipped rows are worse than one readable one. Everywhere else it is the scrolling list. The
+  provider swaps between widget_hero and the list.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
@@ -89,7 +89,7 @@
             android:paddingBottom="12dp"
             android:scrollbars="none" />
 
-        <!-- The next episode, shown alone at sizes too short for a list to be readable. -->
+        <!-- The next episode on its own, at sizes too short for a readable list. -->
         <LinearLayout
             android:id="@+id/widget_hero"
             android:layout_width="match_parent"
@@ -125,6 +125,7 @@
                     android:orientation="horizontal">
 
                     <ImageView
+                        android:id="@+id/hero_clock"
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:contentDescription="@null"

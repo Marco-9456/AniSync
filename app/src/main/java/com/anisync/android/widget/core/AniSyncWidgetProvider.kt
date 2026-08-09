@@ -22,28 +22,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * Base for every AniSync home-screen widget.
+ * Base class for the home screen widgets.
  *
- * The tap path is the reason this class exists. A tap arrives as a broadcast on this provider,
- * [goAsync] holds the broadcast open, the new state is committed synchronously, Room is read, and
- * the result goes straight to `AppWidgetManager.updateAppWidget`. Everything happens in this one
- * process, in one pass, with no job scheduler in between, so a tap applies at the same speed after
- * the device has been idle for an hour as it does a second after the last one.
+ * A tap arrives here as a broadcast. goAsync keeps it alive, we write the new state, read Room and
+ * push the RemoteViews. One pass, same process, no WorkManager in between, so a tap is as fast
+ * after an hour of idle as it is right after the last one.
  *
- * There is exactly one source of truth per render: [snapshot] is read once, after the state write,
- * and every [build] call for that render sees the same value. The screen cannot show a selection
- * that disagrees with its content.
+ * snapshot() is read once per render, after the state write, so the selection and the content can
+ * never disagree.
  *
- * @param S the widget's own snapshot type: its state plus the rows it read out of Room.
+ * @param S the widget's snapshot: its state plus whatever it read out of Room.
  */
 abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
 
     /**
      * Sizes this widget declares.
      *
-     * From API 31 the launcher is handed one `RemoteViews` per entry and picks between them without
-     * calling back into the app, so resizing never waits on us. Below 31 only the entry matching
-     * the current size is built.
+     * On API 31+ the launcher gets one RemoteViews per entry and switches between them itself, so
+     * a resize never calls back into us. Below that only the matching one is built.
      */
     internal abstract val declaredSizes: List<SizeFCompat>
 
@@ -56,12 +52,12 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
         snapshot: S
     ): List<WidgetImageLoader.CoverRequest>
 
-    /** Decode size for those covers, from [WidgetImageBudget], never a constant. */
+    /** Decode size for those covers. Comes from [WidgetImageBudget], never a hardcoded number. */
     internal abstract fun coverSize(context: Context, snapshot: S): Size
 
     /**
-     * Builds the chrome for one declared size: header, controls, empty state. Called once per
-     * size, per render. The scrolling rows are [items], attached separately.
+     * Chrome for one declared size: header, controls, empty state. Called once per size per render.
+     * Rows come from [items] and are attached separately.
      */
     internal abstract fun build(
         context: Context,
@@ -72,10 +68,10 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
     ): RemoteViews
 
     /**
-     * The scrolling rows, or empty for a widget that has no list.
+     * The scrolling rows, or empty if the widget has no list.
      *
-     * Size-independent on purpose. A row looks the same at every widget size, so one set of rows is
-     * attached to every size variant rather than rebuilt per rung.
+     * No size parameter on purpose: a row looks the same at every widget size, so we build the rows
+     * once and attach the same set to every variant.
      */
     internal open fun items(
         context: Context,
@@ -84,17 +80,17 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
         covers: Map<Int, Bitmap?>
     ): List<RemoteViews> = emptyList()
 
-    /** The `ListView` [items] feed, or 0 when the widget has no list. */
+    /** The ListView [items] feeds, or 0 if the widget has no list. */
     internal open val listViewId: Int get() = 0
 
-    /** Shown by the list itself when it has no rows. Ignored when [listViewId] is 0. */
+    /** Shown by the list when it has no rows. Ignored if [listViewId] is 0. */
     internal open val listEmptyViewId: Int get() = 0
 
     /**
-     * Rebuilds the rows from scratch, for [WidgetCollectionService] on API 26 to 30.
+     * Rebuilds the rows from scratch for [WidgetCollectionService] on API 26 to 30.
      *
-     * Takes its own snapshot rather than reusing the render's, because the host can bind to the
-     * service long after that render, in a freshly started process.
+     * Takes a fresh snapshot instead of reusing the render's. The host can bind to the service long
+     * after that render, often in a newly started process.
      */
     internal suspend fun loadItems(context: Context, appWidgetId: Int): List<RemoteViews> {
         val snapshot = snapshot(context, appWidgetId)
@@ -121,7 +117,7 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
         appWidgetId: Int,
         newOptions: Bundle
     ) = goAsync {
-        // Below API 31 only one layout was sent, so a resize needs the matching one built.
+        // Below API 31 we only sent one layout, so a resize means rebuilding the right one.
         render(context, appWidgetId)
     }
 
@@ -136,8 +132,7 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
                 val name = intent.getStringExtra(WidgetIntents.EXTRA_NAME) ?: return
                 val value = intent.getStringExtra(WidgetIntents.EXTRA_VALUE) ?: return
                 goAsync {
-                    // Committed before the snapshot is taken, so the render below cannot read the
-                    // value the user just replaced.
+                    // Write first, then render, so the snapshot cannot pick up the old value.
                     WidgetState.apply(context, appWidgetId, name, value)
                     render(context, appWidgetId)
                 }
@@ -155,15 +150,15 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
     /**
      * One render pass.
      *
-     * Text never waits on images. Covers get [FAST_COVER_TIMEOUT_MS] to arrive, which the memory
-     * and disk caches normally beat, and the widget is published once. When they do not, the text
-     * is published immediately and a second update carries the images in. Both publishes render
-     * from the same [snapshot], so the slow path shows missing covers, never stale content.
+     * Text never waits on images. Covers get [FAST_COVER_TIMEOUT_MS]; a cache hit usually beats it
+     * and we publish once. If not, text goes out straight away and the images follow in a second
+     * update. Both publishes use the same [snapshot], so the slow path can show a missing cover but
+     * never stale content.
      */
     internal suspend fun render(context: Context, appWidgetId: Int) {
         val manager = AppWidgetManager.getInstance(context) ?: return
-        // A widget removed while its broadcast was in flight has no info, and the responsive
-        // helper throws on that rather than no-opping.
+        // Widget removed while its broadcast was in flight. The responsive helper throws on that
+        // instead of doing nothing.
         if (manager.getAppWidgetInfo(appWidgetId) == null) return
         val snapshot = try {
             snapshot(context, appWidgetId)
@@ -189,11 +184,10 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
         }
 
         publish(context, manager, appWidgetId, snapshot, emptyMap())
-        // Bounded, because this runs inside the broadcast. Broadcasts to one receiver are
-        // serialised, so a render that waits indefinitely on covers does not just delay itself, it
-        // delays the next tap behind it. Under Doze there is no network at all and every request
-        // would otherwise sit here until Coil's own timeout. Missing covers arrive on the next
-        // update; a tap that feels stuck does not get a second chance.
+        // Bounded because this runs inside the broadcast, and broadcasts to one receiver are
+        // serialised. An unbounded wait here would hold up the next tap too. Under Doze there is no
+        // network at all, so every request would sit until Coil times out. A missing cover is fixed
+        // by the next update, a tap that feels stuck is not.
         val loaded = withTimeoutOrNull(COVER_LOAD_BUDGET_MS) {
             WidgetImageLoader.loadCovers(context, requests, size)
         } ?: return
@@ -232,8 +226,8 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
                 WidgetCollection.notifyChanged(context, appWidgetId, listViewId)
             }
         } catch (t: IllegalArgumentException) {
-            // The widget was removed between the info check above and this call. Nothing to draw
-            // on and nothing wrong, so it does not get an error card or a stack trace.
+            // Removed between the check above and this call. Nothing to draw on, nothing broken,
+            // so no error card and no stack trace.
             Log.d(TAG, "Skipped ${javaClass.simpleName}/$appWidgetId, no longer bound")
         } catch (t: Throwable) {
             Log.e(TAG, "Update rejected for ${javaClass.simpleName}/$appWidgetId", t)
@@ -244,6 +238,7 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
     private fun publishError(context: Context, manager: AppWidgetManager, appWidgetId: Int) {
         runCatching {
             val views = RemoteViews(context.packageName, R.layout.widget_error).apply {
+                WidgetTheme.panel(this, R.id.widget_error_root, WidgetColors.of(context))
                 setOnClickPendingIntent(
                     R.id.widget_error_root,
                     WidgetIntents.refresh(context, this@AniSyncWidgetProvider.javaClass, appWidgetId)
@@ -260,18 +255,10 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
     private companion object {
         const val TAG = "AniSyncWidget"
 
-        /**
-         * How long a render waits for covers before painting text without them.
-         *
-         * Long enough that a cache hit publishes once, short enough that a cold network fetch never
-         * holds the first frame.
-         */
+        /** How long we wait for covers before painting the text without them. */
         const val FAST_COVER_TIMEOUT_MS = 120L
 
-        /**
-         * Ceiling on the whole cover pass, so one render cannot hold the receiver and delay the
-         * tap queued behind it.
-         */
+        /** Ceiling on the whole cover pass so one render cannot block the next tap. */
         const val COVER_LOAD_BUDGET_MS = 2_500L
     }
 }
@@ -279,10 +266,9 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
 /**
  * Runs [block] while holding the broadcast open.
  *
- * The library equivalent is internal to Glance, and this is the piece worth keeping from it: the
- * broadcast is finished in a `finally` so a thrown render can never leak the receiver, and
- * `IllegalStateException` from `finish()` is swallowed because some OEM builds report the broadcast
- * as already finished.
+ * Glance had its own version of this and kept it internal. finish() goes in a finally so a render
+ * that throws cannot leak the receiver, and we swallow IllegalStateException from it because some
+ * OEM builds claim the broadcast is already done.
  */
 private fun BroadcastReceiver.goAsync(block: suspend () -> Unit) {
     val pendingResult = goAsync()
@@ -290,8 +276,8 @@ private fun BroadcastReceiver.goAsync(block: suspend () -> Unit) {
     scope.launch {
         try {
             try {
-                // coroutineScope so a failing child surfaces here instead of reaching the
-                // CoroutineExceptionHandler and taking the process with it.
+                // coroutineScope so a failing child lands in the catch below instead of the
+                // CoroutineExceptionHandler, which would take the process down.
                 coroutineScope { block() }
             } catch (t: Throwable) {
                 Log.e("AniSyncWidget", "Widget broadcast failed", t)
@@ -299,7 +285,7 @@ private fun BroadcastReceiver.goAsync(block: suspend () -> Unit) {
                 scope.cancel()
             }
         } finally {
-            // Last call. The process may be killed the moment it returns.
+            // Last thing we do. The process can be killed the moment this returns.
             runCatching { pendingResult.finish() }
         }
     }

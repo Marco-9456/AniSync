@@ -44,17 +44,18 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+        <!-- Mirrors the icon plate at the other end of the header, same 32dp rounded square. -->
         <FrameLayout
             android:id="@+id/widget_search"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:layout_marginStart="8dp"
-            android:background="@drawable/widget_pill_bg_muted">
+            android:background="@drawable/widget_icon_plate_muted_bg">
 
             <ImageView
                 android:id="@+id/widget_search_icon"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_search_24px"

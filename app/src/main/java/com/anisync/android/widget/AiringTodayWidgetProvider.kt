@@ -23,11 +23,10 @@ import com.anisync.android.widget.core.activeOwnerId
 import com.anisync.android.widget.core.widgetDeps
 
 /**
- * Airing Today: everything airing between midnight and midnight, filtered to the account's list or
- * not.
+ * Airing Today: everything airing between midnight and midnight, filtered to the list or not.
  *
- * The filter is read before the query, not after it, so switching to My List no longer decodes a
- * cover for every show airing today and then throws most of them away.
+ * The filter is read before the query rather than after, so My List no longer decodes a cover for
+ * every show airing today and then throws most of them away.
  */
 class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvider.Snapshot>() {
 
@@ -37,8 +36,8 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
         val nowSeconds: Long
     ) {
         /**
-         * What the hero card shows: the next episode still to air, or the last one once the day is
-         * over. Showing nothing on a day that has entries would be the wrong answer.
+         * What the hero shows: the next episode still to air, or the last one once the day is done.
+         * Showing nothing on a day that has entries would be wrong.
          */
         val next: AiringScheduleEntity?
             get() = episodes.firstOrNull { it.airingAt > nowSeconds } ?: episodes.lastOrNull()
@@ -57,7 +56,7 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
         val end = start + WidgetTime.DAY
 
         val dao = deps.airingScheduleDao()
-        // No cap. The list scrolls, so the whole day is shown.
+        // No cap, the list scrolls so we show the whole day.
         val episodes = if (myListOnly) {
             dao.getAiringBetweenForUser(ownerId, start, end)
         } else {
@@ -106,12 +105,12 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
         )
 
         val isEmpty = snapshot.episodes.isEmpty()
-        // At short sizes a list is a header and one clipped row. The shipped widget gave the whole
-        // surface to a single card here and dropped the chrome with it, which is what this does.
+        // At short sizes a list is just a header and one clipped row. The old widget gave the whole
+        // surface to a single card here and dropped the chrome with it, same as this.
         val short = WidgetSizes.isShort(size)
         val hero = !isEmpty && short
-        // The chips live in the header, so hiding it takes the filter with it. That is the right
-        // trade at this size: a hero card plus a filter row leaves no room for the card.
+        // Chips live in the header, so hiding it takes the filter too. Fine at this size, a hero
+        // card plus a filter row leaves no room for the card.
         views.setViewVisibility(R.id.widget_header, if (short) View.GONE else View.VISIBLE)
 
         views.setViewVisibility(R.id.widget_empty, if (isEmpty) View.VISIBLE else View.GONE)
@@ -137,7 +136,7 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
         }
 
         if (hero) {
-            snapshot.next?.let { bindHero(context, views, appWidgetId, it, covers) }
+            snapshot.next?.let { bindHero(context, views, appWidgetId, it, covers, colors) }
         }
 
         views.setPendingIntentTemplate(
@@ -176,8 +175,24 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
         views: RemoteViews,
         appWidgetId: Int,
         episode: AiringScheduleEntity,
-        covers: Map<Int, Bitmap?>
+        covers: Map<Int, Bitmap?>,
+        colors: WidgetColors
     ) {
+        // The hero is not a shared row, so it gets themed here instead of by the row builder.
+        // Missing these is why the card kept the device palette while the rest followed the app.
+        WidgetTheme.card(views, R.id.widget_hero, colors)
+        WidgetTheme.poster(views, R.id.hero_cover, colors)
+        WidgetTheme.icon(views, R.id.hero_clock, colors.primary, colors)
+        WidgetTheme.text(views, R.id.hero_time, colors.primary, colors)
+        WidgetTheme.text(views, R.id.hero_title, colors.onSurface, colors)
+        WidgetTheme.badge(
+            views,
+            R.id.hero_episode,
+            colors.tertiaryContainer,
+            colors.onTertiaryContainer,
+            colors
+        )
+
         val time = WidgetTime.clock(context, episode.airingAt)
         views.setTextViewText(R.id.hero_time, context.getString(R.string.widget_airing_at, time))
         views.setTextViewText(R.id.hero_title, episode.titleUserPreferred)
@@ -195,8 +210,8 @@ class AiringTodayWidgetProvider : AniSyncWidgetProvider<AiringTodayWidgetProvide
                 time
             )
         )
-        // Not part of the collection, so this one carries its own PendingIntent rather than a
-        // fill-in against the list's template.
+        // Not part of the collection, so it carries its own PendingIntent instead of filling in
+        // against the list template.
         views.setOnClickPendingIntent(
             R.id.widget_hero,
             WidgetIntents.openMedia(context, appWidgetId, episode.mediaId)

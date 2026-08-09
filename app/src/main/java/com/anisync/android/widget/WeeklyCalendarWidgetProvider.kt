@@ -25,10 +25,10 @@ import com.anisync.android.widget.core.widgetDeps
 /**
  * Weekly Calendar: a seven day strip over the schedule for the selected day.
  *
- * This is the widget the old Glance implementation got most visibly wrong. It captured the episode
- * list in `provideGlance` before composition, so tapping a day recomposed the strip instantly
- * against the previous day's episodes and only corrected itself when a second update landed. Here
- * the day is committed, then read back, then queried, then rendered, once.
+ * The old Glance version got this one most visibly wrong. It grabbed the episode list in
+ * provideGlance before composition, so tapping a day redrew the strip against the previous day
+ * episodes and only fixed itself when a second update landed. Here the day is written, read back,
+ * queried and rendered once.
  */
 class WeeklyCalendarWidgetProvider :
     AniSyncWidgetProvider<WeeklyCalendarWidgetProvider.Snapshot>() {
@@ -53,7 +53,7 @@ class WeeklyCalendarWidgetProvider :
         val start = WidgetTime.startOfDay(selectedDay)
         val end = start + WidgetTime.DAY
         val dao = deps.airingScheduleDao()
-        // No cap. The list scrolls, so the whole day is shown rather than whatever happened to fit.
+        // No cap, the list scrolls so we show the whole day instead of whatever happened to fit.
         val episodes = if (myListOnly) {
             dao.getAiringBetweenForUser(ownerId, start, end)
         } else {
@@ -116,13 +116,13 @@ class WeeklyCalendarWidgetProvider :
                 else R.string.widget_calendar_empty_all
             )
         )
-        // setEmptyView already swaps these once the host has bound the adapter. Setting them here
-        // too means the correct one is showing in the very first frame, before that happens.
+        // setEmptyView swaps these once the host binds the adapter. Setting them here as well means
+        // the right one is already up in the first frame.
         val isEmpty = snapshot.episodes.isEmpty()
         views.setViewVisibility(R.id.widget_empty, if (isEmpty) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_list, if (isEmpty) View.GONE else View.VISIBLE)
 
-        // One template for every row. Each row fills in which series it opens.
+        // One template for all rows, each row fills in which series it opens.
         views.setPendingIntentTemplate(
             R.id.widget_list,
             WidgetIntents.mediaTemplate(context, appWidgetId)
@@ -136,8 +136,8 @@ class WeeklyCalendarWidgetProvider :
         snapshot: Snapshot,
         covers: Map<Int, Bitmap?>
     ): List<RemoteViews> = snapshot.episodes.map { episode ->
-        // Follows the device's 12/24 hour setting. The time is a pill here rather than a fixed
-        // column, so an AM/PM suffix has room.
+        // Follows the device 12/24 hour setting. The time is a pill here, not a fixed column, so an
+        // AM/PM suffix has room.
         val time = WidgetTime.clock(context, episode.airingAt)
         WidgetMediaRow.build(
             context = context,
@@ -169,15 +169,14 @@ class WeeklyCalendarWidgetProvider :
         return RemoteViews(context.packageName, R.layout.widget_weekly_calendar_day).apply {
             setTextViewText(R.id.day_name, letter)
             setTextViewText(R.id.day_number, number.toString())
-            // Unselected cells carry no background, so the strip reads as one row rather than
-            // seven buttons. Only the selected day gets a filled pill.
-            setInt(
-                R.id.day_root,
-                "setBackgroundResource",
-                if (isSelected) R.drawable.widget_day_cell_bg else 0
+            WidgetTheme.daySelection(
+                views = this,
+                rootId = R.id.day_root,
+                nameId = R.id.day_name,
+                numberId = R.id.day_number,
+                selected = isSelected,
+                colors = colors
             )
-            setTextColor(R.id.day_name, if (isSelected) colors.onPrimary else colors.onSurfaceVariant)
-            setTextColor(R.id.day_number, if (isSelected) colors.onPrimary else colors.onSurface)
             setContentDescription(
                 R.id.day_root,
                 context.getString(
