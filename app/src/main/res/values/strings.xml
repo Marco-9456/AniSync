@@ -800,7 +800,7 @@
 
     <!-- Weekly Calendar widget -->
     <string name="widget_calendar_empty_all">No episodes scheduled</string>
-    <string name="widget_calendar_empty_mine">No favorites airing</string>
+    <string name="widget_calendar_empty_mine">Nothing from your list airing</string>
     <string name="widget_calendar_empty_hint">Try selecting another day</string>
 
     <!-- Trending widget -->
