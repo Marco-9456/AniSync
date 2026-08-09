@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Weekly Calendar. Reproduces the shipped Glance layout: 16dp header with the icon plate and a
-  single filter pill, a seven day strip, then a scrolling list of episode cards.
+  Weekly Calendar, same shape as the old Glance one: 16dp header with the icon plate and a filter
+  pill, a seven day strip, then the list of episode cards.
 
-  The header is a fixed height rather than wrap_content. Letting it wrap meant the icon, the title
-  and the pill all negotiated for one line on every resize, and the title lost, which is what made
-  the header look squashed as the widget got narrower.
+  The header height is fixed, not wrap_content. Letting it wrap had the icon, the title and the pill
+  all fighting over one line on every resize, and the title lost. That is what made the header look
+  squashed as the widget got narrower.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
@@ -56,6 +56,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:maxLines="1"
             android:paddingHorizontal="10dp"
             android:paddingVertical="5dp"
             android:text="@string/widget_filter_all"
@@ -67,6 +68,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
+            android:maxLines="1"
             android:paddingHorizontal="10dp"
             android:paddingVertical="5dp"
             android:text="@string/widget_filter_mine"
@@ -91,8 +93,8 @@
         android:layout_weight="1">
 
         <!--
-          A real scrolling list. ScrollView is not permitted inside RemoteViews, so the only way to
-          show more rows than fit is an adapter-backed view fed by WidgetCollection.
+          A real scrolling list. ScrollView is not allowed inside RemoteViews, so the only way to
+          show more rows than fit is an adapter view fed by WidgetCollection.
         -->
         <ListView
             android:id="@+id/widget_list"

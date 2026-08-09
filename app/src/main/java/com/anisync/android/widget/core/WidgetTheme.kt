@@ -7,25 +7,21 @@ import androidx.annotation.IdRes
 import com.anisync.android.R
 
 /**
- * Paints the app's scheme onto a widget's views.
+ * Paints the app scheme onto a widget.
  *
- * Widget layouts reference `@color/widget_*`, which the launcher resolves under its own
- * configuration. That is as far as resources can go: they can express light and dark, and the
- * system palette on API 31 and up, but not the seed colour the user picked in AniSync. Anything
- * that has to match the app is therefore applied here, per view, per render.
+ * The layouts use @color/widget_*, which gets us light/dark and the system palette on API 31+, but
+ * not the seed colour the user picked in the app. So anything that has to match the app is applied
+ * here instead, per view, per render.
  *
- * Every call is a no-op below API 31. Backgrounds cannot be tinted through `RemoteViews` there, and
- * recolouring the text on a card whose background stayed put reads worse than leaving both alone,
- * so those devices keep the resource palette wholesale. See [WidgetColors.canTintBackgrounds].
+ * All no-ops below API 31, where RemoteViews cannot tint a background. Recolouring the text but not
+ * the card under it looks worse than leaving both alone. See [WidgetColors.canTintBackgrounds].
  */
 object WidgetTheme {
 
     /**
-     * Everything every widget has in common: the panel, the header icon plate, the title and the
-     * empty state.
+     * The bits every widget shares: panel, header icon plate, title, empty state.
      *
-     * The ids are shared across all five layouts by convention, so each provider only has to deal
-     * with what is unique to it.
+     * All five layouts use the same ids for these, so a provider only handles what is its own.
      */
     fun applyChrome(views: RemoteViews, colors: WidgetColors) {
         panel(views, android.R.id.background, colors)
@@ -36,9 +32,7 @@ object WidgetTheme {
         text(views, R.id.widget_empty_body, colors.onSurfaceVariant, colors)
     }
 
-    /**
-     * A circular or pill-shaped button in the header, such as Trending's search affordance.
-     */
+    /** A round or pill button in the header, like Trending search. */
     fun iconButton(
         views: RemoteViews,
         @IdRes buttonId: Int,
@@ -52,10 +46,9 @@ object WidgetTheme {
     /**
      * A day in the calendar strip.
      *
-     * The unselected state carries no background at all, so the strip reads as one row rather than
-     * seven buttons. Only the selected day is filled, and it is filled with the app's primary
-     * rather than the drawable's resource colour, which is what made it look unrelated to
-     * everything around it.
+     * Unselected days get no background, otherwise the strip looks like seven buttons instead of one
+     * row. The selected one is filled with the app primary, not the drawable colour, which is what
+     * made it look unrelated before.
      */
     fun daySelection(
         views: RemoteViews,
@@ -73,6 +66,31 @@ object WidgetTheme {
         if (selected) tintBackground(views, rootId, colors.primary)
         views.setTextColor(nameId, if (selected) colors.onPrimary else colors.onSurfaceVariant)
         views.setTextColor(numberId, if (selected) colors.onPrimary else colors.onSurface)
+    }
+
+    /**
+     * The three ProgressBar layers: track, aired band, watched fill.
+     *
+     * The aired band is just the fill colour faded out. A third colour would need explaining, a
+     * lighter shade of "watched" reads as "watchable" on its own.
+     */
+    fun progressBar(views: RemoteViews, @IdRes viewId: Int, colors: WidgetColors) {
+        if (!WidgetColors.canTintBackgrounds) return
+        views.setColorStateList(
+            viewId,
+            "setProgressBackgroundTintList",
+            ColorStateList.valueOf(colors.surfaceVariant)
+        )
+        views.setColorStateList(
+            viewId,
+            "setSecondaryProgressTintList",
+            ColorStateList.valueOf(withAlpha(colors.primary, AIRED_ALPHA))
+        )
+        views.setColorStateList(
+            viewId,
+            "setProgressTintList",
+            ColorStateList.valueOf(colors.primary)
+        )
     }
 
     /** The widget panel itself. */
@@ -134,21 +152,28 @@ object WidgetTheme {
 
     fun icon(views: RemoteViews, @IdRes viewId: Int, @ColorInt color: Int, colors: WidgetColors) {
         if (WidgetColors.canTintBackgrounds) {
-            // setColorFilter takes a plain int and is remotable on every version, but it is only
-            // used where the background around it was tinted too.
+            // setColorFilter is remotable everywhere, but only worth using where we tinted the
+            // background around it too.
             views.setInt(viewId, "setColorFilter", color)
         }
     }
 
     /**
-     * The one call that needs API 31.
+     * The call that needs API 31.
      *
-     * `setBackgroundTintList` replaces the shape's solid colour, keeping its corners. There is no
-     * pre-31 equivalent: `setBackgroundColor` is remotable but flattens the drawable, corners and
-     * all, which is worse than the wrong hue.
+     * setBackgroundTintList swaps the shape colour and keeps the corners. Nothing older does that:
+     * setBackgroundColor is remotable but flattens the drawable, corners included, which is worse
+     * than the wrong colour.
      */
     private fun tintBackground(views: RemoteViews, @IdRes viewId: Int, @ColorInt color: Int) {
         if (!WidgetColors.canTintBackgrounds) return
         views.setColorStateList(viewId, "setBackgroundTintList", ColorStateList.valueOf(color))
     }
+
+    @ColorInt
+    private fun withAlpha(@ColorInt color: Int, alpha: Int): Int =
+        (color and 0x00FFFFFF) or (alpha.coerceIn(0, 255) shl 24)
+
+    /** How strong the aired band is behind the watched fill. */
+    private const val AIRED_ALPHA = 110
 }

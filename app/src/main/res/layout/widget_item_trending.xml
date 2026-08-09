@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  One Trending row. The rank badge sits over the cover's top-left corner, as the shipped design had
-  it, rather than taking a column of its own.
+  One Trending row. The rank badge sits on the cover top left corner like the old design, rather
+  than taking a column of its own.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -30,11 +30,15 @@
                 android:contentDescription="@null"
                 android:scaleType="centerCrop" />
 
-            <!-- Inset from the corner. Flush against it, the badge read as part of the artwork. -->
+            <!--
+              Pinned top left. Without an explicit layout_gravity a FrameLayout child inherits the
+              parent one, which left the badge floating in the middle of the cover.
+            -->
             <TextView
                 android:id="@+id/item_rank"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
                 android:layout_margin="4dp"
                 android:background="@drawable/widget_pill_bg_accent"
                 android:paddingHorizontal="6dp"

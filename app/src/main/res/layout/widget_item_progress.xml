@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  One Watch Progress row.
+  One Watch Progress row: title, then the remaining pill beside the airing line, then the bar with
+  its count on the right.
 
-  item_bar is an ImageView rather than a ProgressBar because the bar carries the aired-episode
-  marker, which no RemoteViews-safe widget can draw. WidgetProgressRenderer rasterises it.
+  The bar is a real ProgressBar. Its three layers are watched, aired but unwatched, and the rest,
+  which widget_progress_bar.xml maps onto progress, secondaryProgress and background.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -35,72 +36,84 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
+            <TextView
+                android:id="@+id/item_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/widget_on_surface"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/item_title"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="@color/widget_on_surface"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/item_remaining"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
                     android:background="@drawable/widget_pill_bg"
                     android:maxLines="1"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="3dp"
+                    android:textAllCaps="true"
                     android:textColor="@color/widget_on_primary_container"
                     android:textSize="11sp"
                     android:textStyle="bold" />
+
+                <!--
+                  When it airs, next to the pill. Gone when nothing is scheduled.
+
+                  Clipped instead of ellipsized on purpose. At the narrowest width there is no room
+                  left after the pill, and a lone ellipsis there looks like a speck of dirt.
+                -->
+                <TextView
+                    android:id="@+id/item_airing"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_on_surface_variant"
+                    android:textSize="12sp" />
             </LinearLayout>
 
-            <ImageView
-                android:id="@+id/item_bar"
-                android:layout_width="match_parent"
-                android:layout_height="10dp"
-                android:layout_marginTop="8dp"
-                android:contentDescription="@null"
-                android:scaleType="fitXY" />
-
-            <!--
-              Stands in for the bar on a series with no known length. Occupies the same slot so the
-              row keeps its height whichever it shows.
-            -->
-            <TextView
-                android:id="@+id/item_ongoing"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/widget_pill_bg_muted"
-                android:maxLines="1"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="2dp"
-                android:textColor="@color/widget_on_surface_variant"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/item_meta"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="@color/widget_on_surface_variant"
-                android:textSize="11sp" />
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <!--
+                  A real ProgressBar, not a bitmap. It draws its own rounded ends at whatever width
+                  the row ends up at, which a stretched bitmap could not. max is 1000 so a fraction
+                  survives being turned into an int.
+                -->
+                <ProgressBar
+                    android:id="@+id/item_bar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="0dp"
+                    android:layout_height="6dp"
+                    android:layout_weight="1"
+                    android:max="1000"
+                    android:progressDrawable="@drawable/widget_progress_bar" />
+
+                <TextView
+                    android:id="@+id/item_meta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_on_surface_variant"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>

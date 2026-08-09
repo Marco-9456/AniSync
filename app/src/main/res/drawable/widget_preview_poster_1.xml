@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Stand-in cover art for the picker previews.
+
+  A gradient, not a real cover. Bundling artwork would put third party images in the APK for
+  something only ever seen in the picker. This reads as a poster without pretending to be a show.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="8dp" />
+    <gradient
+        android:angle="315"
+        android:endColor="@color/widget_primary"
+        android:startColor="@color/widget_tertiary_container"
+        android:type="linear" />
+</shape>

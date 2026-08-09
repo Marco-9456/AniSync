@@ -8,14 +8,14 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Time formatting shared by the schedule-driven widgets.
+ * Time formatting for the schedule widgets.
  *
- * Everything here reads from `strings.xml` rather than building English by concatenation, which is
- * how the previous widgets did it and why several of their labels never reached Weblate.
+ * Everything comes out of strings.xml instead of being glued together in English. The old widgets
+ * did the latter, which is why a few of their labels never made it to Weblate.
  */
 object WidgetTime {
 
-    /** "In 2d 4h", "In 3h 12m", "In 8m", or the airing-now label once the timestamp has passed. */
+    /** "In 2d 4h", "In 3h 12m", "In 8m", or the airing now label once the time has passed. */
     fun countdown(context: Context, airingAtSeconds: Long, nowSeconds: Long): String {
         val remaining = airingAtSeconds - nowSeconds
         if (remaining <= 0) return context.getString(R.string.widget_time_airing_now)
@@ -29,6 +29,29 @@ object WidgetTime {
             else -> context.getString(R.string.widget_time_in_minutes, minutes)
         }
     }
+
+    /**
+     * Same countdown but one unit only, "2d", "5h", "8m", for lines sharing a row with other text.
+     *
+     * Rounds down, so "1d" means anything from 24 to 47 hours. None of this is a deadline and the
+     * exact time is on the card in the app.
+     */
+    fun compactCountdown(context: Context, airingAtSeconds: Long, nowSeconds: Long): String {
+        val remaining = airingAtSeconds - nowSeconds
+        if (remaining <= 0) return context.getString(R.string.widget_time_airing_now)
+
+        val days = remaining / DAY
+        val hours = remaining / HOUR
+        return when {
+            days > 0 -> context.getString(R.string.widget_time_short_days, days)
+            hours > 0 -> context.getString(R.string.widget_time_short_hours, hours)
+            else -> context.getString(R.string.widget_time_short_minutes, remaining / MINUTE)
+        }
+    }
+
+    /** Short weekday name for a timestamp, "Sat". */
+    fun weekdayOf(airingAtSeconds: Long): String =
+        SimpleDateFormat("EEE", Locale.getDefault()).format(Date(airingAtSeconds * 1000))
 
     /** Wall-clock airing time in the device's locale and 12/24 hour setting. */
     fun clock(context: Context, airingAtSeconds: Long): String {
@@ -55,20 +78,19 @@ object WidgetTime {
     }.timeInMillis / 1000
 
     /**
-     * Wall-clock airing time, always 24 hour.
+     * Airing time, always 24 hour.
      *
-     * The calendar card uses a fixed 48dp time column, so it cannot take the extra width an AM/PM
-     * suffix needs. The airing-today row, which has room, uses [clock] and follows the device
-     * setting instead.
+     * The calendar card has a fixed 48dp time column with no room for an AM/PM suffix. The airing
+     * today row has the space, so it uses [clock] and follows the device setting.
      */
     fun clock24(airingAtSeconds: Long): String =
         SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(airingAtSeconds * 1000))
 
     /**
-     * Single-letter weekday, "M", for the calendar day strip.
+     * One letter weekday, "M", for the day strip.
      *
-     * Falls back to the first character of the short name in locales where the narrow form is not
-     * defined, which is what `TextStyle.NARROW` does anyway.
+     * Falls back to the first letter of the short name where the narrow form is not defined, which
+     * is what TextStyle.NARROW does anyway.
      */
     fun narrowWeekday(dayOffset: Int): String {
         val calendar = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, dayOffset) }
@@ -80,7 +102,7 @@ object WidgetTime {
             ?: shortWeekday(dayOffset).take(1).uppercase(Locale.getDefault())
     }
 
-    /** Short weekday name, "Mon", used for the day strip's content description. */
+    /** Short weekday name, "Mon", for the day strip content description. */
     fun shortWeekday(dayOffset: Int): String {
         val calendar = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, dayOffset) }
         return SimpleDateFormat("EEE", Locale.getDefault()).format(calendar.time)

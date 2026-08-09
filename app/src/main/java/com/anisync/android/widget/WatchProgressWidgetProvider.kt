@@ -15,20 +15,19 @@ import com.anisync.android.widget.core.WidgetColors
 import com.anisync.android.widget.core.WidgetImageBudget
 import com.anisync.android.widget.core.WidgetImageLoader
 import com.anisync.android.widget.core.WidgetIntents
-import com.anisync.android.widget.core.WidgetProgressRenderer
 import com.anisync.android.widget.core.WidgetSizes
 import com.anisync.android.widget.core.WidgetState
 import com.anisync.android.widget.core.WidgetTheme
+import com.anisync.android.widget.core.WidgetTime
 import com.anisync.android.widget.core.activeOwnerId
 import com.anisync.android.widget.core.widgetDeps
 import com.anisync.android.worker.LibrarySyncWorker
 
 /**
- * Watch Progress: the series closest to finishing, fewest episodes or chapters remaining first.
+ * Watch Progress: whatever is closest to finishing, fewest episodes or chapters left first.
  *
- * Entries with no known total sort last. They are still worth showing, since an ongoing series the
- * account is mid-way through is exactly what someone opens this widget for, but "unknown remaining"
- * cannot be ranked against a real count.
+ * Entries with no known total go last. Still worth showing, an ongoing series you are halfway
+ * through is exactly what this widget is for, but you cannot rank "unknown" against a real count.
  */
 class WatchProgressWidgetProvider :
     AniSyncWidgetProvider<WatchProgressWidgetProvider.Snapshot>() {
@@ -61,16 +60,16 @@ class WatchProgressWidgetProvider :
                 val remaining = total?.let { (it - entry.progress).coerceAtLeast(0) }
                 Row(entry, total, remaining)
             }
-            // Unknown totals last, then fewest remaining, then most recently touched.
+            // Unknown totals last, then fewest left, then most recently touched.
             .sortedWith(
                 compareBy<Row> { it.remaining == null }
                     .thenBy { it.remaining ?: Int.MAX_VALUE }
                     .thenByDescending { it.entry.lastUpdated }
             )
 
-        // Nothing cached for this type usually means the app has never opened its tab, not that the
-        // account has nothing in progress. Ask for a sync and say so, rather than claiming the list
-        // is empty. Deduped per type, so rendering repeatedly does not restart the fetch.
+        // Nothing cached for this type usually means the tab was never opened, not that there is
+        // nothing in progress. So ask for a sync and say so instead of claiming it is empty. Deduped
+        // per type, so re-rendering does not restart the fetch.
         val syncing = rows.isEmpty()
         if (syncing) {
             runCatching { LibrarySyncWorker.enqueue(context, type) }
@@ -168,9 +167,9 @@ class WatchProgressWidgetProvider :
     ): RemoteViews {
         val entry = row.entry
 
-        // Episodes released so far. For a series with no announced length this is the only end the
-        // bar can measure against, and it is arguably the more useful one anyway: what it shows is
-        // whether the account is caught up, not how far through an unknown whole it is.
+        // Episodes out so far. For a series with no announced length this is the only thing the bar
+        // can measure against, and probably the more useful one anyway: it says whether you are
+        // caught up, not how far into an unknown whole you are.
         val aired = entry.nextAiringEpisode?.minus(1)?.takeIf { it > 0 }
         val scale = row.total ?: aired
         val againstAired = row.total == null && aired != null
@@ -180,8 +179,8 @@ class WatchProgressWidgetProvider :
             ?.let { (entry.progress.toFloat() / it).coerceIn(0f, 1f) }
             ?: 0f
 
-        // The marker sits where the latest aired episode falls. Pointless when the bar already ends
-        // there, which is exactly the unknown-total case.
+        // Marker sits where the latest aired episode falls. Pointless when the bar already ends
+        // there, which is the unknown total case.
         val airedFraction = if (!isManga && !againstAired) {
             val total = row.total
             if (aired != null && total != null && total > 0 && aired > entry.progress) {
@@ -199,11 +198,13 @@ class WatchProgressWidgetProvider :
                 if (isManga) R.string.widget_wp_left_manga else R.string.widget_wp_left,
                 row.remaining
             )
-            // No end to count down to, so count against what is out instead.
+            // No end to count down to, so count against what is out.
             behind != null && behind > 0 -> context.getString(R.string.widget_wp_behind, behind)
             behind != null -> context.getString(R.string.widget_wp_caught_up)
             else -> context.getString(R.string.widget_wp_ongoing)
         }
+
+        val airingLine = airingLine(context, entry, row.total, isManga)
 
         val meta = when {
             row.total != null ->
@@ -221,53 +222,77 @@ class WatchProgressWidgetProvider :
             WidgetTheme.poster(this, R.id.item_cover, colors)
             WidgetTheme.text(this, R.id.item_title, colors.onSurface, colors)
             WidgetTheme.text(this, R.id.item_meta, colors.onSurfaceVariant, colors)
+            WidgetTheme.text(this, R.id.item_airing, colors.onSurfaceVariant, colors)
             WidgetTheme.badge(this, R.id.item_remaining, colors.primaryContainer, colors.onPrimaryContainer, colors)
-            WidgetTheme.badge(this, R.id.item_ongoing, colors.surfaceVariant, colors.onSurfaceVariant, colors)
             setTextViewText(R.id.item_title, entry.titleUserPreferred)
             setTextViewText(R.id.item_remaining, remainingLabel)
             setTextViewText(R.id.item_meta, meta)
+            setTextViewText(R.id.item_airing, airingLine.orEmpty())
+            setViewVisibility(R.id.item_airing, if (airingLine == null) View.GONE else View.VISIBLE)
 
             if (scale == null) {
-                // Nothing to measure against at all: no announced total and no broadcast schedule,
-                // which in practice means manga. A bar here could only ever read empty, which looks
-                // broken rather than unknown, so the row shows the count instead.
-                setViewVisibility(R.id.item_bar, View.GONE)
-                setViewVisibility(R.id.item_ongoing, View.VISIBLE)
-                setTextViewText(
-                    R.id.item_ongoing,
-                    context.getString(
-                        if (isManga) R.string.widget_wp_ongoing_manga
-                        else R.string.widget_wp_ongoing_anime,
-                        entry.progress
-                    )
-                )
+                // Nothing to measure against: no total and no schedule to stand in for one. Most
+                // ongoing manga, since AniList has no "latest released chapter" to divide by.
+                //
+                // Still draw the bar, as a faded band across the whole track. Keeps every row the
+                // same shape, and a flat faded bar reads as "length unknown" rather than zero. The
+                // pill and the count next to it are what actually say anything.
+                setViewVisibility(R.id.item_bar, View.VISIBLE)
+                setProgressBar(R.id.item_bar, BAR_MAX, 0, false)
+                setInt(R.id.item_bar, "setSecondaryProgress", BAR_MAX)
+                WidgetTheme.progressBar(views = this, viewId = R.id.item_bar, colors = colors)
             } else {
                 setViewVisibility(R.id.item_bar, View.VISIBLE)
-                setViewVisibility(R.id.item_ongoing, View.GONE)
-                setImageViewBitmap(
+                setProgressBar(
                     R.id.item_bar,
-                    WidgetProgressRenderer.bar(
-                        context = context,
-                        // Rasterised at a fixed width and stretched by scaleType fitXY, because a
-                        // row in a collection does not know how wide the widget is. Rendered wide
-                        // so the common case shrinks it, which hides the cap distortion that
-                        // stretching a narrow bitmap would show.
-                        widthDp = BAR_RENDER_WIDTH_DP,
-                        heightDp = BAR_HEIGHT_DP,
-                        progress = progressFraction,
-                        trackColor = colors.surfaceVariant,
-                        fillColor = colors.primary,
-                        airedFraction = airedFraction,
-                        // The same hue as the fill, faded. A distinct colour needs explaining;
-                        // a lighter shade of "watched" reads as "watchable" on its own.
-                        airedColor = WidgetProgressRenderer.withAlpha(colors.primary, AIRED_ALPHA)
-                    )
+                    BAR_MAX,
+                    (progressFraction * BAR_MAX).toInt(),
+                    false
+                )
+                // Secondary is the aired band behind the watched fill. Zero when there is nothing to
+                // set apart, which leaves a plain two tone bar.
+                setInt(
+                    R.id.item_bar,
+                    "setSecondaryProgress",
+                    ((airedFraction ?: 0f) * BAR_MAX).toInt()
+                )
+                WidgetTheme.progressBar(
+                    views = this,
+                    viewId = R.id.item_bar,
+                    colors = colors
                 )
             }
 
             covers[entry.mediaId]?.let { setImageViewBitmap(R.id.item_cover, it) }
             setContentDescription(R.id.item_root, describe(context, row, isManga))
             setOnClickFillInIntent(R.id.item_root, WidgetIntents.openMediaFillIn(entry.mediaId))
+        }
+    }
+
+    /**
+     * "ep 11 in 2d", or "finale airs Sat" once the next episode is the last one.
+     *
+     * Uses the absolute timestamp, not timeUntilAiring, which is a snapshot from the last sync and
+     * would count down from whenever that happened to be.
+     */
+    private fun airingLine(
+        context: Context,
+        entry: LibraryEntryEntity,
+        total: Int?,
+        isManga: Boolean
+    ): String? {
+        if (isManga) return null
+        val episode = entry.nextAiringEpisode ?: return null
+        val airingAt = entry.nextAiringEpisodeTime?.takeIf { it > 0 } ?: return null
+        val now = System.currentTimeMillis() / 1000
+        return if (total != null && episode >= total) {
+            context.getString(R.string.widget_wp_finale, WidgetTime.weekdayOf(airingAt))
+        } else {
+            context.getString(
+                R.string.widget_wp_next_ep,
+                episode,
+                WidgetTime.compactCountdown(context, airingAt, now)
+            )
         }
     }
 
@@ -298,12 +323,7 @@ class WatchProgressWidgetProvider :
         const val MANGA = "MANGA"
 
         const val COVER_WIDTH_DP = 52
-        const val BAR_HEIGHT_DP = 6
-
-        /** How visible the aired-but-unwatched band is against the track. */
-        const val AIRED_ALPHA = 110
-
-        /** Wide enough that stretching never softens the rounded ends. */
-        const val BAR_RENDER_WIDTH_DP = 480
+        /** Progress bar resolution, so a fraction survives being turned into an int. */
+        const val BAR_MAX = 1000
     }
 }
