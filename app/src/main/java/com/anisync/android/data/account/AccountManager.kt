@@ -1,7 +1,6 @@
 package com.anisync.android.data.account
 
 import android.content.Context
-import androidx.glance.appwidget.updateAll
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NotificationBadgeStore
@@ -10,9 +9,7 @@ import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.SavedForumThreadDao
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.PreferencesRepository
-import com.anisync.android.widget.AiringTodayWidget
-import com.anisync.android.widget.UpNextWidget
-import com.anisync.android.widget.WeeklyCalendarWidget
+import com.anisync.android.widget.core.WidgetRefresh
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.cache.normalized.apolloStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -47,8 +44,8 @@ class AccountManager @Inject constructor(
     private val accountStore: AccountStore,
     private val apolloClient: ApolloClient,
     private val libraryDao: LibraryDao,
-    private val savedForumThreadDao: SavedForumThreadDao,
     private val airingScheduleDao: AiringScheduleDao,
+    private val savedForumThreadDao: SavedForumThreadDao,
     private val preferencesRepository: PreferencesRepository,
     private val appSettings: AppSettings,
     private val notificationBadgeStore: NotificationBadgeStore,
@@ -157,6 +154,8 @@ class AccountManager @Inject constructor(
      *  - Claim any legacy library rows written before the per-account `ownerId` existed (they
      *    default to [Account.PROVISIONAL_ID] after the v18 migration) for the active account, so
      *    an upgrading user's existing library isn't stranded under owner 0.
+     *  - Claim the airing schedule rows the v23 migration parked under [NO_OWNER], same reason.
+     *    Otherwise the schedule widgets sit empty until a full network refresh lands.
      */
     suspend fun reconcileActiveAccount() {
         val active = accountStore.activeAccount.value ?: return
@@ -169,6 +168,10 @@ class AccountManager @Inject constructor(
         }
         if (realId > 0) {
             runCatching { libraryDao.reassignOwner(Account.PROVISIONAL_ID, realId) }
+            runCatching { airingScheduleDao.reassignOwner(NO_OWNER, realId) }
+            // The widgets read the schedule straight from Room, so they only see the re-tagged rows
+            // if something tells them to look again.
+            runCatching { WidgetRefresh.all(context) }
         }
     }
 
@@ -211,16 +214,16 @@ class AccountManager @Inject constructor(
     }
 
     /**
-     * Clears the cross-account caches on switch. Library and own-profile are NOT wiped — they are
-     * account-scoped in Room (by ownerId / user id) so each account's data persists and shows
-     * instantly on switch-back. The Apollo cache is cleared to avoid the no-variable `GetViewer`
-     * entry bleeding the wrong identity; library/profile read from Room so that's harmless.
+     * Clears the cross-account caches on switch. Library, own-profile and airing schedule are NOT
+     * wiped — they are account-scoped in Room (by ownerId / user id) so each account's data
+     * persists and shows instantly on switch-back. The Apollo cache is cleared to avoid the
+     * no-variable `GetViewer` entry bleeding the wrong identity; those tables read from Room so
+     * that's harmless.
      */
     private suspend fun clearLocalState() {
         withContext(Dispatchers.IO) {
             runCatching { apolloClient.apolloStore.clearAll() }
             savedForumThreadDao.deleteAll()
-            airingScheduleDao.clearAll()
             // Notification dedup is per-account now (kept across switches) — not wiped here.
             appSettings.clearAccountScoped()
             activityRepository.clearViewerCache()
@@ -228,15 +231,14 @@ class AccountManager @Inject constructor(
         }
     }
 
-    private suspend fun refreshWidgets() {
-        runCatching {
-            UpNextWidget().updateAll(context)
-            AiringTodayWidget().updateAll(context)
-            WeeklyCalendarWidget().updateAll(context)
-        }
+    private fun refreshWidgets() {
+        runCatching { WidgetRefresh.all(context) }
     }
 
     companion object {
         private const val ONE_DAY_SECONDS = 86_400L
+
+        /** Where the v23 migration parks the pre-scoping airing schedule until it can be claimed. */
+        private const val NO_OWNER = -1
     }
 }

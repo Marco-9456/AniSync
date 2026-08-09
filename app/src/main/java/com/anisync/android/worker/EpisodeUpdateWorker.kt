@@ -1,12 +1,10 @@
 package com.anisync.android.worker
 
 import android.content.Context
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.anisync.android.data.local.dao.LibraryDao
-import com.anisync.android.widget.UpNextWidget
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -30,21 +28,13 @@ class EpisodeUpdateWorker @AssistedInject constructor(
             // Update progress
             val newProgress = (entry.progress + amount).coerceAtLeast(0)
             
-            // 1. Update LOCAL only (Optimistic)
+            // 1. Update LOCAL only (Optimistic). This refreshes the widgets on its way out.
             val localResult = libraryRepository.updateProgressLocal(mediaId, newProgress)
             if (localResult is com.anisync.android.domain.Result.Error) {
                  return Result.failure()
             }
 
-            // 2. Update Widgets IMMEDIATELY
-            val manager = GlanceAppWidgetManager(appContext)
-            
-            val upNextIds = manager.getGlanceIds(UpNextWidget::class.java)
-            upNextIds.forEach { glanceId ->
-                UpNextWidget().update(appContext, glanceId)
-            }
-
-            // 3. Sync to Network (Background)
+            // 2. Sync to Network (Background)
             // We call updateProgress, which will re-do local update (harmless) and then sync
             libraryRepository.updateProgress(mediaId, newProgress)
 

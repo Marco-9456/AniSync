@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Widget palette, light, no dynamic colour.
+
+  Widgets are inflated by the launcher, which has no access to the app's runtime MaterialKolor
+  scheme, so the colours have to be resources. This file is the floor: the app's own light scheme
+  from ui/theme/Color.kt, used on API 26 to 30 and on any device where the user has turned dynamic
+  colour off. values-v31/ overrides these with the system_* palette.
+-->
+<resources>
+    <color name="widget_background">#F9FAEF</color>
+    <!--
+      Deliberately not surfaceLight. The app's surface and background are the same value, which is
+      fine for a scrolling screen and wrong for a widget, where cards sit directly on the background
+      and would vanish into it.
+    -->
+    <color name="widget_surface">#FFFFFF</color>
+    <color name="widget_surface_variant">#E1E4D5</color>
+    <color name="widget_on_surface">#1A1C16</color>
+    <color name="widget_on_surface_variant">#44483D</color>
+    <color name="widget_outline">#75796C</color>
+    <color name="widget_primary">#4C662B</color>
+    <color name="widget_on_primary">#FFFFFF</color>
+    <color name="widget_primary_container">#CDEDA3</color>
+    <color name="widget_on_primary_container">#354E16</color>
+    <color name="widget_secondary_container">#DCE7C8</color>
+    <color name="widget_on_secondary_container">#404A33</color>
+    <color name="widget_tertiary_container">#BCECE7</color>
+    <color name="widget_on_tertiary_container">#1F4E4B</color>
+</resources>

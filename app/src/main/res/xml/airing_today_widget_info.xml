@@ -4,7 +4,7 @@
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_airing_today_description"
-    android:minWidth="110dp"
+    android:minWidth="180dp"
     android:minHeight="100dp"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="3600000"

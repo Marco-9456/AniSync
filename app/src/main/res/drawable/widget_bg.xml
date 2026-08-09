@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Widget container. Goes on the view with @android:id/background, which is what lets the launcher
+  round and mask us to its own corner radius on API 31+.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="24dp" />
+    <solid android:color="@color/widget_background" />
+</shape>

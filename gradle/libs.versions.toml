@@ -1,11 +1,10 @@
 [versions]
-agp = "9.1.0"
-glanceAppwidget = "1.2.0-rc01"
-glanceVersion = "1.2.0-rc01"
+agp = "9.2.0"
 kotlin = "2.2.21"
 kotlinxCollectionsImmutable = "0.4.0"
 ksp = "2.3.2"
 coreKtx = "1.18.0"
+coreRemoteViews = "1.1.0"
 splashscreen = "1.0.1"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -28,7 +27,6 @@ material3 = "1.5.0-alpha18"
 material3Adaptive = "1.2.0"
 serialization = "1.11.0"
 leakcanary = "2.14"
-glance = "1.1.1"
 materialkolor = "4.1.1"
 media3 = "1.6.1"
 jsoup = "1.22.2"
@@ -41,9 +39,8 @@ capturable = "3.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-remoteviews = { group = "androidx.core", name = "core-remoteviews", version.ref = "coreRemoteViews" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
-androidx-glance = { module = "androidx.glance:glance", version.ref = "glanceVersion" }
-androidx-glance-appwidget-v120rc01 = { module = "androidx.glance:glance-appwidget", version.ref = "glanceAppwidget" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -85,8 +82,6 @@ androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = 
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
-androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
-androidx-glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glance" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 leakcanary = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }

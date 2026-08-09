@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Watch Progress bar, as a real ProgressBar drawable instead of a bitmap.
+
+  The bitmap had to be drawn at a fixed width and stretched with fitXY, since a row in a collection
+  does not know how wide the widget is. Stretching a rounded rectangle turns the end caps into
+  ellipses, which is why both ends looked wrong. A layer-list scales its own layers, so the corners
+  stay round at any width.
+
+  The three ids are the ProgressBar contract: background is the track, secondaryProgress is what has
+  aired, progress is what has been watched.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle">
+            <corners android:radius="100dp" />
+            <solid android:color="@color/widget_surface_variant" />
+        </shape>
+    </item>
+
+    <item android:id="@android:id/secondaryProgress">
+        <scale android:scaleWidth="100%">
+            <shape android:shape="rectangle">
+                <corners android:radius="100dp" />
+                <solid android:color="@color/widget_primary_container" />
+            </shape>
+        </scale>
+    </item>
+
+    <item android:id="@android:id/progress">
+        <scale android:scaleWidth="100%">
+            <shape android:shape="rectangle">
+                <corners android:radius="100dp" />
+                <solid android:color="@color/widget_primary" />
+            </shape>
+        </scale>
+    </item>
+</layer-list>

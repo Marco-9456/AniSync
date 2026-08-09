@@ -61,7 +61,9 @@ abstract class RenameApksTask : DefaultTask() {
 
 android {
     namespace = "com.anisync.android"
-    compileSdk = 36
+    // Glance 1.3.x is built against API 37 and requires AGP 9.2.0+. targetSdk stays on 36 so the
+    // upgrade does not also opt the app into API 37 runtime behaviour changes.
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.anisync.android"
@@ -213,6 +215,13 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    // Ships the exported Room schemas into the androidTest APK. Without them MigrationTestHelper
+    // fails on FileNotFoundException before it ever reaches a migration, which is why the migration
+    // tests have never actually guarded anything. They matter here more than in most projects,
+    // because DatabaseModule still builds with fallbackToDestructiveMigration, so a missing
+    // migration wipes user data instead of crashing.
+    sourceSets.getByName("androidTest").assets.srcDirs("$projectDir/schemas")
 }
 
 kotlin {
@@ -225,6 +234,7 @@ kotlin {
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
+
 
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -269,8 +279,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
-    implementation(libs.androidx.glance)
-    implementation(libs.androidx.glance.appwidget.v120rc01)
+    implementation(libs.androidx.core.remoteviews)
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.reorderable)
     implementation(libs.okhttp)

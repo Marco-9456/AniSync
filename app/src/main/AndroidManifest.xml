@@ -88,6 +88,9 @@
                 <data
                     android:scheme="anisync"
                     android:host="notifications" />
+                <data
+                    android:scheme="anisync"
+                    android:host="discover" />
             </intent-filter>
             <!-- AniList URL deep links for sharing -->
             <intent-filter>
@@ -167,11 +170,28 @@
                 android:resource="@xml/filepaths" />
         </provider>
 
-        <!-- BroadcastReceiver for handling "Add to Watching" action from notifications -->
+        <!--
+          Serves widget list rows to the launcher on API 26 to 30. BIND_REMOTEVIEWS is what stops
+          any app other than the system from binding to it. From API 31 the rows travel inside the
+          RemoteViews and nothing binds here at all.
+        -->
+        <service
+            android:name=".widget.core.WidgetCollectionService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <!--
+          Home-screen widgets.
+
+          Each provider handles both APPWIDGET_UPDATE and its own tap broadcasts. The tap actions
+          are deliberately absent from the intent filters: those PendingIntents name the component
+          explicitly, so they reach the receiver without the filter, and leaving them out means no
+          other app can drive a widget's state.
+        -->
         <receiver
-            android:name=".widget.UpNextWidgetReceiver"
+            android:name=".widget.UpNextWidgetProvider"
             android:exported="true"
-            android:label="Up Next">
+            android:label="@string/widget_up_next_title">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -180,12 +200,10 @@
                 android:resource="@xml/up_next_widget_info" />
         </receiver>
 
-
-
         <receiver
-            android:name=".widget.AiringTodayWidgetReceiver"
+            android:name=".widget.AiringTodayWidgetProvider"
             android:exported="true"
-            android:label="Airing Today">
+            android:label="@string/widget_airing_today_title">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -195,9 +213,9 @@
         </receiver>
 
         <receiver
-            android:name=".widget.WeeklyCalendarWidgetReceiver"
+            android:name=".widget.WeeklyCalendarWidgetProvider"
             android:exported="true"
-            android:label="Weekly Calendar">
+            android:label="@string/widget_calendar_title">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -207,9 +225,9 @@
         </receiver>
 
         <receiver
-            android:name=".widget.TrendingWidgetReceiver"
+            android:name=".widget.TrendingWidgetProvider"
             android:exported="true"
-            android:label="Top 10 Anime">
+            android:label="@string/widget_trending_title">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -218,8 +236,17 @@
                 android:resource="@xml/trending_widget_info" />
         </receiver>
 
-
-
+        <receiver
+            android:name=".widget.WatchProgressWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_watch_progress_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/watch_progress_widget_info" />
+        </receiver>
 
 
         <receiver

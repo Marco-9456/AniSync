@@ -19,6 +19,15 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v23 (Aug 2026):
+ *   - airing_schedule is now account scoped:
+ *     • ownerId joined the primary key, matching library_entries since v18, so a
+ *       switch no longer has to wipe the table and isWatching stops meaning
+ *       whichever account was last active. Manual migration. Existing rows are
+ *       carried over under ownerId -1 and claimed by the signed-in account in
+ *       AccountManager.reconcileActiveAccount, so upgrading users do not stare at
+ *       empty widgets while a network refresh runs.
+ *
  * v19 (Jun 2026):
  *   - Added field to user_profile:
  *     • aboutMarkdown - raw markdown bio (about asHtml:false), cached next to the
@@ -94,7 +103,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         TrendingEntity::class,
         SavedForumThreadEntity::class
     ],
-    version = 22,
+    version = 23,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),

@@ -302,6 +302,9 @@ fun AniSyncNavHost(
             }
 
             composable<Discover>(
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "anisync://discover" }
+                ),
                 enterTransition = {
                     val forward = isForwardNavigation(
                         fromRoute = initialState.destination.route,

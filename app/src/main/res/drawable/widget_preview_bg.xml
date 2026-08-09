@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <corners android:radius="24dp" />
-    <solid android:color="#141218" /> <!-- M3 Dark Surface -->
+    <!-- Everything tints this, but keep the fallback on palette in case something does not. -->
+    <solid android:color="@color/widget_preview_bg" />
 </shape>

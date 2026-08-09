@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Standard episode badge: tertiary container, pill shaped. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="99dp" />
+    <solid android:color="@color/widget_tertiary_container" />
+</shape>

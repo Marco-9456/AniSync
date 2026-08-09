@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The secondary header button, like Trending search.
+
+  Same 10dp rounded square as widget_icon_plate_bg so both ends of the header match, just filled
+  with a surface tone instead of the accent.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="10dp" />
+    <solid android:color="@color/widget_surface_variant" />
+</shape>
