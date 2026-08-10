@@ -19,7 +19,9 @@ data class NotificationEntry(
     val key: String,
     val representative: Notification,
     val all: List<Notification>,
-    val actors: List<User>
+    val actors: List<User>,
+    /** Inside the unread window captured when the inbox opened. See [unreadWindow]. */
+    val isUnread: Boolean = false
 ) {
     val count: Int get() = all.size
     val isGrouped: Boolean get() = count > 1

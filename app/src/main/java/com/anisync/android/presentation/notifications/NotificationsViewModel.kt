@@ -39,11 +39,22 @@ class NotificationsViewModel @Inject constructor(
 
     private val snapshots = mutableMapOf<NotificationFilter, FilterSnapshot>()
 
+    /**
+     * How many rows were unread when the inbox opened. AniList has no per-notification read flag,
+     * only this count, so it has to be captured before the first page load resets it server-side.
+     *
+     * Taking it also clears the badge, on any entry into the inbox (profile bell, deep link, system
+     * notification tap) rather than just the profile path. The ALL first-page load below asks the
+     * server to reset its count too, so the next badge refresh agrees.
+     */
+    private val unreadAtOpen = badgeStore.takeUnreadAtOpen()
+
+    private var unreadIds: Set<Int> = emptySet()
+
+    /** Stops a later page or refresh from re-seeding a window the user already dismissed. */
+    private var boundaryCleared = false
+
     init {
-        // Clear the unread badge on any entry into the inbox (profile bell, deep link, system
-        // notification tap) — not just the profile path. The ALL first-page load below asks the
-        // server to reset its count too, so the next badge refresh agrees.
-        badgeStore.clearOptimistically()
         load(reset = true, isInitial = true)
     }
 
@@ -57,6 +68,22 @@ class NotificationsViewModel @Inject constructor(
                 load(reset = false, isInitial = false)
             }
             NotificationsAction.Retry -> load(reset = true, isInitial = true)
+            NotificationsAction.MarkAllRead -> markAllRead()
+        }
+    }
+
+    private fun markAllRead() {
+        if (unreadIds.isEmpty()) return
+        unreadIds = emptySet()
+        boundaryCleared = true
+        applyUnread()
+    }
+
+    /** Re-flags the visible list and every cached filter, so switching back shows the same state. */
+    private fun applyUnread() {
+        _uiState.update { it.copy(entries = it.entries.markUnread(unreadIds)) }
+        for ((filter, snapshot) in snapshots.toList()) {
+            snapshots[filter] = snapshot.copy(entries = snapshot.entries.markUnread(unreadIds))
         }
     }
 
@@ -82,7 +109,7 @@ class NotificationsViewModel @Inject constructor(
                 it.copy(
                     filter = filter,
                     items = cached.items,
-                    entries = cached.entries,
+                    entries = cached.entries.markUnread(unreadIds),
                     hasNextPage = cached.hasNextPage,
                     isLoading = false,
                     isRefreshing = false,
@@ -149,10 +176,16 @@ class NotificationsViewModel @Inject constructor(
                         if (reset) page.items
                         else (state.items + page.items).distinctBy { it.id }
                     val grouped = withContext(Dispatchers.Default) { groupNotifications(merged) }
+                    // Seeded off the unfiltered list only: a filtered page is a subset of the same
+                    // ids, so widening the window from it would mark rows the inbox never counted.
+                    if (filter == NotificationFilter.ALL && !boundaryCleared) {
+                        unreadIds = unreadWindow(unreadIds, merged, unreadAtOpen)
+                    }
+                    val flagged = grouped.markUnread(unreadIds)
                     _uiState.update {
                         it.copy(
                             items = merged,
-                            entries = grouped,
+                            entries = flagged,
                             isLoading = false,
                             isRefreshing = false,
                             isPaginating = false,
@@ -162,7 +195,7 @@ class NotificationsViewModel @Inject constructor(
                     }
                     snapshots[filter] = FilterSnapshot(
                         items = merged,
-                        entries = grouped,
+                        entries = flagged,
                         nextPage = if (page.hasNextPage) nextPage + 1 else nextPage,
                         hasNextPage = page.hasNextPage
                     )

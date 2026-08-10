@@ -38,6 +38,14 @@ class NotificationBadgeStore @Inject constructor(
     val unreadCount: StateFlow<Int> = _unreadCount.asStateFlow()
 
     /**
+     * What the last clear wiped, held for the inbox.
+     *
+     * The inbox marks its unread rows from this number and cannot always read [unreadCount] itself:
+     * tapping the bell on Profile clears the badge before the inbox view model is constructed.
+     */
+    private var pendingInboxCount = 0
+
+    /**
      * Update from a count already obtained out-of-band (e.g. piggy-backed on
      * a `GetUserProfile` query that included `Viewer.unreadNotificationCount`).
      * Lets us skip the separate `GetViewer` round-trip when the profile
@@ -69,15 +77,32 @@ class NotificationBadgeStore @Inject constructor(
      * test cycle (bump → open inbox) returns to the zero state cleanly.
      */
     fun clearOptimistically() {
+        // Only a real count overwrites it, so clearing twice on the way into the inbox (Profile
+        // first, then the inbox itself) cannot wipe the number the inbox still needs.
+        if (_unreadCount.value > 0) pendingInboxCount = _unreadCount.value
         _serverCount.value = 0
         _debugCount.value = 0
         recompute()
+    }
+
+    /**
+     * The count the inbox draws its unread boundary from, and the clear that goes with opening it.
+     *
+     * Consumed on read: a second visit with nothing new in between gets zero, so the same rows are
+     * never marked new twice.
+     */
+    fun takeUnreadAtOpen(): Int {
+        val value = if (_unreadCount.value > 0) _unreadCount.value else pendingInboxCount
+        clearOptimistically()
+        pendingInboxCount = 0
+        return value
     }
 
     /** Clears all counts when switching accounts so the badge doesn't carry over. */
     fun reset() {
         _serverCount.value = 0
         _debugCount.value = 0
+        pendingInboxCount = 0
         recompute()
     }
 

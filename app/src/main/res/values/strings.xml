@@ -580,6 +580,12 @@
         <item quantity="one">%1$d unread notification</item>
         <item quantity="other">%1$d unread notifications</item>
     </plurals>
+    <string name="notifications_section_new">New</string>
+    <string name="notifications_section_earlier">Earlier</string>
+    <string name="notifications_new_count">%1$s new</string>
+    <string name="notifications_new_count_overflow" translatable="false">99+</string>
+    <string name="notifications_mark_all_read">Mark all read</string>
+    <string name="a11y_notification_unread">Unread</string>
     <string name="profile_edit">Edit Profile</string>
     <string name="profile_unknown_error">Something went wrong while loading your profile.</string>
     <string name="profile_user_load_error">We could not load this user profile right now. The account may be private, unavailable, or temporarily rate-limited.</string>

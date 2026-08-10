@@ -43,11 +43,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.anisync.android.R
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.ActivityKind
 import com.anisync.android.domain.ActivityLikeNotification
@@ -87,12 +91,21 @@ fun NotificationGroupCard(
     modifier: Modifier = Modifier,
     // The target open in the two-pane detail (or null). When this card resolves to that target it
     // shows the Material 3 selection ring (two-pane only).
-    selectedTarget: NotificationTarget? = null
+    selectedTarget: NotificationTarget? = null,
+    // Inside the unread window captured when the inbox opened: one step brighter container, and a
+    // dot beside a primary-coloured timestamp.
+    isUnread: Boolean = false
 ) {
     val payload = entry.toPayload()
     // Moderation notes (data change / merge / deletion reasons) can be long; the card expands in
     // place instead of navigating, and the cover thumb keeps the media-details click.
     var expanded by rememberSaveable(entry.key) { mutableStateOf(false) }
+    val containerColor = if (isUnread) {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerLow
+    }
+    val unreadLabel = stringResource(R.string.a11y_notification_unread)
     Card(
         onClick = {
             if (payload.expandableNote) {
@@ -104,10 +117,13 @@ fun NotificationGroupCard(
         modifier = modifier
             .fillMaxWidth()
             .animateContentSize()
-            .selectedPaneItem(payload.isSelectedBy(selectedTarget), MaterialTheme.shapes.large),
+            .selectedPaneItem(payload.isSelectedBy(selectedTarget), MaterialTheme.shapes.large)
+            // State rather than a description prefix, so TalkBack says "Unread" before the content
+            // and the dot itself stays decorative.
+            .semantics { if (isUnread) stateDescription = unreadLabel },
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = containerColor,
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -120,6 +136,7 @@ fun NotificationGroupCard(
                 entry = entry,
                 payload = payload,
                 expanded = expanded,
+                isUnread = isUnread,
                 onMediaClick = onMediaClick
             )
         } else {
@@ -128,10 +145,39 @@ fun NotificationGroupCard(
                 entry = entry,
                 payload = payload,
                 expanded = expanded,
+                isUnread = isUnread,
+                containerColor = containerColor,
                 onMediaClick = onMediaClick,
                 onUserClick = onUserClick
             )
         }
+    }
+}
+
+/**
+ * Timestamp, and for an unread row the 8dp dot that goes with it. The dot sits inside the same
+ * cluster and shares its colour so it reads as part of the time rather than a loose bullet.
+ */
+@Composable
+private fun TimestampCluster(entry: NotificationEntry, isUnread: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (isUnread) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+        }
+        Text(
+            text = formatRelative(entry.representative.createdAt.toLong()),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (isUnread) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        )
     }
 }
 
@@ -162,6 +208,7 @@ private fun MediaCardBody(
     entry: NotificationEntry,
     payload: GroupPayload,
     expanded: Boolean,
+    isUnread: Boolean,
     onMediaClick: (Int) -> Unit
 ) {
     Row(
@@ -187,11 +234,7 @@ private fun MediaCardBody(
             }
         }
         Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = formatRelative(entry.representative.createdAt.toLong()),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        TimestampCluster(entry = entry, isUnread = isUnread)
     }
 }
 
@@ -200,6 +243,8 @@ private fun SocialCardBody(
     entry: NotificationEntry,
     payload: GroupPayload,
     expanded: Boolean,
+    isUnread: Boolean,
+    containerColor: Color,
     onMediaClick: (Int) -> Unit,
     onUserClick: (String) -> Unit
 ) {
@@ -209,14 +254,10 @@ private fun SocialCardBody(
                 payload = payload,
                 onMediaClick = onMediaClick,
                 onUserClick = onUserClick,
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                containerColor = containerColor
             )
             Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = formatRelative(entry.representative.createdAt.toLong()),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            TimestampCluster(entry = entry, isUnread = isUnread)
         }
 
         Spacer(modifier = Modifier.height(12.dp))
