@@ -41,13 +41,12 @@ class NotificationsViewModel @Inject constructor(
 
     /**
      * How many rows were unread when the inbox opened. AniList has no per-notification read flag,
-     * only this count, so it has to be captured before the first page load resets it server-side.
+     * only this count, so the newest [unreadAtOpen] rows are the ones marked new.
      *
-     * Taking it also clears the badge, on any entry into the inbox (profile bell, deep link, system
-     * notification tap) rather than just the profile path. The ALL first-page load below asks the
-     * server to reset its count too, so the next badge refresh agrees.
+     * Reading it leaves it alone. Opening the inbox no longer counts as reading anything, so the
+     * same rows stay marked across visits until the user taps Mark all read.
      */
-    private val unreadAtOpen = badgeStore.takeUnreadAtOpen()
+    private val unreadAtOpen = badgeStore.unreadCount.value
 
     private var unreadIds: Set<Int> = emptySet()
 
@@ -72,11 +71,20 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The only thing that marks the inbox read. AniList has no mutation for it: the count resets as
+     * a side effect of a notifications query, so this fires a throwaway first page carrying the
+     * flag. The badge is zeroed locally straight away and the next refresh reconciles.
+     */
     private fun markAllRead() {
         if (unreadIds.isEmpty()) return
         unreadIds = emptySet()
         boundaryCleared = true
         applyUnread()
+        badgeStore.clearOptimistically()
+        viewModelScope.launch {
+            getNotifications.getPage(page = 1, typeFilter = null, resetUnreadCount = true)
+        }
     }
 
     /** Re-flags the visible list and every cached filter, so switching back shows the same state. */
@@ -153,14 +161,14 @@ class NotificationsViewModel @Inject constructor(
         }
 
         val filter = _uiState.value.filter
-        // Reset unread count only on first page load with the All filter (matches AniList web behavior).
-        val resetUnread = reset && filter == NotificationFilter.ALL
 
         loadJob = viewModelScope.launch {
+            // Never resets the unread count. Reading the inbox is not the same as reading the
+            // notifications in it, and a reset here would leave Mark all read with nothing to do.
             val result = getNotifications.getPage(
                 page = nextPage,
                 typeFilter = filter.types,
-                resetUnreadCount = resetUnread
+                resetUnreadCount = false
             )
             // Late response from a previous filter — drop it.
             if (_uiState.value.filter != filter) return@launch
