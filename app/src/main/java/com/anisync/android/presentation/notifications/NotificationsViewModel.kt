@@ -39,11 +39,21 @@ class NotificationsViewModel @Inject constructor(
 
     private val snapshots = mutableMapOf<NotificationFilter, FilterSnapshot>()
 
+    /**
+     * How many rows were unread when the inbox opened. AniList has no per-notification read flag,
+     * only this count, so the newest [unreadAtOpen] rows are the ones marked new.
+     *
+     * Reading it leaves it alone. Opening the inbox no longer counts as reading anything, so the
+     * same rows stay marked across visits until the user taps Mark all read.
+     */
+    private val unreadAtOpen = badgeStore.unreadCount.value
+
+    private var unreadIds: Set<Int> = emptySet()
+
+    /** Stops a later page or refresh from re-seeding a window the user already dismissed. */
+    private var boundaryCleared = false
+
     init {
-        // Clear the unread badge on any entry into the inbox (profile bell, deep link, system
-        // notification tap) — not just the profile path. The ALL first-page load below asks the
-        // server to reset its count too, so the next badge refresh agrees.
-        badgeStore.clearOptimistically()
         load(reset = true, isInitial = true)
     }
 
@@ -57,6 +67,31 @@ class NotificationsViewModel @Inject constructor(
                 load(reset = false, isInitial = false)
             }
             NotificationsAction.Retry -> load(reset = true, isInitial = true)
+            NotificationsAction.MarkAllRead -> markAllRead()
+        }
+    }
+
+    /**
+     * The only thing that marks the inbox read. AniList has no mutation for it: the count resets as
+     * a side effect of a notifications query, so this fires a throwaway first page carrying the
+     * flag. The badge is zeroed locally straight away and the next refresh reconciles.
+     */
+    private fun markAllRead() {
+        if (unreadIds.isEmpty()) return
+        unreadIds = emptySet()
+        boundaryCleared = true
+        applyUnread()
+        badgeStore.clearOptimistically()
+        viewModelScope.launch {
+            getNotifications.getPage(page = 1, typeFilter = null, resetUnreadCount = true)
+        }
+    }
+
+    /** Re-flags the visible list and every cached filter, so switching back shows the same state. */
+    private fun applyUnread() {
+        _uiState.update { it.copy(entries = it.entries.markUnread(unreadIds)) }
+        for ((filter, snapshot) in snapshots.toList()) {
+            snapshots[filter] = snapshot.copy(entries = snapshot.entries.markUnread(unreadIds))
         }
     }
 
@@ -82,7 +117,7 @@ class NotificationsViewModel @Inject constructor(
                 it.copy(
                     filter = filter,
                     items = cached.items,
-                    entries = cached.entries,
+                    entries = cached.entries.markUnread(unreadIds),
                     hasNextPage = cached.hasNextPage,
                     isLoading = false,
                     isRefreshing = false,
@@ -126,14 +161,14 @@ class NotificationsViewModel @Inject constructor(
         }
 
         val filter = _uiState.value.filter
-        // Reset unread count only on first page load with the All filter (matches AniList web behavior).
-        val resetUnread = reset && filter == NotificationFilter.ALL
 
         loadJob = viewModelScope.launch {
+            // Never resets the unread count. Reading the inbox is not the same as reading the
+            // notifications in it, and a reset here would leave Mark all read with nothing to do.
             val result = getNotifications.getPage(
                 page = nextPage,
                 typeFilter = filter.types,
-                resetUnreadCount = resetUnread
+                resetUnreadCount = false
             )
             // Late response from a previous filter — drop it.
             if (_uiState.value.filter != filter) return@launch
@@ -149,10 +184,16 @@ class NotificationsViewModel @Inject constructor(
                         if (reset) page.items
                         else (state.items + page.items).distinctBy { it.id }
                     val grouped = withContext(Dispatchers.Default) { groupNotifications(merged) }
+                    // Seeded off the unfiltered list only: a filtered page is a subset of the same
+                    // ids, so widening the window from it would mark rows the inbox never counted.
+                    if (filter == NotificationFilter.ALL && !boundaryCleared) {
+                        unreadIds = unreadWindow(unreadIds, merged, unreadAtOpen)
+                    }
+                    val flagged = grouped.markUnread(unreadIds)
                     _uiState.update {
                         it.copy(
                             items = merged,
-                            entries = grouped,
+                            entries = flagged,
                             isLoading = false,
                             isRefreshing = false,
                             isPaginating = false,
@@ -162,7 +203,7 @@ class NotificationsViewModel @Inject constructor(
                     }
                     snapshots[filter] = FilterSnapshot(
                         items = merged,
-                        entries = grouped,
+                        entries = flagged,
                         nextPage = if (page.hasNextPage) nextPage + 1 else nextPage,
                         hasNextPage = page.hasNextPage
                     )

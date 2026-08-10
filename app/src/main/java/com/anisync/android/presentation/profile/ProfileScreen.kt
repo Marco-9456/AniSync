@@ -129,10 +129,7 @@ fun ProfileScreen(
                         animatedVisibilityScope = animatedVisibilityScope,
                         onAction = viewModel::onAction,
                         onSettingsClick = onNavigateToSettings,
-                        onNotificationsClick = {
-                            viewModel.onNotificationsOpened()
-                            onNavigateToNotifications()
-                        },
+                        onNotificationsClick = onNavigateToNotifications,
                         unreadNotificationCount = uiState.unreadNotificationCount,
                         onMediaClick = onMediaClick,
                         onCharacterClick = onCharacterClick,

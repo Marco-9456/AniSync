@@ -13,10 +13,10 @@ import javax.inject.Singleton
 /**
  * Holds the authenticated viewer's unread-notification count for the
  * inbox badge. Source of truth is AniList's `Viewer.unreadNotificationCount`,
- * but writers can clear it optimistically when the inbox opens (server
- * resets it via `resetNotificationCount=true` on the next notifications
- * fetch) and debug callers can bump it locally so the UI is testable
- * without waiting for real notifications.
+ * but writers can clear it optimistically when the user marks the inbox read
+ * (the server reset rides along on that same action's notifications fetch,
+ * via `resetNotificationCount=true`) and debug callers can bump it locally so
+ * the UI is testable without waiting for real notifications.
  */
 @Singleton
 class NotificationBadgeStore @Inject constructor(
@@ -29,8 +29,8 @@ class NotificationBadgeStore @Inject constructor(
      * Local-only count for debug testing. Decoupled from the server
      * count so refreshes don't clobber a fake bump — that would mask
      * the persistence behaviour we want the test to exercise (real
-     * unreads only clear when the inbox is opened, never on a plain
-     * profile resume).
+     * unreads only clear when the user marks them read, never on a plain
+     * profile resume or a visit to the inbox).
      */
     private val _debugCount = MutableStateFlow(0)
 

@@ -509,16 +509,6 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch { notificationBadgeStore.refresh() }
     }
 
-    /**
-     * Optimistically zero the badge when the user taps the bell. The
-     * server-side reset rides on NotificationsScreen's first ALL fetch
-     * (`resetNotificationCount=true`); the next on-resume refresh
-     * reconciles either way.
-     */
-    fun onNotificationsOpened() {
-        notificationBadgeStore.clearOptimistically()
-    }
-
     fun onAction(action: ProfileAction) {
         when (action) {
             is ProfileAction.Refresh -> refresh(forceNetwork = action.forceNetwork)
