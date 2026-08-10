@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -102,6 +104,7 @@ fun CollapsingTopBarScaffold(
     scrolledContainerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     navigationIcon: ImageVector = Icons.AutoMirrored.Outlined.ArrowBack,
     actions: @Composable RowScope.() -> Unit = {},
+    titleTrailing: (@Composable () -> Unit)? = null,
     belowBar: (@Composable () -> Unit)? = null,
     bottomBar: @Composable () -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
@@ -276,6 +279,7 @@ fun CollapsingTopBarScaffold(
                 scrolledContainerColor = scrolledContainerColor,
                 navigationIcon = navigationIcon,
                 actions = actions,
+                titleTrailing = titleTrailing,
             )
 
             Box(
@@ -309,6 +313,8 @@ fun CollapsibleCommonTopBar(
     scrolledContainerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     navigationIcon: ImageVector = Icons.AutoMirrored.Outlined.ArrowBack,
     actions: @Composable RowScope.() -> Unit = {},
+    /** Optional content beside the title, e.g. a count pill. Follows the title as the bar shrinks. */
+    titleTrailing: (@Composable () -> Unit)? = null,
     maxLines: Int = 2,
     expandedTitleStartPadding: Dp = 16.dp,
     collapsedTitleStartPadding: Dp = 68.dp,
@@ -396,22 +402,38 @@ fun CollapsibleCommonTopBar(
             val titleBottomPadding =
                 androidx.compose.ui.unit.lerp(16.dp, 24.dp, collapseFraction)
 
-            Text(
-                text = title,
-                fontSize = titleFontSize,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = if (collapseFraction > 0.8f) 1 else maxLines,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = titleFontSize * 1.2f,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(
-                        start = titleStartPadding,
-                        end = titleEndPadding,
-                        bottom = titleBottomPadding
-                    )
-            )
+            val titleText: @Composable (Modifier) -> Unit = { textModifier ->
+                Text(
+                    text = title,
+                    fontSize = titleFontSize,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = if (collapseFraction > 0.8f) 1 else maxLines,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = titleFontSize * 1.2f,
+                    modifier = textModifier
+                )
+            }
+            val titleModifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(
+                    start = titleStartPadding,
+                    end = titleEndPadding,
+                    bottom = titleBottomPadding
+                )
+
+            if (titleTrailing == null) {
+                titleText(titleModifier)
+            } else {
+                Row(
+                    modifier = titleModifier,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    titleText(Modifier.weight(1f, fill = false))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    titleTrailing()
+                }
+            }
         }
     }
 }
