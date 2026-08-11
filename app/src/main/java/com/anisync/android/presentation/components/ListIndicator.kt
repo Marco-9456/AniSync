@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -49,6 +50,14 @@ import com.anisync.android.ui.theme.listIndicatorNeedsOutline
 enum class ListIndicatorStyle { Corner, Overlay, Chip }
 
 /**
+ * Which corner of the cover the [ListIndicatorStyle.Corner] tab grows out of.
+ *
+ * [BottomEnd] is the design's default. [TopStart] is for covers that already spend their bottom
+ * edge on a title, such as the trending card, and is the same tab turned around.
+ */
+enum class ListIndicatorCorner { BottomEnd, TopStart }
+
+/**
  * Says that a title already sits on one of the viewer's lists, and which one.
  *
  * Colour names the list, the icon names it again for anyone who cannot use the colour, and the
@@ -60,7 +69,8 @@ fun ListIndicator(
     status: LibraryStatus,
     type: MediaType?,
     style: ListIndicatorStyle,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    corner: ListIndicatorCorner = ListIndicatorCorner.BottomEnd
 ) {
     val kind = status.toIndicatorKind()
     val colors = listIndicatorColor(kind)
@@ -78,23 +88,31 @@ fun ListIndicator(
         // than sitting on top of it.
         ListIndicatorStyle.Corner -> {
             val art = listIndicatorArtColor(kind)
+            val flipped = corner == ListIndicatorCorner.TopStart
             Box(
                 modifier = modifier
                     .size(width = 64.dp, height = 56.dp)
                     .semanticsLabel(spoken)
             ) {
+                // The same tab turned around for the opposite corner. The host cover clips its own
+                // outer radius, so the tab fuses into whatever radius that cover uses.
                 Icon(
                     painter = painterResource(R.drawable.ic_list_corner_tab),
                     contentDescription = null,
                     tint = art.container,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { rotationZ = if (flipped) 180f else 0f }
                 )
                 Icon(
                     painter = painterResource(kind.iconRes()),
                     contentDescription = null,
                     tint = art.content,
                     modifier = Modifier
-                        .offset(x = 29.dp, y = 25.dp)
+                        .offset(
+                            x = if (flipped) 17.dp else 29.dp,
+                            y = if (flipped) 13.dp else 25.dp
+                        )
                         .size(18.dp)
                 )
             }
