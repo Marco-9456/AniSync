@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.anisync.android.data.local.entity.LibraryEntryEntity
+import com.anisync.android.data.local.entity.LibraryStatusProjection
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.Flow
@@ -70,6 +71,15 @@ interface LibraryDao {
      */
     @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND mediaId = :mediaId LIMIT 1")
     fun observeEntry(ownerId: Int, mediaId: Int): Flow<LibraryEntryEntity?>
+
+    /**
+     * Observe which media ids are on this account's lists, with the list each one sits on.
+     *
+     * Not filtered by media type: AniList media ids are unique across anime and manga, so one
+     * subscription covers every surface that mixes both.
+     */
+    @Query("SELECT mediaId, status FROM library_entries WHERE ownerId = :ownerId")
+    fun observeListStatuses(ownerId: Int): Flow<List<LibraryStatusProjection>>
 
     /**
      * Insert or replace entries. The entities carry their own [LibraryEntryEntity.ownerId].
