@@ -4,7 +4,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -36,14 +38,15 @@ import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.ui.theme.ListIndicatorKind
+import com.anisync.android.ui.theme.listIndicatorArtColor
 import com.anisync.android.ui.theme.listIndicatorColor
 import com.anisync.android.ui.theme.listIndicatorNeedsOutline
 
 /**
- * How the indicator is drawn. Posters and grid cards take [Overlay], rows and search results take
- * [Chip]. Never both on one surface.
+ * How the indicator is drawn. Covers take [Corner], rows and search results take [Chip], and narrow
+ * surfaces take the free-standing [Overlay]. Never two forms on one card.
  */
-enum class ListIndicatorStyle { Overlay, Chip }
+enum class ListIndicatorStyle { Corner, Overlay, Chip }
 
 /**
  * Says that a title already sits on one of the viewer's lists, and which one.
@@ -70,6 +73,33 @@ fun ListIndicator(
     val spoken = stringResource(R.string.a11y_in_your_list, label)
 
     when (style) {
+        // Welded into the bottom-right of a cover: the tab shares the cover's 18dp radius on the
+        // outside and meets the art with concave fillets, so it grows out of the poster rather
+        // than sitting on top of it.
+        ListIndicatorStyle.Corner -> {
+            val art = listIndicatorArtColor(kind)
+            Box(
+                modifier = modifier
+                    .size(width = 64.dp, height = 56.dp)
+                    .semanticsLabel(spoken)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_list_corner_tab),
+                    contentDescription = null,
+                    tint = art.container,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Icon(
+                    painter = painterResource(kind.iconRes()),
+                    contentDescription = null,
+                    tint = art.content,
+                    modifier = Modifier
+                        .offset(x = 29.dp, y = 25.dp)
+                        .size(18.dp)
+                )
+            }
+        }
+
         ListIndicatorStyle.Overlay -> Surface(
             color = colors.container,
             contentColor = colors.content,
@@ -191,7 +221,7 @@ private fun ListIndicatorPreview() {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(12.dp)
         ) {
-            ListIndicator(LibraryStatus.CURRENT, MediaType.ANIME, ListIndicatorStyle.Overlay)
+            ListIndicator(LibraryStatus.CURRENT, MediaType.ANIME, ListIndicatorStyle.Corner)
             ListIndicator(LibraryStatus.COMPLETED, MediaType.ANIME, ListIndicatorStyle.Overlay)
             ListIndicator(LibraryStatus.PLANNING, MediaType.ANIME, ListIndicatorStyle.Chip)
             ListIndicator(LibraryStatus.UNKNOWN, MediaType.ANIME, ListIndicatorStyle.Chip)

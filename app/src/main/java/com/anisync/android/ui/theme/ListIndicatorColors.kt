@@ -37,17 +37,23 @@ fun listIndicatorNeedsOutline(): Boolean = MaterialTheme.colorScheme.surface.lum
 
 /** The palette for the current theme. */
 @Composable
-fun listIndicatorColor(kind: ListIndicatorKind): ListIndicatorColor {
-    val dark = when (kind) {
-        ListIndicatorKind.WATCHING -> WatchingDark
-        ListIndicatorKind.REPEATING -> RepeatingDark
-        ListIndicatorKind.PLANNING -> PlanningDark
-        ListIndicatorKind.PAUSED -> PausedDark
-        ListIndicatorKind.COMPLETED -> CompletedDark
-        ListIndicatorKind.DROPPED -> DroppedDark
-        ListIndicatorKind.CUSTOM -> CustomDark
-    }
-    return if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) dark.inverted() else dark
+fun listIndicatorColor(kind: ListIndicatorKind): ListIndicatorColor =
+    if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) kind.tokens().inverted() else kind.tokens()
+
+/**
+ * The pair for an indicator drawn on cover art, with the tonal roles swapped: pale container, deep
+ * icon. Cover art does not change with the app theme, so this one never flips.
+ */
+fun listIndicatorArtColor(kind: ListIndicatorKind): ListIndicatorColor = kind.tokens().inverted()
+
+private fun ListIndicatorKind.tokens(): ListIndicatorColor = when (this) {
+    ListIndicatorKind.WATCHING -> WatchingDark
+    ListIndicatorKind.REPEATING -> RepeatingDark
+    ListIndicatorKind.PLANNING -> PlanningDark
+    ListIndicatorKind.PAUSED -> PausedDark
+    ListIndicatorKind.COMPLETED -> CompletedDark
+    ListIndicatorKind.DROPPED -> DroppedDark
+    ListIndicatorKind.CUSTOM -> CustomDark
 }
 
 private fun Color.luminance(): Float = 0.299f * red + 0.587f * green + 0.114f * blue
