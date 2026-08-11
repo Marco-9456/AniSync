@@ -59,7 +59,8 @@ import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
-import com.anisync.android.presentation.components.LibraryStatusBadge
+import com.anisync.android.presentation.components.ListIndicator
+import com.anisync.android.presentation.components.ListIndicatorStyle
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
@@ -359,14 +360,16 @@ private fun ImmersiveCardContent(
             if (style is CardStyle.Hero) 24.dp else 16.dp
         }
 
-        // Top corner, because the bottom of these cards is already the title and its gradient.
+        // The design puts the marker in the bottom-left of the poster. These cards print the title
+        // over that corner, so it moves to the top and keeps the 8dp inset.
         listStatus?.let { status ->
-            LibraryStatusBadge(
+            ListIndicator(
                 status = status,
                 type = item.type,
+                style = ListIndicatorStyle.Overlay,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(contentPadding)
+                    .padding(8.dp)
             )
         }
 
@@ -506,27 +509,15 @@ private fun ListItemContent(
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .build()
         }
-        Box {
-            AsyncImage(
-                model = imageRequest,
-                contentDescription = stringResource(R.string.a11y_media_poster, title),
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .size(width = 60.dp, height = 90.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
-            )
-
-            listStatus?.let { status ->
-                LibraryStatusBadge(
-                    status = status,
-                    type = item.type,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(4.dp)
-                )
-            }
-        }
+        AsyncImage(
+            model = imageRequest,
+            contentDescription = stringResource(R.string.a11y_media_poster, title),
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .size(width = 60.dp, height = 90.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+        )
 
         Spacer(modifier = Modifier.width(16.dp))
 
@@ -582,8 +573,22 @@ private fun ListItemContent(
             }
         }
 
+        // Rows take the chip form at the trailing edge: one glance down the right side answers the
+        // whole page.
+        listStatus?.let { status ->
+            ListIndicator(
+                status = status,
+                type = item.type,
+                style = ListIndicatorStyle.Chip,
+                modifier = Modifier.padding(start = 10.dp)
+            )
+        }
+
         item.averageScore?.let { score ->
-            Column(horizontalAlignment = Alignment.End) {
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.padding(start = 10.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = null,
