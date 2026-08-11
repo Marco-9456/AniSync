@@ -1247,4 +1247,9 @@
     <string name="a11y_wp_card_manga">%1$s, %2$d de %3$d capítulos, %4$d restante</string>
     <string name="a11y_wp_card_unknown">%1$s, episódio %2$d, total desconhecido</string>
     <string name="a11y_wp_card_unknown_manga">%1$s, %2$d capítulos lidos, total desconhecido</string>
+    <string name="notifications_section_new">Novo</string>
+    <string name="notifications_section_earlier">Anterior</string>
+    <string name="notifications_new_count">%1$s novo</string>
+    <string name="notifications_mark_all_read">Marcar tudo como lido</string>
+    <string name="a11y_notification_unread">Não lido</string>
 </resources>
