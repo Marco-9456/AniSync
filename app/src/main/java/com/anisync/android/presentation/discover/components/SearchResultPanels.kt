@@ -54,6 +54,7 @@ import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.ListIndicator
 import com.anisync.android.presentation.components.ListIndicatorStyle
+import com.anisync.android.presentation.components.MediaPosterCard
 import com.anisync.android.presentation.discover.ResultCategory
 import com.anisync.android.presentation.discover.SearchTarget
 import com.anisync.android.presentation.util.LocalLibraryStatuses
@@ -389,29 +390,19 @@ fun SearchCategoryGrid(
     ) {
         when (activeCategory) {
             ResultCategory.ANIME -> items(searchAnime, key = { "a_${it.mediaId}" }) { entry ->
-                SearchGridCard(
-                    title = entry.getTitle(titleLanguage),
-                    subtitle = entry.format?.label(),
-                    imageUrl = entry.cover.url() ?: entry.coverUrl,
-                    fallbackIcon = Icons.Outlined.Movie,
-                    imageAspect = 0.7f,
-                    selected = selectedTarget is SearchTarget.Media && selectedTarget.id == entry.mediaId,
+                MediaPosterCard(
+                    item = entry,
                     onClick = { onMediaClick(entry.mediaId) },
-                    listStatus = LocalLibraryStatuses.current[entry.mediaId],
-                    mediaType = MediaType.ANIME,
+                    titleLanguage = titleLanguage,
+                    transitionPrefix = "search",
                 )
             }
             ResultCategory.MANGA -> items(searchManga, key = { "m_${it.mediaId}" }) { entry ->
-                SearchGridCard(
-                    title = entry.getTitle(titleLanguage),
-                    subtitle = entry.format?.label(),
-                    imageUrl = entry.cover.url() ?: entry.coverUrl,
-                    fallbackIcon = Icons.Outlined.Movie,
-                    imageAspect = 0.7f,
-                    selected = selectedTarget is SearchTarget.Media && selectedTarget.id == entry.mediaId,
+                MediaPosterCard(
+                    item = entry,
                     onClick = { onMediaClick(entry.mediaId) },
-                    listStatus = LocalLibraryStatuses.current[entry.mediaId],
-                    mediaType = MediaType.MANGA,
+                    titleLanguage = titleLanguage,
+                    transitionPrefix = "search",
                 )
             }
             ResultCategory.CHARACTERS -> items(groupedResults.characters, key = { "c_${it.id}" }) { c ->
@@ -496,8 +487,6 @@ private fun SearchGridCard(
     imageAspect: Float,
     selected: Boolean,
     onClick: () -> Unit,
-    listStatus: LibraryStatus? = null,
-    mediaType: MediaType? = null,
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -528,17 +517,6 @@ private fun SearchGridCard(
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp),
-                    )
-                }
-
-                listStatus?.let { status ->
-                    ListIndicator(
-                        status = status,
-                        type = mediaType,
-                        style = ListIndicatorStyle.Overlay,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(8.dp),
                     )
                 }
             }
