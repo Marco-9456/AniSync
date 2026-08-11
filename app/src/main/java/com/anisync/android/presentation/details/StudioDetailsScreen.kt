@@ -74,6 +74,9 @@ import com.anisync.android.domain.StudioMediaEntry
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.ListIndicator
+import com.anisync.android.presentation.components.ListIndicatorStyle
+import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.components.AttributesCard
 import com.anisync.android.presentation.util.formatAsTitle
@@ -479,6 +482,14 @@ private fun StudioWorkItem(
                 if (media.isMainStudio) {
                     StudioMainChip(label = mainChipLabel)
                 }
+            }
+
+            LocalLibraryStatuses.current[media.mediaId]?.let { status ->
+                ListIndicator(
+                    status = status,
+                    type = media.type,
+                    style = ListIndicatorStyle.Chip
+                )
             }
         }
     }
