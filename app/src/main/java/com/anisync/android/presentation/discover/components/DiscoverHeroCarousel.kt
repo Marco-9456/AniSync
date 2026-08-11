@@ -59,7 +59,6 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LocalCoverQuality
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.ListIndicator
-import com.anisync.android.presentation.components.ListIndicatorCorner
 import com.anisync.android.presentation.components.ListIndicatorStyle
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalLibraryStatuses
@@ -257,15 +256,14 @@ private fun HeroCarouselItem(
                 .background(HeroScrimBrush)
         )
 
-        // Top-left, because this card already spends its bottom edge on the title block. Same
-        // fused tab, turned around, so the hero keeps its shape.
+        // Bottom-right: the title block is left-aligned, so this corner is free and the tab reads
+        // the same way here as it does on every poster card.
         LocalLibraryStatuses.current[item.mediaId]?.let { status ->
             ListIndicator(
                 status = status,
                 type = item.type,
                 style = ListIndicatorStyle.Corner,
-                corner = ListIndicatorCorner.TopStart,
-                modifier = Modifier.align(Alignment.TopStart)
+                modifier = Modifier.align(Alignment.BottomEnd)
             )
         }
 
