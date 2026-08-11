@@ -61,6 +61,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.ListIndicator
 import com.anisync.android.presentation.components.ListIndicatorStyle
+import com.anisync.android.presentation.components.MediaPosterCard
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
@@ -101,19 +102,20 @@ fun HorizontalMediaList(
             contentType = { _, _ -> "media_card" }
         ) { _, item ->
             val onClick = remember(item.mediaId) { { onItemClick(item.mediaId) } }
-            DiscoverMediaCard(
+            MediaPosterCard(
                 item = item,
-                style = CardStyle.Standard(),
                 onClick = onClick,
                 titleLanguage = titleLanguage,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 transitionPrefix = transitionPrefix,
-                modifier = Modifier.animateItem(
-                    fadeInSpec = fadeSpec,
-                    fadeOutSpec = fadeSpec,
-                    placementSpec = placementSpec
-                )
+                modifier = Modifier
+                    .width(171.dp)
+                    .animateItem(
+                        fadeInSpec = fadeSpec,
+                        fadeOutSpec = fadeSpec,
+                        placementSpec = placementSpec
+                    )
             )
         }
     }
