@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -50,6 +51,9 @@ import java.util.Locale
 private const val PosterAspect = 171f / 243f
 
 private val CoverShape = RoundedCornerShape(18.dp)
+
+/** Two title lines, the gap, and the meta row: the tallest the text block gets at default scale. */
+private val TextBlockHeight = 70.dp
 
 /**
  * The browsing card for Discover and the search grid: a clean cover with the title, type and score
@@ -149,59 +153,65 @@ fun MediaPosterCard(
             }
         }
 
-        // Sized to what the title actually needs. Reserving two lines left an obvious hole under
-        // every short title, which reads worse than the meta row sitting at different heights.
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontSize = 15.sp,
-            lineHeight = 20.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = titleModifier
-        )
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        // The text block reserves the two-line height, not the title itself. A short title keeps
+        // its meta row directly underneath with no hole in between, and every card in a row still
+        // measures the same, so scrolling a LazyRow cannot resize it.
+        Column(
+            modifier = Modifier.heightIn(min = TextBlockHeight),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            item.format?.let { format ->
-                Text(
-                    text = format.toLabel(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
-            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontSize = 15.sp,
+                lineHeight = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = titleModifier
+            )
 
-            item.averageScore?.let { score ->
-                if (item.format != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                item.format?.let { format ->
                     Text(
-                        text = "·",
+                        text = format.toLabel(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+
+                item.averageScore?.let { score ->
+                    if (item.format != null) {
+                        Text(
+                            text = "·",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = StarGold,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Text(
+                        text = String.format(Locale.US, "%.1f", score / 10.0),
                         style = MaterialTheme.typography.bodyMedium,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1
                     )
                 }
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = StarGold,
-                    modifier = Modifier.size(15.dp)
-                )
-                Text(
-                    text = String.format(Locale.US, "%.1f", score / 10.0),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1
-                )
             }
         }
     }
