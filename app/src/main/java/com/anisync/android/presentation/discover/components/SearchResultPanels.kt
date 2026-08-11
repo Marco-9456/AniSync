@@ -685,6 +685,15 @@ private fun MediaResultRow(
         imageWidth = 38.dp,
         imageHeight = 52.dp,
         onClick = onClick,
+        trailing = LocalLibraryStatuses.current[entry.mediaId]?.let { status ->
+            {
+                ListIndicator(
+                    status = status,
+                    type = entry.type,
+                    style = ListIndicatorStyle.Chip
+                )
+            }
+        },
     )
 }
 
@@ -705,6 +714,8 @@ private fun SearchResultRow(
     selected: Boolean = false,
     imageWidth: Dp = 44.dp,
     imageHeight: Dp = 44.dp,
+    // Trailing edge of the row, where the list indicator chip sits for media results.
+    trailing: (@Composable () -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     Row(
@@ -759,6 +770,8 @@ private fun SearchResultRow(
                 )
             }
         }
+
+        trailing?.invoke()
     }
 }
 
