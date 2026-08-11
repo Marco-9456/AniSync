@@ -49,11 +49,16 @@ import com.anisync.android.data.DiscoverViewMode
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
+import com.anisync.android.presentation.components.ListIndicator
+import com.anisync.android.presentation.components.ListIndicatorStyle
 import com.anisync.android.presentation.discover.ResultCategory
 import com.anisync.android.presentation.discover.SearchTarget
+import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.type.MediaFormat
+import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.LocalAvatarShape
 import com.anisync.android.util.getTitle
 
@@ -392,6 +397,8 @@ fun SearchCategoryGrid(
                     imageAspect = 0.7f,
                     selected = selectedTarget is SearchTarget.Media && selectedTarget.id == entry.mediaId,
                     onClick = { onMediaClick(entry.mediaId) },
+                    listStatus = LocalLibraryStatuses.current[entry.mediaId],
+                    mediaType = MediaType.ANIME,
                 )
             }
             ResultCategory.MANGA -> items(searchManga, key = { "m_${it.mediaId}" }) { entry ->
@@ -403,6 +410,8 @@ fun SearchCategoryGrid(
                     imageAspect = 0.7f,
                     selected = selectedTarget is SearchTarget.Media && selectedTarget.id == entry.mediaId,
                     onClick = { onMediaClick(entry.mediaId) },
+                    listStatus = LocalLibraryStatuses.current[entry.mediaId],
+                    mediaType = MediaType.MANGA,
                 )
             }
             ResultCategory.CHARACTERS -> items(groupedResults.characters, key = { "c_${it.id}" }) { c ->
@@ -487,6 +496,8 @@ private fun SearchGridCard(
     imageAspect: Float,
     selected: Boolean,
     onClick: () -> Unit,
+    listStatus: LibraryStatus? = null,
+    mediaType: MediaType? = null,
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -517,6 +528,17 @@ private fun SearchGridCard(
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(28.dp),
+                    )
+                }
+
+                listStatus?.let { status ->
+                    ListIndicator(
+                        status = status,
+                        type = mediaType,
+                        style = ListIndicatorStyle.Overlay,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(8.dp),
                     )
                 }
             }
