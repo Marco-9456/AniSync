@@ -15,6 +15,7 @@ import com.anisync.android.type.MediaType
 import com.anisync.android.widget.core.WidgetRefresh
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.flow.first
 import com.anisync.android.domain.Result as DomainResult
 
 /**
@@ -40,6 +41,13 @@ class LibrarySyncWorker @AssistedInject constructor(
             ?.let { runCatching { MediaType.valueOf(it) }.getOrNull() }
             ?: return Result.failure()
 
+        // Callers that only want the first fill stop here once the type has rows.
+        if (inputData.getBoolean(KEY_ONLY_IF_EMPTY, false) &&
+            libraryRepository.observeLibrary("", type).first().isNotEmpty()
+        ) {
+            return Result.success()
+        }
+
         // Empty username means resolve the signed in viewer, which the repository already does.
         return when (libraryRepository.refreshLibrary("", type)) {
             is DomainResult.Success -> {
@@ -53,6 +61,17 @@ class LibrarySyncWorker @AssistedInject constructor(
 
     companion object {
         private const val KEY_TYPE = "media_type"
+        private const val KEY_ONLY_IF_EMPTY = "only_if_empty"
+
+        /**
+         * Fills a type that has never been synced on this account, and does nothing otherwise.
+         *
+         * The list indicators on the browsing screens read Room, so a manga list the user never
+         * opened would leave every manga card looking like it is not tracked.
+         */
+        fun enqueueIfEmpty(context: Context, type: MediaType) {
+            enqueue(context, type, onlyIfEmpty = true)
+        }
 
         /**
          * Asks for a sync of [type], one in flight per type at most.
@@ -60,9 +79,14 @@ class LibrarySyncWorker @AssistedInject constructor(
          * KEEP not REPLACE: the widget asks on every render while the list is empty, and replacing
          * would restart the fetch each time and never finish it.
          */
-        fun enqueue(context: Context, type: MediaType) {
+        fun enqueue(context: Context, type: MediaType, onlyIfEmpty: Boolean = false) {
             val request = OneTimeWorkRequestBuilder<LibrarySyncWorker>()
-                .setInputData(Data.Builder().putString(KEY_TYPE, type.rawValue).build())
+                .setInputData(
+                    Data.Builder()
+                        .putString(KEY_TYPE, type.rawValue)
+                        .putBoolean(KEY_ONLY_IF_EMPTY, onlyIfEmpty)
+                        .build()
+                )
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
