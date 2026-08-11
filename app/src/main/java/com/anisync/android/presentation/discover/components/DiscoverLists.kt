@@ -63,6 +63,7 @@ import com.anisync.android.presentation.components.ListIndicator
 import com.anisync.android.presentation.components.ListIndicatorCorner
 import com.anisync.android.presentation.components.ListIndicatorStyle
 import com.anisync.android.presentation.components.MediaPosterCard
+import com.anisync.android.presentation.components.MediaPosterCardDefaults
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
@@ -77,6 +78,9 @@ import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
 import java.util.Locale
+
+/** Card width in the Discover rows, matching the 171dp card in the design. */
+private val PosterCardWidth = 171.dp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -93,9 +97,11 @@ fun HorizontalMediaList(
     val placementSpec = AppMotion.rememberOffsetSpatialSpec()
     val fadeSpec = AppMotion.rememberEffectsSpec()
 
+    // Pinned, so a two-line title scrolling into view cannot resize the row under the finger.
     LazyRow(
         contentPadding = PaddingValues(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.height(MediaPosterCardDefaults.rowHeight(PosterCardWidth))
     ) {
         itemsIndexed(
             items,
@@ -111,7 +117,7 @@ fun HorizontalMediaList(
                 animatedVisibilityScope = animatedVisibilityScope,
                 transitionPrefix = transitionPrefix,
                 modifier = Modifier
-                    .width(171.dp)
+                    .width(PosterCardWidth)
                     .animateItem(
                         fadeInSpec = fadeSpec,
                         fadeOutSpec = fadeSpec,

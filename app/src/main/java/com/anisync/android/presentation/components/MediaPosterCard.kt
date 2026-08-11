@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,6 +27,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -52,8 +54,33 @@ private const val PosterAspect = 171f / 243f
 
 private val CoverShape = RoundedCornerShape(18.dp)
 
-/** Two title lines, the gap, and the meta row: the tallest the text block gets at default scale. */
-private val TextBlockHeight = 70.dp
+private val CoverToTextGap = 10.dp
+private val TitleToMetaGap = 10.dp
+private val TitleLineHeight = 20.sp
+private val MetaLineHeight = 18.sp
+private val StarSize = 15.dp
+
+object MediaPosterCardDefaults {
+
+    /**
+     * The height a horizontal row of [MediaPosterCard]s should be pinned to.
+     *
+     * Cards are as tall as their own title needs, which is what keeps a one-line title from
+     * leaving a hole above its meta row. In a `LazyRow` that would be a bug on its own: the row
+     * takes its height from the tallest card currently composed, so a two-line title scrolling
+     * into view would resize the whole row mid-scroll. Pinning the row to the tallest a card can
+     * get removes the coupling, and the shorter cards simply sit at the top of it.
+     *
+     * Derived from the text styles rather than guessed, so it follows the font scale.
+     */
+    @Composable
+    fun rowHeight(cardWidth: Dp): Dp = with(LocalDensity.current) {
+        val coverHeight = cardWidth / PosterAspect
+        val titleHeight = TitleLineHeight.toDp() * 2
+        val metaHeight = maxOf(MetaLineHeight.toDp(), StarSize)
+        coverHeight + CoverToTextGap + titleHeight + TitleToMetaGap + metaHeight
+    }
+}
 
 /**
  * The browsing card for Discover and the search grid: a clean cover with the title, type and score
@@ -153,13 +180,11 @@ fun MediaPosterCard(
             }
         }
 
-        // The text block reserves the two-line height, not the title itself. A short title keeps
-        // its meta row directly underneath with no hole in between, and every card in a row still
-        // measures the same, so scrolling a LazyRow cannot resize it.
-        Column(
-            modifier = Modifier.heightIn(min = TextBlockHeight),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+        // Sized to what the title actually needs, so a short title keeps its meta row directly
+        // underneath. Cards are therefore not all the same height: a horizontal row of these must
+        // fix its own height with [MediaPosterCardDefaults.rowHeight] rather than let the tallest
+        // visible card decide it.
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
@@ -181,6 +206,8 @@ fun MediaPosterCard(
                         text = format.toLabel(),
                         style = MaterialTheme.typography.bodyMedium,
                         fontSize = 13.sp,
+
+                        lineHeight = MetaLineHeight,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
@@ -193,6 +220,8 @@ fun MediaPosterCard(
                             text = "·",
                             style = MaterialTheme.typography.bodyMedium,
                             fontSize = 13.sp,
+
+                            lineHeight = MetaLineHeight,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -207,6 +236,8 @@ fun MediaPosterCard(
                         text = String.format(Locale.US, "%.1f", score / 10.0),
                         style = MaterialTheme.typography.bodyMedium,
                         fontSize = 13.sp,
+
+                        lineHeight = MetaLineHeight,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1
