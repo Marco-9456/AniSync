@@ -59,6 +59,7 @@ import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.components.LibraryStatusBadge
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
@@ -181,6 +182,7 @@ fun DiscoverMediaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
+    listStatus: LibraryStatus? = null,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     transitionPrefix: String = TransitionKeys.DISCOVER
@@ -256,6 +258,7 @@ fun DiscoverMediaCard(
                 item = item,
                 transitionPrefix = transitionPrefix,
                 titleLanguage = titleLanguage,
+                listStatus = listStatus,
                 titleKey = titleKey,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
@@ -267,6 +270,7 @@ fun DiscoverMediaCard(
                 style = style,
                 transitionPrefix = transitionPrefix,
                 titleLanguage = titleLanguage,
+                listStatus = listStatus,
                 cacheKey = cacheKey,
                 gradientKey = gradientKey,
                 titleKey = titleKey,
@@ -286,6 +290,7 @@ private fun ImmersiveCardContent(
     style: CardStyle,
     transitionPrefix: String,
     titleLanguage: TitleLanguage,
+    listStatus: LibraryStatus?,
     cacheKey: String,
     gradientKey: String,
     titleKey: String,
@@ -351,6 +356,17 @@ private fun ImmersiveCardContent(
 
         val contentPadding = remember(style) {
             if (style is CardStyle.Hero) 24.dp else 16.dp
+        }
+
+        // Top corner, because the bottom of these cards is already the title and its gradient.
+        listStatus?.let { status ->
+            LibraryStatusBadge(
+                status = status,
+                type = item.type,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(contentPadding)
+            )
         }
 
         Column(
@@ -466,6 +482,7 @@ private fun ListItemContent(
     item: LibraryEntry,
     transitionPrefix: String,
     titleLanguage: TitleLanguage,
+    listStatus: LibraryStatus?,
     titleKey: String,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
@@ -488,15 +505,27 @@ private fun ListItemContent(
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .build()
         }
-        AsyncImage(
-            model = imageRequest,
-            contentDescription = stringResource(R.string.a11y_media_poster, title),
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .size(width = 60.dp, height = 90.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-        )
+        Box {
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = stringResource(R.string.a11y_media_poster, title),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .size(width = 60.dp, height = 90.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+            )
+
+            listStatus?.let { status ->
+                LibraryStatusBadge(
+                    status = status,
+                    type = item.type,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(4.dp)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.width(16.dp))
 
@@ -627,6 +656,7 @@ private fun StandardCardStylePreview() {
                         item = previewItem,
                         style = CardStyle.Standard(),
                         onClick = {},
+                        listStatus = LibraryStatus.COMPLETED,
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = animatedScope
                     )
@@ -686,6 +716,7 @@ private fun ListItemStylePreview() {
                         ),
                         style = CardStyle.ListItem,
                         onClick = {},
+                        listStatus = LibraryStatus.PLANNING,
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = animatedScope
                     )

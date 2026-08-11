@@ -8,7 +8,6 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,7 +43,6 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
-import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
@@ -59,7 +57,6 @@ import com.anisync.android.util.getTitle
  * @param item The library entry data to display
  * @param onClick Click handler for card tap
  * @param modifier Composable modifier
- * @param listStatus The list this media already sits on, or null when it is not in the library
  * @param sharedTransitionScope Scope for shared element animations
  * @param animatedVisibilityScope Scope for visibility animations
  */
@@ -70,7 +67,6 @@ fun MediaCard(
     onClick: () -> Unit,
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     modifier: Modifier = Modifier,
-    listStatus: LibraryStatus? = null,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -106,31 +102,19 @@ fun MediaCard(
         ) {
             Column {
                 // Image Container
-                Box {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(item.cover.url() ?: item.coverUrl)
-                            .crossfade(true)
-                            .placeholderMemoryCacheKey(cacheKey)
-                            .memoryCacheKey(cacheKey)
-                            .build(),
-                        contentDescription = stringResource(R.string.a11y_media_poster, title),
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(0.7f) // Standard poster ratio
-                    )
-
-                    listStatus?.let { status ->
-                        LibraryStatusBadge(
-                            status = status,
-                            type = item.type,
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(8.dp)
-                        )
-                    }
-                }
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(item.cover.url() ?: item.coverUrl)
+                        .crossfade(true)
+                        .placeholderMemoryCacheKey(cacheKey)
+                        .memoryCacheKey(cacheKey)
+                        .build(),
+                    contentDescription = stringResource(R.string.a11y_media_poster, title),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.7f) // Standard poster ratio
+                )
 
                 // Content Container
                 Column(
@@ -229,7 +213,6 @@ private fun MediaCardPreview() {
                         totalVolumes = null
                     ),
                     onClick = {},
-                    listStatus = LibraryStatus.CURRENT,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
