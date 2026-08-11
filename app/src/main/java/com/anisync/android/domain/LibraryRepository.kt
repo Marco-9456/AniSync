@@ -11,7 +11,15 @@ interface LibraryRepository {
     fun observeLibrary(username: String, type: MediaType): Flow<List<LibraryEntry>>
 
     /**
-     * Trigger a network refresh. 
+     * Observe which media the active account already has on a list, keyed by media id.
+     *
+     * Backed by the same local cache as [observeLibrary], so browsing surfaces can mark known
+     * titles without asking the API for list data they were not going to fetch.
+     */
+    fun observeListStatuses(): Flow<Map<Int, LibraryStatus>>
+
+    /**
+     * Trigger a network refresh.
      * Fetches from API and updates local cache.
      * Returns Result to indicate success/failure for UI feedback.
      */
