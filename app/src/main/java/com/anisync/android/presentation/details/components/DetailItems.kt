@@ -64,7 +64,10 @@ import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.StaffInfo
 import com.anisync.android.domain.VoicedCharacter
+import com.anisync.android.presentation.components.ListIndicator
+import com.anisync.android.presentation.components.ListIndicatorStyle
 import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.bouncyCombinedClickable
@@ -407,12 +410,25 @@ fun RelationItem(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         }
 
-        AsyncImage(
-            model = relation.cover.url() ?: relation.coverUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = imageModifier
-        )
+        Box {
+            AsyncImage(
+                model = relation.cover.url() ?: relation.coverUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = imageModifier
+            )
+
+            LocalLibraryStatuses.current[relation.id]?.let { status ->
+                ListIndicator(
+                    status = status,
+                    type = null,
+                    style = ListIndicatorStyle.Overlay,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp)
+                )
+            }
+        }
         Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
         Text(
             text = relation.relationType.formatAsTitle() ?: relation.relationType,
@@ -478,6 +494,17 @@ fun RecommendationItem(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
+
+            LocalLibraryStatuses.current[recommendation.id]?.let { status ->
+                ListIndicator(
+                    status = status,
+                    type = null,
+                    style = ListIndicatorStyle.Overlay,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp)
+                )
+            }
         }
         Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
         Text(
