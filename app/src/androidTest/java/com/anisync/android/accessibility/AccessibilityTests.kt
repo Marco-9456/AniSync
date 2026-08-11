@@ -23,7 +23,8 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
-import com.anisync.android.presentation.components.MediaCard
+import com.anisync.android.presentation.discover.components.CardStyle
+import com.anisync.android.presentation.discover.components.DiscoverMediaCard
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.type.MediaType
 import org.junit.Rule
@@ -285,19 +286,20 @@ class AccessibilityTests {
         composeTestRule.onNodeWithText("Your collection").assertIsDisplayed()
     }
 
-    // ==================== MediaCard Tests ====================
+    // ==================== DiscoverMediaCard Tests ====================
 
     @OptIn(ExperimentalSharedTransitionApi::class)
     @Test
-    fun mediaCard_hasClickLabel_forAccessibility() {
+    fun discoverMediaCard_hasClickLabel_forAccessibility() {
         val testEntry = createTestLibraryEntry()
 
         composeTestRule.setContent {
             MaterialTheme {
                 SharedTransitionLayout {
                     AnimatedVisibility(visible = true) {
-                        MediaCard(
+                        DiscoverMediaCard(
                             item = testEntry,
+                            style = CardStyle.Standard(),
                             onClick = {},
                             sharedTransitionScope = this@SharedTransitionLayout,
                             animatedVisibilityScope = this
@@ -315,15 +317,16 @@ class AccessibilityTests {
 
     @OptIn(ExperimentalSharedTransitionApi::class)
     @Test
-    fun mediaCard_poster_hasContentDescription() {
+    fun discoverMediaCard_poster_hasContentDescription() {
         val testEntry = createTestLibraryEntry()
 
         composeTestRule.setContent {
             MaterialTheme {
                 SharedTransitionLayout {
                     AnimatedVisibility(visible = true) {
-                        MediaCard(
+                        DiscoverMediaCard(
                             item = testEntry,
+                            style = CardStyle.Standard(),
                             onClick = {},
                             sharedTransitionScope = this@SharedTransitionLayout,
                             animatedVisibilityScope = this
@@ -341,15 +344,16 @@ class AccessibilityTests {
 
     @OptIn(ExperimentalSharedTransitionApi::class)
     @Test
-    fun mediaCard_hasButtonRole() {
+    fun discoverMediaCard_hasButtonRole() {
         val testEntry = createTestLibraryEntry()
 
         composeTestRule.setContent {
             MaterialTheme {
                 SharedTransitionLayout {
                     AnimatedVisibility(visible = true) {
-                        MediaCard(
+                        DiscoverMediaCard(
                             item = testEntry,
+                            style = CardStyle.Standard(),
                             onClick = {},
                             sharedTransitionScope = this@SharedTransitionLayout,
                             animatedVisibilityScope = this
