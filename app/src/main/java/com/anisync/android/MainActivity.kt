@@ -114,6 +114,9 @@ class MainActivity : AppCompatActivity() {
     lateinit var linkPreviewProvider: LinkPreviewProvider
 
     @Inject
+    lateinit var libraryRepository: com.anisync.android.domain.LibraryRepository
+
+    @Inject
     lateinit var userOptionsRepository: com.anisync.android.domain.UserOptionsRepository
 
     @Inject
@@ -238,6 +241,9 @@ class MainActivity : AppCompatActivity() {
                 val gridColumnsAuto by appSettings.gridColumnsAuto.collectAsStateWithLifecycle()
                 val gridColumnCount by appSettings.gridColumnCount.collectAsStateWithLifecycle()
                 val typographyOverrides by appSettings.typographyOverrides.collectAsStateWithLifecycle()
+                // Remembered so recomposition does not resubscribe to a fresh Flow every frame.
+                val listStatusFlow = remember { libraryRepository.observeListStatuses() }
+                val libraryStatuses by listStatusFlow.collectAsStateWithLifecycle(initialValue = emptyMap())
                 val avatarShape by appSettings.avatarShape.collectAsStateWithLifecycle()
                 val avatarBackgroundEnabled by appSettings.avatarBackgroundEnabled.collectAsStateWithLifecycle()
                 val disableAvatarShapeProfile by appSettings.disableAvatarShapeProfile.collectAsStateWithLifecycle()
@@ -263,6 +269,7 @@ class MainActivity : AppCompatActivity() {
                     LocalAppSettings provides appSettings,
                     LocalLinkPreviewProvider provides linkPreviewProvider,
                     com.anisync.android.domain.LocalCoverQuality provides coverQuality,
+                    com.anisync.android.presentation.util.LocalLibraryStatuses provides libraryStatuses,
                     com.anisync.android.ui.theme.LocalAvatarShape provides avatarShape.toComposeShape(),
                     com.anisync.android.ui.theme.LocalAvatarShapeId provides avatarShape,
                     com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled provides avatarBackgroundEnabled,

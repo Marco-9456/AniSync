@@ -61,6 +61,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.LibraryStatusBadge
 import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatAsTitle
@@ -182,7 +183,7 @@ fun DiscoverMediaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
-    listStatus: LibraryStatus? = null,
+    listStatus: LibraryStatus? = LocalLibraryStatuses.current[item.mediaId],
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     transitionPrefix: String = TransitionKeys.DISCOVER
