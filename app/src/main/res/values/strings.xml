@@ -950,6 +950,7 @@
 
     <!-- Accessibility: Content Descriptions -->
     <string name="a11y_media_poster">Poster for %1$s</string>
+    <string name="a11y_on_list">On your %1$s list</string>
     <string name="a11y_character_image">Image of %1$s</string>
     <string name="a11y_staff_image">Image of %1$s</string>
     <string name="a11y_user_avatar">Profile picture for %1$s</string>
