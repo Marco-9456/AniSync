@@ -29,7 +29,7 @@
   <a href="https://github.com/sponsors/Marco-9456"><img src="https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=flat&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors"></a>
 </p>
 
-AniSync is a native Android app for [AniList.co](https://anilist.co) — a fast, offline-first way to track your anime and manga, discover new stuff, and keep up with the community. No browser tab required.
+AniSync is a native Android app for [AniList.co](https://anilist.co) — a fast way to track your anime and manga, discover new stuff, and keep up with the community. No browser tab required.
 
 > [!NOTE]
 > AniSync is not affiliated with AniList. It's a third-party client built for the AniList community.
@@ -57,7 +57,6 @@ Everything you'd want from an AniList client, in one app:
 - **Forums** — browse, post, like, and subscribe without ever leaving the app.
 - **Stats** — nice charts that prove you watch too much anime.
 - **Widgets & Notifications** — airing schedules on your home screen and reminders before episodes drop.
-- **Offline-First** — your library works without internet and syncs when you're back online.
 
 ---
 
