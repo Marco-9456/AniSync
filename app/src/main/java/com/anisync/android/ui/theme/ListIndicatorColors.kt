@@ -28,6 +28,13 @@ private val CustomDark = ListIndicatorColor(Color(0xFF3A4A47), Color(0xFFD5E5E0)
 
 private fun ListIndicatorColor.inverted() = ListIndicatorColor(container = content, content = container)
 
+/**
+ * True in light theme, where the swapped pair puts a pale container over cover art that is often
+ * just as pale. The shadow alone does not hold the edge there, so the indicator draws a hairline.
+ */
+@Composable
+fun listIndicatorNeedsOutline(): Boolean = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+
 /** The palette for the current theme. */
 @Composable
 fun listIndicatorColor(kind: ListIndicatorKind): ListIndicatorColor {

@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -36,6 +37,7 @@ import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.ui.theme.ListIndicatorKind
 import com.anisync.android.ui.theme.listIndicatorColor
+import com.anisync.android.ui.theme.listIndicatorNeedsOutline
 
 /**
  * How the indicator is drawn. Posters and grid cards take [Overlay], rows and search results take
@@ -59,6 +61,11 @@ fun ListIndicator(
 ) {
     val kind = status.toIndicatorKind()
     val colors = listIndicatorColor(kind)
+    val outline = if (listIndicatorNeedsOutline()) {
+        Modifier.border(1.dp, colors.content.copy(alpha = 0.4f), kind.overlayShape())
+    } else {
+        Modifier
+    }
     val label = kind.label(status, type)
     val spoken = stringResource(R.string.a11y_in_your_list, label)
 
@@ -71,6 +78,7 @@ fun ListIndicator(
             modifier = modifier
                 .size(28.dp)
                 .alpha(0.94f)
+                .then(outline)
                 .semanticsLabel(spoken)
         ) {
             Box(contentAlignment = Alignment.Center) {
