@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -150,7 +149,8 @@ fun MediaPosterCard(
             }
         }
 
-        // Two lines high whether or not the title needs them, so a row of cards keeps one baseline.
+        // Sized to what the title actually needs. Reserving two lines left an obvious hole under
+        // every short title, which reads worse than the meta row sitting at different heights.
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
@@ -160,7 +160,7 @@ fun MediaPosterCard(
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = titleModifier.height(40.dp)
+            modifier = titleModifier
         )
 
         Row(
