@@ -1,7 +1,7 @@
 # AniSync
 
 <p align="center">
-  <img src=".github/logoWide.svg" alt="AniSync Logo" width="300" height="100">
+  <img src=".github/hero.png" alt="AniSync, a native AniList client for Android" width="100%">
 </p>
 
 <p align="center">
@@ -36,16 +36,12 @@ AniSync is a native Android app for [AniList.co](https://anilist.co) — a fast,
 
 ---
 
-## :camera: Screenshots
-
 <p align="center">
-  <img src=".github/Screenshots.svg" width="100%" alt="AniSync app screenshots">
+  <img src=".github/showcase.png" width="100%" alt="AniSync screens: library, media details, discover, feed and forums, profile, home-screen widgets and notifications">
 </p>
 
-### Shareable cards
-
 <p align="center">
-  <img src=".github/Shareable-cards.svg" width="100%" alt="AniSync shareable cards">
+  <img src=".github/share-cards.png" width="100%" alt="AniSync share cards for media, characters, staff, reviews, favourites and stats">
 </p>
 
 ---
