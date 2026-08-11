@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.util
 
+import androidx.annotation.DrawableRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
@@ -13,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.type.MediaFormat
@@ -77,6 +79,26 @@ fun LibraryStatus.toIcon(type: MediaType?): ImageVector {
         LibraryStatus.REPEATING -> Icons.Default.Repeat
         else -> Icons.Default.Add
     }
+}
+
+/**
+ * The list glyphs from the design file, drawn from the exported paths rather than the Material set.
+ *
+ * These differ from [toIcon] on purpose: a bookmark for Planning, a clock for Paused and a cross
+ * for Dropped read as "which list" rather than "what happens if I tap this".
+ */
+@Composable
+fun LibraryStatus.toListIcon(): ImageVector = ImageVector.vectorResource(toListIconRes())
+
+@DrawableRes
+fun LibraryStatus.toListIconRes(): Int = when (this) {
+    LibraryStatus.CURRENT -> R.drawable.ic_list_watching
+    LibraryStatus.REPEATING -> R.drawable.ic_list_repeating
+    LibraryStatus.PLANNING -> R.drawable.ic_list_planning
+    LibraryStatus.PAUSED -> R.drawable.ic_list_paused
+    LibraryStatus.COMPLETED -> R.drawable.ic_list_completed
+    LibraryStatus.DROPPED -> R.drawable.ic_list_dropped
+    LibraryStatus.UNKNOWN -> R.drawable.ic_list_custom
 }
 
 @Composable

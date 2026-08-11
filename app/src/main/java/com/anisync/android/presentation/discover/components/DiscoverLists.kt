@@ -59,7 +59,13 @@ import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.components.ListIndicator
+import com.anisync.android.presentation.components.ListIndicatorCorner
+import com.anisync.android.presentation.components.ListIndicatorStyle
+import com.anisync.android.presentation.components.MediaPosterCard
+import com.anisync.android.presentation.components.MediaPosterCardDefaults
 import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatAsTitle
@@ -72,6 +78,9 @@ import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
 import java.util.Locale
+
+/** Card width in the Discover rows, matching the 171dp card in the design. */
+private val PosterCardWidth = 171.dp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -88,9 +97,11 @@ fun HorizontalMediaList(
     val placementSpec = AppMotion.rememberOffsetSpatialSpec()
     val fadeSpec = AppMotion.rememberEffectsSpec()
 
+    // Pinned, so a two-line title scrolling into view cannot resize the row under the finger.
     LazyRow(
         contentPadding = PaddingValues(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.height(MediaPosterCardDefaults.rowHeight(PosterCardWidth))
     ) {
         itemsIndexed(
             items,
@@ -98,19 +109,20 @@ fun HorizontalMediaList(
             contentType = { _, _ -> "media_card" }
         ) { _, item ->
             val onClick = remember(item.mediaId) { { onItemClick(item.mediaId) } }
-            DiscoverMediaCard(
+            MediaPosterCard(
                 item = item,
-                style = CardStyle.Standard(),
                 onClick = onClick,
                 titleLanguage = titleLanguage,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 transitionPrefix = transitionPrefix,
-                modifier = Modifier.animateItem(
-                    fadeInSpec = fadeSpec,
-                    fadeOutSpec = fadeSpec,
-                    placementSpec = placementSpec
-                )
+                modifier = Modifier
+                    .width(PosterCardWidth)
+                    .animateItem(
+                        fadeInSpec = fadeSpec,
+                        fadeOutSpec = fadeSpec,
+                        placementSpec = placementSpec
+                    )
             )
         }
     }
@@ -181,6 +193,7 @@ fun DiscoverMediaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
+    listStatus: LibraryStatus? = LocalLibraryStatuses.current[item.mediaId],
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     transitionPrefix: String = TransitionKeys.DISCOVER
@@ -256,6 +269,7 @@ fun DiscoverMediaCard(
                 item = item,
                 transitionPrefix = transitionPrefix,
                 titleLanguage = titleLanguage,
+                listStatus = listStatus,
                 titleKey = titleKey,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
@@ -267,6 +281,7 @@ fun DiscoverMediaCard(
                 style = style,
                 transitionPrefix = transitionPrefix,
                 titleLanguage = titleLanguage,
+                listStatus = listStatus,
                 cacheKey = cacheKey,
                 gradientKey = gradientKey,
                 titleKey = titleKey,
@@ -286,6 +301,7 @@ private fun ImmersiveCardContent(
     style: CardStyle,
     transitionPrefix: String,
     titleLanguage: TitleLanguage,
+    listStatus: LibraryStatus?,
     cacheKey: String,
     gradientKey: String,
     titleKey: String,
@@ -351,6 +367,17 @@ private fun ImmersiveCardContent(
 
         val contentPadding = remember(style) {
             if (style is CardStyle.Hero) 24.dp else 16.dp
+        }
+
+        // Top corner, because these cards print the title over the bottom of the art.
+        listStatus?.let { status ->
+            ListIndicator(
+                status = status,
+                type = item.type,
+                style = ListIndicatorStyle.Corner,
+                corner = ListIndicatorCorner.TopStart,
+                modifier = Modifier.align(Alignment.TopStart)
+            )
         }
 
         Column(
@@ -466,6 +493,7 @@ private fun ListItemContent(
     item: LibraryEntry,
     transitionPrefix: String,
     titleLanguage: TitleLanguage,
+    listStatus: LibraryStatus?,
     titleKey: String,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
@@ -552,8 +580,22 @@ private fun ListItemContent(
             }
         }
 
+        // Rows take the chip form at the trailing edge: one glance down the right side answers the
+        // whole page.
+        listStatus?.let { status ->
+            ListIndicator(
+                status = status,
+                type = item.type,
+                style = ListIndicatorStyle.Chip,
+                modifier = Modifier.padding(start = 10.dp)
+            )
+        }
+
         item.averageScore?.let { score ->
-            Column(horizontalAlignment = Alignment.End) {
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.padding(start = 10.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = null,
@@ -627,6 +669,7 @@ private fun StandardCardStylePreview() {
                         item = previewItem,
                         style = CardStyle.Standard(),
                         onClick = {},
+                        listStatus = LibraryStatus.COMPLETED,
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = animatedScope
                     )
@@ -686,6 +729,7 @@ private fun ListItemStylePreview() {
                         ),
                         style = CardStyle.ListItem,
                         onClick = {},
+                        listStatus = LibraryStatus.PLANNING,
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = animatedScope
                     )

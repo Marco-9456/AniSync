@@ -71,9 +71,11 @@ import com.anisync.android.presentation.util.LocalGridColumnCount
 import com.anisync.android.presentation.util.LocalGridColumnsAuto
 import com.anisync.android.presentation.util.LocalLinkPreviewProvider
 import com.anisync.android.presentation.util.rememberAdaptiveInfo
+import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.AppTheme
 import com.anisync.android.ui.theme.PresetPalettes
 import com.anisync.android.ui.theme.resolveDarkTheme
+import com.anisync.android.worker.LibrarySyncWorker
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -112,6 +114,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var linkPreviewProvider: LinkPreviewProvider
+
+    @Inject
+    lateinit var libraryRepository: com.anisync.android.domain.LibraryRepository
 
     @Inject
     lateinit var userOptionsRepository: com.anisync.android.domain.UserOptionsRepository
@@ -238,6 +243,9 @@ class MainActivity : AppCompatActivity() {
                 val gridColumnsAuto by appSettings.gridColumnsAuto.collectAsStateWithLifecycle()
                 val gridColumnCount by appSettings.gridColumnCount.collectAsStateWithLifecycle()
                 val typographyOverrides by appSettings.typographyOverrides.collectAsStateWithLifecycle()
+                // Remembered so recomposition does not resubscribe to a fresh Flow every frame.
+                val listStatusFlow = remember { libraryRepository.observeListStatuses() }
+                val libraryStatuses by listStatusFlow.collectAsStateWithLifecycle(initialValue = emptyMap())
                 val avatarShape by appSettings.avatarShape.collectAsStateWithLifecycle()
                 val avatarBackgroundEnabled by appSettings.avatarBackgroundEnabled.collectAsStateWithLifecycle()
                 val disableAvatarShapeProfile by appSettings.disableAvatarShapeProfile.collectAsStateWithLifecycle()
@@ -263,6 +271,7 @@ class MainActivity : AppCompatActivity() {
                     LocalAppSettings provides appSettings,
                     LocalLinkPreviewProvider provides linkPreviewProvider,
                     com.anisync.android.domain.LocalCoverQuality provides coverQuality,
+                    com.anisync.android.presentation.util.LocalLibraryStatuses provides libraryStatuses,
                     com.anisync.android.ui.theme.LocalAvatarShape provides avatarShape.toComposeShape(),
                     com.anisync.android.ui.theme.LocalAvatarShapeId provides avatarShape,
                     com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled provides avatarBackgroundEnabled,
@@ -334,6 +343,18 @@ class MainActivity : AppCompatActivity() {
                             // epoch, which tears down and rebuilds the entire MainScreen subtree
                             // (fresh NavController + ViewModels) so screens refetch the new account.
                             val sessionEpoch by accountManager.sessionEpoch.collectAsStateWithLifecycle()
+
+                            // Both libraries have to exist locally for the list indicators to be
+                            // truthful on the browsing screens, and only the anime one is fetched
+                            // by opening the Library tab.
+                            LaunchedEffect(sessionEpoch, isLoggedIn) {
+                                if (isLoggedIn) {
+                                    listOf(MediaType.ANIME, MediaType.MANGA).forEach { type ->
+                                        LibrarySyncWorker.enqueueIfEmpty(this@MainActivity, type)
+                                    }
+                                }
+                            }
+
                             if (isLoggedIn) {
                                 key(sessionEpoch) {
                                     MainScreen(builtAtEpoch = sessionEpoch)

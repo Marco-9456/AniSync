@@ -40,6 +40,8 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.LocalLibraryStatuses
+import com.anisync.android.presentation.components.ListIndicatorCorner
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.util.getTitle
@@ -141,6 +143,17 @@ fun PosterCard(
                             )
                         )
                 )
+
+                // Top corner: this card prints its title over the bottom of the poster.
+                LocalLibraryStatuses.current[item.mediaId]?.let { status ->
+                    ListIndicator(
+                        status = status,
+                        type = item.type,
+                        style = ListIndicatorStyle.Corner,
+                        corner = ListIndicatorCorner.TopStart,
+                        modifier = Modifier.align(Alignment.TopStart)
+                    )
+                }
 
                 // Title at bottom
                 Text(

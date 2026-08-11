@@ -129,6 +129,7 @@ import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
 import com.anisync.android.presentation.util.LIBRARY_FAVORITES_TAB_ID
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.rememberHapticFeedback
+import com.anisync.android.presentation.util.toListIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.debounce
@@ -481,16 +482,7 @@ fun LibraryScreen(
                                 tabs.forEachIndexed { index, tab ->
                                     val statusIcon = when (tab) {
                                         is LibraryTab.All -> Icons.Default.AllInclusive
-                                        is LibraryTab.Standard -> {
-                                            when (tab.status) {
-                                                LibraryStatus.CURRENT -> if (mediaType == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
-                                                LibraryStatus.PAUSED -> Icons.Default.Pause
-                                                LibraryStatus.COMPLETED -> Icons.Default.Done
-                                                LibraryStatus.PLANNING -> Icons.Default.CalendarMonth
-                                                LibraryStatus.DROPPED -> Icons.Default.Close
-                                                else -> Icons.Default.Inbox
-                                            }
-                                        }
+                                        is LibraryTab.Standard -> tab.status.toListIcon()
 
                                         is LibraryTab.Favorites -> Icons.Default.Favorite
                                         is LibraryTab.Custom -> Icons.AutoMirrored.Filled.List

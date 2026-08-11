@@ -28,6 +28,7 @@ import com.apollographql.apollo.cache.normalized.FetchPolicy
 import com.apollographql.apollo.cache.normalized.fetchPolicy
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -67,6 +68,20 @@ class LibraryRepositoryImpl @Inject constructor(
                 libraryDao.observeByType(account?.id ?: NO_OWNER, type)
             }
             .map { entities -> entities.map { it.toDomain() } }
+    }
+
+    /**
+     * Observe list membership for the active account, re-subscribing on account switch so an
+     * indicator never survives from the outgoing account's library.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeListStatuses(): Flow<Map<Int, LibraryStatus>> {
+        return accountStore.activeAccount
+            .flatMapLatest { account ->
+                libraryDao.observeListStatuses(account?.id ?: NO_OWNER)
+            }
+            .map { rows -> rows.associate { it.mediaId to it.status } }
+            .distinctUntilChanged()
     }
 
     /**

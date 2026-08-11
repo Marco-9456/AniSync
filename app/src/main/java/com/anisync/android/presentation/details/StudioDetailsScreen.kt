@@ -74,6 +74,10 @@ import com.anisync.android.domain.StudioMediaEntry
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.ListIndicator
+import com.anisync.android.presentation.components.ListIndicatorStyle
+import com.anisync.android.presentation.util.LocalLibraryStatuses
+import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.components.AttributesCard
 import com.anisync.android.presentation.util.formatAsTitle
@@ -416,12 +420,17 @@ private fun StudioWorkItem(
     val cardShape = RoundedCornerShape(24.dp)
     val coverShape = RoundedCornerShape(8.dp)
     val mainChipLabel = stringResource(R.string.studio_main_studio_chip)
-    val itemDescription = remember(media.titleUserPreferred, media.format, media.year, media.isMainStudio, mainChipLabel) {
+    val listStatus = LocalLibraryStatuses.current[media.mediaId]
+    // This card sets its own description, which replaces anything its children say, so the
+    // indicator has to be spelled out here or it never reaches a screen reader.
+    val listLabel = listStatus?.let { stringResource(R.string.a11y_in_your_list, it.toLabel(media.type)) }
+    val itemDescription = remember(media.titleUserPreferred, media.format, media.year, media.isMainStudio, mainChipLabel, listLabel) {
         buildString {
             append(media.titleUserPreferred)
             media.format?.let { append(", $it") }
             media.year?.let { append(", $it") }
             if (media.isMainStudio) append(", $mainChipLabel")
+            listLabel?.let { append(", $it") }
         }
     }
 
@@ -479,6 +488,14 @@ private fun StudioWorkItem(
                 if (media.isMainStudio) {
                     StudioMainChip(label = mainChipLabel)
                 }
+            }
+
+            listStatus?.let { status ->
+                ListIndicator(
+                    status = status,
+                    type = media.type,
+                    style = ListIndicatorStyle.Chip
+                )
             }
         }
     }

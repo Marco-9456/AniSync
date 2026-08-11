@@ -99,6 +99,7 @@
     <string name="status_repeating">Repeating</string>
     <string name="status_rewatching">Rewatching</string>
     <string name="status_rereading">Rereading</string>
+    <string name="list_indicator_custom">Custom list</string>
 
     <!-- Discover Screen -->
     <string name="search_anime_placeholder">Search Anime…</string>
@@ -950,6 +951,7 @@
 
     <!-- Accessibility: Content Descriptions -->
     <string name="a11y_media_poster">Poster for %1$s</string>
+    <string name="a11y_in_your_list">In your list: %1$s</string>
     <string name="a11y_character_image">Image of %1$s</string>
     <string name="a11y_staff_image">Image of %1$s</string>
     <string name="a11y_user_avatar">Profile picture for %1$s</string>

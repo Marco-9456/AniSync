@@ -58,9 +58,12 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.ListIndicator
+import com.anisync.android.presentation.components.ListIndicatorStyle
 import com.anisync.android.presentation.components.ReadMoreToggle
 import com.anisync.android.presentation.components.TranslateIconButton
 import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.rememberCopyToClipboard
 import java.text.NumberFormat
@@ -451,14 +454,25 @@ fun FeaturedMediaItem(
     Column(
         modifier = cardModifier
     ) {
-        AsyncImage(
-            model = cover.url() ?: coverUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = coverSizeModifier
-                .clip(cardShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
+        Box(modifier = Modifier.clip(cardShape)) {
+            AsyncImage(
+                model = cover.url() ?: coverUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = coverSizeModifier
+                    .clip(cardShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+
+            LocalLibraryStatuses.current[mediaId]?.let { status ->
+                ListIndicator(
+                    status = status,
+                    type = null,
+                    style = ListIndicatorStyle.Corner,
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(8.dp))
         val roleText = buildString {
             role?.let { append(it.replace("_", " ")) }
