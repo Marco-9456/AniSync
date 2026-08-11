@@ -58,7 +58,10 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LocalCoverQuality
 import com.anisync.android.domain.url
+import com.anisync.android.presentation.components.ListIndicator
+import com.anisync.android.presentation.components.ListIndicatorStyle
 import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
@@ -252,6 +255,17 @@ private fun HeroCarouselItem(
                 .fillMaxSize()
                 .background(HeroScrimBrush)
         )
+
+        LocalLibraryStatuses.current[item.mediaId]?.let { status ->
+            ListIndicator(
+                status = status,
+                type = item.type,
+                style = ListIndicatorStyle.Overlay,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(20.dp)
+            )
+        }
 
         Column(
             modifier = Modifier
