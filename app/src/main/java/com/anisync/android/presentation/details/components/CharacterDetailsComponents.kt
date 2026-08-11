@@ -454,7 +454,7 @@ fun FeaturedMediaItem(
     Column(
         modifier = cardModifier
     ) {
-        Box {
+        Box(modifier = Modifier.clip(cardShape)) {
             AsyncImage(
                 model = cover.url() ?: coverUrl,
                 contentDescription = null,
@@ -468,10 +468,8 @@ fun FeaturedMediaItem(
                 ListIndicator(
                     status = status,
                     type = null,
-                    style = ListIndicatorStyle.Overlay,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp)
+                    style = ListIndicatorStyle.Corner,
+                    modifier = Modifier.align(Alignment.BottomEnd)
                 )
             }
         }

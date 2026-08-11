@@ -410,7 +410,7 @@ fun RelationItem(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         }
 
-        Box {
+        Box(modifier = Modifier.clip(imageShape)) {
             AsyncImage(
                 model = relation.cover.url() ?: relation.coverUrl,
                 contentDescription = null,
@@ -422,10 +422,8 @@ fun RelationItem(
                 ListIndicator(
                     status = status,
                     type = null,
-                    style = ListIndicatorStyle.Overlay,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp)
+                    style = ListIndicatorStyle.Corner,
+                    modifier = Modifier.align(Alignment.BottomEnd)
                 )
             }
         }
@@ -499,10 +497,8 @@ fun RecommendationItem(
                 ListIndicator(
                     status = status,
                     type = null,
-                    style = ListIndicatorStyle.Overlay,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp)
+                    style = ListIndicatorStyle.Corner,
+                    modifier = Modifier.align(Alignment.BottomEnd)
                 )
             }
         }

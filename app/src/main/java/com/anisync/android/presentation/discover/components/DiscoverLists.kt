@@ -60,6 +60,7 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.ListIndicator
+import com.anisync.android.presentation.components.ListIndicatorCorner
 import com.anisync.android.presentation.components.ListIndicatorStyle
 import com.anisync.android.presentation.components.MediaPosterCard
 import com.anisync.android.presentation.util.AppMotion
@@ -362,16 +363,14 @@ private fun ImmersiveCardContent(
             if (style is CardStyle.Hero) 24.dp else 16.dp
         }
 
-        // The design puts the marker in the bottom-left of the poster. These cards print the title
-        // over that corner, so it moves to the top and keeps the 8dp inset.
+        // Top corner, because these cards print the title over the bottom of the art.
         listStatus?.let { status ->
             ListIndicator(
                 status = status,
                 type = item.type,
-                style = ListIndicatorStyle.Overlay,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(8.dp)
+                style = ListIndicatorStyle.Corner,
+                corner = ListIndicatorCorner.TopStart,
+                modifier = Modifier.align(Alignment.TopStart)
             )
         }
 
