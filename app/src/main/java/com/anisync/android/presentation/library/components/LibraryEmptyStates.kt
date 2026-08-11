@@ -47,6 +47,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.presentation.util.toListIcon
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.getTitle
 
@@ -138,14 +139,7 @@ fun EmptyLibraryTabState(
     type: MediaType,
     modifier: Modifier = Modifier
 ) {
-    val icon = remember(status, type) {
-        when (status) {
-            LibraryStatus.CURRENT -> if (type == MediaType.ANIME) Icons.Default.PlayArrow else Icons.AutoMirrored.Filled.MenuBook
-            LibraryStatus.PLANNING -> Icons.Default.Check
-            LibraryStatus.COMPLETED -> Icons.Default.Check
-            else -> Icons.Default.Inbox
-        }
-    }
+    val icon = status?.toListIcon() ?: Icons.Default.Inbox
 
     val messageResId = remember(status, type) {
         when (status) {
