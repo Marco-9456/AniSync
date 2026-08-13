@@ -84,7 +84,7 @@ private const val MAX_WEEKS_BACK = 52
 @Composable
 internal fun ActivityWeekBreakdown(byDate: Map<LocalDate, ActivityHistoryDay>, userId: Int) {
     var weekOffset by rememberSaveable { mutableIntStateOf(0) }
-    var openDay by remember { mutableStateOf<LocalDate?>(null) }
+    var openDay by remember { mutableStateOf<ActivityDay?>(null) }
     val week = remember(byDate, weekOffset) { buildActivityWeek(byDate, weekOffset) }
 
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -127,7 +127,7 @@ internal fun ActivityWeekBreakdown(byDate: Map<LocalDate, ActivityHistoryDay>, u
                 ActivityDayRow(
                     day = day,
                     weekMax = week.busiestAmount,
-                    onClick = if (day.amount > 0) ({ openDay = day.date }) else null
+                    onClick = if (day.amount > 0) ({ openDay = day }) else null
                 )
                 Spacer(Modifier.height(4.dp))
             }
@@ -140,10 +140,10 @@ internal fun ActivityWeekBreakdown(byDate: Map<LocalDate, ActivityHistoryDay>, u
         }
     }
 
-    openDay?.let { date ->
+    openDay?.let { day ->
         ActivityDaySheet(
             userId = userId,
-            date = date,
+            day = day,
             onDismiss = { openDay = null }
         )
     }
@@ -414,7 +414,13 @@ internal data class ActivityDay(
     val date: LocalDate,
     val amount: Int,
     val state: DayDataState,
-    val isToday: Boolean
+    val isToday: Boolean,
+    /**
+     * AniList's own bucket timestamp for the day, which is midnight in *its* zone rather than in
+     * UTC. The day sheet queries from here, so the list it opens covers the same hours AniList
+     * counted into the bar.
+     */
+    val epochSeconds: Long?
 )
 
 internal data class ActivityWeek(
@@ -460,11 +466,13 @@ internal fun buildActivityWeek(
             date.isAfter(lastCounted) -> DayDataState.Awaiting
             else -> DayDataState.Counted
         }
+        val entry = byDate[date]
         ActivityDay(
             date = date,
-            amount = if (state == DayDataState.Counted) byDate[date]?.amount ?: 0 else 0,
+            amount = if (state == DayDataState.Counted) entry?.amount ?: 0 else 0,
             state = state,
-            isToday = date == today
+            isToday = date == today,
+            epochSeconds = entry?.date
         )
     }
 

@@ -39,15 +39,16 @@ class ActivityDayViewModel @Inject constructor(
 
     private var loaded: Pair<Int, LocalDate>? = null
 
-    fun load(userId: Int, date: LocalDate) {
-        if (loaded == userId to date) return
-        loaded = userId to date
+    internal fun load(userId: Int, day: ActivityDay) {
+        if (loaded == userId to day.date) return
+        loaded = userId to day.date
         _activities.value = emptyList()
         _errorMessage.value = null
 
-        // The same window the heatmap buckets into: AniList stamps a day at midnight in its own
-        // zone, so the day runs from noon UTC the day before to noon UTC on the day itself.
-        val from = date.toEpochDay() * DAY_SECONDS - HALF_DAY_SECONDS
+        // AniList stamps each bucket at midnight in its own zone, so its own timestamp is the only
+        // exact day boundary available. Without one, fall back to the window the heatmap buckets
+        // into: noon UTC the day before, to noon UTC on the day itself.
+        val from = day.epochSeconds ?: (day.date.toEpochDay() * DAY_SECONDS - HALF_DAY_SECONDS)
         viewModelScope.launch {
             _isLoading.value = true
             when (val result = profileRepository.getUserDayActivities(userId, from, from + DAY_SECONDS)) {

@@ -61,7 +61,7 @@ import java.time.format.FormatStyle
 @Composable
 internal fun ActivityDaySheet(
     userId: Int,
-    date: LocalDate,
+    day: ActivityDay,
     onDismiss: () -> Unit,
     viewModel: ActivityDayViewModel = hiltViewModel()
 ) {
@@ -70,7 +70,7 @@ internal fun ActivityDaySheet(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    LaunchedEffect(userId, date) { viewModel.load(userId, date) }
+    LaunchedEffect(userId, day.date) { viewModel.load(userId, day) }
 
     AppModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -78,7 +78,7 @@ internal fun ActivityDaySheet(
         containerColor = MaterialTheme.colorScheme.surface
     ) {
         ActivityDaySheetContent(
-            date = date,
+            date = day.date,
             activities = activities,
             isLoading = isLoading,
             errorMessage = errorMessage
