@@ -32,7 +32,7 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.profile.ProfileStatsType
 import com.anisync.android.presentation.profile.ProfileUiState
-import com.anisync.android.presentation.statistics.ActivityHeatmapSection
+import com.anisync.android.presentation.statistics.ActivityHistorySection
 import com.anisync.android.presentation.statistics.CountryDistributionRow
 import com.anisync.android.presentation.statistics.EditorialStat
 import com.anisync.android.presentation.statistics.EpisodeLengthDistributionSection
@@ -147,7 +147,7 @@ fun LazyListScope.profileStatsTab(
 
     if (statsData.activityHistory.isNotEmpty()) {
         item(key = "activity_heatmap") {
-            ActivityHeatmapSection(statsData.activityHistory)
+            ActivityHistorySection(statsData.activityHistory)
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
