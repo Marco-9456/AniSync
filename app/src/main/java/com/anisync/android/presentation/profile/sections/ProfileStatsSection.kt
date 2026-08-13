@@ -147,7 +147,7 @@ fun LazyListScope.profileStatsTab(
 
     if (statsData.activityHistory.isNotEmpty()) {
         item(key = "activity_heatmap") {
-            ActivityHistorySection(statsData.activityHistory)
+            ActivityHistorySection(statsData.activityHistory, userId = uiState.profile?.id ?: 0)
             Spacer(modifier = Modifier.height(24.dp))
         }
     }

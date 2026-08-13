@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.statistics
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -28,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -36,8 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
+
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -79,8 +82,9 @@ private const val MAX_WEEKS_BACK = 52
  * [DayDataState.Awaiting] instead, and days that have not happened yet as [DayDataState.Future].
  */
 @Composable
-internal fun ActivityWeekBreakdown(byDate: Map<LocalDate, ActivityHistoryDay>) {
+internal fun ActivityWeekBreakdown(byDate: Map<LocalDate, ActivityHistoryDay>, userId: Int) {
     var weekOffset by rememberSaveable { mutableIntStateOf(0) }
+    var openDay by remember { mutableStateOf<LocalDate?>(null) }
     val week = remember(byDate, weekOffset) { buildActivityWeek(byDate, weekOffset) }
 
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -120,7 +124,11 @@ internal fun ActivityWeekBreakdown(byDate: Map<LocalDate, ActivityHistoryDay>) {
             Spacer(Modifier.height(12.dp))
 
             week.days.forEach { day ->
-                ActivityDayRow(day = day, weekMax = week.busiestAmount)
+                ActivityDayRow(
+                    day = day,
+                    weekMax = week.busiestAmount,
+                    onClick = if (day.amount > 0) ({ openDay = day.date }) else null
+                )
                 Spacer(Modifier.height(4.dp))
             }
 
@@ -130,6 +138,14 @@ internal fun ActivityWeekBreakdown(byDate: Map<LocalDate, ActivityHistoryDay>) {
 
             WeekSummary(week)
         }
+    }
+
+    openDay?.let { date ->
+        ActivityDaySheet(
+            userId = userId,
+            date = date,
+            onDismiss = { openDay = null }
+        )
     }
 }
 
@@ -202,7 +218,7 @@ private fun WeekNavigation(
 }
 
 @Composable
-private fun ActivityDayRow(day: ActivityDay, weekMax: Int) {
+private fun ActivityDayRow(day: ActivityDay, weekMax: Int, onClick: (() -> Unit)?) {
     val counted = day.state == DayDataState.Counted
     val muted = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
     val trackColor = MaterialTheme.colorScheme.onSurface.copy(
@@ -235,8 +251,9 @@ private fun ActivityDayRow(day: ActivityDay, weekMax: Int) {
                 if (day.isToday) Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 else Modifier
             )
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = if (day.isToday) 8.dp else 0.dp)
-            .clearAndSetSemantics { contentDescription = description },
+            .semantics(mergeDescendants = true) { contentDescription = description },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -302,6 +319,18 @@ private fun ActivityDayRow(day: ActivityDay, weekMax: Int) {
             color = if (counted && day.amount > 0) MaterialTheme.colorScheme.onSurface else muted,
             modifier = Modifier.width(32.dp)
         )
+
+        // Only days with something to show advertise a tap.
+        if (onClick != null) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = muted,
+                modifier = Modifier.size(16.dp)
+            )
+        } else {
+            Spacer(Modifier.width(16.dp))
+        }
     }
 }
 
@@ -476,7 +505,7 @@ private fun previousWeekTotal(
 @Composable
 private fun ActivityWeekDarkPreview() {
     StatPreviewSurface(isDark = true) {
-        ActivityWeekBreakdown(bucketActivityDays(previewActivityDays()))
+        ActivityWeekBreakdown(bucketActivityDays(previewActivityDays()), userId = 1)
     }
 }
 
@@ -484,6 +513,6 @@ private fun ActivityWeekDarkPreview() {
 @Composable
 private fun ActivityWeekWidePreview() {
     StatPreviewSurface(isDark = true) {
-        ActivityWeekBreakdown(bucketActivityDays(previewActivityDays()))
+        ActivityWeekBreakdown(bucketActivityDays(previewActivityDays()), userId = 1)
     }
 }

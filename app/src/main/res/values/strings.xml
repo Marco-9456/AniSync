@@ -952,6 +952,8 @@
         <item quantity="one">%d day</item>
         <item quantity="other">%d days</item>
     </plurals>
+    <string name="statistics_activity_day_empty">AniList counted activity on this day, but none of it is in the activity feed any more.</string>
+    <string name="statistics_activity_day_status">Activity</string>
     <string name="cd_activity_week_previous">Previous week</string>
     <string name="cd_activity_week_next">Next week</string>
     <string name="a11y_activity_day">%1$s: %2$s</string>

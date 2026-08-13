@@ -126,6 +126,21 @@ interface ProfileRepository {
     ): Result<UserActivitiesPage>
 
     /**
+     * Fetch the activities a user posted inside one day, newest-first.
+     *
+     * [fromEpochSeconds] and [toEpochSeconds] bound the same UTC day the Activity History
+     * heatmap buckets into, so a day's bar and the list behind it describe the same window.
+     * AniList's own per-day count may still differ, since `activityHistory` counts every kind
+     * of activity and this asks for a filtered set.
+     */
+    suspend fun getUserDayActivities(
+        userId: Int,
+        fromEpochSeconds: Long,
+        toEpochSeconds: Long,
+        policy: CachePolicy = CachePolicy.NetworkFirst
+    ): Result<List<UserActivity>>
+
+    /**
      * Fetch the user's full favourite-anime list (all pages). Loaded lazily when
      * the Favorites tab opens; the profile fetch itself only carries page 1, so
      * a normal profile load/refresh no longer fans out across favourite pages.

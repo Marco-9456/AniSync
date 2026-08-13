@@ -110,6 +110,7 @@ private enum class ActivityPeriod(val labelRes: Int, val icon: ImageVector) {
 @Composable
 fun ActivityHistorySection(
     days: List<ActivityHistoryDay>,
+    userId: Int,
     modifier: Modifier = Modifier
 ) {
     if (days.isEmpty()) return
@@ -147,7 +148,7 @@ fun ActivityHistorySection(
 
                 when (period) {
                     ActivityPeriod.Month -> ActivityHeatmap(byDate)
-                    ActivityPeriod.Week -> ActivityWeekBreakdown(byDate)
+                    ActivityPeriod.Week -> ActivityWeekBreakdown(byDate, userId)
                 }
             }
         }
@@ -477,7 +478,7 @@ private fun buildHeatmapModel(byDate: Map<LocalDate, ActivityHistoryDay>): Heatm
 @Composable
 private fun ActivityHistoryLightPreview() {
     StatPreviewSurface(isDark = false) {
-        ActivityHistorySection(days = previewActivityDays())
+        ActivityHistorySection(days = previewActivityDays(), userId = 1)
     }
 }
 
@@ -485,7 +486,7 @@ private fun ActivityHistoryLightPreview() {
 @Composable
 private fun ActivityHistoryDarkPreview() {
     StatPreviewSurface(isDark = true) {
-        ActivityHistorySection(days = previewActivityDays())
+        ActivityHistorySection(days = previewActivityDays(), userId = 1)
     }
 }
 
