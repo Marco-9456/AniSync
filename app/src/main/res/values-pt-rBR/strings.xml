@@ -1252,4 +1252,6 @@
     <string name="notifications_new_count">%1$s novo</string>
     <string name="notifications_mark_all_read">Marcar tudo como lido</string>
     <string name="a11y_notification_unread">Não lido</string>
+    <string name="list_indicator_custom">Lista customizada</string>
+    <string name="a11y_in_your_list">Na sua lista: %1$s</string>
 </resources>
