@@ -8,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.util.Locale
 
 class ActivityWeekTest {
 
@@ -136,6 +137,6 @@ class ActivityWeekTest {
 
         assertEquals(19, week.total)
         assertEquals(3, week.countedDays)
-        assertEquals("6.3", week.perDayLabel().replace(',', '.'))
+        assertEquals("6.3", week.perDayLabel(Locale.US))
     }
 }

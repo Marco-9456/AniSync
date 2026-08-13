@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 
@@ -89,6 +90,7 @@ internal fun ActivityWeekBreakdown(byDate: Map<LocalDate, ActivityHistoryDay>, u
 
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val mutedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+    val locale = LocalConfiguration.current.locales[0]
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -105,7 +107,7 @@ internal fun ActivityWeekBreakdown(byDate: Map<LocalDate, ActivityHistoryDay>, u
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = stringResource(R.string.statistics_activity_per_day, week.perDayLabel()),
+                    text = stringResource(R.string.statistics_activity_per_day, week.perDayLabel(locale)),
                     style = MaterialTheme.typography.labelMedium,
                     color = mutedColor
                 )
@@ -155,7 +157,8 @@ private fun WeekNavigation(
     onPrevious: () -> Unit,
     onNext: () -> Unit
 ) {
-    val rangeFormatter = remember { DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()) }
+    val locale = LocalConfiguration.current.locales[0]
+    val rangeFormatter = remember(locale) { DateTimeFormatter.ofPattern("MMM d", locale) }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -229,17 +232,16 @@ private fun ActivityDayRow(day: ActivityDay, weekMax: Int, onClick: (() -> Unit)
         }
     )
 
+    val locale = LocalConfiguration.current.locales[0]
+    val fullDayName = day.date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
     val description = when (day.state) {
         DayDataState.Counted -> stringResource(
             R.string.a11y_activity_day,
-            day.date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault()),
+            fullDayName,
             pluralStringResource(R.plurals.statistics_activity_count, day.amount, day.amount)
         )
-        DayDataState.Awaiting -> stringResource(
-            R.string.a11y_activity_day_awaiting,
-            day.date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
-        )
-        DayDataState.Future -> day.date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
+        DayDataState.Awaiting -> stringResource(R.string.a11y_activity_day_awaiting, fullDayName)
+        DayDataState.Future -> fullDayName
     }
 
     Row(
@@ -257,7 +259,7 @@ private fun ActivityDayRow(day: ActivityDay, weekMax: Int, onClick: (() -> Unit)
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+            text = day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = when {
@@ -336,6 +338,7 @@ private fun ActivityDayRow(day: ActivityDay, weekMax: Int, onClick: (() -> Unit)
 
 @Composable
 private fun WeekSummary(week: ActivityWeek) {
+    val locale = LocalConfiguration.current.locales[0]
     val busiest = week.busiest
     val stats = buildList {
         add(
@@ -343,7 +346,7 @@ private fun WeekSummary(week: ActivityWeek) {
                 busiest?.let {
                     stringResource(
                         R.string.statistics_activity_busiest_value,
-                        it.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                        it.date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale),
                         it.amount
                     )
                 } ?: stringResource(R.string.statistics_activity_no_value)
@@ -441,10 +444,10 @@ internal data class ActivityWeek(
     val busiestAmount: Int get() = busiest?.amount ?: 0
 
     /** Averaged over counted days only — dividing by 7 understates a half-counted current week. */
-    fun perDayLabel(): String {
+    fun perDayLabel(locale: Locale): String {
         if (countedDays == 0) return "0"
         val perDay = total.toFloat() / countedDays
-        return String.format(Locale.getDefault(), "%.1f", perDay)
+        return String.format(locale, "%.1f", perDay)
     }
 }
 
