@@ -20,4 +20,8 @@
     <string name="forum_create_thread">Nuova discussione</string>
     <string name="forum_post_thread">Pubblica discussione</string>
     <string name="forum_reply">Rispondi</string>
+    <string name="forum_write_reply">Scrivi una risposta</string>
+    <string name="forum_reply_hint">Condividi i tuoi pensieri…</string>
+    <string name="forum_post_reply">Pubblica risposta</string>
+    <string name="forum_comments">Commenti</string>
 </resources>
