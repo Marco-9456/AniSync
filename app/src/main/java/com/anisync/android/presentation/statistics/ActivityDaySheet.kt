@@ -188,6 +188,11 @@ private fun ActivityDayRow(activity: UserActivity, onClick: () -> Unit) {
     val time = remember(activity.timestamp) {
         Instant.ofEpochSecond(activity.timestamp).atZone(ZoneId.systemDefault()).toLocalTime()
     }
+    val excerpt = remember(activity.id) { statusExcerpt(activity.bodyMarkdown ?: activity.text) }
+    val title = activity.mediaTitle.ifBlank {
+        excerpt ?: stringResource(R.string.statistics_activity_day_posted)
+    }
+    val meta = activityMeta(activity, hasExcerpt = excerpt != null)
 
     Row(
         modifier = Modifier
@@ -203,29 +208,31 @@ private fun ActivityDayRow(activity: UserActivity, onClick: () -> Unit) {
 
         Column(Modifier.weight(1f)) {
             Text(
-                text = activityTitle(activity),
+                text = title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = activityMeta(activity),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                activity.mediaType?.let { type ->
+            if (meta.isNotEmpty() || activity.mediaType != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "  ·  ",
+                        text = meta,
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
-                    MediaTypeLabel(type)
+                    activity.mediaType?.let { type ->
+                        Text(
+                            text = "  ·  ",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        MediaTypeLabel(type)
+                    }
                 }
             }
         }
@@ -292,24 +299,42 @@ private fun ActivityLeading(activity: UserActivity) {
     }
 }
 
-/** The media's title, or the opening line of a status the user wrote. */
-@Composable
-private fun activityTitle(activity: UserActivity): String = activity.mediaTitle.ifBlank {
-    firstLine(activity.bodyMarkdown ?: activity.text)
-        ?: stringResource(R.string.statistics_activity_day_status)
-}
-
 /** "Watched episode 5" for a list update, otherwise what kind of post it was. */
 @Composable
-private fun activityMeta(activity: UserActivity): String {
+private fun activityMeta(activity: UserActivity, hasExcerpt: Boolean): String {
     val status = activity.status
-    if (status.isNullOrBlank()) return stringResource(R.string.statistics_activity_day_posted)
-    val capitalised = status.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-    val progress = activity.progress
-    return if (progress.isNullOrBlank()) capitalised else "$capitalised $progress"
+    if (!status.isNullOrBlank()) {
+        val capitalised = status.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        val progress = activity.progress
+        return if (progress.isNullOrBlank()) capitalised else "$capitalised $progress"
+    }
+    // Without an excerpt the title already says the post is a status, and repeating it under
+    // itself reads like a bug.
+    return if (hasExcerpt) stringResource(R.string.statistics_activity_day_posted) else ""
 }
 
-private fun firstLine(body: String?): String? = body
-    ?.lineSequence()
-    ?.map { it.trim() }
-    ?.firstOrNull { it.isNotEmpty() }
+private val EmbedMarkup = Regex("""(img|youtube|webm|video)\d*\([^)]*\)""", RegexOption.IGNORE_CASE)
+private val LinkMarkup = Regex("""\[([^\]]*)]\([^)]*\)""")
+private val HtmlTag = Regex("""<[^>]+>""")
+private val BareUrl = Regex("""https?://\S+""")
+private val LeftoverMarkup = Regex("""[#*_>`~]+""")
+
+/**
+ * The readable opening of a status post, for use as a row title.
+ *
+ * AniList posts routinely open with an image embed, a link or a spoiler marker, none of which say
+ * anything in one line, so the markup is stripped before the first surviving line is taken. A post
+ * that is nothing but an image has no excerpt at all, and the row falls back to naming the kind.
+ */
+internal fun statusExcerpt(body: String?): String? {
+    if (body.isNullOrBlank()) return null
+    return body
+        .replace(EmbedMarkup, " ")
+        .replace(LinkMarkup, "$1")
+        .replace(HtmlTag, " ")
+        .replace(BareUrl, " ")
+        .replace(LeftoverMarkup, " ")
+        .lineSequence()
+        .map { it.replace(Regex("""\s+"""), " ").trim() }
+        .firstOrNull { it.isNotEmpty() }
+}
