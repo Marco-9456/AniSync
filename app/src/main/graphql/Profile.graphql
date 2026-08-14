@@ -565,3 +565,32 @@ mutation SaveMessageActivity(
     id
   }
 }
+
+"""
+Every activity a user posted inside one day window, for the Activity History week breakdown.
+
+Deliberately its own query rather than a field on GetFullUserProfile: that query already embeds
+ActivityFields across four activity lists and sits close to AniList's complexity ceiling, where
+extra fields make it return null instead of erroring.
+
+MESSAGE is left out of type_in on purpose. `userId` matches a message's *recipient*, so including
+it would list what other people sent this user, which is neither what they did that day nor what
+AniList counted into the day's bar.
+
+perPage is `Int` rather than `Int!` deliberately: AniList rejects a non-null variable that carries
+a default and is then omitted, and answers with data.Page = null rather than an error the client
+can see, because the normalized cache drops response.errors on the way through.
+"""
+query GetUserDayActivities($userId: Int, $from: Int!, $to: Int!, $perPage: Int = 25) {
+  Page(page: 1, perPage: $perPage) {
+    activities(
+      userId: $userId,
+      createdAt_greater: $from,
+      createdAt_lesser: $to,
+      sort: [ID_DESC],
+      type_in: [ANIME_LIST, MANGA_LIST, TEXT]
+    ) {
+      ...ActivityFields
+    }
+  }
+}

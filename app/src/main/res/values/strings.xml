@@ -925,6 +925,41 @@
         <item quantity="other">%d activities</item>
     </plurals>
 
+    <!-- Activity history: week breakdown -->
+    <string name="statistics_activity_period_month">Month</string>
+    <string name="statistics_activity_period_week">Week</string>
+    <string name="statistics_activity_week_range">%1$s – %2$s</string>
+    <string name="statistics_activity_week_current">This week</string>
+    <string name="statistics_activity_week_previous">Last week</string>
+    <string name="statistics_activity_per_day">%1$s / day</string>
+    <string name="statistics_activity_busiest_day">Busiest day</string>
+    <string name="statistics_activity_busiest_value">%1$s · %2$d</string>
+    <string name="statistics_activity_active_days">Active days</string>
+    <string name="statistics_activity_days_counted">Days counted</string>
+    <string name="statistics_activity_awaiting">Awaiting stats</string>
+    <string name="statistics_activity_awaiting_inline">Awaiting AniList stats</string>
+    <string name="statistics_activity_today_pending">Today · not counted yet</string>
+    <string name="statistics_activity_vs_previous">vs last week</string>
+    <string name="statistics_activity_day_ratio">%1$d of %2$d</string>
+    <string name="statistics_activity_percent_up">+%1$d%%</string>
+    <string name="statistics_activity_percent_down">-%1$d%%</string>
+    <string name="statistics_activity_no_value">—</string>
+    <plurals name="statistics_activity_weeks_ago">
+        <item quantity="one">%d week ago</item>
+        <item quantity="other">%d weeks ago</item>
+    </plurals>
+    <plurals name="statistics_activity_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <string name="statistics_activity_day_empty">AniList counted activity on this day, but none of it is in the activity feed any more.</string>
+    <string name="statistics_activity_day_status">Activity</string>
+    <string name="statistics_activity_day_posted">Posted a status</string>
+    <string name="cd_activity_week_previous">Previous week</string>
+    <string name="cd_activity_week_next">Next week</string>
+    <string name="a11y_activity_day">%1$s: %2$s</string>
+    <string name="a11y_activity_day_awaiting">%1$s: not counted yet</string>
+
     <!-- Accessibility: Statistics -->
     <string name="a11y_stat_card">%1$s: %2$s</string>
     <string name="a11y_score_bar">Score %1$d: %2$d entries</string>

@@ -45,7 +45,7 @@ import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.RecentUpdatesSection
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
-import com.anisync.android.presentation.statistics.ActivityHeatmapSection
+import com.anisync.android.presentation.statistics.ActivityHistorySection
 import com.anisync.android.presentation.statistics.GenreCardModern
 import com.anisync.android.presentation.util.bouncyClickable
 
@@ -119,7 +119,12 @@ fun ProfileOverviewSection(
 
         // Activity heatmap — leads the tab as the most glanceable "what they've been up to".
         if (activityHistory.isNotEmpty()) {
-            ActivityHeatmapSection(activityHistory)
+            ActivityHistorySection(
+                activityHistory,
+                userId = profile.id,
+                onMediaClick = onMediaClick,
+                onActivityClick = onActivityClick
+            )
             Spacer(modifier = Modifier.height(24.dp))
         }
 

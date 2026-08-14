@@ -742,6 +742,39 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUserDayActivities(
+        userId: Int,
+        fromEpochSeconds: Long,
+        toEpochSeconds: Long,
+        policy: CachePolicy
+    ): Result<List<com.anisync.android.domain.UserActivity>> {
+        return dedupe("dayActivities:$userId:$fromEpochSeconds:$policy") {
+            safeApiCall {
+                val response = apolloClient.query(
+                    com.anisync.android.GetUserDayActivitiesQuery(
+                        userId = Optional.present(userId),
+                        from = fromEpochSeconds.toInt(),
+                        to = toEpochSeconds.toInt()
+                    )
+                )
+                    .fetchPolicy(policy.toFetchPolicy())
+                    .execute()
+
+                if (response.hasErrors()) {
+                    throw Exception(
+                        response.errors?.firstOrNull()?.message ?: "Failed to load activities"
+                    )
+                }
+
+                response.data?.Page?.activities
+                    ?.filterNotNull()
+                    ?.mapNotNull { it.activityFields.activityFieldsToDomain() }
+                    ?.distinctBy { it.id }
+                    ?: emptyList()
+            }
+        }
+    }
+
     /** Maps a domain activity type to the AniList query enum; UNKNOWN has no query form. */
     private fun com.anisync.android.domain.ActivityType.toApiActivityType(): com.anisync.android.type.ActivityType? =
         when (this) {

@@ -564,7 +564,7 @@ private fun ActivityListStatusText(activity: UserActivity, modifier: Modifier = 
  * accent-colored label in AniList's brand blue (anime) / orange (manga). See [AniListLinkCard].
  */
 @Composable
-private fun MediaTypeLabel(type: ActivityMediaType) {
+internal fun MediaTypeLabel(type: ActivityMediaType) {
     val (labelRes, color) = when (type) {
         ActivityMediaType.ANIME -> R.string.media_type_anime to Color(0xFF3DB4F2)
         ActivityMediaType.MANGA -> R.string.media_type_manga to Color(0xFFF2A33D)

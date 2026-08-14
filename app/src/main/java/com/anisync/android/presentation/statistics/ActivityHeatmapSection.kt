@@ -26,6 +26,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.ViewWeek
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -42,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +55,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -68,6 +72,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.SegmentedTabGroup
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -82,25 +87,38 @@ import java.util.Locale
 // actually returned, bounded by these. MAX leaves headroom in case the API window grows.
 private const val MIN_WEEKS = 18
 private const val MAX_WEEKS = 53
-private const val DAYS_IN_WEEK = 7
+internal const val DAYS_IN_WEEK = 7
 private const val SECONDS_PER_DAY = 86_400L
 
+/** The two breakdowns the Activity History card can show. */
+private enum class ActivityPeriod(val labelRes: Int, val icon: ImageVector) {
+    Month(R.string.statistics_activity_period_month, Icons.Rounded.CalendarMonth),
+    Week(R.string.statistics_activity_period_week, Icons.Rounded.ViewWeek)
+}
+
 /**
- * GitHub-style activity calendar for an AniList profile. Each cell is a day; the color
- * intensity comes straight from AniList's `UserActivityHistory.level` (1-10), and tapping
- * a day reveals its date and activity count. Data is the account-wide
- * [ActivityHistoryDay] list sourced from the (deprecated) `User.stats.activityHistory`.
+ * Activity History for an AniList profile, in either of two breakdowns of the same
+ * [ActivityHistoryDay] list (sourced from the deprecated `User.stats.activityHistory`):
+ *
+ * - **Month** — the GitHub-style calendar. Each cell is a day, the colour intensity comes straight
+ *   from AniList's `level` (1-10), and tapping a day reveals its date and activity count.
+ * - **Week** — one Sunday-to-Saturday week at a time, each day a proportional bar, so days compare
+ *   against each other rather than against a colour ramp.
+ *
+ * Both read the same bucketed days, so switching costs no network call.
  */
 @Composable
-fun ActivityHeatmapSection(
+fun ActivityHistorySection(
     days: List<ActivityHistoryDay>,
+    userId: Int,
+    onMediaClick: (Int) -> Unit = {},
+    onActivityClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (days.isEmpty()) return
 
-    val model = remember(days) { buildHeatmapModel(days) }
-    var selected by remember(days) { mutableStateOf<HeatmapCell?>(null) }
-    val dateFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
+    val byDate = remember(days) { bucketActivityDays(days) }
+    var period by rememberSaveable { mutableStateOf(ActivityPeriod.Month) }
 
     Column(modifier = modifier) {
         SectionHeader(
@@ -118,187 +136,219 @@ fun ActivityHeatmapSection(
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp)
         ) {
-            val emptyColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-            val activeColor = MaterialTheme.colorScheme.primary
-            val ringColor = MaterialTheme.colorScheme.onSurface
-            val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-            val textMeasurer = rememberTextMeasurer()
-            val monthStyle = TextStyle(color = labelColor, fontSize = 10.sp)
-
             Column(Modifier.padding(20.dp)) {
-                val sel = selected
-                val headline = if (sel != null) {
-                    pluralStringResource(
-                        R.plurals.statistics_activity_count, sel.amount, sel.amount
-                    ) + "  ·  " + sel.date.format(dateFormatter)
-                } else {
-                    stringResource(
-                        R.string.statistics_activity_summary,
-                        model.totalActivities,
-                        model.activeDays
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = headline,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    val tooltipState = rememberTooltipState()
-                    val scope = rememberCoroutineScope()
-                    TooltipBox(
-                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                            TooltipAnchorPosition.Above
-                        ),
-                        tooltip = {
-                            PlainTooltip {
-                                Text(stringResource(R.string.statistics_activity_update_info))
-                            }
-                        },
-                        state = tooltipState
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Info,
-                            contentDescription = stringResource(
-                                R.string.statistics_activity_update_info
-                            ),
-                            tint = labelColor,
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .clickable { scope.launch { tooltipState.show() } }
-                                .padding(2.dp)
-                                .size(16.dp)
-                        )
-                    }
-                }
+                SegmentedTabGroup(
+                    options = ActivityPeriod.entries,
+                    selected = period,
+                    onSelect = { period = it },
+                    label = { stringResource(it.labelRes) },
+                    icon = { it.icon },
+                    fillEqually = true
+                )
 
                 Spacer(Modifier.height(16.dp))
 
-                val cellDp = 13.dp
-                val gapDp = 4.dp
-                val monthRowDp = 16.dp
-                val gridWidth = (cellDp + gapDp) * model.weeks.size
-                val gridHeight = monthRowDp + (cellDp + gapDp) * DAYS_IN_WEEK
-
-                val scrollState = rememberScrollState()
-                // Start scrolled to the most recent week (right edge), like GitHub.
-                LaunchedEffect(model, scrollState.maxValue) {
-                    scrollState.scrollTo(scrollState.maxValue)
-                }
-
-                val a11y = stringResource(R.string.statistics_activity_a11y, model.totalActivities)
-                val selectedDate = sel?.date
-
-                Box(Modifier.fillMaxWidth()) {
-                  val fadeColor = MaterialTheme.colorScheme.surfaceContainer
-                  Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(scrollState)
-                        .semantics { contentDescription = a11y }
-                  ) {
-                    Canvas(
-                        modifier = Modifier
-                            .size(width = gridWidth, height = gridHeight)
-                            .pointerInput(model) {
-                                val stridePx = cellDp.toPx() + gapDp.toPx()
-                                val monthPx = monthRowDp.toPx()
-                                detectTapGestures { offset ->
-                                    if (offset.y < monthPx) return@detectTapGestures
-                                    val w = (offset.x / stridePx).toInt()
-                                    val r = ((offset.y - monthPx) / stridePx).toInt()
-                                    val cell = model.weeks.getOrNull(w)?.getOrNull(r)
-                                    if (cell != null && !cell.afterData) {
-                                        selected = if (selected?.date == cell.date) null else cell
-                                    }
-                                }
-                            }
-                    ) {
-                        val cellPx = cellDp.toPx()
-                        val stridePx = cellPx + gapDp.toPx()
-                        val monthPx = monthRowDp.toPx()
-                        val corner = CornerRadius(cellPx * 0.28f, cellPx * 0.28f)
-
-                        model.monthLabels.forEach { (weekIndex, label) ->
-                            drawText(
-                                textMeasurer = textMeasurer,
-                                text = label,
-                                topLeft = Offset(weekIndex * stridePx, 0f),
-                                style = monthStyle
-                            )
-                        }
-
-                        for (w in model.weeks.indices) {
-                            val column = model.weeks[w]
-                            for (r in 0 until DAYS_IN_WEEK) {
-                                val cell = column[r]
-                                if (cell.afterData) continue
-                                val x = w * stridePx
-                                val y = monthPx + r * stridePx
-                                drawRoundRect(
-                                    color = heatCellColor(cell.level, emptyColor, activeColor),
-                                    topLeft = Offset(x, y),
-                                    size = Size(cellPx, cellPx),
-                                    cornerRadius = corner
-                                )
-                                if (selectedDate == cell.date) {
-                                    drawRoundRect(
-                                        color = ringColor,
-                                        topLeft = Offset(x, y),
-                                        size = Size(cellPx, cellPx),
-                                        cornerRadius = corner,
-                                        style = Stroke(width = 1.5.dp.toPx())
-                                    )
-                                }
-                            }
-                        }
-                    }
-                  }
-                  ScrollEdgeFade(
-                      visible = scrollState.canScrollBackward,
-                      atStart = true,
-                      color = fadeColor,
-                      height = gridHeight,
-                      modifier = Modifier.align(Alignment.CenterStart)
-                  )
-                  ScrollEdgeFade(
-                      visible = scrollState.canScrollForward,
-                      atStart = false,
-                      color = fadeColor,
-                      height = gridHeight,
-                      modifier = Modifier.align(Alignment.CenterEnd)
-                  )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.statistics_activity_less),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = labelColor
-                    )
-                    listOf(0, 3, 6, 8, 10).forEach { level ->
-                        Box(
-                            Modifier
-                                .size(12.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(heatCellColor(level, emptyColor, activeColor))
-                        )
-                    }
-                    Text(
-                        text = stringResource(R.string.statistics_activity_more),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = labelColor
+                when (period) {
+                    ActivityPeriod.Month -> ActivityHeatmap(byDate)
+                    ActivityPeriod.Week -> ActivityWeekBreakdown(
+                        byDate = byDate,
+                        userId = userId,
+                        onMediaClick = onMediaClick,
+                        onActivityClick = onActivityClick
                     )
                 }
             }
         }
+    }
+}
+
+/** The 48-hour-lag note. Both breakdowns carry it, because both render the same lagging data. */
+@Composable
+internal fun ActivityUpdateInfo(tint: Color) {
+    val tooltipState = rememberTooltipState()
+    val scope = rememberCoroutineScope()
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+            TooltipAnchorPosition.Above
+        ),
+        tooltip = {
+            PlainTooltip {
+                Text(stringResource(R.string.statistics_activity_update_info))
+            }
+        },
+        state = tooltipState
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Info,
+            contentDescription = stringResource(R.string.statistics_activity_update_info),
+            tint = tint,
+            modifier = Modifier
+                .clip(CircleShape)
+                .clickable { scope.launch { tooltipState.show() } }
+                .padding(2.dp)
+                .size(16.dp)
+        )
+    }
+}
+
+@Composable
+private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
+    val model = remember(byDate) { buildHeatmapModel(byDate) }
+    var selected by remember(byDate) { mutableStateOf<HeatmapCell?>(null) }
+    val dateFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
+
+    val emptyColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val activeColor = MaterialTheme.colorScheme.primary
+    val ringColor = MaterialTheme.colorScheme.onSurface
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val textMeasurer = rememberTextMeasurer()
+    val monthStyle = TextStyle(color = labelColor, fontSize = 10.sp)
+
+    val sel = selected
+    val headline = if (sel != null) {
+        pluralStringResource(
+            R.plurals.statistics_activity_count, sel.amount, sel.amount
+        ) + "  ·  " + sel.date.format(dateFormatter)
+    } else {
+        stringResource(
+            R.string.statistics_activity_summary,
+            model.totalActivities,
+            model.activeDays
+        )
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = headline,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        ActivityUpdateInfo(tint = labelColor)
+    }
+
+    Spacer(Modifier.height(16.dp))
+
+    val cellDp = 13.dp
+    val gapDp = 4.dp
+    val monthRowDp = 16.dp
+    val gridWidth = (cellDp + gapDp) * model.weeks.size
+    val gridHeight = monthRowDp + (cellDp + gapDp) * DAYS_IN_WEEK
+
+    val scrollState = rememberScrollState()
+    // Start scrolled to the most recent week (right edge), like GitHub.
+    LaunchedEffect(model, scrollState.maxValue) {
+        scrollState.scrollTo(scrollState.maxValue)
+    }
+
+    val a11y = stringResource(R.string.statistics_activity_a11y, model.totalActivities)
+    val selectedDate = sel?.date
+
+    Box(Modifier.fillMaxWidth()) {
+        val fadeColor = MaterialTheme.colorScheme.surfaceContainer
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState)
+                .semantics { contentDescription = a11y }
+        ) {
+            Canvas(
+                modifier = Modifier
+                    .size(width = gridWidth, height = gridHeight)
+                    .pointerInput(model) {
+                        val stridePx = cellDp.toPx() + gapDp.toPx()
+                        val monthPx = monthRowDp.toPx()
+                        detectTapGestures { offset ->
+                            if (offset.y < monthPx) return@detectTapGestures
+                            val w = (offset.x / stridePx).toInt()
+                            val r = ((offset.y - monthPx) / stridePx).toInt()
+                            val cell = model.weeks.getOrNull(w)?.getOrNull(r)
+                            if (cell != null && !cell.afterData) {
+                                selected = if (selected?.date == cell.date) null else cell
+                            }
+                        }
+                    }
+            ) {
+                val cellPx = cellDp.toPx()
+                val stridePx = cellPx + gapDp.toPx()
+                val monthPx = monthRowDp.toPx()
+                val corner = CornerRadius(cellPx * 0.28f, cellPx * 0.28f)
+
+                model.monthLabels.forEach { (weekIndex, label) ->
+                    drawText(
+                        textMeasurer = textMeasurer,
+                        text = label,
+                        topLeft = Offset(weekIndex * stridePx, 0f),
+                        style = monthStyle
+                    )
+                }
+
+                for (w in model.weeks.indices) {
+                    val column = model.weeks[w]
+                    for (r in 0 until DAYS_IN_WEEK) {
+                        val cell = column[r]
+                        if (cell.afterData) continue
+                        val x = w * stridePx
+                        val y = monthPx + r * stridePx
+                        drawRoundRect(
+                            color = heatCellColor(cell.level, emptyColor, activeColor),
+                            topLeft = Offset(x, y),
+                            size = Size(cellPx, cellPx),
+                            cornerRadius = corner
+                        )
+                        if (selectedDate == cell.date) {
+                            drawRoundRect(
+                                color = ringColor,
+                                topLeft = Offset(x, y),
+                                size = Size(cellPx, cellPx),
+                                cornerRadius = corner,
+                                style = Stroke(width = 1.5.dp.toPx())
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        ScrollEdgeFade(
+            visible = scrollState.canScrollBackward,
+            atStart = true,
+            color = fadeColor,
+            height = gridHeight,
+            modifier = Modifier.align(Alignment.CenterStart)
+        )
+        ScrollEdgeFade(
+            visible = scrollState.canScrollForward,
+            atStart = false,
+            color = fadeColor,
+            height = gridHeight,
+            modifier = Modifier.align(Alignment.CenterEnd)
+        )
+    }
+
+    Spacer(Modifier.height(16.dp))
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.statistics_activity_less),
+            style = MaterialTheme.typography.labelSmall,
+            color = labelColor
+        )
+        listOf(0, 3, 6, 8, 10).forEach { level ->
+            Box(
+                Modifier
+                    .size(12.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(heatCellColor(level, emptyColor, activeColor))
+            )
+        }
+        Text(
+            text = stringResource(R.string.statistics_activity_more),
+            style = MaterialTheme.typography.labelSmall,
+            color = labelColor
+        )
     }
 }
 
@@ -357,7 +407,7 @@ private data class HeatmapCell(
 )
 
 private data class HeatmapModel(
-    /** [WEEK_COUNT] columns, each with [DAYS_IN_WEEK] cells (Sunday..Saturday). */
+    /** One column per week, each with [DAYS_IN_WEEK] cells (Sunday..Saturday). */
     val weeks: List<List<HeatmapCell>>,
     /** Week-column index -> short month name, emitted once per month change. */
     val monthLabels: List<Pair<Int, String>>,
@@ -365,16 +415,28 @@ private data class HeatmapModel(
     val activeDays: Int
 )
 
-private fun buildHeatmapModel(days: List<ActivityHistoryDay>): HeatmapModel {
-    // Day buckets are stamped at midnight in AniList's server zone (23:00 UTC during BST),
-    // so round to the nearest UTC day — truncating paints summer buckets one day early.
+/**
+ * Buckets AniList's timestamps into calendar days, keeping the busiest entry per day.
+ *
+ * Day buckets are stamped at midnight in AniList's server zone (23:00 UTC during BST),
+ * so round to the nearest UTC day — truncating paints summer buckets one day early.
+ * Both breakdowns share this, so a week's bars and the heatmap's cells cannot disagree.
+ */
+internal fun bucketActivityDays(
+    days: List<ActivityHistoryDay>
+): Map<LocalDate, ActivityHistoryDay> {
     val byDate = HashMap<LocalDate, ActivityHistoryDay>(days.size)
     for (day in days) {
-        val date = LocalDate.ofEpochDay(Math.floorDiv(day.date + SECONDS_PER_DAY / 2, SECONDS_PER_DAY))
+        val date = LocalDate.ofEpochDay(
+            Math.floorDiv(day.date + SECONDS_PER_DAY / 2, SECONDS_PER_DAY)
+        )
         val existing = byDate[date]
         if (existing == null || day.amount > existing.amount) byDate[date] = day
     }
+    return byDate
+}
 
+private fun buildHeatmapModel(byDate: Map<LocalDate, ActivityHistoryDay>): HeatmapModel {
     // Grid ends at the last day AniList has counted (stats lag ~48h) — padding out to
     // today draws empty cells the site doesn't show and reads as missing activity.
     val end = byDate.keys.max()
@@ -419,23 +481,23 @@ private fun buildHeatmapModel(days: List<ActivityHistoryDay>): HeatmapModel {
 }
 
 
-@Preview(showBackground = true, name = "ActivityHeatmap — light", widthDp = 360)
+@Preview(showBackground = true, name = "ActivityHistory — light", widthDp = 360)
 @Composable
-private fun ActivityHeatmapLightPreview() {
+private fun ActivityHistoryLightPreview() {
     StatPreviewSurface(isDark = false) {
-        ActivityHeatmapSection(days = previewActivityDays())
+        ActivityHistorySection(days = previewActivityDays(), userId = 1)
     }
 }
 
-@Preview(showBackground = true, name = "ActivityHeatmap — dark", widthDp = 360)
+@Preview(showBackground = true, name = "ActivityHistory — dark", widthDp = 360)
 @Composable
-private fun ActivityHeatmapDarkPreview() {
+private fun ActivityHistoryDarkPreview() {
     StatPreviewSurface(isDark = true) {
-        ActivityHeatmapSection(days = previewActivityDays())
+        ActivityHistorySection(days = previewActivityDays(), userId = 1)
     }
 }
 
-private fun previewActivityDays(): List<ActivityHistoryDay> {
+internal fun previewActivityDays(): List<ActivityHistoryDay> {
     val today = LocalDate.now()
     return (0 until 320).mapNotNull { i ->
         val amount = (i * 7 + i / 3) % 14
