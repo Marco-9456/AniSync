@@ -129,7 +129,7 @@ fun ActivityHistorySection(
 
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier
@@ -244,7 +244,7 @@ private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
     val selectedDate = sel?.date
 
     Box(Modifier.fillMaxWidth()) {
-        val fadeColor = MaterialTheme.colorScheme.surfaceContainer
+        val fadeColor = MaterialTheme.colorScheme.surfaceContainerLow
         Box(
             Modifier
                 .fillMaxWidth()
