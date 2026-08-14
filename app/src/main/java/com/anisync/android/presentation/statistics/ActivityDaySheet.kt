@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.statistics
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,13 +11,19 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.Notes
+import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -39,15 +46,23 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
+import com.anisync.android.domain.ActivityMediaType
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.AppModalBottomSheet
+import com.anisync.android.presentation.profile.components.MediaTypeLabel
 import com.anisync.android.ui.theme.emphasis
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+
+private val CoverWidth = 42.dp
+private val CoverHeight = 56.dp
+
+/** Keeps a status row, whose tile is square, the same height as the rows carrying cover art. */
+private val RowMinHeight = 72.dp
 
 /**
  * What actually happened on one day of the week breakdown.
@@ -158,9 +173,13 @@ internal fun ActivityDaySheetContent(
     }
 }
 
+/**
+ * One entry of the day. Every kind of activity keeps the same skeleton — leading slot, title, one
+ * line of meta, time — so a day that mixes list updates with a written status still scans as one
+ * list. Only the leading slot and the trailing tag change.
+ */
 @Composable
 private fun ActivityDayRow(activity: UserActivity) {
-    val context = LocalContext.current
     val timeFormatter = remember { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT) }
     val time = remember(activity.timestamp) {
         Instant.ofEpochSecond(activity.timestamp).atZone(ZoneId.systemDefault()).toLocalTime()
@@ -169,43 +188,41 @@ private fun ActivityDayRow(activity: UserActivity) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = RowMinHeight)
             .clip(RoundedCornerShape(16.dp))
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (activity.mediaCoverUrl != null) {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(activity.mediaCoverUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(width = 42.dp, height = 56.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            )
-            Spacer(Modifier.width(12.dp))
-        }
+        ActivityLeading(activity)
+        Spacer(Modifier.width(12.dp))
 
         Column(Modifier.weight(1f)) {
             Text(
-                text = activity.mediaTitle.ifBlank {
-                    stringResource(R.string.statistics_activity_day_status)
-                },
+                text = activityTitle(activity),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = activitySubtitle(activity),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = activityMeta(activity),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                activity.mediaType?.let { type ->
+                    Text(
+                        text = "  ·  ",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    MediaTypeLabel(type)
+                }
+            }
         }
 
         Spacer(Modifier.width(8.dp))
@@ -217,15 +234,77 @@ private fun ActivityDayRow(activity: UserActivity) {
     }
 }
 
-/** "Watched episode 5", or the post's first line for text and message activities. */
+/**
+ * Cover art where there is any, the media kind where AniList has no cover, and a distinct tile for
+ * a written status, which has no media at all. The slot keeps its width either way so the titles
+ * below each other stay aligned.
+ */
 @Composable
-private fun activitySubtitle(activity: UserActivity): String {
-    val status = activity.status
-    if (status.isNullOrBlank()) {
-        return activity.bodyMarkdown?.lineSequence()?.firstOrNull()?.takeIf { it.isNotBlank() }
-            ?: stringResource(R.string.statistics_activity_day_status)
+private fun ActivityLeading(activity: UserActivity) {
+    val context = LocalContext.current
+    val cover = activity.mediaCoverUrl
+    when {
+        cover != null -> AsyncImage(
+            model = ImageRequest.Builder(context).data(cover).crossfade(true).build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(width = CoverWidth, height = CoverHeight)
+                .clip(RoundedCornerShape(8.dp))
+        )
+        activity.mediaType != null -> Box(
+            modifier = Modifier
+                .size(width = CoverWidth, height = CoverHeight)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (activity.mediaType == ActivityMediaType.MANGA) {
+                    Icons.AutoMirrored.Rounded.MenuBook
+                } else {
+                    Icons.Rounded.Tv
+                },
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        else -> Box(
+            modifier = Modifier
+                .size(CoverWidth)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.Notes,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
+}
+
+/** The media's title, or the opening line of a status the user wrote. */
+@Composable
+private fun activityTitle(activity: UserActivity): String = activity.mediaTitle.ifBlank {
+    firstLine(activity.bodyMarkdown ?: activity.text)
+        ?: stringResource(R.string.statistics_activity_day_status)
+}
+
+/** "Watched episode 5" for a list update, otherwise what kind of post it was. */
+@Composable
+private fun activityMeta(activity: UserActivity): String {
+    val status = activity.status
+    if (status.isNullOrBlank()) return stringResource(R.string.statistics_activity_day_posted)
     val capitalised = status.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     val progress = activity.progress
     return if (progress.isNullOrBlank()) capitalised else "$capitalised $progress"
 }
+
+private fun firstLine(body: String?): String? = body
+    ?.lineSequence()
+    ?.map { it.trim() }
+    ?.firstOrNull { it.isNotEmpty() }
