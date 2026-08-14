@@ -83,7 +83,12 @@ private const val MAX_WEEKS_BACK = 52
  * [DayDataState.Awaiting] instead, and days that have not happened yet as [DayDataState.Future].
  */
 @Composable
-internal fun ActivityWeekBreakdown(byDate: Map<LocalDate, ActivityHistoryDay>, userId: Int) {
+internal fun ActivityWeekBreakdown(
+    byDate: Map<LocalDate, ActivityHistoryDay>,
+    userId: Int,
+    onMediaClick: (Int) -> Unit,
+    onActivityClick: (Int) -> Unit
+) {
     var weekOffset by rememberSaveable { mutableIntStateOf(0) }
     var openDay by remember { mutableStateOf<ActivityDay?>(null) }
     val week = remember(byDate, weekOffset) { buildActivityWeek(byDate, weekOffset) }
@@ -146,7 +151,14 @@ internal fun ActivityWeekBreakdown(byDate: Map<LocalDate, ActivityHistoryDay>, u
         ActivityDaySheet(
             userId = userId,
             day = day,
-            onDismiss = { openDay = null }
+            onDismiss = { openDay = null },
+            onOpenActivity = { activity ->
+                // The sheet is a dead end otherwise: a row names something the user then has to go
+                // and find. Close first, so returning does not land back on top of the sheet.
+                openDay = null
+                val mediaId = activity.mediaId
+                if (mediaId != null) onMediaClick(mediaId) else onActivityClick(activity.id)
+            }
         )
     }
 }
@@ -516,7 +528,12 @@ private fun previousWeekTotal(
 @Composable
 private fun ActivityWeekDarkPreview() {
     StatPreviewSurface(isDark = true) {
-        ActivityWeekBreakdown(bucketActivityDays(previewActivityDays()), userId = 1)
+        ActivityWeekBreakdown(
+            byDate = bucketActivityDays(previewActivityDays()),
+            userId = 1,
+            onMediaClick = {},
+            onActivityClick = {}
+        )
     }
 }
 
@@ -524,6 +541,11 @@ private fun ActivityWeekDarkPreview() {
 @Composable
 private fun ActivityWeekWidePreview() {
     StatPreviewSurface(isDark = true) {
-        ActivityWeekBreakdown(bucketActivityDays(previewActivityDays()), userId = 1)
+        ActivityWeekBreakdown(
+            byDate = bucketActivityDays(previewActivityDays()),
+            userId = 1,
+            onMediaClick = {},
+            onActivityClick = {}
+        )
     }
 }

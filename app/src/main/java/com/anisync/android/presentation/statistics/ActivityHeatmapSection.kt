@@ -111,6 +111,8 @@ private enum class ActivityPeriod(val labelRes: Int, val icon: ImageVector) {
 fun ActivityHistorySection(
     days: List<ActivityHistoryDay>,
     userId: Int,
+    onMediaClick: (Int) -> Unit = {},
+    onActivityClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (days.isEmpty()) return
@@ -148,7 +150,12 @@ fun ActivityHistorySection(
 
                 when (period) {
                     ActivityPeriod.Month -> ActivityHeatmap(byDate)
-                    ActivityPeriod.Week -> ActivityWeekBreakdown(byDate, userId)
+                    ActivityPeriod.Week -> ActivityWeekBreakdown(
+                        byDate = byDate,
+                        userId = userId,
+                        onMediaClick = onMediaClick,
+                        onActivityClick = onActivityClick
+                    )
                 }
             }
         }

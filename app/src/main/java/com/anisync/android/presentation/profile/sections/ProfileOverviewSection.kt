@@ -119,7 +119,12 @@ fun ProfileOverviewSection(
 
         // Activity heatmap — leads the tab as the most glanceable "what they've been up to".
         if (activityHistory.isNotEmpty()) {
-            ActivityHistorySection(activityHistory, userId = profile.id)
+            ActivityHistorySection(
+                activityHistory,
+                userId = profile.id,
+                onMediaClick = onMediaClick,
+                onActivityClick = onActivityClick
+            )
             Spacer(modifier = Modifier.height(24.dp))
         }
 

@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.statistics
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -78,6 +79,7 @@ internal fun ActivityDaySheet(
     userId: Int,
     day: ActivityDay,
     onDismiss: () -> Unit,
+    onOpenActivity: (UserActivity) -> Unit,
     viewModel: ActivityDayViewModel = hiltViewModel()
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
@@ -96,7 +98,8 @@ internal fun ActivityDaySheet(
             date = day.date,
             activities = activities,
             isLoading = isLoading,
-            errorMessage = errorMessage
+            errorMessage = errorMessage,
+            onOpenActivity = onOpenActivity
         )
     }
 }
@@ -107,6 +110,7 @@ internal fun ActivityDaySheetContent(
     activities: List<UserActivity>,
     isLoading: Boolean,
     errorMessage: String?,
+    onOpenActivity: (UserActivity) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL) }
@@ -165,7 +169,7 @@ internal fun ActivityDaySheetContent(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(activities, key = { it.id }) { activity ->
-                        ActivityDayRow(activity)
+                        ActivityDayRow(activity, onClick = { onOpenActivity(activity) })
                     }
                 }
             }
@@ -179,7 +183,7 @@ internal fun ActivityDaySheetContent(
  * list. Only the leading slot and the trailing tag change.
  */
 @Composable
-private fun ActivityDayRow(activity: UserActivity) {
+private fun ActivityDayRow(activity: UserActivity, onClick: () -> Unit) {
     val timeFormatter = remember { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT) }
     val time = remember(activity.timestamp) {
         Instant.ofEpochSecond(activity.timestamp).atZone(ZoneId.systemDefault()).toLocalTime()
@@ -190,6 +194,7 @@ private fun ActivityDayRow(activity: UserActivity) {
             .fillMaxWidth()
             .heightIn(min = RowMinHeight)
             .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -61,6 +61,8 @@ fun LazyListScope.profileStatsTab(
     onVoiceActorClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
+    onMediaClick: (Int) -> Unit = {},
+    onActivityClick: (Int) -> Unit = {},
     statsColumns: Int = 1,
     modifier: Modifier = Modifier
 ) {
@@ -147,7 +149,12 @@ fun LazyListScope.profileStatsTab(
 
     if (statsData.activityHistory.isNotEmpty()) {
         item(key = "activity_heatmap") {
-            ActivityHistorySection(statsData.activityHistory, userId = uiState.profile?.id ?: 0)
+            ActivityHistorySection(
+                statsData.activityHistory,
+                userId = uiState.profile?.id ?: 0,
+                onMediaClick = onMediaClick,
+                onActivityClick = onActivityClick
+            )
             Spacer(modifier = Modifier.height(24.dp))
         }
     }

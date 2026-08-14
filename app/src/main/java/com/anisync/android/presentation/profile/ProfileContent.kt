@@ -522,6 +522,8 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onVoiceActorClick = onVoiceActorClick,
                 onStaffClick = onStaffClick,
                 onStudioClick = onStudioClick,
+                onMediaClick = onMediaClick,
+                onActivityClick = onActivityClick,
                 statsColumns = statsColumns
             )
         }
