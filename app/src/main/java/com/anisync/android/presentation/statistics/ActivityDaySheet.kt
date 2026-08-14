@@ -199,6 +199,7 @@ private fun ActivityDayRow(activity: UserActivity, onClick: () -> Unit) {
             .fillMaxWidth()
             .heightIn(min = RowMinHeight)
             .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .clickable(onClick = onClick)
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
