@@ -16,6 +16,7 @@ import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.MediaFollowingEntry
+import com.anisync.android.domain.MediaThemesRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.util.ShareUtils
@@ -27,6 +28,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -46,6 +49,7 @@ class MediaDetailsViewModel @Inject constructor(
     private val toastManager: com.anisync.android.presentation.components.alert.ToastManager,
     private val forumRepository: ForumRepository,
     private val discoverSearchLauncher: com.anisync.android.domain.DiscoverSearchLauncher,
+    private val mediaThemesRepository: MediaThemesRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -72,6 +76,9 @@ class MediaDetailsViewModel @Inject constructor(
     val hasMoreFollowing: StateFlow<Boolean> = _hasMoreFollowing.asStateFlow()
 
     /** Forum threads that have this media as a `mediaCategory` (Discussions section). */
+    private val _themes = MutableStateFlow(MediaThemesState())
+    val themes: StateFlow<MediaThemesState> = _themes.asStateFlow()
+
     private val _discussions = MutableStateFlow<List<ForumThread>>(emptyList())
     val discussions: StateFlow<List<ForumThread>> = _discussions.asStateFlow()
 
@@ -161,7 +168,63 @@ class MediaDetailsViewModel @Inject constructor(
         refreshIfStale()
         loadFollowingPreview()
         loadDiscussionsPreview()
+        loadThemes()
     }
+
+    /**
+     * Openings and endings from AnimeThemes, which is a different service on a different
+     * schedule to AniList. It waits for the details to say the title is anime, so a manga
+     * page never spends a request, and it never blocks the page: the section draws its own
+     * skeleton and the rest of the screen is already on screen by the time this lands.
+     */
+    private fun loadThemes() {
+        viewModelScope.launch {
+            val details = uiState.filterIsInstance<DetailsUiState.Success>().first().details
+            if (details.type != com.anisync.android.type.MediaType.ANIME) return@launch
+
+            launch {
+                mediaThemesRepository.observeThemes(mediaId).collect { cached ->
+                    if (cached == null) return@collect
+                    _themes.update {
+                        it.copy(
+                            animeSlug = cached.animeSlug,
+                            themes = cached.themes.filterAdult(),
+                            hasLoaded = true
+                        )
+                    }
+                }
+            }
+
+            if (mediaThemesRepository.isStale(mediaId)) fetchThemes()
+            else _themes.update { it.copy(hasLoaded = true) }
+        }
+    }
+
+    private fun fetchThemes() {
+        viewModelScope.launch {
+            _themes.update { it.copy(isLoading = true, errorMessage = null) }
+            when (val result = mediaThemesRepository.refreshThemes(mediaId)) {
+                is Result.Success -> _themes.update {
+                    it.copy(
+                        animeSlug = result.data.animeSlug,
+                        themes = result.data.themes.filterAdult(),
+                        isLoading = false,
+                        hasLoaded = true
+                    )
+                }
+
+                is Result.Error -> _themes.update {
+                    it.copy(isLoading = false, hasLoaded = true, errorMessage = result.message)
+                }
+            }
+        }
+    }
+
+    /** Retry after a failed AnimeThemes lookup, from the notice inside the section. */
+    fun retryThemes() = fetchThemes()
+
+    private fun List<com.anisync.android.domain.MediaTheme>.filterAdult() =
+        if (appSettings.showAdultContent.value) this else filterNot { it.isAdult }
 
     /**
      * Background revalidation on entry. Does not drive the PTR spinner and never blocks the cache
