@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 24,
-    "identityHash": "a2b926d195cb0dba10a270083b52ba3d",
+    "identityHash": "a55e5375124506b769921e867170e6fe",
     "entities": [
       {
         "tableName": "library_entries",
@@ -1036,13 +1036,18 @@
       },
       {
         "tableName": "media_themes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`mediaId` INTEGER NOT NULL, `themes` TEXT NOT NULL, `fetchedAt` INTEGER NOT NULL, PRIMARY KEY(`mediaId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`mediaId` INTEGER NOT NULL, `animeSlug` TEXT, `themes` TEXT NOT NULL, `fetchedAt` INTEGER NOT NULL, PRIMARY KEY(`mediaId`))",
         "fields": [
           {
             "fieldPath": "mediaId",
             "columnName": "mediaId",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "animeSlug",
+            "columnName": "animeSlug",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "themes",
@@ -1067,7 +1072,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a2b926d195cb0dba10a270083b52ba3d')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a55e5375124506b769921e867170e6fe')"
     ]
   }
 }

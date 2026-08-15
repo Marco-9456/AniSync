@@ -2,6 +2,7 @@ package com.anisync.android.data.network
 
 import com.anisync.android.BuildConfig
 import com.anisync.android.domain.MediaTheme
+import com.anisync.android.domain.MediaThemes
 import com.anisync.android.domain.ThemeType
 import com.anisync.android.domain.ThemeVersion
 import com.anisync.android.domain.ThemeVideo
@@ -44,12 +45,12 @@ class AnimeThemesApi @Inject constructor() {
     private val json = Json { ignoreUnknownKeys = true }
 
     /**
-     * Every theme AnimeThemes lists for the AniList title [anilistId], or an empty list
-     * when the title is not in their database.
+     * Every theme AnimeThemes lists for the AniList title [anilistId]. An empty result means
+     * the title is not in their database, which is a real answer rather than a failure.
      */
-    suspend fun getThemes(anilistId: Int): List<MediaTheme> = withContext(Dispatchers.IO) {
-        val slug = resolveSlug(anilistId) ?: return@withContext emptyList()
-        fetchThemes(slug)
+    suspend fun getThemes(anilistId: Int): MediaThemes = withContext(Dispatchers.IO) {
+        val slug = resolveSlug(anilistId) ?: return@withContext MediaThemes()
+        MediaThemes(animeSlug = slug, themes = fetchThemes(slug))
     }
 
     private fun resolveSlug(anilistId: Int): String? {

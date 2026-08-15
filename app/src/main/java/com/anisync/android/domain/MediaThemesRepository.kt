@@ -11,13 +11,13 @@ import kotlinx.coroutines.flow.Flow
 interface MediaThemesRepository {
 
     /** Cached themes for [mediaId]. Emits null until a lookup has been stored. */
-    fun observeThemes(mediaId: Int): Flow<List<MediaTheme>?>
+    fun observeThemes(mediaId: Int): Flow<MediaThemes?>
 
     /**
      * Fetches from AnimeThemes and stores the answer, including an empty one, so a
      * title with no themes is not looked up again on every visit.
      */
-    suspend fun refreshThemes(mediaId: Int): Result<List<MediaTheme>>
+    suspend fun refreshThemes(mediaId: Int): Result<MediaThemes>
 
     /** True when the stored answer is missing or old enough to be worth refetching. */
     suspend fun isStale(mediaId: Int): Boolean

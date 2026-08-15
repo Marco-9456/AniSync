@@ -4,7 +4,7 @@ import com.anisync.android.data.local.dao.MediaThemesDao
 import com.anisync.android.data.local.entity.MediaThemesEntity
 import com.anisync.android.data.network.AnimeThemesApi
 import com.anisync.android.data.network.AnimeThemesException
-import com.anisync.android.domain.MediaTheme
+import com.anisync.android.domain.MediaThemes
 import com.anisync.android.domain.MediaThemesRepository
 import com.anisync.android.domain.Result
 import kotlinx.coroutines.flow.Flow
@@ -26,19 +26,22 @@ class MediaThemesRepositoryImpl @Inject constructor(
     private val dao: MediaThemesDao
 ) : MediaThemesRepository {
 
-    override fun observeThemes(mediaId: Int): Flow<List<MediaTheme>?> =
-        dao.observe(mediaId).map { it?.themes }
+    override fun observeThemes(mediaId: Int): Flow<MediaThemes?> =
+        dao.observe(mediaId).map { entity ->
+            entity?.let { MediaThemes(animeSlug = it.animeSlug, themes = it.themes) }
+        }
 
-    override suspend fun refreshThemes(mediaId: Int): Result<List<MediaTheme>> = try {
-        val themes = api.getThemes(mediaId)
+    override suspend fun refreshThemes(mediaId: Int): Result<MediaThemes> = try {
+        val lookup = api.getThemes(mediaId)
         dao.upsert(
             MediaThemesEntity(
                 mediaId = mediaId,
-                themes = themes,
+                animeSlug = lookup.animeSlug,
+                themes = lookup.themes,
                 fetchedAt = System.currentTimeMillis()
             )
         )
-        Result.Success(themes)
+        Result.Success(lookup)
     } catch (e: AnimeThemesException.RateLimited) {
         Result.Error(
             message = "AnimeThemes is rate limiting requests. Try again shortly.",

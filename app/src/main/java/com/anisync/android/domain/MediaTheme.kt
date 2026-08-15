@@ -44,6 +44,16 @@ data class MediaTheme(
         get() = versions.firstOrNull()?.preferredVideo
 }
 
+/**
+ * A whole lookup: the themes plus the AnimeThemes slug they came from, which is what the
+ * "open on AnimeThemes" links are built out of.
+ */
+@Serializable
+data class MediaThemes(
+    val animeSlug: String? = null,
+    val themes: List<MediaTheme> = emptyList()
+)
+
 @Serializable
 enum class ThemeType { OP, ED }
 

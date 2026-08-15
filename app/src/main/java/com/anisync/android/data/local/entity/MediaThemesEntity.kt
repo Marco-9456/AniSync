@@ -16,6 +16,7 @@ import com.anisync.android.domain.MediaTheme
 @Entity(tableName = "media_themes")
 data class MediaThemesEntity(
     @PrimaryKey val mediaId: Int,
+    val animeSlug: String?,
     val themes: List<MediaTheme>,
     val fetchedAt: Long
 )
