@@ -4,6 +4,7 @@ import com.anisync.android.data.local.dao.MediaThemesDao
 import com.anisync.android.data.local.entity.MediaThemesEntity
 import com.anisync.android.data.network.AnimeThemesApi
 import com.anisync.android.data.network.AnimeThemesException
+import com.anisync.android.domain.MediaTheme
 import com.anisync.android.domain.MediaThemes
 import com.anisync.android.domain.MediaThemesRepository
 import com.anisync.android.domain.Result
@@ -28,7 +29,7 @@ class MediaThemesRepositoryImpl @Inject constructor(
 
     override fun observeThemes(mediaId: Int): Flow<MediaThemes?> =
         dao.observe(mediaId).map { entity ->
-            entity?.let { MediaThemes(animeSlug = it.animeSlug, themes = it.themes) }
+            entity?.let { MediaThemes(animeSlug = it.animeSlug, themes = it.themes.inShowOrder()) }
         }
 
     override suspend fun refreshThemes(mediaId: Int): Result<MediaThemes> = try {
@@ -37,11 +38,11 @@ class MediaThemesRepositoryImpl @Inject constructor(
             MediaThemesEntity(
                 mediaId = mediaId,
                 animeSlug = lookup.animeSlug,
-                themes = lookup.themes,
+                themes = lookup.themes.inShowOrder(),
                 fetchedAt = System.currentTimeMillis()
             )
         )
-        Result.Success(lookup)
+        Result.Success(lookup.copy(themes = lookup.themes.inShowOrder()))
     } catch (e: AnimeThemesException.RateLimited) {
         Result.Error(
             message = "AnimeThemes is rate limiting requests. Try again shortly.",
@@ -56,6 +57,15 @@ class MediaThemesRepositoryImpl @Inject constructor(
     } catch (e: Exception) {
         Result.Error("Could not read the AnimeThemes response.", exception = e)
     }
+
+    /**
+     * Openings first, then endings, each by their own number. AnimeThemes returns them in the
+     * order they were added, which interleaves the two once a show gets a second cour, and the
+     * rail has no group headings to explain that away. Applied on read as well as on write so a
+     * row cached before this stops being wrong without a refetch.
+     */
+    private fun List<MediaTheme>.inShowOrder(): List<MediaTheme> =
+        sortedWith(compareBy({ it.type.ordinal }, { it.sequence ?: Int.MAX_VALUE }, { it.slug }))
 
     override suspend fun isStale(mediaId: Int): Boolean {
         val cached = dao.get(mediaId) ?: return true
