@@ -144,7 +144,9 @@ data class CharacterMediaGrid(
 @Serializable
 data class MediaThemes(
     val mediaId: Int,
-    val mediaTitle: String
+    val mediaTitle: String,
+    val totalEpisodes: Int? = null,
+    val coverUrl: String? = null
 )
 
 /**

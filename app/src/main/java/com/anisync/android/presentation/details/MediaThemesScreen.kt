@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,16 +62,15 @@ private enum class ThemeFilter { All, Openings, Endings }
 @Composable
 fun MediaThemesScreen(
     mediaTitle: String,
+    totalEpisodes: Int?,
+    coverUrl: String?,
     onBackClick: () -> Unit,
-    viewModel: MediaDetailsViewModel = hiltViewModel()
+    viewModel: MediaThemesViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val themesState by viewModel.themes.collectAsStateWithLifecycle()
-    val detailsState by viewModel.uiState.collectAsStateWithLifecycle()
+    val themesState by viewModel.state.collectAsStateWithLifecycle()
 
-    val details = (detailsState as? DetailsUiState.Success)?.details
-    val totalEpisodes = details?.episodes
-    val coverUrl = details?.bannerUrl ?: details?.coverUrl
+    LaunchedEffect(Unit) { viewModel.start(isAnime = true) }
 
     var filter by rememberSaveable { mutableStateOf(ThemeFilter.All) }
     var openTheme by remember { mutableStateOf<MediaTheme?>(null) }

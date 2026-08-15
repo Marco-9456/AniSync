@@ -575,8 +575,8 @@ fun AniSyncNavHost(
                     onRecommendationsSeeAllClick = { mediaId, mediaTitle ->
                         navController.navigate(MediaRecommendationsGrid(mediaId, mediaTitle))
                     },
-                    onThemesSeeAllClick = { mediaId, mediaTitle ->
-                        navController.navigate(MediaThemes(mediaId, mediaTitle))
+                    onThemesSeeAllClick = { mediaId, mediaTitle, totalEpisodes, coverUrl ->
+                        navController.navigate(MediaThemes(mediaId, mediaTitle, totalEpisodes, coverUrl))
                     },
                     onWriteReviewClick = { mediaId, mediaTitle ->
                         navController.navigate(WriteReview(mediaId, mediaTitle))
@@ -928,6 +928,8 @@ fun AniSyncNavHost(
                 val route: MediaThemes = backStackEntry.toRoute()
                 MediaThemesScreen(
                     mediaTitle = route.mediaTitle,
+                    totalEpisodes = route.totalEpisodes,
+                    coverUrl = route.coverUrl,
                     onBackClick = { navController.popBackStack() }
                 )
             }

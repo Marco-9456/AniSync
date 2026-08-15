@@ -190,7 +190,7 @@ fun MediaDetailsScreen(
     onStudioClick: (Int) -> Unit = {},
     onRelatedSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onRecommendationsSeeAllClick: (Int, String) -> Unit = { _, _ -> },
-    onThemesSeeAllClick: (Int, String) -> Unit = { _, _ -> },
+    onThemesSeeAllClick: (mediaId: Int, mediaTitle: String, totalEpisodes: Int?, coverUrl: String?) -> Unit = { _, _, _, _ -> },
     onWriteReviewClick: (Int, String) -> Unit = { _, _ -> },
     onReviewClick: (Int) -> Unit = {},
     onDiscussionClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
@@ -199,6 +199,7 @@ fun MediaDetailsScreen(
     onUserClick: (String) -> Unit = {},
     navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     viewModel: MediaDetailsViewModel = hiltViewModel(),
+    themesViewModel: MediaThemesViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -212,12 +213,16 @@ fun MediaDetailsScreen(
     val following by viewModel.following.collectAsStateWithLifecycle()
     val hasMoreFollowing by viewModel.hasMoreFollowing.collectAsStateWithLifecycle()
     val discussions by viewModel.discussions.collectAsStateWithLifecycle()
-    val themesState by viewModel.themes.collectAsStateWithLifecycle()
+    val themesState by themesViewModel.state.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val cast by viewModel.cast.collectAsStateWithLifecycle()
     val staff by viewModel.staff.collectAsStateWithLifecycle()
     val mediaStats by viewModel.stats.collectAsStateWithLifecycle()
     val pullToRefreshState = rememberPullToRefreshState()
+
+    // AnimeThemes only carries anime, so the lookup waits until the page says which it is.
+    val isAnime = (uiState as? DetailsUiState.Success)?.details?.type == com.anisync.android.type.MediaType.ANIME
+    LaunchedEffect(isAnime) { themesViewModel.start(isAnime) }
 
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
@@ -671,11 +676,13 @@ fun MediaDetailsScreen(
                                     hasObservedDetailsReEnter = false
                                     onThemesSeeAllClick(
                                         state.details.id,
-                                        state.details.getTitle(titleLanguage)
+                                        state.details.getTitle(titleLanguage),
+                                        state.details.episodes,
+                                        state.details.bannerUrl ?: state.details.coverUrl
                                     )
                                 },
                                 themesState = themesState,
-                                onRetryThemes = viewModel::retryThemes,
+                                onRetryThemes = themesViewModel::retry,
                                 onWriteReviewClick = {
                                     onWriteReviewClick(
                                         state.details.id,
