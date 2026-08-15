@@ -137,12 +137,15 @@ private const val CONTROLS_HIDE_DELAY_MS = 3000L
 fun VideoPlayer(
     url: String,
     modifier: Modifier = Modifier,
-    playerCache: ExoPlayerCache? = LocalExoPlayerCache.current
+    playerCache: ExoPlayerCache? = LocalExoPlayerCache.current,
+    startMuted: Boolean = true,
+    loop: Boolean = true,
+    autoPlay: Boolean = false
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    var isMuted by remember { mutableStateOf(true) }
+    var isMuted by remember { mutableStateOf(startMuted) }
     var isPlaying by remember { mutableStateOf(false) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var durationMs by remember { mutableLongStateOf(0L) }
@@ -161,7 +164,7 @@ fun VideoPlayer(
     val exoPlayer = if (playerCache != null) {
         remember(url) { playerCache.getOrCreate(url) }
     } else {
-        remember(url) { buildVideoExoPlayer(context.applicationContext, url) }
+        remember(url) { buildVideoExoPlayer(context.applicationContext, url, startMuted, loop, autoPlay) }
     }
 
     DisposableEffect(exoPlayer) {

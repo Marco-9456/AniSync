@@ -69,7 +69,10 @@ class ExoPlayerCache internal constructor(private val context: Context) {
 }
 
 /**
- * Builds a prepared, muted, looping [ExoPlayer] for an inline video [url].
+ * Builds a prepared [ExoPlayer] for an inline video [url], muted and looping by default.
+ *
+ * A theme song wants the opposite of an embedded clip, so [muted], [loop] and [autoPlay]
+ * are overridable: the openings and endings sheet opens with sound and plays once.
  *
  * Single source of truth so the cached ([ExoPlayerCache]) and self-managed ([VideoPlayer])
  * paths can't drift. Two things make user-embedded clips actually play instead of erroring:
@@ -82,7 +85,13 @@ class ExoPlayerCache internal constructor(private val context: Context) {
  *    (i.e. when scrolled near), not when its surface finally attaches.
  */
 @OptIn(UnstableApi::class)
-internal fun buildVideoExoPlayer(context: Context, url: String): ExoPlayer {
+internal fun buildVideoExoPlayer(
+    context: Context,
+    url: String,
+    muted: Boolean = true,
+    loop: Boolean = true,
+    autoPlay: Boolean = false
+): ExoPlayer {
     val loadControl = DefaultLoadControl.Builder()
         .setBufferDurationsMs(
             1500, // minBufferMs: minimum buffered before playback starts
@@ -105,9 +114,9 @@ internal fun buildVideoExoPlayer(context: Context, url: String): ExoPlayer {
         .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
         .build().apply {
             setMediaItem(MediaItem.fromUri(url))
-            repeatMode = Player.REPEAT_MODE_ONE
-            volume = 0f
-            playWhenReady = false
+            repeatMode = if (loop) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+            volume = if (muted) 0f else 1f
+            playWhenReady = autoPlay
             prepare()
         }
 }
