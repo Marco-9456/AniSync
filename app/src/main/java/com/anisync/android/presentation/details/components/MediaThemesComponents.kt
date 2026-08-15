@@ -247,11 +247,14 @@ fun ThemeTile(
         stringResource(R.string.themes_episodes, coverageLabel)
     }
 
+    // The ripple is rounded at the top to match the artwork and left square at the bottom, so
+    // the corner curve does not bite the first and last mark off the episode bar.
+    val rippleShape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)
+
     Column(
         modifier = modifier
             .width(TILE_WIDTH)
-            .clip(RoundedCornerShape(14.dp))
-            .bouncyClickable(onClick = onClick, clipShape = RoundedCornerShape(14.dp))
+            .bouncyClickable(onClick = onClick, clipShape = rippleShape)
             .semantics { contentDescription = "${theme.slug}. $description" }
     ) {
         ThemeArtwork(
