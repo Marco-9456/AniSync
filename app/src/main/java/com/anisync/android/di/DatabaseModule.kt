@@ -75,4 +75,9 @@ object DatabaseModule {
     fun provideSavedForumThreadDao(database: AppDatabase): SavedForumThreadDao {
         return database.savedForumThreadDao()
     }
+
+    @Provides
+    fun provideMediaThemesDao(database: AppDatabase): com.anisync.android.data.local.dao.MediaThemesDao {
+        return database.mediaThemesDao()
+    }
 }
