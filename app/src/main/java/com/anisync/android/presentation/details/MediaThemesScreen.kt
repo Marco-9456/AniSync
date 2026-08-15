@@ -83,6 +83,7 @@ fun MediaThemesScreen(
 
     val openingsLabel = stringResource(R.string.themes_group_openings)
     val endingsLabel = stringResource(R.string.themes_group_endings)
+    val scaleLabel = totalEpisodes?.let { stringResource(R.string.themes_episode_scale, it) }
 
     CollapsingTopBarScaffold(
         title = stringResource(R.string.section_themes),
@@ -91,7 +92,7 @@ fun MediaThemesScreen(
     ) { topContentPadding ->
         if (themesState.themes.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                if (themesState.isLoading) {
+                if (themesState.isLoading || !themesState.hasLoaded) {
                     AppCircularProgressIndicator()
                 } else {
                     Text(
@@ -135,6 +136,7 @@ fun MediaThemesScreen(
             if (filter != ThemeFilter.Endings && openings.isNotEmpty()) {
                 themeGroup(
                     label = openingsLabel,
+                    scaleLabel = scaleLabel,
                     themes = openings,
                     totalEpisodes = totalEpisodes,
                     coverUrl = coverUrl,
@@ -147,6 +149,7 @@ fun MediaThemesScreen(
             if (filter != ThemeFilter.Openings && endings.isNotEmpty()) {
                 themeGroup(
                     label = endingsLabel,
+                    scaleLabel = scaleLabel,
                     themes = endings,
                     totalEpisodes = totalEpisodes,
                     coverUrl = coverUrl,
@@ -231,6 +234,7 @@ fun MediaThemesScreen(
 
 private fun androidx.compose.foundation.lazy.LazyListScope.themeGroup(
     label: String,
+    scaleLabel: String?,
     themes: List<MediaTheme>,
     totalEpisodes: Int?,
     coverUrl: String?,
@@ -240,11 +244,22 @@ private fun androidx.compose.foundation.lazy.LazyListScope.themeGroup(
 ) {
     item(key = "label_$label") {
         Spacer(Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            // Every bar below shares this scale, which is what makes the stack readable.
+            if (scaleLabel != null) {
+                Text(
+                    text = scaleLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+            }
+        }
     }
     items(themes, key = { it.id }) { theme ->
         ThemeRow(

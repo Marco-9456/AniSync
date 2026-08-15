@@ -685,7 +685,6 @@
 
     <!-- Openings &amp; Endings (AnimeThemes) -->
     <string name="section_themes">Openings &amp; Endings</string>
-    <string name="themes_screen_subtitle">%1$s</string>
     <plurals name="themes_openings_count">
         <item quantity="one">%d opening</item>
         <item quantity="other">%d openings</item>

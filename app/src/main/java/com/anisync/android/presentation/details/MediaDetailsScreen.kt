@@ -1242,12 +1242,16 @@ fun DetailsPageContent(
 
                     // Openings & Endings (AnimeThemes)
                     item(key = "media_themes") {
-                        if (themesState.themes.isNotEmpty() || themesState.isLoading || themesState.errorMessage != null) {
+                        // Anime only, and the skeleton holds the space until the lookup answers so
+                        // the sections below it do not jump once it does.
+                        val awaitingThemes = !themesState.hasLoaded &&
+                            details.type == com.anisync.android.type.MediaType.ANIME
+                        if (themesState.themes.isNotEmpty() || awaitingThemes || themesState.errorMessage != null) {
                             Column {
                                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
                                 MediaThemesSection(
                                     themes = themesState.themes,
-                                    isLoading = themesState.isLoading,
+                                    isLoading = themesState.isLoading || awaitingThemes,
                                     errorMessage = themesState.errorMessage,
                                     coverUrl = details.bannerUrl ?: details.coverUrl,
                                     totalEpisodes = details.episodes,
