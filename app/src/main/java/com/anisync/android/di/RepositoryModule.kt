@@ -8,6 +8,7 @@ import com.anisync.android.data.FeedRepositoryImpl
 import com.anisync.android.data.ForumRepositoryImpl
 import com.anisync.android.data.LibraryRepositoryImpl
 import com.anisync.android.data.LinkPreviewProviderImpl
+import com.anisync.android.data.MediaThemesRepositoryImpl
 import com.anisync.android.data.NotificationRepositoryImpl
 import com.anisync.android.data.ProfileRepositoryImpl
 import com.anisync.android.data.SearchRepositoryImpl
@@ -22,6 +23,7 @@ import com.anisync.android.domain.FeedRepository
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LinkPreviewProvider
+import com.anisync.android.domain.MediaThemesRepository
 import com.anisync.android.domain.NotificationRepository
 import com.anisync.android.domain.PreferencesRepository
 import com.anisync.android.domain.ProfileRepository
@@ -106,4 +108,9 @@ abstract class RepositoryModule {
     abstract fun bindUserOptionsRepository(
         impl: UserOptionsRepositoryImpl
     ): UserOptionsRepository
+
+    @Binds
+    abstract fun bindMediaThemesRepository(
+        impl: MediaThemesRepositoryImpl
+    ): MediaThemesRepository
 }
