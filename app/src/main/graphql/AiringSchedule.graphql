@@ -40,6 +40,8 @@ query AiringSchedule($page: Int, $perPage: Int, $airingAtGreater: Int, $airingAt
                 genres
                 mediaListEntry {
                     status
+                    private
+                    hiddenFromStatusLists
                 }
             }
         }

@@ -34,6 +34,13 @@ class AppLockManager @Inject constructor(
     /** Mirrors the persisted toggle, so the gate can react without touching [AppSettings] directly. */
     val enabled: StateFlow<Boolean> = appSettings.appLockEnabled
 
+    /** Dedicated session lock state for the Hidden List tab. */
+    private val _hiddenListUnlocked = MutableStateFlow(false)
+    val hiddenListUnlocked: StateFlow<Boolean> = _hiddenListUnlocked.asStateFlow()
+
+    val biometricsEnabled: StateFlow<Boolean> = appSettings.appLockBiometricsEnabled
+    val hasCustomPassword: Boolean get() = appSettings.hasCustomPassword()
+
     @Volatile
     private var authInProgress = false
 
@@ -43,7 +50,12 @@ class AppLockManager @Inject constructor(
     }
 
     override fun onStop(owner: LifecycleOwner) {
-        if (enabled.value && !authInProgress) _locked.value = true
+        if (enabled.value && !authInProgress) {
+            _locked.value = true
+        }
+        if (!authInProgress) {
+            _hiddenListUnlocked.value = false
+        }
     }
 
     /** The unlock prompt is being shown — pause the background re-arm until it resolves. */
@@ -60,5 +72,29 @@ class AppLockManager @Inject constructor(
     /** The prompt was dismissed or errored without unlocking; the gate stays up. */
     fun onUnlockDismissed() {
         authInProgress = false
+    }
+
+    fun verifyPassword(password: String): Boolean {
+        val valid = appSettings.verifyCustomPassword(password)
+        if (valid) {
+            unlock()
+        }
+        return valid
+    }
+
+    fun unlockHiddenListWithPassword(password: String): Boolean {
+        val valid = appSettings.verifyCustomPassword(password)
+        if (valid) {
+            _hiddenListUnlocked.value = true
+        }
+        return valid
+    }
+
+    fun unlockHiddenList() {
+        _hiddenListUnlocked.value = true
+    }
+
+    fun lockHiddenList() {
+        _hiddenListUnlocked.value = false
     }
 }

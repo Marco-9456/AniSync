@@ -49,6 +49,10 @@ class CalendarRepositoryImpl @Inject constructor(
                 val isAdult = media.isAdult == true
                 if (isAdult && !showAdult) return@forEach
 
+                val entry = media.mediaListEntry
+                val isHidden = entry?.`private` == true || entry?.hiddenFromStatusLists == true
+                val isOnList = entry != null && !isHidden
+
                 episodes += AiringEpisode(
                     id = scheduleId,
                     episode = schedule.episode ?: 0,
@@ -63,8 +67,8 @@ class CalendarRepositoryImpl @Inject constructor(
                         ?: media.coverImage?.medium,
                     format = media.format?.rawValue,
                     averageScore = media.averageScore,
-                    isOnList = media.mediaListEntry != null,
-                    listStatus = media.mediaListEntry?.status?.toDomainStatus(),
+                    isOnList = isOnList,
+                    listStatus = if (isOnList) entry?.status?.toDomainStatus() else null,
                     isAdult = isAdult
                 )
             }

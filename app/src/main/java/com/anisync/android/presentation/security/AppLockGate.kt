@@ -53,87 +53,24 @@ fun AppLockGate(
 
     val context = LocalContext.current
     val activity = remember(context) { context.findFragmentActivity() }
+    val biometricsEnabled by appLockManager.biometricsEnabled.collectAsState()
 
     // Swallow Back while locked so it can't drive the hidden UI underneath; send the app to the
     // background instead, the way a real lock screen behaves.
     BackHandler { activity?.moveTaskToBack(true) }
 
-    fun prompt() {
-        // Fail open: if we can't resolve the host activity, or the device lock was removed while we
-        // were away, never trap the user behind a lock they can't clear.
-        val host = activity
-        if (host == null || !context.isAppLockSupported()) {
+    CustomPasswordLockGate(
+        title = stringResource(R.string.app_name),
+        subtitle = stringResource(R.string.app_lock_message),
+        icon = Icons.Rounded.Lock,
+        biometricsEnabled = biometricsEnabled,
+        hasCustomPassword = appLockManager.hasCustomPassword,
+        onVerifyPassword = { password ->
+            appLockManager.verifyPassword(password)
+        },
+        onUnlockSuccess = {
             appLockManager.unlock()
-            return
-        }
-        // No re-entrancy guard: the system dialog owns focus while it's up, so this only ever fires
-        // when nothing is showing (auto-launch on appear, or a tap on the Unlock button).
-        appLockManager.onUnlockStarted()
-        host.authenticateForAppLock(
-            title = context.getString(R.string.app_lock_title),
-            subtitle = context.getString(R.string.app_lock_subtitle),
-            onSuccess = { appLockManager.unlock() },
-            onError = { appLockManager.onUnlockDismissed() },
-        )
-    }
-
-    // Auto-prompt once when the gate first appears (i.e. each time the app locks).
-    LaunchedEffect(Unit) { prompt() }
-
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Lock,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(44.dp),
-                )
-            }
-
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(top = 24.dp),
-            )
-            Text(
-                text = stringResource(R.string.app_lock_message),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-
-            Button(
-                onClick = { prompt() },
-                modifier = Modifier.padding(top = 32.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Lock,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(
-                    text = stringResource(R.string.app_lock_unlock),
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
-        }
-    }
+        },
+        modifier = modifier
+    )
 }

@@ -32,14 +32,17 @@ import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.IconButton
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.WideNavigationRail
 import androidx.compose.material3.WideNavigationRailDefaults
 import androidx.compose.material3.WideNavigationRailItem
@@ -87,11 +90,15 @@ import com.anisync.android.presentation.navigation.AniSyncNavHost
 import com.anisync.android.presentation.navigation.Discover
 import com.anisync.android.presentation.navigation.navigateSafely
 import com.anisync.android.presentation.navigation.Feed
+import com.anisync.android.presentation.ai.AiChatSheet
 import com.anisync.android.presentation.navigation.Forum
 import com.anisync.android.presentation.navigation.Library
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
+import com.anisync.android.presentation.navigation.SettingsAi
+import com.anisync.android.presentation.navigation.UserProfile
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
+import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.LocalStatusBarColor
 import com.anisync.android.presentation.util.LocalMainNavBarSuppressor
@@ -283,27 +290,94 @@ fun MainScreen(
         statusBarColorHolder.value = if (isBackgroundRoot) backgroundColor else Color.Unspecified
     }
 
+    val appSettings = LocalAppSettings.current
+    val aiChatButtonEnabled by appSettings.aiChatButtonEnabled.collectAsStateWithLifecycle()
+    var showAiChatSheet by remember { mutableStateOf(false) }
+
+    val isProfileRoute by remember {
+        derivedStateOf {
+            val dest = currentBackStackEntry?.destination
+            dest?.hasRoute<Profile>() == true || dest?.hasRoute<UserProfile>() == true
+        }
+    }
+
+    val isBottomBarVisibleOnScreen by remember(navBarSuppressor) {
+        derivedStateOf {
+            val dest = currentBackStackEntry?.destination
+            val onWhitelistedRoute = dest?.hasRoute<Library>() == true ||
+                    dest?.hasRoute<Discover>() == true ||
+                    dest?.hasRoute<Feed>() == true ||
+                    dest?.hasRoute<Forum>() == true ||
+                    dest?.hasRoute<Profile>() == true
+            onWhitelistedRoute && navBarSuppressor?.isSuppressed != true
+        }
+    }
+
     ProvideToastManager(toastManager = viewModel.toastManager) {
         CompositionLocalProvider(LocalMainNavBarSuppressor provides navBarSuppressor) {
-            if (adaptive.isCompact || adaptive.isCompactHeight) {
-                CompactNavLayout(
-                    navController = navController,
-                    startDestination = startDestination,
-                    unreadNotificationCount = unreadNotificationCount,
-                    navBarStyle = navBarStyle,
-                    navBarShowLabels = navBarShowLabels,
-                    navBarCornerRadius = navBarCornerRadius,
-                    onTabSelected = viewModel::onMainTabSelected,
-                    toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
-                )
-            } else {
-                RailNavLayout(
-                    navController = navController,
-                    startDestination = startDestination,
-                    unreadNotificationCount = unreadNotificationCount,
-                    onTabSelected = viewModel::onMainTabSelected,
-                    toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
-                )
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (adaptive.isCompact || adaptive.isCompactHeight) {
+                    CompactNavLayout(
+                        navController = navController,
+                        startDestination = startDestination,
+                        unreadNotificationCount = unreadNotificationCount,
+                        navBarStyle = navBarStyle,
+                        navBarShowLabels = navBarShowLabels,
+                        navBarCornerRadius = navBarCornerRadius,
+                        onTabSelected = viewModel::onMainTabSelected,
+                        toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
+                    )
+                } else {
+                    RailNavLayout(
+                        navController = navController,
+                        startDestination = startDestination,
+                        unreadNotificationCount = unreadNotificationCount,
+                        onTabSelected = viewModel::onMainTabSelected,
+                        toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
+                    )
+                }
+
+                // Universal AI Chat Button (bottom-left corner, hidden on Profile pages and toggleable)
+                val showAiButton = aiChatButtonEnabled && !isProfileRoute
+                AnimatedVisibility(
+                    visible = showAiButton,
+                    enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
+                    exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom),
+                    modifier = Modifier.align(Alignment.BottomStart)
+                ) {
+                    val barInset = if (navBarShowLabels) 96.dp else 76.dp
+                    val bottomPadding = if (usesBottomBar) {
+                        if (isBottomBarVisibleOnScreen) barInset + 16.dp else 24.dp
+                    } else {
+                        24.dp
+                    }
+                    val startPadding = if (!usesBottomBar && isBottomBarVisibleOnScreen) 108.dp else 20.dp
+
+                    FloatingActionButton(
+                        onClick = { showAiChatSheet = true },
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        shape = CircleShape,
+                        modifier = Modifier
+                            .padding(start = startPadding, bottom = bottomPadding)
+                            .size(48.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.AutoAwesome,
+                            contentDescription = "AI Assistant",
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                if (showAiChatSheet) {
+                    AiChatSheet(
+                        onDismiss = { showAiChatSheet = false },
+                        onNavigateToSettings = {
+                            navController.navigate(SettingsAi)
+                        }
+                    )
+                }
             }
         }
     }

@@ -69,7 +69,9 @@ import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
 import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
+import com.anisync.android.presentation.settings.SettingsAiScreen
 import com.anisync.android.presentation.settings.SettingsListDetail
+import com.anisync.android.presentation.settings.SettingsSecurityScreen
 import com.anisync.android.presentation.settings.SponsorsScreen
 import com.anisync.android.presentation.settings.StorageScreen
 import com.anisync.android.presentation.settings.ThemeScreen
@@ -1185,6 +1187,30 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onNavigateToTheme = { navController.navigate(SettingsTheme) },
                     onNavigateToLanguage = { navController.navigate(SettingsLanguage) }
+                )
+            }
+
+            // AI Assistant Settings
+            composable<SettingsAi>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                SettingsAiScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Security & App Lock Settings
+            composable<SettingsSecurity>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                SettingsSecurityScreen(
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 

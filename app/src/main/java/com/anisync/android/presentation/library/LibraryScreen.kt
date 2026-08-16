@@ -52,10 +52,13 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.AppBarWithSearch
@@ -125,8 +128,10 @@ import com.anisync.android.presentation.library.components.SkeletonGrid
 import com.anisync.android.presentation.library.components.SkeletonList
 import com.anisync.android.presentation.library.components.SortBottomSheet
 import com.anisync.android.presentation.library.components.SortIcon
+import com.anisync.android.presentation.security.CustomPasswordLockGate
 import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
 import com.anisync.android.presentation.util.LIBRARY_FAVORITES_TAB_ID
+import com.anisync.android.presentation.util.LocalAppLockManager
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toListIcon
@@ -142,6 +147,7 @@ sealed class LibraryTab {
     data class Standard(val status: LibraryStatus) : LibraryTab()
     object Favorites : LibraryTab()
     data class Custom(val name: String) : LibraryTab()
+    object Hidden : LibraryTab()
 
     /** Canonical identifier matching the format used in tabOrder / AppSettings. */
     fun toId(): String = when (this) {
@@ -149,6 +155,7 @@ sealed class LibraryTab {
         is Standard -> "status:${status.name}"
         is Favorites -> LIBRARY_FAVORITES_TAB_ID
         is Custom -> name
+        is Hidden -> "status:HIDDEN"
     }
 
     @Composable
@@ -158,6 +165,7 @@ sealed class LibraryTab {
             is Standard -> status.toLabel(mediaType)
             is Favorites -> "Favorites"
             is Custom -> name
+            is Hidden -> "Hidden"
         }
     }
 }
@@ -201,6 +209,7 @@ fun LibraryScreen(
             when {
                 id == LIBRARY_ALL_TAB_ID -> LibraryTab.All
                 id == "status:FAVORITES" -> LibraryTab.Favorites
+                id == "status:HIDDEN" -> LibraryTab.Hidden
                 id.startsWith("status:") -> {
                     val statusName = id.removePrefix("status:")
                     LibraryStatus.entries.find { it.name == statusName }?.let { LibraryTab.Standard(it) }
@@ -483,9 +492,9 @@ fun LibraryScreen(
                                     val statusIcon = when (tab) {
                                         is LibraryTab.All -> Icons.Default.AllInclusive
                                         is LibraryTab.Standard -> tab.status.toListIcon()
-
                                         is LibraryTab.Favorites -> Icons.Default.Favorite
                                         is LibraryTab.Custom -> Icons.AutoMirrored.Filled.List
+                                        is LibraryTab.Hidden -> Icons.Rounded.Lock
                                     }
 
                                     SegmentedTabItem(
@@ -567,14 +576,38 @@ fun LibraryScreen(
                         if (pageIndex >= tabs.size) return@HorizontalPager
                         val tab = tabs[pageIndex]
 
+                        if (tab is LibraryTab.Hidden) {
+                            val appLockManager = LocalAppLockManager.current
+                            val isHiddenUnlocked by appLockManager.hiddenListUnlocked.collectAsStateWithLifecycle()
+                            val biometricsEnabled by appLockManager.biometricsEnabled.collectAsStateWithLifecycle()
+
+                            if (!isHiddenUnlocked) {
+                                CustomPasswordLockGate(
+                                    title = "Hidden List",
+                                    subtitle = "Enter password or authenticate to view hidden anime & manga",
+                                    icon = Icons.Rounded.Lock,
+                                    biometricsEnabled = biometricsEnabled,
+                                    hasCustomPassword = appLockManager.hasCustomPassword,
+                                    onVerifyPassword = { password ->
+                                        appLockManager.unlockHiddenListWithPassword(password)
+                                    },
+                                    onUnlockSuccess = {
+                                        appLockManager.unlockHiddenList()
+                                    },
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                                return@HorizontalPager
+                            }
+                        }
+
                         val entries = when (tab) {
                             is LibraryTab.All -> uiState.entries
                             is LibraryTab.Standard -> uiState.groupedEntries[tab.status]
                                 ?: emptyList()
-
                             is LibraryTab.Favorites -> uiState.favoriteEntries
                             is LibraryTab.Custom -> uiState.customListEntries[tab.name]
                                 ?: emptyList()
+                            is LibraryTab.Hidden -> uiState.hiddenEntries
                         }
 
                         val tabLabel = tab.getLabel(mediaType)

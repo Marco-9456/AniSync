@@ -392,3 +392,15 @@ object SettingsFontPlayground
  */
 @Serializable
 object SettingsMediaUpload
+
+/**
+ * AI Assistant settings (Gemini API key, model, toggles).
+ */
+@Serializable
+object SettingsAi
+
+/**
+ * Security and privacy settings (App lock, custom password, biometrics).
+ */
+@Serializable
+object SettingsSecurity

@@ -18,12 +18,53 @@ import androidx.fragment.app.FragmentActivity
  */
 object AppLockAuthenticator {
 
-    /** Class-2 biometric OR device credential — i.e. any lock the user has set up. */
     private val authenticators = Authenticators.BIOMETRIC_WEAK or Authenticators.DEVICE_CREDENTIAL
+    private val biometricAuthenticators = Authenticators.BIOMETRIC_STRONG or Authenticators.BIOMETRIC_WEAK
 
     /** True when a usable screen lock exists (a biometric is enrolled, or a PIN/pattern/password). */
     fun Context.isAppLockSupported(): Boolean =
         BiometricManager.from(this).canAuthenticate(authenticators) == BiometricManager.BIOMETRIC_SUCCESS
+
+    /** True when biometric hardware and enrolled biometrics are available. */
+    fun Context.isBiometricSupported(): Boolean =
+        BiometricManager.from(this).canAuthenticate(biometricAuthenticators) == BiometricManager.BIOMETRIC_SUCCESS
+
+    /**
+     * Shows a biometric-only unlock prompt with a fallback negative button (e.g. "Use Password").
+     */
+    fun FragmentActivity.authenticateWithBiometrics(
+        title: String,
+        subtitle: String?,
+        negativeButtonText: String = "Use Password",
+        onSuccess: () -> Unit,
+        onError: (CharSequence) -> Unit,
+    ) {
+        val executor = ContextCompat.getMainExecutor(this)
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(title)
+            .setSubtitle(subtitle)
+            .setNegativeButtonText(negativeButtonText)
+            .setAllowedAuthenticators(biometricAuthenticators)
+            .setConfirmationRequired(false)
+            .build()
+
+        val biometricPrompt = BiometricPrompt(
+            this,
+            executor,
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    onSuccess()
+                }
+
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    super.onAuthenticationError(errorCode, errString)
+                    onError(errString)
+                }
+            }
+        )
+        biometricPrompt.authenticate(promptInfo)
+    }
 
     /**
      * Shows the system unlock prompt. [onSuccess] fires once the user proves it's them; [onError]

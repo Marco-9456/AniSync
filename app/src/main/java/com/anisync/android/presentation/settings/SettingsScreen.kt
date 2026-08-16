@@ -25,7 +25,9 @@ import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Update
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.VolunteerActivism
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -165,6 +167,20 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.settings_look_and_feel_desc),
                 icon = Icons.Outlined.Palette,
                 onClick = { onCategorySelected(SettingsCategory.LookAndFeel) }
+            ),
+            CategoryData(
+                key = "ai",
+                title = "AI Assistant (Gemini)",
+                subtitle = "Google Gemini API key, search & notes",
+                icon = Icons.Rounded.AutoAwesome,
+                onClick = { onCategorySelected(SettingsCategory.Ai) }
+            ),
+            CategoryData(
+                key = "security",
+                title = "Security & App Lock",
+                subtitle = "Custom password & biometric authentication",
+                icon = Icons.Rounded.Security,
+                onClick = { onCategorySelected(SettingsCategory.Security) }
             ),
             CategoryData(
                 key = "anilist",
@@ -369,6 +385,8 @@ fun ExpressiveCategoryItem(
  *  selected.) */
 private fun SettingsCategory.cardKey(): String = when (this) {
     SettingsCategory.LookAndFeel -> "lookandfeel"
+    SettingsCategory.Ai -> "ai"
+    SettingsCategory.Security -> "security"
     SettingsCategory.AniList -> "anilist"
     SettingsCategory.Notifications -> "notifications"
     SettingsCategory.Storage -> "storage"
@@ -383,6 +401,8 @@ private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> 
     return if (isDark) {
         when (key) {
             "lookandfeel" -> Color(0xFF7D5260) to Color(0xFFFFD8E4)
+            "ai" -> Color(0xFF2C4A70) to Color(0xFFB5D4FF)
+            "security" -> Color(0xFF4A4458) to Color(0xFFE8DEF8)
             "anilist" -> Color(0xFF2E4B5F) to Color(0xFFB8E6FF)
             "notifications" -> Color(0xFF3E4C63) to Color(0xFFD7E3FF)
             "storage" -> Color(0xFF3B4869) to Color(0xFFD9E2FF)
@@ -397,6 +417,8 @@ private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> 
     } else {
         when (key) {
             "lookandfeel" -> Color(0xFFFFD8E4) to Color(0xFF631835)
+            "ai" -> Color(0xFFD4E3FF) to Color(0xFF003062)
+            "security" -> Color(0xFFE8DEF8) to Color(0xFF1D192B)
             "anilist" -> Color(0xFFB8E6FF) to Color(0xFF0E3346)
             "notifications" -> Color(0xFFD7E3FF) to Color(0xFF253347)
             "storage" -> Color(0xFFD9E2FF) to Color(0xFF27304E)

@@ -52,7 +52,8 @@ class LibraryViewModel @Inject constructor(
             "status:COMPLETED",
             "status:PLANNING",
             "status:DROPPED",
-            "status:FAVORITES"
+            "status:FAVORITES",
+            "status:HIDDEN"
         )
     }
 
@@ -79,6 +80,7 @@ class LibraryViewModel @Inject constructor(
         val customNames: List<String>,
         val customEntries: Map<String, List<LibraryEntry>>,
         val favorites: List<LibraryEntry>,
+        val hiddenEntries: List<LibraryEntry>,
         val hiddenListNames: Set<String>,
         val tabOrder: List<String>,
         val tabCounts: Map<String, Int>,
@@ -272,18 +274,21 @@ class LibraryViewModel @Inject constructor(
                     val customEntriesMap = HashMap<String, MutableList<LibraryEntry>>()
                     val customNames = HashSet<String>()
                     val visibilityFiltered = ArrayList<SortableEntry>(sortedEntries.size)
+                    val hiddenEntries = ArrayList<LibraryEntry>()
+
                     for (s in sortedEntries) {
                         val e = s.entry
-                        val notPrivate = showPrivate || e.isPrivate != true
-                        if (notPrivate) {
-                            for (name in e.customLists) {
-                                customNames.add(name)
-                                customEntriesMap.getOrPut(name) { ArrayList() }.add(e)
-                            }
+                        val isGhost = e.hiddenFromStatusLists || e.isPrivate == true
+                        if (isGhost) {
+                            hiddenEntries.add(e)
+                            continue
                         }
-                        if (notPrivate && !e.hiddenFromStatusLists) {
-                            visibilityFiltered.add(s)
+
+                        for (name in e.customLists) {
+                            customNames.add(name)
+                            customEntriesMap.getOrPut(name) { ArrayList() }.add(e)
                         }
+                        visibilityFiltered.add(s)
                     }
                     customNames.addAll(listOrder)
 
@@ -301,7 +306,8 @@ class LibraryViewModel @Inject constructor(
                     // Extract sorted custom names from the tab order for the UI
                     val sortedCustomNames = tabOrder.filter { !it.startsWith("status:") && it in customNamesSet }
 
-                    val sortedFavorites = favorites.sortedBy { it.getTitle(titleLang).lowercase() }
+                    val sortedFavorites = favorites.filter { !it.hiddenFromStatusLists && it.isPrivate != true }
+                        .sortedBy { it.getTitle(titleLang).lowercase() }
 
                     // Raw per-tab counts (independent of the query) for the tab badges.
                     val tabCounts = buildMap {
@@ -309,6 +315,7 @@ class LibraryViewModel @Inject constructor(
                         grouped.forEach { (status, list) -> put("status:${status.name}", list.size) }
                         put(LIBRARY_FAVORITES_TAB_ID, sortedFavorites.size)
                         customEntriesMap.forEach { (name, list) -> put(name, list.size) }
+                        put("status:HIDDEN", hiddenEntries.size)
                     }
 
                     // Search matches every title variant + notes, grouped by list so the overlay can
@@ -344,6 +351,7 @@ class LibraryViewModel @Inject constructor(
                         customNames = sortedCustomNames,
                         customEntries = customEntriesMap,
                         favorites = sortedFavorites,
+                        hiddenEntries = hiddenEntries,
                         hiddenListNames = hiddenLists,
                         tabOrder = tabOrder,
                         tabCounts = tabCounts,
@@ -387,6 +395,7 @@ class LibraryViewModel @Inject constructor(
                             customListNames = computed.customNames,
                             customListEntries = computed.customEntries,
                             favoriteEntries = computed.favorites,
+                            hiddenEntries = computed.hiddenEntries,
                             hiddenListNames = computed.hiddenListNames,
                             tabOrder = computed.tabOrder,
                             tabCounts = computed.tabCounts,

@@ -269,6 +269,7 @@ class MainActivity : AppCompatActivity() {
                     LocalGridColumnsAuto provides gridColumnsAuto,
                     LocalGridColumnCount provides gridColumnCount,
                     LocalAppSettings provides appSettings,
+                    com.anisync.android.presentation.util.LocalAppLockManager provides appLockManager,
                     LocalLinkPreviewProvider provides linkPreviewProvider,
                     com.anisync.android.domain.LocalCoverQuality provides coverQuality,
                     com.anisync.android.presentation.util.LocalLibraryStatuses provides libraryStatuses,

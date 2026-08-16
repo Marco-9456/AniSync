@@ -17,6 +17,7 @@ import com.anisync.android.ui.theme.TypeCategory
 import com.anisync.android.ui.theme.TypographyOverrides
 import com.anisync.android.widget.UpNextWidgetProvider
 import com.anisync.android.widget.core.WidgetRefresh
+import com.anisync.android.data.security.SecurityStorage
 import com.materialkolor.PaletteStyle
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -176,10 +177,38 @@ class AppSettings @Inject constructor(
     private val _hapticEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTIC_ENABLED, true))
     val hapticEnabled: StateFlow<Boolean> = _hapticEnabled.asStateFlow()
 
-    // App lock: require the device screen lock (biometric or PIN/pattern/password) to open the app.
+    // App lock: require the device screen lock or custom password to open the app.
     // Device-local privacy toggle; default off.
     private val _appLockEnabled = MutableStateFlow(prefs.getBoolean(KEY_APP_LOCK_ENABLED, false))
     val appLockEnabled: StateFlow<Boolean> = _appLockEnabled.asStateFlow()
+
+    private val _appLockPasswordHash = MutableStateFlow(prefs.getString(KEY_APP_LOCK_PASSWORD_HASH, null))
+    val appLockPasswordHash: StateFlow<String?> = _appLockPasswordHash.asStateFlow()
+
+    private val _appLockPasswordSalt = MutableStateFlow(prefs.getString(KEY_APP_LOCK_PASSWORD_SALT, null))
+    val appLockPasswordSalt: StateFlow<String?> = _appLockPasswordSalt.asStateFlow()
+
+    private val _appLockBiometricsEnabled = MutableStateFlow(prefs.getBoolean(KEY_APP_LOCK_BIOMETRICS_ENABLED, true))
+    val appLockBiometricsEnabled: StateFlow<Boolean> = _appLockBiometricsEnabled.asStateFlow()
+
+    // Gemini AI Chat settings
+    private val _geminiApiKey = MutableStateFlow(prefs.getString(KEY_GEMINI_API_KEY, "").orEmpty())
+    val geminiApiKey: StateFlow<String> = _geminiApiKey.asStateFlow()
+
+    private val _geminiModel = MutableStateFlow(prefs.getString(KEY_GEMINI_MODEL, DEFAULT_GEMINI_MODEL) ?: DEFAULT_GEMINI_MODEL)
+    val geminiModel: StateFlow<String> = _geminiModel.asStateFlow()
+
+    private val _aiChatButtonEnabled = MutableStateFlow(prefs.getBoolean(KEY_AI_CHAT_BUTTON_ENABLED, true))
+    val aiChatButtonEnabled: StateFlow<Boolean> = _aiChatButtonEnabled.asStateFlow()
+
+    private val _aiWebSearchEnabled = MutableStateFlow(prefs.getBoolean(KEY_AI_WEB_SEARCH_ENABLED, true))
+    val aiWebSearchEnabled: StateFlow<Boolean> = _aiWebSearchEnabled.asStateFlow()
+
+    private val _aiIncludeNotesEnabled = MutableStateFlow(prefs.getBoolean(KEY_AI_INCLUDE_NOTES_ENABLED, true))
+    val aiIncludeNotesEnabled: StateFlow<Boolean> = _aiIncludeNotesEnabled.asStateFlow()
+
+    private val _aiAllowSpoilersEnabled = MutableStateFlow(prefs.getBoolean(KEY_AI_ALLOW_SPOILERS_ENABLED, false))
+    val aiAllowSpoilersEnabled: StateFlow<Boolean> = _aiAllowSpoilersEnabled.asStateFlow()
 
     // Navigation bar style (anchored rounded top vs floating pill)
     private val _navBarStyle = MutableStateFlow(readNavBarStyle())
@@ -621,10 +650,72 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_HAPTIC_ENABLED, enabled).apply()
     }
 
-    /** Enable or disable the app lock (device screen-lock gate). */
+    /** Enable or disable the app lock (custom password or biometric gate). */
     fun setAppLockEnabled(enabled: Boolean) {
         _appLockEnabled.value = enabled
         prefs.edit().putBoolean(KEY_APP_LOCK_ENABLED, enabled).apply()
+    }
+
+    fun setAppLockPassword(password: String) {
+        val salt = SecurityStorage.generateSalt()
+        val hash = SecurityStorage.hashPassword(password, salt)
+        _appLockPasswordSalt.value = salt
+        _appLockPasswordHash.value = hash
+        prefs.edit()
+            .putString(KEY_APP_LOCK_PASSWORD_SALT, salt)
+            .putString(KEY_APP_LOCK_PASSWORD_HASH, hash)
+            .apply()
+    }
+
+    fun clearAppLockPassword() {
+        _appLockPasswordSalt.value = null
+        _appLockPasswordHash.value = null
+        prefs.edit()
+            .remove(KEY_APP_LOCK_PASSWORD_SALT)
+            .remove(KEY_APP_LOCK_PASSWORD_HASH)
+            .apply()
+    }
+
+    fun hasCustomPassword(): Boolean = !_appLockPasswordHash.value.isNullOrEmpty()
+
+    fun verifyCustomPassword(password: String): Boolean {
+        return SecurityStorage.verifyPassword(password, _appLockPasswordSalt.value, _appLockPasswordHash.value)
+    }
+
+    fun setAppLockBiometricsEnabled(enabled: Boolean) {
+        _appLockBiometricsEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_APP_LOCK_BIOMETRICS_ENABLED, enabled).apply()
+    }
+
+    fun setGeminiApiKey(key: String) {
+        val trimmed = key.trim()
+        _geminiApiKey.value = trimmed
+        prefs.edit().putString(KEY_GEMINI_API_KEY, trimmed).apply()
+    }
+
+    fun setGeminiModel(model: String) {
+        _geminiModel.value = model
+        prefs.edit().putString(KEY_GEMINI_MODEL, model).apply()
+    }
+
+    fun setAiChatButtonEnabled(enabled: Boolean) {
+        _aiChatButtonEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_AI_CHAT_BUTTON_ENABLED, enabled).apply()
+    }
+
+    fun setAiWebSearchEnabled(enabled: Boolean) {
+        _aiWebSearchEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_AI_WEB_SEARCH_ENABLED, enabled).apply()
+    }
+
+    fun setAiIncludeNotesEnabled(enabled: Boolean) {
+        _aiIncludeNotesEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_AI_INCLUDE_NOTES_ENABLED, enabled).apply()
+    }
+
+    fun setAiAllowSpoilersEnabled(enabled: Boolean) {
+        _aiAllowSpoilersEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_AI_ALLOW_SPOILERS_ENABLED, enabled).apply()
     }
 
     fun setNavBarStyle(style: NavBarStyle) {
@@ -1132,6 +1223,17 @@ companion object {
         private const val KEY_CUSTOM_HOST_AUTH = "custom_host_auth"
         private const val KEY_CUSTOM_HOST_JSON_PATH = "custom_host_json_path"
         private const val KEY_CATBOX_USERHASH = "catbox_userhash"
+
+        const val DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+        private const val KEY_GEMINI_API_KEY = "gemini_api_key"
+        private const val KEY_GEMINI_MODEL = "gemini_model"
+        private const val KEY_AI_CHAT_BUTTON_ENABLED = "ai_chat_button_enabled"
+        private const val KEY_AI_WEB_SEARCH_ENABLED = "ai_web_search_enabled"
+        private const val KEY_AI_INCLUDE_NOTES_ENABLED = "ai_include_notes_enabled"
+        private const val KEY_AI_ALLOW_SPOILERS_ENABLED = "ai_allow_spoilers_enabled"
+        private const val KEY_APP_LOCK_PASSWORD_HASH = "app_lock_password_hash"
+        private const val KEY_APP_LOCK_PASSWORD_SALT = "app_lock_password_salt"
+        private const val KEY_APP_LOCK_BIOMETRICS_ENABLED = "app_lock_biometrics_enabled"
     }
 }
 

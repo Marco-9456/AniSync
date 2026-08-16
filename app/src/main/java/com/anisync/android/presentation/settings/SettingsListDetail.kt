@@ -28,6 +28,7 @@ import com.anisync.android.presentation.navigation.DetailPanePlaceholder
 import com.anisync.android.presentation.navigation.Login
 import com.anisync.android.presentation.navigation.SettingsAbout
 import com.anisync.android.presentation.navigation.SettingsAcknowledgments
+import com.anisync.android.presentation.navigation.SettingsAi
 import com.anisync.android.presentation.navigation.SettingsAniList
 import com.anisync.android.presentation.navigation.SettingsDeveloperTools
 import com.anisync.android.presentation.navigation.SettingsFontPlayground
@@ -37,6 +38,7 @@ import com.anisync.android.presentation.navigation.SettingsLookAndFeel
 import com.anisync.android.presentation.navigation.SettingsMediaUpload
 import com.anisync.android.presentation.navigation.SettingsNotifications
 import com.anisync.android.presentation.navigation.SettingsOpenSourceLicenses
+import com.anisync.android.presentation.navigation.SettingsSecurity
 import com.anisync.android.presentation.navigation.SettingsSponsors
 import com.anisync.android.presentation.navigation.SettingsStorage
 import com.anisync.android.presentation.navigation.SettingsTheme
@@ -101,6 +103,8 @@ fun SettingsListDetail(
 /** A Settings category that opens its own subscreen in the detail pane (App Links stays a dialog). */
 enum class SettingsCategory {
     LookAndFeel,
+    Ai,
+    Security,
     AniList,
     Notifications,
     Storage,
@@ -113,6 +117,8 @@ enum class SettingsCategory {
 
 private fun SettingsCategory.toPaneRoute(): Any = when (this) {
     SettingsCategory.LookAndFeel -> SettingsLookAndFeel
+    SettingsCategory.Ai -> SettingsAi
+    SettingsCategory.Security -> SettingsSecurity
     SettingsCategory.AniList -> SettingsAniList
     SettingsCategory.Notifications -> SettingsNotifications
     SettingsCategory.Storage -> SettingsStorage
@@ -185,6 +191,8 @@ private fun SettingsDetailPane(
                 onNavigateToLanguage = { paneNav.navigate(SettingsLanguage) },
             )
         }
+        composable<SettingsAi> { SettingsAiScreen(onBackClick = popOrClose) }
+        composable<SettingsSecurity> { SettingsSecurityScreen(onBackClick = popOrClose) }
         composable<SettingsTheme> { ThemeScreen(onBackClick = popOrClose) }
         composable<SettingsLanguage> { LanguageScreen(onBackClick = popOrClose) }
         composable<SettingsAniList> {
@@ -218,4 +226,5 @@ private fun SettingsDetailPane(
         composable<SettingsFontPlayground> { FontSettingsScreen(onBackClick = popOrClose) }
     }
     }
+}
 }

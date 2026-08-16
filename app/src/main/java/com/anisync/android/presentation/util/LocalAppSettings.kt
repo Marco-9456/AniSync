@@ -10,3 +10,7 @@ import com.anisync.android.data.AppSettings
 val LocalAppSettings = compositionLocalOf<AppSettings> { 
     error("AppSettings not provided. Make sure to provide it using CompositionLocalProvider.") 
 }
+
+val LocalAppLockManager = compositionLocalOf<com.anisync.android.data.security.AppLockManager> {
+    error("AppLockManager not provided.")
+}
