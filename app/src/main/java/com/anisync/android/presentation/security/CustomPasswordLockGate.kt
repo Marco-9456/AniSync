@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,21 +19,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Backspace
 import androidx.compose.material.icons.rounded.Fingerprint
-import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,24 +42,22 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.anisync.android.R
 import com.anisync.android.presentation.security.AppLockAuthenticator.authenticateForAppLock
 import com.anisync.android.presentation.security.AppLockAuthenticator.authenticateWithBiometrics
 import com.anisync.android.presentation.security.AppLockAuthenticator.isBiometricSupported
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
 fun CustomPasswordLockGate(
     title: String = stringResource(R.string.app_name),
-    subtitle: String = "Enter your password to unlock",
+    subtitle: String = "Enter 4-digit PIN",
     icon: ImageVector = Icons.Rounded.Lock,
     biometricsEnabled: Boolean = true,
     hasCustomPassword: Boolean = false,
@@ -78,8 +69,7 @@ fun CustomPasswordLockGate(
     val activity = remember(context) { context.findFragmentActivity() }
     val scope = rememberCoroutineScope()
 
-    var passwordInput by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
+    var pinInput by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val shakeOffset = remember { Animatable(0f) }
 
@@ -112,12 +102,11 @@ fun CustomPasswordLockGate(
             host.authenticateWithBiometrics(
                 title = title,
                 subtitle = subtitle,
-                negativeButtonText = if (hasCustomPassword) "Use Password" else "Cancel",
+                negativeButtonText = if (hasCustomPassword) "Use PIN" else "Cancel",
                 onSuccess = { onUnlockSuccess() },
-                onError = { /* fallback to password */ }
+                onError = { }
             )
         } else if (!hasCustomPassword) {
-            // If no custom password configured, fallback to standard device lock
             host.authenticateForAppLock(
                 title = title,
                 subtitle = subtitle,
@@ -134,24 +123,33 @@ fun CustomPasswordLockGate(
         }
     }
 
-    fun handleUnlock() {
-        if (!hasCustomPassword) {
-            promptBiometrics()
-            return
-        }
-        if (passwordInput.isBlank()) {
-            errorMessage = "Please enter password"
-            triggerShake()
-            return
-        }
-        val isSuccess = onVerifyPassword(passwordInput)
-        if (isSuccess) {
+    fun onDigitPress(digit: String) {
+        if (pinInput.length < 4) {
+            val newPin = pinInput + digit
+            pinInput = newPin
             errorMessage = null
-            passwordInput = ""
-            onUnlockSuccess()
-        } else {
-            errorMessage = "Incorrect password"
-            triggerShake()
+
+            if (newPin.length == 4) {
+                scope.launch {
+                    delay(50)
+                    val isSuccess = onVerifyPassword(newPin)
+                    if (isSuccess) {
+                        onUnlockSuccess()
+                    } else {
+                        errorMessage = "Incorrect PIN"
+                        triggerShake()
+                        delay(200)
+                        pinInput = ""
+                    }
+                }
+            }
+        }
+    }
+
+    fun onDeletePress() {
+        if (pinInput.isNotEmpty()) {
+            pinInput = pinInput.dropLast(1)
+            errorMessage = null
         }
     }
 
@@ -168,25 +166,25 @@ fun CustomPasswordLockGate(
         ) {
             Box(
                 modifier = Modifier
-                    .size(88.dp)
+                    .size(72.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(40.dp)
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(36.dp)
                 )
             }
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(top = 20.dp)
+                modifier = Modifier.padding(top = 16.dp)
             )
 
             Text(
@@ -194,99 +192,96 @@ fun CustomPasswordLockGate(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
+                modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
             )
 
             if (hasCustomPassword) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                // PIN Dots
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .padding(vertical = 12.dp)
                         .offset { IntOffset(shakeOffset.value.roundToInt(), 0) }
                 ) {
-                    OutlinedTextField(
-                        value = passwordInput,
-                        onValueChange = {
-                            passwordInput = it
-                            errorMessage = null
-                        },
-                        label = { Text("Password / PIN") },
-                        placeholder = { Text("Enter password") },
-                        singleLine = true,
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(onDone = { handleUnlock() }),
-                        leadingIcon = {
-                            Icon(Icons.Rounded.Key, contentDescription = null)
-                        },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = if (passwordVisible) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
-                                    contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                    for (i in 0 until 4) {
+                        val isFilled = i < pinInput.length
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    when {
+                                        errorMessage != null -> MaterialTheme.colorScheme.error
+                                        isFilled -> MaterialTheme.colorScheme.primary
+                                        else -> MaterialTheme.colorScheme.surfaceContainerHighest
+                                    }
                                 )
-                            }
-                        },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                        ),
-                        modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                AnimatedVisibility(visible = errorMessage != null) {
+                    errorMessage?.let { msg ->
+                        Text(
+                            text = msg,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Built-in Number Keypad (3x4)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth(0.85f)
+                ) {
+                    val rows = listOf(
+                        listOf("1", "2", "3"),
+                        listOf("4", "5", "6"),
+                        listOf("7", "8", "9"),
+                        listOf("BIO", "0", "DEL")
                     )
 
-                    AnimatedVisibility(visible = errorMessage != null) {
-                        errorMessage?.let { msg ->
-                            Text(
-                                text = msg,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = { handleUnlock() },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(16.dp)
+                    for (row in rows) {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(Icons.Rounded.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Unlock", fontWeight = FontWeight.SemiBold)
-                        }
-
-                        if (canUseBiometrics) {
-                            FilledIconButton(
-                                onClick = { promptBiometrics() },
-                                modifier = Modifier.size(52.dp),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Fingerprint,
-                                    contentDescription = "Biometric unlock",
-                                    modifier = Modifier.size(24.dp)
-                                )
+                            for (item in row) {
+                                when (item) {
+                                    "BIO" -> {
+                                        if (canUseBiometrics) {
+                                            KeypadIconButton(
+                                                icon = Icons.Rounded.Fingerprint,
+                                                onClick = { promptBiometrics() }
+                                            )
+                                        } else {
+                                            Spacer(modifier = Modifier.size(64.dp))
+                                        }
+                                    }
+                                    "DEL" -> {
+                                        KeypadIconButton(
+                                            icon = Icons.AutoMirrored.Rounded.Backspace,
+                                            onClick = { onDeletePress() }
+                                        )
+                                    }
+                                    else -> {
+                                        KeypadDigitButton(
+                                            digit = item,
+                                            onClick = { onDigitPress(item) }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
             } else {
-                // If user has not set a custom in-app password yet
                 Button(
                     onClick = { promptBiometrics() },
                     modifier = Modifier
@@ -303,6 +298,54 @@ fun CustomPasswordLockGate(
                     Text(stringResource(R.string.app_lock_unlock), fontWeight = FontWeight.SemiBold)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun KeypadDigitButton(
+    digit: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier
+            .size(64.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = digit,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun KeypadIconButton(
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier
+            .size(64.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(26.dp)
+            )
         }
     }
 }

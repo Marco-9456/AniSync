@@ -146,7 +146,8 @@ private fun SearchFilters.moreCount(): Int = listOf(
     score.isActive,
     episodes.isActive,
     chapters.isActive,
-    adultMode != com.anisync.android.domain.AdultMode.ANY
+    adultMode != com.anisync.android.domain.AdultMode.ANY,
+    onListOnly
 ).count { it }
 
 private fun SortOption.shortLabel(): String = when (this) {

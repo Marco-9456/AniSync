@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.settings
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,11 +43,17 @@ import com.anisync.android.util.launchUrl
 
 private const val GOOGLE_AI_STUDIO_URL = "https://aistudio.google.com/app/apikey"
 
-private val GEMINI_MODELS = listOf(
-    "gemini-2.5-flash" to "Gemini 2.5 Flash (Recommended - Fastest & smart)",
-    "gemini-1.5-flash" to "Gemini 1.5 Flash (High speed)",
-    "gemini-1.5-pro" to "Gemini 1.5 Pro (Deep reasoning)",
-    "gemini-2.0-flash" to "Gemini 2.0 Flash"
+private val PRESET_GEMINI_MODELS = listOf(
+    "gemini-2.5-flash" to "Gemini 2.5 Flash (Default & Recommended)",
+    "gemini-2.5-flash-lite" to "Gemini 2.5 Flash Lite",
+    "gemini-3-flash-preview" to "Gemini 3 Flash Preview",
+    "gemini-3.1-flash-lite" to "Gemini 3.1 Flash Lite",
+    "gemini-3.5-flash" to "Gemini 3.5 Flash",
+    "gemini-3.5-flash-lite" to "Gemini 3.5 Flash Lite",
+    "gemini-3.6-flash" to "Gemini 3.6 Flash",
+    "gemini-3.7-flash" to "Gemini 3.7 Flash",
+    "gemma-4-31b-it" to "Gemma 4 31B IT",
+    "gemma-4-26b-a4b-it" to "Gemma 4 26B A4B IT"
 )
 
 @Composable
@@ -58,7 +65,7 @@ fun SettingsAiScreen(
     val context = LocalContext.current
 
     val apiKey by appSettings.geminiApiKey.collectAsStateWithLifecycle()
-    val model by appSettings.geminiModel.collectAsStateWithLifecycle()
+    val currentModel by appSettings.geminiModel.collectAsStateWithLifecycle()
     val buttonEnabled by appSettings.aiChatButtonEnabled.collectAsStateWithLifecycle()
     val defaultWebSearch by appSettings.aiWebSearchEnabled.collectAsStateWithLifecycle()
     val defaultIncludeNotes by appSettings.aiIncludeNotesEnabled.collectAsStateWithLifecycle()
@@ -67,6 +74,13 @@ fun SettingsAiScreen(
     var inputKey by remember(apiKey) { mutableStateOf(apiKey) }
     var keyVisible by remember { mutableStateOf(false) }
     var isSaved by remember { mutableStateOf(false) }
+
+    val isCustomModel = remember(currentModel) {
+        PRESET_GEMINI_MODELS.none { it.first == currentModel }
+    }
+    var customModelIdInput by remember(currentModel) {
+        mutableStateOf(if (isCustomModel) currentModel else "")
+    }
 
     SettingsScreenScaffold(
         title = "AI Assistant (Gemini)",
@@ -162,13 +176,59 @@ fun SettingsAiScreen(
         // Model Selection
         SettingsSectionLabel("AI Model")
         SettingsGroup {
-            GEMINI_MODELS.forEach { (modelId, modelLabel) ->
+            PRESET_GEMINI_MODELS.forEach { (modelId, modelLabel) ->
                 RadioSettingsItem(
                     title = modelId,
                     subtitle = modelLabel,
-                    selected = model == modelId,
+                    selected = currentModel == modelId,
                     onClick = { appSettings.setGeminiModel(modelId) }
                 )
+            }
+
+            RadioSettingsItem(
+                title = "Custom Model ID",
+                subtitle = if (isCustomModel) "Active: $currentModel" else "Enter a custom model identifier",
+                selected = isCustomModel,
+                onClick = {
+                    if (customModelIdInput.isNotBlank()) {
+                        appSettings.setGeminiModel(customModelIdInput.trim())
+                    }
+                }
+            )
+
+            AnimatedVisibility(visible = isCustomModel || customModelIdInput.isNotEmpty()) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = customModelIdInput,
+                            onValueChange = { customModelIdInput = it },
+                            placeholder = { Text("e.g. gemini-2.0-flash") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                if (customModelIdInput.isNotBlank()) {
+                                    appSettings.setGeminiModel(customModelIdInput.trim())
+                                }
+                            },
+                            enabled = customModelIdInput.isNotBlank()
+                        ) {
+                            Text("Set")
+                        }
+                    }
+                }
             }
         }
 
@@ -193,7 +253,7 @@ fun SettingsAiScreen(
 
             SwitchSettingsItem(
                 title = "Library Notes Context",
-                subtitle = "Allow AI to read your saved anime/manga notes to personalize recommendations",
+                subtitle = "Allow AI to search relevant anime/manga notes from your library on-demand",
                 checked = defaultIncludeNotes,
                 onCheckedChange = { appSettings.setAiIncludeNotesEnabled(it) }
             )

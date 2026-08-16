@@ -58,6 +58,7 @@ import com.anisync.android.presentation.profile.ProfileScreen
 import com.anisync.android.presentation.review.RecentReviewsScreen
 import com.anisync.android.presentation.review.ReviewDetailScreen
 import com.anisync.android.presentation.review.WriteReviewScreen
+import com.anisync.android.presentation.ai.AiChatScreen
 import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
 import com.anisync.android.presentation.settings.AniListSettingsScreen
@@ -1199,6 +1200,19 @@ fun AniSyncNavHost(
             ) {
                 SettingsAiScreen(
                     onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // AI Chat Screen
+            composable<AiChat>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                AiChatScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onNavigateToSettings = { navController.navigate(SettingsAi) }
                 )
             }
 

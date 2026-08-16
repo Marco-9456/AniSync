@@ -50,7 +50,7 @@ class CalendarRepositoryImpl @Inject constructor(
                 if (isAdult && !showAdult) return@forEach
 
                 val entry = media.mediaListEntry
-                val isHidden = entry?.`private` == true || entry?.hiddenFromStatusLists == true
+                val isHidden = entry?.`private` == true && entry?.hiddenFromStatusLists == true
                 val isOnList = entry != null && !isHidden
 
                 episodes += AiringEpisode(

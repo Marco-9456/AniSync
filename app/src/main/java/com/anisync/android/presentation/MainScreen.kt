@@ -97,12 +97,11 @@ import com.anisync.android.presentation.navigation.AniSyncNavHost
 import com.anisync.android.presentation.navigation.Discover
 import com.anisync.android.presentation.navigation.navigateSafely
 import com.anisync.android.presentation.navigation.Feed
-import com.anisync.android.presentation.ai.AiChatSheet
+import com.anisync.android.presentation.navigation.AiChat
 import com.anisync.android.presentation.navigation.Forum
 import com.anisync.android.presentation.navigation.Library
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
-import com.anisync.android.presentation.navigation.SettingsAi
 import com.anisync.android.presentation.navigation.UserProfile
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalAppSettings
@@ -299,12 +298,13 @@ fun MainScreen(
 
     val appSettings = LocalAppSettings.current
     val aiChatButtonEnabled by appSettings.aiChatButtonEnabled.collectAsStateWithLifecycle()
-    var showAiChatSheet by remember { mutableStateOf(false) }
 
-    val isProfileRoute by remember {
+    val isProfileOrAiRoute by remember {
         derivedStateOf {
             val dest = currentBackStackEntry?.destination
-            dest?.hasRoute<Profile>() == true || dest?.hasRoute<UserProfile>() == true
+            dest?.hasRoute<Profile>() == true ||
+                dest?.hasRoute<UserProfile>() == true ||
+                dest?.hasRoute<AiChat>() == true
         }
     }
 
@@ -344,8 +344,8 @@ fun MainScreen(
                     )
                 }
 
-                // Universal AI Chat Button (bottom-left corner, hidden on Profile pages and toggleable)
-                val showAiButton = aiChatButtonEnabled && !isProfileRoute
+                // Universal AI Chat Button (bottom-left corner, hidden on Profile & AI pages and toggleable)
+                val showAiButton = aiChatButtonEnabled && !isProfileOrAiRoute
                 AnimatedVisibility(
                     visible = showAiButton,
                     enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
@@ -361,7 +361,7 @@ fun MainScreen(
                     val startPadding = if (!usesBottomBar && isBottomBarVisibleOnScreen) 108.dp else 20.dp
 
                     FloatingActionButton(
-                        onClick = { showAiChatSheet = true },
+                        onClick = { navController.navigate(AiChat) },
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         shape = CircleShape,
@@ -375,15 +375,6 @@ fun MainScreen(
                             modifier = Modifier.size(22.dp)
                         )
                     }
-                }
-
-                if (showAiChatSheet) {
-                    AiChatSheet(
-                        onDismiss = { showAiChatSheet = false },
-                        onNavigateToSettings = {
-                            navController.navigate(SettingsAi)
-                        }
-                    )
                 }
             }
         }

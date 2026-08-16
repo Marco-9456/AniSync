@@ -102,6 +102,7 @@ class SearchRepositoryImpl @Inject constructor(
                     countryOfOrigin = filters.country?.let { Optional.present(it.code) }
                         ?: Optional.absent(),
                     isAdult = resolveAdultFilter(filters.adultMode),
+                    onList = if (filters.onListOnly) Optional.present(true) else Optional.absent(),
                     countOnly = Optional.present(countOnly)
                 )
             )
@@ -228,7 +229,8 @@ class SearchRepositoryImpl @Inject constructor(
                         chapters_lesser = filters.chapters.lesser(),
                         countryOfOrigin = filters.country?.let { Optional.present(it.code) }
                             ?: Optional.absent(),
-                        isAdult = resolveAdultFilter(filters.adultMode)
+                        isAdult = resolveAdultFilter(filters.adultMode),
+                        onList = if (filters.onListOnly) Optional.present(true) else Optional.absent()
                     )
                 )
                     .fetchPolicy(FetchPolicy.NetworkFirst)

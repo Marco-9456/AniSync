@@ -78,7 +78,8 @@ data class SearchFilters(
     val episodes: IntComparatorFilter = IntComparatorFilter(),
     val chapters: IntComparatorFilter = IntComparatorFilter(),
     val country: OriginCountry? = null,
-    val adultMode: AdultMode = AdultMode.ANY
+    val adultMode: AdultMode = AdultMode.ANY,
+    val onListOnly: Boolean = false
 ) {
     /** True when [searchType] forces the overlay onto a non-media entity. */
     val isNonMediaType: Boolean
@@ -101,6 +102,7 @@ data class SearchFilters(
             episodes.isActive,
             chapters.isActive,
             country != null,
-            adultMode != AdultMode.ANY
+            adultMode != AdultMode.ANY,
+            onListOnly
         ).count { it }
 }

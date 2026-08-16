@@ -10,13 +10,14 @@ import com.anisync.android.domain.ai.ChatMessage
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.getTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class AiChatUiState(
@@ -25,8 +26,7 @@ data class AiChatUiState(
     val webSearchEnabled: Boolean = true,
     val includeNotesEnabled: Boolean = true,
     val allowSpoilersEnabled: Boolean = false,
-    val hasApiKey: Boolean = false,
-    val availableNotesCount: Int = 0
+    val hasApiKey: Boolean = false
 )
 
 @HiltViewModel
@@ -50,18 +50,6 @@ class AiChatViewModel @Inject constructor(
         viewModelScope.launch {
             appSettings.geminiApiKey.collect { key ->
                 _uiState.update { it.copy(hasApiKey = key.isNotBlank()) }
-            }
-        }
-
-        // Preload notes count
-        viewModelScope.launch {
-            combine(
-                libraryRepository.observeLibrary("", MediaType.ANIME),
-                libraryRepository.observeLibrary("", MediaType.MANGA)
-            ) { anime, manga ->
-                (anime + manga).count { !it.notes.isNullOrBlank() }
-            }.collect { count ->
-                _uiState.update { it.copy(availableNotesCount = count) }
             }
         }
     }
@@ -105,7 +93,7 @@ class AiChatViewModel @Inject constructor(
                 val model = appSettings.geminiModel.value
 
                 val userNotes = if (_uiState.value.includeNotesEnabled) {
-                    getUserNotesContext()
+                    getRelevantNotes(trimmed)
                 } else {
                     emptyList()
                 }
@@ -148,35 +136,50 @@ class AiChatViewModel @Inject constructor(
         }
     }
 
-    private suspend fun getUserNotesContext(): List<AiUserNoteContext> {
-        return try {
+    /**
+     * Searches only relevant notes matching the user's query keywords instead of dumping all notes.
+     */
+    private suspend fun getRelevantNotes(query: String): List<AiUserNoteContext> = withContext(Dispatchers.IO) {
+        try {
             val titleLang = appSettings.titleLanguage.value
             val anime = libraryRepository.observeLibrary("", MediaType.ANIME).first()
             val manga = libraryRepository.observeLibrary("", MediaType.MANGA).first()
 
-            val animeNotes = anime.filter { !it.notes.isNullOrBlank() }.map { entry ->
+            val allNotesEntries = (anime + manga).filter { !it.notes.isNullOrBlank() }
+            if (allNotesEntries.isEmpty()) return@withContext emptyList()
+
+            val words = query.lowercase().split("\\s+".toRegex()).filter { it.length > 2 }
+            if (words.isEmpty()) {
+                // If query is very short/generic, return at most 3 recent notes
+                return@withContext allNotesEntries.take(3).map { entry ->
+                    AiUserNoteContext(
+                        title = entry.getTitle(titleLang),
+                        mediaType = entry.type.name,
+                        status = entry.status.name,
+                        score = entry.score,
+                        progress = entry.progress,
+                        note = entry.notes.orEmpty()
+                    )
+                }
+            }
+
+            // Find entries whose title or note content matches any keyword in user's query
+            val matched = allNotesEntries.filter { entry ->
+                val title = entry.getTitle(titleLang).lowercase()
+                val note = entry.notes.orEmpty().lowercase()
+                words.any { word -> title.contains(word) || note.contains(word) }
+            }.take(5)
+
+            matched.map { entry ->
                 AiUserNoteContext(
                     title = entry.getTitle(titleLang),
-                    mediaType = "Anime",
+                    mediaType = entry.type.name,
                     status = entry.status.name,
                     score = entry.score,
                     progress = entry.progress,
                     note = entry.notes.orEmpty()
                 )
             }
-
-            val mangaNotes = manga.filter { !it.notes.isNullOrBlank() }.map { entry ->
-                AiUserNoteContext(
-                    title = entry.getTitle(titleLang),
-                    mediaType = "Manga",
-                    status = entry.status.name,
-                    score = entry.score,
-                    progress = entry.progress,
-                    note = entry.notes.orEmpty()
-                )
-            }
-
-            (animeNotes + mangaNotes)
         } catch (e: Exception) {
             emptyList()
         }

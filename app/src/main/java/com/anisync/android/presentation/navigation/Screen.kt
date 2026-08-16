@@ -404,3 +404,9 @@ object SettingsAi
  */
 @Serializable
 object SettingsSecurity
+
+/**
+ * Universal Gemini AI Chat Assistant screen.
+ */
+@Serializable
+object AiChat

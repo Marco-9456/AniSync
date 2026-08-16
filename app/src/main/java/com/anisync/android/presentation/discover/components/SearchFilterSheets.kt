@@ -1054,7 +1054,8 @@ private fun MoreFiltersSheet(
         filters.score.isActive ||
         filters.episodes.isActive ||
         filters.chapters.isActive ||
-        filters.adultMode != AdultMode.ANY
+        filters.adultMode != AdultMode.ANY ||
+        filters.onListOnly
 
     FilterSheetScaffold(
         title = "More filters",
@@ -1069,12 +1070,28 @@ private fun MoreFiltersSheet(
                     score = IntComparatorFilter(),
                     episodes = IntComparatorFilter(),
                     chapters = IntComparatorFilter(),
-                    adultMode = AdultMode.ANY
+                    adultMode = AdultMode.ANY,
+                    onListOnly = false
                 )
             )
         },
         resetEnabled = anyActive
     ) {
+        FilterOptionGroup(
+            label = "My Library",
+            summary = if (filters.onListOnly) "On my list only" else "All media",
+            expanded = expanded == "library",
+            onToggle = { expanded = if (expanded == "library") null else "library" }
+        ) {
+            ChipsFlow {
+                SheetFilterChip(
+                    label = "Show in my list only",
+                    selected = filters.onListOnly,
+                    onClick = { onFiltersChange(filters.copy(onListOnly = !filters.onListOnly)) }
+                )
+            }
+        }
+
         FilterOptionGroup(
             label = "Status",
             summary = filters.statusesSummary(),
