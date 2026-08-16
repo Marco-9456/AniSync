@@ -232,4 +232,103 @@ class GeminiApiService @Inject constructor(
         sb.appendLine("Format your response clearly using rich Markdown (bolding, bullet points, headers, quotes) formatted for mobile screens.")
         return sb.toString()
     }
+
+    suspend fun fetchNewsRadar(
+        apiKey: String,
+        modelName: String = "gemini-2.5-flash",
+        topic: String = "All"
+    ): List<com.anisync.android.domain.ai.AiNewsItem> = withContext(Dispatchers.IO) {
+        if (apiKey.isBlank()) {
+            throw IllegalArgumentException("Please configure your Gemini API key in Settings > Gemini AI Assistant.")
+        }
+
+        val prompt = buildString {
+            appendLine("You are the AI Anime News Radar for AniSync.")
+            appendLine("Fetch the latest, most exciting real-time anime news, trailer drops, release dates, voice actor / studio announcements, and major industry updates.")
+            if (topic != "All") {
+                appendLine("Focus specifically on topic: $topic.")
+            }
+            appendLine("Format your response as a list of 5-8 news items formatted strictly as JSON array with this schema:")
+            appendLine("""[{"title": "Headline", "summary": "2-3 sentence summary of the news and what fans should know", "category": "TRAILER|RELEASE|ANNOUNCEMENT|INDUSTRY", "timeAgo": "e.g. 2h ago or Today"}]""")
+            appendLine("Output ONLY the valid JSON array and nothing else.")
+        }
+
+        val effectiveModel = modelName.ifBlank { "gemini-2.5-flash" }
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/$effectiveModel:generateContent?key=$apiKey"
+
+        val requestJson = buildJsonObject {
+            putJsonArray("contents") {
+                add(buildJsonObject {
+                    put("role", "user")
+                    putJsonArray("parts") {
+                        add(buildJsonObject { put("text", prompt) })
+                    }
+                })
+            }
+            putJsonObject("tools") {
+                putJsonArray("google_search") {}
+            }
+        }
+
+        val requestBody = requestJson.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
+        val request = Request.Builder().url(url).post(requestBody).build()
+
+        val response = client.newCall(request).execute()
+        val bodyString = response.body?.string() ?: throw IOException("Empty response from Gemini API")
+
+        if (!response.isSuccessful) {
+            val errorMsg = runCatching {
+                val jsonEl = json.parseToJsonElement(bodyString).jsonObject
+                jsonEl["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+            }.getOrNull() ?: "API Error (${response.code})"
+            throw IOException(errorMsg)
+        }
+
+        val root = json.parseToJsonElement(bodyString).jsonObject
+        val candidate = root["candidates"]?.jsonArray?.firstOrNull()?.jsonObject
+        val rawText = candidate?.get("content")?.jsonObject?.get("parts")?.jsonArray?.firstOrNull()
+            ?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull.orEmpty()
+
+        val sources = mutableListOf<AiGroundingSource>()
+        val groundingMetadata = candidate?.get("groundingMetadata")?.jsonObject
+        val searchChunks = groundingMetadata?.get("groundingChunks")?.jsonArray
+        searchChunks?.forEach { chunkEl ->
+            val web = chunkEl.jsonObject["web"]?.jsonObject
+            val webTitle = web?.get("title")?.jsonPrimitive?.contentOrNull
+            val webUri = web?.get("uri")?.jsonPrimitive?.contentOrNull
+            if (!webUri.isNullOrBlank()) {
+                sources.add(AiGroundingSource(title = webTitle ?: "Source", url = webUri))
+            }
+        }
+
+        val jsonStartIndex = rawText.indexOf('[')
+        val jsonEndIndex = rawText.lastIndexOf(']')
+        if (jsonStartIndex != -1 && jsonEndIndex != -1 && jsonEndIndex > jsonStartIndex) {
+            val jsonArrayStr = rawText.substring(jsonStartIndex, jsonEndIndex + 1)
+            val parsed = runCatching {
+                val array = json.parseToJsonElement(jsonArrayStr).jsonArray
+                array.map { el ->
+                    val obj = el.jsonObject
+                    com.anisync.android.domain.ai.AiNewsItem(
+                        title = obj["title"]?.jsonPrimitive?.contentOrNull ?: "Anime Update",
+                        summary = obj["summary"]?.jsonPrimitive?.contentOrNull ?: "",
+                        category = obj["category"]?.jsonPrimitive?.contentOrNull ?: "NEWS",
+                        timeAgo = obj["timeAgo"]?.jsonPrimitive?.contentOrNull ?: "Recent",
+                        sources = sources
+                    )
+                }
+            }.getOrDefault(emptyList())
+            if (parsed.isNotEmpty()) return@withContext parsed
+        }
+
+        listOf(
+            com.anisync.android.domain.ai.AiNewsItem(
+                title = "Latest Anime Radar",
+                summary = rawText.take(500),
+                category = "NEWS",
+                timeAgo = "Recent",
+                sources = sources
+            )
+        )
+    }
 }

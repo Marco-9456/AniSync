@@ -24,7 +24,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+import com.anisync.android.domain.ai.AiChatSession
+
 data class AiChatUiState(
+    val currentSessionId: String = java.util.UUID.randomUUID().toString(),
     val messages: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
     val webSearchEnabled: Boolean = true,
@@ -42,6 +45,8 @@ class AiChatViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val detailsRepository: DetailsRepository
 ) : ViewModel() {
+
+    val sessions: StateFlow<List<AiChatSession>> = appSettings.aiChatSessions
 
     private val navRoute = runCatching { savedStateHandle.toRoute<AiChat>() }.getOrNull()
     private val focusedMediaId = navRoute?.mediaId
@@ -109,6 +114,33 @@ class AiChatViewModel @Inject constructor(
         _uiState.update { it.copy(messages = emptyList(), isLoading = false) }
     }
 
+    fun startNewChat() {
+        _uiState.update {
+            it.copy(
+                currentSessionId = java.util.UUID.randomUUID().toString(),
+                messages = emptyList(),
+                isLoading = false
+            )
+        }
+    }
+
+    fun loadSession(session: AiChatSession) {
+        _uiState.update {
+            it.copy(
+                currentSessionId = session.id,
+                messages = session.messages,
+                isLoading = false
+            )
+        }
+    }
+
+    fun deleteSession(sessionId: String) {
+        appSettings.deleteAiChatSession(sessionId)
+        if (_uiState.value.currentSessionId == sessionId) {
+            startNewChat()
+        }
+    }
+
     fun sendMessage(text: String) {
         val trimmed = text.trim()
         if (trimmed.isBlank() || _uiState.value.isLoading) return
@@ -151,12 +183,24 @@ class AiChatViewModel @Inject constructor(
                     sources = result.sources
                 )
 
+                val updatedList = currentMessages + aiMessage
                 _uiState.update {
                     it.copy(
-                        messages = it.messages + aiMessage,
+                        messages = updatedList,
                         isLoading = false
                     )
                 }
+
+                // Persist session in history
+                val firstUserMsg = updatedList.firstOrNull { it.isUser }?.text?.take(40) ?: "New Chat"
+                val session = AiChatSession(
+                    id = _uiState.value.currentSessionId,
+                    title = firstUserMsg,
+                    mediaId = _uiState.value.focusedMedia?.mediaId,
+                    mediaTitle = _uiState.value.focusedMedia?.title,
+                    messages = updatedList
+                )
+                appSettings.saveAiChatSession(session)
             } catch (e: Exception) {
                 val errorMessage = ChatMessage(
                     text = e.message ?: "Failed to get response from Gemini AI. Please check your API key and connection.",

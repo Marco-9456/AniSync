@@ -334,10 +334,21 @@ fun LibraryMediaCard(
                             )
                         }
                         if (airingText != null) {
-                            AiringCountdownText(
-                                text = airingText,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            val timeSec = entry.dynamicTimeUntilAiring ?: Int.MAX_VALUE
+                            val isAiringToday = timeSec in 1..86400
+                            val isUrgent = timeSec in 1..10800
+                            if (isAiringToday) {
+                                StatusBadge(
+                                    text = if (isUrgent) "🔥 $airingText" else "⚡ $airingText",
+                                    containerColor = if (isUrgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = if (isUrgent) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            } else {
+                                AiringCountdownText(
+                                    text = airingText,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))

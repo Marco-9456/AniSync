@@ -45,3 +45,23 @@ data class AiMediaFocusContext(
     val episodes: Int?,
     val studio: String?
 )
+
+@Serializable
+data class AiChatSession(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val title: String,
+    val timestamp: Long = System.currentTimeMillis(),
+    val mediaId: Int? = null,
+    val mediaTitle: String? = null,
+    val messages: List<ChatMessage> = emptyList()
+)
+
+@Serializable
+data class AiNewsItem(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val title: String,
+    val summary: String,
+    val category: String = "NEWS",
+    val timeAgo: String = "Recent",
+    val sources: List<AiGroundingSource> = emptyList()
+)

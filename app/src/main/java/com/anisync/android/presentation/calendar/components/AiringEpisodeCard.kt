@@ -157,19 +157,29 @@ fun AiringEpisodeCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.height(2.dp))
-                Text(
-                    text = if (hasAired) {
-                        stringResource(R.string.calendar_aired)
+                if (hasAired) {
+                    Text(
+                        text = stringResource(R.string.calendar_aired),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    val isUrgent = secondsUntil in 1..10800 // < 3 hours
+                    val isToday = secondsUntil in 1..86400
+                    if (isToday) {
+                        StatusBadge(
+                            text = if (isUrgent) "🔥 In ${formatTimeUntilAiring(secondsUntil.toInt())}" else "⚡ In ${formatTimeUntilAiring(secondsUntil.toInt())}",
+                            containerColor = if (isUrgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = if (isUrgent) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     } else {
-                        stringResource(R.string.calendar_airs_in, formatTimeUntilAiring(secondsUntil.toInt()))
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (hasAired) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.primary
+                        Text(
+                            text = stringResource(R.string.calendar_airs_in, formatTimeUntilAiring(secondsUntil.toInt())),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
-                )
+                }
             }
         }
     }

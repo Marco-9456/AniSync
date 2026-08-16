@@ -20,13 +20,17 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.rounded.AutoAwesome
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -34,10 +38,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.anisync.android.presentation.feed.components.AiNewsRadarSection
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -69,6 +76,7 @@ fun FeedScreen(
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     onLoginClick: () -> Unit,
     onComposeStatus: () -> Unit,
+    onNavigateToSettings: () -> Unit = {},
     // The activity id open in the two-pane detail (or null); its card shows the selection ring.
     selectedActivityId: Int? = null,
     viewModel: FeedViewModel = hiltViewModel()
@@ -78,6 +86,7 @@ fun FeedScreen(
     val pullToRefreshState = rememberPullToRefreshState()
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
     val coroutineScope = rememberCoroutineScope()
+    var selectedFeedTab by rememberSaveable { mutableIntStateOf(0) }
     val showScrollToTop by remember { derivedStateOf { listState.firstVisibleItemIndex > 3 } }
 
     // On rail layouts the compose action lives in the rail header (Material 3); on compact it stays a
@@ -93,33 +102,35 @@ fun FeedScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
-            // Offset above the main bottom nav bar using the real insets — the system
-            // navigation inset (gesture/3-button) plus the bar's own height — instead
-            // of a fixed dp. A hardcoded value overlapped the bar on devices with a
-            // taller gesture inset / edge-to-edge enforcement (e.g. Android 16). (#34)
-            Box(
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = LocalMainNavBarInset.current)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+            if (selectedFeedTab == 0) {
+                // Offset above the main bottom nav bar using the real insets — the system
+                // navigation inset (gesture/3-button) plus the bar's own height — instead
+                // of a fixed dp. A hardcoded value overlapped the bar on devices with a
+                // taller gesture inset / edge-to-edge enforcement (e.g. Android 16). (#34)
+                Box(
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = LocalMainNavBarInset.current)
                 ) {
-                    ScrollToTopFab(
-                        visible = showScrollToTop,
-                        onClick = { coroutineScope.launch { listState.animateScrollToItem(0) } }
-                    )
-                    if (!hasRail) {
-                        FloatingActionButton(
-                            onClick = onComposeStatus,
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = stringResource(R.string.cd_write_status)
-                            )
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ScrollToTopFab(
+                            visible = showScrollToTop,
+                            onClick = { coroutineScope.launch { listState.animateScrollToItem(0) } }
+                        )
+                        if (!hasRail) {
+                            FloatingActionButton(
+                                onClick = onComposeStatus,
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = stringResource(R.string.cd_write_status)
+                                )
+                            }
                         }
                     }
                 }
@@ -127,37 +138,67 @@ fun FeedScreen(
         },
         topBar = {
             Column(modifier = Modifier.statusBarsPadding()) {
-                FeedFilterBar(
-                    filter = uiState.filter,
-                    scope = uiState.scope,
-                    mediaType = uiState.mediaType,
-                    onFilterChange = { viewModel.onAction(FeedAction.OnFilterChange(it)) },
-                    onScopeChange = { viewModel.onAction(FeedAction.OnScopeChange(it)) },
-                    onMediaTypeChange = { viewModel.onAction(FeedAction.OnMediaTypeChange(it)) },
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+                PrimaryTabRow(
+                    selectedTabIndex = selectedFeedTab,
+                    containerColor = MaterialTheme.colorScheme.background
+                ) {
+                    Tab(
+                        selected = selectedFeedTab == 0,
+                        onClick = { selectedFeedTab = 0 },
+                        text = { Text("Activity Feed") },
+                        icon = { Icon(Icons.Default.DynamicFeed, contentDescription = null) }
+                    )
+                    Tab(
+                        selected = selectedFeedTab == 1,
+                        onClick = { selectedFeedTab = 1 },
+                        text = { Text("AI News Radar") },
+                        icon = { Icon(Icons.Rounded.AutoAwesome, contentDescription = null) }
+                    )
+                }
 
-                Spacer(Modifier.height(4.dp))
+                if (selectedFeedTab == 0) {
+                    FeedFilterBar(
+                        filter = uiState.filter,
+                        scope = uiState.scope,
+                        mediaType = uiState.mediaType,
+                        onFilterChange = { viewModel.onAction(FeedAction.OnFilterChange(it)) },
+                        onScopeChange = { viewModel.onAction(FeedAction.OnScopeChange(it)) },
+                        onMediaTypeChange = { viewModel.onAction(FeedAction.OnMediaTypeChange(it)) },
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+                }
             }
         }
     ) { innerPadding ->
-        PullToRefreshBox(
-            isRefreshing = uiState.isRefreshing,
-            state = pullToRefreshState,
-            onRefresh = rememberRateLimitedRefresh { viewModel.onAction(FeedAction.Refresh) },
-            indicator = {
-                CustomPullToRefreshIndicator(
-                    isRefreshing = uiState.isRefreshing,
-                    state = pullToRefreshState,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 16.dp)
-                )
-            },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
+        if (selectedFeedTab == 1) {
+            AiNewsRadarSection(
+                geminiApiService = viewModel.geminiApiService,
+                appSettings = viewModel.appSettings,
+                onNavigateToSettings = onNavigateToSettings,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            )
+        } else {
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                state = pullToRefreshState,
+                onRefresh = rememberRateLimitedRefresh { viewModel.onAction(FeedAction.Refresh) },
+                indicator = {
+                    CustomPullToRefreshIndicator(
+                        isRefreshing = uiState.isRefreshing,
+                        state = pullToRefreshState,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 16.dp)
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
             when {
                 !uiState.isAuthenticated && uiState.scope == FeedScope.FOLLOWING -> {
                     EmptyStateConfigs.NotLoggedIn(

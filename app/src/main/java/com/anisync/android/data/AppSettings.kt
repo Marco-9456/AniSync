@@ -210,6 +210,16 @@ class AppSettings @Inject constructor(
     private val _aiAllowSpoilersEnabled = MutableStateFlow(prefs.getBoolean(KEY_AI_ALLOW_SPOILERS_ENABLED, false))
     val aiAllowSpoilersEnabled: StateFlow<Boolean> = _aiAllowSpoilersEnabled.asStateFlow()
 
+    private fun readAiChatSessions(): List<com.anisync.android.domain.ai.AiChatSession> {
+        val raw = prefs.getString(KEY_AI_CHAT_SESSIONS, null) ?: return emptyList()
+        return runCatching {
+            json.decodeFromString<List<com.anisync.android.domain.ai.AiChatSession>>(raw)
+        }.getOrDefault(emptyList())
+    }
+
+    private val _aiChatSessions = MutableStateFlow(readAiChatSessions())
+    val aiChatSessions: StateFlow<List<com.anisync.android.domain.ai.AiChatSession>> = _aiChatSessions.asStateFlow()
+
     // Navigation bar style (anchored rounded top vs floating pill)
     private val _navBarStyle = MutableStateFlow(readNavBarStyle())
     val navBarStyle: StateFlow<NavBarStyle> = _navBarStyle.asStateFlow()
@@ -1073,6 +1083,31 @@ class AppSettings @Inject constructor(
         prefs.edit().putString(KEY_CATBOX_USERHASH, value).apply()
     }
 
+    fun saveAiChatSession(session: com.anisync.android.domain.ai.AiChatSession) {
+        val current = _aiChatSessions.value.toMutableList()
+        val index = current.indexOfFirst { it.id == session.id }
+        if (index >= 0) {
+            current[index] = session
+        } else {
+            current.add(0, session)
+        }
+        _aiChatSessions.value = current
+        val serialized = runCatching { json.encodeToString(current) }.getOrNull()
+        prefs.edit().putString(KEY_AI_CHAT_SESSIONS, serialized).apply()
+    }
+
+    fun deleteAiChatSession(sessionId: String) {
+        val updated = _aiChatSessions.value.filter { it.id != sessionId }
+        _aiChatSessions.value = updated
+        val serialized = runCatching { json.encodeToString(updated) }.getOrNull()
+        prefs.edit().putString(KEY_AI_CHAT_SESSIONS, serialized).apply()
+    }
+
+    fun clearAllAiChatSessions() {
+        _aiChatSessions.value = emptyList()
+        prefs.edit().remove(KEY_AI_CHAT_SESSIONS).apply()
+    }
+
     /**
      * Get the preferred streaming service directly from SharedPreferences.
      * Use this for widgets to ensure the latest value is always read.
@@ -1210,9 +1245,9 @@ companion object {
         const val DEFAULT_PANE_CALENDAR_FRACTION = 0.42f
         private const val KEY_PANE_PROFILE_FRACTION = "pane_profile_fraction"
         const val DEFAULT_PANE_PROFILE_FRACTION = 0.32f
-        private const val KEY_LIBRARY_SORT_OPTION = "library_sort_option"
         private const val KEY_LIBRARY_SORT_ASCENDING = "library_sort_ascending"
         private const val DEFAULT_LIBRARY_SORT = "AIRING_SOON"
+        private const val KEY_AI_CHAT_SESSIONS = "ai_chat_sessions_json"
         private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
         private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
         private const val KEY_FORUM_FEED = "forum_feed"

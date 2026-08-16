@@ -42,6 +42,7 @@ fun FeedListDetail(
             },
             onLoginClick = onLoginClick,
             onComposeStatus = { navController.navigate(CreateStatus) },
+            onNavigateToSettings = { navController.navigate(com.anisync.android.presentation.navigation.SettingsAi) },
         )
     }
 

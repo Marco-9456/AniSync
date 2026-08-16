@@ -29,12 +29,15 @@ import javax.inject.Inject
 
 private const val PAGE_SIZE = 25
 
+import com.anisync.android.data.ai.GeminiApiService
+
 @HiltViewModel
 class FeedViewModel @Inject constructor(
     private val feedRepository: FeedRepository,
     private val activityRepository: ActivityRepository,
     private val activityEventBus: ActivityEventBus,
-    private val appSettings: AppSettings,
+    val appSettings: AppSettings,
+    val geminiApiService: GeminiApiService,
     private val toastManager: ToastManager
 ) : ViewModel() {
 

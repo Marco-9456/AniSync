@@ -272,14 +272,26 @@ fun LibraryListCard(
                         }
 
                         if (config.showAiringInfo && entry.dynamicTimeUntilAiring != null && entry.nextAiringEpisode != null) {
-                            AiringCountdownText(
-                                text = stringResource(
-                                    R.string.airing_episode_in,
-                                    entry.nextAiringEpisode ?: 0,
-                                    formatTimeUntilAiring(entry.dynamicTimeUntilAiring ?: 0)
-                                ),
-                                modifier = Modifier.weight(1f)
+                            val timeSec = entry.dynamicTimeUntilAiring ?: Int.MAX_VALUE
+                            val isAiringToday = timeSec in 1..86400
+                            val isUrgent = timeSec in 1..10800
+                            val airingString = stringResource(
+                                R.string.airing_episode_in,
+                                entry.nextAiringEpisode ?: 0,
+                                formatTimeUntilAiring(entry.dynamicTimeUntilAiring ?: 0)
                             )
+                            if (isAiringToday) {
+                                StatusBadge(
+                                    text = if (isUrgent) "🔥 $airingString" else "⚡ $airingString",
+                                    containerColor = if (isUrgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = if (isUrgent) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            } else {
+                                AiringCountdownText(
+                                    text = airingString,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
                 }
