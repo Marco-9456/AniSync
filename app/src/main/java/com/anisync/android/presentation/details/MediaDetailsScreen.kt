@@ -59,6 +59,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -194,6 +195,7 @@ fun MediaDetailsScreen(
     onViewAllDiscussions: (mediaId: Int, mediaTitle: String) -> Unit = { _, _ -> },
     onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?) -> Unit = { _, _, _ -> },
     onUserClick: (String) -> Unit = {},
+    onAiChatClick: (Int) -> Unit = {},
     navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     viewModel: MediaDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
@@ -534,6 +536,28 @@ fun MediaDetailsScreen(
                                         text = stringResource(R.string.label_custom),
                                         fontWeight = FontWeight.Normal,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            )
+                            FloatingActionButtonMenuItem(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                    onAiChatClick(mediaId)
+                                    fabMenuExpanded = false
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Rounded.AutoAwesome,
+                                        contentDescription = "Ask AI Assistant",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                text = {
+                                    Text(
+                                        text = "Ask AI Assistant",
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 },
                                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh

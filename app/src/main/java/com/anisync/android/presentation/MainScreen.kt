@@ -299,12 +299,10 @@ fun MainScreen(
     val appSettings = LocalAppSettings.current
     val aiChatButtonEnabled by appSettings.aiChatButtonEnabled.collectAsStateWithLifecycle()
 
-    val isProfileOrAiRoute by remember {
+    val isOnHomeOrDiscover by remember {
         derivedStateOf {
             val dest = currentBackStackEntry?.destination
-            dest?.hasRoute<Profile>() == true ||
-                dest?.hasRoute<UserProfile>() == true ||
-                dest?.hasRoute<AiChat>() == true
+            dest?.hasRoute<Library>() == true || dest?.hasRoute<Discover>() == true
         }
     }
 
@@ -344,8 +342,8 @@ fun MainScreen(
                     )
                 }
 
-                // Universal AI Chat Button (bottom-left corner, hidden on Profile & AI pages and toggleable)
-                val showAiButton = aiChatButtonEnabled && !isProfileOrAiRoute
+                // AI Chat Button (bottom-left corner, only on Home and Discover pages)
+                val showAiButton = aiChatButtonEnabled && isOnHomeOrDiscover && isBottomBarVisibleOnScreen
                 AnimatedVisibility(
                     visible = showAiButton,
                     enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
@@ -361,18 +359,13 @@ fun MainScreen(
                     val startPadding = if (!usesBottomBar && isBottomBarVisibleOnScreen) 108.dp else 20.dp
 
                     FloatingActionButton(
-                        onClick = { navController.navigate(AiChat) },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        shape = CircleShape,
+                        onClick = { navController.navigate(AiChat()) },
                         modifier = Modifier
                             .padding(start = startPadding, bottom = bottomPadding)
-                            .size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.AutoAwesome,
-                            contentDescription = "AI Assistant",
-                            modifier = Modifier.size(22.dp)
+                            contentDescription = "AI Assistant"
                         )
                     }
                 }

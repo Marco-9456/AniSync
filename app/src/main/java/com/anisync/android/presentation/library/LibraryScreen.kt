@@ -508,7 +508,7 @@ fun LibraryScreen(
                                         },
                                         icon = statusIcon,
                                         label = tab.getLabel(mediaType),
-                                        count = uiState.tabCounts[tab.toId()]
+                                        count = if (tab is LibraryTab.Hidden) null else uiState.tabCounts[tab.toId()]
                                     )
                                 }
                             }

@@ -19,11 +19,29 @@ data class ChatMessage(
     val isError: Boolean = false
 )
 
-data class AiUserNoteContext(
-    val title: String,
+data class AiUserDataEntry(
+    val titleUserPreferred: String,
+    val titleRomaji: String?,
+    val titleEnglish: String?,
+    val titleNative: String?,
     val mediaType: String,
     val status: String,
-    val score: Double?,
     val progress: Int,
-    val note: String
+    val totalEpisodesOrChapters: Int?,
+    val score: Double?,
+    val notes: String?,
+    val startedAt: Long?,
+    val completedAt: Long?
+)
+
+data class AiMediaFocusContext(
+    val mediaId: Int,
+    val title: String,
+    val description: String?,
+    val genres: List<String>,
+    val format: String?,
+    val status: String?,
+    val averageScore: Int?,
+    val episodes: Int?,
+    val studio: String?
 )

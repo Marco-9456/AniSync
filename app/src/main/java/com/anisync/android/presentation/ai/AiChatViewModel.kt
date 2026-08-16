@@ -1,14 +1,18 @@
 package com.anisync.android.presentation.ai
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.ai.GeminiApiService
+import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.LibraryRepository
-import com.anisync.android.domain.ai.AiUserNoteContext
+import com.anisync.android.domain.ai.AiMediaFocusContext
+import com.anisync.android.domain.ai.AiUserDataEntry
 import com.anisync.android.domain.ai.ChatMessage
+import com.anisync.android.presentation.navigation.AiChat
 import com.anisync.android.type.MediaType
-import com.anisync.android.util.getTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,22 +28,28 @@ data class AiChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
     val webSearchEnabled: Boolean = true,
-    val includeNotesEnabled: Boolean = true,
+    val userDataEnabled: Boolean = true,
     val allowSpoilersEnabled: Boolean = false,
-    val hasApiKey: Boolean = false
+    val hasApiKey: Boolean = false,
+    val focusedMedia: AiMediaFocusContext? = null
 )
 
 @HiltViewModel
 class AiChatViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val geminiApiService: GeminiApiService,
     private val appSettings: AppSettings,
-    private val libraryRepository: LibraryRepository
+    private val libraryRepository: LibraryRepository,
+    private val detailsRepository: DetailsRepository
 ) : ViewModel() {
+
+    private val navRoute = runCatching { savedStateHandle.toRoute<AiChat>() }.getOrNull()
+    private val focusedMediaId = navRoute?.mediaId
 
     private val _uiState = MutableStateFlow(
         AiChatUiState(
             webSearchEnabled = appSettings.aiWebSearchEnabled.value,
-            includeNotesEnabled = appSettings.aiIncludeNotesEnabled.value,
+            userDataEnabled = appSettings.aiUserDataEnabled.value,
             allowSpoilersEnabled = appSettings.aiAllowSpoilersEnabled.value,
             hasApiKey = appSettings.geminiApiKey.value.isNotBlank()
         )
@@ -52,6 +62,32 @@ class AiChatViewModel @Inject constructor(
                 _uiState.update { it.copy(hasApiKey = key.isNotBlank()) }
             }
         }
+
+        if (focusedMediaId != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                loadFocusedMediaDetails(focusedMediaId)
+            }
+        }
+    }
+
+    private suspend fun loadFocusedMediaDetails(mediaId: Int) {
+        try {
+            val details = detailsRepository.getMediaDetails(mediaId).first()
+            if (details != null) {
+                val focusContext = AiMediaFocusContext(
+                    mediaId = details.id,
+                    title = details.titleUserPreferred,
+                    description = details.description,
+                    genres = details.genres,
+                    format = details.format?.rawValue,
+                    status = details.status?.name,
+                    averageScore = details.averageScore,
+                    episodes = details.episodes,
+                    studio = details.studios.firstOrNull()?.name
+                )
+                _uiState.update { it.copy(focusedMedia = focusContext) }
+            }
+        } catch (_: Exception) {}
     }
 
     fun toggleWebSearch(enabled: Boolean) {
@@ -59,9 +95,9 @@ class AiChatViewModel @Inject constructor(
         _uiState.update { it.copy(webSearchEnabled = enabled) }
     }
 
-    fun toggleIncludeNotes(enabled: Boolean) {
-        appSettings.setAiIncludeNotesEnabled(enabled)
-        _uiState.update { it.copy(includeNotesEnabled = enabled) }
+    fun toggleUserData(enabled: Boolean) {
+        appSettings.setAiUserDataEnabled(enabled)
+        _uiState.update { it.copy(userDataEnabled = enabled) }
     }
 
     fun toggleAllowSpoilers(enabled: Boolean) {
@@ -92,8 +128,8 @@ class AiChatViewModel @Inject constructor(
                 val apiKey = appSettings.geminiApiKey.value
                 val model = appSettings.geminiModel.value
 
-                val userNotes = if (_uiState.value.includeNotesEnabled) {
-                    getRelevantNotes(trimmed)
+                val userData = if (_uiState.value.userDataEnabled) {
+                    getUserDataEntries()
                 } else {
                     emptyList()
                 }
@@ -105,7 +141,8 @@ class AiChatViewModel @Inject constructor(
                     latestUserMessage = trimmed,
                     useWebSearch = _uiState.value.webSearchEnabled,
                     allowSpoilers = _uiState.value.allowSpoilersEnabled,
-                    userNotes = userNotes
+                    userData = userData,
+                    mediaFocus = _uiState.value.focusedMedia
                 )
 
                 val aiMessage = ChatMessage(
@@ -137,47 +174,29 @@ class AiChatViewModel @Inject constructor(
     }
 
     /**
-     * Searches only relevant notes matching the user's query keywords instead of dumping all notes.
+     * Loads user's anime and manga library entries to provide full personal context.
      */
-    private suspend fun getRelevantNotes(query: String): List<AiUserNoteContext> = withContext(Dispatchers.IO) {
+    private suspend fun getUserDataEntries(): List<AiUserDataEntry> = withContext(Dispatchers.IO) {
         try {
-            val titleLang = appSettings.titleLanguage.value
             val anime = libraryRepository.observeLibrary("", MediaType.ANIME).first()
             val manga = libraryRepository.observeLibrary("", MediaType.MANGA).first()
 
-            val allNotesEntries = (anime + manga).filter { !it.notes.isNullOrBlank() }
-            if (allNotesEntries.isEmpty()) return@withContext emptyList()
+            val allEntries = (anime + manga)
 
-            val words = query.lowercase().split("\\s+".toRegex()).filter { it.length > 2 }
-            if (words.isEmpty()) {
-                // If query is very short/generic, return at most 3 recent notes
-                return@withContext allNotesEntries.take(3).map { entry ->
-                    AiUserNoteContext(
-                        title = entry.getTitle(titleLang),
-                        mediaType = entry.type?.name ?: "ANIME",
-                        status = entry.status.name,
-                        score = entry.score,
-                        progress = entry.progress,
-                        note = entry.notes.orEmpty()
-                    )
-                }
-            }
-
-            // Find entries whose title or note content matches any keyword in user's query
-            val matched = allNotesEntries.filter { entry ->
-                val title = entry.getTitle(titleLang).lowercase()
-                val note = entry.notes.orEmpty().lowercase()
-                words.any { word -> title.contains(word) || note.contains(word) }
-            }.take(5)
-
-            matched.map { entry ->
-                AiUserNoteContext(
-                    title = entry.getTitle(titleLang),
+            allEntries.map { entry ->
+                AiUserDataEntry(
+                    titleUserPreferred = entry.titleUserPreferred,
+                    titleRomaji = entry.titleRomaji,
+                    titleEnglish = entry.titleEnglish,
+                    titleNative = entry.titleNative,
                     mediaType = entry.type?.name ?: "ANIME",
                     status = entry.status.name,
-                    score = entry.score,
                     progress = entry.progress,
-                    note = entry.notes.orEmpty()
+                    totalEpisodesOrChapters = entry.totalEpisodes ?: entry.totalChapters,
+                    score = entry.score,
+                    notes = entry.notes,
+                    startedAt = entry.startedAt,
+                    completedAt = entry.completedAt
                 )
             }
         } catch (e: Exception) {

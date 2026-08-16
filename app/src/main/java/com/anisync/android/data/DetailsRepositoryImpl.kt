@@ -382,20 +382,18 @@ class DetailsRepositoryImpl @Inject constructor(
                 )
             ).execute()
 
-            if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
-                refreshMediaDetails(mediaId)
+            val savedEntry = response.data?.SaveMediaListEntry
+            if (savedEntry != null && !response.hasErrors()) {
                 val owner = currentOwnerId()
                 val existingEntry = libraryDao.getEntry(owner, mediaId)
 
                 if (existingEntry != null) {
                     libraryDao.updateStatusAndProgress(owner, mediaId, status, progress)
                 } else {
-                    val savedEntry = response.data?.SaveMediaListEntry
                     val cachedMedia = mediaDetailsDao.getById(mediaId)
-
                     if (cachedMedia != null) {
                         val newEntry = com.anisync.android.data.local.entity.LibraryEntryEntity(
-                            id = savedEntry?.id ?: 0,
+                            id = savedEntry.id,
                             ownerId = owner,
                             mediaId = mediaId,
                             titleRomaji = cachedMedia.titleRomaji,
@@ -425,6 +423,9 @@ class DetailsRepositoryImpl @Inject constructor(
                         libraryDao.insertOrReplace(newEntry)
                     }
                 }
+
+                // Refresh details from network or update cached details
+                runCatching { refreshMediaDetails(mediaId) }
             } else {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Update failed"
                 throw Exception(errorMessage)

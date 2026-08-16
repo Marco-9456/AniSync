@@ -1,13 +1,12 @@
 package com.anisync.android.data.ai
 
 import com.anisync.android.domain.ai.AiGroundingSource
-import com.anisync.android.domain.ai.AiUserNoteContext
+import com.anisync.android.domain.ai.AiMediaFocusContext
+import com.anisync.android.domain.ai.AiUserDataEntry
 import com.anisync.android.domain.ai.ChatMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -55,7 +54,8 @@ class GeminiApiService @Inject constructor(
         latestUserMessage: String,
         useWebSearch: Boolean = true,
         allowSpoilers: Boolean = false,
-        userNotes: List<AiUserNoteContext> = emptyList()
+        userData: List<AiUserDataEntry> = emptyList(),
+        mediaFocus: AiMediaFocusContext? = null
     ): GenerateResult = withContext(Dispatchers.IO) {
         if (apiKey.isBlank()) {
             throw IllegalArgumentException("Please enter your Google Gemini API key in Settings -> AI Assistant.")
@@ -63,7 +63,7 @@ class GeminiApiService @Inject constructor(
 
         val endpoint = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$apiKey"
 
-        val systemPrompt = buildSystemPrompt(allowSpoilers, userNotes)
+        val systemPrompt = buildSystemPrompt(allowSpoilers, userData, mediaFocus)
 
         val requestJson = buildJsonObject {
             // System instructions
@@ -165,31 +165,71 @@ class GeminiApiService @Inject constructor(
         )
     }
 
-    private fun buildSystemPrompt(allowSpoilers: Boolean, userNotes: List<AiUserNoteContext>): String {
+    private fun buildSystemPrompt(
+        allowSpoilers: Boolean,
+        userData: List<AiUserDataEntry>,
+        mediaFocus: AiMediaFocusContext?
+    ): String {
         val sb = StringBuilder()
-        sb.appendLine("You are the AniSync AI Assistant, a knowledgeable, friendly, and helpful anime and manga companion inside the AniSync app.")
-        sb.appendLine("You assist users with anime/manga recommendations, character information, episode discussions, plot summaries, staff info, and analyzing their library.")
+        sb.appendLine("You are the AniSync AI Assistant, a knowledgeable, passionate, and helpful anime & manga companion inside the AniSync Android app.")
+        sb.appendLine("You assist users with recommendations, character breakdowns, lore discussions, plot analysis, airing schedules, and reviewing their anime/manga lists.")
+        sb.appendLine("You have broad encyclopedic knowledge of AniList anime/manga stats, characters, staff, and release details.")
         sb.appendLine()
 
-        if (allowSpoilers) {
-            sb.appendLine("### SPOILER POLICY: SPOILERS ALLOWED")
-            sb.appendLine("The user has explicitly turned ON spoilers. You are allowed to discuss plot twists, major events, character fates, and endings openly when asked.")
-        } else {
-            sb.appendLine("### SPOILER POLICY: STRICTLY NO SPOILERS")
-            sb.appendLine("The user has turned OFF spoilers. DO NOT reveal major plot twists, character deaths, identity reveals, or climactic endings unless they specifically and explicitly ask about a finished season. If discussing upcoming plot, keep descriptions spoiler-free and add a polite warning if touching upon critical elements.")
-        }
-        sb.appendLine()
-
-        if (userNotes.isNotEmpty()) {
-            sb.appendLine("### USER'S PERSONAL ANIME/MANGA LIBRARY NOTES:")
-            sb.appendLine("The user has enabled notes access. Here are their saved personal notes on anime/manga entries in their library. Use this context to personalize your recommendations and reference what they noted if relevant:")
-            for (note in userNotes.take(40)) {
-                sb.appendLine("- ${note.title} (${note.mediaType}) [Status: ${note.status}, Score: ${note.score ?: "N/A"}/100, Progress: ${note.progress}]: \"${note.note.replace("\n", " ")}\"")
+        if (mediaFocus != null) {
+            sb.appendLine("### CURRENTLY FOCUSED ANIME / MANGA CONTEXT (Opened from details page):")
+            sb.appendLine("Title: ${mediaFocus.title}")
+            mediaFocus.format?.let { sb.appendLine("Format: $it") }
+            mediaFocus.status?.let { sb.appendLine("Status: $it") }
+            mediaFocus.averageScore?.let { sb.appendLine("Average AniList Score: $it/100") }
+            mediaFocus.episodes?.let { sb.appendLine("Episodes: $it") }
+            if (mediaFocus.genres.isNotEmpty()) {
+                sb.appendLine("Genres: ${mediaFocus.genres.joinToString(", ")}")
             }
+            mediaFocus.studio?.let { sb.appendLine("Studio / Producers: $it") }
+            mediaFocus.description?.let {
+                sb.appendLine("Synopsis: ${it.take(1500)}")
+            }
+            sb.appendLine("Prioritize this specific title in your answers when relevant.")
             sb.appendLine()
         }
 
-        sb.appendLine("Format your responses clearly using Markdown (bolding, lists, code blocks, quote blocks) where appropriate for great readability on mobile devices.")
+        if (allowSpoilers) {
+            sb.appendLine("### SPOILER POLICY: SPOILERS ALLOWED")
+            sb.appendLine("The user has enabled spoilers. You may openly discuss major plot twists, character fates, and endings.")
+        } else {
+            sb.appendLine("### SPOILER POLICY: STRICTLY NO SPOILERS")
+            sb.appendLine("The user has disabled spoilers. Keep discussions spoiler-free and do NOT reveal major twists, deaths, or secret identity reveals without a clear warning.")
+        }
+        sb.appendLine()
+
+        if (userData.isNotEmpty()) {
+            sb.appendLine("### USER'S PERSONAL ANILIST LIBRARY DATA (User Data toggle is ON):")
+            sb.appendLine("You have access to the user's personal watch/read library, including their scores, progress, personal notes, and dates.")
+            sb.appendLine("Always check this list when the user asks about their notes, score, opinions, or list progress on any anime/manga (e.g. Domestic Girlfriend, Frieren, etc.):")
+            for (entry in userData) {
+                val titlePart = buildString {
+                    append(entry.titleUserPreferred)
+                    val altTitles = listOfNotNull(entry.titleRomaji, entry.titleEnglish, entry.titleNative)
+                        .filter { it != entry.titleUserPreferred }
+                        .distinct()
+                    if (altTitles.isNotEmpty()) {
+                        append(" (aka ${altTitles.joinToString(" / ")})")
+                    }
+                }
+                val scorePart = entry.score?.let { "$it/100" } ?: "Not rated"
+                val notePart = if (!entry.notes.isNullOrBlank()) " | Notes: \"${entry.notes.replace("\n", " ")}\"" else ""
+                val totalPart = entry.totalEpisodesOrChapters?.let { "/$it" } ?: ""
+                sb.appendLine("• [$titlePart] Type: ${entry.mediaType} | Status: ${entry.status} | Progress: ${entry.progress}$totalPart | User Score: $scorePart$notePart")
+            }
+            sb.appendLine()
+        } else {
+            sb.appendLine("### USER DATA POLICY: OFF")
+            sb.appendLine("The user data toggle is currently OFF. You do not have access to their personal notes or private library records, but you can freely discuss general AniList facts, synopsis, and public stats.")
+            sb.appendLine()
+        }
+
+        sb.appendLine("Format your response clearly using rich Markdown (bolding, bullet points, headers, quotes) formatted for mobile screens.")
         return sb.toString()
     }
 }

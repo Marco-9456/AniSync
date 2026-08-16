@@ -30,11 +30,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.ClearAll
-import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
@@ -108,9 +109,11 @@ fun AiChatScreen(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "AniSync AI",
+                            text = if (uiState.focusedMedia != null) uiState.focusedMedia!!.title else "AniSync AI",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Surface(
@@ -171,7 +174,9 @@ fun AiChatScreen(
                     OutlinedTextField(
                         value = inputText,
                         onValueChange = { inputText = it },
-                        placeholder = { Text("Ask AniSync AI...") },
+                        placeholder = {
+                            Text(if (uiState.focusedMedia != null) "Ask about ${uiState.focusedMedia!!.title}..." else "Ask AniSync AI...")
+                        },
                         maxLines = 4,
                         enabled = uiState.hasApiKey && !uiState.isLoading,
                         shape = RoundedCornerShape(24.dp),
@@ -225,7 +230,7 @@ fun AiChatScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Toggles Row (Web Search, Notes, Spoilers)
+            // Toggles Row (Web Search, User Data, Spoilers)
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -254,12 +259,12 @@ fun AiChatScreen(
 
                 item {
                     FilterChip(
-                        selected = uiState.includeNotesEnabled,
-                        onClick = { viewModel.toggleIncludeNotes(!uiState.includeNotesEnabled) },
-                        label = { Text("Notes Context") },
+                        selected = uiState.userDataEnabled,
+                        onClick = { viewModel.toggleUserData(!uiState.userDataEnabled) },
+                        label = { Text("User Data") },
                         leadingIcon = {
                             Icon(
-                                Icons.Rounded.Description,
+                                Icons.Rounded.AccountCircle,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -364,7 +369,7 @@ fun AiChatScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.AutoAwesome,
+                                imageVector = if (uiState.focusedMedia != null) Icons.Rounded.Movie else Icons.Rounded.AutoAwesome,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(28.dp)
@@ -374,25 +379,34 @@ fun AiChatScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
-                            text = "How can I help you today?",
+                            text = if (uiState.focusedMedia != null) "Chatting about ${uiState.focusedMedia!!.title}" else "How can I help you today?",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
                         )
 
                         Text(
-                            text = "Ask recommendations, character trivia, plot discussions, or questions about your library.",
+                            text = if (uiState.focusedMedia != null) "Ask about the plot, characters, ratings, themes, or what to watch next after this title."
+                            else "Ask recommendations, character trivia, opinions on your scored anime, or questions about your library.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
                         )
 
-                        val suggestions = listOf(
-                            "Recommend anime similar to Frieren",
-                            "What are the top trending anime this season?",
-                            "Give me a psychological thriller like Steins;Gate",
-                            "Explain the lore behind Jujutsu Kaisen"
-                        )
+                        val suggestions = if (uiState.focusedMedia != null) {
+                            listOf(
+                                "What are the key themes and appeal of this show?",
+                                "What anime should I watch if I love this?",
+                                "Explain the character dynamics in this show"
+                            )
+                        } else {
+                            listOf(
+                                "Recommend anime similar to Frieren",
+                                "Look at my notes and give your take on my scores",
+                                "What are the top trending anime this season?"
+                            )
+                        }
 
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp),

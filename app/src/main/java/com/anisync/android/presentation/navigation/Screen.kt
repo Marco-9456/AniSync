@@ -409,4 +409,6 @@ object SettingsSecurity
  * Universal Gemini AI Chat Assistant screen.
  */
 @Serializable
-object AiChat
+data class AiChat(
+    val mediaId: Int? = null
+)

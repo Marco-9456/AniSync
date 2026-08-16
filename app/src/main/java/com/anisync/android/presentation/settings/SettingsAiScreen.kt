@@ -68,7 +68,7 @@ fun SettingsAiScreen(
     val currentModel by appSettings.geminiModel.collectAsStateWithLifecycle()
     val buttonEnabled by appSettings.aiChatButtonEnabled.collectAsStateWithLifecycle()
     val defaultWebSearch by appSettings.aiWebSearchEnabled.collectAsStateWithLifecycle()
-    val defaultIncludeNotes by appSettings.aiIncludeNotesEnabled.collectAsStateWithLifecycle()
+    val defaultUserData by appSettings.aiUserDataEnabled.collectAsStateWithLifecycle()
     val defaultAllowSpoilers by appSettings.aiAllowSpoilersEnabled.collectAsStateWithLifecycle()
 
     var inputKey by remember(apiKey) { mutableStateOf(apiKey) }
@@ -252,10 +252,10 @@ fun SettingsAiScreen(
             )
 
             SwitchSettingsItem(
-                title = "Library Notes Context",
-                subtitle = "Allow AI to search relevant anime/manga notes from your library on-demand",
-                checked = defaultIncludeNotes,
-                onCheckedChange = { appSettings.setAiIncludeNotesEnabled(it) }
+                title = "Include User Data",
+                subtitle = "Allow AI to access your personal watch history, scores, notes, progress, and dates for personalized answers",
+                checked = defaultUserData,
+                onCheckedChange = { appSettings.setAiUserDataEnabled(it) }
             )
 
             SwitchSettingsItem(

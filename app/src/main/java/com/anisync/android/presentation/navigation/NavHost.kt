@@ -599,6 +599,7 @@ fun AniSyncNavHost(
                         )
                     },
                     onUserClick = navigateToUserProfile,
+                    onAiChatClick = { targetMediaId -> navController.navigate(AiChat(mediaId = targetMediaId)) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )

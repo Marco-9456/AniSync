@@ -204,8 +204,8 @@ class AppSettings @Inject constructor(
     private val _aiWebSearchEnabled = MutableStateFlow(prefs.getBoolean(KEY_AI_WEB_SEARCH_ENABLED, true))
     val aiWebSearchEnabled: StateFlow<Boolean> = _aiWebSearchEnabled.asStateFlow()
 
-    private val _aiIncludeNotesEnabled = MutableStateFlow(prefs.getBoolean(KEY_AI_INCLUDE_NOTES_ENABLED, true))
-    val aiIncludeNotesEnabled: StateFlow<Boolean> = _aiIncludeNotesEnabled.asStateFlow()
+    private val _aiUserDataEnabled = MutableStateFlow(prefs.getBoolean(KEY_AI_USER_DATA_ENABLED, true))
+    val aiUserDataEnabled: StateFlow<Boolean> = _aiUserDataEnabled.asStateFlow()
 
     private val _aiAllowSpoilersEnabled = MutableStateFlow(prefs.getBoolean(KEY_AI_ALLOW_SPOILERS_ENABLED, false))
     val aiAllowSpoilersEnabled: StateFlow<Boolean> = _aiAllowSpoilersEnabled.asStateFlow()
@@ -708,9 +708,9 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_AI_WEB_SEARCH_ENABLED, enabled).apply()
     }
 
-    fun setAiIncludeNotesEnabled(enabled: Boolean) {
-        _aiIncludeNotesEnabled.value = enabled
-        prefs.edit().putBoolean(KEY_AI_INCLUDE_NOTES_ENABLED, enabled).apply()
+    fun setAiUserDataEnabled(enabled: Boolean) {
+        _aiUserDataEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_AI_USER_DATA_ENABLED, enabled).apply()
     }
 
     fun setAiAllowSpoilersEnabled(enabled: Boolean) {
@@ -1229,7 +1229,7 @@ companion object {
         private const val KEY_GEMINI_MODEL = "gemini_model"
         private const val KEY_AI_CHAT_BUTTON_ENABLED = "ai_chat_button_enabled"
         private const val KEY_AI_WEB_SEARCH_ENABLED = "ai_web_search_enabled"
-        private const val KEY_AI_INCLUDE_NOTES_ENABLED = "ai_include_notes_enabled"
+        private const val KEY_AI_USER_DATA_ENABLED = "ai_user_data_enabled"
         private const val KEY_AI_ALLOW_SPOILERS_ENABLED = "ai_allow_spoilers_enabled"
         private const val KEY_APP_LOCK_PASSWORD_HASH = "app_lock_password_hash"
         private const val KEY_APP_LOCK_PASSWORD_SALT = "app_lock_password_salt"

@@ -315,7 +315,6 @@ class LibraryViewModel @Inject constructor(
                         grouped.forEach { (status, list) -> put("status:${status.name}", list.size) }
                         put(LIBRARY_FAVORITES_TAB_ID, sortedFavorites.size)
                         customEntriesMap.forEach { (name, list) -> put(name, list.size) }
-                        put("status:HIDDEN", hiddenEntries.size)
                     }
 
                     // Search matches every title variant + notes, grouped by list so the overlay can
