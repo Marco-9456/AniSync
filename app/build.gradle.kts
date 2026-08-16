@@ -66,7 +66,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.anisync.android"
+        applicationId = "com.anisync.android.aq"
         minSdk = 26
         targetSdk = 36
         versionCode = 19

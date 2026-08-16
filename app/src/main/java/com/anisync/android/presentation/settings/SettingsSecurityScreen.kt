@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Password
@@ -30,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -100,8 +98,9 @@ fun SettingsSecurityScreen(
         onBackClick = onBackClick,
         modifier = modifier
     ) {
-        SettingsGroup(title = "App Lock") {
-            SettingsSwitchItem(
+        SettingsSectionLabel("App Lock")
+        SettingsGroup {
+            SwitchSettingsItem(
                 title = "App Lock Gate",
                 subtitle = "Require authentication to open the app on cold start and background return",
                 checked = appLockEnabled,
@@ -109,10 +108,11 @@ fun SettingsSecurityScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        SettingsGroup(title = "Custom Password & Biometrics") {
-            SettingsClickableItem(
+        SettingsSectionLabel("Custom Password & Biometrics")
+        SettingsGroup {
+            SettingsItem(
                 title = if (hasPassword) "Change Custom Password" else "Set Custom Password",
                 subtitle = if (hasPassword) "Custom password/PIN is active for App Lock and Hidden List" else "Configure a custom password for in-app privacy",
                 icon = Icons.Rounded.Password,
@@ -120,7 +120,7 @@ fun SettingsSecurityScreen(
             )
 
             if (hasPassword) {
-                SettingsClickableItem(
+                SettingsItem(
                     title = "Remove Custom Password",
                     subtitle = "Clear your custom in-app password",
                     icon = Icons.Rounded.Key,
@@ -129,7 +129,7 @@ fun SettingsSecurityScreen(
             }
 
             if (isBiometricHardwareAvailable) {
-                SettingsSwitchItem(
+                SwitchSettingsItem(
                     title = "Biometric Authentication",
                     subtitle = "Allow unlocking with fingerprint or face recognition alongside password",
                     checked = biometricsEnabled,
@@ -158,7 +158,7 @@ private fun SetPasswordDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = "This password will be used to unlock the app and access your Hidden List.",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
