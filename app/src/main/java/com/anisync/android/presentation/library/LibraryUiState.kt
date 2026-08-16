@@ -23,7 +23,7 @@ data class LibraryUiState(
     val customListNames: List<String> = emptyList(),
     val customListEntries: Map<String, List<LibraryEntry>> = emptyMap(),
     val favoriteEntries: List<LibraryEntry> = emptyList(),
-    /** Ghost/hidden entries where hiddenFromStatusLists = true or isPrivate = true. */
+    /** Ghost/hidden entries where hiddenFromStatusLists = true and isPrivate = true. */
     val hiddenEntries: List<LibraryEntry> = emptyList(),
     val hiddenListNames: Set<String> = emptySet(),
     val tabOrder: List<String> = emptyList(),

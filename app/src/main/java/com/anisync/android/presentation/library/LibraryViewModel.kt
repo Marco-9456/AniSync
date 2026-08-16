@@ -278,7 +278,7 @@ class LibraryViewModel @Inject constructor(
 
                     for (s in sortedEntries) {
                         val e = s.entry
-                        val isGhost = e.hiddenFromStatusLists || e.isPrivate == true
+                        val isGhost = e.hiddenFromStatusLists && e.isPrivate == true
                         if (isGhost) {
                             hiddenEntries.add(e)
                             continue
@@ -306,7 +306,7 @@ class LibraryViewModel @Inject constructor(
                     // Extract sorted custom names from the tab order for the UI
                     val sortedCustomNames = tabOrder.filter { !it.startsWith("status:") && it in customNamesSet }
 
-                    val sortedFavorites = favorites.filter { !(it.hiddenFromStatusLists || it.isPrivate == true) }
+                    val sortedFavorites = favorites.filter { !(it.hiddenFromStatusLists && it.isPrivate == true) }
                         .sortedBy { it.getTitle(titleLang).lowercase() }
 
                     // Raw per-tab counts (independent of the query) for the tab badges.
