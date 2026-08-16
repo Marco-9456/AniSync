@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -210,10 +212,12 @@ class AppSettings @Inject constructor(
     private val _aiAllowSpoilersEnabled = MutableStateFlow(prefs.getBoolean(KEY_AI_ALLOW_SPOILERS_ENABLED, false))
     val aiAllowSpoilersEnabled: StateFlow<Boolean> = _aiAllowSpoilersEnabled.asStateFlow()
 
+    private val jsonSerializer = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true }
+
     private fun readAiChatSessions(): List<com.anisync.android.domain.ai.AiChatSession> {
         val raw = prefs.getString(KEY_AI_CHAT_SESSIONS, null) ?: return emptyList()
         return runCatching {
-            json.decodeFromString<List<com.anisync.android.domain.ai.AiChatSession>>(raw)
+            jsonSerializer.decodeFromString<List<com.anisync.android.domain.ai.AiChatSession>>(raw)
         }.getOrDefault(emptyList())
     }
 
@@ -1092,14 +1096,14 @@ class AppSettings @Inject constructor(
             current.add(0, session)
         }
         _aiChatSessions.value = current
-        val serialized = runCatching { json.encodeToString(current) }.getOrNull()
+        val serialized = runCatching { jsonSerializer.encodeToString<List<com.anisync.android.domain.ai.AiChatSession>>(current) }.getOrNull()
         prefs.edit().putString(KEY_AI_CHAT_SESSIONS, serialized).apply()
     }
 
     fun deleteAiChatSession(sessionId: String) {
         val updated = _aiChatSessions.value.filter { it.id != sessionId }
         _aiChatSessions.value = updated
-        val serialized = runCatching { json.encodeToString(updated) }.getOrNull()
+        val serialized = runCatching { jsonSerializer.encodeToString<List<com.anisync.android.domain.ai.AiChatSession>>(updated) }.getOrNull()
         prefs.edit().putString(KEY_AI_CHAT_SESSIONS, serialized).apply()
     }
 
@@ -1245,6 +1249,7 @@ companion object {
         const val DEFAULT_PANE_CALENDAR_FRACTION = 0.42f
         private const val KEY_PANE_PROFILE_FRACTION = "pane_profile_fraction"
         const val DEFAULT_PANE_PROFILE_FRACTION = 0.32f
+        private const val KEY_LIBRARY_SORT_OPTION = "library_sort_option"
         private const val KEY_LIBRARY_SORT_ASCENDING = "library_sort_ascending"
         private const val DEFAULT_LIBRARY_SORT = "AIRING_SOON"
         private const val KEY_AI_CHAT_SESSIONS = "ai_chat_sessions_json"

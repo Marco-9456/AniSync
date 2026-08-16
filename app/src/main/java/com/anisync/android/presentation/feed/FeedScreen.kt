@@ -311,6 +311,7 @@ fun FeedScreen(
             }
         }
     }
+    }
 
     val editing = uiState.editingActivity
     if (editing != null) {

@@ -26,10 +26,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.anisync.android.data.ai.GeminiApiService
 
 private const val PAGE_SIZE = 25
-
-import com.anisync.android.data.ai.GeminiApiService
 
 @HiltViewModel
 class FeedViewModel @Inject constructor(
