@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Backspace
 import androidx.compose.material.icons.rounded.Fingerprint
@@ -68,6 +70,7 @@ fun CustomPasswordLockGate(
     val context = LocalContext.current
     val activity = remember(context) { context.findFragmentActivity() }
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     var pinInput by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -160,13 +163,14 @@ fun CustomPasswordLockGate(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp, vertical = 24.dp),
+                .verticalScroll(scrollState)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(72.dp)
+                    .size(56.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
@@ -175,40 +179,40 @@ fun CustomPasswordLockGate(
                     imageVector = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(28.dp)
                 )
             }
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(top = 16.dp)
+                modifier = Modifier.padding(top = 10.dp)
             )
 
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
+                modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
             )
 
             if (hasCustomPassword) {
                 // PIN Dots
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .padding(vertical = 12.dp)
+                        .padding(vertical = 8.dp)
                         .offset { IntOffset(shakeOffset.value.roundToInt(), 0) }
                 ) {
                     for (i in 0 until 4) {
                         val isFilled = i < pinInput.length
                         Box(
                             modifier = Modifier
-                                .size(16.dp)
+                                .size(14.dp)
                                 .clip(CircleShape)
                                 .background(
                                     when {
@@ -227,16 +231,16 @@ fun CustomPasswordLockGate(
                             text = msg,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 8.dp)
+                            modifier = Modifier.padding(top = 4.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Built-in Number Keypad (3x4)
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth(0.85f)
                 ) {
@@ -261,7 +265,7 @@ fun CustomPasswordLockGate(
                                                 onClick = { promptBiometrics() }
                                             )
                                         } else {
-                                            Spacer(modifier = Modifier.size(64.dp))
+                                            Spacer(modifier = Modifier.size(56.dp))
                                         }
                                     }
                                     "DEL" -> {
@@ -286,18 +290,20 @@ fun CustomPasswordLockGate(
                     onClick = { promptBiometrics() },
                     modifier = Modifier
                         .fillMaxWidth(0.7f)
-                        .height(52.dp),
+                        .height(48.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Icon(
                         imageVector = if (canUseBiometrics) Icons.Rounded.Fingerprint else Icons.Rounded.Lock,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.app_lock_unlock), fontWeight = FontWeight.SemiBold)
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -311,14 +317,14 @@ private fun KeypadDigitButton(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier
-            .size(64.dp)
+            .size(56.dp)
             .clip(CircleShape)
             .clickable(onClick = onClick)
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 text = digit,
-                fontSize = 24.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -335,7 +341,7 @@ private fun KeypadIconButton(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = Modifier
-            .size(64.dp)
+            .size(56.dp)
             .clip(CircleShape)
             .clickable(onClick = onClick)
     ) {
@@ -344,7 +350,7 @@ private fun KeypadIconButton(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(26.dp)
+                modifier = Modifier.size(22.dp)
             )
         }
     }

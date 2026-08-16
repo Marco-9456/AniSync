@@ -796,7 +796,11 @@ class ProfileRepositoryImpl @Inject constructor(
 
     private suspend fun fetchUserList(username: String, type: com.anisync.android.type.MediaType): Result<List<LibraryEntry>> {
         return safeApiCall {
-            val query = com.anisync.android.GetUserLibraryQuery(username = username, type = type)
+            val query = com.anisync.android.GetUserLibraryQuery(
+                userId = com.apollographql.apollo.api.Optional.absent(),
+                username = com.apollographql.apollo.api.Optional.present(username),
+                type = type
+            )
 
             val response = apolloClient.query(query)
                 .fetchPolicy(FetchPolicy.CacheFirst)

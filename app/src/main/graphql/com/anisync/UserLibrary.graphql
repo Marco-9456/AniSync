@@ -1,5 +1,5 @@
-query GetUserLibrary($username: String!, $type: MediaType!) {
-  MediaListCollection(userName: $username, type: $type) {
+query GetUserLibrary($userId: Int, $username: String, $type: MediaType!) {
+  MediaListCollection(userId: $userId, userName: $username, type: $type) {
     user {
       id
       mediaListOptions {

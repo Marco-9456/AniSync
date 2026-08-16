@@ -365,14 +365,14 @@ class AppSettings @Inject constructor(
     )
     val discoverSearchViewMode: StateFlow<DiscoverViewMode> = _discoverSearchViewMode.asStateFlow()
 
-    // Last selected library tab (per media type)
+    // Last selected library tab (per media type) - never reopen directly on Hidden tab
     private val _lastSelectedAnimeTab = MutableStateFlow(
-        prefs.getString(KEY_LAST_SELECTED_ANIME_TAB, null)
+        prefs.getString(KEY_LAST_SELECTED_ANIME_TAB, null)?.takeIf { it != "status:HIDDEN" }
     )
     val lastSelectedAnimeTab: StateFlow<String?> = _lastSelectedAnimeTab.asStateFlow()
 
     private val _lastSelectedMangaTab = MutableStateFlow(
-        prefs.getString(KEY_LAST_SELECTED_MANGA_TAB, null)
+        prefs.getString(KEY_LAST_SELECTED_MANGA_TAB, null)?.takeIf { it != "status:HIDDEN" }
     )
     val lastSelectedMangaTab: StateFlow<String?> = _lastSelectedMangaTab.asStateFlow()
 
@@ -885,9 +885,10 @@ class AppSettings @Inject constructor(
      * Persist the last selected library tab for anime.
      */
     fun setLastSelectedAnimeTab(tabId: String?) {
-        _lastSelectedAnimeTab.value = tabId
+        val sanitized = if (tabId == "status:HIDDEN") "all" else tabId
+        _lastSelectedAnimeTab.value = sanitized
         prefs.edit().apply {
-            if (tabId != null) putString(KEY_LAST_SELECTED_ANIME_TAB, tabId)
+            if (sanitized != null) putString(KEY_LAST_SELECTED_ANIME_TAB, sanitized)
             else remove(KEY_LAST_SELECTED_ANIME_TAB)
         }.apply()
     }
@@ -896,9 +897,10 @@ class AppSettings @Inject constructor(
      * Persist the last selected library tab for manga.
      */
     fun setLastSelectedMangaTab(tabId: String?) {
-        _lastSelectedMangaTab.value = tabId
+        val sanitized = if (tabId == "status:HIDDEN") "all" else tabId
+        _lastSelectedMangaTab.value = sanitized
         prefs.edit().apply {
-            if (tabId != null) putString(KEY_LAST_SELECTED_MANGA_TAB, tabId)
+            if (sanitized != null) putString(KEY_LAST_SELECTED_MANGA_TAB, sanitized)
             else remove(KEY_LAST_SELECTED_MANGA_TAB)
         }.apply()
     }

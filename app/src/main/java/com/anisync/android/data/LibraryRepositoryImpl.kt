@@ -100,8 +100,13 @@ class LibraryRepositoryImpl @Inject constructor(
                 username
             }
 
+            val activeUserId = accountStore.activeAccount.value?.id ?: currentOwnerId()
             val response = apolloClient.query(
-                GetUserLibraryQuery(username = actualUsername, type = type)
+                GetUserLibraryQuery(
+                    userId = if (username.isBlank() && activeUserId > 0) com.apollographql.apollo.api.Optional.present(activeUserId) else com.apollographql.apollo.api.Optional.absent(),
+                    username = com.apollographql.apollo.api.Optional.present(actualUsername),
+                    type = type
+                )
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
             .execute()

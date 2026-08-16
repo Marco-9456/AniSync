@@ -514,10 +514,11 @@ class LibraryViewModel @Inject constructor(
      * Persist the selected tab for the current media type.
      */
     private fun saveSelectedTab(tabId: String) {
+        val target = if (tabId == "status:HIDDEN") LIBRARY_ALL_TAB_ID else tabId
         if (_uiState.value.mediaType == com.anisync.android.type.MediaType.ANIME) {
-            appSettings.setLastSelectedAnimeTab(tabId)
+            appSettings.setLastSelectedAnimeTab(target)
         } else {
-            appSettings.setLastSelectedMangaTab(tabId)
+            appSettings.setLastSelectedMangaTab(target)
         }
     }
 

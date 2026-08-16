@@ -72,18 +72,18 @@ class AiChatViewModel @Inject constructor(
 
     private suspend fun loadFocusedMediaDetails(mediaId: Int) {
         try {
-            val details = detailsRepository.getMediaDetails(mediaId).first()
+            val details = detailsRepository.observeMediaDetails(mediaId).first()
             if (details != null) {
                 val focusContext = AiMediaFocusContext(
                     mediaId = details.id,
                     title = details.titleUserPreferred,
                     description = details.description,
                     genres = details.genres,
-                    format = details.format?.rawValue,
-                    status = details.status?.name,
-                    averageScore = details.averageScore,
+                    format = details.format,
+                    status = details.status,
+                    averageScore = details.score,
                     episodes = details.episodes,
-                    studio = details.studios.firstOrNull()?.name
+                    studio = details.studios.firstOrNull()?.name ?: details.studio?.name
                 )
                 _uiState.update { it.copy(focusedMedia = focusContext) }
             }
