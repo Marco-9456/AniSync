@@ -1,82 +1,68 @@
-# AniSync (Enhanced Fork)
+# AniSync (Fork)
 
-<p align="center">
-  <img src=".github/hero.png" alt="AniSync, a native AniList client for Android" width="100%">
-</p>
+A modified fork of AniSync, a native Android client for AniList.
 
-<p align="center">
-  <strong>A native Android client for AniList — track your anime and manga the way you want, now with Gemini AI integration, real-time airing countdowns, and PIN-locked Hidden/Ghost lists.</strong>
-</p>
+## Key Additions & Differences from Original
 
-<p align="center">
-  <a href="https://www.android.com/"><img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=flat&logo=android&logoColor=white" alt="Platform"></a>
-  <a href="https://developer.android.com/about/versions/oreo/"><img src="https://img.shields.io/badge/Min%20SDK-26-blue?style=flat" alt="Min SDK"></a>
-  <a href="https://kotlinlang.org/"><img src="https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?style=flat&logo=kotlin&logoColor=white" alt="Kotlin"></a>
-  <a href="https://developer.android.com/jetpack/compose"><img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=flat&logo=jetpackcompose&logoColor=white" alt="Compose"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue?style=flat" alt="License"></a>
-</p>
+### 1. Hidden / Ghost List System
+- **How the Hidden Logic Works:**
+  - When an anime or manga entry is marked with **"Hidden from status lists"** or set to **"Private"** on AniList (or in-app), AniSync classifies it as a ghost/hidden entry.
+  - Ghost entries are filtered out from all regular library tabs (Watching, Completed, Planning, Paused, Dropped, Repeating) and general search results.
+  - All hidden entries are collected into a dedicated **Hidden** tab in the Library.
+- **Protection & Security:**
+  - Protected with a built-in 4-digit numeric keypad with auto-unlock upon entering the correct PIN.
+  - The hidden item count badge on the tab is hidden for privacy.
+  - Whenever the app is reopened or restarted, the selected tab resets automatically to "All" so the hidden list is never left open or exposed.
 
-AniSync is a native Android app for [AniList.co](https://anilist.co) — a fast way to track your anime and manga, discover new stuff, and keep up with the community without a browser tab.
+### 2. Google Gemini AI Assistant
+- Integrated AI assistant powered by Google Gemini and Gemma models.
+- **Supported Models:**
+  - gemini-2.5-flash
+  - gemini-2.5-flash-lite
+  - gemini-3-flash-preview
+  - gemini-3.1-flash-lite
+  - gemini-3.5-flash
+  - gemini-3.5-flash-lite
+  - gemini-3.6-flash
+  - gemini-3.7-flash
+  - gemma-4-31b-it
+  - gemma-4-26b-a4b-it
+  - Custom model ID support
+- **Features:**
+  - Contextual In-Anime Chat: Opening AI Chat from an anime or manga details screen pre-loads full media context (synopsis, studios, scores, format, genres).
+  - User Data Toggle: Allows the AI to read your personal library data (progress, personal scores, notes, dates) when enabled.
+  - Spoiler Control: Toggle to strictly prevent or allow spoilers in answers.
+  - Google Search Grounding: Toggle for real-time web search grounding.
+  - Chat History: Dedicated History tab in AI Chat to view and review past conversations.
+  - Placement: AI Assistant button integrated into the top search bar across Home and Discover screens.
 
-> [!NOTE]
-> AniSync is not affiliated with AniList. It's a third-party client built for the AniList community.
+### 3. AI News Radar (Feed Screen)
+- Live anime and manga news feed tab powered by Google Gemini with real-time web search grounding.
+- Topic filters: All, Trailers & PVs, Release Dates, Cast & Announcements, and Industry News.
+- Persistent state: News results stay loaded across tab switching and only refresh when requested by the user.
 
----
+### 4. Real-time Airing Countdown Badges
+- Live episode countdown badges on Library "Watching" cards and Calendar view for anime airing today.
 
-## ✨ Features Added in this Fork
+### 5. Search Filters
+- Added "On my list only" filter in Discover search to restrict results to entries already present in the user's library.
 
-This fork includes several major enhancements, AI tools, and privacy improvements:
+### 6. Package Identity & Fast Release CI
+- Application ID `com.anisync.android.aq` to allow installing alongside the official upstream app.
+- Streamlined GitHub Actions workflow focused on building release APKs directly on push.
 
-### 🔒 Hidden / Ghost List & PIN Protection
+## Build and Installation
 
-#### How the Hidden Logic Works:
-1. **AniList Privacy Sync**: Whenever you edit an anime or manga entry and enable **"Hidden from status lists"** OR mark it **"Private"** (either on the AniList website or in-app), AniSync classifies it as a **Ghost/Hidden Entry**.
-2. **Total Isolation**: Hidden entries are automatically filtered out from all regular library tabs (*Watching, Completed, Planning, Paused, Dropped, Repeating*) and general library searches to keep your list completely discreet.
-3. **PIN-Locked Tab**: All hidden entries are moved into the dedicated **Hidden** tab in your Library.
-   - Protected by a built-in 4-digit numeric keypad with auto-unlock upon entering the correct PIN.
-   - **Session Security**: Whenever you restart or reopen the app, the tab resets automatically back to *All* so your hidden list is never left exposed.
+Build the release APK:
+```bash
+./gradlew assembleStableRelease
+```
 
----
+Build the debug APK:
+```bash
+./gradlew assembleStableDebug
+```
 
-### 🤖 Built-in Gemini AI Assistant
-- **Quick Access**: AI Chat icon located directly in the top search bar on Home and Discover screens.
-- **Context-Aware Anime Chat**: Open AI Chat from inside any anime/manga details screen to ask specific questions about the story, characters, themes, or recommendations with media context pre-loaded.
-- **User Data Context**: Option to allow the AI to access your personalized list data (progress, personal score, notes, start/finish dates) or keep conversations strictly general.
-- **Spoiler Protection**: Configurable spoiler toggle to strictly prevent or allow spoilers in AI answers.
-- **Custom Model Support**: Choose from preset models (`gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-3-flash-preview`, `gemma-4-31b-it`, etc.) or input any custom Gemini model ID.
-- **AI Chat History**: Dedicated History tab to review previous conversations.
+## License
 
----
-
-### 📡 AI News Radar (Feed Screen)
-- **Live Anime News**: Get up-to-the-minute anime & manga industry news, trailers, cast reveals, and release date announcements powered by Google Search Grounding.
-- **Persistent State**: News results stay loaded while navigating the app and only refresh on demand when you tap the refresh button.
-- **Topic Filters**: Browse by *All*, *Trailers & PVs*, *Release Dates*, *Cast & Announcements*, or *Industry News*.
-
----
-
-### ⏱️ Live Airing Countdown Badges
-- Dynamic real-time countdown badges on Library "Watching" cards and Calendar views for anime episodes airing today.
-
----
-
-## 📱 Base Features
-
-- **Tracking** — Statuses, scores, progress, notes, and custom lists for your anime and manga.
-- **Search & Discovery** — Trending, seasonal, and upcoming titles with multi-criteria filters.
-- **Media Details** — Characters, voice actors, staff, trailers, reviews, recommendations, and streaming links.
-- **Feed & Forums** — Social activity feed, forum threads, posts, replies, and notifications.
-- **Stats** — Detailed breakdown charts of your anime and manga habits.
-- **Widgets** — Airing schedule widgets for your Android home screen.
-
----
-
-## 🛠️ Building & CI
-
-This repository uses automated GitHub Actions workflows to compile **Release APKs** on push. You can download the latest builds directly from the GitHub Actions tab or Releases section.
-
----
-
-## 📄 License
-
-This project's source code is licensed under the **GNU General Public License v3.0** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 (GPLv3).
