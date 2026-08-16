@@ -41,11 +41,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,54 +54,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.anisync.android.data.AppSettings
-import com.anisync.android.data.ai.GeminiApiService
 import com.anisync.android.domain.ai.AiNewsItem
 import com.anisync.android.presentation.components.StatusBadge
 import com.anisync.android.util.launchUrl
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AiNewsRadarSection(
-    geminiApiService: GeminiApiService,
-    appSettings: AppSettings,
+    newsItems: List<AiNewsItem>,
+    isLoading: Boolean,
+    errorMessage: String?,
+    apiKey: String,
+    onFetchNews: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    val apiKey = appSettings.geminiApiKey.value
-    val model = appSettings.geminiModel.value
 
     var selectedTopic by remember { mutableStateOf("All") }
-    var newsItems by remember { mutableStateOf<List<AiNewsItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val topics = listOf("All", "Trailers & PVs", "Release Dates", "Cast & Announcements", "Industry News")
-
-    fun loadNews(topic: String) {
-        if (apiKey.isBlank()) return
-        isLoading = true
-        errorMessage = null
-        val currentDateTime = java.text.SimpleDateFormat("EEEE, MMMM d, yyyy, HH:mm z", java.util.Locale.ENGLISH).format(java.util.Date())
-        coroutineScope.launch {
-            try {
-                val results = geminiApiService.fetchNewsRadar(
-                    apiKey = apiKey,
-                    modelName = model,
-                    topic = topic,
-                    currentDateTime = currentDateTime
-                )
-                newsItems = results
-            } catch (e: Exception) {
-                errorMessage = e.message ?: "Failed to fetch anime news radar"
-            } finally {
-                isLoading = false
-            }
-        }
-    }
 
     if (apiKey.isBlank()) {
         Column(
@@ -170,7 +140,7 @@ fun AiNewsRadarSection(
                         selected = selectedTopic == topic,
                         onClick = {
                             selectedTopic = topic
-                            loadNews(topic)
+                            onFetchNews(topic)
                         },
                         label = { Text(topic) },
                         colors = FilterChipDefaults.filterChipColors(
@@ -182,7 +152,7 @@ fun AiNewsRadarSection(
             }
 
             IconButton(
-                onClick = { loadNews(selectedTopic) },
+                onClick = { onFetchNews(selectedTopic) },
                 enabled = !isLoading
             ) {
                 if (isLoading) {
@@ -236,7 +206,7 @@ fun AiNewsRadarSection(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { loadNews(selectedTopic) }) {
+                Button(onClick = { onFetchNews(selectedTopic) }) {
                     Text("Retry")
                 }
             }
@@ -278,7 +248,7 @@ fun AiNewsRadarSection(
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
-                    onClick = { loadNews(selectedTopic) },
+                    onClick = { onFetchNews(selectedTopic) },
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))

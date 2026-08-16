@@ -82,6 +82,9 @@ fun FeedScreen(
     viewModel: FeedViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val newsItems by viewModel.newsItems.collectAsStateWithLifecycle()
+    val newsLoading by viewModel.newsLoading.collectAsStateWithLifecycle()
+    val newsError by viewModel.newsError.collectAsStateWithLifecycle()
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val pullToRefreshState = rememberPullToRefreshState()
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
@@ -174,8 +177,11 @@ fun FeedScreen(
     ) { innerPadding ->
         if (selectedFeedTab == 1) {
             AiNewsRadarSection(
-                geminiApiService = viewModel.geminiApiService,
-                appSettings = viewModel.appSettings,
+                newsItems = newsItems,
+                isLoading = newsLoading,
+                errorMessage = newsError,
+                apiKey = viewModel.appSettings.geminiApiKey.value,
+                onFetchNews = { topic -> viewModel.fetchNews(topic) },
                 onNavigateToSettings = onNavigateToSettings,
                 modifier = Modifier
                     .fillMaxSize()

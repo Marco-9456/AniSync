@@ -54,6 +54,39 @@ class FeedViewModel @Inject constructor(
     private var hasLoadedInitially = false
     private var loadJob: Job? = null
 
+    // AI News Radar persistent state — survives tab switches
+    private val _newsItems = MutableStateFlow<List<com.anisync.android.domain.ai.AiNewsItem>>(emptyList())
+    val newsItems: StateFlow<List<com.anisync.android.domain.ai.AiNewsItem>> = _newsItems.asStateFlow()
+
+    private val _newsLoading = MutableStateFlow(false)
+    val newsLoading: StateFlow<Boolean> = _newsLoading.asStateFlow()
+
+    private val _newsError = MutableStateFlow<String?>(null)
+    val newsError: StateFlow<String?> = _newsError.asStateFlow()
+
+    fun fetchNews(topic: String) {
+        val apiKey = appSettings.geminiApiKey.value
+        if (apiKey.isBlank()) return
+        _newsLoading.value = true
+        _newsError.value = null
+        val currentDateTime = java.text.SimpleDateFormat("EEEE, MMMM d, yyyy, HH:mm z", java.util.Locale.ENGLISH).format(java.util.Date())
+        viewModelScope.launch {
+            try {
+                val results = geminiApiService.fetchNewsRadar(
+                    apiKey = apiKey,
+                    modelName = appSettings.geminiModel.value,
+                    topic = topic,
+                    currentDateTime = currentDateTime
+                )
+                _newsItems.value = results
+            } catch (e: Exception) {
+                _newsError.value = e.message ?: "Failed to fetch anime news"
+            } finally {
+                _newsLoading.value = false
+            }
+        }
+    }
+
     init {
         // Reflect like / subscribe / reply / delete made on the activity detail
         // screen (or elsewhere) back onto the cached feed items without a refetch.
