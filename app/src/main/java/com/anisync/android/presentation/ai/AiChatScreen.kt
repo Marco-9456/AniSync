@@ -67,9 +67,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,9 +81,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anisync.android.domain.ai.AiChatSession
 import com.anisync.android.domain.ai.ChatMessage
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.util.launchUrl
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -101,7 +102,6 @@ fun AiChatScreen(
     val listState = rememberLazyListState()
 
     var inputText by remember { mutableStateOf("") }
-
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -205,7 +205,6 @@ fun AiChatScreen(
         },
         bottomBar = {
             if (selectedTab == 0) {
-                // Bottom input composer bar
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     modifier = Modifier.fillMaxWidth()
@@ -272,7 +271,6 @@ fun AiChatScreen(
         }
     ) { paddingValues ->
         if (selectedTab == 1) {
-            // History Tab
             AiChatHistoryView(
                 sessions = sessions,
                 currentSessionId = uiState.currentSessionId,
@@ -292,274 +290,280 @@ fun AiChatScreen(
                     .padding(paddingValues)
             )
         } else {
-            // Chat Tab
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-            // Toggles Row (Web Search, User Data, Spoilers)
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                item {
-                    FilterChip(
-                        selected = uiState.webSearchEnabled,
-                        onClick = { viewModel.toggleWebSearch(!uiState.webSearchEnabled) },
-                        label = { Text("Web Search") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Rounded.Language,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
+                // Toggles Row (Web Search, User Data, Spoilers)
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    item {
+                        FilterChip(
+                            selected = uiState.webSearchEnabled,
+                            onClick = { viewModel.toggleWebSearch(!uiState.webSearchEnabled) },
+                            label = { Text("Web Search") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Rounded.Language,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
-                    )
-                }
-
-                item {
-                    FilterChip(
-                        selected = uiState.userDataEnabled,
-                        onClick = { viewModel.toggleUserData(!uiState.userDataEnabled) },
-                        label = { Text("User Data") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Rounded.AccountCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    )
-                }
-
-                item {
-                    FilterChip(
-                        selected = uiState.allowSpoilersEnabled,
-                        onClick = { viewModel.toggleAllowSpoilers(!uiState.allowSpoilersEnabled) },
-                        label = { Text(if (uiState.allowSpoilersEnabled) "Spoilers: ON" else "Spoilers: OFF") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Rounded.Warning,
-                                contentDescription = null,
-                                tint = if (uiState.allowSpoilersEnabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.errorContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    )
-                }
-            }
-
-            // Main Content Area
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                if (!uiState.hasApiKey) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.errorContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.AutoAwesome,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                            text = "Google Gemini API Key Needed",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = "To chat with AniSync AI, please add your Google Gemini API key in Settings -> AI Assistant. It is completely free from Google AI Studio.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Button(
-                            onClick = onNavigateToSettings,
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text("Open AI Settings")
-                        }
                     }
-                } else if (uiState.messages.isEmpty()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (uiState.focusedMedia != null) Icons.Rounded.Movie else Icons.Rounded.AutoAwesome,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(28.dp)
+
+                    item {
+                        FilterChip(
+                            selected = uiState.userDataEnabled,
+                            onClick = { viewModel.toggleUserData(!uiState.userDataEnabled) },
+                            label = { Text("User Data") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Rounded.AccountCircle,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
                             )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                            text = if (uiState.focusedMedia != null) "Chatting about ${uiState.focusedMedia!!.title}" else "How can I help you today?",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center
                         )
+                    }
 
-                        Text(
-                            text = if (uiState.focusedMedia != null) "Ask about the plot, characters, ratings, themes, or what to watch next after this title."
-                            else "Ask recommendations, character trivia, opinions on your scored anime, or questions about your library.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+                    item {
+                        FilterChip(
+                            selected = uiState.allowSpoilersEnabled,
+                            onClick = { viewModel.toggleAllowSpoilers(!uiState.allowSpoilersEnabled) },
+                            label = { Text(if (uiState.allowSpoilersEnabled) "Spoilers: ON" else "Spoilers: OFF") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Rounded.Warning,
+                                    contentDescription = null,
+                                    tint = if (uiState.allowSpoilersEnabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.errorContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
                         )
+                    }
+                }
 
-                        val suggestions = if (uiState.focusedMedia != null) {
-                            listOf(
-                                "What are the key themes and appeal of this show?",
-                                "What anime should I watch if I love this?",
-                                "Explain the character dynamics in this show"
-                            )
-                        } else {
-                            listOf(
-                                "Recommend anime similar to Frieren",
-                                "Look at my notes and give your take on my scores",
-                                "What are the top trending anime this season?"
-                            )
-                        }
-
+                // Main Content Area
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    if (!uiState.hasApiKey) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            suggestions.forEach { suggestion ->
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    onClick = { viewModel.sendMessage(suggestion) },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(
-                                        text = suggestion,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                                    )
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = "Gemini API Key Required",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "To use the AI Assistant, enter your Google Gemini API key in Settings.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Button(
+                                onClick = onNavigateToSettings,
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Text("Open AI Settings")
+                            }
+                        }
+                    } else if (uiState.messages.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (uiState.focusedMedia != null) Icons.Rounded.Movie else Icons.Rounded.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = if (uiState.focusedMedia != null) "Chatting about ${uiState.focusedMedia!!.title}" else "How can I help you today?",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = if (uiState.focusedMedia != null) {
+                                    "I have access to details about this anime. Ask for trivia, watch order, analysis, or recommendations!"
+                                } else {
+                                    "Ask for recommendations, anime discussions, release schedules, or information about your AniList library."
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            val suggestions = if (uiState.focusedMedia != null) {
+                                listOf(
+                                    "Give me a spoiler-free summary",
+                                    "What is the watch order?",
+                                    "Recommend anime with similar vibes"
+                                )
+                            } else {
+                                listOf(
+                                    "Recommend anime similar to Frieren",
+                                    "Look at my notes and give your take on my scores",
+                                    "What are the top trending anime this season?"
+                                )
+                            }
+
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                suggestions.forEach { suggestion ->
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        onClick = { viewModel.sendMessage(suggestion) },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = suggestion,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        item { Spacer(modifier = Modifier.height(8.dp)) }
+                    } else {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            item { Spacer(modifier = Modifier.height(8.dp)) }
 
-                        items(uiState.messages, key = { it.id }) { message ->
-                            ChatBubble(message = message, onUrlClick = { context.launchUrl(it) })
-                        }
+                            items(uiState.messages, key = { it.id }) { message ->
+                                ChatBubble(message = message, onUrlClick = { context.launchUrl(it) })
+                            }
 
-                        if (uiState.isLoading) {
-                            item {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp)
-                                ) {
-                                    Box(
+                            if (uiState.isLoading) {
+                                item {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier
-                                            .size(32.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primaryContainer),
-                                        contentAlignment = Alignment.Center
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp)
                                     ) {
-                                        Icon(
-                                            Icons.Rounded.AutoAwesome,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(16.dp),
-                                        color = MaterialTheme.colorScheme.surfaceContainerHigh
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                                        Box(
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.primaryContainer),
+                                            contentAlignment = Alignment.Center
                                         ) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(14.dp),
-                                                strokeWidth = 2.dp,
-                                                color = MaterialTheme.colorScheme.primary
+                                            Icon(
+                                                Icons.Rounded.AutoAwesome,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
                                             )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = "Thinking...",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(16.dp),
+                                            color = MaterialTheme.colorScheme.surfaceContainerHigh
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(14.dp),
+                                                    strokeWidth = 2.dp,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = "Thinking...",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        item { Spacer(modifier = Modifier.height(8.dp)) }
+                            item { Spacer(modifier = Modifier.height(8.dp)) }
+                        }
                     }
                 }
             }
@@ -569,9 +573,9 @@ fun AiChatScreen(
 
 @Composable
 private fun AiChatHistoryView(
-    sessions: List<com.anisync.android.domain.ai.AiChatSession>,
+    sessions: List<AiChatSession>,
     currentSessionId: String,
-    onSelectSession: (com.anisync.android.domain.ai.AiChatSession) -> Unit,
+    onSelectSession: (AiChatSession) -> Unit,
     onDeleteSession: (String) -> Unit,
     onNewChat: () -> Unit,
     modifier: Modifier = Modifier
