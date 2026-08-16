@@ -1,4 +1,4 @@
-name: Build Release and Debug APKs
+name: Build Release APK
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    name: Build APKs
+    name: Build Release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -29,10 +29,10 @@ jobs:
         with:
           gradle-version: 8.13
 
-      - name: Build Release and Debug APKs
+      - name: Build Release APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleStableRelease assembleStableDebug --stacktrace
+          ./gradlew assembleStableRelease --stacktrace
 
       - name: Upload Release APKs
         uses: actions/upload-artifact@v4
@@ -40,10 +40,3 @@ jobs:
           name: anisync-release-apk
           path: |
             app/build/outputs/apk/stable/release/*.apk
-
-      - name: Upload Debug APKs
-        uses: actions/upload-artifact@v4
-        with:
-          name: anisync-debug-apk
-          path: |
-            app/build/outputs/apk/stable/debug/*.apk
