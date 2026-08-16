@@ -154,7 +154,7 @@ class AiChatViewModel @Inject constructor(
                 return@withContext allNotesEntries.take(3).map { entry ->
                     AiUserNoteContext(
                         title = entry.getTitle(titleLang),
-                        mediaType = entry.type.name,
+                        mediaType = entry.type?.name ?: "ANIME",
                         status = entry.status.name,
                         score = entry.score,
                         progress = entry.progress,
@@ -173,7 +173,7 @@ class AiChatViewModel @Inject constructor(
             matched.map { entry ->
                 AiUserNoteContext(
                     title = entry.getTitle(titleLang),
-                    mediaType = entry.type.name,
+                    mediaType = entry.type?.name ?: "ANIME",
                     status = entry.status.name,
                     score = entry.score,
                     progress = entry.progress,
