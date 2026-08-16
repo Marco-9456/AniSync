@@ -1,11 +1,11 @@
-# AniSync
+# AniSync (Enhanced Fork)
 
 <p align="center">
   <img src=".github/hero.png" alt="AniSync, a native AniList client for Android" width="100%">
 </p>
 
 <p align="center">
-  <strong>A native Android client for AniList ΓÇö track your anime and manga the way you want</strong>
+  <strong>A native Android client for AniList — track your anime and manga the way you want, now with Gemini AI integration, real-time airing countdowns, and PIN-locked Hidden/Ghost lists.</strong>
 </p>
 
 <p align="center">
@@ -16,101 +16,67 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue?style=flat" alt="License"></a>
 </p>
 
-<p align="center">
-  <a href="https://github.com/Marco-9456/AniSync/releases"><img src="https://img.shields.io/github/downloads/Marco-9456/AniSync/total?style=flat&logo=github&color=brightgreen&label=Downloads" alt="Total Downloads"></a>
-  <a href="https://github.com/Marco-9456/AniSync/releases/latest"><img src="https://img.shields.io/github/v/release/Marco-9456/AniSync?style=flat&logo=github&label=Latest" alt="Latest Release"></a>
-  <a href="https://f-droid.org/packages/com.anisync.android/"><img alt="F-Droid Version" src="https://img.shields.io/f-droid/v/com.anisync.android?style=flat&logo=f-droid&logoColor=%239BB9CC&color=%23CC8F91"></a>
-  <a href="https://github.com/Marco-9456/AniSync/stargazers"><img src="https://img.shields.io/github/stars/Marco-9456/AniSync?style=flat&logo=github&color=yellow" alt="Stars"></a>
-  <a href="https://hosted.weblate.org/engage/anisync/"><img src="https://hosted.weblate.org/widget/anisync/app/svg-badge.svg" alt="Translation status"></a>
-</p>
-
-<p align="center">
-  <a href="https://ko-fi.com/marco_9456"><img src="https://img.shields.io/badge/Ko--fi-Support-FF5E5B?style=flat&logo=ko-fi&logoColor=white" alt="Ko-Fi"></a>
-  <a href="https://github.com/sponsors/Marco-9456"><img src="https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=flat&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors"></a>
-</p>
-
-AniSync is a native Android app for [AniList.co](https://anilist.co) ΓÇö a fast way to track your anime and manga, discover new stuff, and keep up with the community. No browser tab required.
+AniSync is a native Android app for [AniList.co](https://anilist.co) — a fast way to track your anime and manga, discover new stuff, and keep up with the community without a browser tab.
 
 > [!NOTE]
 > AniSync is not affiliated with AniList. It's a third-party client built for the AniList community.
 
 ---
 
-<p align="center">
-  <img src=".github/showcase.png" width="100%" alt="AniSync screens: library, media details, discover, feed and forums, profile, home-screen widgets and notifications">
-</p>
+## ✨ Features Added in this Fork
 
-<p align="center">
-  <img src=".github/share-cards.png" width="100%" alt="AniSync share cards for media, characters, staff, reviews, favourites and stats">
-</p>
+This fork includes several major enhancements, AI tools, and privacy improvements:
 
----
+### 🔒 Hidden / Ghost List & PIN Protection
 
-## :sparkles: Features
-
-Everything you'd want from an AniList client, in one app:
-
-- **Tracking** ΓÇö obviously. Statuses, scores, progress, notes, and custom lists for your anime and manga.
-- **Search & Discovery** ΓÇö trending, seasonal, and upcoming titles, plus proper filters for when you know exactly what you're after.
-- **Media Details** ΓÇö characters, voice actors, staff, trailers, reviews, recommendations, and where to watch.
-- **Feed** ΓÇö see what your friends are watching and judge them accordingly.
-- **Forums** ΓÇö browse, post, like, and subscribe without ever leaving the app.
-- **Stats** ΓÇö nice charts that prove you watch too much anime.
-- **Widgets & Notifications** ΓÇö airing schedules on your home screen and reminders before episodes drop.
+#### How the Hidden Logic Works:
+1. **AniList Privacy Sync**: Whenever you edit an anime or manga entry and enable **"Hidden from status lists"** OR mark it **"Private"** (either on the AniList website or in-app), AniSync classifies it as a **Ghost/Hidden Entry**.
+2. **Total Isolation**: Hidden entries are automatically filtered out from all regular library tabs (*Watching, Completed, Planning, Paused, Dropped, Repeating*) and general library searches to keep your list completely discreet.
+3. **PIN-Locked Tab**: All hidden entries are moved into the dedicated **Hidden** tab in your Library.
+   - Protected by a built-in 4-digit numeric keypad with auto-unlock upon entering the correct PIN.
+   - **Session Security**: Whenever you restart or reopen the app, the tab resets automatically back to *All* so your hidden list is never left exposed.
 
 ---
 
-## :scroll: Changelog
-
-Curious what's new (or what broke and got fixed)? Check the [CHANGELOG](docs/CHANGELOG.md) or the [releases page](https://github.com/Marco-9456/AniSync/releases).
-
----
-
-## Contributing
-
-Contributions are welcome! Read [CONTRIBUTING.md](docs/CONTRIBUTING.md), fork, branch, and open a PR.
+### 🤖 Built-in Gemini AI Assistant
+- **Quick Access**: AI Chat icon located directly in the top search bar on Home and Discover screens.
+- **Context-Aware Anime Chat**: Open AI Chat from inside any anime/manga details screen to ask specific questions about the story, characters, themes, or recommendations with media context pre-loaded.
+- **User Data Context**: Option to allow the AI to access your personalized list data (progress, personal score, notes, start/finish dates) or keep conversations strictly general.
+- **Spoiler Protection**: Configurable spoiler toggle to strictly prevent or allow spoilers in AI answers.
+- **Custom Model Support**: Choose from preset models (`gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-3-flash-preview`, `gemma-4-31b-it`, etc.) or input any custom Gemini model ID.
+- **AI Chat History**: Dedicated History tab to review previous conversations.
 
 ---
 
-## License
-
-This project's source code is licensed under the **GNU General Public License v3.0** ΓÇö see the [LICENSE](LICENSE) file for details.
-
-> [!WARNING]
-> **Brand & Naming Guidelines**
->
-> While the source code is freely available under the GPLv3, the **AniSync** name and brand identity are protected. Any derivative works ΓÇö including forks and unofficial builds ΓÇö are strictly prohibited from using "AniSync" as the name for an AniList client application.
+### 📡 AI News Radar (Feed Screen)
+- **Live Anime News**: Get up-to-the-minute anime & manga industry news, trailers, cast reveals, and release date announcements powered by Google Search Grounding.
+- **Persistent State**: News results stay loaded while navigating the app and only refresh on demand when you tap the refresh button.
+- **Topic Filters**: Browse by *All*, *Trailers & PVs*, *Release Dates*, *Cast & Announcements*, or *Industry News*.
 
 ---
 
-## Acknowledgments
-
-- [AniList](https://anilist.co) for the excellent GraphQL API
-- [Material Design 3](https://m3.material.io) for the design system
-- [Seal](https://github.com/JunkFood02/Seal) and [ReadYou](https://github.com/ReadYouApp/ReadYou) for UI/UX inspiration
-- The Android and Kotlin communities for amazing tools and libraries
+### ⏱️ Live Airing Countdown Badges
+- Dynamic real-time countdown badges on Library "Watching" cards and Calendar views for anime episodes airing today.
 
 ---
 
-## The FAQ
+## 📱 Base Features
 
-* *Why isn't the app on the Play Store?*
-  * I need MONEY <img src="https://files.catbox.moe/uqa4ad.jpg" width="50" alt="DUTCH"> ΓÇö and a new laptop or rent matters more to me than handing it to Google.
-* *Where do I actually get it, then?*
-  * F-Droid or the GitHub releases page ΓÇö the badges up top link straight to both. That's it. No sketchy APK mirror sites, please.
-* *Is it free? Any ads or tracking?*
-  * Completely free and open source under GPLv3. No ads, no trackers, no analytics, no telemetry ΓÇö I don't collect anything about you.
-* *Is it safe to log in?*
-  * Yep. Login goes through AniList's official OAuth, so the app never sees your password. Your access token is encrypted on-device with AES-256-GCM and only ever talks to AniList's API ΓÇö nothing else.
-* *Why isn't the app on the AniList clients list?*
-  * It's a bit complicated, but long story short: a mod told me the app wasn't getting added because the release thread was AI-generated. I rewrote it, let them know, and then didn't hear anything for quite a while. When I followed up recently, the same mod now says the app is vibecoded, so they won't add it. I asked right away how they reached that conclusion ΓÇö and never heard back again.
+- **Tracking** — Statuses, scores, progress, notes, and custom lists for your anime and manga.
+- **Search & Discovery** — Trending, seasonal, and upcoming titles with multi-criteria filters.
+- **Media Details** — Characters, voice actors, staff, trailers, reviews, recommendations, and streaming links.
+- **Feed & Forums** — Social activity feed, forum threads, posts, replies, and notifications.
+- **Stats** — Detailed breakdown charts of your anime and manga habits.
+- **Widgets** — Airing schedule widgets for your Android home screen.
 
-  Getting told your first open-source project is "vibecoded" stung, not gonna lie. But whatever. If a mod with actual front-end and back-end experience reviews the app down the line and changes their mind, great; if not, no hard feelings either. I still love AniList :)
-* *Why another AniList client? Aren't there enough?*
-  * Maybe! But I wanted one that felt genuinely native and looked like a proper Material 3 app. Building it turned out to be way more fun than I expected, so here we are.
-* *Found a bug or want a feature?*
-  * Open an issue on GitHub. I actually read them and usually reply fast (see the vibecoded saga above). No promises on every feature, but good ideas tend to make it in.
-* *Can I help translate?*
-  * Please do ΓÇö AniSync is on Weblate (badge's up top). Pick your language and go, no coding required.
-* *Will it ever come to iOS?*
-  * Probably not. Compose Multiplatform exists, but I don't want to touch it ΓÇö every multiplatform app I've tried ran noticeably worse than native Android, since the iOS side wasn't native. Unless I actually learn Swift and SwiftUI (not happening any time soon), it's staying Android-only.
+---
+
+## 🛠️ Building & CI
+
+This repository uses automated GitHub Actions workflows to compile **Release APKs** on push. You can download the latest builds directly from the GitHub Actions tab or Releases section.
+
+---
+
+## 📄 License
+
+This project's source code is licensed under the **GNU General Public License v3.0** — see the [LICENSE](LICENSE) file for details.
