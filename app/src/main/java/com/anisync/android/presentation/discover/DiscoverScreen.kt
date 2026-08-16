@@ -35,6 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material3.AppBarWithSearch
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExpandedFullScreenSearchBar
@@ -134,6 +135,7 @@ fun DiscoverScreen(
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
     onReviewClick: (Int) -> Unit = {},
     onRecentReviewsSeeAllClick: (MediaType) -> Unit = {},
+    onNavigateToAiChat: () -> Unit = {},
     // App nav controller, threaded only so the wide (expanded) search overlay can host its results in a
     // two-pane list-detail. Null on compact/medium (and previews), where search push-navigates instead.
     navController: NavHostController? = null,
@@ -330,7 +332,8 @@ fun DiscoverScreen(
                         coroutineScope = coroutineScope,
                         keyboardController = keyboardController,
                         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
-                        onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) }
+                        onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) },
+                        onNavigateToAiChat = onNavigateToAiChat
                     )
                 }
             }
@@ -459,7 +462,8 @@ private fun DiscoverTopBar(
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
     onSearch: () -> Unit,
-    onMediaTypeChange: (MediaType) -> Unit
+    onMediaTypeChange: (MediaType) -> Unit,
+    onNavigateToAiChat: () -> Unit = {}
 ) {
     val inputModeManager = LocalInputModeManager.current
     Column(
@@ -485,7 +489,8 @@ private fun DiscoverTopBar(
                     mediaType = mediaType,
                     coroutineScope = coroutineScope,
                     keyboardController = keyboardController,
-                    onSearch = onSearch
+                    onSearch = onSearch,
+                    onNavigateToAiChat = onNavigateToAiChat
                 )
             },
             colors = SearchBarDefaults.appBarWithSearchColors(
@@ -512,7 +517,8 @@ private fun SearchInputField(
     mediaType: MediaType,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
-    onSearch: () -> Unit
+    onSearch: () -> Unit,
+    onNavigateToAiChat: () -> Unit = {}
 ) {
     val isExpanded = searchBarState.currentValue == SearchBarValue.Expanded
     val hasText by remember { derivedStateOf { textFieldState.text.isNotEmpty() } }
@@ -568,6 +574,14 @@ private fun SearchInputField(
                     hasText = hasText,
                     onClearText = { textFieldState.edit { replace(0, length, "") } }
                 )
+            } else {
+                IconButton(onClick = onNavigateToAiChat) {
+                    Icon(
+                        imageVector = Icons.Rounded.AutoAwesome,
+                        contentDescription = "AI Assistant",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     )

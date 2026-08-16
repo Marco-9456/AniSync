@@ -69,6 +69,7 @@ fun DiscoverListDetail(
     // sourceSection = the TransitionKeys.DISCOVER_* prefix of the tapped section; becomes
     // MediaDetails.sourceScreen so the return morph targets the exact card tapped.
     onMediaClickFullScreen: (mediaId: Int, sourceSection: String) -> Unit,
+    onNavigateToAiChat: () -> Unit = {},
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
@@ -90,6 +91,7 @@ fun DiscoverListDetail(
             onRecentReviewsSeeAllClick = { mediaType ->
                 navController.navigate(RecentReviews(mediaType.name))
             },
+            onNavigateToAiChat = onNavigateToAiChat,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )

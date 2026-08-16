@@ -296,27 +296,6 @@ fun MainScreen(
         statusBarColorHolder.value = if (isBackgroundRoot) backgroundColor else Color.Unspecified
     }
 
-    val appSettings = LocalAppSettings.current
-    val aiChatButtonEnabled by appSettings.aiChatButtonEnabled.collectAsStateWithLifecycle()
-
-    val isOnHomeOrDiscover by remember {
-        derivedStateOf {
-            val dest = currentBackStackEntry?.destination
-            dest?.hasRoute<Library>() == true || dest?.hasRoute<Discover>() == true
-        }
-    }
-
-    val isBottomBarVisibleOnScreen by remember(navBarSuppressor) {
-        derivedStateOf {
-            val dest = currentBackStackEntry?.destination
-            val onWhitelistedRoute = dest?.hasRoute<Library>() == true ||
-                    dest?.hasRoute<Discover>() == true ||
-                    dest?.hasRoute<Feed>() == true ||
-                    dest?.hasRoute<Forum>() == true ||
-                    dest?.hasRoute<Profile>() == true
-            onWhitelistedRoute && navBarSuppressor?.isSuppressed != true
-        }
-    }
 
     ProvideToastManager(toastManager = viewModel.toastManager) {
         CompositionLocalProvider(LocalMainNavBarSuppressor provides navBarSuppressor) {
@@ -340,34 +319,6 @@ fun MainScreen(
                         onTabSelected = viewModel::onMainTabSelected,
                         toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
                     )
-                }
-
-                // AI Chat Button (bottom-left corner, only on Home and Discover pages)
-                val showAiButton = aiChatButtonEnabled && isOnHomeOrDiscover && isBottomBarVisibleOnScreen
-                AnimatedVisibility(
-                    visible = showAiButton,
-                    enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
-                    exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom),
-                    modifier = Modifier.align(Alignment.BottomStart)
-                ) {
-                    val barInset = if (navBarShowLabels) 96.dp else 76.dp
-                    val bottomPadding = if (usesBottomBar) {
-                        if (isBottomBarVisibleOnScreen) barInset + 16.dp else 24.dp
-                    } else {
-                        24.dp
-                    }
-                    val startPadding = if (!usesBottomBar && isBottomBarVisibleOnScreen) 108.dp else 20.dp
-
-                    FloatingActionButton(
-                        onClick = { navController.navigate(AiChat()) },
-                        modifier = Modifier
-                            .padding(start = startPadding, bottom = bottomPadding)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.AutoAwesome,
-                            contentDescription = "AI Assistant"
-                        )
-                    }
                 }
             }
         }

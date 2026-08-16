@@ -58,6 +58,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.ViewAgenda
@@ -182,6 +183,7 @@ fun LibraryScreen(
     onMediaClick: (Int) -> Unit,
     onNavigateToCalendar: () -> Unit,
     onNavigateToNotes: () -> Unit,
+    onNavigateToAiChat: () -> Unit = {},
     viewModel: LibraryViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: androidx.compose.animation.AnimatedVisibilityScope
@@ -358,7 +360,8 @@ fun LibraryScreen(
                 showSortMenu = true
             },
             onNavigateToCalendar = onNavigateToCalendar,
-            onNavigateToNotes = onNavigateToNotes
+            onNavigateToNotes = onNavigateToNotes,
+            onNavigateToAiChat = onNavigateToAiChat
         )
     }
     val isLibraryEnteringFromBackStack by remember {
@@ -967,7 +970,8 @@ private fun LibrarySearchBarInputField(
     onToggleView: () -> Unit,
     onToggleSort: () -> Unit,
     onNavigateToCalendar: () -> Unit,
-    onNavigateToNotes: () -> Unit
+    onNavigateToNotes: () -> Unit,
+    onNavigateToAiChat: () -> Unit = {}
 ) {
     SearchBarDefaults.InputField(
         enabled = !showListManagement,
@@ -1005,6 +1009,14 @@ private fun LibrarySearchBarInputField(
                 }
             } else if (searchBarState.currentValue == SearchBarValue.Collapsed) {
                 Row {
+                    IconButton(onClick = onNavigateToAiChat) {
+                        Icon(
+                            imageVector = Icons.Rounded.AutoAwesome,
+                            contentDescription = "AI Assistant",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
                     IconButton(onClick = onNavigateToCalendar) {
                         Icon(
                             imageVector = Icons.Default.CalendarMonth,

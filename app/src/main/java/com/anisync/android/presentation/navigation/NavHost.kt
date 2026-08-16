@@ -299,6 +299,7 @@ fun AniSyncNavHost(
                     onMediaClickFullScreen = onLibraryMediaClick,
                     onNavigateToCalendar = { navController.navigate(Calendar) },
                     onNavigateToNotes = { navController.navigate(Notes) },
+                    onNavigateToAiChat = { navController.navigate(AiChat()) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -330,6 +331,7 @@ fun AniSyncNavHost(
                     // The section prefix rides through as MediaDetails.sourceScreen so the
                     // return morph targets the exact card tapped (per-section shared keys).
                     onMediaClickFullScreen = onMediaClick,
+                    onNavigateToAiChat = { navController.navigate(AiChat()) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )

@@ -170,8 +170,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("Boolean", "IS_DEBUG_BUILD", "false")
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (signingConfigs.getByName("release").storeFile?.exists() == true) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             vcsInfo { include = false }
         }
         debug {
