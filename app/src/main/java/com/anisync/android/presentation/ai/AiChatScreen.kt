@@ -23,10 +23,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Send
@@ -40,6 +42,7 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Movie
+import androidx.compose.material.icons.rounded.QuestionAnswer
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Button
@@ -123,7 +126,7 @@ fun AiChatScreen(
             Column {
                 TopAppBar(
                     title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column {
                             Text(
                                 text = if (uiState.focusedMedia != null) uiState.focusedMedia!!.title else "AniSync AI",
                                 style = MaterialTheme.typography.titleMedium,
@@ -131,19 +134,12 @@ fun AiChatScreen(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer
-                            ) {
-                                Text(
-                                    text = "Gemini",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
+                            Text(
+                                text = if (uiState.focusedMedia != null) "In-Context Discussion" else "Powered by Google Gemini",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
                         }
                     },
                     navigationIcon = {
@@ -213,13 +209,18 @@ fun AiChatScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         OutlinedTextField(
                             value = inputText,
                             onValueChange = { inputText = it },
                             placeholder = {
-                                Text(if (uiState.focusedMedia != null) "Ask about ${uiState.focusedMedia!!.title}..." else "Ask AniSync AI...")
+                                Text(
+                                    text = if (uiState.focusedMedia != null) "Ask about ${uiState.focusedMedia!!.title}..." else "Ask AniSync AI...",
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             },
                             maxLines = 4,
                             enabled = uiState.hasApiKey && !uiState.isLoading,
@@ -232,9 +233,9 @@ fun AiChatScreen(
                                 }
                             }),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                focusedBorderColor = Color.Transparent,
                                 unfocusedBorderColor = Color.Transparent
                             ),
                             modifier = Modifier.weight(1f)
@@ -262,7 +263,7 @@ fun AiChatScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.Send,
                                 contentDescription = "Send",
-                                tint = if (canSend) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (canSend) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                             )
                         }
                     }
@@ -345,7 +346,7 @@ fun AiChatScreen(
                         FilterChip(
                             selected = uiState.allowSpoilersEnabled,
                             onClick = { viewModel.toggleAllowSpoilers(!uiState.allowSpoilersEnabled) },
-                            label = { Text(if (uiState.allowSpoilersEnabled) "Spoilers: ON" else "Spoilers: OFF") },
+                            label = { Text(if (uiState.allowSpoilersEnabled) "Spoilers: Allowed" else "Spoilers: Blocked") },
                             leadingIcon = {
                                 Icon(
                                     Icons.Rounded.Warning,
@@ -402,7 +403,7 @@ fun AiChatScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "To use the AI Assistant, enter your Google Gemini API key in Settings.",
+                                text = "To use the AI Assistant, configure your free Google Gemini API key in Settings.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
@@ -421,7 +422,8 @@ fun AiChatScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(24.dp),
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
@@ -440,30 +442,29 @@ fun AiChatScreen(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
                             Text(
-                                text = if (uiState.focusedMedia != null) "Chatting about ${uiState.focusedMedia!!.title}" else "How can I help you today?",
+                                text = if (uiState.focusedMedia != null) "Discussion: ${uiState.focusedMedia!!.title}" else "How can I help you today?",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
 
                             Text(
                                 text = if (uiState.focusedMedia != null) {
-                                    "I have access to details about this anime. Ask for trivia, watch order, analysis, or recommendations!"
+                                    "I have access to details about this title. Ask for trivia, watch order, analysis, or recommendations."
                                 } else {
-                                    "Ask for recommendations, anime discussions, release schedules, or information about your AniList library."
+                                    "Ask for recommendations, anime discussions, release schedules, or personalized insights from your library."
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                                textAlign = TextAlign.Center
                             )
 
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
 
                             val suggestions = if (uiState.focusedMedia != null) {
                                 listOf(
@@ -474,7 +475,7 @@ fun AiChatScreen(
                             } else {
                                 listOf(
                                     "Recommend anime similar to Frieren",
-                                    "Look at my notes and give your take on my scores",
+                                    "Look at my library and give your take on my scores",
                                     "What are the top trending anime this season?"
                                 )
                             }
@@ -485,17 +486,28 @@ fun AiChatScreen(
                             ) {
                                 suggestions.forEach { suggestion ->
                                     Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
                                         onClick = { viewModel.sendMessage(suggestion) },
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text(
-                                            text = suggestion,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurface,
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
                                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                                        )
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.QuestionAnswer,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(
+                                                text = suggestion,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
                                     }
                                 }
                             }

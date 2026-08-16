@@ -339,7 +339,7 @@ fun LibraryMediaCard(
                             val isUrgent = timeSec in 1..10800
                             if (isAiringToday) {
                                 StatusBadge(
-                                    text = if (isUrgent) "🔥 $airingText" else "⚡ $airingText",
+                                    text = airingText,
                                     containerColor = if (isUrgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
                                     contentColor = if (isUrgent) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
                                 )

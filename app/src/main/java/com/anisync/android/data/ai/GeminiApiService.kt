@@ -196,10 +196,11 @@ class GeminiApiService @Inject constructor(
 
         if (allowSpoilers) {
             sb.appendLine("### SPOILER POLICY: SPOILERS ALLOWED")
-            sb.appendLine("The user has enabled spoilers. You may openly discuss major plot twists, character fates, and endings.")
+            sb.appendLine("The user has enabled spoilers. You may discuss plot twists, manga source material beyond the anime, and ending details freely.")
         } else {
-            sb.appendLine("### SPOILER POLICY: STRICTLY NO SPOILERS")
-            sb.appendLine("The user has disabled spoilers. Keep discussions spoiler-free and do NOT reveal major twists, deaths, or secret identity reveals without a clear warning.")
+            sb.appendLine("### SPOILER POLICY: STRICTLY FORBIDDEN (ZERO SPOILERS)")
+            sb.appendLine("The user has DISABLED spoilers. It is CRITICAL that you NEVER reveal any plot twists, climax events, character deaths, traitor reveals, identity reveals, or source material progression.")
+            sb.appendLine("If the user asks 'What happens next?' or asks for spoilers, explicitly refuse and explain that Spoilers are turned OFF in the top bar. Keep all summaries focused exclusively on the premise, genres, production, and themes.")
         }
         sb.appendLine()
 
@@ -229,28 +230,32 @@ class GeminiApiService @Inject constructor(
             sb.appendLine()
         }
 
-        sb.appendLine("Format your response clearly using rich Markdown (bolding, bullet points, headers, quotes) formatted for mobile screens.")
+        sb.appendLine("Format your response clearly using clean Markdown (bolding, bullet points, headers, quotes) formatted for mobile screens. Do not use random emoji spam.")
         return sb.toString()
     }
 
     suspend fun fetchNewsRadar(
         apiKey: String,
         modelName: String = "gemini-2.5-flash",
-        topic: String = "All"
+        topic: String = "All",
+        currentDateTime: String = ""
     ): List<com.anisync.android.domain.ai.AiNewsItem> = withContext(Dispatchers.IO) {
         if (apiKey.isBlank()) {
             throw IllegalArgumentException("Please configure your Gemini API key in Settings > Gemini AI Assistant.")
         }
 
         val prompt = buildString {
+            if (currentDateTime.isNotBlank()) {
+                appendLine("CURRENT REAL-WORLD DATE & TIME: $currentDateTime.")
+            }
             appendLine("You are the AI Anime News Radar for AniSync.")
-            appendLine("Fetch the latest, most exciting real-time anime news, trailer drops, release dates, voice actor / studio announcements, and major industry updates.")
+            appendLine("Use Google Search Grounding to find breaking anime news, trailer drops, release dates, voice actor / studio announcements, and major industry updates from today or the past 48 hours relative to $currentDateTime.")
             if (topic != "All") {
                 appendLine("Focus specifically on topic: $topic.")
             }
             appendLine("Format your response as a list of 5-8 news items formatted strictly as JSON array with this schema:")
-            appendLine("""[{"title": "Headline", "summary": "2-3 sentence summary of the news and what fans should know", "category": "TRAILER|RELEASE|ANNOUNCEMENT|INDUSTRY", "timeAgo": "e.g. 2h ago or Today"}]""")
-            appendLine("Output ONLY the valid JSON array and nothing else.")
+            appendLine("""[{"title": "Headline without emojis", "summary": "2-3 sentence clear summary of the news and what fans should know", "category": "TRAILER|RELEASE|ANNOUNCEMENT|INDUSTRY", "timeAgo": "e.g. 2h ago or Today"}]""")
+            appendLine("DO NOT include emojis in title, summary, or category. Output ONLY the valid JSON array and nothing else.")
         }
 
         val effectiveModel = modelName.ifBlank { "gemini-2.5-flash" }
@@ -265,8 +270,10 @@ class GeminiApiService @Inject constructor(
                     }
                 })
             }
-            putJsonObject("tools") {
-                putJsonArray("google_search") {}
+            putJsonArray("tools") {
+                add(buildJsonObject {
+                    putJsonObject("googleSearch") {}
+                })
             }
         }
 
@@ -310,10 +317,10 @@ class GeminiApiService @Inject constructor(
                 array.map { el ->
                     val obj = el.jsonObject
                     com.anisync.android.domain.ai.AiNewsItem(
-                        title = obj["title"]?.jsonPrimitive?.contentOrNull ?: "Anime Update",
-                        summary = obj["summary"]?.jsonPrimitive?.contentOrNull ?: "",
-                        category = obj["category"]?.jsonPrimitive?.contentOrNull ?: "NEWS",
-                        timeAgo = obj["timeAgo"]?.jsonPrimitive?.contentOrNull ?: "Recent",
+                        title = obj["title"]?.jsonPrimitive?.contentOrNull?.replace(Regex("[\\p{So}\\p{Cn}]"), "")?.trim() ?: "Anime Update",
+                        summary = obj["summary"]?.jsonPrimitive?.contentOrNull?.replace(Regex("[\\p{So}\\p{Cn}]"), "")?.trim() ?: "",
+                        category = obj["category"]?.jsonPrimitive?.contentOrNull?.replace(Regex("[\\p{So}\\p{Cn}]"), "")?.trim() ?: "NEWS",
+                        timeAgo = obj["timeAgo"]?.jsonPrimitive?.contentOrNull?.replace(Regex("[\\p{So}\\p{Cn}]"), "")?.trim() ?: "Recent",
                         sources = sources
                     )
                 }

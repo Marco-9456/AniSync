@@ -234,16 +234,9 @@ fun SettingsAiScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Universal Button & Interface Preferences
-        SettingsSectionLabel("Floating Button & Preferences")
+        // Default Preferences
+        SettingsSectionLabel("Default Chat Preferences")
         SettingsGroup {
-            SwitchSettingsItem(
-                title = "Universal AI Chat Button",
-                subtitle = "Show floating AI chat button in the bottom-left corner across browsing screens",
-                checked = buttonEnabled,
-                onCheckedChange = { appSettings.setAiChatButtonEnabled(it) }
-            )
-
             SwitchSettingsItem(
                 title = "Web Search Grounding",
                 subtitle = "Enable real-time Google search grounding by default",

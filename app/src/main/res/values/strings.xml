@@ -118,7 +118,7 @@
 
     <!-- Library Screen -->
     <string name="library_title">Library</string>
-    <string name="search_library_placeholder">Search Library…</string>
+    <string name="search_library_placeholder">Search</string>
     <string name="loading">Loading…</string>
     <string name="sort">Sort</string>
     <string name="sort_by">Sort by</string>

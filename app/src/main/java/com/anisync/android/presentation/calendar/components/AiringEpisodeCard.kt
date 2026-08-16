@@ -168,7 +168,7 @@ fun AiringEpisodeCard(
                     val isToday = secondsUntil in 1..86400
                     if (isToday) {
                         StatusBadge(
-                            text = if (isUrgent) "🔥 In ${formatTimeUntilAiring(secondsUntil.toInt())}" else "⚡ In ${formatTimeUntilAiring(secondsUntil.toInt())}",
+                            text = "In ${formatTimeUntilAiring(secondsUntil.toInt())}",
                             containerColor = if (isUrgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
                             contentColor = if (isUrgent) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
                         )

@@ -282,7 +282,7 @@ fun LibraryListCard(
                             )
                             if (isAiringToday) {
                                 StatusBadge(
-                                    text = if (isUrgent) "🔥 $airingString" else "⚡ $airingString",
+                                    text = airingString,
                                     containerColor = if (isUrgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
                                     contentColor = if (isUrgent) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
                                 )

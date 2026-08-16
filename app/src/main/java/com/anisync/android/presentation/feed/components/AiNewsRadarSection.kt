@@ -87,12 +87,14 @@ fun AiNewsRadarSection(
         if (apiKey.isBlank()) return
         isLoading = true
         errorMessage = null
+        val currentDateTime = java.text.SimpleDateFormat("EEEE, MMMM d, yyyy, HH:mm z", java.util.Locale.ENGLISH).format(java.util.Date())
         coroutineScope.launch {
             try {
                 val results = geminiApiService.fetchNewsRadar(
                     apiKey = apiKey,
                     modelName = model,
-                    topic = topic
+                    topic = topic,
+                    currentDateTime = currentDateTime
                 )
                 newsItems = results
             } catch (e: Exception) {
@@ -100,12 +102,6 @@ fun AiNewsRadarSection(
             } finally {
                 isLoading = false
             }
-        }
-    }
-
-    LaunchedEffect(selectedTopic, apiKey) {
-        if (apiKey.isNotBlank() && newsItems.isEmpty()) {
-            loadNews(selectedTopic)
         }
     }
 
@@ -236,11 +232,58 @@ fun AiNewsRadarSection(
                 Text(
                     text = errorMessage!!,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = { loadNews(selectedTopic) }) {
                     Text("Retry")
+                }
+            }
+        } else if (newsItems.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.AutoAwesome,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "AI News Radar",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Discover up-to-the-minute anime headlines, trailers, and announcements curated with Google Search Grounding.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = { loadNews(selectedTopic) },
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Fetch Latest Anime News")
                 }
             }
         } else {
