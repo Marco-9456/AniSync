@@ -132,6 +132,7 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toListIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
+import com.anisync.android.util.launchUrl
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -648,10 +649,22 @@ fun LibraryScreen(
                                             key = { "grid_${tabLabel}_${it.mediaId}" },
                                             contentType = { "LibraryEntry" }
                                         ) { entry ->
+                                            val customPlayUrl = uiState.customMediaUrls[entry.mediaId]
                                             LibraryMediaCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
                                                 onClick = { navigateToMediaDetails(entry.mediaId) },
+                                                customPlayUrl = customPlayUrl,
+                                                onPlay = if (!customPlayUrl.isNullOrBlank()) {
+                                                    {
+                                                        val url = if (customPlayUrl.startsWith("http://", ignoreCase = true) || customPlayUrl.startsWith("https://", ignoreCase = true) || customPlayUrl.startsWith("intent://", ignoreCase = true) || customPlayUrl.startsWith("vlc://", ignoreCase = true)) {
+                                                            customPlayUrl
+                                                        } else {
+                                                            "https://$customPlayUrl"
+                                                        }
+                                                        context.launchUrl(url)
+                                                    }
+                                                } else null,
                                                 onIncrement = if (hasQuickProgress) {
                                                     { handleIncrement(entry.mediaId) }
                                                 } else null,
@@ -695,10 +708,22 @@ fun LibraryScreen(
                                             key = { "list_${tabLabel}_${it.mediaId}" },
                                             contentType = { "LibraryEntry" }
                                         ) { entry ->
+                                            val customPlayUrl = uiState.customMediaUrls[entry.mediaId]
                                             LibraryListCard(
                                                 entry = entry,
                                                 mediaType = mediaType,
                                                 onClick = { navigateToMediaDetails(entry.mediaId) },
+                                                customPlayUrl = customPlayUrl,
+                                                onPlay = if (!customPlayUrl.isNullOrBlank()) {
+                                                    {
+                                                        val url = if (customPlayUrl.startsWith("http://", ignoreCase = true) || customPlayUrl.startsWith("https://", ignoreCase = true) || customPlayUrl.startsWith("intent://", ignoreCase = true) || customPlayUrl.startsWith("vlc://", ignoreCase = true)) {
+                                                            customPlayUrl
+                                                        } else {
+                                                            "https://$customPlayUrl"
+                                                        }
+                                                        context.launchUrl(url)
+                                                    }
+                                                } else null,
                                                 onIncrement = if (hasQuickProgress) {
                                                     { handleIncrement(entry.mediaId) }
                                                 } else null,
@@ -902,6 +927,10 @@ fun LibraryScreen(
             entry = entry,
             scoreFormat = uiState.userScoreFormat,
             availableCustomLists = uiState.customListNames,
+            initialCustomUrl = uiState.customMediaUrls[entry.mediaId],
+            onCustomUrlSave = { mediaId, url ->
+                viewModel.onAction(LibraryAction.SaveCustomMediaUrl(mediaId, url))
+            },
             onDismiss = { editingEntry = null },
             onSave = { updatedEntry ->
                 viewModel.onAction(LibraryAction.UpdateEntry(updatedEntry))

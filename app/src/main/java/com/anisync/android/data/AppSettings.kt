@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -180,6 +182,30 @@ class AppSettings @Inject constructor(
     // Device-local privacy toggle; default off.
     private val _appLockEnabled = MutableStateFlow(prefs.getBoolean(KEY_APP_LOCK_ENABLED, false))
     val appLockEnabled: StateFlow<Boolean> = _appLockEnabled.asStateFlow()
+
+    private fun readCustomMediaUrls(): Map<Int, String> {
+        val raw = prefs.getString(KEY_CUSTOM_MEDIA_URLS, null) ?: return emptyMap()
+        return runCatching { Json.decodeFromString<Map<Int, String>>(raw) }.getOrDefault(emptyMap())
+    }
+
+    private val _customMediaUrls = MutableStateFlow(readCustomMediaUrls())
+    val customMediaUrls: StateFlow<Map<Int, String>> = _customMediaUrls.asStateFlow()
+
+    fun getCustomMediaUrl(mediaId: Int): String? {
+        return _customMediaUrls.value[mediaId]
+    }
+
+    fun setCustomMediaUrl(mediaId: Int, url: String?) {
+        val current = _customMediaUrls.value.toMutableMap()
+        if (url.isNullOrBlank()) {
+            current.remove(mediaId)
+        } else {
+            current[mediaId] = url.trim()
+        }
+        _customMediaUrls.value = current
+        val serialized = Json.encodeToString(current)
+        prefs.edit().putString(KEY_CUSTOM_MEDIA_URLS, serialized).apply()
+    }
 
     // Navigation bar style (anchored rounded top vs floating pill)
     private val _navBarStyle = MutableStateFlow(readNavBarStyle())
@@ -1048,6 +1074,7 @@ companion object {
         private const val KEY_HAPTIC_ENABLED = "haptic_enabled"
         private const val KEY_APP_LOCK_ENABLED = "app_lock_enabled"
         private const val KEY_NAV_BAR_STYLE = "nav_bar_style"
+        private const val KEY_CUSTOM_MEDIA_URLS = "custom_media_urls"
         private const val KEY_NAV_BAR_LABELS = "nav_bar_show_labels"
         private const val KEY_NAV_BAR_CORNER_RADIUS = "nav_bar_corner_radius"
 

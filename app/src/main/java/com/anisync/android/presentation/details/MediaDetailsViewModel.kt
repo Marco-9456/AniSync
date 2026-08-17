@@ -50,6 +50,11 @@ class MediaDetailsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val titleLanguage = appSettings.titleLanguage
+    val customMediaUrls = appSettings.customMediaUrls
+
+    fun saveCustomMediaUrl(mediaId: Int, url: String?) {
+        appSettings.setCustomMediaUrl(mediaId, url)
+    }
 
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()

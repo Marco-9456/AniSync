@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -89,6 +90,8 @@ fun LibraryListCard(
     config: LibraryCardConfig = WatchingCardConfig,
     showScore: Boolean = false,
     scoreFormat: ScoreFormat = ScoreFormat.POINT_10_DECIMAL,
+    customPlayUrl: String? = null,
+    onPlay: (() -> Unit)? = null,
     onIncrement: (() -> Unit)? = null,
     onDecrement: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
@@ -345,7 +348,7 @@ fun LibraryListCard(
                         .width(56.dp)
                         .fillMaxHeight()
                         .padding(end = 12.dp, top = 12.dp, bottom = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Surface(
                         modifier = Modifier
@@ -398,6 +401,34 @@ fun LibraryListCard(
                             )
                         }
                     }
+
+                    if (!customPlayUrl.isNullOrBlank() && onPlay != null) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .bouncyClickable(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                        onPlay()
+                                    },
+                                    role = Role.Button,
+                                    onClickLabel = "Play",
+                                    clipShape = RoundedCornerShape(12.dp)
+                                ),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.PlayArrow,
+                                    contentDescription = "Play",
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+                        }
+                    }
                 }
             } else if (!config.showAdjusters && onEdit != null) {
                 val haptic = rememberHapticFeedback()
@@ -406,12 +437,12 @@ fun LibraryListCard(
                         .width(56.dp)
                         .fillMaxHeight()
                         .padding(end = 12.dp, top = 12.dp, bottom = 12.dp),
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .fillMaxHeight()
+                            .weight(1f)
                             .bouncyClickable(
                                 onClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -431,6 +462,34 @@ fun LibraryListCard(
                                 modifier = Modifier.size(20.dp),
                                 tint = MaterialTheme.colorScheme.onSecondaryContainer
                             )
+                        }
+                    }
+
+                    if (!customPlayUrl.isNullOrBlank() && onPlay != null) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .bouncyClickable(
+                                    onClick = {
+                                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                        onPlay()
+                                    },
+                                    role = Role.Button,
+                                    onClickLabel = "Play",
+                                    clipShape = RoundedCornerShape(12.dp)
+                                ),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.PlayArrow,
+                                    contentDescription = "Play",
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
                         }
                     }
                 }

@@ -35,6 +35,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
@@ -55,6 +56,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -96,6 +98,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -128,6 +131,8 @@ fun EditLibraryEntrySheet(
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     scoreFormat: ScoreFormat = ScoreFormat.POINT_100,
     availableCustomLists: List<String> = emptyList(),
+    initialCustomUrl: String? = null,
+    onCustomUrlSave: ((mediaId: Int, url: String?) -> Unit)? = null,
     onDismiss: () -> Unit,
     onSave: (LibraryEntry) -> Unit,
     onDelete: () -> Unit,
@@ -141,6 +146,7 @@ fun EditLibraryEntrySheet(
     var progress by rememberSaveable(entry.id) { mutableIntStateOf(entry.progress) }
     var score by rememberSaveable(entry.id) { mutableDoubleStateOf(entry.score ?: 0.0) }
     var notes by rememberSaveable(entry.id) { mutableStateOf(entry.notes.orEmpty()) }
+    var customUrl by rememberSaveable(entry.id) { mutableStateOf(initialCustomUrl.orEmpty()) }
     var startedAt by rememberSaveable(entry.id) { mutableStateOf(entry.startedAt) }
     var completedAt by rememberSaveable(entry.id) { mutableStateOf(entry.completedAt) }
     var rewatches by rememberSaveable(entry.id) { mutableIntStateOf(entry.rewatches) }
@@ -151,8 +157,9 @@ fun EditLibraryEntrySheet(
     var selectedCustomLists by remember(entry.id) { mutableStateOf(entry.customLists.toSet()) }
 
     // Track unsaved changes using derived state for performance
-    val hasChanges by remember(entry.id) {
+    val hasChanges by remember(entry.id, initialCustomUrl, customUrl) {
         derivedStateOf {
+            customUrl != initialCustomUrl.orEmpty() ||
             status != entry.status ||
             selectedCustomLists != entry.customLists.toSet() ||
                     progress != entry.progress ||
@@ -175,11 +182,12 @@ fun EditLibraryEntrySheet(
     var showCompletedDatePicker by rememberSaveable { mutableStateOf(false) }
 
     // Sync state if entry changes externally
-    LaunchedEffect(entry) {
+    LaunchedEffect(entry, initialCustomUrl) {
         status = entry.status
         progress = entry.progress
         score = entry.score ?: 0.0
         notes = entry.notes.orEmpty()
+        customUrl = initialCustomUrl.orEmpty()
         startedAt = entry.startedAt
         completedAt = entry.completedAt
         rewatches = entry.rewatches
@@ -284,6 +292,11 @@ fun EditLibraryEntrySheet(
                     modifier = Modifier.heightIn(min = 120.dp, max = 200.dp)
                 )
 
+                CustomUrlSection(
+                    urlProvider = { customUrl },
+                    onUrlChange = { customUrl = it }
+                )
+
                 PrivacySection(
                     isPrivateProvider = { isPrivate },
                     hiddenFromStatusListsProvider = { hiddenFromStatusLists },
@@ -298,6 +311,9 @@ fun EditLibraryEntrySheet(
                     },
                     onSave = {
                         haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                        if (customUrl != initialCustomUrl.orEmpty()) {
+                            onCustomUrlSave?.invoke(entry.mediaId, customUrl.trim().takeIf { it.isNotBlank() })
+                        }
                         onSave(
                             entry.copy(
                                 status = status,
@@ -1158,6 +1174,78 @@ private fun NotesSection(
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
+    }
+}
+
+// ================== CUSTOM URL SECTION ==================
+
+@Composable
+private fun CustomUrlSection(
+    urlProvider: () -> String,
+    onUrlChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val url = urlProvider()
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp)
+            )
+            SectionTitle(text = "Custom Stream / Web URL")
+        }
+
+        OutlinedTextField(
+            value = url,
+            onValueChange = onUrlChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = {
+                Text(
+                    text = "e.g. example.com/watch/series",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            singleLine = true,
+            trailingIcon = {
+                if (url.isNotBlank()) {
+                    IconButton(onClick = { onUrlChange("") }) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear URL",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            ),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Uri,
+                imeAction = ImeAction.Done
+            )
+        )
+
+        Text(
+            text = "Adds a quick Play button on this title's library card to open your custom streaming or reading link.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            fontSize = 11.sp
+        )
     }
 }
 

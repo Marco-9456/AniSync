@@ -38,7 +38,8 @@ data class LibraryUiState(
     val isGridView: Boolean = true,
     val initialTabId: String? = null,
     val isLoading: Boolean = true,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val customMediaUrls: Map<Int, String> = emptyMap()
 )
 
 enum class LibrarySort {
@@ -64,6 +65,7 @@ sealed interface LibraryAction {
     data class DecrementProgress(val mediaId: Int) : LibraryAction
     data class UpdateEntry(val entry: LibraryEntry) : LibraryAction
     data class DeleteEntry(val entryId: Int, val mediaId: Int) : LibraryAction
+    data class SaveCustomMediaUrl(val mediaId: Int, val url: String?) : LibraryAction
     data class ToggleListVisibility(val listName: String, val hidden: Boolean) : LibraryAction
     data class ReorderTabs(val tabOrder: List<String>) : LibraryAction
     data class CreateCustomList(val listName: String, val type: MediaType) : LibraryAction

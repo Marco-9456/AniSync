@@ -103,6 +103,10 @@ class LibraryViewModel @Inject constructor(
             _uiState.update { it.copy(showScoreOnCards = show) }
         }.launchIn(viewModelScope)
 
+        appSettings.customMediaUrls.onEach { urls ->
+            _uiState.update { it.copy(customMediaUrls = urls) }
+        }.launchIn(viewModelScope)
+
         observeLibraryData()
     }
 
@@ -159,6 +163,7 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.DecrementProgress -> updateProgress(action.mediaId, -1)
             is LibraryAction.UpdateEntry -> updateEntry(action.entry)
             is LibraryAction.DeleteEntry -> deleteEntry(action.entryId, action.mediaId)
+            is LibraryAction.SaveCustomMediaUrl -> appSettings.setCustomMediaUrl(action.mediaId, action.url)
             is LibraryAction.ToggleListVisibility -> toggleListVisibility(
                 action.listName,
                 action.hidden
