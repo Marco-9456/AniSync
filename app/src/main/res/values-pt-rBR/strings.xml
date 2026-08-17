@@ -1254,4 +1254,39 @@
     <string name="a11y_notification_unread">Não lido</string>
     <string name="list_indicator_custom">Lista customizada</string>
     <string name="a11y_in_your_list">Na sua lista: %1$s</string>
+    <string name="statistics_activity_period_month">Mês</string>
+    <string name="statistics_activity_period_week">Semana</string>
+    <string name="statistics_activity_week_range">%1$s – %2$s</string>
+    <string name="statistics_activity_week_current">Essa semana</string>
+    <string name="statistics_activity_week_previous">Semana passada</string>
+    <string name="statistics_activity_per_day">%1$s / dia</string>
+    <string name="statistics_activity_busiest_day">Dia mais ativo</string>
+    <string name="statistics_activity_busiest_value">%1$s · %2$d</string>
+    <string name="statistics_activity_active_days">Dias ativos</string>
+    <string name="statistics_activity_days_counted">Dias registrados</string>
+    <string name="statistics_activity_awaiting">Esperando estatísticas</string>
+    <string name="statistics_activity_awaiting_inline">Esperando estatísticas do AniList</string>
+    <string name="statistics_activity_today_pending">Hoje · ainda não registrado</string>
+    <string name="statistics_activity_vs_previous">vs. semana passada</string>
+    <string name="statistics_activity_day_ratio">%1$d de %2$d</string>
+    <string name="statistics_activity_percent_up">+%1$d%%</string>
+    <string name="statistics_activity_percent_down">-%1$d%%</string>
+    <string name="statistics_activity_no_value">—</string>
+    <plurals name="statistics_activity_weeks_ago">
+        <item quantity="one">%d semana atrás</item>
+        <item quantity="many">%d semanas atrás</item>
+        <item quantity="other">%d semanas atrás</item>
+    </plurals>
+    <plurals name="statistics_activity_days">
+        <item quantity="one">%d dia</item>
+        <item quantity="many">%d dias</item>
+        <item quantity="other">%d dias</item>
+    </plurals>
+    <string name="statistics_activity_day_empty">AniList registrou atividade nesse dia, mas nenhuma consta mais no feed.</string>
+    <string name="statistics_activity_day_status">Atividade</string>
+    <string name="statistics_activity_day_posted">Postou um status</string>
+    <string name="cd_activity_week_previous">Semana anterior</string>
+    <string name="cd_activity_week_next">Próxima semana</string>
+    <string name="a11y_activity_day">%1$s: %2$s</string>
+    <string name="a11y_activity_day_awaiting">%1$s: ainda não registrado</string>
 </resources>
