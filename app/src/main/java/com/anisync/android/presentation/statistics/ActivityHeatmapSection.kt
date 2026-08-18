@@ -10,6 +10,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -89,6 +90,15 @@ private const val MIN_WEEKS = 18
 private const val MAX_WEEKS = 53
 internal const val DAYS_IN_WEEK = 7
 private const val SECONDS_PER_DAY = 86_400L
+
+/** Phone-sized heatmap metrics. Everything else in the grid scales off [BASE_CELL]. */
+private val BASE_CELL = 13.dp
+private val BASE_GAP = 4.dp
+private val BASE_MONTH_ROW = 16.dp
+private val BASE_MONTH_LABEL_SP = 10.sp
+
+/** Cap growth on very wide windows: past this a cell reads as a tile, not a day. */
+private val MAX_CELL = 26.dp
 
 /** The two breakdowns the Activity History card can show. */
 private enum class ActivityPeriod(val labelRes: Int, val icon: ImageVector) {
@@ -202,7 +212,6 @@ private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
     val ringColor = MaterialTheme.colorScheme.onSurface
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val textMeasurer = rememberTextMeasurer()
-    val monthStyle = TextStyle(color = labelColor, fontSize = 10.sp)
 
     val sel = selected
     val headline = if (sel != null) {
@@ -228,12 +237,6 @@ private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
 
     Spacer(Modifier.height(16.dp))
 
-    val cellDp = 13.dp
-    val gapDp = 4.dp
-    val monthRowDp = 16.dp
-    val gridWidth = (cellDp + gapDp) * model.weeks.size
-    val gridHeight = monthRowDp + (cellDp + gapDp) * DAYS_IN_WEEK
-
     val scrollState = rememberScrollState()
     // Start scrolled to the most recent week (right edge), like GitHub.
     LaunchedEffect(model, scrollState.maxValue) {
@@ -243,13 +246,23 @@ private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
     val a11y = stringResource(R.string.statistics_activity_a11y, model.totalActivities)
     val selectedDate = sel?.date
 
-    Box(Modifier.fillMaxWidth()) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        // On a phone the grid is wider than the card and scrolls at its natural cell size. On a
+        // tablet the whole grid fits with room to spare, so grow the cells to claim that width
+        // instead of leaving the card mostly empty.
+        val (cellDp, gapDp) = heatmapCellSize(maxWidth, model.weeks.size)
+        val scale = cellDp / BASE_CELL
+        val monthRowDp = BASE_MONTH_ROW * scale
+        val monthStyle = TextStyle(color = labelColor, fontSize = BASE_MONTH_LABEL_SP * scale)
+        val gridWidth = (cellDp + gapDp) * model.weeks.size
+        val gridHeight = monthRowDp + (cellDp + gapDp) * DAYS_IN_WEEK
         val fadeColor = MaterialTheme.colorScheme.surfaceContainerLow
         Box(
-            Modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(scrollState)
-                .semantics { contentDescription = a11y }
+                .semantics { contentDescription = a11y },
+            contentAlignment = Alignment.Center
         ) {
             Canvas(
                 modifier = Modifier
@@ -393,6 +406,22 @@ private fun ScrollEdgeFade(
     }
 }
 
+/**
+ * Cell and gap size for a grid of [weeks] columns given [available] width.
+ *
+ * Below the natural size the grid keeps [BASE_CELL] and scrolls, which is the phone case. Once it
+ * fits, cells grow together with the gap (so the ratio stays put) until either the width is used up
+ * or [MAX_CELL] is reached.
+ */
+private fun heatmapCellSize(available: Dp, weeks: Int): Pair<Dp, Dp> {
+    if (weeks <= 0) return BASE_CELL to BASE_GAP
+    val naturalStride = BASE_CELL + BASE_GAP
+    val stride = (available / weeks).coerceAtLeast(naturalStride)
+    val cell = (stride * (BASE_CELL / naturalStride)).coerceAtMost(MAX_CELL)
+    val gap = cell * (BASE_GAP / BASE_CELL)
+    return cell to gap
+}
+
 /** Maps an AniList activity [level] (1-10, or 0 = no activity) to a heatmap cell color. */
 private fun heatCellColor(level: Int, empty: Color, active: Color): Color =
     if (level <= 0) empty
@@ -484,6 +513,14 @@ private fun buildHeatmapModel(byDate: Map<LocalDate, ActivityHistoryDay>): Heatm
 @Preview(showBackground = true, name = "ActivityHistory — light", widthDp = 360)
 @Composable
 private fun ActivityHistoryLightPreview() {
+    StatPreviewSurface(isDark = false) {
+        ActivityHistorySection(days = previewActivityDays(), userId = 1)
+    }
+}
+
+@Preview(showBackground = true, name = "ActivityHistory — tablet", widthDp = 900)
+@Composable
+private fun ActivityHistoryTabletPreview() {
     StatPreviewSurface(isDark = false) {
         ActivityHistorySection(days = previewActivityDays(), userId = 1)
     }
