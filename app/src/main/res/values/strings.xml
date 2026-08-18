@@ -683,6 +683,14 @@
     <string name="subsection_reading">Read On</string>
     <string name="subsection_external">External Links</string>
 
+    <!-- Video playback errors -->
+    <string name="player_error_network">No connection. Check your network and try again.</string>
+    <string name="player_error_server">The video host is having trouble right now. Try again in a moment.</string>
+    <string name="player_error_rate_limited">The video host is refusing requests. Wait a moment and try again.</string>
+    <string name="player_error_missing">This video is no longer on the host.</string>
+    <string name="player_error_format">This video format is not supported.</string>
+    <string name="player_error_generic">Unable to play this video.</string>
+
     <!-- Openings &amp; Endings (AnimeThemes) -->
     <string name="section_themes">Openings &amp; Endings</string>
     <plurals name="themes_openings_count">
@@ -714,6 +722,7 @@
     <string name="themes_failed_title">Themes did not load</string>
     <string name="themes_failed_body">AniList data on this page is unaffected. Only the AnimeThemes request failed.</string>
     <string name="themes_retry">Retry</string>
+    <string name="themes_retry_in">Retry in %1$ds</string>
     <string name="themes_empty">AnimeThemes does not list this title yet.</string>
     <string name="themes_video">Video</string>
     <string name="themes_appears_in">Appears in</string>

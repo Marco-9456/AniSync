@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -115,6 +116,7 @@ private fun FullscreenVideoContent(
     aspectRatio: Float,
     onClose: () -> Unit
 ) {
+    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     var isMuted by remember { mutableStateOf(player.volume == 0f) }
@@ -143,7 +145,7 @@ private fun FullscreenVideoContent(
 
             override fun onPlayerError(error: PlaybackException) {
                 playerState = PlayerState.Error
-                errorMessage = playbackErrorMessage(error)
+                errorMessage = playbackErrorMessage(context, error)
             }
         }
         player.addListener(listener)
