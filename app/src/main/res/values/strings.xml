@@ -709,8 +709,8 @@
     <string name="themes_episode_scale">Ep 1 – %1$d</string>
     <string name="themes_opening_number">Opening %1$d</string>
     <string name="themes_ending_number">Ending %1$d</string>
-    <string name="themes_spoiler_hidden">Episodes hidden</string>
-    <string name="themes_spoiler_reveal">Reveal</string>
+    <string name="themes_spoiler_tag">Spoiler</string>
+    <string name="cd_theme_spoiler">This theme may spoil the show</string>
     <string name="themes_failed_title">Themes did not load</string>
     <string name="themes_failed_body">AniList data on this page is unaffected. Only the AnimeThemes request failed.</string>
     <string name="themes_retry">Retry</string>

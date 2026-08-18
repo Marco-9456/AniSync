@@ -85,12 +85,7 @@ fun EpisodeCoverageBar(
     modifier: Modifier = Modifier,
     height: Dp = 6.dp,
     coveredColor: Color = MaterialTheme.colorScheme.primary,
-    trackColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f),
-    /**
-     * Whether no spans means the theme plays over everything. True for an entry AnimeThemes never
-     * gave a range, false when the range is merely being withheld behind a spoiler tap.
-     */
-    emptyMeansAll: Boolean = true
+    trackColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
 ) {
     val total = totalEpisodes ?: return
     if (total <= 0) return
@@ -103,8 +98,7 @@ fun EpisodeCoverageBar(
         val radius = CornerRadius(size.height / 2f, size.height / 2f)
 
         if (spans.isEmpty()) {
-            val fill = if (emptyMeansAll) coveredColor.copy(alpha = 0.4f) else trackColor
-            drawRoundRect(color = fill, cornerRadius = radius)
+            drawRoundRect(color = coveredColor.copy(alpha = 0.4f), cornerRadius = radius)
             return@Canvas
         }
 
@@ -173,7 +167,10 @@ private fun ThemeArtwork(
     type: ThemeType,
     cornerRadius: Dp,
     playGlyphSize: Dp,
-    modifier: Modifier = Modifier
+    isSpoiler: Boolean,
+    modifier: Modifier = Modifier,
+    /** False in the full list, where the row already carries a play button the glyph would sit under. */
+    showPlayGlyph: Boolean = true
 ) {
     val tint = if (type == ThemeType.OP) {
         MaterialTheme.colorScheme.primary
@@ -205,20 +202,41 @@ private fun ThemeArtwork(
                 .background(tint.copy(alpha = 0.34f))
         )
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(playGlyphSize)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(playGlyphSize * 0.55f)
-            )
+        if (showPlayGlyph) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(playGlyphSize)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(playGlyphSize * 0.55f)
+                )
+            }
+        }
+
+        if (isSpoiler) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.error),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.VisibilityOff,
+                    contentDescription = stringResource(R.string.cd_theme_spoiler),
+                    tint = MaterialTheme.colorScheme.onError,
+                    modifier = Modifier.size(11.dp)
+                )
+            }
         }
 
         Surface(
@@ -253,7 +271,7 @@ fun ThemeTile(
 ) {
     val spans = remember(theme) { theme.episodeSpans }
     val coverageLabel = remember(spans) { formatEpisodeSpans(spans) }
-    val description = if (theme.isSpoiler || spans.isEmpty()) {
+    val description = if (spans.isEmpty()) {
         theme.songTitle.orEmpty()
     } else {
         pluralStringResource(R.plurals.themes_episodes, episodeQuantity(spans), coverageLabel)
@@ -275,6 +293,7 @@ fun ThemeTile(
             type = theme.type,
             cornerRadius = 14.dp,
             playGlyphSize = 30.dp,
+            isSpoiler = theme.isSpoiler,
             modifier = Modifier
                 .width(TILE_WIDTH)
                 .height(TILE_ART_HEIGHT)
@@ -288,23 +307,22 @@ fun ThemeTile(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-        if (theme.artists.isNotEmpty()) {
-            Text(
-                text = theme.artists.joinToString(", "),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        // Always drawn, even with no artist recorded. An absent line would make this tile
+        // shorter than its neighbours, and a LazyRow takes its height from the tallest visible
+        // item, so the whole section would resize as it scrolled.
+        Text(
+            text = theme.artists.joinToString(", "),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
         Spacer(Modifier.height(8.dp))
-        if (!theme.isSpoiler) {
-            EpisodeCoverageBar(
-                spans = spans,
-                totalEpisodes = totalEpisodes,
-                height = 5.dp
-            )
-        }
+        EpisodeCoverageBar(
+            spans = spans,
+            totalEpisodes = totalEpisodes,
+            height = 5.dp
+        )
     }
 }
 
@@ -314,13 +332,10 @@ fun ThemeRow(
     theme: MediaTheme,
     coverUrl: String?,
     totalEpisodes: Int?,
-    isSpoilerRevealed: Boolean,
     onClick: () -> Unit,
-    onRevealSpoiler: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val spans = remember(theme) { theme.episodeSpans }
-    val hideEpisodes = theme.isSpoiler && !isSpoilerRevealed
 
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -338,6 +353,8 @@ fun ThemeRow(
                     type = theme.type,
                     cornerRadius = 10.dp,
                     playGlyphSize = 26.dp,
+                    isSpoiler = theme.isSpoiler,
+                    showPlayGlyph = false,
                     modifier = Modifier
                         .width(ROW_ART_WIDTH)
                         .height(ROW_ART_HEIGHT)
@@ -361,45 +378,19 @@ fun ThemeRow(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    if (hideEpisodes) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.bouncyClickable(onClick = onRevealSpoiler)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.VisibilityOff,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = stringResource(R.string.themes_spoiler_hidden),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            // Never wraps: a broken "Revea/l" reads as a rendering fault.
-                            Text(
-                                text = stringResource(R.string.themes_spoiler_reveal),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                softWrap = false
-                            )
-                        }
-                    } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = themeCoverageLabel(theme, spans),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
+                        if (theme.isSpoiler) {
+                            Spacer(Modifier.width(8.dp))
+                            SpoilerTag()
+                        }
                     }
                 }
                 Spacer(Modifier.width(12.dp))
@@ -420,10 +411,9 @@ fun ThemeRow(
             }
             Spacer(Modifier.height(10.dp))
             EpisodeCoverageBar(
-                spans = if (hideEpisodes) emptyList() else spans,
+                spans = spans,
                 totalEpisodes = totalEpisodes,
-                height = 6.dp,
-                emptyMeansAll = !hideEpisodes
+                height = 6.dp
             )
         }
     }
@@ -618,6 +608,43 @@ fun themeCoverageLabel(theme: MediaTheme, spans: List<EpisodeSpan>): String {
         range + "  ·  " + pluralStringResource(R.plurals.themes_versions_count, versions, versions)
     } else {
         range
+    }
+}
+
+/**
+ * Marks a theme AnimeThemes flagged as spoiling the show.
+ *
+ * A warning, not a cover. What spoils is the theme itself, its visuals and often its lyrics,
+ * so hiding the episode range would withhold the one thing that is safe to read.
+ */
+@Composable
+fun SpoilerTag(modifier: Modifier = Modifier) {
+    Surface(
+        color = Color.Transparent,
+        shape = RoundedCornerShape(50),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+        modifier = modifier
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.VisibilityOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(12.dp)
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text = stringResource(R.string.themes_spoiler_tag),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error,
+                maxLines = 1,
+                softWrap = false
+            )
+        }
     }
 }
 

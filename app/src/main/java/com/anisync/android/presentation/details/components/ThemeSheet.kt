@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -83,13 +84,11 @@ fun ThemeSheet(
     val context = LocalContext.current
     var selectedVersionIndex by rememberSaveable(theme.id) { mutableIntStateOf(0) }
     var selectedVideoId by rememberSaveable(theme.id) { mutableStateOf<Int?>(null) }
-    var spoilerRevealed by rememberSaveable(theme.id) { mutableStateOf(false) }
 
     val version = theme.versions.getOrNull(selectedVersionIndex) ?: theme.versions.first()
     val video = remember(version, selectedVideoId) {
         version.videos.firstOrNull { it.id == selectedVideoId } ?: version.preferredVideo
     }
-    val hideEpisodes = theme.isSpoiler && !spoilerRevealed
 
     AppModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -118,9 +117,7 @@ fun ThemeSheet(
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_medium)))
 
-            if (hideEpisodes) {
-                SpoilerNotice(onReveal = { spoilerRevealed = true })
-            } else if (theme.versions.size > 1) {
+            if (theme.versions.size > 1) {
                 SheetLabel(stringResource(R.string.themes_versions))
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
                 theme.versions.forEachIndexed { index, entry ->
@@ -225,23 +222,47 @@ fun ThemeSheet(
     }
 }
 
+private val ACTION_CHIP_HEIGHT = 40.dp
+
 @Composable
 private fun ThemeIdentity(theme: MediaTheme) {
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer,
-        shape = RoundedCornerShape(50)
-    ) {
-        val name = when (theme.type) {
-            ThemeType.OP -> stringResource(R.string.themes_opening_number, theme.sequence ?: 1)
-            ThemeType.ED -> stringResource(R.string.themes_ending_number, theme.sequence ?: 1)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            color = MaterialTheme.colorScheme.primaryContainer,
+            shape = RoundedCornerShape(50)
+        ) {
+            Text(
+                text = when (theme.type) {
+                    ThemeType.OP -> stringResource(R.string.themes_opening_number, theme.sequence ?: 1)
+                    ThemeType.ED -> stringResource(R.string.themes_ending_number, theme.sequence ?: 1)
+                },
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+            )
         }
-        Text(
-            text = theme.qualifier?.let { "$name  ·  $it" } ?: name,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-        )
+        // Only what the slug adds on top of the number, since the pill beside it already
+        // says "Ending 11". Without this, ED11 and ED11-EN would read identically.
+        theme.qualifier?.let { qualifier ->
+            Spacer(Modifier.width(dimensionResource(R.dimen.spacing_small)))
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                shape = RoundedCornerShape(50)
+            ) {
+                Text(
+                    text = qualifier,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
+        }
+        if (theme.isSpoiler) {
+            Spacer(Modifier.width(dimensionResource(R.dimen.spacing_small)))
+            SpoilerTag()
+        }
     }
     Spacer(Modifier.height(6.dp))
     Text(
@@ -267,43 +288,6 @@ private fun SheetLabel(text: String) {
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
-}
-
-@Composable
-private fun SpoilerNotice(onReveal: () -> Unit) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .bouncyClickable(onClick = onReveal, clipShape = RoundedCornerShape(16.dp))
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium))
-        ) {
-            Icon(
-                imageVector = Icons.Default.VisibilityOff,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.width(dimensionResource(R.dimen.spacing_normal)))
-            Text(
-                text = stringResource(R.string.themes_spoiler_hidden),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = stringResource(R.string.themes_spoiler_reveal),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
 }
 
 @Composable
@@ -444,12 +428,17 @@ private fun ActionChip(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(50),
         modifier = Modifier
+            // Fixed height so the icon-only chip matches the labelled ones instead of
+            // sitting short and looking lifted.
+            .height(ACTION_CHIP_HEIGHT)
             .clip(RoundedCornerShape(50))
             .bouncyClickable(onClick = onClick, clipShape = RoundedCornerShape(50))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(horizontal = 14.dp)
         ) {
             Icon(
                 imageVector = icon,
@@ -462,7 +451,9 @@ private fun ActionChip(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }

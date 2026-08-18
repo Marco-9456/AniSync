@@ -75,7 +75,6 @@ fun MediaThemesScreen(
 
     var filter by rememberSaveable { mutableStateOf(ThemeFilter.All) }
     var openTheme by remember { mutableStateOf<MediaTheme?>(null) }
-    var revealedSpoilers by remember { mutableStateOf(emptySet<Int>()) }
 
     val listState = rememberLazyListState()
 
@@ -141,8 +140,6 @@ fun MediaThemesScreen(
                     themes = openings,
                     totalEpisodes = totalEpisodes,
                     coverUrl = coverUrl,
-                    revealedSpoilers = revealedSpoilers,
-                    onRevealSpoiler = { revealedSpoilers = revealedSpoilers + it },
                     onThemeClick = { openTheme = it }
                 )
             }
@@ -154,8 +151,6 @@ fun MediaThemesScreen(
                     themes = endings,
                     totalEpisodes = totalEpisodes,
                     coverUrl = coverUrl,
-                    revealedSpoilers = revealedSpoilers,
-                    onRevealSpoiler = { revealedSpoilers = revealedSpoilers + it },
                     onThemeClick = { openTheme = it }
                 )
             }
@@ -239,8 +234,6 @@ private fun androidx.compose.foundation.lazy.LazyListScope.themeGroup(
     themes: List<MediaTheme>,
     totalEpisodes: Int?,
     coverUrl: String?,
-    revealedSpoilers: Set<Int>,
-    onRevealSpoiler: (Int) -> Unit,
     onThemeClick: (MediaTheme) -> Unit
 ) {
     item(key = "label_$label") {
@@ -267,9 +260,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.themeGroup(
             theme = theme,
             coverUrl = coverUrl,
             totalEpisodes = totalEpisodes,
-            isSpoilerRevealed = theme.id in revealedSpoilers,
-            onClick = { onThemeClick(theme) },
-            onRevealSpoiler = { onRevealSpoiler(theme.id) }
+            onClick = { onThemeClick(theme) }
         )
     }
 }
