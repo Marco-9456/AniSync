@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.R
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
+import com.anisync.android.data.CacheInventory
 import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.NotificationPreferences
@@ -59,6 +60,7 @@ class SettingsViewModel @Inject constructor(
     private val notificationDebugService: NotificationDebugService,
     private val accountManager: AccountManager,
     private val updateManager: UpdateManager,
+    private val cacheInventory: CacheInventory,
     getProfileUseCase: GetProfileUseCase,
     private val toastManager: ToastManager,
     @ApplicationContext private val context: Context
@@ -423,9 +425,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _isCacheClearing.value = true
             try {
-                context.cacheDir.deleteRecursively()
-                context.externalCacheDir?.deleteRecursively()
-                _cacheSize.value = "0 B"
+                cacheInventory.clearAll()
+                _cacheSize.value = formatFileSize(cacheInventory.totalBytes())
                 _isCacheCleared.value = true
                 toastManager.showToast(ToastType.SUCCESS, message = "Cache cleared")
             } catch (e: Exception) {
@@ -436,15 +437,8 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun calculateCacheSizeAsync(): String {
-        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            val internalCacheSize = context.cacheDir.walkTopDown().sumOf { it.length() }
-            val externalCacheSize =
-                context.externalCacheDir?.walkTopDown()?.sumOf { it.length() } ?: 0L
-            val totalSize = internalCacheSize + externalCacheSize
-            formatFileSize(totalSize)
-        }
-    }
+    private suspend fun calculateCacheSizeAsync(): String =
+        formatFileSize(cacheInventory.totalBytes())
 
     private fun formatFileSize(bytes: Long): String {
         return when {
