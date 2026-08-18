@@ -63,6 +63,9 @@ private val TILE_ART_HEIGHT = 90.dp
 private val ROW_ART_WIDTH = 104.dp
 private val ROW_ART_HEIGHT = 59.dp
 
+/** Keeps a long slug ("OP1-EN4Kids") inside the artwork instead of wrapping out of it. */
+private const val BADGE_MAX_WIDTH_FRACTION = 0.82f
+
 /**
  * Where a theme plays across a show's run.
  *
@@ -82,7 +85,12 @@ fun EpisodeCoverageBar(
     modifier: Modifier = Modifier,
     height: Dp = 6.dp,
     coveredColor: Color = MaterialTheme.colorScheme.primary,
-    trackColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
+    trackColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f),
+    /**
+     * Whether no spans means the theme plays over everything. True for an entry AnimeThemes never
+     * gave a range, false when the range is merely being withheld behind a spoiler tap.
+     */
+    emptyMeansAll: Boolean = true
 ) {
     val total = totalEpisodes ?: return
     if (total <= 0) return
@@ -95,7 +103,8 @@ fun EpisodeCoverageBar(
         val radius = CornerRadius(size.height / 2f, size.height / 2f)
 
         if (spans.isEmpty()) {
-            drawRoundRect(color = coveredColor.copy(alpha = 0.4f), cornerRadius = radius)
+            val fill = if (emptyMeansAll) coveredColor.copy(alpha = 0.4f) else trackColor
+            drawRoundRect(color = fill, cornerRadius = radius)
             return@Canvas
         }
 
@@ -218,12 +227,15 @@ private fun ThemeArtwork(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(6.dp)
+                .fillMaxWidth(BADGE_MAX_WIDTH_FRACTION)
         ) {
             Text(
                 text = slug,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
             )
         }
@@ -244,7 +256,7 @@ fun ThemeTile(
     val description = if (theme.isSpoiler || spans.isEmpty()) {
         theme.songTitle.orEmpty()
     } else {
-        stringResource(R.string.themes_episodes, coverageLabel)
+        pluralStringResource(R.plurals.themes_episodes, episodeQuantity(spans), coverageLabel)
     }
 
     // The ripple is rounded at the top to match the artwork and left square at the bottom, so
@@ -364,14 +376,20 @@ fun ThemeRow(
                             Text(
                                 text = stringResource(R.string.themes_spoiler_hidden),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
                             )
                             Spacer(Modifier.width(8.dp))
+                            // Never wraps: a broken "Revea/l" reads as a rendering fault.
                             Text(
                                 text = stringResource(R.string.themes_spoiler_reveal),
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     } else {
@@ -379,7 +397,7 @@ fun ThemeRow(
                             text = themeCoverageLabel(theme, spans),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
@@ -405,11 +423,7 @@ fun ThemeRow(
                 spans = if (hideEpisodes) emptyList() else spans,
                 totalEpisodes = totalEpisodes,
                 height = 6.dp,
-                coveredColor = if (hideEpisodes) {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f)
-                } else {
-                    MaterialTheme.colorScheme.primary
-                }
+                emptyMeansAll = !hideEpisodes
             )
         }
     }
@@ -593,7 +607,11 @@ private fun ThemesErrorCard(
 fun themeCoverageLabel(theme: MediaTheme, spans: List<EpisodeSpan>): String {
     val range = when {
         spans.isEmpty() -> stringResource(R.string.themes_all_episodes)
-        else -> stringResource(R.string.themes_episodes, formatEpisodeSpans(spans))
+        else -> pluralStringResource(
+            R.plurals.themes_episodes,
+            episodeQuantity(spans),
+            formatEpisodeSpans(spans)
+        )
     }
     val versions = theme.versions.size
     return if (versions > 1) {
@@ -601,6 +619,12 @@ fun themeCoverageLabel(theme: MediaTheme, spans: List<EpisodeSpan>): String {
     } else {
         range
     }
+}
+
+/** 1 when the theme plays over a single episode, so the label can say "Episode" not "Episodes". */
+fun episodeQuantity(spans: List<EpisodeSpan>): Int {
+    val only = spans.singleOrNull() ?: return 2
+    return if (only.end == only.start) 1 else 2
 }
 
 /** "13 of 24 episodes", shown in the sheet where a number is worth more than a shape. */

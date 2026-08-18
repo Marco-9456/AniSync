@@ -45,6 +45,7 @@ import com.anisync.android.domain.MediaTheme
 import com.anisync.android.domain.ThemeType
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
+import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.details.components.ThemeRow
 import com.anisync.android.presentation.details.components.ThemeSheet
 import com.anisync.android.presentation.util.bouncyClickable
@@ -282,53 +283,17 @@ private fun ThemeFilterRow(
 ) {
     if (!hasOpenings || !hasEndings) return
 
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(50),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(4.dp)
-        ) {
-            ThemeFilter.entries.forEach { option ->
-                val isSelected = option == selected
-                Surface(
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainer
-                    },
-                    shape = RoundedCornerShape(50),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .bouncyClickable(
-                            onClick = { onSelect(option) },
-                            clipShape = RoundedCornerShape(50)
-                        )
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.padding(vertical = 9.dp)
-                    ) {
-                        Text(
-                            text = when (option) {
-                                ThemeFilter.All -> stringResource(R.string.themes_filter_all)
-                                ThemeFilter.Openings -> stringResource(R.string.themes_group_openings)
-                                ThemeFilter.Endings -> stringResource(R.string.themes_group_endings)
-                            },
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) {
-                                MaterialTheme.colorScheme.onPrimary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-                        )
-                    }
-                }
+    SegmentedTabGroup(
+        options = ThemeFilter.entries,
+        selected = selected,
+        onSelect = onSelect,
+        label = {
+            when (it) {
+                ThemeFilter.All -> stringResource(R.string.themes_filter_all)
+                ThemeFilter.Openings -> stringResource(R.string.themes_group_openings)
+                ThemeFilter.Endings -> stringResource(R.string.themes_group_endings)
             }
-        }
-    }
+        },
+        fillEqually = true
+    )
 }

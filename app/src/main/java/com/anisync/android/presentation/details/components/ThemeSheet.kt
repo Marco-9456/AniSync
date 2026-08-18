@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -138,20 +139,24 @@ fun ThemeSheet(
             } else {
                 SheetLabel(stringResource(R.string.themes_appears_in))
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
-                EpisodeCoverageBar(
-                    spans = theme.episodeSpans,
-                    totalEpisodes = totalEpisodes,
-                    height = 10.dp
-                )
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
+                // A show with no episode count on AniList gets no bar, so the slot goes with it.
+                if (totalEpisodes != null && totalEpisodes > 0) {
+                    EpisodeCoverageBar(
+                        spans = theme.episodeSpans,
+                        totalEpisodes = totalEpisodes,
+                        height = 10.dp
+                    )
+                    Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
+                }
                 val coverage = themeCoverageCount(theme.episodeSpans, totalEpisodes)
                 Text(
                     text = listOfNotNull(
                         if (theme.episodeSpans.isEmpty()) {
                             stringResource(R.string.themes_all_episodes)
                         } else {
-                            stringResource(
-                                R.string.themes_episodes,
+                            pluralStringResource(
+                                R.plurals.themes_episodes,
+                                episodeQuantity(theme.episodeSpans),
                                 formatEpisodeSpans(theme.episodeSpans)
                             )
                         },
@@ -215,27 +220,20 @@ fun ThemeSheet(
 
 @Composable
 private fun ThemeIdentity(theme: MediaTheme) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(
-            color = MaterialTheme.colorScheme.primaryContainer,
-            shape = RoundedCornerShape(50)
-        ) {
-            Text(
-                text = theme.slug,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp)
-            )
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = RoundedCornerShape(50)
+    ) {
+        val name = when (theme.type) {
+            ThemeType.OP -> stringResource(R.string.themes_opening_number, theme.sequence ?: 1)
+            ThemeType.ED -> stringResource(R.string.themes_ending_number, theme.sequence ?: 1)
         }
-        Spacer(Modifier.width(dimensionResource(R.dimen.spacing_small)))
         Text(
-            text = when (theme.type) {
-                ThemeType.OP -> stringResource(R.string.themes_opening_number, theme.sequence ?: 1)
-                ThemeType.ED -> stringResource(R.string.themes_ending_number, theme.sequence ?: 1)
-            },
+            text = theme.qualifier?.let { "$name  ·  $it" } ?: name,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
         )
     }
     Spacer(Modifier.height(6.dp))
@@ -334,7 +332,11 @@ private fun VersionCard(
                         text = if (spans.isEmpty()) {
                             stringResource(R.string.themes_all_episodes)
                         } else {
-                            stringResource(R.string.themes_episodes, formatEpisodeSpans(spans))
+                            pluralStringResource(
+                                R.plurals.themes_episodes,
+                                episodeQuantity(spans),
+                                formatEpisodeSpans(spans)
+                            )
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
