@@ -50,6 +50,7 @@ import com.anisync.android.presentation.navigation.ForumThreadDetail
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.MediaRecommendationsGrid
 import com.anisync.android.presentation.navigation.MediaRelationsGrid
+import com.anisync.android.presentation.navigation.MediaThemes
 import com.anisync.android.presentation.navigation.StaffDetails
 import com.anisync.android.presentation.navigation.StudioDetails
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
@@ -229,6 +230,9 @@ private fun NotificationDetailPane(
                     onRelatedSeeAllClick = { mId, t -> navController.navigate(MediaRelationsGrid(mId, t)) },
                     onRecommendationsSeeAllClick = { mId, t ->
                         navController.navigate(MediaRecommendationsGrid(mId, t))
+                    },
+                    onThemesSeeAllClick = { mId, t, episodes, cover ->
+                        navController.navigate(MediaThemes(mId, t, episodes, cover))
                     },
                     onWriteReviewClick = { mId, t -> navController.navigate(WriteReview(mId, t)) },
                     onDiscussionClick = { tId, tt -> navController.navigate(ForumThreadDetail(tId, tt)) },

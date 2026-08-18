@@ -69,6 +69,7 @@ import com.anisync.android.presentation.details.CharacterMediaGridScreen
 import com.anisync.android.presentation.details.MediaDetailsScreen
 import com.anisync.android.presentation.details.MediaRecommendationsGridScreen
 import com.anisync.android.presentation.details.MediaRelationsGridScreen
+import com.anisync.android.presentation.details.MediaThemesScreen
 import com.anisync.android.presentation.details.StaffDetailsScreen
 import com.anisync.android.presentation.details.StaffMediaGridScreen
 import com.anisync.android.presentation.details.StaffProductionMediaGridScreen
@@ -450,6 +451,9 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             onRecommendationsSeeAllClick = { mId, t ->
                 paneNav.navigate(MediaRecommendationsGrid(mId, t))
             },
+            onThemesSeeAllClick = { mId, t, episodes, cover ->
+                paneNav.navigate(MediaThemes(mId, t, episodes, cover))
+            },
             onWriteReviewClick = { mId, t -> navController.navigate(WriteReview(mId, t)) },
             onDiscussionClick = { tId, tt -> navController.navigate(ForumThreadDetail(tId, tt)) },
             onViewAllDiscussions = { mId, t -> navController.navigate(ForumMediaThreads(mId, t)) },
@@ -498,6 +502,19 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
             onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             onMediaSeeAllClick = { sId, sName -> paneNav.navigate(StudioMediaGrid(sId, sName)) },
+        )
+    }
+
+    composable<MediaThemes> { backStackEntry ->
+        val route: MediaThemes = backStackEntry.toRoute()
+        MediaThemesScreen(
+            mediaTitle = route.mediaTitle,
+            totalEpisodes = route.totalEpisodes,
+            coverUrl = route.coverUrl,
+            onBackClick = { if (!paneNav.popBackStack()) onClose() },
+            // The pane is already the detail half of a split, so the theme opens in a sheet here
+            // rather than in a second pane inside this one.
+            forceSinglePane = true,
         )
     }
 
