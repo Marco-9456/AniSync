@@ -136,6 +136,20 @@ data class CharacterMediaGrid(
 )
 
 /**
+ * Full list of a title's openings and endings, opened from the section arrow on the
+ * media details page.
+ * @param mediaId The ID of the media
+ * @param mediaTitle The title of the media (for display under the app bar)
+ */
+@Serializable
+data class MediaThemes(
+    val mediaId: Int,
+    val mediaTitle: String,
+    val totalEpisodes: Int? = null,
+    val coverUrl: String? = null
+)
+
+/**
  * Grid screen for displaying all recommendations for a media.
  * @param mediaId The ID of the media
  * @param mediaTitle The title of the media (for display in app bar)

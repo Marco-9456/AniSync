@@ -8,6 +8,7 @@ import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaReview
+import com.anisync.android.domain.MediaTheme
 import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.StudioInfo
@@ -214,4 +215,14 @@ class Converters {
 
     @TypeConverter
     fun toStudioRefList(list: List<StudioRef>): String = json.encodeToString(list)
+
+    @TypeConverter
+    fun fromMediaThemeList(value: String): List<MediaTheme> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    @TypeConverter
+    fun toMediaThemeList(list: List<MediaTheme>): String = json.encodeToString(list)
 }

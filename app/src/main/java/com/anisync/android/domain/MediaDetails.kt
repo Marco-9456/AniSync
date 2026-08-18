@@ -149,6 +149,21 @@ data class NextAiringEpisode(
     val timeUntilAiring: Int    // seconds, snapshot at fetch time (fallback only)
 )
 
+/**
+ * Episodes to measure a theme's coverage against.
+ *
+ * AniList leaves [MediaDetails.episodes] null for a show that is still airing, which would
+ * cost every long-running series its episode bar. How many have aired is still knowable:
+ * the next episode number, minus the one that has not arrived. The denominator grows week
+ * to week, which is honest rather than misleading, and the scale label says what it used.
+ */
+val MediaDetails.coverageEpisodeCount: Int?
+    get() = coverageEpisodeCount(episodes, nextAiringEpisode?.episode)
+
+/** The rule behind [coverageEpisodeCount], kept separate so it can be tested on its own. */
+fun coverageEpisodeCount(episodes: Int?, nextAiringEpisode: Int?): Int? =
+    episodes ?: nextAiringEpisode?.minus(1)?.takeIf { it > 0 }
+
 @Serializable
 data class StaffInfo(
     val id: Int,

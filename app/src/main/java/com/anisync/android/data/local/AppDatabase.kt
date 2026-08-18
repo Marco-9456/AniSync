@@ -10,6 +10,7 @@ import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.data.local.entity.MediaDetailsEntity
+import com.anisync.android.data.local.entity.MediaThemesEntity
 import com.anisync.android.data.local.entity.SavedForumThreadEntity
 import com.anisync.android.data.local.entity.TrendingEntity
 import com.anisync.android.data.local.entity.UserProfileEntity
@@ -19,6 +20,12 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v24 (Aug 2026):
+ *   - Added media_themes table for the AnimeThemes openings and endings lookup:
+ *     • mediaId, themes (JSON blob), fetchedAt
+ *     An empty themes list is stored deliberately, recording that AnimeThemes does
+ *     not list the title so the page stops asking. Auto-migration, new table only.
+ *
  * v23 (Aug 2026):
  *   - airing_schedule is now account scoped:
  *     • ownerId joined the primary key, matching library_entries since v18, so a
@@ -101,9 +108,10 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         UserProfileEntity::class,
         AiringScheduleEntity::class,
         TrendingEntity::class,
-        SavedForumThreadEntity::class
+        SavedForumThreadEntity::class,
+        MediaThemesEntity::class
     ],
-    version = 23,
+    version = 24,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
@@ -124,7 +132,8 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         androidx.room.AutoMigration(from = 18, to = 19),
         androidx.room.AutoMigration(from = 19, to = 20),
         androidx.room.AutoMigration(from = 20, to = 21),
-        androidx.room.AutoMigration(from = 21, to = 22)
+        androidx.room.AutoMigration(from = 21, to = 22),
+        androidx.room.AutoMigration(from = 23, to = 24)
     ]
 )
 @TypeConverters(Converters::class)
@@ -135,4 +144,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun airingScheduleDao(): com.anisync.android.data.local.dao.AiringScheduleDao
     abstract fun trendingDao(): com.anisync.android.data.local.dao.TrendingDao
     abstract fun savedForumThreadDao(): SavedForumThreadDao
+    abstract fun mediaThemesDao(): com.anisync.android.data.local.dao.MediaThemesDao
 }

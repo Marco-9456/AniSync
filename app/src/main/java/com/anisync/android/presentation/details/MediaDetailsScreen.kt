@@ -129,6 +129,7 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.coverageEpisodeCount
 import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
@@ -145,6 +146,8 @@ import com.anisync.android.presentation.details.components.ContentMetadataSectio
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
 import com.anisync.android.presentation.details.components.ExpandableSynopsis
 import com.anisync.android.presentation.details.components.ExternalLinksSection
+import com.anisync.android.presentation.details.components.MediaThemesSection
+import com.anisync.android.presentation.details.components.ThemeSheet
 import com.anisync.android.presentation.details.components.FollowingListSheet
 import com.anisync.android.presentation.settings.components.SettingsPickerSheet
 import com.anisync.android.presentation.details.components.FollowingRow
@@ -188,6 +191,7 @@ fun MediaDetailsScreen(
     onStudioClick: (Int) -> Unit = {},
     onRelatedSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onRecommendationsSeeAllClick: (Int, String) -> Unit = { _, _ -> },
+    onThemesSeeAllClick: (mediaId: Int, mediaTitle: String, totalEpisodes: Int?, coverUrl: String?) -> Unit = { _, _, _, _ -> },
     onWriteReviewClick: (Int, String) -> Unit = { _, _ -> },
     onReviewClick: (Int) -> Unit = {},
     onDiscussionClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
@@ -196,6 +200,7 @@ fun MediaDetailsScreen(
     onUserClick: (String) -> Unit = {},
     navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     viewModel: MediaDetailsViewModel = hiltViewModel(),
+    themesViewModel: MediaThemesViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -209,11 +214,16 @@ fun MediaDetailsScreen(
     val following by viewModel.following.collectAsStateWithLifecycle()
     val hasMoreFollowing by viewModel.hasMoreFollowing.collectAsStateWithLifecycle()
     val discussions by viewModel.discussions.collectAsStateWithLifecycle()
+    val themesState by themesViewModel.state.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val cast by viewModel.cast.collectAsStateWithLifecycle()
     val staff by viewModel.staff.collectAsStateWithLifecycle()
     val mediaStats by viewModel.stats.collectAsStateWithLifecycle()
     val pullToRefreshState = rememberPullToRefreshState()
+
+    // AnimeThemes only carries anime, so the lookup waits until the page says which it is.
+    val isAnime = (uiState as? DetailsUiState.Success)?.details?.type == com.anisync.android.type.MediaType.ANIME
+    LaunchedEffect(isAnime) { themesViewModel.start(isAnime) }
 
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
@@ -662,6 +672,18 @@ fun MediaDetailsScreen(
                                         state.details.getTitle(titleLanguage)
                                     )
                                 },
+                                onThemesSeeAllClick = {
+                                    shouldKeepChromeOverlayForReturn = true
+                                    hasObservedDetailsReEnter = false
+                                    onThemesSeeAllClick(
+                                        state.details.id,
+                                        state.details.getTitle(titleLanguage),
+                                        state.details.coverageEpisodeCount,
+                                        state.details.bannerUrl ?: state.details.coverUrl
+                                    )
+                                },
+                                themesState = themesState,
+                                onRetryThemes = themesViewModel::retry,
                                 onWriteReviewClick = {
                                     onWriteReviewClick(
                                         state.details.id,
@@ -961,6 +983,9 @@ fun DetailsPageContent(
     onStudioClick: (Int) -> Unit,
     onRelatedSeeAllClick: () -> Unit,
     onRecommendationsSeeAllClick: () -> Unit,
+    onThemesSeeAllClick: () -> Unit,
+    themesState: MediaThemesState,
+    onRetryThemes: () -> Unit,
     onWriteReviewClick: () -> Unit,
     onReviewClick: (Int) -> Unit,
     onEditNotes: () -> Unit,
@@ -1011,6 +1036,7 @@ fun DetailsPageContent(
 
     var showAllReviewsSheet by remember { mutableStateOf(false) }
     var showAllFollowingSheet by remember { mutableStateOf(false) }
+    var openThemeSheet by remember { mutableStateOf<com.anisync.android.domain.MediaTheme?>(null) }
     var showRecommendSheet by remember { mutableStateOf(false) }
 
     val displayStaff = remember(details.staff) {
@@ -1210,6 +1236,30 @@ fun DetailsPageContent(
                                 ExternalLinksSection(
                                     externalLinks = details.externalLinks,
                                     mediaType = details.type
+                                )
+                            }
+                        }
+                    }
+
+                    // Openings & Endings (AnimeThemes)
+                    item(key = "media_themes") {
+                        // Anime only, and the skeleton holds the space until the lookup answers so
+                        // the sections below it do not jump once it does.
+                        val awaitingThemes = !themesState.hasLoaded &&
+                            details.type == com.anisync.android.type.MediaType.ANIME
+                        if (themesState.themes.isNotEmpty() || awaitingThemes || themesState.errorMessage != null) {
+                            Column {
+                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                                MediaThemesSection(
+                                    themes = themesState.themes,
+                                    isLoading = themesState.isLoading || awaitingThemes,
+                                    errorMessage = themesState.errorMessage,
+                                    retryAfterSeconds = themesState.retryAfterSeconds,
+                                    coverUrl = details.bannerUrl ?: details.coverUrl,
+                                    totalEpisodes = details.coverageEpisodeCount,
+                                    onSeeAllClick = onThemesSeeAllClick,
+                                    onThemeClick = { openThemeSheet = it },
+                                    onRetryClick = onRetryThemes
                                 )
                             }
                         }
@@ -1570,6 +1620,15 @@ fun DetailsPageContent(
             itemLabel = { it.label },
             onSelect = { staffSort = it; onStaffSortChange(it.apiSort); showStaffSortSheet = false },
             onDismiss = { showStaffSortSheet = false }
+        )
+    }
+
+    openThemeSheet?.let { theme ->
+        ThemeSheet(
+            theme = theme,
+            totalEpisodes = details.coverageEpisodeCount,
+            animeSlug = themesState.animeSlug,
+            onDismiss = { openThemeSheet = null }
         )
     }
 

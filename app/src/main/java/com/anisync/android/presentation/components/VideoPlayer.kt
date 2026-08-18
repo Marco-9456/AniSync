@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.components
 
+import android.content.Context
 import android.content.Intent
 import android.view.LayoutInflater
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -13,7 +14,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -70,6 +74,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -78,6 +83,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
+import androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
@@ -137,12 +143,15 @@ private const val CONTROLS_HIDE_DELAY_MS = 3000L
 fun VideoPlayer(
     url: String,
     modifier: Modifier = Modifier,
-    playerCache: ExoPlayerCache? = LocalExoPlayerCache.current
+    playerCache: ExoPlayerCache? = LocalExoPlayerCache.current,
+    startMuted: Boolean = true,
+    loop: Boolean = true,
+    autoPlay: Boolean = false
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    var isMuted by remember { mutableStateOf(true) }
+    var isMuted by remember { mutableStateOf(startMuted) }
     var isPlaying by remember { mutableStateOf(false) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var durationMs by remember { mutableLongStateOf(0L) }
@@ -161,7 +170,7 @@ fun VideoPlayer(
     val exoPlayer = if (playerCache != null) {
         remember(url) { playerCache.getOrCreate(url) }
     } else {
-        remember(url) { buildVideoExoPlayer(context.applicationContext, url) }
+        remember(url) { buildVideoExoPlayer(context.applicationContext, url, startMuted, loop, autoPlay) }
     }
 
     DisposableEffect(exoPlayer) {
@@ -191,7 +200,7 @@ fun VideoPlayer(
                     error
                 )
                 playerState = PlayerState.Error
-                errorMessage = playbackErrorMessage(error)
+                errorMessage = playbackErrorMessage(context, error)
             }
         }
 
@@ -280,7 +289,9 @@ fun VideoPlayer(
             .fillMaxWidth()
             .aspectRatio(displayAspect)
             .clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            // Black, not a surface tint: any letterboxing a clip's aspect leaves should read as
+            // part of the picture rather than a pale frame around it.
+            .background(Color.Black)
     ) {
         if (playerState != PlayerState.Error) {
             PlayerSurface(
@@ -329,18 +340,53 @@ internal fun mapPlaybackState(playbackState: Int, current: PlayerState): PlayerS
 }
 
 /** Friendly, user-facing copy for a playback failure. */
-internal fun playbackErrorMessage(error: PlaybackException): String = when (error.errorCode) {
-    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
-    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ->
-        "Network error — check your connection"
-    PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
-    PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS ->
-        "This video is no longer available"
-    PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
-    PlaybackException.ERROR_CODE_DECODING_FAILED ->
-        "Unsupported video format"
-    else -> "Unable to play this video"
+internal fun playbackErrorMessage(context: Context, error: PlaybackException): String {
+    val status = error.httpStatusCode()
+    val messageRes = when {
+        status == HTTP_TOO_MANY_REQUESTS -> R.string.player_error_rate_limited
+        status != null && status >= 500 -> R.string.player_error_server
+        status == HTTP_NOT_FOUND || status == HTTP_GONE -> R.string.player_error_missing
+
+        else -> when (error.errorCode) {
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ->
+                R.string.player_error_network
+
+            PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND -> R.string.player_error_missing
+
+            // The host answered with something that is not video, which in practice is an
+            // error page from a struggling CDN rather than a dead file.
+            PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,
+            PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> R.string.player_error_server
+
+            PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+            PlaybackException.ERROR_CODE_DECODING_FAILED -> R.string.player_error_format
+
+            else -> R.string.player_error_generic
+        }
+    }
+    return context.getString(messageRes)
 }
+
+/**
+ * The HTTP status behind a playback failure, when there was one.
+ *
+ * Media3 reports a 503 and a 404 under codes that read alike, so the status is what separates
+ * "the host is down, wait" from "this file is gone, do not bother waiting". It sits on the
+ * cause chain rather than the exception itself.
+ */
+private fun PlaybackException.httpStatusCode(): Int? {
+    var cause: Throwable? = this
+    while (cause != null) {
+        if (cause is InvalidResponseCodeException) return cause.responseCode
+        cause = cause.cause
+    }
+    return null
+}
+
+private const val HTTP_TOO_MANY_REQUESTS = 429
+private const val HTTP_NOT_FOUND = 404
+private const val HTTP_GONE = 410
 
 /**
  * The native video surface. [active] hands the shared [exoPlayer] to exactly one surface at a time
@@ -417,42 +463,63 @@ internal fun PlayerStatusVisuals(
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center
             ) {
+                // The player is locked to the clip's aspect ratio, so this column has to fit a
+                // box it does not control. It scrolls rather than clipping, which is what used
+                // to cut the retry button in half once a message ran to two lines.
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(24.dp)
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 14.dp)
                 ) {
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.errorContainer,
-                        modifier = Modifier.size(56.dp)
+                        modifier = Modifier.size(44.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Rounded.BrokenImage,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.size(28.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(10.dp))
 
                     Text(
-                        text = errorMessage ?: "Unable to play this video",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = errorMessage ?: stringResource(R.string.player_error_generic),
+                        style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
                     )
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(10.dp))
 
-                    FilledTonalButton(onClick = onRetry, shape = RoundedCornerShape(100)) {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.size(8.dp))
-                        Text(text = stringResource(R.string.retry), fontWeight = FontWeight.SemiBold)
+                    FilledTonalButton(
+                        onClick = onRetry,
+                        shape = RoundedCornerShape(100),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.size(6.dp))
+                        Text(
+                            text = stringResource(R.string.retry),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
             }

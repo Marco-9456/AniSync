@@ -683,6 +683,63 @@
     <string name="subsection_reading">Read On</string>
     <string name="subsection_external">External Links</string>
 
+    <!-- Video playback errors -->
+    <string name="player_error_network">No connection. Check your network and try again.</string>
+    <string name="player_error_server">The video host is having trouble right now. Try again in a moment.</string>
+    <string name="player_error_rate_limited">The video host is refusing requests. Wait a moment and try again.</string>
+    <string name="player_error_missing">This video is no longer on the host.</string>
+    <string name="player_error_format">This video format is not supported.</string>
+    <string name="player_error_generic">Unable to play this video.</string>
+
+    <!-- Openings &amp; Endings (AnimeThemes) -->
+    <string name="section_themes">Openings &amp; Endings</string>
+    <plurals name="themes_openings_count">
+        <item quantity="one">%d opening</item>
+        <item quantity="other">%d openings</item>
+    </plurals>
+    <plurals name="themes_endings_count">
+        <item quantity="one">%d ending</item>
+        <item quantity="other">%d endings</item>
+    </plurals>
+    <plurals name="themes_versions_count">
+        <item quantity="one">%d version</item>
+        <item quantity="other">%d versions</item>
+    </plurals>
+    <string name="themes_filter_all">All</string>
+    <string name="themes_group_openings">Openings</string>
+    <string name="themes_group_endings">Endings</string>
+    <plurals name="themes_episodes">
+        <item quantity="one">Episode %1$s</item>
+        <item quantity="other">Episodes %1$s</item>
+    </plurals>
+    <string name="themes_all_episodes">All episodes</string>
+    <string name="themes_coverage">%1$d of %2$d episodes</string>
+    <string name="themes_episode_scale">Ep 1 – %1$d</string>
+    <string name="themes_opening_number">Opening %1$d</string>
+    <string name="themes_ending_number">Ending %1$d</string>
+    <string name="themes_spoiler_tag">Spoiler</string>
+    <string name="cd_theme_spoiler">This theme may spoil the show</string>
+    <string name="themes_failed_title">Themes did not load</string>
+    <string name="themes_failed_body">AniList data on this page is unaffected. Only the AnimeThemes request failed.</string>
+    <string name="themes_retry">Retry</string>
+    <string name="themes_retry_in">Retry in %1$ds</string>
+    <string name="themes_empty">AnimeThemes does not list this title yet.</string>
+    <string name="themes_video">Video</string>
+    <string name="themes_appears_in">Appears in</string>
+    <string name="themes_versions">Versions</string>
+    <string name="themes_version_label">Version %1$d</string>
+    <string name="themes_variant_creditless">Creditless</string>
+    <string name="themes_variant_with_credits">With credits</string>
+    <string name="themes_variant_subbed">Subbed</string>
+    <string name="themes_variant_lyrics">Lyrics</string>
+    <string name="themes_open_source">Open on AnimeThemes</string>
+    <string name="themes_attribution">Theme data and video from AnimeThemes.moe</string>
+    <string name="themes_action_youtube">YouTube</string>
+    <string name="themes_action_animethemes">AnimeThemes</string>
+    <string name="themes_action_share">Share</string>
+    <string name="themes_share_subject">%1$s by %2$s</string>
+    <string name="cd_theme_play">Play %1$s</string>
+
     <!-- Edit Library Entry -->
     <string name="edit_entry">Edit Entry</string>
     <string name="no_score">No Score</string>

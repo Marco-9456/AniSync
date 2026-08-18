@@ -31,6 +31,7 @@ import com.anisync.android.presentation.details.CharacterMediaGridScreen
 import com.anisync.android.presentation.details.MediaDetailsScreen
 import com.anisync.android.presentation.details.MediaRecommendationsGridScreen
 import com.anisync.android.presentation.details.MediaRelationsGridScreen
+import com.anisync.android.presentation.details.MediaThemesScreen
 import com.anisync.android.presentation.details.StaffDetailsScreen
 import com.anisync.android.presentation.details.StaffMediaGridScreen
 import com.anisync.android.presentation.details.StaffProductionMediaGridScreen
@@ -574,6 +575,9 @@ fun AniSyncNavHost(
                     onRecommendationsSeeAllClick = { mediaId, mediaTitle ->
                         navController.navigate(MediaRecommendationsGrid(mediaId, mediaTitle))
                     },
+                    onThemesSeeAllClick = { mediaId, mediaTitle, totalEpisodes, coverUrl ->
+                        navController.navigate(MediaThemes(mediaId, mediaTitle, totalEpisodes, coverUrl))
+                    },
                     onWriteReviewClick = { mediaId, mediaTitle ->
                         navController.navigate(WriteReview(mediaId, mediaTitle))
                     },
@@ -909,6 +913,24 @@ fun AniSyncNavHost(
                     },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
+                )
+            }
+
+            // =================================================================
+            // MEDIA THEMES (OPENINGS & ENDINGS) - Shared Axis Z (Depth)
+            // =================================================================
+            composable<MediaThemes>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val route: MediaThemes = backStackEntry.toRoute()
+                MediaThemesScreen(
+                    mediaTitle = route.mediaTitle,
+                    totalEpisodes = route.totalEpisodes,
+                    coverUrl = route.coverUrl,
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 
