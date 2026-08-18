@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -62,8 +63,8 @@ private val TILE_ART_HEIGHT = 90.dp
 private val ROW_ART_WIDTH = 104.dp
 private val ROW_ART_HEIGHT = 59.dp
 
-/** Keeps a long slug ("OP1-EN4Kids") inside the artwork instead of wrapping out of it. */
-private const val BADGE_MAX_WIDTH_FRACTION = 0.82f
+/** Room left around a long slug ("OP1-EN4Kids") so it ellipsises inside the artwork. */
+private val BADGE_INSET = 16.dp
 
 /**
  * Where a theme plays across a show's run.
@@ -166,6 +167,7 @@ private fun ThemeArtwork(
     type: ThemeType,
     cornerRadius: Dp,
     playGlyphSize: Dp,
+    artWidth: Dp,
     modifier: Modifier = Modifier,
     /** False in the full list, where the row already carries a play button the glyph would sit under. */
     showPlayGlyph: Boolean = true
@@ -224,7 +226,8 @@ private fun ThemeArtwork(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(6.dp)
-                .fillMaxWidth(BADGE_MAX_WIDTH_FRACTION)
+                // A cap, not a width: "OP1" stays tight and only a long slug is trimmed.
+                .widthIn(max = artWidth - BADGE_INSET)
         ) {
             Text(
                 text = slug,
@@ -272,6 +275,7 @@ fun ThemeTile(
             type = theme.type,
             cornerRadius = 14.dp,
             playGlyphSize = 30.dp,
+            artWidth = TILE_WIDTH,
             modifier = Modifier
                 .width(TILE_WIDTH)
                 .height(TILE_ART_HEIGHT)
@@ -331,6 +335,7 @@ fun ThemeRow(
                     type = theme.type,
                     cornerRadius = 10.dp,
                     playGlyphSize = 26.dp,
+                    artWidth = ROW_ART_WIDTH,
                     showPlayGlyph = false,
                     modifier = Modifier
                         .width(ROW_ART_WIDTH)
