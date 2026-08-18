@@ -1,0 +1,60 @@
+extend schema @link(
+  url: "https://specs.apollo.dev/cache/v0.4",
+  import: ["@typePolicy", "@fieldPolicy", "@cacheControl", "@cacheControlField"]
+)
+
+# Cache IDs for every AniList type carrying a stable `id`.
+#
+# Without these the normalized cache keys records by their path from the query root, so the same
+# anime seen in Discover, the feed, the airing schedule and its own details page is stored four
+# times over, and a root field keyed only on its arguments can collide across unrelated operations
+# (`Page(page: 1, perPage: 20)` was shared by recent reviews and forum threads, with `pageInfo`
+# going to whichever query wrote last).
+#
+# MediaTag is deliberately absent. It has a global `id`, but `rank` is documented as "the relevance
+# ranking of the tag out of the 100 for this media" and `isMediaSpoiler` as "if the tag is a spoiler
+# for this media", and MediaDetails selects both. Keying it by `id` would let the last anime you
+# opened set the tag ranks and spoiler flags for every other one. It is the only id-bearing type in
+# the schema whose fields are scoped to their parent, so it is the only exclusion.
+
+extend type ActivityLikeNotification @typePolicy(keyFields: "id")
+extend type ActivityMentionNotification @typePolicy(keyFields: "id")
+extend type ActivityMessageNotification @typePolicy(keyFields: "id")
+extend type ActivityReply @typePolicy(keyFields: "id")
+extend type ActivityReplyLikeNotification @typePolicy(keyFields: "id")
+extend type ActivityReplyNotification @typePolicy(keyFields: "id")
+extend type ActivityReplySubscribedNotification @typePolicy(keyFields: "id")
+extend type AiringNotification @typePolicy(keyFields: "id")
+extend type AiringSchedule @typePolicy(keyFields: "id")
+extend type Character @typePolicy(keyFields: "id")
+extend type CharacterSubmission @typePolicy(keyFields: "id")
+extend type FollowingNotification @typePolicy(keyFields: "id")
+extend type ListActivity @typePolicy(keyFields: "id")
+extend type Media @typePolicy(keyFields: "id")
+extend type MediaDataChangeNotification @typePolicy(keyFields: "id")
+extend type MediaDeletionNotification @typePolicy(keyFields: "id")
+extend type MediaExternalLink @typePolicy(keyFields: "id")
+extend type MediaList @typePolicy(keyFields: "id")
+extend type MediaMergeNotification @typePolicy(keyFields: "id")
+extend type MediaRank @typePolicy(keyFields: "id")
+extend type MediaSubmission @typePolicy(keyFields: "id")
+extend type MessageActivity @typePolicy(keyFields: "id")
+extend type ModAction @typePolicy(keyFields: "id")
+extend type Recommendation @typePolicy(keyFields: "id")
+extend type RelatedMediaAdditionNotification @typePolicy(keyFields: "id")
+extend type Report @typePolicy(keyFields: "id")
+extend type Review @typePolicy(keyFields: "id")
+extend type RevisionHistory @typePolicy(keyFields: "id")
+extend type Staff @typePolicy(keyFields: "id")
+extend type StaffSubmission @typePolicy(keyFields: "id")
+extend type Studio @typePolicy(keyFields: "id")
+extend type TextActivity @typePolicy(keyFields: "id")
+extend type Thread @typePolicy(keyFields: "id")
+extend type ThreadCategory @typePolicy(keyFields: "id")
+extend type ThreadComment @typePolicy(keyFields: "id")
+extend type ThreadCommentLikeNotification @typePolicy(keyFields: "id")
+extend type ThreadCommentMentionNotification @typePolicy(keyFields: "id")
+extend type ThreadCommentReplyNotification @typePolicy(keyFields: "id")
+extend type ThreadCommentSubscribedNotification @typePolicy(keyFields: "id")
+extend type ThreadLikeNotification @typePolicy(keyFields: "id")
+extend type User @typePolicy(keyFields: "id")
