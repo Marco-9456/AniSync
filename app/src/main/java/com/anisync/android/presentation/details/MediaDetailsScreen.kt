@@ -1254,6 +1254,7 @@ fun DetailsPageContent(
                                     themes = themesState.themes,
                                     isLoading = themesState.isLoading || awaitingThemes,
                                     errorMessage = themesState.errorMessage,
+                                    retryAfterSeconds = themesState.retryAfterSeconds,
                                     coverUrl = details.bannerUrl ?: details.coverUrl,
                                     totalEpisodes = details.coverageEpisodeCount,
                                     onSeeAllClick = onThemesSeeAllClick,

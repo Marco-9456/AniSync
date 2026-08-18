@@ -27,7 +27,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,6 +58,7 @@ import com.anisync.android.domain.ThemeType
 import com.anisync.android.domain.countCoveredEpisodes
 import com.anisync.android.domain.formatEpisodeSpans
 import com.anisync.android.presentation.util.bouncyClickable
+import kotlinx.coroutines.delay
 
 /** Past this many episodes a per-episode mark is thinner than a hairline, so the bar draws spans. */
 private const val TICK_LIMIT = 50
@@ -410,6 +415,7 @@ fun MediaThemesSection(
     themes: List<MediaTheme>,
     isLoading: Boolean,
     errorMessage: String?,
+    retryAfterSeconds: Long? = null,
     coverUrl: String?,
     totalEpisodes: Int?,
     onSeeAllClick: () -> Unit,
@@ -451,6 +457,8 @@ fun MediaThemesSection(
             }
 
             else -> ThemesErrorCard(
+                message = errorMessage,
+                retryAfterSeconds = retryAfterSeconds,
                 onRetryClick = onRetryClick,
                 modifier = Modifier.padding(horizontal = horizontal)
             )
@@ -523,9 +531,22 @@ private fun ThemeTileSkeleton() {
 
 @Composable
 private fun ThemesErrorCard(
+    message: String?,
+    retryAfterSeconds: Long?,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // A rate limit is the one failure with a known end, so it counts down and holds the
+    // button rather than inviting a tap that will fail the same way.
+    var remaining by remember(retryAfterSeconds) { mutableLongStateOf(retryAfterSeconds ?: 0L) }
+    LaunchedEffect(retryAfterSeconds) {
+        while (remaining > 0) {
+            delay(1_000)
+            remaining -= 1
+        }
+    }
+    val waiting = remaining > 0
+
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(16.dp),
@@ -540,7 +561,7 @@ private fun ThemesErrorCard(
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = stringResource(R.string.themes_failed_body),
+                text = message ?: stringResource(R.string.themes_failed_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -550,7 +571,13 @@ private fun ThemesErrorCard(
                 shape = RoundedCornerShape(50),
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .bouncyClickable(onClick = onRetryClick, clipShape = RoundedCornerShape(50))
+                    .then(
+                        if (waiting) Modifier
+                        else Modifier.bouncyClickable(
+                            onClick = onRetryClick,
+                            clipShape = RoundedCornerShape(50)
+                        )
+                    )
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -564,7 +591,11 @@ private fun ThemesErrorCard(
                     )
                     Spacer(Modifier.width(7.dp))
                     Text(
-                        text = stringResource(R.string.themes_retry),
+                        text = if (waiting) {
+                            stringResource(R.string.themes_retry_in, remaining)
+                        } else {
+                            stringResource(R.string.themes_retry)
+                        },
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary
                     )

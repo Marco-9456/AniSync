@@ -20,5 +20,7 @@ data class MediaThemesState(
     val themes: List<MediaTheme> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    /** Seconds AnimeThemes asked us to wait, from a 429's Retry-After. Null for other failures. */
+    val retryAfterSeconds: Long? = null,
     val hasLoaded: Boolean = false
 )

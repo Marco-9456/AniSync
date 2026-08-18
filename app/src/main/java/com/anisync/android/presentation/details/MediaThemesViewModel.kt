@@ -71,7 +71,7 @@ class MediaThemesViewModel @Inject constructor(
     }
 
     private suspend fun fetch() {
-        _state.update { it.copy(isLoading = true, errorMessage = null) }
+        _state.update { it.copy(isLoading = true, errorMessage = null, retryAfterSeconds = null) }
         when (val result = repository.refreshThemes(mediaId)) {
             is Result.Success -> _state.update {
                 it.copy(
@@ -83,7 +83,12 @@ class MediaThemesViewModel @Inject constructor(
             }
 
             is Result.Error -> _state.update {
-                it.copy(isLoading = false, hasLoaded = true, errorMessage = result.message)
+                it.copy(
+                    isLoading = false,
+                    hasLoaded = true,
+                    errorMessage = result.message,
+                    retryAfterSeconds = result.countdownSeconds
+                )
             }
         }
     }
