@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Process
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,6 +54,9 @@ class CrashReportActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Back must kill the crashed process too, not just pop this activity off the stack.
+        onBackPressedDispatcher.addCallback(this) { finishAndKill() }
+
         val stackTrace = intent.getStringExtra(EXTRA_STACK_TRACE).orEmpty()
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Unknown Error"
 
@@ -89,11 +93,6 @@ class CrashReportActivity : ComponentActivity() {
         finishAffinity()
         Process.killProcess(Process.myPid())
         exitProcess(10)
-    }
-
-    @Deprecated("Use finishAndKill directly", ReplaceWith("finishAndKill()"))
-    override fun onBackPressed() {
-        finishAndKill()
     }
 
     companion object {
