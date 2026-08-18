@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 11 and below. Auto Backup allows 25 MB per user, and once that is exceeded the system
+  stops backing the app up entirely, taking the settings and account metadata with it. So back up
+  what cannot be refetched and nothing else: including the whole database domain used to sweep in
+  the Apollo normalized cache, which is pure cache and grows without a ceiling.
+-->
 <full-backup-content>
-    <include domain="sharedpref" path="."/>
-    <include domain="database" path="."/>
+    <include domain="sharedpref" path="." />
+    <include domain="database" path="anisync.db" />
 </full-backup-content>

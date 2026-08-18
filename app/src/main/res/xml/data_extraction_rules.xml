@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12 and above. Same reasoning as backup_rules.xml: domain="root" pulled in every database,
+  and the Apollo normalized cache alone can eat the 25 MB Auto Backup quota, after which the system
+  quietly stops backing up the things that actually matter.
+
+  Device transfer has no such quota and moves to a device the user is holding, so it keeps the
+  wider set.
+-->
 <data-extraction-rules>
     <cloud-backup>
-        <include domain="root" />
+        <include domain="sharedpref" path="." />
+        <include domain="database" path="anisync.db" />
     </cloud-backup>
     <device-transfer>
-        <include domain="root" />
+        <include domain="sharedpref" path="." />
+        <include domain="database" path="anisync.db" />
+        <include domain="file" path="." />
     </device-transfer>
 </data-extraction-rules>
