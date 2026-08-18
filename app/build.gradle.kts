@@ -265,8 +265,8 @@ dependencies {
     implementation(libs.androidx.material3.adaptive.layout)
     implementation(libs.androidx.material3.adaptive.navigation)
     implementation(libs.apollo.runtime)
-    implementation(libs.apollo.normalized.cache)
-    implementation(libs.apollo.normalized.cache.sqlite)
+    implementation(libs.apollo.cache)
+    implementation(libs.apollo.cache.sqlite)
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)
     implementation(libs.coil.svg)
@@ -305,6 +305,14 @@ apollo {
             schemaFile.set(file("src/main/graphql/schema.graphqls"))
         }
         generateKotlinModels.set(true)
+        // Generates the type policies, max ages and the cache() builder extension the normalized
+        // cache reads. Apollo Kotlin v4 takes the argument inside the plugin block.
+        plugin(
+            "com.apollographql.cache:normalized-cache-apollo-compiler-plugin:" +
+                libs.versions.apolloCache.get()
+        ) {
+            argument("com.apollographql.cache.packageName", packageName.get())
+        }
         mapScalar("Json", "kotlin.Any", "com.apollographql.apollo.api.AnyAdapter")
         mapScalar("CountryCode", "kotlin.String", "com.apollographql.apollo.api.StringAdapter")
         mapScalar("FuzzyDateInt", "kotlin.Int", "com.apollographql.apollo.api.IntAdapter")

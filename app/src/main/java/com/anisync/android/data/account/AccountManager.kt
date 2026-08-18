@@ -11,7 +11,7 @@ import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.PreferencesRepository
 import com.anisync.android.widget.core.WidgetRefresh
 import com.apollographql.apollo.ApolloClient
-import com.apollographql.apollo.cache.normalized.apolloStore
+import com.apollographql.cache.normalized.apolloStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

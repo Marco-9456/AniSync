@@ -4,7 +4,7 @@ import android.content.Context
 import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
 import com.apollographql.apollo.ApolloClient
-import com.apollographql.apollo.cache.normalized.apolloStore
+import com.apollographql.cache.normalized.apolloStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

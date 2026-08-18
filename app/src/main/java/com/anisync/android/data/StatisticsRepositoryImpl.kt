@@ -23,8 +23,8 @@ import com.anisync.android.domain.UserStatistics
 import com.anisync.android.domain.VoiceActorStat
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
-import com.apollographql.apollo.cache.normalized.FetchPolicy
-import com.apollographql.apollo.cache.normalized.fetchPolicy
+import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.fetchPolicy
 import javax.inject.Inject
 
 class StatisticsRepositoryImpl @Inject constructor(

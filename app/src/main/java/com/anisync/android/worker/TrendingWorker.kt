@@ -12,8 +12,8 @@ import com.anisync.android.data.util.ApiError
 import com.anisync.android.type.MediaSeason
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
-import com.apollographql.apollo.cache.normalized.FetchPolicy
-import com.apollographql.apollo.cache.normalized.fetchPolicy
+import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.fetchPolicy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.Calendar

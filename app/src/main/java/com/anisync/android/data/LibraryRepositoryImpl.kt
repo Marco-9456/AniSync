@@ -24,8 +24,8 @@ import com.anisync.android.widget.core.WidgetRefresh
 import com.apollographql.apollo.ApolloClient
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.apollographql.apollo.api.Optional
-import com.apollographql.apollo.cache.normalized.FetchPolicy
-import com.apollographql.apollo.cache.normalized.fetchPolicy
+import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.fetchPolicy
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged

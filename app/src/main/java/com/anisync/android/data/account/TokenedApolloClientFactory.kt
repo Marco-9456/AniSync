@@ -1,9 +1,9 @@
 package com.anisync.android.data.account
 
+import com.anisync.android.cache.Cache.cache
 import com.anisync.android.di.AuthorizationInterceptor
 import com.apollographql.apollo.ApolloClient
-import com.apollographql.apollo.cache.normalized.api.MemoryCacheFactory
-import com.apollographql.apollo.cache.normalized.normalizedCache
+import com.apollographql.cache.normalized.memory.MemoryCacheFactory
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,7 +31,7 @@ class TokenedApolloClientFactory @Inject constructor(
             .serverUrl(ANILIST_URL)
             .addHttpInterceptor(authorizationInterceptor)
             .addHttpHeader("Authorization", "Bearer $token")
-            .normalizedCache(MemoryCacheFactory(maxSizeBytes = MEMORY_CACHE_SIZE))
+            .cache(MemoryCacheFactory(maxSizeBytes = MEMORY_CACHE_SIZE))
             .build()
     }
 
