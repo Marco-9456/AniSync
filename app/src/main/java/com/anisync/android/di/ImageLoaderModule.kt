@@ -19,7 +19,7 @@ import javax.inject.Singleton
 
 /**
  * Provides an optimized ImageLoader with:
- * - 256MB disk cache for offline image storage
+ * - Disk cache sized to the device, capped at 128MB
  * - 12.5% memory cache of available app heap
  * - 200ms crossfade animation for smooth loading
  * - Hardware bitmaps enabled for GPU-accelerated rendering
@@ -30,7 +30,9 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object ImageLoaderModule {
 
-    private const val DISK_CACHE_SIZE = 256L * 1024 * 1024 // 256 MB — fewer re-fetches of revisited covers/banners
+    private const val DISK_CACHE_PERCENT = 0.02            // 2% of device storage, Coil's own default shape
+    private const val DISK_CACHE_MIN_BYTES = 32L * 1024 * 1024
+    private const val DISK_CACHE_MAX_BYTES = 128L * 1024 * 1024
     private const val MEMORY_CACHE_PERCENT = 0.125         // 12.5% of app heap
     private const val CROSSFADE_DURATION_MS = 200
 
@@ -57,11 +59,17 @@ object ImageLoaderModule {
             .crossfade(CROSSFADE_DURATION_MS)
             // Enable hardware bitmaps for faster GPU rendering
             .allowHardware(true)
-            // Disk cache for offline image storage
+            // Disk cache for offline image storage. 2% of total device storage, so anything past
+            // roughly 6 GB lands on the 128 MB ceiling and the percentage only bites on genuinely
+            // small devices. Nothing here expires by age, only the byte ceiling evicts, so the
+            // cache settles at whichever bound applies and stays there. That is why the ceiling is
+            // the number that matters: it was a flat 256 MB.
             .diskCache {
                 DiskCache.Builder()
                     .directory(context.cacheDir.resolve("image_cache"))
-                    .maxSizeBytes(DISK_CACHE_SIZE)
+                    .maxSizePercent(DISK_CACHE_PERCENT)
+                    .minimumMaxSizeBytes(DISK_CACHE_MIN_BYTES)
+                    .maximumMaxSizeBytes(DISK_CACHE_MAX_BYTES)
                     .build()
             }
             // Memory cache using percentage of available heap
