@@ -129,6 +129,7 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.coverageEpisodeCount
 import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
@@ -677,7 +678,7 @@ fun MediaDetailsScreen(
                                     onThemesSeeAllClick(
                                         state.details.id,
                                         state.details.getTitle(titleLanguage),
-                                        state.details.episodes,
+                                        state.details.coverageEpisodeCount,
                                         state.details.bannerUrl ?: state.details.coverUrl
                                     )
                                 },
@@ -1254,7 +1255,7 @@ fun DetailsPageContent(
                                     isLoading = themesState.isLoading || awaitingThemes,
                                     errorMessage = themesState.errorMessage,
                                     coverUrl = details.bannerUrl ?: details.coverUrl,
-                                    totalEpisodes = details.episodes,
+                                    totalEpisodes = details.coverageEpisodeCount,
                                     onSeeAllClick = onThemesSeeAllClick,
                                     onThemeClick = { openThemeSheet = it },
                                     onRetryClick = onRetryThemes
@@ -1624,7 +1625,7 @@ fun DetailsPageContent(
     openThemeSheet?.let { theme ->
         ThemeSheet(
             theme = theme,
-            totalEpisodes = details.episodes,
+            totalEpisodes = details.coverageEpisodeCount,
             animeSlug = themesState.animeSlug,
             onDismiss = { openThemeSheet = null }
         )

@@ -146,6 +146,17 @@ class EpisodeSpanTest {
         assertEquals(2, entry.preferredVideo?.id)
     }
 
+    @Test
+    fun `an airing show measures coverage against the episodes that have aired`() {
+        // Bleach: finished, AniList gives the real total.
+        assertEquals(366, coverageEpisodeCount(episodes = 366, nextAiringEpisode = null))
+        // One Piece: still airing, so the total comes off the next episode number.
+        assertEquals(1174, coverageEpisodeCount(episodes = null, nextAiringEpisode = 1175))
+        // Nothing has aired yet, which is no scale rather than a scale of zero.
+        assertEquals(null, coverageEpisodeCount(episodes = null, nextAiringEpisode = 1))
+        assertEquals(null, coverageEpisodeCount(episodes = null, nextAiringEpisode = null))
+    }
+
     private fun theme(slug: String, type: ThemeType, sequence: Int) = MediaTheme(
         id = 1,
         type = type,
