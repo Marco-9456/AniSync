@@ -73,6 +73,10 @@ private enum class ThemeFilter { All, Openings, Endings }
  * shared two-pane [TwoPaneListDetailScaffold] — the list as the permanent pane, the theme in the
  * resizable detail pane beside it — so the list keeps its scroll position and its selection while a
  * theme plays.
+ *
+ * @param forceSinglePane set when this screen is itself drilled into a detail pane, which already
+ * spends part of the window on the list beside it. Splitting again there would leave both halves too
+ * narrow, so the pane keeps the sheet layout however wide the window is.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,6 +85,7 @@ fun MediaThemesScreen(
     totalEpisodes: Int?,
     coverUrl: String?,
     onBackClick: () -> Unit,
+    forceSinglePane: Boolean = false,
     viewModel: MediaThemesViewModel = hiltViewModel()
 ) {
     val themesState by viewModel.state.collectAsStateWithLifecycle()
@@ -111,7 +116,7 @@ fun MediaThemesScreen(
             )
         }
 
-    if (!LocalAdaptiveInfo.current.supportsTwoPane) {
+    if (forceSinglePane || !LocalAdaptiveInfo.current.supportsTwoPane) {
         list(null) { id -> openTheme = themesState.themes.firstOrNull { it.id == id } }
 
         openTheme?.let { theme ->
