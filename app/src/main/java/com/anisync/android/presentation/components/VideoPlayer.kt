@@ -283,7 +283,9 @@ fun VideoPlayer(
             .fillMaxWidth()
             .aspectRatio(displayAspect)
             .clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            // Black, not a surface tint: any letterboxing a clip's aspect leaves should read as
+            // part of the picture rather than a pale frame around it.
+            .background(Color.Black)
     ) {
         if (playerState != PlayerState.Error) {
             PlayerSurface(
