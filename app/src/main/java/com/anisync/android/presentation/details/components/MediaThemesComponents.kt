@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -167,7 +166,6 @@ private fun ThemeArtwork(
     type: ThemeType,
     cornerRadius: Dp,
     playGlyphSize: Dp,
-    isSpoiler: Boolean,
     modifier: Modifier = Modifier,
     /** False in the full list, where the row already carries a play button the glyph would sit under. */
     showPlayGlyph: Boolean = true
@@ -216,25 +214,6 @@ private fun ThemeArtwork(
                     contentDescription = null,
                     tint = Color.White,
                     modifier = Modifier.size(playGlyphSize * 0.55f)
-                )
-            }
-        }
-
-        if (isSpoiler) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(6.dp)
-                    .size(18.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.error),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.VisibilityOff,
-                    contentDescription = stringResource(R.string.cd_theme_spoiler),
-                    tint = MaterialTheme.colorScheme.onError,
-                    modifier = Modifier.size(11.dp)
                 )
             }
         }
@@ -293,7 +272,6 @@ fun ThemeTile(
             type = theme.type,
             cornerRadius = 14.dp,
             playGlyphSize = 30.dp,
-            isSpoiler = theme.isSpoiler,
             modifier = Modifier
                 .width(TILE_WIDTH)
                 .height(TILE_ART_HEIGHT)
@@ -353,7 +331,6 @@ fun ThemeRow(
                     type = theme.type,
                     cornerRadius = 10.dp,
                     playGlyphSize = 26.dp,
-                    isSpoiler = theme.isSpoiler,
                     showPlayGlyph = false,
                     modifier = Modifier
                         .width(ROW_ART_WIDTH)
@@ -615,36 +592,26 @@ fun themeCoverageLabel(theme: MediaTheme, spans: List<EpisodeSpan>): String {
  * Marks a theme AnimeThemes flagged as spoiling the show.
  *
  * A warning, not a cover. What spoils is the theme itself, its visuals and often its lyrics,
- * so hiding the episode range would withhold the one thing that is safe to read.
+ * so hiding the episode range would withhold the one thing that is safe to read. Drawn as a
+ * tonal pill so it sits in the same family as the number and qualifier pills rather than
+ * shouting over the row.
  */
 @Composable
 fun SpoilerTag(modifier: Modifier = Modifier) {
     Surface(
-        color = Color.Transparent,
+        color = MaterialTheme.colorScheme.errorContainer,
         shape = RoundedCornerShape(50),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error),
         modifier = modifier
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Text(
+            text = stringResource(R.string.themes_spoiler_tag),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            maxLines = 1,
+            softWrap = false,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.VisibilityOff,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(12.dp)
-            )
-            Spacer(Modifier.width(5.dp))
-            Text(
-                text = stringResource(R.string.themes_spoiler_tag),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error,
-                maxLines = 1,
-                softWrap = false
-            )
-        }
+        )
     }
 }
 
