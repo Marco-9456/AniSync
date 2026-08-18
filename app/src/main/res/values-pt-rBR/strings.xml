@@ -178,13 +178,13 @@
     <string name="setting_streaming_service_desc">Selecione sua plataforma de streaming preferida para o ícone de \"A seguir\"</string>
     <string name="control_notifications">Notificações</string>
     <string name="notification_watching">Lista de Assistindo</string>
-    <string name="notification_watching_desc">Novos episódios de programas que você está assistindo</string>
+    <string name="notification_watching_desc">Novos episódios para obras que você está assistindo</string>
     <string name="notification_planning">Lista de Planejados</string>
-    <string name="notification_planning_desc">Alerta quando o Episódio 1 é exibido dos programas que você está planejando assistir</string>
+    <string name="notification_planning_desc">Alerta quando o Episódio 1 é exibido das obras que você está planejando assistir</string>
     <string name="notification_upcoming">Próximos lançamentos</string>
     <string name="notification_upcoming_desc">Adiantar notificação antes do episódio exibir</string>
     <string name="notification_streaming_delay">Atraso na disponibilidade do streaming</string>
-    <string name="notification_streaming_delay_desc">Esperar essa quantidade de minutos depois que o episódio for exibido para te notificar. Útil se o seu site de streaming postar os episódios depois da hora de lançamento oficial. As notificações disparam após uma verificação com intervalo de aproximadamente 15 minutos, então o atraso atual pode ser alguns minutos mais longo do que o valor escolhido.</string>
+    <string name="notification_streaming_delay_desc">Esperar esta quantidade de minutos depois que o episódio for exibido para te notificar. Útil se o seu site de streaming postar os episódios depois da hora de lançamento oficial. As notificações disparam após uma verificação com intervalo de aproximadamente 15 minutos, então o atraso atual pode ser alguns minutos mais longo do que o valor escolhido.</string>
     <string name="notification_streaming_delay_value">%1$d min</string>
     <string name="notification_streaming_delay_off">Desligado</string>
     <string name="notification_thread_comment_reply">Respostas a comentários</string>
@@ -204,9 +204,9 @@
     <string name="notification_follows_desc">Quando alguém começa a seguir você</string>
     <string name="notification_group_activity">Atividade</string>
     <string name="notification_channel_watching">Lista de Assistindo</string>
-    <string name="notification_channel_watching_desc">Novos episódios para programas que você está assistindo</string>
+    <string name="notification_channel_watching_desc">Novos episódios para obras que você está assistindo</string>
     <string name="notification_channel_planning">Lista de Planejados</string>
-    <string name="notification_channel_planning_desc">Alerta quando o Episódio 1 é exibido para os programas que você planeja assistir</string>
+    <string name="notification_channel_planning_desc">Alerta quando o Episódio 1 é exibido para as obras que você planeja assistir</string>
     <string name="notification_channel_upcoming">Próximos lançamentos</string>
     <string name="notification_channel_upcoming_desc">Adiantar notificação antes do episódio exibir</string>
     <string name="notification_channel_thread_comment_reply">Respostas a comentários</string>
@@ -314,7 +314,7 @@
     <string name="theme_mode_dialog_title">Tema</string>
     <string name="settings_acknowledgments_description">AniSync não seria possível sem a maravilhosa comunidade de código aberto e os seguintes contribuidores:</string>
     <string name="acknowledgments_section_data">Provedores de dados</string>
-    <string name="acknowledgments_anilist_desc">O banco de dados de anime e mangá que possibilita esse aplicativo</string>
+    <string name="acknowledgments_anilist_desc">O banco de dados de anime e mangá que possibilita este aplicativo</string>
     <string name="acknowledgments_section_community">Comunidade</string>
     <string name="acknowledgments_contributors">Contribuidores de código aberto</string>
     <string name="acknowledgments_contributors_desc">Todos os desenvolvedores que mantém as bibliotecas que nós usamos</string>
@@ -357,7 +357,7 @@
     </plurals>
     <string name="profile_edit">Editar perfil</string>
     <string name="profile_unknown_error">Algo deu errado enquanto carregava o seu perfil.</string>
-    <string name="profile_user_load_error">Nós não conseguimos carregar o perfil desse usuário nesse momento. A conta pode ser privada, indisponível ou temporariamente limitada por excesso de solicitações.</string>
+    <string name="profile_user_load_error">Nós não conseguimos carregar o perfil deste usuário nesse momento. A conta pode ser privada, indisponível ou temporariamente limitada por excesso de solicitações.</string>
     <string name="profile_tab_overview">Visão geral</string>
     <string name="profile_tab_activity">Atividade</string>
     <string name="profile_activity_all">Tudo</string>
@@ -418,7 +418,7 @@
     <string name="notes">Notas</string>
     <string name="notes_placeholder">Adicione suas notas aqui…</string>
     <string name="save">Salvar</string>
-    <string name="delete_entry_confirm">Remover esse item da sua biblioteca?</string>
+    <string name="delete_entry_confirm">Remover este item da sua biblioteca?</string>
     <string name="entry_saved">Item salvo</string>
     <string name="entry_deleted">Item removido</string>
     <string name="login_welcome_to">Bem vindo a</string>
@@ -556,7 +556,7 @@
     <string name="activity_detail_private">Privado</string>
     <string name="activity_detail_wrote_to">%1$s escreveu para %2$s</string>
     <string name="activity_delete_confirm_title">Deletar atividade?</string>
-    <string name="activity_delete_confirm_body">Essa ação não pode ser desfeita.</string>
+    <string name="activity_delete_confirm_body">Esta ação não pode ser desfeita.</string>
     <string name="reply_delete_confirm_title">Deletar resposta?</string>
     <string name="reply_delete_confirm_body">Sua resposta será permanentemente removida e não poderá ser recuperada.</string>
     <string name="thread_delete_confirm_title">Deletar tópico?</string>
@@ -639,7 +639,7 @@
     <string name="custom_lists">Listas customizadas</string>
     <string name="privacy">Privacidade</string>
     <string name="private_entry">Privar item</string>
-    <string name="private_entry_desc">Oculta esse item de outros usuários</string>
+    <string name="private_entry_desc">Oculta este item de outros usuários</string>
     <string name="hide_from_status_lists">Ocultar da lista de Status</string>
     <string name="hide_from_status_lists_desc">Não mostra nas atualizações recentes globais</string>
     <string name="manage_tabs">Gerenciar abas</string>
@@ -647,9 +647,9 @@
     <string name="create_new_list">Criar nova lista</string>
     <string name="pinned">Fixado</string>
     <string name="replied_to">Respondido para: %s</string>
-    <string name="thread_locked_desc">Esse tópico está trancado e não pode receber novas respostas.</string>
+    <string name="thread_locked_desc">Este tópico está trancado e não pode receber novas respostas.</string>
     <string name="dialog_delete_activity_title">Deletar atividade?</string>
-    <string name="dialog_delete_activity_body">Essa ação não pode ser desfeita.</string>
+    <string name="dialog_delete_activity_body">Esta ação não pode ser desfeita.</string>
     <string name="cd_developer_avatar">Avatar do desenvolvedor</string>
     <string name="sponsor_project">Patrocinar o projeto</string>
     <string name="support_anisync">Suporte %s</string>
@@ -661,7 +661,7 @@
     <string name="test_code">Teste %s</string>
     <string name="by_author">por %s</string>
     <string name="empty_list_title">Sua lista %s está vazia</string>
-    <string name="empty_list_anime_action">Comece a rastrear anime adicionando programas pela aba Descobrir</string>
+    <string name="empty_list_anime_action">Comece a rastrear animes adicionando obras pela aba Descobrir</string>
     <string name="empty_list_anime_button">Navegar em Anime</string>
     <string name="empty_list_manga_action">Comece a rastrear mangá adicionando títulos pela aba Descobrir</string>
     <string name="empty_list_manga_button">Navegar em Mangá</string>
@@ -671,7 +671,7 @@
     <string name="empty_search_alt_action">Tente palavras-chave diferentes</string>
     <string name="empty_favorites_title">Sem favoritos ainda</string>
     <string name="empty_favorites_action">Adicione anime ou mangá aos seus favoritos das suas páginas de detalhe</string>
-    <string name="empty_favorites_button">Descobrir novos programas</string>
+    <string name="empty_favorites_button">Descobrir novas obras</string>
     <string name="empty_connection_title">Problema de conexão</string>
     <string name="empty_connection_action">Verifique sua conexão com a internet e tente novamente</string>
     <string name="empty_generic_title">Algo de errado aconteceu</string>
@@ -679,14 +679,14 @@
     <string name="empty_sign_in_action">Conecte sua conta AniList para sincronizar sua biblioteca entre dispositivos</string>
     <string name="empty_sign_in_button">Conectar</string>
     <string name="empty_airing_today_title">Nenhum episódio em exibição hoje</string>
-    <string name="empty_airing_today_action">Verifique novamente mais tarde ou adicione mais programas à sua lista</string>
+    <string name="empty_airing_today_action">Verifique novamente mais tarde ou adicione mais obras à sua lista</string>
     <string name="empty_upcoming_title">Sem episódios a ser lançados</string>
     <string name="empty_upcoming_action">Adicione animes exibindo atualmente à sua lista para ver os próximos episódios</string>
     <string name="empty_upcoming_button">Navegar em Exibição</string>
     <string name="empty_notifications_title">Sem notificações</string>
     <string name="empty_notifications_action">Nada de novo por aqui!</string>
     <string name="empty_characters_title">Sem personagens listados</string>
-    <string name="empty_characters_action">Informação de personagem não está disponível para esse título</string>
+    <string name="empty_characters_action">Informação de personagem não está disponível para este título</string>
     <string name="empty_discussions_title">Ainda sem discussão</string>
     <string name="empty_discussions_action">Seja o primeiro a iniciar uma conversa</string>
     <string name="empty_discussions_button">Começar uma Discussão</string>
@@ -694,9 +694,9 @@
     <string name="empty_comments_action">Seja o primeiro a compartilhar seus pensamentos</string>
     <string name="empty_forum_search_title">Nenhum tópico encontrado para %s</string>
     <string name="empty_forum_search_action">Tente palavras-chave diferentes</string>
-    <string name="test_message_error_code">Essa é uma mensagem teste para o código de erro %s.</string>
+    <string name="test_message_error_code">Esta é uma mensagem teste para o código de erro %s.</string>
     <string name="missing_recipient">Destinatário ausente</string>
-    <string name="cannot_edit_activity_type">Não é possível editar esse tipo de atividade</string>
+    <string name="cannot_edit_activity_type">Não é possível editar este tipo de atividade</string>
     <string name="activity_updated">Atividade atualizada</string>
     <string name="activity_deleted">Atividade deletada</string>
     <string name="message_sent">Mensagem enviada</string>
@@ -827,7 +827,7 @@
     <string name="studio_label_website">Site</string>
     <string name="studio_label_type">Tipo</string>
     <string name="studio_main_studio_chip">Estúdio principal</string>
-    <string name="media_attach_error_catbox_rejected">Catbox rejeitou esse arquivo. Tente um arquivo diferente, ou troque para o Litterbox em Configurações → Upload de mídia.</string>
+    <string name="media_attach_error_catbox_rejected">Catbox rejeitou este arquivo. Tente um arquivo diferente, ou troque para o Litterbox em Configurações → Upload de mídia.</string>
     <string name="settings_navigation">Navegação</string>
     <string name="setting_nav_bar_style">Estilo da barra inferior</string>
     <string name="setting_nav_bar_style_anchored">Ancorada</string>
@@ -922,7 +922,7 @@
     <string name="avatar_shape_none_desc">Mostra a imagem de perfil em seu formato natural</string>
     <string name="calendar_title">Calendário de Lançamento</string>
     <string name="calendar_open">Calendário de lançamento</string>
-    <string name="calendar_following_only">Mostrar apenas programas da sua lista</string>
+    <string name="calendar_following_only">Mostrar apenas obras da sua lista</string>
     <string name="calendar_previous_week">Semana anterior</string>
     <string name="calendar_next_week">Próxima semana</string>
     <string name="calendar_jump_to_today">Voltar para esta semana</string>
@@ -932,8 +932,8 @@
     <string name="calendar_chip_watching">Assistindo</string>
     <string name="calendar_chip_planning">Planejado</string>
     <string name="calendar_empty_title">Sem exibição</string>
-    <string name="calendar_empty_desc">Sem exibição de episódios para esse dia.</string>
-    <string name="calendar_empty_following_desc">Sem programas da sua lista com exibição para esse dia.</string>
+    <string name="calendar_empty_desc">Sem exibição de episódios para este dia.</string>
+    <string name="calendar_empty_following_desc">Sem obras da sua lista com exibição para este dia.</string>
     <string name="empty_no_recommendations">Ainda sem recomendações</string>
     <string name="cd_add_recommendation">Recomende uma mídia similar</string>
     <string name="recommend_media_title">Recomende similar</string>
@@ -977,7 +977,7 @@
     <string name="account_reauthenticate">Reautenticar</string>
     <string name="account_sign_in_failed">Não foi possível entrar. Por favor, tente novamente.</string>
     <string name="account_remove_dialog_title">Remover a conta?</string>
-    <string name="account_remove_dialog_message">%1$s será removido desse dispositivo. Você poderá entrar novamente a qualquer momento.</string>
+    <string name="account_remove_dialog_message">%1$s será removido deste dispositivo. Você poderá entrar novamente a qualquer momento.</string>
     <string name="account_switch_to">Trocar para %1$s</string>
     <string name="settings_anilist_account">Configurações do AniList</string>
     <string name="settings_anilist_account_desc">Contas, conteúdo adulto, idiomas, formato de pontuação</string>
@@ -1114,7 +1114,7 @@
     <string name="media_stats_score_bucket_eyebrow">Nota %1$d</string>
     <string name="stat_hashtag">Hashtag</string>
     <string name="media_stats_percent_of_ratings">%1$d%% das avaliações</string>
-    <string name="media_stats_empty">Ainda sem estatísticas da comunidade para esse título.</string>
+    <string name="media_stats_empty">Ainda sem estatísticas da comunidade para este título.</string>
     <string name="media_stats_error">Não foi possível carregar as estatísticas.</string>
     <string name="media_stats_activity_chart_a11y">Grafico de atividade diária nos últimos %1$d dias, com pico de %2$s em %3$s</string>
     <string name="media_stats_score_chart_a11y">Gráfico de nota por episódio, entre os episódios %1$d a %2$d, nota mais baixa de %3$d, mais alta de %4$d</string>
@@ -1257,7 +1257,7 @@
     <string name="statistics_activity_period_month">Mês</string>
     <string name="statistics_activity_period_week">Semana</string>
     <string name="statistics_activity_week_range">%1$s – %2$s</string>
-    <string name="statistics_activity_week_current">Essa semana</string>
+    <string name="statistics_activity_week_current">Esta semana</string>
     <string name="statistics_activity_week_previous">Semana passada</string>
     <string name="statistics_activity_per_day">%1$s / dia</string>
     <string name="statistics_activity_busiest_day">Dia mais ativo</string>
@@ -1282,11 +1282,70 @@
         <item quantity="many">%d dias</item>
         <item quantity="other">%d dias</item>
     </plurals>
-    <string name="statistics_activity_day_empty">AniList registrou atividade nesse dia, mas nenhuma consta mais no feed.</string>
+    <string name="statistics_activity_day_empty">AniList registrou atividade neste dia, mas nenhuma consta mais no feed.</string>
     <string name="statistics_activity_day_status">Atividade</string>
     <string name="statistics_activity_day_posted">Postou um status</string>
     <string name="cd_activity_week_previous">Semana anterior</string>
     <string name="cd_activity_week_next">Próxima semana</string>
     <string name="a11y_activity_day">%1$s: %2$s</string>
     <string name="a11y_activity_day_awaiting">%1$s: ainda não registrado</string>
+    <string name="player_error_network">Sem conexão. Verifique sua rede e tente novamente.</string>
+    <string name="player_error_server">O servidor do vídeo está tendo problemas agora. Tente novamente mais tarde.</string>
+    <string name="player_error_rate_limited">O servidor do vídeo está recusando requisições. Espere um momento e tente novamente.</string>
+    <string name="player_error_missing">Este vídeo não existe mais no servidor.</string>
+    <string name="player_error_format">O formato deste vídeo não é suportado.</string>
+    <string name="player_error_generic">Não foi possivel tocar este vídeo.</string>
+    <string name="section_themes">Aberturas &amp; Encerramentos</string>
+    <plurals name="themes_openings_count">
+        <item quantity="one">%d abertura</item>
+        <item quantity="many">%d aberturas</item>
+        <item quantity="other">%d aberturas</item>
+    </plurals>
+    <plurals name="themes_endings_count">
+        <item quantity="one">%d encerramento</item>
+        <item quantity="many">%d encerramentos</item>
+        <item quantity="other">%d encerramentos</item>
+    </plurals>
+    <plurals name="themes_versions_count">
+        <item quantity="one">%d versão</item>
+        <item quantity="many">%d versões</item>
+        <item quantity="other">%d versões</item>
+    </plurals>
+    <string name="themes_filter_all">Tudo</string>
+    <string name="themes_group_openings">Aberturas</string>
+    <string name="themes_group_endings">Encerramentos</string>
+    <plurals name="themes_episodes">
+        <item quantity="one">Episódio %1$s</item>
+        <item quantity="many">Episódios %1$s</item>
+        <item quantity="other">Episódios %1$s</item>
+    </plurals>
+    <string name="themes_all_episodes">Todos os episódios</string>
+    <string name="themes_coverage">%1$d de %2$d episódios</string>
+    <string name="themes_episode_scale">Ep 1 – %1$d</string>
+    <string name="themes_opening_number">Abertura %1$d</string>
+    <string name="themes_ending_number">Encerramento %1$d</string>
+    <string name="themes_spoiler_tag">Spoiler</string>
+    <string name="cd_theme_spoiler">Este tema pode ter spoilers da obra</string>
+    <string name="themes_failed_title">Temas não carregaram</string>
+    <string name="themes_failed_body">Os dados do AniList nesta página não foram afetados. Apenas a requisição ao AnimeThemes falhou.</string>
+    <string name="themes_retry">Tentar novamente</string>
+    <string name="themes_retry_in">Tentar novamente em %1$ds</string>
+    <string name="themes_empty">O AnimeThemes não lista este título ainda.</string>
+    <string name="themes_video">Vídeo</string>
+    <string name="themes_appears_in">Aparece em</string>
+    <string name="themes_versions">Versões</string>
+    <string name="themes_version_label">Versão %1$d</string>
+    <string name="themes_variant_creditless">Sem crédito</string>
+    <string name="themes_variant_with_credits">Com créditos</string>
+    <string name="themes_variant_subbed">Legendado</string>
+    <string name="themes_variant_lyrics">Letras</string>
+    <string name="themes_open_source">Abrir em AnimeThemes</string>
+    <string name="themes_attribution">Dados de tema e vídeo de AnimeThemes.moe</string>
+    <string name="themes_actions_label">Outro lugar</string>
+    <string name="themes_action_youtube">YouTube</string>
+    <string name="themes_action_animethemes">AnimeThemes</string>
+    <string name="themes_action_share">Compartilhar</string>
+    <string name="themes_share_subject">%1$s de %2$s</string>
+    <string name="cd_theme_play">Tocar %1$s</string>
+    <string name="pane_placeholder_theme">Selecione um tema para tocar aqui</string>
 </resources>
