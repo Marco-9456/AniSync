@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -58,14 +61,26 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * Past this width the bars stop growing and the block centres instead. A 900.dp-wide bar carries
- * no more information than a 500.dp one, and the row's day label and count drift apart until they
- * stop reading as one row.
+ * Past this width the bars stop growing. A 900.dp-wide bar carries no more information than a
+ * 500.dp one, and the row's day label and count drift apart until they stop reading as one row.
  */
 private val WeekContentMaxWidth = 560.dp
 
+/**
+ * On a wide card the leftover width goes to the summary beside the days rather than to longer bars,
+ * so the block fills the card without the bars overstating what they measure.
+ */
+private val WeekSummaryColumnWidth = 200.dp
+private val WeekWideGap = 20.dp
+private val WeekWideContentMaxWidth = WeekContentMaxWidth + WeekWideGap + WeekSummaryColumnWidth
+
+/** Below this the summary stays under the days, where a narrow card has room for it. */
+private val WeekWideMinWidth = 660.dp
+
 private val BarHeight = 18.dp
 private val RowHeight = 32.dp
+/** Matches the seven day rows plus their gaps, so the divider spans the days and nothing else. */
+private val WeekSummaryDividerHeight = (RowHeight + 4.dp) * DAYS_IN_WEEK
 
 /** Shortest bar drawn for a day with any activity, so a single activity is still visible. */
 private val MinBarWidth = 20.dp
@@ -97,11 +112,16 @@ internal fun ActivityWeekBreakdown(
     val mutedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
     val locale = LocalConfiguration.current.locales[0]
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Column(Modifier.widthIn(max = WeekContentMaxWidth)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val wide = maxWidth >= WeekWideMinWidth
+        val contentMaxWidth = if (wide) WeekWideContentMaxWidth else WeekContentMaxWidth
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentWidth(Alignment.CenterHorizontally)
+                .widthIn(max = contentMaxWidth)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = pluralStringResource(
@@ -130,20 +150,39 @@ internal fun ActivityWeekBreakdown(
 
             Spacer(Modifier.height(12.dp))
 
-            week.days.forEach { day ->
-                ActivityDayRow(
-                    day = day,
-                    weekMax = week.busiestAmount,
-                    onClick = if (day.amount > 0) ({ openDay = day }) else null
-                )
-                Spacer(Modifier.height(4.dp))
+            val days: @Composable ColumnScope.() -> Unit = {
+                week.days.forEach { day ->
+                    ActivityDayRow(
+                        day = day,
+                        weekMax = week.busiestAmount,
+                        onClick = if (day.amount > 0) ({ openDay = day }) else null
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
             }
 
-            Spacer(Modifier.height(12.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Spacer(Modifier.height(12.dp))
+            if (wide) {
+                Row(horizontalArrangement = Arrangement.spacedBy(WeekWideGap)) {
+                    Column(modifier = Modifier.weight(1f), content = days)
+                    VerticalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.height(WeekSummaryDividerHeight)
+                    )
+                    WeekSummary(
+                        week = week,
+                        stacked = true,
+                        modifier = Modifier.width(WeekSummaryColumnWidth - WeekWideGap)
+                    )
+                }
+            } else {
+                Column(content = days)
 
-            WeekSummary(week)
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(Modifier.height(12.dp))
+
+                WeekSummary(week = week, stacked = false)
+            }
         }
     }
 
@@ -349,7 +388,11 @@ private fun ActivityDayRow(day: ActivityDay, weekMax: Int, onClick: (() -> Unit)
 }
 
 @Composable
-private fun WeekSummary(week: ActivityWeek) {
+private fun WeekSummary(
+    week: ActivityWeek,
+    stacked: Boolean,
+    modifier: Modifier = Modifier
+) {
     val locale = LocalConfiguration.current.locales[0]
     val busiest = week.busiest
     val stats = buildList {
@@ -395,29 +438,40 @@ private fun WeekSummary(week: ActivityWeek) {
         }
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        stats.forEach { (label, value) ->
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center
-                )
-                Spacer(Modifier.size(2.dp))
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-            }
+    val stat: @Composable (String, String, Modifier) -> Unit = { label, value, statModifier ->
+        Column(
+            modifier = statModifier,
+            horizontalAlignment = if (stacked) Alignment.Start else Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                textAlign = if (stacked) TextAlign.Start else TextAlign.Center
+            )
+            Spacer(Modifier.size(2.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = if (stacked) TextAlign.Start else TextAlign.Center
+            )
+        }
+    }
+
+    if (stacked) {
+        Column(
+            modifier = modifier,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            stats.forEach { (label, value) -> stat(label, value, Modifier.fillMaxWidth()) }
+        }
+    } else {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            stats.forEach { (label, value) -> stat(label, value, Modifier.weight(1f)) }
         }
     }
 }
