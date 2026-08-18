@@ -16,6 +16,7 @@ import com.anisync.android.type.MediaType
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.doNotStore
 import com.apollographql.cache.normalized.fetchPolicy
 import javax.inject.Inject
 
@@ -53,6 +54,7 @@ class DiscoverRepositoryImpl @Inject constructor(
                 )
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
             if (response.hasErrors()) {
@@ -99,6 +101,7 @@ class DiscoverRepositoryImpl @Inject constructor(
                 )
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
             response.data?.Page?.media?.filterNotNull()
@@ -118,6 +121,7 @@ class DiscoverRepositoryImpl @Inject constructor(
                 )
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
             response.data?.Page?.media?.filterNotNull()
@@ -155,6 +159,7 @@ class DiscoverRepositoryImpl @Inject constructor(
                 )
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
             val pageInfo = response.data?.Page?.pageInfo
@@ -211,6 +216,7 @@ class DiscoverRepositoryImpl @Inject constructor(
                 )
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
             response.data?.Page?.media?.filterNotNull()?.map { media ->

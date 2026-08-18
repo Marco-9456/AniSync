@@ -13,6 +13,7 @@ import com.anisync.android.type.MediaSeason
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.doNotStore
 import com.apollographql.cache.normalized.fetchPolicy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -50,6 +51,7 @@ class TrendingWorker @AssistedInject constructor(
                 // This worker's whole job is refreshing trending; the implicit
                 // CacheFirst default made every run re-serve the first response.
                 .fetchPolicy(FetchPolicy.NetworkOnly)
+                .doNotStore(true)
                 .execute()
 
             if (response.hasErrors()) {

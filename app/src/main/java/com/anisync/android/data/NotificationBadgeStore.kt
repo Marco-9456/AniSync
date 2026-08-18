@@ -3,6 +3,7 @@ package com.anisync.android.data
 import com.anisync.android.GetViewerQuery
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.doNotStore
 import com.apollographql.cache.normalized.fetchPolicy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,6 +55,7 @@ class NotificationBadgeStore @Inject constructor(
             val response = apolloClient
                 .query(GetViewerQuery())
                 .fetchPolicy(FetchPolicy.NetworkOnly)
+                .doNotStore(true)
                 .execute()
             val count = response.data?.Viewer?.unreadNotificationCount ?: return
             _serverCount.value = count.coerceAtLeast(0)

@@ -40,6 +40,7 @@ import com.anisync.android.type.NotificationType
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.doNotStore
 import com.apollographql.cache.normalized.fetchPolicy
 import javax.inject.Inject
 
@@ -72,6 +73,7 @@ class NotificationRepositoryImpl @Inject constructor(
                 )
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
             response.data?.Page?.notifications?.filterNotNull()?.mapNotNull { mapNotification(it) }
@@ -97,6 +99,7 @@ class NotificationRepositoryImpl @Inject constructor(
                 )
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
             val pageData = response.data?.Page
@@ -384,6 +387,7 @@ class NotificationRepositoryImpl @Inject constructor(
                 )
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
             // Server now filters by recency, but we still need to verify it's in the past
@@ -429,6 +433,7 @@ class NotificationRepositoryImpl @Inject constructor(
                 )
             )
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
             // Server now handles time filtering, results are already sorted by TIME

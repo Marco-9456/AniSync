@@ -23,6 +23,7 @@ import com.anisync.android.util.AniListTextEncoder.encodeForAniList
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.doNotStore
 import com.apollographql.cache.normalized.fetchPolicy
 import javax.inject.Inject
 
@@ -40,6 +41,7 @@ class ActivityRepositoryImpl @Inject constructor(
         val response = apolloClient
             .query(GetActivityQuery(id))
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
         if (response.hasErrors()) {
@@ -203,6 +205,7 @@ class ActivityRepositoryImpl @Inject constructor(
         val response = apolloClient
             .query(GetActivityLikesQuery(activityId))
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
         if (response.hasErrors()) {
@@ -227,6 +230,7 @@ class ActivityRepositoryImpl @Inject constructor(
         val response = apolloClient
             .query(GetActivityReplyLikesQuery(replyId))
             .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
             .execute()
 
         if (response.hasErrors()) {

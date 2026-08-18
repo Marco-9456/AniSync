@@ -20,6 +20,7 @@ import com.anisync.android.type.MediaType
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.doNotStore
 import com.apollographql.cache.normalized.fetchPolicy
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -106,6 +107,7 @@ class SearchRepositoryImpl @Inject constructor(
                 )
             )
                 .fetchPolicy(FetchPolicy.NetworkOnly)
+                .doNotStore(true)
                 .execute()
 
             val pageData = response.data?.Page
@@ -134,6 +136,7 @@ class SearchRepositoryImpl @Inject constructor(
                 )
             )
                 .fetchPolicy(FetchPolicy.NetworkOnly)
+                .doNotStore(true)
                 .execute()
 
             val data = response.data

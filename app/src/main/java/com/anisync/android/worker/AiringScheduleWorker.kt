@@ -25,6 +25,7 @@ import com.anisync.android.widget.core.WidgetRefresh
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.doNotStore
 import com.apollographql.cache.normalized.fetchPolicy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -102,6 +103,7 @@ class AiringScheduleWorker @AssistedInject constructor(
                     // CacheFirst default turned intraday refreshes into no-ops
                     // and schedule changes (delays, swaps) were never picked up.
                     .fetchPolicy(FetchPolicy.NetworkOnly)
+                    .doNotStore(true)
                     .execute()
 
                 if (response.hasErrors()) {
