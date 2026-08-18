@@ -2,6 +2,7 @@ package com.anisync.android.presentation.details.components
 
 import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -171,7 +172,10 @@ fun ThemeSheet(
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacing_medium)))
                 SheetLabel(stringResource(R.string.themes_video))
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
-                Row(horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
                     version.videos.forEach { candidate ->
                         VariantChip(
                             video = candidate,
@@ -184,7 +188,10 @@ fun ThemeSheet(
 
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_medium)))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
+                modifier = Modifier.horizontalScroll(rememberScrollState())
+            ) {
                 ActionChip(
                     icon = Icons.Default.Search,
                     label = stringResource(R.string.themes_action_youtube),
