@@ -16,6 +16,8 @@ import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.anisync.android.data.media.MediaHttp
+import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * CompositionLocal providing an [ExoPlayerCache] to composables in the tree.
@@ -65,6 +67,27 @@ class ExoPlayerCache internal constructor(private val context: Context) {
         players.values.forEach { it.release() }
         players.clear()
         Log.d("PerfMetrics", "All cached ExoPlayers released.")
+    }
+
+    companion object {
+        /**
+         * Live caches, so the process can hand back player memory and decoders when the system
+         * asks. Each cache is scoped to a composition and already releases on dispose, so this
+         * only exists for the case where nothing is being disposed and memory is short anyway.
+         */
+        private val live: MutableSet<ExoPlayerCache> =
+            Collections.newSetFromMap(ConcurrentHashMap())
+
+        internal fun track(cache: ExoPlayerCache) {
+            live += cache
+        }
+
+        internal fun untrack(cache: ExoPlayerCache) {
+            live -= cache
+        }
+
+        /** Releases every player held anywhere in the process. Main thread only, as ExoPlayer requires. */
+        fun releaseAllCaches() = live.forEach { it.releaseAll() }
     }
 }
 
@@ -129,8 +152,12 @@ fun rememberExoPlayerCache(): ExoPlayerCache {
     val context = LocalContext.current.applicationContext
     val cache = remember { ExoPlayerCache(context) }
 
-    DisposableEffect(Unit) {
-        onDispose { cache.releaseAll() }
+    DisposableEffect(cache) {
+        ExoPlayerCache.track(cache)
+        onDispose {
+            ExoPlayerCache.untrack(cache)
+            cache.releaseAll()
+        }
     }
 
     return cache
