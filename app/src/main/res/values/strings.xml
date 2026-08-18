@@ -734,6 +734,7 @@
     <string name="themes_variant_lyrics">Lyrics</string>
     <string name="themes_open_source">Open on AnimeThemes</string>
     <string name="themes_attribution">Theme data and video from AnimeThemes.moe</string>
+    <string name="themes_actions_label">Elsewhere</string>
     <string name="themes_action_youtube">YouTube</string>
     <string name="themes_action_animethemes">AnimeThemes</string>
     <string name="themes_action_share">Share</string>
@@ -1451,6 +1452,7 @@
     <string name="pane_placeholder_activity">Select a status to view it here</string>
     <string name="pane_placeholder_notification">Select a notification to open it here</string>
     <string name="pane_placeholder_settings">Select a setting to adjust it here</string>
+    <string name="pane_placeholder_theme">Select a theme to play it here</string>
 
     <!-- Collapsible wide navigation rail (rail layouts) -->
     <string name="rail_expand">Expand navigation</string>
