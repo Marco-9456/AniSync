@@ -7,17 +7,21 @@ import androidx.activity.compose.setContent
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
@@ -29,6 +33,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import com.anisync.android.ui.theme.AppTheme
@@ -59,17 +64,24 @@ class FullscreenPlayerActivity : ComponentActivity() {
     companion object {
         /** Float extra: the clip's width/height, used to pick the launch orientation. */
         const val EXTRA_ASPECT = "com.anisync.android.extra.ASPECT"
+
+        /** Smallest width at which the window fits the clip in either orientation. */
+        private const val LARGE_SCREEN_SW_DP = 600
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val aspect = intent.getFloatExtra(EXTRA_ASPECT, DEFAULT_VIDEO_ASPECT)
-        // Wide/square → landscape; tall → portrait. Sensor variants still allow a 180° flip.
-        requestedOrientation = if (aspect >= 1f) {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+        // A phone only fits the clip one way round, so rotate it there. A tablet or unfolded
+        // foldable has room either way and is often docked or held in portrait, so forcing a
+        // rotation there fights the user for nothing (Android 16 ignores the request on those
+        // windows anyway). Sensor variants still allow a 180° flip.
+        val largeScreen = resources.configuration.smallestScreenWidthDp >= LARGE_SCREEN_SW_DP
+        requestedOrientation = when {
+            largeScreen -> ActivityInfo.SCREEN_ORIENTATION_USER
+            aspect >= 1f -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            else -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         }
 
         // Edge-to-edge + hide the system bars for a true immersive view (swipe brings them back).
@@ -128,9 +140,20 @@ private fun FullscreenVideoContent(
         mutableStateOf(mapPlaybackState(player.playbackState, PlayerState.Loading))
     }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    // Seeded from the launch extra, then corrected off the player itself, so the fitted box tracks
+    // the real picture even when the inline player never reported a size before the handoff.
+    var aspect by remember {
+        mutableFloatStateOf(aspectRatio.takeIf { it > 0f } ?: DEFAULT_VIDEO_ASPECT)
+    }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
+            override fun onVideoSizeChanged(videoSize: VideoSize) {
+                if (videoSize.width > 0 && videoSize.height > 0) {
+                    aspect = videoSize.width.toFloat() / videoSize.height.toFloat()
+                }
+            }
+
             override fun onIsPlayingChanged(isPlayingNow: Boolean) {
                 isPlaying = isPlayingNow
             }
@@ -178,10 +201,22 @@ private fun FullscreenVideoContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
     ) {
-        if (playerState != PlayerState.Error) {
-            PlayerSurface(exoPlayer = player, active = true, modifier = Modifier.fillMaxSize())
+        // Fit a box to the clip rather than letting the surface letterbox itself inside the whole
+        // window. On a phone the two are the same box; on a tablet — especially in portrait, where
+        // a wide clip fills a band across the middle — it keeps the controls on the video instead
+        // of stranding the scrubber at the bottom of the screen, far from the picture.
+        val videoModifier = Modifier
+            .fillMaxSize()
+            .wrapContentSize(Alignment.Center)
+            .aspectRatio(aspect)
+
+        Box(videoModifier) {
+            if (playerState != PlayerState.Error) {
+                PlayerSurface(exoPlayer = player, active = true, modifier = Modifier.fillMaxSize())
+            }
         }
 
         PlayerStatusVisuals(
@@ -198,6 +233,7 @@ private fun FullscreenVideoContent(
 
         if (playerState == PlayerState.Ready || playerState == PlayerState.Buffering) {
             VideoControlsOverlay(
+                modifier = videoModifier,
                 isPlaying = isPlaying,
                 isBuffering = playerState == PlayerState.Buffering,
                 isMuted = isMuted,

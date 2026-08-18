@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -111,6 +112,9 @@ internal const val DEFAULT_VIDEO_ASPECT = 16f / 9f
 
 /** How long the controls linger after the last interaction before fading, while playing. */
 private const val CONTROLS_HIDE_DELAY_MS = 3000L
+
+/** Surface width past which the controls step up to tablet-sized touch targets. */
+private val WIDE_CONTROLS_MIN_WIDTH = 600.dp
 
 /**
  * An inline video player for the short, looping, user-embedded clips that appear in rich text
@@ -569,7 +573,27 @@ internal fun VideoControlsOverlay(
     val poke: () -> Unit = { interactions++ }
     val fraction = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
 
-    Box(modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        // Controls are laid out against the surface they sit on, not the device: a tablet's
+        // fullscreen video is two to three times the width of a phone's, and phone-sized touch
+        // targets look stranded on it.
+        val wide = maxWidth >= WIDE_CONTROLS_MIN_WIDTH
+        val buttonSize = if (wide) 56.dp else 40.dp
+        val buttonIconSize = if (wide) 28.dp else 20.dp
+        val playSize = when {
+            wide -> 96.dp
+            isFullscreen -> 72.dp
+            else -> 64.dp
+        }
+        val playIconSize = when {
+            wide -> 48.dp
+            isFullscreen -> 36.dp
+            else -> 30.dp
+        }
+        val edgePadding = if (wide) 20.dp else 12.dp
+        val timeStyle = if (wide) MaterialTheme.typography.titleSmall
+        else MaterialTheme.typography.labelSmall
+
         // Tap layer: toggles control visibility (sits below the controls, which consume their own taps).
         Box(
             modifier = Modifier
@@ -607,14 +631,14 @@ internal fun VideoControlsOverlay(
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .statusBarsPadding()
-                            .padding(12.dp)
-                            .size(40.dp)
+                            .padding(edgePadding)
+                            .size(buttonSize)
                     ) {
                         IconButton(onClick = { poke(); onBack() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.back),
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(buttonIconSize)
                             )
                         }
                     }
@@ -628,15 +652,15 @@ internal fun VideoControlsOverlay(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .then(if (isFullscreen) Modifier.statusBarsPadding() else Modifier)
-                        .padding(12.dp)
-                        .size(40.dp)
+                        .padding(edgePadding)
+                        .size(buttonSize)
                 ) {
                     IconButton(onClick = { poke(); onToggleMute() }) {
                         Crossfade(targetState = isMuted, label = "mute_crossfade") { muted ->
                             Icon(
                                 imageVector = if (muted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
                                 contentDescription = if (muted) stringResource(R.string.unmute) else stringResource(R.string.mute),
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(buttonIconSize)
                             )
                         }
                     }
@@ -650,14 +674,14 @@ internal fun VideoControlsOverlay(
                         contentColor = Color.White,
                         modifier = Modifier
                             .align(Alignment.Center)
-                            .size(if (isFullscreen) 72.dp else 64.dp)
+                            .size(playSize)
                     ) {
                         IconButton(onClick = { poke(); onPlayPause() }, modifier = Modifier.fillMaxSize()) {
                             Crossfade(targetState = isPlaying, label = "playpause_crossfade") { playing ->
                                 Icon(
                                     imageVector = if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                                     contentDescription = if (playing) stringResource(R.string.cd_pause) else stringResource(R.string.cd_play),
-                                    modifier = Modifier.size(if (isFullscreen) 36.dp else 30.dp)
+                                    modifier = Modifier.size(playIconSize)
                                 )
                             }
                         }
@@ -670,12 +694,12 @@ internal fun VideoControlsOverlay(
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .then(if (isFullscreen) Modifier.navigationBarsPadding() else Modifier)
-                        .padding(start = 12.dp, end = 4.dp, bottom = 4.dp),
+                        .padding(start = edgePadding, end = edgePadding / 3, bottom = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = formatTime(positionMs),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = timeStyle,
                         color = Color.White
                     )
 
@@ -686,7 +710,7 @@ internal fun VideoControlsOverlay(
                         thumb = {
                             SliderDefaults.Thumb(
                                 interactionSource = remember { MutableInteractionSource() },
-                                thumbSize = DpSize(12.dp, 12.dp),
+                                thumbSize = if (wide) DpSize(16.dp, 16.dp) else DpSize(12.dp, 12.dp),
                                 colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary)
                             )
                         },
@@ -696,13 +720,13 @@ internal fun VideoControlsOverlay(
                         ),
                         modifier = Modifier
                             .weight(1f)
-                            .padding(horizontal = 8.dp)
-                            .height(32.dp)
+                            .padding(horizontal = if (wide) 12.dp else 8.dp)
+                            .height(if (wide) 40.dp else 32.dp)
                     )
 
                     Text(
                         text = formatTime(durationMs),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = timeStyle,
                         color = Color.White
                     )
 
@@ -713,7 +737,7 @@ internal fun VideoControlsOverlay(
                             imageVector = if (isFullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
                             contentDescription = if (isFullscreen) stringResource(R.string.cd_exit_fullscreen) else stringResource(R.string.cd_fullscreen),
                             tint = Color.White,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(if (wide) 28.dp else 22.dp)
                         )
                     }
                 }
