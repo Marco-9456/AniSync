@@ -53,6 +53,9 @@ class UpdateManager @Inject constructor(
         private const val DOWNLOAD_BUFFER_SIZE = 8192
         private const val VERSION_SEGMENT_COUNT = 3
         private const val VERSION_SEGMENT_MULTIPLIER = 1000
+        private const val APK_DIR = "apk"
+        private const val DOWNLOADED_APK = "latest.apk"
+        private const val TEMP_APK = "latest.apk.tmp"
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -180,10 +183,10 @@ class UpdateManager @Inject constructor(
             _updateState.value = UpdateState.Downloading(release, 0)
             try {
                 val finalFile = withContext(Dispatchers.IO) {
-                    val apkDir = context.getExternalFilesDir("apk")
-                        ?: throw Exception("External files directory unavailable")
-                    val tempFile = File(apkDir, "latest.apk.tmp")
-                    val targetFile = File(apkDir, "latest.apk")
+                    val apkDir = apkDir() ?: throw Exception("External cache directory unavailable")
+                    apkDir.mkdirs()
+                    val tempFile = File(apkDir, TEMP_APK)
+                    val targetFile = File(apkDir, DOWNLOADED_APK)
 
                     try {
                         val url = URL(release.downloadUrl)
@@ -257,7 +260,7 @@ class UpdateManager @Inject constructor(
      */
     fun installApk() {
         try {
-            val apkFile = File(context.getExternalFilesDir("apk"), "latest.apk")
+            val apkFile = File(apkDir(), DOWNLOADED_APK)
             if (!apkFile.exists()) {
                 Log.e(TAG, "APK file not found at ${apkFile.absolutePath}")
                 return
@@ -280,6 +283,38 @@ class UpdateManager @Inject constructor(
         }
     }
 
+
+    /**
+     * Where the downloaded APK lives. External *cache* rather than external files, so the system
+     * can reclaim it under storage pressure, Auto Backup leaves it out, and the in-app clear
+     * button reaches it. See [com.anisync.android.data.CacheInventory].
+     */
+    private fun apkDir(): File? = context.externalCacheDir?.resolve(APK_DIR)
+
+    /**
+     * Drops anything left over from an earlier download. The APK is only needed between the
+     * download finishing and the user tapping install, and the app is not restarted in that
+     * window, so anything still here at startup is either an installed update or an abandoned
+     * one. A `.tmp` survives only when the process was killed mid-download.
+     */
+    fun cleanUpDownloads() {
+        val dir = apkDir()
+        if (dir == null) {
+            Log.w(TAG, "No external cache directory, leaving any downloaded APK in place")
+            return
+        }
+        listOf(TEMP_APK, DOWNLOADED_APK)
+            .map { File(dir, it) }
+            .filter { it.exists() }
+            .forEach { file ->
+                val bytes = file.length()
+                if (file.delete()) {
+                    Log.i(TAG, "Reclaimed ${file.name} ($bytes bytes)")
+                } else {
+                    Log.w(TAG, "Could not delete ${file.absolutePath}")
+                }
+            }
+    }
 
     /**
      * Dismisses the current update dialog / state.

@@ -42,6 +42,9 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
     @Inject
     lateinit var appLockManager: com.anisync.android.data.security.AppLockManager
 
+    @Inject
+    lateinit var updateManager: com.anisync.android.data.update.UpdateManager
+
     private val applicationScope = CoroutineScope(
         SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
             Log.e("AniSyncApp", "Unhandled coroutine exception", throwable)
@@ -86,6 +89,10 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
                 scheduleWorkersBackground()
             }
             Log.d("PerfMetrics", "Background Worker scheduling took $backgroundInitTime ms")
+
+            // An update APK is only wanted between its download finishing and the install tap,
+            // and the app is not restarted in between. Anything still here is dead weight.
+            updateManager.cleanUpDownloads()
         }
 
         // Keep AniList account options (adult-content, languages, score format, …) in sync with the
