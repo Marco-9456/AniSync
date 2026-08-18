@@ -42,6 +42,17 @@ data class MediaTheme(
     /** The video shown first: creditless and highest resolution when one exists. */
     val preferredVideo: ThemeVideo?
         get() = versions.firstOrNull()?.preferredVideo
+
+    /**
+     * What the slug carries beyond the plain "OP1" form, "EN" for a dub or "EN4Kids" for an
+     * edit. One Piece lists OP1 and OP1-EN as separate themes with the same number, so dropping
+     * this would leave two rows both calling themselves Opening 1.
+     */
+    val qualifier: String?
+        get() {
+            val canonical = type.name + (sequence ?: 1)
+            return slug.removePrefix(canonical).trim('-', ' ').takeIf { it.isNotEmpty() }
+        }
 }
 
 /**
@@ -74,6 +85,8 @@ data class ThemeVersion(
         get() = videos.minWithOrNull(
             compareByDescending<ThemeVideo> { it.creditless }
                 .thenByDescending { it.resolution ?: 0 }
+                .thenBy { it.lyrics }
+                .thenBy { it.subbed }
         )
 }
 

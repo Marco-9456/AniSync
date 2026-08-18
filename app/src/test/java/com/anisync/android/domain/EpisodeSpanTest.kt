@@ -118,6 +118,44 @@ class EpisodeSpanTest {
         assertEquals(2, entry.preferredVideo?.id)
     }
 
+    @Test
+    fun `a dub theme keeps the part of its slug the readable name drops`() {
+        val dub = theme(slug = "ED11-EN", type = ThemeType.ED, sequence = 11)
+        val original = theme(slug = "ED11", type = ThemeType.ED, sequence = 11)
+        val edit = theme(slug = "OP1-EN4Kids", type = ThemeType.OP, sequence = 1)
+
+        assertEquals("EN", dub.qualifier)
+        assertEquals(null, original.qualifier)
+        assertEquals("EN4Kids", edit.qualifier)
+    }
+
+    @Test
+    fun `a plain cut wins over a lyrics one when neither is creditless`() {
+        val entry = ThemeVersion(
+            id = 1,
+            version = 1,
+            rawEpisodes = "493-516",
+            notes = null,
+            spoiler = false,
+            nsfw = false,
+            videos = listOf(
+                video(id = 1, creditless = false, resolution = 720, lyrics = true),
+                video(id = 2, creditless = false, resolution = 720)
+            )
+        )
+        assertEquals(2, entry.preferredVideo?.id)
+    }
+
+    private fun theme(slug: String, type: ThemeType, sequence: Int) = MediaTheme(
+        id = 1,
+        type = type,
+        sequence = sequence,
+        slug = slug,
+        songTitle = "Song",
+        artists = emptyList(),
+        versions = listOf(version(id = 1, episodes = "1-2"))
+    )
+
     private fun version(id: Int, episodes: String?) = ThemeVersion(
         id = id,
         version = id,
@@ -128,13 +166,18 @@ class EpisodeSpanTest {
         videos = listOf(video(id = id, creditless = true, resolution = 1080))
     )
 
-    private fun video(id: Int, creditless: Boolean, resolution: Int) = ThemeVideo(
+    private fun video(
+        id: Int,
+        creditless: Boolean,
+        resolution: Int,
+        lyrics: Boolean = false
+    ) = ThemeVideo(
         id = id,
         url = "https://v.animethemes.moe/Example-$id.webm",
         resolution = resolution,
         creditless = creditless,
         subbed = false,
-        lyrics = false,
+        lyrics = lyrics,
         source = "BD"
     )
 }
