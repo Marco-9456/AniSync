@@ -5,12 +5,14 @@ import com.anisync.android.cache.Cache.cache
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.cache.normalized.memory.MemoryCacheFactory
 import com.apollographql.cache.normalized.sql.SqlNormalizedCacheFactory
+import com.apollographql.cache.normalized.storeReceivedDate
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.days
 
 /**
  * Provides Apollo GraphQL client with two-tier normalized caching:
@@ -31,6 +33,13 @@ object ApolloModule {
     /** SQLite keeps its journal and shared-memory files alongside the database. */
     private val SQLITE_SUFFIXES = listOf("", "-journal", "-wal", "-shm")
 
+    /**
+     * How long a cached field counts as fresh when the schema does not say otherwise. Reads past
+     * this age miss and refetch, and [com.anisync.android.worker.CacheMaintenanceWorker] collects
+     * them. Room, not this cache, is what the app reads offline.
+     */
+    private val DEFAULT_MAX_AGE = 1.days
+
     @Provides
     @Singleton
     fun provideApolloClient(
@@ -46,7 +55,11 @@ object ApolloModule {
         return ApolloClient.Builder()
             .serverUrl("https://graphql.anilist.co")
             .addHttpInterceptor(authorizationInterceptor)
-            .cache(cacheFactory)
+            .cache(cacheFactory, defaultMaxAge = DEFAULT_MAX_AGE)
+            // Stamps each field with when it arrived, which is what lets
+            // [com.anisync.android.worker.CacheMaintenanceWorker] tell stale from fresh. Without it
+            // there is nothing for garbage collection to act on.
+            .storeReceivedDate(true)
             .build()
     }
 

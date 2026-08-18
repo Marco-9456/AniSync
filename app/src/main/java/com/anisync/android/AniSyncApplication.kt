@@ -184,6 +184,9 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
             ExistingPeriodicWorkPolicy.KEEP,
             updateCheckRequest
         )
+
+        // Nothing evicts the normalized cache on its own.
+        com.anisync.android.worker.CacheMaintenanceWorker.schedule(this@AniSyncApplication)
     }
 
     /**
