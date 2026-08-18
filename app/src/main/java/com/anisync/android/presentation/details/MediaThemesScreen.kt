@@ -12,18 +12,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,8 +51,13 @@ import com.anisync.android.domain.ThemeType
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.SegmentedTabGroup
+import com.anisync.android.presentation.details.components.ThemeDetail
 import com.anisync.android.presentation.details.components.ThemeRow
 import com.anisync.android.presentation.details.components.ThemeSheet
+import com.anisync.android.presentation.navigation.DetailPanePlaceholder
+import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
+import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.bouncyClickable
 
 private enum class ThemeFilter { All, Openings, Endings }
@@ -58,6 +68,11 @@ private enum class ThemeFilter { All, Openings, Endings }
  * This is the screen behind the section arrow. The rail on the media page is deliberately
  * short and horizontal, which is fine for four themes and useless for seventy, so the
  * comparison view lives here where the rows can align and the filter can cut the list down.
+ *
+ * Compact and medium widths open a tapped theme in a sheet over the list. Expanded widths use the
+ * shared two-pane [TwoPaneListDetailScaffold] — the list as the permanent pane, the theme in the
+ * resizable detail pane beside it — so the list keeps its scroll position and its selection while a
+ * theme plays.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +83,6 @@ fun MediaThemesScreen(
     onBackClick: () -> Unit,
     viewModel: MediaThemesViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val themesState by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.start(isAnime = true) }
@@ -76,10 +90,86 @@ fun MediaThemesScreen(
     var filter by rememberSaveable { mutableStateOf(ThemeFilter.All) }
     var openTheme by remember { mutableStateOf<MediaTheme?>(null) }
 
-    val listState = rememberLazyListState()
-
     val openings = remember(themesState.themes) { themesState.themes.filter { it.type == ThemeType.OP } }
     val endings = remember(themesState.themes) { themesState.themes.filter { it.type == ThemeType.ED } }
+
+    val list: @Composable (selectedThemeId: Int?, onThemeClick: (Int) -> Unit) -> Unit =
+        { selectedThemeId, onThemeClick ->
+            ThemeListPane(
+                mediaTitle = mediaTitle,
+                totalEpisodes = totalEpisodes,
+                coverUrl = coverUrl,
+                animeSlug = themesState.animeSlug,
+                openings = openings,
+                endings = endings,
+                isLoading = themesState.isLoading || !themesState.hasLoaded,
+                filter = filter,
+                onFilterChange = { filter = it },
+                selectedThemeId = selectedThemeId,
+                onThemeClick = onThemeClick,
+                onBackClick = onBackClick
+            )
+        }
+
+    if (!LocalAdaptiveInfo.current.supportsTwoPane) {
+        list(null) { id -> openTheme = themesState.themes.firstOrNull { it.id == id } }
+
+        openTheme?.let { theme ->
+            ThemeSheet(
+                theme = theme,
+                totalEpisodes = totalEpisodes,
+                animeSlug = themesState.animeSlug,
+                onDismiss = { openTheme = null }
+            )
+        }
+        return
+    }
+
+    TwoPaneListDetailScaffold(
+        // A pushed route, so there is no navigation rail for the list pane to sit flush against.
+        gutterPadding = PaddingValues(16.dp),
+        placeholderPane = {
+            DetailPanePlaceholder(
+                icon = Icons.Outlined.MusicNote,
+                text = stringResource(R.string.pane_placeholder_theme)
+            )
+        },
+        listPane = { selectedThemeId, onItemClick -> list(selectedThemeId, onItemClick) },
+        detailPane = { themeId, onClose ->
+            themesState.themes.firstOrNull { it.id == themeId }?.let { theme ->
+                // One theme per pane and no drilling, so the pane is always its own root: the detail
+                // shows the trailing close instead of a leading back arrow.
+                CompositionLocalProvider(LocalPaneIsRoot provides true) {
+                    ThemeDetailPane(
+                        theme = theme,
+                        totalEpisodes = totalEpisodes,
+                        animeSlug = themesState.animeSlug,
+                        onClose = onClose
+                    )
+                }
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThemeListPane(
+    mediaTitle: String,
+    totalEpisodes: Int?,
+    coverUrl: String?,
+    animeSlug: String?,
+    openings: List<MediaTheme>,
+    endings: List<MediaTheme>,
+    isLoading: Boolean,
+    filter: ThemeFilter,
+    onFilterChange: (ThemeFilter) -> Unit,
+    selectedThemeId: Int?,
+    onThemeClick: (Int) -> Unit,
+    onBackClick: () -> Unit
+) {
+    val context = LocalContext.current
+    val listState = rememberLazyListState()
 
     val openingsLabel = stringResource(R.string.themes_group_openings)
     val endingsLabel = stringResource(R.string.themes_group_endings)
@@ -90,9 +180,9 @@ fun MediaThemesScreen(
         onBackClick = onBackClick,
         scrollableState = listState
     ) { topContentPadding ->
-        if (themesState.themes.isEmpty()) {
+        if (openings.isEmpty() && endings.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                if (themesState.isLoading || !themesState.hasLoaded) {
+                if (isLoading) {
                     AppCircularProgressIndicator()
                 } else {
                     Text(
@@ -129,7 +219,7 @@ fun MediaThemesScreen(
                     selected = filter,
                     hasOpenings = openings.isNotEmpty(),
                     hasEndings = endings.isNotEmpty(),
-                    onSelect = { filter = it }
+                    onSelect = onFilterChange
                 )
             }
 
@@ -140,7 +230,8 @@ fun MediaThemesScreen(
                     themes = openings,
                     totalEpisodes = totalEpisodes,
                     coverUrl = coverUrl,
-                    onThemeClick = { openTheme = it }
+                    selectedThemeId = selectedThemeId,
+                    onThemeClick = onThemeClick
                 )
             }
 
@@ -151,13 +242,13 @@ fun MediaThemesScreen(
                     themes = endings,
                     totalEpisodes = totalEpisodes,
                     coverUrl = coverUrl,
-                    onThemeClick = { openTheme = it }
+                    selectedThemeId = selectedThemeId,
+                    onThemeClick = onThemeClick
                 )
             }
 
             item(key = "footer") {
                 Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
-                val slug = themesState.animeSlug
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     shape = RoundedCornerShape(16.dp),
@@ -166,8 +257,8 @@ fun MediaThemesScreen(
                         .clip(RoundedCornerShape(16.dp))
                         .bouncyClickable(
                             onClick = {
-                                val url = if (slug != null) {
-                                    "https://animethemes.moe/anime/$slug"
+                                val url = if (animeSlug != null) {
+                                    "https://animethemes.moe/anime/$animeSlug"
                                 } else {
                                     "https://animethemes.moe"
                                 }
@@ -217,24 +308,53 @@ fun MediaThemesScreen(
             }
         }
     }
+}
 
-    openTheme?.let { theme ->
-        ThemeSheet(
+/**
+ * The selected theme, filling a detail pane. It carries its own collapsing bar so the pane reads
+ * like every other detail pane in the app, with the song title in the bar and the close affordance
+ * where [LocalPaneIsRoot] puts it.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThemeDetailPane(
+    theme: MediaTheme,
+    totalEpisodes: Int?,
+    animeSlug: String?,
+    onClose: () -> Unit
+) {
+    val scrollState = rememberScrollState()
+    CollapsingTopBarScaffold(
+        title = theme.songTitle ?: theme.slug,
+        onBackClick = onClose,
+        scrollableState = scrollState
+    ) { topContentPadding ->
+        ThemeDetail(
             theme = theme,
             totalEpisodes = totalEpisodes,
-            animeSlug = themesState.animeSlug,
-            onDismiss = { openTheme = null }
+            animeSlug = animeSlug,
+            twoColumn = true,
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(top = topContentPadding)
+                .padding(
+                    start = dimensionResource(R.dimen.spacing_large),
+                    end = dimensionResource(R.dimen.spacing_large),
+                    bottom = dimensionResource(R.dimen.spacing_large)
+                )
         )
     }
 }
 
-private fun androidx.compose.foundation.lazy.LazyListScope.themeGroup(
+private fun LazyListScope.themeGroup(
     label: String,
     scaleLabel: String?,
     themes: List<MediaTheme>,
     totalEpisodes: Int?,
     coverUrl: String?,
-    onThemeClick: (MediaTheme) -> Unit
+    selectedThemeId: Int?,
+    onThemeClick: (Int) -> Unit
 ) {
     item(key = "label_$label") {
         Spacer(Modifier.height(4.dp))
@@ -260,7 +380,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.themeGroup(
             theme = theme,
             coverUrl = coverUrl,
             totalEpisodes = totalEpisodes,
-            onClick = { onThemeClick(theme) }
+            selected = theme.id == selectedThemeId,
+            onClick = { onThemeClick(theme.id) }
         )
     }
 }

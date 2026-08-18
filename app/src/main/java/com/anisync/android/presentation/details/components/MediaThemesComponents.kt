@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.details.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -320,13 +321,20 @@ fun ThemeRow(
     coverUrl: String?,
     totalEpisodes: Int?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selected: Boolean = false
 ) {
     val spans = remember(theme) { theme.episodeSpans }
 
     Surface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = if (selected) {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
         shape = RoundedCornerShape(16.dp),
+        // A detail pane keeps one theme on screen, so the row it came from has to stay marked.
+        border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
