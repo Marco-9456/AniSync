@@ -8,16 +8,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.platform.app.InstrumentationRegistry
+import com.anisync.android.R
+import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.SegmentedTabItem
@@ -25,6 +31,7 @@ import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.discover.components.CardStyle
 import com.anisync.android.presentation.discover.components.DiscoverMediaCard
+import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.type.MediaType
 import org.junit.Rule
@@ -51,7 +58,7 @@ class AccessibilityTests {
     @Test
     fun errorState_hasLiveRegion_forScreenReaderAnnouncement() {
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 ErrorState(
                     message = "Network error occurred",
                     onRetry = {}
@@ -70,7 +77,7 @@ class AccessibilityTests {
         val errorMessage = "Network error occurred"
         
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 ErrorState(
                     message = errorMessage,
                     onRetry = {}
@@ -89,7 +96,7 @@ class AccessibilityTests {
         var retryClicked = false
         
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 ErrorState(
                     message = "Network error",
                     onRetry = { retryClicked = true }
@@ -97,9 +104,12 @@ class AccessibilityTests {
             }
         }
 
-        // Find and click the retry button
+        // Resolved from resources rather than hardcoded: the label is translated, so a literal
+        // "Retry" only matches on an English device and fails on, say, a German one.
+        val retryLabel = InstrumentationRegistry.getInstrumentation().targetContext
+            .getString(R.string.retry)
         composeTestRule
-            .onNodeWithText("Retry")
+            .onNodeWithText(retryLabel)
             .performClick()
 
         assert(retryClicked) { "Retry button should be clickable" }
@@ -110,7 +120,7 @@ class AccessibilityTests {
     @Test
     fun animatedTab_hasTabRole() {
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 SegmentedTabItem(
                     index = 0,
                     selectedIndex = 0,
@@ -131,7 +141,7 @@ class AccessibilityTests {
     @Test
     fun animatedTab_selectedState_includesSelectedInDescription() {
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 SegmentedTabItem(
                     index = 0,
                     selectedIndex = 0,
@@ -152,7 +162,7 @@ class AccessibilityTests {
     @Test
     fun animatedTab_unselectedState_hasLabelOnlyDescription() {
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 SegmentedTabItem(
                     index = 1,
                     selectedIndex = 0,
@@ -173,7 +183,7 @@ class AccessibilityTests {
     @Test
     fun animatedTab_selectionState_isAccessible() {
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 Column {
                     SegmentedTabItem(
                         index = 0,
@@ -217,7 +227,7 @@ class AccessibilityTests {
     @Test
     fun sectionHeader_title_isHeading() {
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 SectionHeader(
                     title = "Trending Now",
                     level = HeaderLevel.Section
@@ -234,7 +244,7 @@ class AccessibilityTests {
     @Test
     fun sectionHeader_actionButton_hasButtonRole() {
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 SectionHeader(
                     title = "Trending Now",
                     level = HeaderLevel.Section,
@@ -253,7 +263,7 @@ class AccessibilityTests {
     @Test
     fun sectionHeader_actionButton_hasContentDescription() {
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 SectionHeader(
                     title = "Trending Now",
                     level = HeaderLevel.Section,
@@ -272,7 +282,7 @@ class AccessibilityTests {
     @Test
     fun sectionHeader_withSubtitle_displaysAllContent() {
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 SectionHeader(
                     title = "Library",
                     level = HeaderLevel.Screen,
@@ -294,7 +304,7 @@ class AccessibilityTests {
         val testEntry = createTestLibraryEntry()
 
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 SharedTransitionLayout {
                     AnimatedVisibility(visible = true) {
                         DiscoverMediaCard(
@@ -321,7 +331,7 @@ class AccessibilityTests {
         val testEntry = createTestLibraryEntry()
 
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 SharedTransitionLayout {
                     AnimatedVisibility(visible = true) {
                         DiscoverMediaCard(
@@ -348,7 +358,7 @@ class AccessibilityTests {
         val testEntry = createTestLibraryEntry()
 
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 SharedTransitionLayout {
                     AnimatedVisibility(visible = true) {
                         DiscoverMediaCard(
@@ -374,7 +384,7 @@ class AccessibilityTests {
     @Test
     fun allClickableElements_areInteractive() {
         composeTestRule.setContent {
-            MaterialTheme {
+            TestTheme {
                 Column {
                     SegmentedTabItem(
                         index = 0,
@@ -406,7 +416,7 @@ class AccessibilityTests {
         composeTestRule.setContent {
             var selectedIndex by remember { mutableIntStateOf(0) }
             
-            MaterialTheme {
+            TestTheme {
                 Column {
                     SegmentedTabItem(
                         index = 0,
@@ -465,4 +475,20 @@ class AccessibilityTests {
             totalVolumes = null
         )
     }
+
+    /**
+     * Wraps content the way the app does. Several of these components reach
+     * [com.anisync.android.presentation.util.rememberHapticFeedback], which reads
+     * [LocalAppSettings], and that CompositionLocal has no default: without a provider it throws
+     * "AppSettings not provided" and the test fails before it can assert anything.
+     */
+    @Composable
+    private fun TestTheme(content: @Composable () -> Unit) {
+        val context = LocalContext.current
+        val appSettings = remember(context) { AppSettings(context) }
+        CompositionLocalProvider(LocalAppSettings provides appSettings) {
+            MaterialTheme(content = content)
+        }
+    }
+
 }
