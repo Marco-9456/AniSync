@@ -178,12 +178,13 @@ class MediaDetailsViewModel @Inject constructor(
      * [loadFollowingPreview]: a separate StateFlow, silent on failure so the
      * section just stays hidden. Reuses the rate-limit-safe [ForumRepository.searchThreads].
      */
-    private fun loadDiscussionsPreview() {
+    private fun loadDiscussionsPreview(allowCached: Boolean = true) {
         viewModelScope.launch {
             when (val result = forumRepository.searchThreads(
                 mediaCategoryId = mediaId,
                 sort = com.anisync.android.domain.ThreadSortOption.RECENTLY_REPLIED,
-                page = 1
+                page = 1,
+                allowCached = allowCached
             )) {
                 is Result.Success -> {
                     _discussions.value = result.data.items.take(DISCUSSIONS_PREVIEW_LIMIT)
@@ -198,12 +199,13 @@ class MediaDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun loadFollowingPreview() {
+    private fun loadFollowingPreview(allowCached: Boolean = true) {
         viewModelScope.launch {
             when (val result = detailsRepository.getMediaFollowing(
                 mediaId = mediaId,
                 page = 1,
-                perPage = FOLLOWING_PREVIEW_LIMIT
+                perPage = FOLLOWING_PREVIEW_LIMIT,
+                allowCached = allowCached
             )) {
                 is Result.Success -> {
                     val (entries, hasNext) = result.data
@@ -226,8 +228,10 @@ class MediaDetailsViewModel @Inject constructor(
      */
     fun refresh() {
         if (_stats.value.initialized && !statsLoading) loadStats()
-        loadFollowingPreview()
-        loadDiscussionsPreview()
+        // Pull-to-refresh is the user asking for current data, so the previews skip the cache
+        // here even though entering the screen accepts a cached answer.
+        loadFollowingPreview(allowCached = false)
+        loadDiscussionsPreview(allowCached = false)
         viewModelScope.launch {
             _isRefreshing.value = true
             try {

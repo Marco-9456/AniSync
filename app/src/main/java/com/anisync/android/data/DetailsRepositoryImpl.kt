@@ -708,7 +708,8 @@ class DetailsRepositoryImpl @Inject constructor(
     override suspend fun getMediaFollowing(
         mediaId: Int,
         page: Int,
-        perPage: Int
+        perPage: Int,
+        allowCached: Boolean
     ): Result<Pair<List<MediaFollowingEntry>, Boolean>> {
         return safeApiCall {
             val response = apolloClient.query(
@@ -718,10 +719,11 @@ class DetailsRepositoryImpl @Inject constructor(
                     perPage = perPage
                 )
             )
-                // Followed users' avatars/score/progress/notes change often;
-                // the implicit CacheFirst default pinned the first response in
-                // the persistent cache and it never refreshed.
-                .fetchPolicy(FetchPolicy.NetworkFirst)
+                // Followed users' avatars/score/progress/notes change often, and the cache used
+                // to have no expiry at all, so the first response stayed pinned forever. It expires
+                // now (User carries a six hour window), which is what makes a cached read safe for
+                // the preview section. Callers showing the full list still ask the network.
+                .fetchPolicy(if (allowCached) FetchPolicy.CacheFirst else FetchPolicy.NetworkFirst)
                 .execute()
 
             if (response.hasErrors() || response.data == null) {
@@ -1105,7 +1107,8 @@ class DetailsRepositoryImpl @Inject constructor(
                     sort = Optional.presentIfNotNull(sort)
                 )
             )
-                .fetchPolicy(FetchPolicy.NetworkOnly)
+                // A show's cast does not change. Character carries a seven day window.
+                .fetchPolicy(FetchPolicy.CacheFirst)
                 .execute()
 
             val connection = response.data?.Media?.characters
@@ -1152,7 +1155,8 @@ class DetailsRepositoryImpl @Inject constructor(
                     sort = Optional.presentIfNotNull(sort)
                 )
             )
-                .fetchPolicy(FetchPolicy.NetworkOnly)
+                // Same as the cast: crew credits are settled once a show has aired.
+                .fetchPolicy(FetchPolicy.CacheFirst)
                 .execute()
 
             val connection = response.data?.Media?.staff
@@ -1180,7 +1184,9 @@ class DetailsRepositoryImpl @Inject constructor(
             val response = apolloClient.query(
                 GetMediaStatsQuery(id = Optional.present(mediaId))
             )
-                .fetchPolicy(FetchPolicy.NetworkOnly)
+                // Score distributions and status breakdowns move over days, not minutes, and
+                // expire with Media's three hour window.
+                .fetchPolicy(FetchPolicy.CacheFirst)
                 .execute()
 
             val media = response.data?.Media ?: throw Exception("Media not found")

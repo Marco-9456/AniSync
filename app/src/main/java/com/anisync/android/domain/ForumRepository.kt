@@ -40,7 +40,8 @@ interface ForumRepository {
         userId: Int? = null,
         subscribed: Boolean? = null,
         sort: ThreadSortOption = ThreadSortOption.Default,
-        page: Int = 1
+        page: Int = 1,
+        allowCached: Boolean = false
     ): Result<PaginatedResult<ForumThread>>
 
     /**

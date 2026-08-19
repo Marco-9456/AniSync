@@ -129,7 +129,8 @@ class ForumRepositoryImpl @Inject constructor(
         userId: Int?,
         subscribed: Boolean?,
         sort: ThreadSortOption,
-        page: Int
+        page: Int,
+        allowCached: Boolean
     ): Result<PaginatedResult<ForumThread>> {
         val trimmed = search?.trim()?.takeIf { it.isNotBlank() }
         // SEARCH_MATCH only ranks meaningfully with a query — fall back when blank.
@@ -154,7 +155,10 @@ class ForumRepositoryImpl @Inject constructor(
                             sort = Optional.present(sortList)
                         )
                     )
-                    .fetchPolicy(FetchPolicy.NetworkOnly)
+                    // Thread lists are browsed for what is new, so the network stays the default.
+                    // The details screen only shows a three-item preview, where a cached answer
+                    // within Thread's window is worth more than a request per visit.
+                    .fetchPolicy(if (allowCached) FetchPolicy.CacheFirst else FetchPolicy.NetworkOnly)
                     .execute()
 
                 val pageData = response.data?.Page

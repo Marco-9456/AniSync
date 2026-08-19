@@ -116,11 +116,16 @@ interface DetailsRepository {
     /**
      * Get paginated list of media list entries belonging to users the viewer follows.
      * Returns a pair of: list of entries, and a boolean indicating if there is a next page.
+     *
+     * @param allowCached lets a caller that only shows a preview accept a cached answer within its
+     * freshness window, rather than spending a request on every visit to the same page. Screens
+     * that show the full list leave it off.
      */
     suspend fun getMediaFollowing(
         mediaId: Int,
         page: Int,
-        perPage: Int
+        perPage: Int,
+        allowCached: Boolean = false
     ): Result<Pair<List<MediaFollowingEntry>, Boolean>>
 
     /**
