@@ -138,9 +138,13 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
         val workManager = WorkManager.getInstance(this@AniSyncApplication)
 
         // Schedule Airing Updates
+        // Six hourly, not hourly. The query window is bucketed to the start of the day, so an
+        // hourly run refetched three pages of near-identical data twenty four times over, and the
+        // countdown users actually see is computed locally from each episode's airingAt. Episode
+        // notifications do not read this table, they fetch their own.
         val airingRequest =
             PeriodicWorkRequestBuilder<com.anisync.android.worker.AiringScheduleWorker>(
-                1, TimeUnit.HOURS
+                6, TimeUnit.HOURS
             )
                 .setConstraints(networkConstraints)
                 .build()
