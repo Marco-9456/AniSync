@@ -25,8 +25,10 @@ class WidgetDataDiagnostic {
 
     private val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
 
+    // runBlocking<Unit> is deliberate: the block ends on Log.i, which returns Int on Android, so
+    // an inferred return type makes this a non-void method and JUnit refuses to run the class.
     @Test
-    fun reportWhatTheWidgetsCanSee() = runBlocking {
+    fun reportWhatTheWidgetsCanSee() = runBlocking<Unit> {
         val deps = context.widgetDeps()
         val owner = deps.activeOwnerId()
         val start = WidgetTime.startOfToday()
