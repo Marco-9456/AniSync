@@ -58,3 +58,31 @@ extend type ThreadCommentReplyNotification @typePolicy(keyFields: "id")
 extend type ThreadCommentSubscribedNotification @typePolicy(keyFields: "id")
 extend type ThreadLikeNotification @typePolicy(keyFields: "id")
 extend type User @typePolicy(keyFields: "id")
+
+# Freshness windows.
+#
+# These are what arm read-time expiry: the cache only installs CacheControlCacheResolver when at
+# least one max age is declared, and without it "cached" would mean "until garbage collection",
+# which is the trap the repository comments describe ("the persistent SQLite tier serves the first
+# response forever"). Anything not named here falls back to the client's one-day default.
+#
+# A window is only as long as the staleness a user would actually accept on that data.
+
+# Reference data. A finished show's cast and crew do not change.
+extend type Character @cacheControl(maxAge: 604800)
+extend type Staff @cacheControl(maxAge: 604800)
+extend type Studio @cacheControl(maxAge: 604800)
+
+# Slow-moving. Matches the ladder DetailsRepositoryImpl already applies to its Room copy.
+extend type Media @cacheControl(maxAge: 10800)
+extend type Thread @cacheControl(maxAge: 10800)
+extend type Review @cacheControl(maxAge: 10800)
+
+# Other people's profiles, as shown in the following preview.
+extend type User @cacheControl(maxAge: 21600)
+
+# Other users' list entries, which is what the following preview is made of. The viewer's own
+# progress does not come through here: the library reads it from Room (libraryDao.observeByType)
+# and mutations write through, so this window governs other people's scores and progress only.
+# It was five minutes, which expired the preview before a revisit could ever benefit from it.
+extend type MediaList @cacheControl(maxAge: 3600)
