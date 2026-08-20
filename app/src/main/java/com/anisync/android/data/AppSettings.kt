@@ -576,6 +576,34 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_DEV_TOOLS_UNLOCKED, false).apply()
     }
 
+    // ==========================================================================
+    // ONBOARDING — first-run flow
+    // ==========================================================================
+
+    private val _onboardingCompleted = MutableStateFlow(
+        prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+    )
+    val onboardingCompleted: StateFlow<Boolean> = _onboardingCompleted.asStateFlow()
+
+    /**
+     * A developer-triggered replay of the first-run flow. Held in memory only: a replay is a review
+     * aid, and persisting it would strand the user in onboarding if the process died mid-flow.
+     */
+    private val _onboardingReplay = MutableStateFlow(false)
+    val onboardingReplay: StateFlow<Boolean> = _onboardingReplay.asStateFlow()
+
+    /** Marks the first-run flow done, and ends a replay if one was running. */
+    fun completeOnboarding() {
+        _onboardingReplay.value = false
+        _onboardingCompleted.value = true
+        prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, true).apply()
+    }
+
+    /** Shows the first-run flow again over the running app (Developer Tools). */
+    fun replayOnboarding() {
+        _onboardingReplay.value = true
+    }
+
     /**
      * Set the app theme mode. Main thread only: it re-syncs AppCompat's night mode (seeded at
      * process start in AniSyncApplication) — without this, SYSTEM keeps reading a stale uiMode
@@ -1075,6 +1103,7 @@ companion object {
 
         private const val KEY_TYPOGRAPHY_OVERRIDES = "typography_overrides"
         private const val KEY_DEV_TOOLS_UNLOCKED = "dev_tools_unlocked"
+        private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
 
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"

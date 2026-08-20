@@ -63,6 +63,7 @@ import com.anisync.android.data.update.UpdateState
 import com.anisync.android.domain.LinkPreviewProvider
 import com.anisync.android.presentation.MainScreen
 import com.anisync.android.presentation.login.LoginScreen
+import com.anisync.android.presentation.onboarding.OnboardingScreen
 import com.anisync.android.presentation.settings.UpdateDialog
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalStatusBarColor
@@ -175,6 +176,13 @@ class MainActivity : AppCompatActivity() {
 
             handleAuthRedirect(intent)
             routeAccountDeepLink(intent)
+
+            // Upgraders already have an account, so the first-run flow has nothing to tell them.
+            // Backfilling here (not from a default) keeps the flag meaning "has been through it"
+            // rather than "was installed after the flag existed".
+            if (!appSettings.onboardingCompleted.value && accountManager.activeAccount.value != null) {
+                appSettings.completeOnboarding()
+            }
 
             // Resolve a migrated legacy login + claim its pre-ownerId library rows for the account.
             lifecycleScope.launch(Dispatchers.IO) {
@@ -355,7 +363,18 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
 
-                            if (isLoggedIn) {
+                            // First run, or a Developer Tools replay, owns the whole window: the
+                            // sign-in handoff is the flow's own first step, and the steps after it
+                            // read the account it attaches. Signing out later returns to the plain
+                            // LoginScreen — onboarding is a one-time introduction, not a login gate.
+                            val onboardingCompleted by appSettings.onboardingCompleted
+                                .collectAsStateWithLifecycle()
+                            val onboardingReplay by appSettings.onboardingReplay
+                                .collectAsStateWithLifecycle()
+
+                            if (!onboardingCompleted || onboardingReplay) {
+                                OnboardingScreen()
+                            } else if (isLoggedIn) {
                                 key(sessionEpoch) {
                                     MainScreen(builtAtEpoch = sessionEpoch)
                                 }
