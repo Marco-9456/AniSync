@@ -1530,8 +1530,7 @@
     <string name="share_recap_top_staff">Most read author</string>
 
     <!-- ONBOARDING (first-run flow) -->
-    <string name="onboarding_welcome_headline">Your library,
-always in sync.</string>
+    <string name="onboarding_welcome_headline">Your library,\nalways in sync.</string>
     <string name="onboarding_welcome_body">Track anime and manga, and never miss an airing episode.</string>
     <string name="onboarding_welcome_cta">Continue with AniList</string>
     <string name="onboarding_welcome_new_prompt">New to AniList?</string>
@@ -1547,8 +1546,7 @@ always in sync.</string>
     <string name="onboarding_signin_dismiss">Not now</string>
 
     <string name="onboarding_sync_signed_in_as">SIGNED IN AS</string>
-    <string name="onboarding_sync_body">Your lists are coming over from AniList.
-This happens once.</string>
+    <string name="onboarding_sync_body">Your lists are coming over from AniList.\nThis happens once.</string>
     <string name="onboarding_sync_card_label">BRINGING YOUR ACCOUNT OVER</string>
     <string name="onboarding_sync_row_library">Library</string>
     <string name="onboarding_sync_row_airing">Airing schedule</string>
@@ -1592,9 +1590,9 @@ This happens once.</string>
     <string name="onboarding_personalise_titles">TITLES</string>
     <string name="onboarding_personalise_open_on">OPEN ON</string>
     <string name="onboarding_personalise_note">The accent carries through cards, buttons and widgets.</string>
-    <string name="onboarding_preview_title">Frieren: Beyond Journey's End</string>
+    <string name="onboarding_preview_title">Frieren: Beyond Journey\'s End</string>
 
-    <string name="onboarding_done_headline">You're all set</string>
+    <string name="onboarding_done_headline">You\'re all set</string>
     <string name="onboarding_done_body">Your lists are here and the alerts are armed.</string>
     <string name="onboarding_done_pill_alerts_on">Alerts on</string>
     <string name="onboarding_done_pill_alerts_off">Alerts off</string>
