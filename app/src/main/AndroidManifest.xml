@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- Onboarding offers the Doze exemption that keeps the 15-minute notification poll on
+         time. Requested through the system dialog, never assumed. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <!--
       Package visibility (Android 11+): declare that we interact with web browsers so the app can
       resolve and explicitly target one when opening links externally (see AppLinksUtil.openInBrowser).
