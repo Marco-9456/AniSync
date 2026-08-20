@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Copyright (C) 2026 The Android Open Source Project
   ~
@@ -14,11 +15,22 @@
   ~ limitations under the License.
   -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="90"
     android:viewportHeight="90">
-  <path
-      android:pathData="M0,0h90v90h-90z"
-      android:fillColor="#FFFFFF"/>
+  <path android:pathData="M0,0h90v90h-90z">
+    <aapt:attr name="android:fillColor">
+      <gradient
+          android:startX="0"
+          android:startY="0"
+          android:endX="90"
+          android:endY="90"
+          android:type="linear">
+        <item android:offset="0" android:color="#FF101A2E"/>
+        <item android:offset="1" android:color="#FF060A13"/>
+      </gradient>
+    </aapt:attr>
+  </path>
 </vector>

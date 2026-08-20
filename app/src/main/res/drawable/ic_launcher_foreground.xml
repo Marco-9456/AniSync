@@ -33,7 +33,7 @@
             android:endY="75"
             android:type="linear">
           <item android:offset="0" android:color="#FFFFFFFF"/>
-          <item android:offset="1" android:color="#FF003399"/>
+          <item android:offset="1" android:color="#FF4C8FFF"/>
         </gradient>
       </aapt:attr>
     </path>
