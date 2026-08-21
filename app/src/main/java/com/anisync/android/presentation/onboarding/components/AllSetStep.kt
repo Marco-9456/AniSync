@@ -1,6 +1,5 @@
 package com.anisync.android.presentation.onboarding.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,10 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -206,13 +204,23 @@ private fun WidgetNudge(onClick: () -> Unit, modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(horizontal = 8.dp)
             ) {
                 WidgetPreviewRow(
-                    poster = R.drawable.widget_preview_poster_1,
+                    poster = Brush.linearGradient(
+                        listOf(
+                            colorResource(R.color.widget_tertiary_container),
+                            colorResource(R.color.widget_primary)
+                        )
+                    ),
                     title = stringResource(R.string.widget_preview_title_1),
                     episode = stringResource(R.string.widget_preview_episode_1),
                     pill = stringResource(R.string.widget_preview_time_1)
                 )
                 WidgetPreviewRow(
-                    poster = R.drawable.widget_preview_poster_2,
+                    poster = Brush.linearGradient(
+                        listOf(
+                            colorResource(R.color.widget_primary_container),
+                            colorResource(R.color.widget_secondary_container)
+                        )
+                    ),
                     title = stringResource(R.string.widget_preview_title_2),
                     episode = stringResource(R.string.widget_preview_episode_2),
                     pill = stringResource(R.string.widget_preview_time_2)
@@ -228,7 +236,7 @@ private fun WidgetNudge(onClick: () -> Unit, modifier: Modifier = Modifier) {
  */
 @Composable
 private fun WidgetPreviewRow(
-    poster: Int,
+    poster: Brush,
     title: String,
     episode: String,
     pill: String
@@ -241,13 +249,14 @@ private fun WidgetPreviewRow(
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(poster),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
+        // The picker's stand-in cover is a <shape> gradient, redrawn here rather than loaded:
+        // painterResource rejects shape drawables outright.
+        Box(
             modifier = Modifier
                 .width(40.dp)
                 .height(57.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(poster)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
