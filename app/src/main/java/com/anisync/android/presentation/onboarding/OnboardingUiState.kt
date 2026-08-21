@@ -16,6 +16,18 @@ enum class OnboardingStep {
     PERSONALISE,
     DONE;
 
+    /**
+     * The step a back press returns to, or null where there is nothing to go back to. Welcome has
+     * nothing behind it, and syncing cannot un-attach the account it just imported.
+     */
+    val previous: OnboardingStep?
+        get() = when (this) {
+            WELCOME, SYNCING -> null
+            PERMISSIONS -> SYNCING
+            PERSONALISE -> PERMISSIONS
+            DONE -> PERSONALISE
+        }
+
     /** Position within the two numbered "STEP n OF 2" screens, or 0 for the unnumbered ones. */
     val numberedIndex: Int
         get() = when (this) {
@@ -104,6 +116,7 @@ sealed interface OnboardingAction {
     data object ContinueWithAniList : OnboardingAction
     data object DismissSignInSheet : OnboardingAction
     data object Next : OnboardingAction
+    data object Back : OnboardingAction
     data object Skip : OnboardingAction
     data object Finish : OnboardingAction
     data object RefreshPermissions : OnboardingAction

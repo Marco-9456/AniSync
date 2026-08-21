@@ -57,13 +57,15 @@ fun PermissionsStep(
     onRequest: (PermissionRow) -> Unit,
     onSkip: () -> Unit,
     onContinue: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         OnboardingStepHeader(
             step = 1,
             total = 2,
             onSkip = onSkip,
+            onBack = onBack,
             modifier = Modifier
                 .padding(horizontal = OnboardingMargin)
                 .padding(top = 12.dp)

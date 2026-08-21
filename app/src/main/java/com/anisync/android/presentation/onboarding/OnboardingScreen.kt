@@ -19,10 +19,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -41,7 +41,6 @@ import com.anisync.android.presentation.onboarding.components.SignInSheet
 import com.anisync.android.presentation.onboarding.components.SyncingStep
 import com.anisync.android.presentation.onboarding.components.WelcomeStep
 import com.anisync.android.presentation.util.LocalAppSettings
-import com.anisync.android.presentation.util.LocalStatusBarColor
 import com.anisync.android.ui.theme.resolveDarkTheme
 import com.anisync.android.util.AppLinksUtil
 import com.anisync.android.util.BackgroundWorkUtil
@@ -63,12 +62,6 @@ fun OnboardingScreen(
     val appSettings = LocalAppSettings.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
-
-    // The welcome hero runs to the top edge, so the status-bar strip has to be the page background
-    // rather than the default surfaceContainer tone.
-    val statusBarColorHolder = LocalStatusBarColor.current
-    val backgroundColor = MaterialTheme.colorScheme.background
-    LaunchedEffect(backgroundColor) { statusBarColorHolder.value = backgroundColor }
 
     // All four set-up rows are granted on a system screen, so the answer only arrives on resume.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -110,9 +103,13 @@ fun OnboardingScreen(
         }
     }
 
-    // Back is a no-op past the welcome step: the flow is forward-only once an account is attached,
-    // and there is nothing behind it to return to.
-    BackHandler(enabled = uiState.step != OnboardingStep.WELCOME) {}
+    val goBack = { viewModel.onAction(OnboardingAction.Back) }
+
+    // Back walks the steps in reverse where there is somewhere to go, and is swallowed where there
+    // is not — leaving the flow by accident would drop the user onto a half-configured app.
+    BackHandler(enabled = uiState.step != OnboardingStep.WELCOME) {
+        if (uiState.step.previous != null) goBack()
+    }
 
     Box(
         modifier = modifier
@@ -151,7 +148,8 @@ fun OnboardingScreen(
                     onRequest = requestPermission,
                     onSkip = { viewModel.onAction(OnboardingAction.Skip) },
                     onContinue = { viewModel.onAction(OnboardingAction.Next) },
-                    modifier = Modifier.navigationBarsOnly()
+                    onBack = goBack.takeIf { step.previous != null },
+                    modifier = Modifier.systemBarsOnly()
                 )
 
                 OnboardingStep.PERSONALISE -> PersonaliseStep(
@@ -167,7 +165,8 @@ fun OnboardingScreen(
                     onStartTabSelected = { viewModel.onAction(OnboardingAction.SetStartTab(it)) },
                     onSkip = { viewModel.onAction(OnboardingAction.Skip) },
                     onContinue = { viewModel.onAction(OnboardingAction.Next) },
-                    modifier = Modifier.navigationBarsOnly()
+                    onBack = goBack.takeIf { step.previous != null },
+                    modifier = Modifier.systemBarsOnly()
                 )
 
                 OnboardingStep.DONE -> AllSetStep(
@@ -177,7 +176,7 @@ fun OnboardingScreen(
                     widgetPinSupported = uiState.widgetPinSupported,
                     onAddWidget = { WidgetPin.requestUpNext(context) },
                     onFinish = { viewModel.onAction(OnboardingAction.Finish) },
-                    modifier = Modifier.navigationBarsOnly()
+                    modifier = Modifier.systemBarsOnly()
                 )
             }
         }
@@ -198,9 +197,13 @@ fun OnboardingScreen(
 }
 
 /**
- * The activity already consumes the status-bar inset for every screen; onboarding only has to keep
- * its own bottom action clear of the gesture bar.
+ * Onboarding draws edge to edge, so each step states which bars it wants to sit clear of. The two
+ * screens built on artwork keep the status bar over the image and only dodge the gesture bar.
  */
 @Composable
 private fun Modifier.navigationBarsOnly(): Modifier =
     windowInsetsPadding(WindowInsets.navigationBars)
+
+@Composable
+private fun Modifier.systemBarsOnly(): Modifier =
+    windowInsetsPadding(WindowInsets.systemBars)
