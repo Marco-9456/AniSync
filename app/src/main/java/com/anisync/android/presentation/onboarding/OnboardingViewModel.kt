@@ -65,6 +65,8 @@ class OnboardingViewModel @Inject constructor(
     private var wasLoggedIn = accountManager.activeAccount.value != null
 
     init {
+        appSettings.markOnboardingStarted()
+        observeReplayRequests()
         observeAccount()
         observeSettings()
         loadHeroCovers()
@@ -112,6 +114,28 @@ class OnboardingViewModel @Inject constructor(
         _uiState.update { copy(step = next, showSignInSheet = false) }
         if (next == OnboardingStep.SYNCING) startSync()
         if (next == OnboardingStep.PERMISSIONS) refreshPermissions()
+    }
+
+    /**
+     * A replay reuses this ViewModel: it is scoped to the activity, and the flow leaving composition
+     * does not clear that store. So the flag turning true is what rewinds the steps — without this a
+     * second run would resume on whatever screen the first one ended on.
+     */
+    private fun observeReplayRequests() {
+        viewModelScope.launch {
+            appSettings.onboardingReplay.collect { replaying ->
+                if (!replaying) return@collect
+                syncJob?.cancel()
+                wasLoggedIn = accountManager.activeAccount.value != null
+                _uiState.update {
+                    copy(
+                        step = OnboardingStep.WELCOME,
+                        showSignInSheet = false,
+                        sync = SyncProgress()
+                    )
+                }
+            }
+        }
     }
 
     private fun back() {
