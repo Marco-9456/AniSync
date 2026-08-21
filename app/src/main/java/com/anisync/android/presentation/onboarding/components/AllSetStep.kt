@@ -60,17 +60,19 @@ fun AllSetStep(
     ) {
         Spacer(modifier = Modifier.height(64.dp))
 
+        // Same plate construction as the set-up rows, at emblem scale, so the green reads as the
+        // flow's own "granted" colour rather than a one-off.
         Box(
             modifier = Modifier
                 .size(150.dp)
                 .clip(MaterialShapes.Cookie12Sided.toShape())
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                .background(OnboardingAccents.Green.copy(alpha = 0.22f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Filled.Check,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = OnboardingAccents.Green,
                 modifier = Modifier.size(64.dp)
             )
         }
