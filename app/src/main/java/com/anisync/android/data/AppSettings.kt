@@ -56,6 +56,21 @@ enum class DiscoverViewMode {
 }
 
 /**
+ * Which tab a cold launch opens on.
+ *
+ * [LAST_VISITED] is the behaviour the app has always had and stays the default; the rest pin the
+ * app to one tab however the user left it. The last visited tab keeps being recorded either way, so
+ * switching back to [LAST_VISITED] resumes where the user actually was.
+ */
+enum class StartScreen(val tabKey: String?) {
+    LAST_VISITED(null),
+    LIBRARY("library"),
+    DISCOVER("discover"),
+    FEED("feed"),
+    FORUM("forum")
+}
+
+/**
  * Visual style of the bottom navigation bar.
  *
  *  - [ANCHORED]: bar pinned to the bottom edge with rounded top corners.
@@ -454,6 +469,21 @@ class AppSettings @Inject constructor(
     // on the screen the user left. Profile and Settings are intentionally never stored.
     private val _lastMainTab = MutableStateFlow(prefs.getString(KEY_LAST_MAIN_TAB, null))
     val lastMainTab: StateFlow<String?> = _lastMainTab.asStateFlow()
+
+    private val _startScreen = MutableStateFlow(readStartScreen())
+    val startScreen: StateFlow<StartScreen> = _startScreen.asStateFlow()
+
+    private fun readStartScreen(): StartScreen {
+        val name = runCatching { prefs.getString(KEY_START_SCREEN, null) }.getOrNull()
+            ?: return StartScreen.LAST_VISITED
+        return runCatching { StartScreen.valueOf(name) }.getOrDefault(StartScreen.LAST_VISITED)
+    }
+
+    /** Pins cold launches to one tab, or hands them back to the last visited one. */
+    fun setStartScreen(screen: StartScreen) {
+        _startScreen.value = screen
+        prefs.edit().putString(KEY_START_SCREEN, screen.name).apply()
+    }
 
     // ==========================================================================
     // MEDIA UPLOAD SETTINGS — third-party host config for in-composer attach
@@ -1167,6 +1197,7 @@ companion object {
         private const val KEY_FORUM_FEED = "forum_feed"
         private const val KEY_FORUM_CATEGORY_ID = "forum_category_id"
         private const val KEY_LAST_MAIN_TAB = "last_main_tab"
+        private const val KEY_START_SCREEN = "start_screen"
         private const val KEY_MEDIA_HOST = "media_host"
         private const val KEY_LITTERBOX_DURATION = "litterbox_duration"
         private const val KEY_CUSTOM_HOST_URL = "custom_host_url"

@@ -230,6 +230,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetHapticEnabled -> appSettings.setHapticEnabled(action.enabled)
             is SettingsAction.SetAppLockEnabled -> setAppLockEnabled(action.enabled)
             is SettingsAction.SetNavBarStyle -> appSettings.setNavBarStyle(action.style)
+            is SettingsAction.SetStartScreen -> appSettings.setStartScreen(action.screen)
             is SettingsAction.SetNavBarShowLabels -> appSettings.setNavBarShowLabels(action.show)
             is SettingsAction.SetNavBarCornerRadius -> appSettings.setNavBarCornerRadius(action.radius)
             is SettingsAction.SetAvatarShape -> appSettings.setAvatarShape(action.shape)

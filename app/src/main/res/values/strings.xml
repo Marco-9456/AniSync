@@ -1570,8 +1570,8 @@
     <string name="onboarding_permissions_body">Alerts and airing times depend on work that happens while AniSync is closed.</string>
     <string name="onboarding_permissions_progress">%1$d of %2$d done</string>
     <string name="onboarding_permissions_note">Change any of this later in Settings.</string>
-    <string name="onboarding_perm_alerts_title">Episode alerts</string>
-    <string name="onboarding_perm_alerts_body">Tell you the moment a new episode airs, and when someone replies.</string>
+    <string name="onboarding_perm_alerts_title">Notifications</string>
+    <string name="onboarding_perm_alerts_body">New episodes, forum replies, mentions and follows. Also switches the alerts on inside AniSync.</string>
     <string name="onboarding_perm_battery_title">Background refresh</string>
     <string name="onboarding_perm_battery_body">Android sleeps idle apps. An exemption keeps checks on time.</string>
     <string name="onboarding_perm_links_title">AniList links</string>
@@ -1589,6 +1589,8 @@
     <string name="onboarding_personalise_theme">THEME</string>
     <string name="onboarding_personalise_titles">TITLES</string>
     <string name="onboarding_personalise_open_on">OPEN ON</string>
+    <string name="setting_start_screen">Open on</string>
+    <string name="start_screen_last_visited">Last visited</string>
     <string name="onboarding_personalise_note">The accent carries through cards, buttons and widgets.</string>
     <string name="onboarding_preview_title">Frieren: Beyond Journey\'s End</string>
 
