@@ -179,8 +179,13 @@ class MainActivity : AppCompatActivity() {
 
             // Upgraders already have an account, so the first-run flow has nothing to tell them.
             // Backfilling here (not from a default) keeps the flag meaning "has been through it"
-            // rather than "was installed after the flag existed".
-            if (!appSettings.onboardingCompleted.value && accountManager.activeAccount.value != null) {
+            // rather than "was installed after the flag existed". Anyone who has already opened the
+            // flow is excluded: they signed in through it, and a crash or a swipe-away mid-run must
+            // resume the remaining steps rather than silently count as finished.
+            if (!appSettings.onboardingCompleted.value &&
+                !appSettings.onboardingStarted &&
+                accountManager.activeAccount.value != null
+            ) {
                 appSettings.completeOnboarding()
             }
 

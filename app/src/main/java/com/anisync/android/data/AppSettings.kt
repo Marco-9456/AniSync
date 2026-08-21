@@ -592,6 +592,18 @@ class AppSettings @Inject constructor(
     private val _onboardingReplay = MutableStateFlow(false)
     val onboardingReplay: StateFlow<Boolean> = _onboardingReplay.asStateFlow()
 
+    /**
+     * Whether the flow has ever been opened. Separate from [onboardingCompleted] because the
+     * upgrade backfill keys off "an account exists", and a run that died part way through leaves
+     * exactly that state — without this marker the next launch would skip the rest of the flow.
+     */
+    val onboardingStarted: Boolean get() = prefs.getBoolean(KEY_ONBOARDING_STARTED, false)
+
+    fun markOnboardingStarted() {
+        if (onboardingStarted) return
+        prefs.edit().putBoolean(KEY_ONBOARDING_STARTED, true).apply()
+    }
+
     /** Marks the first-run flow done, and ends a replay if one was running. */
     fun completeOnboarding() {
         _onboardingReplay.value = false
@@ -1104,6 +1116,7 @@ companion object {
         private const val KEY_TYPOGRAPHY_OVERRIDES = "typography_overrides"
         private const val KEY_DEV_TOOLS_UNLOCKED = "dev_tools_unlocked"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+        private const val KEY_ONBOARDING_STARTED = "onboarding_started"
 
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"
