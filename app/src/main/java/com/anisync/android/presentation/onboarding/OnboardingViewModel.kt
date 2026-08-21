@@ -78,6 +78,7 @@ class OnboardingViewModel @Inject constructor(
 
             OnboardingAction.DismissSignInSheet -> _uiState.update { copy(showSignInSheet = false) }
             OnboardingAction.Next -> advance()
+            OnboardingAction.Back -> back()
             OnboardingAction.Skip -> advance()
             OnboardingAction.Finish -> appSettings.completeOnboarding()
             OnboardingAction.RefreshPermissions -> refreshPermissions()
@@ -111,6 +112,11 @@ class OnboardingViewModel @Inject constructor(
         _uiState.update { copy(step = next, showSignInSheet = false) }
         if (next == OnboardingStep.SYNCING) startSync()
         if (next == OnboardingStep.PERMISSIONS) refreshPermissions()
+    }
+
+    private fun back() {
+        val previous = _uiState.value.step.previous ?: return
+        _uiState.update { copy(step = previous, showSignInSheet = false) }
     }
 
     // =========================================================================
@@ -268,7 +274,7 @@ class OnboardingViewModel @Inject constructor(
                 permissions = PermissionStates(
                     notifications = NotificationPermissionHelper.hasNotificationPermission(context),
                     batteryExempt = BackgroundWorkUtil.isIgnoringBatteryOptimizations(context),
-                    linksVerified = AppLinksUtil.isDomainVerified(context),
+                    linksVerified = AppLinksUtil.opensLinksFor(context),
                     hibernationExempt = BackgroundWorkUtil.isHibernationExempt(context)
                 )
             )
