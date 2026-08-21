@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +47,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
 import com.anisync.android.R
 
 /**
@@ -263,7 +266,14 @@ private fun MarqueeColumn(
     ) {
         doubled.forEach { url ->
             AsyncImage(
-                model = url,
+                // The marquee is drawn through a 1.9x scale, so Coil's default sizing (which reads
+                // the pre-scale layout bounds) would decode at roughly half the pixels the cover is
+                // actually painted at. ORIGINAL keeps AniList's full-size file.
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(url)
+                    .size(Size.ORIGINAL)
+                    .crossfade(true)
+                    .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

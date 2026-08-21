@@ -281,8 +281,11 @@ class OnboardingViewModel @Inject constructor(
             if (trending.isEmpty()) return@launch
             _uiState.update {
                 copy(
+                    // Deliberately not the viewer's CoverQuality preference: the marquee blows
+                    // each cover up well past card size, where anything below extraLarge is visibly
+                    // soft.
                     heroCovers = trending.mapNotNull { entry ->
-                        entry.cover?.preferred(CoverQuality.LARGE) ?: entry.coverUrl
+                        entry.cover?.preferred(CoverQuality.EXTRA_LARGE) ?: entry.coverUrl
                     },
                     previewEntry = previewEntry ?: trending.firstOrNull { it.nextAiringEpisode != null }
                     ?: trending.firstOrNull()
