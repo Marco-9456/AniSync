@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -87,7 +88,8 @@ fun WelcomeStep(
         BrandLockup(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 44.dp)
+                .statusBarsPadding()
+                .padding(top = 24.dp)
         )
 
         Column(

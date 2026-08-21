@@ -301,6 +301,16 @@ class MainActivity : AppCompatActivity() {
                           // publishes a tone, the protection Spacer below reads it. The Spacer is a
                           // sibling of the content, so a CompositionLocal bridges the two subtrees.
                           val statusBarColor = remember { mutableStateOf(Color.Unspecified) }
+
+                          // First run, or a Developer Tools replay, takes the whole window: the
+                          // sign-in handoff is the flow's own first step, and its artwork runs under
+                          // the status bar. So it opts out of both the inset padding and the
+                          // status-bar protection strip below, and handles its own insets per step.
+                          val onboardingCompleted by appSettings.onboardingCompleted
+                              .collectAsStateWithLifecycle()
+                          val onboardingReplay by appSettings.onboardingReplay
+                              .collectAsStateWithLifecycle()
+                          val onboardingActive = !onboardingCompleted || onboardingReplay
                           CompositionLocalProvider(LocalStatusBarColor provides statusBarColor) {
                           Box(modifier = Modifier.fillMaxSize()) {
                           // Keep all content out from under the system status bar: pad it down by the
@@ -309,7 +319,13 @@ class MainActivity : AppCompatActivity() {
                           Box(
                               modifier = Modifier
                                   .fillMaxSize()
-                                  .windowInsetsPadding(WindowInsets.statusBars)
+                                  .then(
+                                      if (onboardingActive) {
+                                          Modifier
+                                      } else {
+                                          Modifier.windowInsetsPadding(WindowInsets.statusBars)
+                                      }
+                                  )
                           ) {
                             // Cold Flow — seed from the account store so a logged-in cold start
                             // doesn't flash LoginScreen for a frame.
@@ -363,16 +379,9 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
 
-                            // First run, or a Developer Tools replay, owns the whole window: the
-                            // sign-in handoff is the flow's own first step, and the steps after it
-                            // read the account it attaches. Signing out later returns to the plain
-                            // LoginScreen — onboarding is a one-time introduction, not a login gate.
-                            val onboardingCompleted by appSettings.onboardingCompleted
-                                .collectAsStateWithLifecycle()
-                            val onboardingReplay by appSettings.onboardingReplay
-                                .collectAsStateWithLifecycle()
-
-                            if (!onboardingCompleted || onboardingReplay) {
+                            // Signing out later returns to the plain LoginScreen — onboarding is
+                            // a one-time introduction, not a login gate.
+                            if (onboardingActive) {
                                 OnboardingScreen()
                             } else if (isLoggedIn) {
                                 key(sessionEpoch) {
@@ -412,17 +421,19 @@ class MainActivity : AppCompatActivity() {
                             // M3 status-bar protection: an opaque bar filling the status-bar strip
                             // (surfaceContainer, per the Android system-bars guidance), drawn above the
                             // padded content so nothing shows under the system status bar.
-                            Spacer(
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .fillMaxWidth()
-                                    .windowInsetsTopHeight(WindowInsets.statusBars)
-                                    .background(
-                                        statusBarColor.value.takeOrElse {
-                                            MaterialTheme.colorScheme.surfaceContainer
-                                        }
-                                    )
-                            )
+                            if (!onboardingActive) {
+                                Spacer(
+                                    modifier = Modifier
+                                        .align(Alignment.TopCenter)
+                                        .fillMaxWidth()
+                                        .windowInsetsTopHeight(WindowInsets.statusBars)
+                                        .background(
+                                            statusBarColor.value.takeOrElse {
+                                                MaterialTheme.colorScheme.surfaceContainer
+                                            }
+                                        )
+                                )
+                            }
 
                             // App-lock privacy gate: drawn above the content AND the status-bar strip
                             // so nothing shows while locked. No-op when the feature is off/unlocked.
