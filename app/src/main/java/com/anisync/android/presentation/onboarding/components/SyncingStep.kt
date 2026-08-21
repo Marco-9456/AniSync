@@ -1,11 +1,6 @@
 package com.anisync.android.presentation.onboarding.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -23,7 +18,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -34,10 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.onboarding.SyncProgress
 import com.anisync.android.presentation.onboarding.TaskState
@@ -159,6 +154,7 @@ fun SyncingStep(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ImportChecklist(progress: SyncProgress, modifier: Modifier = Modifier) {
     Surface(
@@ -227,12 +223,9 @@ private fun ImportChecklist(progress: SyncProgress, modifier: Modifier = Modifie
             Spacer(modifier = Modifier.height(14.dp))
 
             val fraction by animateFloatAsState(progress.fraction, label = "ImportProgress")
-            LinearProgressIndicator(
+            LinearWavyProgressIndicator(
                 progress = { fraction },
-                strokeCap = StrokeCap.Round,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -285,29 +278,10 @@ private fun TaskStateIcon(state: TaskState) {
             )
         }
 
-        TaskState.Running -> {
-            val spin = rememberInfiniteTransition(label = "TaskSpinner")
-            val angle by spin.animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
-                label = "TaskSpinnerAngle"
-            )
-            val color = MaterialTheme.colorScheme.primary
-            Canvas(
-                modifier = Modifier
-                    .size(22.dp)
-                    .graphicsLayer { rotationZ = angle }
-            ) {
-                drawArc(
-                    color = color,
-                    startAngle = 0f,
-                    sweepAngle = 260f,
-                    useCenter = false,
-                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
-                )
-            }
-        }
+        TaskState.Running -> AppCircularProgressIndicator(
+            modifier = Modifier.size(22.dp),
+            strokeWidth = 2.dp
+        )
 
         TaskState.Pending -> Canvas(modifier = Modifier.size(22.dp)) {
             drawCircle(
