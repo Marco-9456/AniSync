@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.onboarding
 
 import androidx.compose.runtime.Immutable
+import com.anisync.android.data.StartScreen
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
@@ -39,17 +40,6 @@ enum class OnboardingStep {
 
 /** One row of the account-import checklist on the syncing step. */
 enum class TaskState { Pending, Running, Done }
-
-/**
- * The bottom navigation tab the app opens on. Mirrors the keys [com.anisync.android.data.AppSettings.setLastMainTab]
- * already persists, so choosing here writes the same preference the app updates as the user browses.
- */
-enum class StartTab(val key: String) {
-    LIBRARY("library"),
-    DISCOVER("discover"),
-    FEED("feed"),
-    FORUM("forum")
-}
 
 @Immutable
 data class SyncProgress(
@@ -91,7 +81,7 @@ data class PersonaliseState(
     val paletteId: String = "dynamic",
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
-    val startTab: StartTab = StartTab.LIBRARY
+    val startScreen: StartScreen = StartScreen.LAST_VISITED
 )
 
 @Immutable
@@ -124,5 +114,5 @@ sealed interface OnboardingAction {
     data class SetPalette(val paletteId: String) : OnboardingAction
     data class SetThemeMode(val mode: ThemeMode) : OnboardingAction
     data class SetTitleLanguage(val language: TitleLanguage) : OnboardingAction
-    data class SetStartTab(val tab: StartTab) : OnboardingAction
+    data class SetStartScreen(val screen: StartScreen) : OnboardingAction
 }

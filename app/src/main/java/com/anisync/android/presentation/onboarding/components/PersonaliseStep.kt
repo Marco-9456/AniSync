@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.data.StartScreen
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
@@ -22,7 +23,6 @@ import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.components.WatchingCardConfig
 import com.anisync.android.presentation.library.components.LibraryListCard
 import com.anisync.android.presentation.onboarding.PersonaliseState
-import com.anisync.android.presentation.onboarding.StartTab
 import com.anisync.android.presentation.settings.components.ColorSchemeSelector
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.PresetPalettes
@@ -42,7 +42,7 @@ fun PersonaliseStep(
     onPaletteSelected: (String) -> Unit,
     onThemeModeSelected: (ThemeMode) -> Unit,
     onTitleLanguageSelected: (TitleLanguage) -> Unit,
-    onStartTabSelected: (StartTab) -> Unit,
+    onStartScreenSelected: (StartScreen) -> Unit,
     onSkip: () -> Unit,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
@@ -151,21 +151,24 @@ fun PersonaliseStep(
                 modifier = Modifier.padding(horizontal = OnboardingMargin)
             )
             Spacer(modifier = Modifier.height(10.dp))
+            // "Last visited" leads because it is the app's own default; picking any of the
+            // others pins cold launches to that tab, exactly as Look and Feel ▸ Open on does.
             SegmentedTabGroup(
-                options = StartTab.entries.toList(),
-                selected = personalise.startTab,
-                onSelect = onStartTabSelected,
-                label = { tab ->
+                options = StartScreen.entries.toList(),
+                selected = personalise.startScreen,
+                onSelect = onStartScreenSelected,
+                label = { screen ->
                     stringResource(
-                        when (tab) {
-                            StartTab.LIBRARY -> R.string.nav_library
-                            StartTab.DISCOVER -> R.string.nav_discover
-                            StartTab.FEED -> R.string.nav_feed
-                            StartTab.FORUM -> R.string.nav_forum
+                        when (screen) {
+                            StartScreen.LAST_VISITED -> R.string.start_screen_last_visited
+                            StartScreen.LIBRARY -> R.string.nav_library
+                            StartScreen.DISCOVER -> R.string.nav_discover
+                            StartScreen.FEED -> R.string.nav_feed
+                            StartScreen.FORUM -> R.string.nav_forum
                         }
                     )
                 },
-                icon = { if (it == personalise.startTab) Icons.Filled.Check else null },
+                icon = { if (it == personalise.startScreen) Icons.Filled.Check else null },
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
 

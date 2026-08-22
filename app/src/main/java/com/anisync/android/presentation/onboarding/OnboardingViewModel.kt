@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.CoverQuality
+import com.anisync.android.data.StartScreen
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.data.account.AccountManager
@@ -95,7 +96,7 @@ class OnboardingViewModel @Inject constructor(
             is OnboardingAction.SetPalette -> appSettings.setSelectedPalette(action.paletteId)
             is OnboardingAction.SetThemeMode -> appSettings.setThemeMode(action.mode)
             is OnboardingAction.SetTitleLanguage -> appSettings.setTitleLanguage(action.language)
-            is OnboardingAction.SetStartTab -> appSettings.setLastMainTab(action.tab.key)
+            is OnboardingAction.SetStartScreen -> appSettings.setStartScreen(action.screen)
         }
     }
 
@@ -189,7 +190,8 @@ class OnboardingViewModel @Inject constructor(
                 copy(
                     sync = sync.copy(
                         notifications = TaskState.Done,
-                        notificationsOn = NotificationPermissionHelper.hasNotificationPermission(context)
+                        notificationsOn = NotificationPermissionHelper.hasNotificationPermission(context) &&
+                            appSettings.notificationsEnabled.value
                     )
                 )
             }
@@ -256,10 +258,14 @@ class OnboardingViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            appSettings.lastMainTab.collect { key ->
-                val tab = StartTab.entries.firstOrNull { it.key == key } ?: StartTab.LIBRARY
-                _uiState.update { copy(personalise = personalise.copy(startTab = tab)) }
+            appSettings.startScreen.collect { screen ->
+                _uiState.update { copy(personalise = personalise.copy(startScreen = screen)) }
             }
+        }
+        // AniSync's own notification switch is half of what the alerts row reports, so the row has
+        // to move when it does — granting the OS permission alone leaves the app silent.
+        viewModelScope.launch {
+            appSettings.notificationsEnabled.collect { refreshPermissions() }
         }
     }
 
@@ -267,8 +273,7 @@ class OnboardingViewModel @Inject constructor(
         paletteId = appSettings.selectedPaletteId.value,
         themeMode = appSettings.themeMode.value,
         titleLanguage = appSettings.titleLanguage.value,
-        startTab = StartTab.entries.firstOrNull { it.key == appSettings.lastMainTab.value }
-            ?: StartTab.LIBRARY
+        startScreen = appSettings.startScreen.value
     )
 
     /**
@@ -299,7 +304,8 @@ class OnboardingViewModel @Inject constructor(
         _uiState.update {
             copy(
                 permissions = PermissionStates(
-                    notifications = NotificationPermissionHelper.hasNotificationPermission(context),
+                    notifications = NotificationPermissionHelper.hasNotificationPermission(context) &&
+                        appSettings.notificationsEnabled.value,
                     batteryExempt = BackgroundWorkUtil.isIgnoringBatteryOptimizations(context),
                     linksVerified = AppLinksUtil.opensLinksFor(context),
                     hibernationExempt = BackgroundWorkUtil.isHibernationExempt(context)
