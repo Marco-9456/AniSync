@@ -8,6 +8,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -40,10 +41,12 @@ import com.anisync.android.presentation.onboarding.components.PersonaliseStep
 import com.anisync.android.presentation.onboarding.components.SignInSheet
 import com.anisync.android.presentation.onboarding.components.SyncingStep
 import com.anisync.android.presentation.onboarding.components.WelcomeStep
+import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.resolveDarkTheme
 import com.anisync.android.util.AppLinksUtil
 import com.anisync.android.util.BackgroundWorkUtil
+import com.anisync.android.util.NotificationPermissionHelper
 import com.anisync.android.widget.core.WidgetPin
 
 private const val ANILIST_REGISTER_URL = "https://anilist.co/signup"
@@ -78,10 +81,17 @@ fun OnboardingScreen(
     val requestPermission: (PermissionRow) -> Unit = remember(context) {
         { row ->
             when (row) {
-                PermissionRow.Notifications ->
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // Two separate gates sit behind this row: Android's POST_NOTIFICATIONS grant and
+                // AniSync's own master switch. Whichever is missing is the one the tap addresses,
+                // so the row cannot read granted while the app stays silent.
+                PermissionRow.Notifications -> when {
+                    NotificationPermissionHelper.hasNotificationPermission(context) ->
+                        viewModel.onAction(OnboardingAction.EnableNotifications)
+
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
                         notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    } else {
+
+                    else -> {
                         runCatching {
                             context.startActivity(
                                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
@@ -90,6 +100,7 @@ fun OnboardingScreen(
                             )
                         }
                     }
+                }
 
                 PermissionRow.Battery -> BackgroundWorkUtil.requestIgnoreBatteryOptimizations(context)
 
@@ -116,11 +127,22 @@ fun OnboardingScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        // Steps travel with the direction they are taken in: forward slides the new screen in
+        // from the trailing edge, back reverses it, so a back press never reads as another advance.
+        // The offset spring is the app's shared spatial spec, the same motion the tab transitions use.
+        val stepMotion = AppMotion.rememberOffsetSpatialSpec()
         AnimatedContent(
             targetState = uiState.step,
             transitionSpec = {
-                (slideInHorizontally(tween(320)) { it / 6 } + fadeIn(tween(220)))
-                    .togetherWith(slideOutHorizontally(tween(320)) { -it / 6 } + fadeOut(tween(180)))
+                val forward = targetState.ordinal >= initialState.ordinal
+                val direction = if (forward) 1 else -1
+                (
+                    slideInHorizontally(stepMotion) { width -> direction * width / 4 } +
+                        fadeIn(tween(200, delayMillis = 40))
+                    ).togetherWith(
+                    slideOutHorizontally(stepMotion) { width -> -direction * width / 4 } +
+                        fadeOut(tween(140))
+                ).using(SizeTransform(clip = false))
             },
             label = "OnboardingStep"
         ) { step ->
@@ -162,7 +184,9 @@ fun OnboardingScreen(
                     onTitleLanguageSelected = {
                         viewModel.onAction(OnboardingAction.SetTitleLanguage(it))
                     },
-                    onStartTabSelected = { viewModel.onAction(OnboardingAction.SetStartTab(it)) },
+                    onStartScreenSelected = {
+                        viewModel.onAction(OnboardingAction.SetStartScreen(it))
+                    },
                     onSkip = { viewModel.onAction(OnboardingAction.Skip) },
                     onContinue = { viewModel.onAction(OnboardingAction.Next) },
                     onBack = goBack.takeIf { step.previous != null },
