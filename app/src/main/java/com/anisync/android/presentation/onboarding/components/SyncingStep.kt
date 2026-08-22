@@ -7,35 +7,38 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -44,6 +47,19 @@ import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.onboarding.SyncProgress
 import com.anisync.android.presentation.onboarding.TaskState
+import com.anisync.android.presentation.profile.components.ProfileAvatarHalfSize
+import com.anisync.android.presentation.profile.components.ProfileAvatarSize
+
+/**
+ * Banner geometry lifted from the profile header (`ProfileTopSection`) so the first thing the user
+ * sees of their account is arranged the way the Profile tab will arrange it: banner, a rounded
+ * content card overlapping its lower edge, and the avatar straddling the seam. The banner is
+ * shorter than the profile's 320.dp because the import checklist has to fit underneath it.
+ */
+private val BannerHeight = 260.dp
+private val CardOverlap = 64.dp
+private val ContentCardShape = RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp)
+private val HeaderMargin = 24.dp
 
 /**
  * The one-time account import, shown while it runs. Every row reports a real outcome — the entry
@@ -60,82 +76,72 @@ fun SyncingStep(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.34f)
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
         ) {
-            if (bannerUrl != null) {
-                AsyncImage(
-                    model = bannerUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            val background = MaterialTheme.colorScheme.background
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to background.copy(alpha = 0.55f),
-                            0.55f to background.copy(alpha = 0.72f),
-                            1f to background
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Banner(bannerUrl = bannerUrl, username = username)
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = BannerHeight - CardOverlap),
+                    shape = ContentCardShape,
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = HeaderMargin)
+                            .padding(top = ProfileAvatarHalfSize + 20.dp, bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.onboarding_sync_signed_in_as),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.4.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    )
-            )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = username,
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
 
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(horizontal = OnboardingMargin),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = stringResource(R.string.onboarding_sync_body),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        ImportChecklist(progress = progress)
+                    }
+                }
+
+                // Straddles the banner/card seam exactly as the profile header does.
                 UserAvatar(
+                    url = avatarUrl,
                     contentDescription = username,
-                    size = 104.dp,
-                    url = avatarUrl
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                Text(
-                    text = stringResource(R.string.onboarding_sync_signed_in_as),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.4.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = username,
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    size = ProfileAvatarSize,
+                    borderWidth = 2.dp,
+                    framePadding = 3.dp,
+                    isProfileHeader = true,
+                    modifier = Modifier
+                        .padding(horizontal = HeaderMargin)
+                        .offset(y = BannerHeight - CardOverlap - ProfileAvatarHalfSize)
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = stringResource(R.string.onboarding_sync_body),
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = OnboardingMargin)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        ImportChecklist(
-            progress = progress,
-            modifier = Modifier.padding(horizontal = OnboardingMargin)
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
 
         OnboardingNote(
             text = stringResource(R.string.onboarding_sync_note),
@@ -151,6 +157,42 @@ fun SyncingStep(
                 .padding(horizontal = OnboardingMargin)
                 .padding(bottom = 24.dp)
         )
+    }
+}
+
+@Composable
+private fun Banner(bannerUrl: String?, username: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(BannerHeight)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        if (bannerUrl != null) {
+            AsyncImage(
+                model = bannerUrl,
+                contentDescription = stringResource(R.string.content_description_cover, username),
+                contentScale = ContentScale.Crop,
+                // Top-anchored like the profile banner: AniList banners carry their subject up top.
+                alignment = Alignment.TopCenter,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            val scrimBrush = remember {
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Black.copy(alpha = 0.5f),
+                        Color.Transparent,
+                        Color.Black.copy(alpha = 0.2f)
+                    )
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(scrimBrush)
+            )
+        }
     }
 }
 
@@ -259,13 +301,19 @@ private fun ChecklistRow(state: TaskState, label: String, value: String) {
     }
 }
 
+/**
+ * The three row states share a 24.dp slot. The running one is the app's wavy spinner with its wave
+ * geometry scaled to that slot: the component's defaults (48.dp container, 15.dp wavelength, 4.dp
+ * strokes and gap) are only coherent at full size, and shrinking the container alone leaves barely
+ * one visible wave with an outsized gap.
+ */
 @Composable
 private fun TaskStateIcon(state: TaskState) {
     val outline = MaterialTheme.colorScheme.outlineVariant
     when (state) {
         TaskState.Done -> Box(
             modifier = Modifier
-                .size(22.dp)
+                .size(TaskIconSize)
                 .clip(CircleShape)
                 .background(OnboardingAccents.Green),
             contentAlignment = Alignment.Center
@@ -274,16 +322,18 @@ private fun TaskStateIcon(state: TaskState) {
                 imageVector = Icons.Filled.Check,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(15.dp)
             )
         }
 
         TaskState.Running -> AppCircularProgressIndicator(
-            modifier = Modifier.size(22.dp),
-            strokeWidth = 2.dp
+            modifier = Modifier.size(TaskIconSize),
+            strokeWidth = 2.dp,
+            wavelength = 7.5.dp,
+            gapSize = 2.dp
         )
 
-        TaskState.Pending -> Canvas(modifier = Modifier.size(22.dp)) {
+        TaskState.Pending -> Canvas(modifier = Modifier.size(TaskIconSize)) {
             drawCircle(
                 color = outline,
                 radius = size.minDimension / 2 - 1.dp.toPx(),
@@ -297,3 +347,6 @@ private fun TaskStateIcon(state: TaskState) {
         }
     }
 }
+
+/** Half the wavy indicator's 48.dp natural container, so its geometry halves cleanly. */
+private val TaskIconSize = 24.dp
