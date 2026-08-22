@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,6 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anisync.android.R
 
+/** The closing screen is a single centred statement; it gains nothing from a tablet's width. */
+private val DoneMaxWidth = 560.dp
+
 /**
  * The closing screen: what the flow actually achieved, then the one thing worth doing next. The
  * widget nudge renders the same rows the widget picker shows, so what the user taps to add looks
@@ -54,28 +59,28 @@ fun AllSetStep(
     onFinish: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (isWideOnboarding()) {
+        WideAllSet(
+            libraryEntries = libraryEntries,
+            alertsOn = alertsOn,
+            linksOn = linksOn,
+            widgetPinSupported = widgetPinSupported,
+            onAddWidget = onAddWidget,
+            onFinish = onFinish,
+            modifier = modifier
+        )
+        return
+    }
+
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .onboardingColumn(DoneMaxWidth),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(64.dp))
 
-        // Same plate construction as the set-up rows, at emblem scale, so the green reads as the
-        // flow's own "granted" colour rather than a one-off.
-        Box(
-            modifier = Modifier
-                .size(150.dp)
-                .clip(MaterialShapes.Cookie12Sided.toShape())
-                .background(OnboardingAccents.Green.copy(alpha = 0.22f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Check,
-                contentDescription = null,
-                tint = OnboardingAccents.Green,
-                modifier = Modifier.size(64.dp)
-            )
-        }
+        CompletionEmblem()
 
         Spacer(modifier = Modifier.height(28.dp))
 
@@ -93,38 +98,19 @@ fun AllSetStep(
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = OnboardingMargin)
+            modifier = Modifier.padding(horizontal = onboardingMargin())
         )
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatPill(
-                dot = OnboardingAccents.Blue,
-                text = stringResource(R.string.onboarding_sync_entries, libraryEntries)
-            )
-            StatPill(
-                dot = if (alertsOn) OnboardingAccents.Green else MaterialTheme.colorScheme.outline,
-                text = stringResource(
-                    if (alertsOn) R.string.onboarding_done_pill_alerts_on
-                    else R.string.onboarding_done_pill_alerts_off
-                )
-            )
-            StatPill(
-                dot = if (linksOn) OnboardingAccents.Amber else MaterialTheme.colorScheme.outline,
-                text = stringResource(
-                    if (linksOn) R.string.onboarding_done_pill_links_on
-                    else R.string.onboarding_done_pill_links_off
-                )
-            )
-        }
+        StatPills(libraryEntries = libraryEntries, alertsOn = alertsOn, linksOn = linksOn)
 
         Spacer(modifier = Modifier.height(26.dp))
 
         if (widgetPinSupported) {
             WidgetNudge(
                 onClick = onAddWidget,
-                modifier = Modifier.padding(horizontal = OnboardingMargin)
+                modifier = Modifier.padding(horizontal = onboardingMargin())
             )
         }
 
@@ -134,8 +120,119 @@ fun AllSetStep(
             text = stringResource(R.string.onboarding_done_cta),
             onClick = onFinish,
             modifier = Modifier
-                .padding(horizontal = OnboardingMargin)
+                .padding(horizontal = onboardingMargin())
                 .padding(bottom = 24.dp)
+        )
+    }
+}
+
+/**
+ * Wide layout: the outcome and its action on the left, the one thing worth doing next on the right.
+ * Stacking them centred would leave a tablet's whole lower half empty.
+ */
+@Composable
+private fun WideAllSet(
+    libraryEntries: Int,
+    alertsOn: Boolean,
+    linksOn: Boolean,
+    widgetPinSupported: Boolean,
+    onAddWidget: () -> Unit,
+    onFinish: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = OnboardingWidePadding)
+            .padding(vertical = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(OnboardingPaneGap)
+    ) {
+        OnboardingCentredScroll(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            CompletionEmblem()
+            Spacer(modifier = Modifier.height(28.dp))
+            Text(
+                text = stringResource(R.string.onboarding_done_headline),
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = stringResource(R.string.onboarding_done_body),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(22.dp))
+            StatPills(libraryEntries = libraryEntries, alertsOn = alertsOn, linksOn = linksOn)
+            Spacer(modifier = Modifier.height(32.dp))
+            OnboardingPrimaryButton(
+                text = stringResource(R.string.onboarding_done_cta),
+                onClick = onFinish,
+                modifier = Modifier.widthIn(max = 360.dp)
+            )
+        }
+
+        OnboardingCentredScroll(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+        ) {
+            if (widgetPinSupported) {
+                WidgetNudge(onClick = onAddWidget)
+            }
+        }
+    }
+}
+
+/**
+ * Same plate construction as the set-up rows, at emblem scale, so the green reads as the flow's own
+ * "granted" colour rather than a one-off.
+ */
+@Composable
+private fun CompletionEmblem() {
+    Box(
+        modifier = Modifier
+            .size(150.dp)
+            .clip(MaterialShapes.Cookie12Sided.toShape())
+            .background(OnboardingAccents.Green.copy(alpha = 0.22f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Check,
+            contentDescription = null,
+            tint = OnboardingAccents.Green,
+            modifier = Modifier.size(64.dp)
+        )
+    }
+}
+
+/** What the flow actually achieved, in three readings. */
+@Composable
+private fun StatPills(libraryEntries: Int, alertsOn: Boolean, linksOn: Boolean) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        StatPill(
+            dot = OnboardingAccents.Blue,
+            text = stringResource(R.string.onboarding_sync_entries, libraryEntries)
+        )
+        StatPill(
+            dot = if (alertsOn) OnboardingAccents.Green else MaterialTheme.colorScheme.outline,
+            text = stringResource(
+                if (alertsOn) R.string.onboarding_done_pill_alerts_on
+                else R.string.onboarding_done_pill_alerts_off
+            )
+        )
+        StatPill(
+            dot = if (linksOn) OnboardingAccents.Amber else MaterialTheme.colorScheme.outline,
+            text = stringResource(
+                if (linksOn) R.string.onboarding_done_pill_links_on
+                else R.string.onboarding_done_pill_links_off
+            )
         )
     }
 }
