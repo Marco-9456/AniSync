@@ -1732,4 +1732,53 @@
     <!-- %1$s is the error reported by AniList -->
     <string name="toast_update_failed_reason">Aktualisierung fehlgeschlagen: %1$s</string>
     <string name="toast_update_failed">Liste konnte nicht aktualisiert werden</string>
+
+    <!-- Relative timestamps, shown on cards and in the inbox -->
+    <string name="time_ago_just_now">gerade eben</string>
+    <string name="time_ago_minutes">vor %1$d Min.</string>
+    <string name="time_ago_hours">vor %1$d Std.</string>
+    <string name="time_ago_days">vor %1$d T.</string>
+    <string name="time_ago_weeks">vor %1$d Wo.</string>
+    <string name="time_ago_months">vor %1$d Mon.</string>
+    <string name="time_ago_years">vor %1$d J.</string>
+
+    <!-- Last reply line on a thread or activity card: %1$s is the user, %2$s a relative time -->
+    <string name="forum_last_by">Zuletzt von %1$s • %2$s</string>
+
+    <!-- Expandable cards -->
+    <string name="show_more">Mehr anzeigen</string>
+    <string name="show_less">Weniger anzeigen</string>
+
+    <!-- Notifications inbox: who acted, when several people did the same thing -->
+    <string name="notifications_actors_list">%1$s, %2$s und %3$s</string>
+    <plurals name="notifications_actors_tail">
+        <item quantity="one">%1$d weiterer</item>
+        <item quantity="other">%1$d weitere</item>
+    </plurals>
+
+    <!-- Notifications inbox headlines. %1$s is who acted; %2$s, where present, is one of the
+         notification_kind_* nouns -->
+    <string name="notifications_item_liked_activity">%1$s hat geliked: %2$s</string>
+    <string name="notifications_item_liked_reply">%1$s gefällt deine Antwort</string>
+    <string name="notifications_item_replied_activity">%1$s hat geantwortet auf: %2$s</string>
+    <string name="notifications_item_replied_subscribed">%1$s hat auf einen von dir abonnierten Beitrag geantwortet</string>
+    <string name="notifications_item_mentioned_activity">%1$s hat dich erwähnt in: %2$s</string>
+    <string name="notifications_item_message">%1$s hat dir eine Nachricht gesendet</string>
+    <string name="notifications_item_liked_thread">%1$s gefällt dein Thread</string>
+    <string name="notifications_item_liked_comment">%1$s gefällt dein Kommentar</string>
+    <string name="notifications_item_replied_comment">%1$s hat auf deinen Kommentar geantwortet</string>
+    <string name="notifications_item_commented_subscribed">%1$s hat in einem von dir abonnierten Thread kommentiert</string>
+    <string name="notifications_item_mentioned_comment">%1$s hat dich in einem Kommentar erwähnt</string>
+    <string name="notifications_item_following">%1$s folgt dir jetzt</string>
+    <string name="notifications_item_episode">Episode %1$d</string>
+    <!-- Site-wide media changes announced by AniList moderators -->
+    <string name="notifications_item_media_added_fallback">Ein neuer Titel</string>
+    <string name="notifications_item_media_added_context">wurde der Seite hinzugefügt</string>
+    <string name="notifications_item_media_changed_fallback">Ein Titel auf deiner Liste</string>
+    <string name="notifications_item_media_changed_context">hat neue Daten erhalten</string>
+    <string name="notifications_item_media_merged">%1$s in %2$s zusammengeführt</string>
+    <string name="notifications_item_media_merged_fallback">Einträge</string>
+    <string name="notifications_item_media_merged_target">einen anderen Eintrag</string>
+    <string name="notifications_item_media_deleted">%1$s wurde von der Seite entfernt</string>
+    <string name="notifications_item_unknown">Neue Benachrichtigung</string>
 </resources>
