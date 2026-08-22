@@ -3,10 +3,13 @@ package com.anisync.android.presentation.onboarding.components
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,6 +42,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -57,9 +61,13 @@ import com.anisync.android.presentation.profile.components.ProfileAvatarSize
  * shorter than the profile's 320.dp because the import checklist has to fit underneath it.
  */
 private val BannerHeight = 260.dp
+private val WideBannerHeight = 200.dp
 private val CardOverlap = 64.dp
 private val ContentCardShape = RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp)
 private val HeaderMargin = 24.dp
+
+/** Widest the phone composition runs before the banner becomes a billboard. */
+private val HeaderMaxWidth = 760.dp
 
 /**
  * The one-time account import, shown while it runs. Every row reports a real outcome — the entry
@@ -75,69 +83,28 @@ fun SyncingStep(
     onContinue: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (isWideOnboarding()) {
+        WideSyncing(username, avatarUrl, bannerUrl, progress, onContinue, modifier)
+        return
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Banner(bannerUrl = bannerUrl, username = username)
-
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = BannerHeight - CardOverlap),
-                    shape = ContentCardShape,
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = HeaderMargin)
-                            .padding(top = ProfileAvatarHalfSize + 20.dp, bottom = 8.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.onboarding_sync_signed_in_as),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.4.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = username,
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = stringResource(R.string.onboarding_sync_body),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        ImportChecklist(progress = progress)
-                    }
-                }
-
-                // Straddles the banner/card seam exactly as the profile header does.
-                UserAvatar(
-                    url = avatarUrl,
-                    contentDescription = username,
-                    size = ProfileAvatarSize,
-                    borderWidth = 2.dp,
-                    framePadding = 3.dp,
-                    isProfileHeader = true,
-                    modifier = Modifier
-                        .padding(horizontal = HeaderMargin)
-                        .offset(y = BannerHeight - CardOverlap - ProfileAvatarHalfSize)
-                )
+            IdentityHeader(
+                username = username,
+                avatarUrl = avatarUrl,
+                bannerUrl = bannerUrl,
+                bannerHeight = BannerHeight,
+                margin = HeaderMargin,
+                rounded = false,
+                modifier = Modifier.onboardingColumn(HeaderMaxWidth)
+            ) {
+                Spacer(modifier = Modifier.height(24.dp))
+                ImportChecklist(progress = progress)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -145,7 +112,9 @@ fun SyncingStep(
 
         OnboardingNote(
             text = stringResource(R.string.onboarding_sync_note),
-            modifier = Modifier.padding(horizontal = OnboardingMargin)
+            modifier = Modifier
+                .onboardingColumn(HeaderMaxWidth)
+                .padding(horizontal = onboardingMargin())
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -154,18 +123,160 @@ fun SyncingStep(
             text = stringResource(R.string.onboarding_continue),
             onClick = onContinue,
             modifier = Modifier
-                .padding(horizontal = OnboardingMargin)
+                .onboardingColumn()
+                .padding(horizontal = onboardingMargin())
                 .padding(bottom = 24.dp)
         )
     }
 }
 
+/**
+ * Wide layout: who you are signed in as on the left with the action under it, what is being brought
+ * over on the right. The checklist is the part that changes while you watch, so it gets the pane
+ * with room to breathe.
+ */
 @Composable
-private fun Banner(bannerUrl: String?, username: String) {
+private fun WideSyncing(
+    username: String,
+    avatarUrl: String?,
+    bannerUrl: String?,
+    progress: SyncProgress,
+    onContinue: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = OnboardingWidePadding)
+            .padding(vertical = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(OnboardingPaneGap)
+    ) {
+        OnboardingCentredScroll(
+            modifier = Modifier
+                .weight(OnboardingContextPaneWeight)
+                .fillMaxHeight()
+        ) {
+            IdentityHeader(
+                username = username,
+                avatarUrl = avatarUrl,
+                bannerUrl = bannerUrl,
+                bannerHeight = WideBannerHeight,
+                margin = 20.dp,
+                rounded = true
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            OnboardingNote(text = stringResource(R.string.onboarding_sync_note))
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OnboardingPrimaryButton(
+                text = stringResource(R.string.onboarding_continue),
+                onClick = onContinue
+            )
+        }
+
+        OnboardingCentredScroll(
+            modifier = Modifier
+                .weight(OnboardingContentPaneWeight)
+                .fillMaxHeight()
+        ) {
+            ImportChecklist(progress = progress)
+        }
+    }
+}
+
+/**
+ * Banner, overlapping content card and the avatar straddling the seam, with the signed-in-as block
+ * underneath. [content] is whatever the layout wants below the intro line — the checklist on a
+ * phone, nothing on a tablet where it lives in the other pane.
+ */
+@Composable
+private fun IdentityHeader(
+    username: String,
+    avatarUrl: String?,
+    bannerUrl: String?,
+    bannerHeight: Dp,
+    margin: Dp,
+    rounded: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit = {}
+) {
+    Box(modifier = modifier.fillMaxWidth()) {
+        Banner(
+            bannerUrl = bannerUrl,
+            username = username,
+            height = bannerHeight,
+            modifier = if (rounded) Modifier.clip(RoundedCornerShape(28.dp)) else Modifier
+        )
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = bannerHeight - CardOverlap),
+            shape = ContentCardShape,
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = margin)
+                    .padding(top = ProfileAvatarHalfSize + 20.dp, bottom = 8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.onboarding_sync_signed_in_as),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.4.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = username,
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = stringResource(R.string.onboarding_sync_body),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                content()
+            }
+        }
+
+        // Straddles the banner/card seam exactly as the profile header does.
+        UserAvatar(
+            url = avatarUrl,
+            contentDescription = username,
+            size = ProfileAvatarSize,
+            borderWidth = 2.dp,
+            framePadding = 3.dp,
+            isProfileHeader = true,
+            modifier = Modifier
+                .padding(horizontal = margin)
+                .offset(y = bannerHeight - CardOverlap - ProfileAvatarHalfSize)
+        )
+    }
+}
+
+@Composable
+private fun Banner(
+    bannerUrl: String?,
+    username: String,
+    height: Dp,
+    modifier: Modifier = Modifier
+) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(BannerHeight)
+            .height(height)
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         if (bannerUrl != null) {
