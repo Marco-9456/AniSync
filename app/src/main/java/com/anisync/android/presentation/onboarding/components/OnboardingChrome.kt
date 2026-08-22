@@ -2,16 +2,23 @@ package com.anisync.android.presentation.onboarding.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -34,9 +41,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anisync.android.R
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
 
 /**
  * Shared furniture for the first-run steps: the numbered header, the type scale the steps share, the
@@ -45,6 +54,77 @@ import com.anisync.android.R
 
 /** Side margin every onboarding screen sits on. */
 val OnboardingMargin = 20.dp
+
+/**
+ * Largest a step's content column is allowed to get. Past this the flow stops reading as a focused
+ * task and turns into a banner of stretched text, which is exactly what a phone-only layout does to
+ * a tablet.
+ */
+val OnboardingColumnMaxWidth = 520.dp
+
+/** Wide enough to put a step's artwork beside its content instead of above it. */
+@Composable
+fun isWideOnboarding(): Boolean = LocalAdaptiveInfo.current.isExpandedOrWider
+
+/**
+ * Pane split used by every wide step: context and the primary action on the left, the step's own
+ * controls on the right. Keeping one ratio across the flow means the headline and the Continue
+ * button never move between steps.
+ */
+const val OnboardingContextPaneWeight = 0.42f
+const val OnboardingContentPaneWeight = 0.58f
+
+/** Outer inset and gutter for the wide two-pane steps. */
+val OnboardingWidePadding = 40.dp
+val OnboardingPaneGap = 32.dp
+
+/**
+ * A column that centres its content in the available height while it fits, and scrolls once it does
+ * not. Top-aligning instead would strand a short step against the top of a tablet with a screen's
+ * worth of empty space under it.
+ */
+@Composable
+fun OnboardingCentredScroll(
+    modifier: Modifier = Modifier,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    BoxWithConstraints(modifier = modifier) {
+        val minHeight = maxHeight
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = minHeight),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = horizontalAlignment,
+            content = content
+        )
+    }
+}
+
+/** Horizontal page inset for the current width. */
+@Composable
+fun onboardingMargin(): Dp =
+    if (LocalAdaptiveInfo.current.isCompact) OnboardingMargin else 32.dp
+
+/**
+ * Caps and centres a column so nothing stretches across a wide window. A no-op on compact, where the
+ * step already fills a phone exactly as designed.
+ */
+@Composable
+fun Modifier.onboardingColumn(max: Dp = OnboardingColumnMaxWidth): Modifier {
+    val adaptive = LocalAdaptiveInfo.current
+    if (adaptive.isCompact) return this
+    // Never wider than the app's own reading cap for this width class, so a step that asks for a
+    // two-pane width still collapses sensibly on a tablet in portrait.
+    val cap = adaptive.contentMaxWidth
+    val limit = if (cap == Dp.Unspecified) max else minOf(max, cap)
+    return this
+        .fillMaxWidth()
+        .wrapContentWidth(Alignment.CenterHorizontally)
+        .widthIn(max = limit)
+}
 
 /**
  * Status hues the flow uses for the permission plates and the completion pills. They are semantic
@@ -216,8 +296,8 @@ fun IconBlob(
     icon: ImageVector,
     tint: Color,
     modifier: Modifier = Modifier,
-    size: androidx.compose.ui.unit.Dp = 44.dp,
-    iconSize: androidx.compose.ui.unit.Dp = 22.dp
+    size: Dp = 44.dp,
+    iconSize: Dp = 22.dp
 ) {
     Box(
         modifier = modifier.size(size),
@@ -242,7 +322,7 @@ fun IconBlob(
 @Composable
 fun OnboardingColumn(
     modifier: Modifier = Modifier,
-    spacing: androidx.compose.ui.unit.Dp = 16.dp,
+    spacing: Dp = 16.dp,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
 ) {
     Column(
