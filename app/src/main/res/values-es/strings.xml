@@ -14,7 +14,7 @@
     <string name="feed_empty_following">Sigue a personas para ver su actividad aquí.</string>
     <string name="feed_compose_title">Escribir un estado</string>
     <string name="feed_compose_placeholder">Comparte lo que tienes en mente…</string>
-    <string name="feed_compose_submit">Correo</string>
+    <string name="feed_compose_submit">Publicar</string>
     <string name="forum_browse_categories">Explorar categorías</string>
     <string name="forum_recent_discussions">Debates recientes</string>
     <string name="forum_create_thread">Nuevo hilo</string>
@@ -1069,7 +1069,7 @@
     <string name="options_conflict_use_website">Utilice el sitio web</string>
     <string name="account_add_desc">Inicia sesión en otra cuenta de AniList</string>
     <string name="details_tab_overview">Descripción general</string>
-    <string name="details_tab_characters">Caracteres</string>
+    <string name="details_tab_characters">Personajes</string>
     <string name="details_tab_staff">Personal</string>
     <string name="profile_follows_you">Te sigue</string>
     <string name="profile_mutual">Mutuo</string>
