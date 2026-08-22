@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.components
 
+import android.content.res.Resources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -259,18 +260,17 @@ private fun AvatarCircle(
     }
 }
 
-fun formatRelativeTimeSeconds(timestampSeconds: Long): String {
+fun formatRelativeTimeSeconds(res: Resources, timestampSeconds: Long): String {
     if (timestampSeconds <= 0L) return ""
     val now = System.currentTimeMillis() / 1000
     val diff = now - timestampSeconds
     return when {
-        diff < 0 -> "just now"
-        diff < 60 -> "just now"
-        diff < 3600 -> "${diff / 60}m ago"
-        diff < 86400 -> "${diff / 3600}h ago"
-        diff < 604800 -> "${diff / 86400}d ago"
-        diff < 2592000 -> "${diff / 604800}w ago"
-        diff < 31536000 -> "${diff / 2592000}mo ago"
-        else -> "${diff / 31536000}y ago"
+        diff < 60 -> res.getString(R.string.time_ago_just_now)
+        diff < 3600 -> res.getString(R.string.time_ago_minutes, (diff / 60).toInt())
+        diff < 86400 -> res.getString(R.string.time_ago_hours, (diff / 3600).toInt())
+        diff < 604800 -> res.getString(R.string.time_ago_days, (diff / 86400).toInt())
+        diff < 2592000 -> res.getString(R.string.time_ago_weeks, (diff / 604800).toInt())
+        diff < 31536000 -> res.getString(R.string.time_ago_months, (diff / 2592000).toInt())
+        else -> res.getString(R.string.time_ago_years, (diff / 31536000).toInt())
     }
 }

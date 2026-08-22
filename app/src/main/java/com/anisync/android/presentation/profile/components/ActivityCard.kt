@@ -51,6 +51,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -68,6 +69,7 @@ import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.ReadMoreToggle
 import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 import com.anisync.android.presentation.util.selectedPaneItem
 import com.anisync.android.presentation.util.shareActivity
 
@@ -391,7 +393,7 @@ private fun ActivityCardHeader(
             }
 
             Text(
-                text = formatRelativeTimeSeconds(activity.timestamp / 1000L),
+                text = formatRelativeTimeSeconds(LocalResources.current, activity.timestamp / 1000L),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
@@ -624,9 +626,11 @@ private fun ActivityCardFooter(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Last by ${activity.replyUserName} • ${
-                                formatRelativeTimeSeconds(activity.repliedAt)
-                            }",
+                            text = stringResource(
+                                R.string.forum_last_by,
+                                activity.replyUserName,
+                                formatRelativeTimeSeconds(LocalResources.current, activity.repliedAt)
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -671,16 +675,3 @@ private fun ActivityCardFooter(
 private fun String.parseHexColor(): Color? =
     runCatching { Color(android.graphics.Color.parseColor(this)) }.getOrNull()
 
-private fun formatRelativeTimeSeconds(timestampSeconds: Long): String {
-    val now = System.currentTimeMillis() / 1000
-    val diff = now - timestampSeconds
-    return when {
-        diff < 60 -> "just now"
-        diff < 3600 -> "${diff / 60}m ago"
-        diff < 86400 -> "${diff / 3600}h ago"
-        diff < 604800 -> "${diff / 86400}d ago"
-        diff < 2592000 -> "${diff / 604800}w ago"
-        diff < 31536000 -> "${diff / 2592000}mo ago"
-        else -> "${diff / 31536000}y ago"
-    }
-}

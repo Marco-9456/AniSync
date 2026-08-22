@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.forum.components.shared
 
+import android.content.res.Resources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -27,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 import com.anisync.android.ui.theme.LocalAvatarShape
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -98,7 +101,7 @@ fun AuthorRow(
         )
         Spacer(Modifier.width(8.dp))
         Text(
-            text = timestampSeconds.toRelativeTime(),
+            text = timestampSeconds.toRelativeTime(LocalResources.current),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.outline
         )
@@ -117,15 +120,11 @@ private fun Int.formatCount(): String = when {
     else -> toString()
 }
 
-private fun Long.toRelativeTime(): String {
-    val now = System.currentTimeMillis() / 1000
-    val diff = now - this
-    return when {
-        diff < 60 -> "just now"
-        diff < 3600 -> "${diff / 60}m ago"
-        diff < 86400 -> "${diff / 3600}h ago"
-        diff < 604800 -> "${diff / 86400}d ago"
-        diff < 2592000 -> "${diff / 604800}w ago"
-        else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(this * 1000))
+private fun Long.toRelativeTime(res: Resources): String {
+    val diff = System.currentTimeMillis() / 1000 - this
+    return if (diff < 2592000) {
+        formatRelativeTimeSeconds(res, this)
+    } else {
+        SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(this * 1000))
     }
 }

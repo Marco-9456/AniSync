@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,6 +55,7 @@ import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 import com.anisync.android.presentation.util.selectedPaneItem
 
 @Composable
@@ -172,7 +174,7 @@ private fun ThreadHeader(
             }
 
             Text(
-                text = formatRelativeTimeSeconds(thread.createdAt),
+                text = formatRelativeTimeSeconds(LocalResources.current, thread.createdAt),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
@@ -303,11 +305,11 @@ private fun ThreadFooter(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Last by ${thread.replyUserName} • ${
-                                formatRelativeTimeSeconds(
-                                    thread.repliedAt
-                                )
-                            }",
+                            text = stringResource(
+                                R.string.forum_last_by,
+                                thread.replyUserName,
+                                formatRelativeTimeSeconds(LocalResources.current, thread.repliedAt)
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -532,19 +534,7 @@ data class ForumCategory(
     val name: String
 )
 
-private fun formatRelativeTimeSeconds(timestampSeconds: Long): String {
-    val now = System.currentTimeMillis() / 1000
-    val diff = now - timestampSeconds
-    return when {
-        diff < 60 -> "just now"
-        diff < 3600 -> "${diff / 60}m ago"
-        diff < 86400 -> "${diff / 3600}h ago"
-        diff < 604800 -> "${diff / 86400}d ago"
-        diff < 2592000 -> "${diff / 604800}w ago"
-        diff < 31536000 -> "${diff / 2592000}mo ago"
-        else -> "${diff / 31536000}y ago"
-    }
-}
+
 
 private fun formatStatValue(value: Int): String {
     return when {

@@ -1772,4 +1772,20 @@
     <!-- %1$s is the error reported by AniList -->
     <string name="toast_update_failed_reason">Failed to update: %1$s</string>
     <string name="toast_update_failed">Failed to update list</string>
+
+    <!-- Relative timestamps, shown on cards and in the inbox -->
+    <string name="time_ago_just_now">just now</string>
+    <string name="time_ago_minutes">%1$dm ago</string>
+    <string name="time_ago_hours">%1$dh ago</string>
+    <string name="time_ago_days">%1$dd ago</string>
+    <string name="time_ago_weeks">%1$dw ago</string>
+    <string name="time_ago_months">%1$dmo ago</string>
+    <string name="time_ago_years">%1$dy ago</string>
+
+    <!-- Last reply line on a thread or activity card: %1$s is the user, %2$s a relative time -->
+    <string name="forum_last_by">Last by %1$s • %2$s</string>
+
+    <!-- Expandable cards -->
+    <string name="show_more">Show more</string>
+    <string name="show_less">Show less</string>
 </resources>
