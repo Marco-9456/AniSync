@@ -1,17 +1,22 @@
 package com.anisync.android.presentation.details.components
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowOverflow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -30,6 +36,7 @@ import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Movie
@@ -37,7 +44,6 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -54,27 +60,42 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
@@ -88,12 +109,20 @@ import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.type.MediaType
+import com.anisync.android.ui.theme.LocalExpressiveTypography
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
  * Displays content metadata (Genres and Tags) in a unified section.
- * Organized into subsections: Genres, Tags, and Spoilers.
+ *
+ * Every tag carries AniList's rank, 0 to 100, meaning how much of that tag this title
+ * has. The chip prints it and maps it onto four size and shade steps, so the section
+ * can be skimmed without reading a single number. Collapsed holds
+ * [COLLAPSED_TAG_ROWS] wrapped rows whatever the tag count and offers the rest behind
+ * a "+N more" chip; expanded groups by the family in front of the hyphen in the
+ * AniList category. Spoilers sit behind one shutter, built like the one
+ * `RichTextRenderer` draws for a `~! !~` span.
  */
 @Composable
 fun ContentMetadataSection(
@@ -105,17 +134,19 @@ fun ContentMetadataSection(
 ) {
     if (genres.isEmpty() && tags.isEmpty()) return
 
-    val sortedTags = remember(tags) {
+    val rankedTags = remember(tags) {
         tags.filter { it.rank != null }.sortedByDescending { it.rank }
     }
 
-    val spoilerTags = remember(sortedTags) {
-        sortedTags.filter { it.isMediaSpoiler || it.isGeneralSpoiler }
+    val spoilerTags = remember(rankedTags) {
+        rankedTags.filter { it.isMediaSpoiler || it.isGeneralSpoiler }
     }
 
-    val regularTags = remember(sortedTags) {
-        sortedTags.filter { !it.isMediaSpoiler && !it.isGeneralSpoiler }
+    val regularTags = remember(rankedTags) {
+        rankedTags.filter { !it.isMediaSpoiler && !it.isGeneralSpoiler }
     }
+
+    var expanded by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = modifier) {
         SectionHeader(
@@ -125,75 +156,201 @@ fun ContentMetadataSection(
 
         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
 
-        // 1. Genres Subsection
         if (genres.isNotEmpty()) {
-            MetadataGroup(
-                title = stringResource(R.string.label_genres),
-                items = genres,
-                keySelector = { it }
-            ) { genre ->
-                GenreChip(genre = genre, onClick = { onGenreClick(genre) })
+            MetadataGroup(title = stringResource(R.string.label_genres)) {
+                GenreCloud(genres = genres, onGenreClick = onGenreClick)
             }
         }
 
-        // 2. Regular Tags Subsection
         if (regularTags.isNotEmpty()) {
             if (genres.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
             }
-            MetadataGroup(
-                title = stringResource(R.string.label_tags),
-                items = regularTags,
-                keySelector = { it.name }
-            ) { tag ->
-                TagChip(tag = tag, isSpoiler = false, onTagClick = onTagClick)
-            }
+            TagsGroup(
+                tags = regularTags,
+                expanded = expanded,
+                onToggleExpanded = { expanded = !expanded },
+                onTagClick = onTagClick
+            )
         }
 
-        // 3. Spoiler Tags Subsection
         if (spoilerTags.isNotEmpty()) {
             if (genres.isNotEmpty() || regularTags.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
             }
-            MetadataGroup(
-                title = stringResource(R.string.label_spoilers),
-                titleColor = MaterialTheme.colorScheme.error,
-                items = spoilerTags,
-                keySelector = { it.name }
-            ) { tag ->
-                TagChip(tag = tag, isSpoiler = true, onTagClick = onTagClick)
+            SpoilerShutter(
+                tags = spoilerTags,
+                expanded = expanded,
+                onTagClick = onTagClick
+            )
+        }
+    }
+}
+
+/** Rows the collapsed cloud keeps, whether the title has six tags or forty. */
+private const val COLLAPSED_TAG_ROWS = 3
+
+@Composable
+private fun MetadataGroup(
+    title: String,
+    modifier: Modifier = Modifier,
+    count: Int? = null,
+    trailing: (@Composable () -> Unit)? = null,
+    content: @Composable () -> Unit
+) {
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensionResource(R.dimen.spacing_large)),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold
+            )
+            if (count != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = count.toString(),
+                    style = LocalExpressiveTypography.current.numericMono.copy(fontSize = 12.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
             }
+            if (trailing != null) {
+                Spacer(modifier = Modifier.weight(1f))
+                trailing()
+            }
+        }
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
+        content()
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun GenreCloud(
+    genres: List<String>,
+    onGenreClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FlowRow(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = dimensionResource(R.dimen.spacing_large)),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        genres.forEach { genre ->
+            GenreChip(genre = genre, onClick = { onGenreClick(genre) })
         }
     }
 }
 
 @Composable
-private fun <T> MetadataGroup(
-    title: String,
-    items: List<T>,
-    keySelector: (T) -> Any,
-    titleColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    content: @Composable (T) -> Unit
+private fun TagsGroup(
+    tags: List<Tag>,
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    onTagClick: (Tag) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = titleColor,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))
-        )
-        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(
-                items = items,
-                key = keySelector
-            ) { item ->
-                content(item)
+    val families = remember(tags) { groupByFamily(tags) }
+    val sidePadding = dimensionResource(R.dimen.spacing_large)
+
+    MetadataGroup(
+        modifier = modifier,
+        title = stringResource(R.string.label_tags),
+        count = tags.size,
+        trailing = { ExpandAction(expanded = expanded, onClick = onToggleExpanded) }
+    ) {
+        if (expanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = sidePadding),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                families.forEach { (family, familyTags) ->
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        FamilyHeader(family = family, count = familyTags.size)
+                        TagCloud(
+                            tags = familyTags,
+                            expanded = true,
+                            onTagClick = onTagClick
+                        )
+                    }
+                }
             }
+        } else {
+            TagCloud(
+                tags = tags,
+                expanded = false,
+                onTagClick = onTagClick,
+                maxLines = COLLAPSED_TAG_ROWS,
+                onOverflowClick = onToggleExpanded,
+                modifier = Modifier.padding(horizontal = sidePadding)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FamilyHeader(family: String, count: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = family,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+        )
+        Text(
+            text = count.toString(),
+            style = LocalExpressiveTypography.current.numericMono.copy(fontSize = 12.sp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagCloud(
+    tags: List<Tag>,
+    expanded: Boolean,
+    onTagClick: (Tag) -> Unit,
+    modifier: Modifier = Modifier,
+    isSpoiler: Boolean = false,
+    maxLines: Int = Int.MAX_VALUE,
+    onOverflowClick: (() -> Unit)? = null
+) {
+    FlowRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        maxLines = maxLines,
+        overflow = if (onOverflowClick != null) {
+            FlowRowOverflow.expandIndicator {
+                MoreTagsChip(
+                    count = totalItemCount - shownItemCount,
+                    onClick = onOverflowClick
+                )
+            }
+        } else {
+            FlowRowOverflow.Clip
+        }
+    ) {
+        tags.forEach { tag ->
+            TagChip(
+                tag = tag,
+                expanded = expanded,
+                isSpoiler = isSpoiler,
+                onTagClick = onTagClick
+            )
         }
     }
 }
@@ -225,194 +382,339 @@ private fun GenreChip(
     }
 }
 
+/**
+ * The chip the rest of the section is built from. Rank picks the height, the type step
+ * and the tint strength; the hue only says whether this is a spoiler. The shape, the
+ * hairline and the 12dp padding are unchanged from the chip that shipped before.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TagChip(
     tag: Tag,
+    expanded: Boolean,
     isSpoiler: Boolean,
     onTagClick: (Tag) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // State to toggle spoiler visibility
-    var isVisible by remember { mutableStateOf(!isSpoiler) }
-
     val colorScheme = MaterialTheme.colorScheme
-    val tagColors = rememberTagColors(tag.category, colorScheme, isSpoiler)
+    val expressive = LocalExpressiveTypography.current
+    val rank = tag.rank ?: 0
+    val tier = tierOf(rank)
+    val step = stepFor(tier, expanded)
 
-    val shape = RoundedCornerShape(8.dp)
+    val hue = if (isSpoiler) colorScheme.error else colorScheme.primary
+    val labelColor = if (isSpoiler) {
+        colorScheme.error.copy(alpha = step.labelAlpha)
+    } else {
+        when (tier) {
+            TagTier.Defining, TagTier.Strong -> colorScheme.onSurface
+            TagTier.Present -> colorScheme.onSurfaceVariant
+            TagTier.Faint -> colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        }
+    }
+    val rankLabel = stringResource(R.string.a11y_tag_rank, tag.name, rank)
 
-    // Tooltip state
-    val tooltipState = rememberTooltipState()
-
-    // Only show tooltip if:
-    // 1. Tag has a description
-    // 2. For spoilers: only when revealed (isVisible == true)
-    val showTooltip = tag.description?.isNotBlank() == true && (!isSpoiler || isVisible)
-
-    val tagContent = @Composable {
+    val chip = @Composable {
         Surface(
             modifier = modifier
-                .height(32.dp)
-                .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
-            shape = shape,
-            color = tagColors.containerColor.copy(alpha = 0.12f),
-            border = BorderStroke(
-                1.dp,
-                tagColors.borderColor.copy(alpha = 0.3f)
-            )
+                .height(step.height)
+                .semantics(mergeDescendants = true) { contentDescription = rankLabel },
+            shape = RoundedCornerShape(8.dp),
+            color = hue.copy(alpha = step.fillAlpha),
+            border = BorderStroke(1.dp, hue.copy(alpha = step.borderAlpha))
         ) {
             Row(
                 modifier = Modifier
-                    .clip(shape)
-                    // Hidden spoilers reveal on first tap; revealed tags (spoiler or
-                    // not) open the tag search on the next one.
-                    .clickable {
-                        if (isSpoiler && !isVisible) isVisible = true else onTagClick(tag)
-                    }
+                    .clickable { onTagClick(tag) }
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                AnimatedContent(
-                    targetState = isVisible,
-                    label = "spoiler_reveal"
-                ) { visible ->
-                    if (visible) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = tag.name,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = tagColors.textColor,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            if (isSpoiler) {
-                                // Chip body now opens the tag search, so re-hiding
-                                // moved onto a dedicated trailing eye target.
-                                Icon(
-                                    imageVector = Icons.Default.VisibilityOff,
-                                    contentDescription = stringResource(R.string.label_spoiler),
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .clickable { isVisible = false }
-                                        .padding(4.dp)
-                                        .size(14.dp),
-                                    tint = tagColors.textColor
-                                )
-                            }
-                        }
-                    } else {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.VisibilityOff,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = tagColors.textColor
-                            )
-                            Text(
-                                text = stringResource(R.string.label_spoiler),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = tagColors.textColor
-                            )
-                        }
-                    }
-                }
+                Text(
+                    text = tag.name,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontSize = step.labelSize,
+                        fontWeight = step.labelWeight
+                    ),
+                    color = labelColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = stringResource(R.string.tags_rank_percent, rank),
+                    style = expressive.numericMono.copy(fontSize = step.rankSize),
+                    color = labelColor.copy(alpha = labelColor.alpha * 0.7f)
+                )
             }
         }
     }
 
-    if (showTooltip) {
+    val description = tag.description
+    if (!description.isNullOrBlank()) {
         TooltipBox(
             positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
             tooltip = {
                 PlainTooltip {
-                    Text(text = tag.description ?: "")
+                    Text(text = description)
                 }
             },
-            state = tooltipState,
+            state = rememberTooltipState(),
             enableUserInput = true
         ) {
-            tagContent()
+            chip()
         }
     } else {
-        tagContent()
+        chip()
     }
 }
 
+/** The overflow affordance the collapsed cloud ends on. Does the same as "Expand". */
 @Composable
-private fun rememberTagColors(
-    category: String,
-    colorScheme: androidx.compose.material3.ColorScheme,
-    isSpoiler: Boolean
-): TagColors {
-    if (isSpoiler) {
-        return TagColors(
-            containerColor = colorScheme.error,
-            borderColor = colorScheme.error,
-            textColor = colorScheme.error
+private fun MoreTagsChip(
+    count: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val primary = MaterialTheme.colorScheme.primary
+    Row(
+        modifier = modifier
+            .height(26.dp)
+            .dashedRoundedBorder(color = primary.copy(alpha = 0.34f))
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(start = 12.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = pluralStringResource(R.plurals.tags_more, count, count),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = primary
         )
-    }
-
-    return when (category.lowercase()) {
-        "themes" -> TagColors(
-            containerColor = colorScheme.primary,
-            borderColor = colorScheme.primary,
-            textColor = colorScheme.primary
-        )
-
-        "demographics" -> TagColors(
-            containerColor = colorScheme.secondary,
-            borderColor = colorScheme.secondary,
-            textColor = colorScheme.secondary
-        )
-
-        "genre" -> TagColors(
-            containerColor = colorScheme.tertiary,
-            borderColor = colorScheme.tertiary,
-            textColor = colorScheme.tertiary
-        )
-
-        "cast", "setting" -> TagColors(
-            containerColor = colorScheme.secondaryContainer,
-            borderColor = colorScheme.onSecondaryContainer,
-            textColor = colorScheme.onSurface
-        )
-
-        "technical" -> TagColors(
-            containerColor = colorScheme.outline,
-            borderColor = colorScheme.outline,
-            textColor = colorScheme.onSurfaceVariant
-        )
-
-        "content-warning", "explicit-content" -> TagColors(
-            containerColor = colorScheme.error,
-            borderColor = colorScheme.error,
-            textColor = colorScheme.error
-        )
-
-        else -> TagColors(
-            containerColor = colorScheme.surfaceVariant,
-            borderColor = colorScheme.outline,
-            textColor = colorScheme.onSurface
+        Icon(
+            imageVector = Icons.Default.ExpandMore,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = primary
         )
     }
 }
 
-private data class TagColors(
-    val containerColor: Color,
-    val borderColor: Color,
-    val textColor: Color
+/** The trailing control on the Tags header, styled like [SectionHeader]'s own action. */
+@Composable
+private fun ExpandAction(
+    expanded: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val angle by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "tags_expand_chevron"
+    )
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .clickable(onClick = onClick)
+            .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = stringResource(
+                if (expanded) R.string.tags_collapse else R.string.tags_expand
+            ),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Icon(
+            imageVector = Icons.Default.ExpandMore,
+            contentDescription = null,
+            modifier = Modifier
+                .size(20.dp)
+                .graphicsLayer { rotationZ = angle },
+            tint = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+/**
+ * One shutter for the whole spoiler group, not one per chip.
+ *
+ * Container, tints and animation follow the `~! !~` block `RichTextRenderer` already
+ * draws, so a spoiler behaves the same here as it does in a review or a description:
+ * a neutral container that says what it is, dims once the decision is made, and opens
+ * on a single tap. The red lives on the badge and on the chips inside, never on the
+ * container, because the container is a control and not a warning.
+ */
+@Composable
+private fun SpoilerShutter(
+    tags: List<Tag>,
+    expanded: Boolean,
+    onTagClick: (Tag) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var revealed by rememberSaveable { mutableStateOf(false) }
+    val shutterColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val angle by animateFloatAsState(
+        targetValue = if (revealed) 180f else 0f,
+        label = "spoiler_chevron"
+    )
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = dimensionResource(R.dimen.spacing_large))
+            .clip(RoundedCornerShape(8.dp))
+            .background(shutterColor.copy(alpha = if (revealed) 0.05f else 0.15f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    onClickLabel = stringResource(
+                        if (revealed) R.string.cd_tags_hide_spoilers
+                        else R.string.cd_tags_show_spoilers
+                    )
+                ) { revealed = !revealed }
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SpoilerTag()
+            Text(
+                text = if (revealed) {
+                    pluralStringResource(R.plurals.tags_spoiler_revealed, tags.size, tags.size)
+                } else {
+                    pluralStringResource(R.plurals.tags_spoiler_hidden, tags.size, tags.size)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                fontStyle = FontStyle.Italic,
+                fontWeight = FontWeight.SemiBold,
+                color = shutterColor.copy(alpha = 0.8f)
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer { rotationZ = angle },
+                tint = shutterColor.copy(alpha = 0.8f)
+            )
+        }
+        AnimatedVisibility(
+            visible = revealed,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            TagCloud(
+                tags = tags,
+                expanded = expanded,
+                isSpoiler = true,
+                onTagClick = onTagClick,
+                modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+            )
+        }
+    }
+}
+
+private enum class TagTier { Defining, Strong, Present, Faint }
+
+private fun tierOf(rank: Int): TagTier = when {
+    rank >= 80 -> TagTier.Defining
+    rank >= 60 -> TagTier.Strong
+    rank >= 40 -> TagTier.Present
+    else -> TagTier.Faint
+}
+
+/** Height, type and tint for one rank tier, in one of the section's two states. */
+@Immutable
+private data class TagChipStep(
+    val height: Dp,
+    val labelSize: TextUnit,
+    val labelWeight: FontWeight,
+    val rankSize: TextUnit,
+    val fillAlpha: Float,
+    val borderAlpha: Float,
+    val labelAlpha: Float
 )
+
+private fun stepFor(tier: TagTier, expanded: Boolean): TagChipStep = when (tier) {
+    TagTier.Defining -> TagChipStep(
+        height = if (expanded) 36.dp else 30.dp,
+        labelSize = if (expanded) 14.sp else 13.sp,
+        labelWeight = FontWeight.Bold,
+        rankSize = if (expanded) 13.sp else 12.sp,
+        fillAlpha = 0.28f,
+        borderAlpha = 0.60f,
+        labelAlpha = 1f
+    )
+
+    TagTier.Strong -> TagChipStep(
+        height = if (expanded) 32.dp else 28.dp,
+        labelSize = if (expanded) 13.sp else 12.sp,
+        labelWeight = FontWeight.SemiBold,
+        rankSize = if (expanded) 12.sp else 11.sp,
+        fillAlpha = 0.17f,
+        borderAlpha = 0.36f,
+        labelAlpha = 1f
+    )
+
+    TagTier.Present -> TagChipStep(
+        height = if (expanded) 30.dp else 26.dp,
+        labelSize = if (expanded) 12.sp else 11.sp,
+        labelWeight = FontWeight.Medium,
+        rankSize = 11.sp,
+        fillAlpha = 0.10f,
+        borderAlpha = 0.20f,
+        labelAlpha = 0.9f
+    )
+
+    TagTier.Faint -> TagChipStep(
+        height = if (expanded) 28.dp else 24.dp,
+        labelSize = 11.sp,
+        labelWeight = FontWeight.Medium,
+        rankSize = if (expanded) 11.sp else 10.sp,
+        fillAlpha = 0.05f,
+        borderAlpha = 0.10f,
+        labelAlpha = 0.75f
+    )
+}
+
+/**
+ * AniList sends categories like "Cast-Traits" and "Theme-Fantasy". Only the part in
+ * front of the hyphen names a family anyone recognises, and grouping by it is what
+ * turns a wall of thirteen cast tags into one labelled block.
+ */
+private fun tagFamily(category: String): String = category.substringBefore('-').trim()
+
+/** Families ordered by their own top rank; [tags] is expected to be rank-sorted already. */
+private fun groupByFamily(tags: List<Tag>): List<Pair<String, List<Tag>>> =
+    tags.groupBy { tagFamily(it.category) }
+        .toList()
+        .sortedByDescending { (_, familyTags) -> familyTags.firstOrNull()?.rank ?: 0 }
+
+private fun Modifier.dashedRoundedBorder(
+    color: Color,
+    cornerRadius: Dp = 8.dp,
+    strokeWidth: Dp = 1.dp
+) = drawBehind {
+    val width = strokeWidth.toPx()
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(width / 2, width / 2),
+        size = Size(size.width - width, size.height - width),
+        cornerRadius = CornerRadius(cornerRadius.toPx()),
+        style = Stroke(
+            width = width,
+            pathEffect = PathEffect.dashPathEffect(
+                floatArrayOf(4.dp.toPx(), 3.dp.toPx())
+            )
+        )
+    )
+}
 
 @Composable
 fun StatsCard(details: MediaDetails) {

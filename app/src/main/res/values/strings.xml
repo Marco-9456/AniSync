@@ -1609,4 +1609,24 @@
     <string name="dev_tools_onboarding_section">Onboarding</string>
     <string name="dev_tools_replay_onboarding">Replay onboarding</string>
     <string name="dev_tools_replay_onboarding_subtitle">Reopens the first-run flow over the running app. Leaving it returns you to the Library tab.</string>
+
+    <!-- Media details: tags -->
+    <string name="tags_expand">Expand</string>
+    <string name="tags_collapse">Collapse</string>
+    <string name="tags_rank_percent">%1$d%%</string>
+    <plurals name="tags_more">
+        <item quantity="one">+%1$d more</item>
+        <item quantity="other">+%1$d more</item>
+    </plurals>
+    <plurals name="tags_spoiler_hidden">
+        <item quantity="one">%1$d tag, tap to view</item>
+        <item quantity="other">%1$d tags, tap to view</item>
+    </plurals>
+    <plurals name="tags_spoiler_revealed">
+        <item quantity="one">%1$d tag</item>
+        <item quantity="other">%1$d tags</item>
+    </plurals>
+    <string name="a11y_tag_rank">%1$s, rank %2$d percent</string>
+    <string name="cd_tags_show_spoilers">Show spoiler tags</string>
+    <string name="cd_tags_hide_spoilers">Hide spoiler tags</string>
 </resources>
