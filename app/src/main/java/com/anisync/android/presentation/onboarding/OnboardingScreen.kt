@@ -147,13 +147,14 @@ fun OnboardingScreen(
             label = "OnboardingStep"
         ) { step ->
             when (step) {
+                // The welcome step takes no inset padding from here: its artwork bleeds to every
+                // edge and only the copy beside it has to clear the bars, so it applies its own.
                 OnboardingStep.WELCOME -> WelcomeStep(
                     covers = uiState.heroCovers,
                     onContinue = { viewModel.onAction(OnboardingAction.ContinueWithAniList) },
                     onCreateAccount = {
                         AppLinksUtil.openInBrowser(context, ANILIST_REGISTER_URL)
-                    },
-                    modifier = Modifier.navigationBarsOnly()
+                    }
                 )
 
                 OnboardingStep.SYNCING -> SyncingStep(
