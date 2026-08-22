@@ -1665,4 +1665,111 @@
     <string name="a11y_editing_entry">Editing %1$s</string>
     <!-- %1$s is the current progress, %2$s the total, or "Unknown" when no total is published -->
     <string name="a11y_progress_of">Progress %1$s of %2$s</string>
+
+    <!-- Notifications: who acted. %1$s and %2$s are user names, %2$d a count of further users -->
+    <string name="notification_actor_someone">Someone</string>
+    <string name="notification_actors_two">%1$s and %2$s</string>
+    <plurals name="notification_actors_others">
+        <item quantity="one">%1$s and %2$d other</item>
+        <item quantity="other">%1$s and %2$d others</item>
+    </plurals>
+
+    <!-- Notifications: forum. %1$s, or %2$s in the counted forms, is the thread title -->
+    <string name="notification_thread_reply">Replied to your comment in \"%1$s\"</string>
+    <string name="notification_thread_reply_untitled">Replied to your comment</string>
+    <plurals name="notification_thread_replies">
+        <item quantity="one">%1$d new reply in \"%2$s\"</item>
+        <item quantity="other">%1$d new replies in \"%2$s\"</item>
+    </plurals>
+    <plurals name="notification_thread_replies_untitled">
+        <item quantity="one">%1$d new reply</item>
+        <item quantity="other">%1$d new replies</item>
+    </plurals>
+    <string name="notification_thread_comment">Commented in \"%1$s\"</string>
+    <string name="notification_thread_comment_untitled">Commented in a thread you are subscribed to</string>
+    <plurals name="notification_thread_comments">
+        <item quantity="one">%1$d new comment in \"%2$s\"</item>
+        <item quantity="other">%1$d new comments in \"%2$s\"</item>
+    </plurals>
+    <plurals name="notification_thread_comments_untitled">
+        <item quantity="one">%1$d new comment</item>
+        <item quantity="other">%1$d new comments</item>
+    </plurals>
+    <string name="notification_thread_mention">Mentioned you in a comment in \"%1$s\"</string>
+    <string name="notification_thread_mention_untitled">Mentioned you in a comment</string>
+    <string name="notification_liked_thread">Liked your thread \"%1$s\"</string>
+    <string name="notification_liked_thread_untitled">Liked your thread</string>
+    <string name="notification_liked_comment">Liked your comment in \"%1$s\"</string>
+    <string name="notification_liked_comment_untitled">Liked your comment</string>
+
+    <!-- Notifications: activity feed. %1$s is one of the notification_kind_* nouns below -->
+    <string name="notification_activity_reply">Replied to your %1$s</string>
+    <plurals name="notification_activity_replies">
+        <item quantity="one">%1$d new reply to your %2$s</item>
+        <item quantity="other">%1$d new replies to your %2$s</item>
+    </plurals>
+    <string name="notification_activity_reply_subscribed">Replied to a post you are subscribed to</string>
+    <plurals name="notification_activity_replies_subscribed">
+        <item quantity="one">%1$d new reply to a post you are subscribed to</item>
+        <item quantity="other">%1$d new replies to a post you are subscribed to</item>
+    </plurals>
+    <string name="notification_activity_mention">Mentioned you in %1$s</string>
+    <string name="notification_activity_like">Liked your %1$s</string>
+    <string name="notification_activity_reply_like">Liked your reply</string>
+    <string name="notification_activity_message">Sent you a message</string>
+    <plurals name="notification_activity_messages">
+        <item quantity="one">%1$d new message</item>
+        <item quantity="other">%1$d new messages</item>
+    </plurals>
+    <string name="notification_following">Started following you</string>
+
+    <!-- Notifications: the kind of post a notification points at, substituted into the lines above -->
+    <string name="notification_kind_status">status update</string>
+    <string name="notification_kind_anime_list">anime list update</string>
+    <string name="notification_kind_manga_list">manga list update</string>
+    <string name="notification_kind_message">message</string>
+    <string name="notification_kind_post">post</string>
+    <!-- The same nouns with an indefinite article, for "Mentioned you in a status update" -->
+    <string name="notification_kind_status_indefinite">a status update</string>
+    <string name="notification_kind_anime_list_indefinite">an anime list update</string>
+    <string name="notification_kind_manga_list_indefinite">a manga list update</string>
+    <string name="notification_kind_message_indefinite">a message</string>
+    <string name="notification_kind_post_indefinite">a post</string>
+
+    <!-- Notifications: tray summary for stacked social notifications -->
+    <string name="notification_social_summary_title">New activity</string>
+    <plurals name="notification_social_summary_count">
+        <item quantity="one">%1$d notification</item>
+        <item quantity="other">%1$d notifications</item>
+    </plurals>
+
+    <!-- Notifications: airing episodes -->
+    <string name="notification_episode_title_fallback">New episode</string>
+    <string name="notification_episode_aired">Episode %1$d has aired</string>
+    <!-- %1$s is a day, one of the three strings below, and %2$s the local airing time -->
+    <string name="notification_episode_one_airs_at">Episode 1 airs %1$s at %2$s</string>
+    <string name="notification_day_today">today</string>
+    <string name="notification_day_tomorrow">tomorrow</string>
+    <!-- %1$s is a formatted date -->
+    <string name="notification_day_on_date">on %1$s</string>
+    <string name="notification_episode_one_airs_under_hour">Episode 1 airs in less than an hour</string>
+    <plurals name="notification_episode_one_airs_in_hours">
+        <item quantity="one">Episode 1 airs in about an hour</item>
+        <item quantity="other">Episode 1 airs in about %1$d hours</item>
+    </plurals>
+    <string name="notification_episode_one_available">Episode 1 is now available</string>
+    <string name="notification_action_add_to_watching">Add to Watching</string>
+    <plurals name="notification_episodes_aired_summary">
+        <item quantity="one">%1$d new episode aired</item>
+        <item quantity="other">%1$d new episodes aired</item>
+    </plurals>
+    <!-- One line of the stacked airing summary: %1$s is the title, %2$d the episode number -->
+    <string name="notification_episode_summary_line">%1$s — Episode %2$d</string>
+    <string name="notification_media_title_fallback">Anime</string>
+
+    <!-- Toasts fired from the "Add to Watching" notification action -->
+    <string name="toast_added_to_watching">Added \"%1$s\" to Watching</string>
+    <!-- %1$s is the error reported by AniList -->
+    <string name="toast_update_failed_reason">Failed to update: %1$s</string>
+    <string name="toast_update_failed">Failed to update list</string>
 </resources>

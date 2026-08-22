@@ -39,8 +39,7 @@ import com.anisync.android.domain.ThreadCommentReplyNotification
 import com.anisync.android.domain.ThreadCommentSubscribedNotification
 import com.anisync.android.domain.ThreadLikeNotification
 import com.anisync.android.domain.User
-import com.anisync.android.domain.indefiniteNoun
-import com.anisync.android.domain.noun
+import com.anisync.android.domain.ActivityKind
 import com.anisync.android.type.MediaType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -402,15 +401,64 @@ class NotificationWorker @AssistedInject constructor(
 
     /** "Hameru", "Hameru and Bob", "Hameru and 2 others" — newest actor first. */
     private fun actorsLabel(actors: List<User>): String = when (actors.size) {
-        0 -> "Someone"
+        0 -> string(R.string.notification_actor_someone)
         1 -> actors[0].name
-        2 -> "${actors[0].name} and ${actors[1].name}"
-        else -> "${actors[0].name} and ${actors.size - 1} others"
+        2 -> string(R.string.notification_actors_two, actors[0].name, actors[1].name)
+        else -> quantityString(
+            R.plurals.notification_actors_others,
+            actors.size - 1,
+            actors[0].name,
+            actors.size - 1
+        )
     }
 
-    /** ` in "Thread title"` suffix, or nothing when the title is blank. */
-    private fun inThread(title: String): String =
-        title.takeIf { it.isNotBlank() }?.let { " in \"$it\"" }.orEmpty()
+    private fun string(resId: Int, vararg args: Any): String =
+        applicationContext.getString(resId, *args)
+
+    private fun quantityString(resId: Int, quantity: Int, vararg args: Any): String =
+        applicationContext.resources.getQuantityString(resId, quantity, *args)
+
+    /**
+     * One forum line, picking the counted or single form and dropping to the untitled variant
+     * when AniList serves no thread title.
+     */
+    private fun threadLine(
+        threadTitle: String,
+        count: Int,
+        single: Int,
+        singleUntitled: Int,
+        counted: Int,
+        countedUntitled: Int
+    ): String {
+        val titled = threadTitle.isNotBlank()
+        return when {
+            count > 1 && titled -> quantityString(counted, count, count, threadTitle)
+            count > 1 -> quantityString(countedUntitled, count, count)
+            titled -> string(single, threadTitle)
+            else -> string(singleUntitled)
+        }
+    }
+
+    /** The activity subtype as a noun, so a line reads "Liked your status update". */
+    private fun kindNoun(kind: ActivityKind?, indefinite: Boolean = false): String = string(
+        when (kind) {
+            ActivityKind.TEXT ->
+                if (indefinite) R.string.notification_kind_status_indefinite
+                else R.string.notification_kind_status
+            ActivityKind.ANIME_LIST ->
+                if (indefinite) R.string.notification_kind_anime_list_indefinite
+                else R.string.notification_kind_anime_list
+            ActivityKind.MANGA_LIST ->
+                if (indefinite) R.string.notification_kind_manga_list_indefinite
+                else R.string.notification_kind_manga_list
+            ActivityKind.MESSAGE ->
+                if (indefinite) R.string.notification_kind_message_indefinite
+                else R.string.notification_kind_message
+            ActivityKind.UNKNOWN, null ->
+                if (indefinite) R.string.notification_kind_post_indefinite
+                else R.string.notification_kind_post
+        }
+    )
 
     /**
      * Display one tray entry for all [members] that landed in the same [slot]. Copy follows the
@@ -424,74 +472,112 @@ class NotificationWorker @AssistedInject constructor(
 
         val data = when (rep) {
             is ThreadCommentReplyNotification -> SocialNotificationData(
-                content = if (count > 1) "$count new replies${inThread(rep.threadTitle)}"
-                else "Replied to your comment${inThread(rep.threadTitle)}",
+                content = threadLine(
+                    rep.threadTitle,
+                    count,
+                    R.string.notification_thread_reply,
+                    R.string.notification_thread_reply_untitled,
+                    R.plurals.notification_thread_replies,
+                    R.plurals.notification_thread_replies_untitled
+                ),
                 channelId = NotificationChannels.THREAD_COMMENT_REPLY_CHANNEL_ID,
                 threadId = rep.threadId,
                 commentId = rep.commentId
             )
             is ThreadCommentSubscribedNotification -> SocialNotificationData(
-                content = when {
-                    count > 1 -> "$count new comments${inThread(rep.threadTitle)}"
-                    rep.threadTitle.isNotBlank() -> "Commented in \"${rep.threadTitle}\""
-                    else -> "Commented in a thread you're subscribed to"
-                },
+                content = threadLine(
+                    rep.threadTitle,
+                    count,
+                    R.string.notification_thread_comment,
+                    R.string.notification_thread_comment_untitled,
+                    R.plurals.notification_thread_comments,
+                    R.plurals.notification_thread_comments_untitled
+                ),
                 channelId = NotificationChannels.THREAD_SUBSCRIBED_CHANNEL_ID,
                 threadId = rep.threadId,
                 commentId = rep.commentId
             )
             is ThreadCommentMentionNotification -> SocialNotificationData(
-                content = "Mentioned you in a comment${inThread(rep.threadTitle)}",
+                content = if (rep.threadTitle.isNotBlank()) {
+                    string(R.string.notification_thread_mention, rep.threadTitle)
+                } else {
+                    string(R.string.notification_thread_mention_untitled)
+                },
                 channelId = NotificationChannels.THREAD_COMMENT_MENTION_CHANNEL_ID,
                 threadId = rep.threadId,
                 commentId = rep.commentId
             )
             is ThreadLikeNotification -> SocialNotificationData(
-                content = "Liked your thread" +
-                    rep.threadTitle.takeIf { it.isNotBlank() }?.let { " \"$it\"" }.orEmpty(),
+                content = if (rep.threadTitle.isNotBlank()) {
+                    string(R.string.notification_liked_thread, rep.threadTitle)
+                } else {
+                    string(R.string.notification_liked_thread_untitled)
+                },
                 channelId = NotificationChannels.THREAD_LIKE_CHANNEL_ID,
                 threadId = rep.threadId
             )
             is ThreadCommentLikeNotification -> SocialNotificationData(
-                content = "Liked your comment${inThread(rep.threadTitle)}",
+                content = if (rep.threadTitle.isNotBlank()) {
+                    string(R.string.notification_liked_comment, rep.threadTitle)
+                } else {
+                    string(R.string.notification_liked_comment_untitled)
+                },
                 channelId = NotificationChannels.THREAD_COMMENT_LIKE_CHANNEL_ID,
                 threadId = rep.threadId,
                 commentId = rep.commentId
             )
             is ActivityReplyNotification -> SocialNotificationData(
-                content = if (count > 1) "$count new replies to your ${rep.activity?.kind.noun()}"
-                else "Replied to your ${rep.activity?.kind.noun()}",
+                content = if (count > 1) {
+                    quantityString(
+                        R.plurals.notification_activity_replies,
+                        count,
+                        count,
+                        kindNoun(rep.activity?.kind)
+                    )
+                } else {
+                    string(R.string.notification_activity_reply, kindNoun(rep.activity?.kind))
+                },
                 channelId = NotificationChannels.ACTIVITY_REPLY_CHANNEL_ID,
                 activityId = rep.activityId
             )
             is ActivityReplySubscribedNotification -> SocialNotificationData(
-                content = if (count > 1) "$count new replies to a post you're subscribed to"
-                else "Replied to a post you're subscribed to",
+                content = if (count > 1) {
+                    quantityString(R.plurals.notification_activity_replies_subscribed, count, count)
+                } else {
+                    string(R.string.notification_activity_reply_subscribed)
+                },
                 channelId = NotificationChannels.ACTIVITY_REPLY_CHANNEL_ID,
                 activityId = rep.activityId
             )
             is ActivityMentionNotification -> SocialNotificationData(
-                content = "Mentioned you in ${rep.activity?.kind.indefiniteNoun()}",
+                content = string(
+                    R.string.notification_activity_mention,
+                    kindNoun(rep.activity?.kind, indefinite = true)
+                ),
                 channelId = NotificationChannels.ACTIVITY_MENTION_CHANNEL_ID,
                 activityId = rep.activityId
             )
             is ActivityLikeNotification -> SocialNotificationData(
-                content = "Liked your ${rep.activity?.kind.noun()}",
+                content = string(R.string.notification_activity_like, kindNoun(rep.activity?.kind)),
                 channelId = NotificationChannels.ACTIVITY_LIKE_CHANNEL_ID,
                 activityId = rep.activityId
             )
             is ActivityReplyLikeNotification -> SocialNotificationData(
-                content = "Liked your reply",
+                content = string(R.string.notification_activity_reply_like),
                 channelId = NotificationChannels.ACTIVITY_LIKE_CHANNEL_ID,
                 activityId = rep.activityId
             )
             is ActivityMessageNotification -> SocialNotificationData(
-                content = if (count > 1) "$count new messages" else "Sent you a message",
+                content = if (count > 1) {
+                    quantityString(R.plurals.notification_activity_messages, count, count)
+                } else {
+                    string(R.string.notification_activity_message)
+                },
                 channelId = NotificationChannels.ACTIVITY_MESSAGE_CHANNEL_ID,
                 activityId = rep.activityId
             )
             is FollowingNotification -> SocialNotificationData(
-                content = "Started following you",
+                content = string(R.string.notification_following),
                 channelId = NotificationChannels.FOLLOW_CHANNEL_ID,
                 userName = rep.user?.name
             )
@@ -548,8 +634,14 @@ class NotificationWorker @AssistedInject constructor(
 
         val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.ACTIVITY_REPLY_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("New activity")
-            .setContentText("$activeInGroup notifications")
+            .setContentTitle(string(R.string.notification_social_summary_title))
+            .setContentText(
+                quantityString(
+                    R.plurals.notification_social_summary_count,
+                    activeInGroup,
+                    activeInGroup
+                )
+            )
             .setGroup(group)
             .setGroupSummary(true)
             .setAutoCancel(true)
@@ -642,8 +734,8 @@ class NotificationWorker @AssistedInject constructor(
     private suspend fun showAiringNotification(notification: AiringNotification, ctx: AcctCtx) {
         val notificationId = notification.id
         val media = notification.media
-        val title = media?.title ?: "New episode"
-        val content = "Episode ${notification.episode} has aired"
+        val title = media?.title ?: string(R.string.notification_episode_title_fallback)
+        val content = string(R.string.notification_episode_aired, notification.episode)
 
         val largeIcon: Bitmap? = media?.coverUrl?.let { loadImage(it) }
 
@@ -680,14 +772,14 @@ class NotificationWorker @AssistedInject constructor(
         val airingDay = calendar.get(java.util.Calendar.DAY_OF_YEAR)
 
         val dayPrefix = when {
-            airingDay == currentDay -> "today"
-            airingDay == currentDay + 1 -> "tomorrow"
+            airingDay == currentDay -> string(R.string.notification_day_today)
+            airingDay == currentDay + 1 -> string(R.string.notification_day_tomorrow)
             else -> {
                 val dateFormat = DateFormat.getDateFormat(applicationContext)
-                "on ${dateFormat.format(airingDate)}"
+                string(R.string.notification_day_on_date, dateFormat.format(airingDate))
             }
         }
-        val content = "Episode 1 airs $dayPrefix at $formattedTime"
+        val content = string(R.string.notification_episode_one_airs_at, dayPrefix, formattedTime)
 
         val largeIcon: Bitmap? = airing.mediaCoverUrl?.let { loadImage(it) }
 
@@ -709,10 +801,14 @@ class NotificationWorker @AssistedInject constructor(
         val notificationId = airing.id
         val title = airing.mediaTitle
 
-        val content = when {
-            hoursUntil < 1 -> "Episode 1 airs in less than an hour"
-            hoursUntil == 1 -> "Episode 1 airs in about an hour"
-            else -> "Episode 1 airs in about $hoursUntil hours"
+        val content = if (hoursUntil < 1) {
+            string(R.string.notification_episode_one_airs_under_hour)
+        } else {
+            quantityString(
+                R.plurals.notification_episode_one_airs_in_hours,
+                hoursUntil,
+                hoursUntil
+            )
         }
 
         val largeIcon: Bitmap? = airing.mediaCoverUrl?.let { loadImage(it) }
@@ -734,7 +830,7 @@ class NotificationWorker @AssistedInject constructor(
     private suspend fun showPlanningFirstEpisodeNotification(airing: AiringSchedule, ctx: AcctCtx) {
         val notificationId = airing.mediaId
         val title = airing.mediaTitle
-        val content = "Episode 1 is now available"
+        val content = string(R.string.notification_episode_one_available)
 
         // "Add to Watching" action button
         val addToWatchingIntent = Intent(applicationContext, AddToWatchingReceiver::class.java).apply {
@@ -764,7 +860,7 @@ class NotificationWorker @AssistedInject constructor(
             .setContentIntent(deepLinkIntent("anisync://details/${airing.mediaId}", ctx, notificationId))
             .addAction(
                 R.drawable.ic_notification,
-                "Add to Watching",
+                string(R.string.notification_action_add_to_watching),
                 addToWatchingPendingIntent
             )
 
@@ -774,14 +870,21 @@ class NotificationWorker @AssistedInject constructor(
     }
 
     private fun showSummaryNotification(notifications: List<AiringNotification>, ctx: AcctCtx) {
-        val summaryTitle = "${notifications.size} new episodes aired"
+        val summaryTitle = quantityString(
+            R.plurals.notification_episodes_aired_summary,
+            notifications.size,
+            notifications.size
+        )
         val inboxStyle = NotificationCompat.InboxStyle()
             .setBigContentTitle(summaryTitle)
             .setSummaryText(if (ctx.showLabel) ctx.name else "AniSync")
 
         for (notification in notifications) {
-            val title = notification.media?.title ?: "Anime"
-            inboxStyle.addLine("$title — Episode ${notification.episode}")
+            val title = notification.media?.title
+                ?: string(R.string.notification_media_title_fallback)
+            inboxStyle.addLine(
+                string(R.string.notification_episode_summary_line, title, notification.episode)
+            )
         }
 
         val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.AIRING_CHANNEL_ID)

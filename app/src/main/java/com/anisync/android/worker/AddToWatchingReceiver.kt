@@ -9,6 +9,7 @@ import android.widget.Toast
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.R
 import com.anisync.android.domain.Result
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -78,7 +79,7 @@ class AddToWatchingReceiver : BroadcastReceiver() {
                         CoroutineScope(Dispatchers.Main).launch {
                             Toast.makeText(
                                 context,
-                                "Added \"$mediaTitle\" to Watching",
+                                context.getString(R.string.toast_added_to_watching, mediaTitle),
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -89,7 +90,7 @@ class AddToWatchingReceiver : BroadcastReceiver() {
                         CoroutineScope(Dispatchers.Main).launch {
                             Toast.makeText(
                                 context,
-                                "Failed to update: ${result.message}",
+                                context.getString(R.string.toast_update_failed_reason, result.message),
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -100,7 +101,7 @@ class AddToWatchingReceiver : BroadcastReceiver() {
                 CoroutineScope(Dispatchers.Main).launch {
                     Toast.makeText(
                         context,
-                        "Failed to update list",
+                        context.getString(R.string.toast_update_failed),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
