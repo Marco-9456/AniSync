@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -40,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.R
 import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.domain.LinkPreview
 import com.anisync.android.domain.parser.RichTextBlock
@@ -246,7 +248,7 @@ private fun ActivityLinkChip(
             modifier = Modifier.size(18.dp)
         )
         Text(
-            text = "View activity",
+            text = stringResource(R.string.link_card_view_activity),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Medium

@@ -1,7 +1,10 @@
 package com.anisync.android.presentation.components.alert
 
+import android.content.Context
 import android.os.SystemClock
+import com.anisync.android.R
 import com.anisync.android.domain.Result
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -9,7 +12,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ToastManager @Inject constructor() {
+class ToastManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     private val _toast = MutableStateFlow<ToastMessage?>(null)
     val toast: StateFlow<ToastMessage?> = _toast.asStateFlow()
 
@@ -104,7 +109,7 @@ class ToastManager @Inject constructor() {
         val now = SystemClock.elapsedRealtime()
         if (now - lastThrottleNoticeAt < THROTTLE_NOTICE_INTERVAL_MS) return
         lastThrottleNoticeAt = now
-        showToast(ToastType.INFO, message = "Slowing down to stay within AniList's rate limit…")
+        showToast(ToastType.INFO, message = context.getString(R.string.alert_rate_limit_notice))
     }
 
     private companion object {

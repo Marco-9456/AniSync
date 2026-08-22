@@ -1821,4 +1821,11 @@
     <string name="notifications_item_media_merged_target">another entry</string>
     <string name="notifications_item_media_deleted">%1$s was removed from the site</string>
     <string name="notifications_item_unknown">New notification</string>
+
+    <!-- Top alert toast -->
+    <string name="alert_rate_limit_notice">Slowing down to stay within AniList\'s rate limit…</string>
+    <string name="alert_retrying_in">Retrying in %1$ds</string>
+
+    <!-- AniList link card -->
+    <string name="link_card_view_activity">View activity</string>
 </resources>

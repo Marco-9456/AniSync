@@ -1,8 +1,10 @@
 package com.anisync.android.presentation.activity
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.R
 import com.anisync.android.domain.ActivityDetail
 import com.anisync.android.domain.ActivityEventBus
 import com.anisync.android.domain.ActivityRepository
@@ -12,6 +14,7 @@ import com.anisync.android.domain.Result
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -48,6 +51,7 @@ sealed interface EditActivityEvent {
  */
 @HiltViewModel
 class EditActivityViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: ActivityRepository,
     private val activityEventBus: ActivityEventBus,
     private val toastManager: ToastManager,
@@ -110,7 +114,10 @@ class EditActivityViewModel @Inject constructor(
                 val recipientId = current.recipientId
                 if (recipientId == null) {
                     _uiState.update { it.copy(isSubmitting = false) }
-                    toastManager.showToast(ToastType.VALIDATION_ERROR, message = "Missing recipient")
+                    toastManager.showToast(
+                        ToastType.VALIDATION_ERROR,
+                        message = context.getString(R.string.missing_recipient)
+                    )
                     return@launch
                 }
                 repository.saveMessageActivity(

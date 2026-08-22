@@ -34,10 +34,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.anisync.android.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -191,7 +193,7 @@ private fun CountdownTimerText(
     }
 
     Text(
-        text = "Retrying in ${remainingSeconds}s",
+        text = stringResource(R.string.alert_retrying_in, remainingSeconds),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.secondary,
         fontWeight = FontWeight.Medium
