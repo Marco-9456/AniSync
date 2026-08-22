@@ -15,7 +15,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import com.anisync.android.data.DiscoverViewMode
 import com.anisync.android.presentation.discover.ResultCategory
 
@@ -86,7 +88,9 @@ private fun ViewModeToggle(
     ) {
         Icon(
             imageVector = if (isGrid) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda,
-            contentDescription = if (isGrid) "Switch to list view" else "Switch to grid view"
+            contentDescription = stringResource(
+                if (isGrid) R.string.cd_switch_to_list_view else R.string.cd_switch_to_grid_view
+            )
         )
     }
 }

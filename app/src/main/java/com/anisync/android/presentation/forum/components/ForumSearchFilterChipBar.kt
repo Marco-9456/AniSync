@@ -15,7 +15,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import com.anisync.android.domain.ForumSearchFilters
 import com.anisync.android.domain.ThreadSortOption
 
@@ -63,7 +65,7 @@ fun ForumSearchFilterChipBar(
         FilterChip(
             selected = filters.subscribedOnly,
             onClick = onToggleSubscribed,
-            label = { Text("Subscribed") },
+            label = { Text(stringResource(R.string.forum_filter_subscribed)) },
             leadingIcon = if (filters.subscribedOnly) {
                 {
                     Icon(

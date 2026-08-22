@@ -26,9 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.anisync.android.R
 import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumSearchFilters
 import com.anisync.android.domain.LibraryEntry
@@ -132,12 +134,12 @@ fun ForumSearchFilterSheetHost(
                     FilterChip(
                         selected = mediaPickerType == MediaType.ANIME,
                         onClick = { onMediaPickerTypeChange(MediaType.ANIME) },
-                        label = { Text("Anime") }
+                        label = { Text(stringResource(R.string.media_type_anime)) }
                     )
                     FilterChip(
                         selected = mediaPickerType == MediaType.MANGA,
                         onClick = { onMediaPickerTypeChange(MediaType.MANGA) },
-                        label = { Text("Manga") }
+                        label = { Text(stringResource(R.string.media_type_manga)) }
                     )
                 }
                 Spacer(Modifier.height(8.dp))
@@ -253,7 +255,10 @@ fun ForumMediaFilterHeader(
                     )
                 }
                 IconButton(onClick = onClear) {
-                    Icon(Icons.Default.Close, contentDescription = "Clear media filter")
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.cd_clear_media_filter)
+                    )
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -267,7 +272,7 @@ fun ForumMediaFilterHeader(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("Start a discussion about this")
+                Text(stringResource(R.string.forum_start_discussion))
             }
         }
     }

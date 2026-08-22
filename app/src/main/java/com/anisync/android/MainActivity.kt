@@ -13,6 +13,7 @@ import android.util.Log
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.widget.Toast
+import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.AlertDialog
+import com.anisync.android.R
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -356,13 +358,13 @@ class MainActivity : AppCompatActivity() {
                                             contentDescription = null
                                         )
                                     },
-                                    title = { Text("Session Expired") },
+                                    title = { Text(stringResource(R.string.session_expired_title)) },
                                     text = {
-                                        Text("Your session has expired. Please log in again to continue using AniSync.")
+                                        Text(stringResource(R.string.session_expired_message))
                                     },
                                     confirmButton = {
                                         TextButton(onClick = { showSessionExpiredDialog = false }) {
-                                            Text("OK")
+                                            Text(stringResource(R.string.ok))
                                         }
                                     }
                                 )

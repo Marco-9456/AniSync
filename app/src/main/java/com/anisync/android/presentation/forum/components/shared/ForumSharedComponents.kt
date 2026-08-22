@@ -77,7 +77,7 @@ fun AuthorRow(
     ) {
         UserAvatar(
             url = avatarUrl,
-            contentDescription = "Avatar of $name",
+            contentDescription = stringResource(R.string.a11y_user_avatar, name),
             size = avatarSize
         )
         Spacer(Modifier.width(8.dp))

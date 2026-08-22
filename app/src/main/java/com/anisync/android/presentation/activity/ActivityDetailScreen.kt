@@ -234,7 +234,9 @@ fun ActivityDetailScreen(
                     Icon(
                         imageVector = if (act.isSubscribed) Icons.Filled.Notifications
                         else Icons.Outlined.NotificationsNone,
-                        contentDescription = if (act.isSubscribed) "Unsubscribe" else "Subscribe",
+                        contentDescription = stringResource(
+                            if (act.isSubscribed) R.string.cd_unsubscribe else R.string.cd_subscribe
+                        ),
                         tint = if (act.isSubscribed) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant
                     )

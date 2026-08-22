@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -33,6 +34,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import com.anisync.android.presentation.util.bouncyClickable
 
 enum class HeaderLevel {
@@ -147,6 +149,8 @@ fun SectionHeader(
                 trailingContent?.invoke()
 
                 if (onActionClick != null) {
+                    val actionDescription = actionLabel
+                        ?: stringResource(R.string.a11y_action_see_all, title)
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
@@ -156,7 +160,7 @@ fun SectionHeader(
                             )
                             .semantics {
                                 role = Role.Button
-                                contentDescription = actionLabel ?: "See all $title"
+                                contentDescription = actionDescription
                             }
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically

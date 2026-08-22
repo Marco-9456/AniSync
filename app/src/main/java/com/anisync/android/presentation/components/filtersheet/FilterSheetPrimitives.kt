@@ -38,8 +38,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import com.anisync.android.presentation.components.AppModalBottomSheet
 
 /**
@@ -86,7 +88,7 @@ fun FilterSheetScaffold(
                 )
                 if (onReset != null) {
                     TextButton(onClick = onReset, enabled = resetEnabled) {
-                        Text("Reset")
+                        Text(stringResource(R.string.reset))
                     }
                 }
             }

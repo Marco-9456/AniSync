@@ -429,7 +429,9 @@ private fun PeopleFilterBarRow(
         IconButton(onClick = onToggleView) {
             Icon(
                 imageVector = if (viewMode == PeopleViewMode.GRID) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
-                contentDescription = if (viewMode == PeopleViewMode.GRID) "List view" else "Grid view",
+                contentDescription = stringResource(
+                    if (viewMode == PeopleViewMode.GRID) R.string.cd_view_list else R.string.cd_view_grid
+                ),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

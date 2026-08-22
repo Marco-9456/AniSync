@@ -319,7 +319,7 @@ private fun TagsFilterSheet(
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            placeholder = { Text("Search tags") },
+            placeholder = { Text(stringResource(R.string.search_tags_hint)) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),

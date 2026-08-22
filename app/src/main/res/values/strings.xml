@@ -1629,4 +1629,40 @@
     <string name="a11y_tag_rank">%1$s, rank %2$d percent</string>
     <string name="cd_tags_show_spoilers">Show spoiler tags</string>
     <string name="cd_tags_hide_spoilers">Hide spoiler tags</string>
+
+    <!-- Session expiry dialog -->
+    <string name="ok">OK</string>
+    <string name="session_expired_title">Session Expired</string>
+    <string name="session_expired_message">Your session has expired. Please log in again to continue using AniSync.</string>
+
+    <!-- Filter sheets -->
+    <string name="reset">Reset</string>
+    <string name="done">Done</string>
+    <string name="search_tags_hint">Search tags</string>
+    <string name="forum_filter_subscribed">Subscribed</string>
+    <string name="forum_start_discussion">Start a discussion about this</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_subscribe">Subscribe</string>
+    <string name="cd_unsubscribe">Unsubscribe</string>
+    <string name="cd_unsave">Unsave</string>
+    <string name="cd_unlike">Unlike</string>
+    <string name="cd_add_to_favorites">Add to favorites</string>
+    <string name="cd_remove_from_favorites">Remove from favorites</string>
+    <string name="cd_view_grid">Grid view</string>
+    <string name="cd_view_list">List view</string>
+    <string name="cd_switch_to_grid_view">Switch to grid view</string>
+    <string name="cd_switch_to_list_view">Switch to list view</string>
+    <string name="cd_expand_all">Expand all</string>
+    <string name="cd_collapse_all">Collapse all</string>
+    <string name="cd_trending_carousel">Trending carousel</string>
+    <string name="cd_clear_media_filter">Clear media filter</string>
+    <string name="cd_media_cover">Media cover</string>
+    <string name="cd_show_tab">Show tab</string>
+    <string name="cd_hide_tab">Hide tab</string>
+    <string name="cd_cover_quality_preview">Cover quality preview</string>
+    <!-- %1$s is the title of the entry being edited -->
+    <string name="a11y_editing_entry">Editing %1$s</string>
+    <!-- %1$s is the current progress, %2$s the total, or "Unknown" when no total is published -->
+    <string name="a11y_progress_of">Progress %1$s of %2$s</string>
 </resources>

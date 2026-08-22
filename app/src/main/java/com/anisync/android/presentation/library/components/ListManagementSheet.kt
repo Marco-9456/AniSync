@@ -320,7 +320,9 @@ fun ListManagementSheet(
                                     IconButton(onClick = { onVisibilityChanged(tabId, !isHidden) }) {
                                         Icon(
                                             imageVector = if (isHidden) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                            contentDescription = if (isHidden) "Show Tab" else "Hide Tab",
+                                            contentDescription = stringResource(
+                                                if (isHidden) R.string.cd_show_tab else R.string.cd_hide_tab
+                                            ),
                                             tint = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant
                                                    else MaterialTheme.colorScheme.primary
                                         )

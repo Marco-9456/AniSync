@@ -422,6 +422,8 @@ private fun HeaderSection(
                 color = MaterialTheme.colorScheme.primary
             )
 
+            val editingDescription = stringResource(R.string.a11y_editing_entry, title)
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge.copy(
@@ -431,7 +433,7 @@ private fun HeaderSection(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.semantics {
-                    contentDescription = "Editing $title"
+                    contentDescription = editingDescription
                 }
             )
 
@@ -633,10 +635,16 @@ private fun ProgressSection(
         stringResource(R.string.stat_chapters)
     }
 
+    val progressDescription = stringResource(
+        R.string.a11y_progress_of,
+        progress.toString(),
+        total?.toString() ?: stringResource(R.string.unknown)
+    )
+
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.semantics(mergeDescendants = true) {
-            contentDescription = "Progress $progress of ${total ?: "unknown"}"
+            contentDescription = progressDescription
         }
     ) {
         Row(

@@ -433,7 +433,7 @@ fun CoverQualitySelectionSheet(
             ) {
                 AsyncImage(
                     model = imageUrl,
-                    contentDescription = "Cover Quality Preview",
+                    contentDescription = stringResource(R.string.cd_cover_quality_preview),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .height(280.dp)

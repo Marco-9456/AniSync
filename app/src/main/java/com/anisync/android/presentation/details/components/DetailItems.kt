@@ -663,7 +663,9 @@ fun VoicedCharacterItem(
                     ) {
                         Icon(
                             imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = if (expanded) "Collapse All" else "Expand All",
+                            contentDescription = stringResource(
+                                if (expanded) R.string.cd_collapse_all else R.string.cd_expand_all
+                            ),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }

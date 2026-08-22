@@ -129,7 +129,9 @@ private fun MediaSortOptionItem(
             if (isSelected) {
                 Icon(
                     imageVector = if (isAscending) Icons.Rounded.ArrowUpward else Icons.Rounded.ArrowDownward,
-                    contentDescription = if (isAscending) "Ascending" else "Descending",
+                    contentDescription = stringResource(
+                        if (isAscending) R.string.ascending else R.string.descending
+                    ),
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.size(20.dp)
                 )

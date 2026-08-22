@@ -28,9 +28,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import com.anisync.android.domain.MediaTag
 import com.anisync.android.presentation.components.AppModalBottomSheet
 
@@ -88,7 +90,7 @@ fun TagPickerSheet(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Search tags") },
+                placeholder = { Text(stringResource(R.string.search_tags_hint)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -171,7 +173,7 @@ fun TagPickerSheet(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 12.dp)
             ) {
-                Text("Done")
+                Text(stringResource(R.string.done))
             }
         }
     }

@@ -11,7 +11,9 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.ReviewSortOption
 import com.anisync.android.domain.SearchResult
@@ -84,12 +86,12 @@ fun ReviewSearchFilterSheetHost(
                     FilterChip(
                         selected = mediaPickerType == MediaType.ANIME,
                         onClick = { onMediaPickerTypeChange(MediaType.ANIME) },
-                        label = { Text("Anime") }
+                        label = { Text(stringResource(R.string.media_type_anime)) }
                     )
                     FilterChip(
                         selected = mediaPickerType == MediaType.MANGA,
                         onClick = { onMediaPickerTypeChange(MediaType.MANGA) },
-                        label = { Text("Manga") }
+                        label = { Text(stringResource(R.string.media_type_manga)) }
                     )
                 }
                 Spacer(Modifier.height(8.dp))

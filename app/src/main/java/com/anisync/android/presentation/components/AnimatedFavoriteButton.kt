@@ -29,8 +29,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 import kotlin.math.cos
@@ -174,7 +176,9 @@ fun AnimatedFavoriteButton(
         ) { icon ->
             Icon(
                 imageVector = icon,
-                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                contentDescription = stringResource(
+                    if (isFavorite) R.string.cd_remove_from_favorites else R.string.cd_add_to_favorites
+                ),
                 tint = tint,
                 modifier = Modifier.size(iconSize)
             )

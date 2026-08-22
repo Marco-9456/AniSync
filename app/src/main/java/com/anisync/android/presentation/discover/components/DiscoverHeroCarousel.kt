@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -54,6 +55,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.anisync.android.R
 import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
@@ -113,10 +115,12 @@ fun DiscoverHeroCarousel(
         }
     }
 
+    val carouselDescription = stringResource(R.string.cd_trending_carousel)
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .semantics { contentDescription = "Trending carousel" }
+            .semantics { contentDescription = carouselDescription }
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val horizontalPadding = 16.dp

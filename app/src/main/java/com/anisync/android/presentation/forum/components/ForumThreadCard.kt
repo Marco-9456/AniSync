@@ -184,7 +184,9 @@ private fun ThreadHeader(
             if (onSubscribeClick != null) {
                 ActionIconButton(
                     icon = if (isSubscribed) Icons.Filled.Notifications else Icons.Outlined.NotificationsNone,
-                    contentDescription = if (isSubscribed) "Unsubscribe" else "Subscribe",
+                    contentDescription = stringResource(
+                        if (isSubscribed) R.string.cd_unsubscribe else R.string.cd_subscribe
+                    ),
                     isActive = isSubscribed,
                     activeColor = MaterialTheme.colorScheme.primary,
                     onClick = onSubscribeClick
@@ -193,7 +195,9 @@ private fun ThreadHeader(
             if (onSaveClick != null) {
                 ActionIconButton(
                     icon = if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                    contentDescription = if (isSaved) "Unsave" else "Save",
+                    contentDescription = stringResource(
+                        if (isSaved) R.string.cd_unsave else R.string.save
+                    ),
                     isActive = isSaved,
                     activeColor = MaterialTheme.colorScheme.primary,
                     onClick = onSaveClick
@@ -240,7 +244,7 @@ private fun ThreadBody(thread: ForumThread) {
             Spacer(Modifier.width(12.dp))
             AsyncImage(
                 model = thread.mediaCover.url() ?: thread.mediaCoverUrl,
-                contentDescription = thread.mediaTitle ?: "Media cover",
+                contentDescription = thread.mediaTitle ?: stringResource(R.string.cd_media_cover),
                 modifier = Modifier
                     .width(72.dp)
                     .aspectRatio(3f / 4f)

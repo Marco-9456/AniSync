@@ -381,7 +381,9 @@ private fun ActivityCardHeader(
                 if (activity.isLocked || activity.isPrivate) {
                     Icon(
                         imageVector = Icons.Default.Lock,
-                        contentDescription = if (activity.isPrivate) "Private" else "Locked",
+                        contentDescription = stringResource(
+                            if (activity.isPrivate) R.string.activity_detail_private else R.string.locked
+                        ),
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(16.dp)
                     )
@@ -406,7 +408,9 @@ private fun ActivityCardHeader(
                     Icon(
                         imageVector = if (activity.isSubscribed) Icons.Filled.Notifications
                         else Icons.Outlined.NotificationsNone,
-                        contentDescription = if (activity.isSubscribed) "Unsubscribe" else "Subscribe",
+                        contentDescription = stringResource(
+                            if (activity.isSubscribed) R.string.cd_unsubscribe else R.string.cd_subscribe
+                        ),
                         tint = if (activity.isSubscribed) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
@@ -421,7 +425,7 @@ private fun ActivityCardHeader(
             ) {
                 Icon(
                     imageVector = Icons.Default.Share,
-                    contentDescription = "Share",
+                    contentDescription = stringResource(R.string.cd_share),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
@@ -654,7 +658,7 @@ private fun ActivityCardFooter(
                 icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                 value = activity.likeCount,
                 onClick = onLikeClick,
-                contentDescription = if (isLiked) "Unlike" else "Like",
+                contentDescription = stringResource(if (isLiked) R.string.cd_unlike else R.string.cd_like),
                 contentColor = if (isLiked) Color(0xFFBE123C) else MaterialTheme.colorScheme.primary,
                 containerColor = if (isLiked) Color(0xFFBE123C).copy(alpha = 0.1f) else MaterialTheme.colorScheme.primary.copy(
                     alpha = 0.1f
