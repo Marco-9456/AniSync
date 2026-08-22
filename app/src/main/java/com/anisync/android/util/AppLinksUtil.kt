@@ -82,6 +82,26 @@ object AppLinksUtil {
         return true
     }
 
+    /**
+     * Whether anilist.co links actually land in AniSync. Verification is only one of the two ways
+     * that happens: the user can also tick the domain by hand under "Open by default", which reports
+     * as SELECTED rather than VERIFIED. [isDomainVerified] answers "did the OS verify us"; this
+     * answers "does the link open here", which is what a setting-state readout wants.
+     */
+    fun opensLinksFor(context: Context, domain: String = DOMAIN_ANILIST): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+        val manager = context.getSystemService(DomainVerificationManager::class.java) ?: return false
+        return try {
+            val state = manager.getDomainVerificationUserState(context.packageName)
+                ?.hostToStateMap
+                ?.get(domain)
+            state == DomainVerificationUserState.DOMAIN_STATE_VERIFIED ||
+                state == DomainVerificationUserState.DOMAIN_STATE_SELECTED
+        } catch (_: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.S)
     fun openAppLinksSettings(context: Context) {
         try {

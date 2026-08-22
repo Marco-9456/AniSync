@@ -88,6 +88,39 @@ fun DeveloperToolsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Onboarding — replays the first-run flow over the running app. Leaving it rebuilds
+        // MainScreen, so the app returns to its start tab rather than the Settings screen.
+        SettingsGroup {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        stringResource(R.string.dev_tools_onboarding_section),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.dev_tools_replay_onboarding_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    FilledTonalButton(
+                        onClick = { appSettings.replayOnboarding() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.dev_tools_replay_onboarding))
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Build Information
         SettingsGroup {
             Surface(

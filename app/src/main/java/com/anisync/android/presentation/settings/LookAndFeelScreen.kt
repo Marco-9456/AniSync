@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.DynamicFeed
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Forum
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
@@ -68,11 +69,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anisync.android.presentation.settings.components.SettingsPickerSheet
+import com.anisync.android.presentation.util.LocalAppSettings
 import coil.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.NavBarStyle
+import com.anisync.android.data.StartScreen
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.AppModalBottomSheet
@@ -107,6 +111,10 @@ fun LookAndFeelScreen(
     var showStreamingServiceSheet by rememberSaveable { mutableStateOf(false) }
     var showCoverQualitySheet by rememberSaveable { mutableStateOf(false) }
     var showNavBarStyleSheet by rememberSaveable { mutableStateOf(false) }
+    var showStartScreenSheet by rememberSaveable { mutableStateOf(false) }
+    // Read straight off AppSettings: the ViewModel's uiState is assembled from combines that
+    // are already at their arity ceiling, and this is a single value with a single writer.
+    val startScreen by LocalAppSettings.current.startScreen.collectAsStateWithLifecycle()
     var showAvatarShapeDialog by rememberSaveable { mutableStateOf(false) }
 
     val isDarkMode = themeMode.resolveDarkTheme()
@@ -129,6 +137,20 @@ fun LookAndFeelScreen(
                 viewModel.onAction(SettingsAction.SetCoverQuality(it))
             },
             onDismiss = { showCoverQualitySheet = false }
+        )
+    }
+
+    if (showStartScreenSheet) {
+        SettingsPickerSheet(
+            title = stringResource(R.string.setting_start_screen),
+            items = StartScreen.entries,
+            selected = startScreen,
+            itemLabel = { startScreenLabel(it) },
+            onSelect = {
+                viewModel.onAction(SettingsAction.SetStartScreen(it))
+                showStartScreenSheet = false
+            },
+            onDismiss = { showStartScreenSheet = false }
         )
     }
 
@@ -212,6 +234,12 @@ fun LookAndFeelScreen(
                 title = stringResource(R.string.setting_nav_bar_style),
                 currentValue = navBarStyleLabel(navBarStyle),
                 onClick = { showNavBarStyleSheet = true }
+            )
+            SelectionSettingsItem(
+                icon = Icons.Outlined.Home,
+                title = stringResource(R.string.setting_start_screen),
+                currentValue = startScreenLabel(startScreen),
+                onClick = { showStartScreenSheet = true }
             )
             SelectionSettingsItem(
                 icon = Icons.Default.Face,
@@ -906,3 +934,15 @@ fun AvatarShapeSelectionSheet(
         }
     }
 }
+
+/** Human label for an [StartScreen] option, shared by the row subtitle and the picker. */
+@Composable
+private fun startScreenLabel(screen: StartScreen): String = stringResource(
+    when (screen) {
+        StartScreen.LAST_VISITED -> R.string.start_screen_last_visited
+        StartScreen.LIBRARY -> R.string.nav_library
+        StartScreen.DISCOVER -> R.string.nav_discover
+        StartScreen.FEED -> R.string.nav_feed
+        StartScreen.FORUM -> R.string.nav_forum
+    }
+)

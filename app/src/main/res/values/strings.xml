@@ -1528,4 +1528,85 @@
     <string name="share_recap_completed">Completed</string>
     <string name="share_recap_top_studio">Most watched studio</string>
     <string name="share_recap_top_staff">Most read author</string>
+
+    <!-- ONBOARDING (first-run flow) -->
+    <string name="onboarding_welcome_headline">Your library,\nalways in sync.</string>
+    <string name="onboarding_welcome_body">Track anime and manga, and never miss an airing episode.</string>
+    <string name="onboarding_welcome_cta">Continue with AniList</string>
+    <string name="onboarding_welcome_new_prompt">New to AniList?</string>
+    <string name="onboarding_welcome_new_action">Create a free account</string>
+
+    <string name="onboarding_signin_title">Sign in on AniList</string>
+    <string name="onboarding_signin_domain">anilist.co</string>
+    <string name="onboarding_signin_body">The browser opens on AniList, you approve AniSync there, and Android hands the app back an access token.</string>
+    <string name="onboarding_signin_point_password">Your password stays with AniList</string>
+    <string name="onboarding_signin_point_token">The token is kept on this device only</string>
+    <string name="onboarding_signin_point_revoke">Revoke access any time from AniList</string>
+    <string name="onboarding_signin_open">Open AniList</string>
+    <string name="onboarding_signin_dismiss">Not now</string>
+
+    <string name="onboarding_sync_signed_in_as">SIGNED IN AS</string>
+    <string name="onboarding_sync_body">Your lists are coming over from AniList.\nThis happens once.</string>
+    <string name="onboarding_sync_card_label">BRINGING YOUR ACCOUNT OVER</string>
+    <string name="onboarding_sync_row_library">Library</string>
+    <string name="onboarding_sync_row_airing">Airing schedule</string>
+    <string name="onboarding_sync_row_notifications">Notifications</string>
+    <string name="onboarding_sync_row_widgets">Widgets</string>
+    <string name="onboarding_sync_entries">%1$d entries</string>
+    <string name="onboarding_sync_this_week">%1$d this week</string>
+    <string name="onboarding_sync_checking">Checking</string>
+    <string name="onboarding_sync_waiting">Waiting</string>
+    <string name="onboarding_sync_widgets_none">None yet</string>
+    <string name="onboarding_sync_widgets_placed">%1$d placed</string>
+    <string name="onboarding_sync_note">Everything after this refreshes quietly in the background.</string>
+
+    <string name="onboarding_continue">Continue</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_step_of">STEP %1$d OF %2$d</string>
+    <string name="onboarding_state_on">On</string>
+    <string name="onboarding_state_off">Off</string>
+
+    <string name="onboarding_permissions_headline">Let it run in the background</string>
+    <string name="onboarding_permissions_body">Alerts and airing times depend on work that happens while AniSync is closed.</string>
+    <string name="onboarding_permissions_progress">%1$d of %2$d done</string>
+    <string name="onboarding_permissions_note">Change any of this later in Settings.</string>
+    <string name="onboarding_perm_alerts_title">Notifications</string>
+    <string name="onboarding_perm_alerts_body">New episodes, forum replies, mentions and follows. Also switches the alerts on inside AniSync.</string>
+    <string name="onboarding_perm_battery_title">Background refresh</string>
+    <string name="onboarding_perm_battery_body">Android sleeps idle apps. An exemption keeps checks on time.</string>
+    <string name="onboarding_perm_links_title">AniList links</string>
+    <string name="onboarding_perm_links_body">anilist.co links open in AniSync instead of the browser.</string>
+    <string name="onboarding_perm_hibernation_title">Idle app pause</string>
+    <string name="onboarding_perm_hibernation_body">Stops Android pausing AniSync after months idle.</string>
+    <string name="onboarding_perm_badge_android12">ANDROID 12+</string>
+    <string name="onboarding_perm_action_allow">Allow</string>
+    <string name="onboarding_perm_action_turn_off">Turn off</string>
+    <string name="onboarding_perm_action_open">Open</string>
+
+    <string name="onboarding_personalise_headline">Make it yours</string>
+    <string name="onboarding_personalise_body">Four small choices. Every one of them lives in Look and Feel afterwards.</string>
+    <string name="onboarding_personalise_accent">ACCENT</string>
+    <string name="onboarding_personalise_theme">THEME</string>
+    <string name="onboarding_personalise_titles">TITLES</string>
+    <string name="onboarding_personalise_open_on">OPEN ON</string>
+    <string name="setting_start_screen">Open on</string>
+    <string name="start_screen_last_visited">Last visited</string>
+    <string name="onboarding_personalise_note">The accent carries through cards, buttons and widgets.</string>
+    <string name="onboarding_preview_title">Frieren: Beyond Journey\'s End</string>
+
+    <string name="onboarding_done_headline">You\'re all set</string>
+    <string name="onboarding_done_body">Your lists are here and the alerts are armed.</string>
+    <string name="onboarding_done_pill_alerts_on">Alerts on</string>
+    <string name="onboarding_done_pill_alerts_off">Alerts off</string>
+    <string name="onboarding_done_pill_links_on">Links on</string>
+    <string name="onboarding_done_pill_links_off">Links off</string>
+    <string name="onboarding_done_widget_title">Add the Up Next widget</string>
+    <string name="onboarding_done_widget_body">One tap to the next episode.</string>
+    <string name="onboarding_done_cta">Start watching</string>
+
+    <string name="cd_anilist_logo">AniList</string>
+
+    <string name="dev_tools_onboarding_section">Onboarding</string>
+    <string name="dev_tools_replay_onboarding">Replay onboarding</string>
+    <string name="dev_tools_replay_onboarding_subtitle">Reopens the first-run flow over the running app. Leaving it returns you to the Library tab.</string>
 </resources>

@@ -56,6 +56,21 @@ enum class DiscoverViewMode {
 }
 
 /**
+ * Which tab a cold launch opens on.
+ *
+ * [LAST_VISITED] is the behaviour the app has always had and stays the default; the rest pin the
+ * app to one tab however the user left it. The last visited tab keeps being recorded either way, so
+ * switching back to [LAST_VISITED] resumes where the user actually was.
+ */
+enum class StartScreen(val tabKey: String?) {
+    LAST_VISITED(null),
+    LIBRARY("library"),
+    DISCOVER("discover"),
+    FEED("feed"),
+    FORUM("forum")
+}
+
+/**
  * Visual style of the bottom navigation bar.
  *
  *  - [ANCHORED]: bar pinned to the bottom edge with rounded top corners.
@@ -455,6 +470,21 @@ class AppSettings @Inject constructor(
     private val _lastMainTab = MutableStateFlow(prefs.getString(KEY_LAST_MAIN_TAB, null))
     val lastMainTab: StateFlow<String?> = _lastMainTab.asStateFlow()
 
+    private val _startScreen = MutableStateFlow(readStartScreen())
+    val startScreen: StateFlow<StartScreen> = _startScreen.asStateFlow()
+
+    private fun readStartScreen(): StartScreen {
+        val name = runCatching { prefs.getString(KEY_START_SCREEN, null) }.getOrNull()
+            ?: return StartScreen.LAST_VISITED
+        return runCatching { StartScreen.valueOf(name) }.getOrDefault(StartScreen.LAST_VISITED)
+    }
+
+    /** Pins cold launches to one tab, or hands them back to the last visited one. */
+    fun setStartScreen(screen: StartScreen) {
+        _startScreen.value = screen
+        prefs.edit().putString(KEY_START_SCREEN, screen.name).apply()
+    }
+
     // ==========================================================================
     // MEDIA UPLOAD SETTINGS — third-party host config for in-composer attach
     // ==========================================================================
@@ -574,6 +604,46 @@ class AppSettings @Inject constructor(
     fun lockDevTools() {
         _devToolsUnlocked.value = false
         prefs.edit().putBoolean(KEY_DEV_TOOLS_UNLOCKED, false).apply()
+    }
+
+    // ==========================================================================
+    // ONBOARDING — first-run flow
+    // ==========================================================================
+
+    private val _onboardingCompleted = MutableStateFlow(
+        prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+    )
+    val onboardingCompleted: StateFlow<Boolean> = _onboardingCompleted.asStateFlow()
+
+    /**
+     * A developer-triggered replay of the first-run flow. Held in memory only: a replay is a review
+     * aid, and persisting it would strand the user in onboarding if the process died mid-flow.
+     */
+    private val _onboardingReplay = MutableStateFlow(false)
+    val onboardingReplay: StateFlow<Boolean> = _onboardingReplay.asStateFlow()
+
+    /**
+     * Whether the flow has ever been opened. Separate from [onboardingCompleted] because the
+     * upgrade backfill keys off "an account exists", and a run that died part way through leaves
+     * exactly that state — without this marker the next launch would skip the rest of the flow.
+     */
+    val onboardingStarted: Boolean get() = prefs.getBoolean(KEY_ONBOARDING_STARTED, false)
+
+    fun markOnboardingStarted() {
+        if (onboardingStarted) return
+        prefs.edit().putBoolean(KEY_ONBOARDING_STARTED, true).apply()
+    }
+
+    /** Marks the first-run flow done, and ends a replay if one was running. */
+    fun completeOnboarding() {
+        _onboardingReplay.value = false
+        _onboardingCompleted.value = true
+        prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, true).apply()
+    }
+
+    /** Shows the first-run flow again over the running app (Developer Tools). */
+    fun replayOnboarding() {
+        _onboardingReplay.value = true
     }
 
     /**
@@ -1075,6 +1145,8 @@ companion object {
 
         private const val KEY_TYPOGRAPHY_OVERRIDES = "typography_overrides"
         private const val KEY_DEV_TOOLS_UNLOCKED = "dev_tools_unlocked"
+        private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+        private const val KEY_ONBOARDING_STARTED = "onboarding_started"
 
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"
@@ -1125,6 +1197,7 @@ companion object {
         private const val KEY_FORUM_FEED = "forum_feed"
         private const val KEY_FORUM_CATEGORY_ID = "forum_category_id"
         private const val KEY_LAST_MAIN_TAB = "last_main_tab"
+        private const val KEY_START_SCREEN = "start_screen"
         private const val KEY_MEDIA_HOST = "media_host"
         private const val KEY_LITTERBOX_DURATION = "litterbox_duration"
         private const val KEY_CUSTOM_HOST_URL = "custom_host_url"

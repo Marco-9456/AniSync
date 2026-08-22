@@ -5,6 +5,7 @@ import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AvatarShape
 import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.NavBarStyle
+import com.anisync.android.data.StartScreen
 import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
@@ -22,6 +23,7 @@ sealed interface SettingsAction {
     data class SetHapticEnabled(val enabled: Boolean) : SettingsAction
     data class SetAppLockEnabled(val enabled: Boolean) : SettingsAction
     data class SetNavBarStyle(val style: NavBarStyle) : SettingsAction
+    data class SetStartScreen(val screen: StartScreen) : SettingsAction
     data class SetNavBarShowLabels(val show: Boolean) : SettingsAction
     data class SetNavBarCornerRadius(val radius: Float) : SettingsAction
     data class SetAvatarShape(val shape: AvatarShape) : SettingsAction

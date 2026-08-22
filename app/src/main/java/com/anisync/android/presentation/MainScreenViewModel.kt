@@ -39,10 +39,12 @@ class MainScreenViewModel @Inject constructor(
     val navBarCornerRadius: StateFlow<Float> = appSettings.navBarCornerRadius
 
     /**
-     * The main bottom-nav tab the user last visited, captured once at startup so the
-     * NavHost can open on it. Null on first ever launch (falls back to the default tab).
+     * The tab a cold launch opens on, captured once at startup. A pinned Open-on choice wins;
+     * otherwise this is the tab the user last visited, which is null on a first ever launch and
+     * falls back to the default tab.
      */
-    val startTabKey: String? = appSettings.lastMainTab.value
+    val startTabKey: String? =
+        appSettings.startScreen.value.tabKey ?: appSettings.lastMainTab.value
 
     /** Remember the main tab the user switched to, for the next cold launch. */
     fun onMainTabSelected(tabKey: String) {
