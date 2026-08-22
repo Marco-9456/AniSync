@@ -1788,4 +1788,37 @@
     <!-- Expandable cards -->
     <string name="show_more">Show more</string>
     <string name="show_less">Show less</string>
+
+    <!-- Notifications inbox: who acted, when several people did the same thing -->
+    <string name="notifications_actors_list">%1$s, %2$s and %3$s</string>
+    <plurals name="notifications_actors_tail">
+        <item quantity="one">%1$d other</item>
+        <item quantity="other">%1$d others</item>
+    </plurals>
+
+    <!-- Notifications inbox headlines. %1$s is who acted; %2$s, where present, is one of the
+         notification_kind_* nouns -->
+    <string name="notifications_item_liked_activity">%1$s liked your %2$s</string>
+    <string name="notifications_item_liked_reply">%1$s liked your reply</string>
+    <string name="notifications_item_replied_activity">%1$s replied to your %2$s</string>
+    <string name="notifications_item_replied_subscribed">%1$s replied to a post you are subscribed to</string>
+    <string name="notifications_item_mentioned_activity">%1$s mentioned you in %2$s</string>
+    <string name="notifications_item_message">%1$s sent you a message</string>
+    <string name="notifications_item_liked_thread">%1$s liked your thread</string>
+    <string name="notifications_item_liked_comment">%1$s liked your comment</string>
+    <string name="notifications_item_replied_comment">%1$s replied to your comment</string>
+    <string name="notifications_item_commented_subscribed">%1$s commented in a thread you are subscribed to</string>
+    <string name="notifications_item_mentioned_comment">%1$s mentioned you in a comment</string>
+    <string name="notifications_item_following">%1$s started following you</string>
+    <string name="notifications_item_episode">Episode %1$d</string>
+    <!-- Site-wide media changes announced by AniList moderators -->
+    <string name="notifications_item_media_added_fallback">A new title</string>
+    <string name="notifications_item_media_added_context">was added to the site</string>
+    <string name="notifications_item_media_changed_fallback">A title on your list</string>
+    <string name="notifications_item_media_changed_context">had data updated</string>
+    <string name="notifications_item_media_merged">%1$s merged into %2$s</string>
+    <string name="notifications_item_media_merged_fallback">Entries</string>
+    <string name="notifications_item_media_merged_target">another entry</string>
+    <string name="notifications_item_media_deleted">%1$s was removed from the site</string>
+    <string name="notifications_item_unknown">New notification</string>
 </resources>

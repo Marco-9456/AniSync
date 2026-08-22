@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.notifications.components
 
+import android.content.res.Resources
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalResources
 import com.anisync.android.presentation.components.UserAvatar
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -52,6 +54,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.ActivityKind
 import com.anisync.android.domain.ActivityLikeNotification
@@ -74,8 +77,6 @@ import com.anisync.android.domain.ThreadCommentSubscribedNotification
 import com.anisync.android.domain.ThreadLikeNotification
 import com.anisync.android.domain.UnknownNotification
 import com.anisync.android.domain.User
-import com.anisync.android.domain.indefiniteNoun
-import com.anisync.android.domain.noun
 import com.anisync.android.presentation.notifications.NotificationEntry
 import com.anisync.android.presentation.notifications.NotificationTarget
 import com.anisync.android.presentation.util.selectedPaneItem
@@ -96,7 +97,7 @@ fun NotificationGroupCard(
     // dot beside a primary-coloured timestamp.
     isUnread: Boolean = false
 ) {
-    val payload = entry.toPayload()
+    val payload = entry.toPayload(LocalResources.current)
     // Moderation notes (data change / merge / deletion reasons) can be long; the card expands in
     // place instead of navigating, and the cover thumb keeps the media-details click.
     var expanded by rememberSaveable(entry.key) { mutableStateOf(false) }
@@ -170,7 +171,10 @@ private fun TimestampCluster(entry: NotificationEntry, isUnread: Boolean) {
             Spacer(modifier = Modifier.width(6.dp))
         }
         Text(
-            text = formatRelative(entry.representative.createdAt.toLong()),
+            text = formatRelativeTimeSeconds(
+                LocalResources.current,
+                entry.representative.createdAt.toLong()
+            ),
             style = MaterialTheme.typography.labelMedium,
             color = if (isUnread) {
                 MaterialTheme.colorScheme.primary
@@ -196,7 +200,7 @@ private fun ExpandAffordance(expanded: Boolean) {
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
-            text = if (expanded) "Show less" else "Show more",
+            text = stringResource(if (expanded) R.string.show_less else R.string.show_more),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary
         )
@@ -463,56 +467,71 @@ private data class GroupPayload(
     }
 }
 
-private fun NotificationEntry.toPayload(): GroupPayload {
+private fun NotificationEntry.toPayload(res: Resources): GroupPayload {
     val rep = representative
     return when (rep) {
         is AiringNotification -> GroupPayload(
-            headline = rep.media?.title ?: "Anime",
-            subtitlePlain = "Episode ${rep.episode}",
+            headline = rep.media?.title ?: res.getString(R.string.notification_media_title_fallback),
+            subtitlePlain = res.getString(R.string.notifications_item_episode, rep.episode),
             leadingMediaCover = rep.media?.coverUrl,
             fallbackIcon = Icons.Default.PlayCircleOutline,
             mediaId = rep.media?.id
         )
         is FollowingNotification -> GroupPayload(
-            headline = "${rep.user?.name ?: "Someone"} started following you",
+            headline = res.getString(R.string.notifications_item_following, actorName(res, rep.user)),
             actors = listOfNotNull(rep.user),
             fallbackIcon = Icons.Default.Person,
             userName = rep.user?.name
         )
         is ActivityLikeNotification -> activityLikePayload(
             actors = actors,
-            verb = "liked ${activityNoun(rep.activity, possessive = "your")}",
+            headline = res.getString(
+                R.string.notifications_item_liked_activity,
+                combineActors(res, actors),
+                activityNoun(res, rep.activity)
+            ),
             activity = rep.activity,
             activityId = rep.activityId
         )
         is ActivityReplyLikeNotification -> activityLikePayload(
             actors = actors,
-            verb = "liked your reply",
+            headline = res.getString(R.string.notifications_item_liked_reply, combineActors(res, actors)),
             activity = rep.activity,
             activityId = rep.activityId
         )
         is ActivityReplyNotification -> activitySingleActorPayload(
             user = rep.user,
-            verb = "replied to ${activityNoun(rep.activity, possessive = "your")}",
+            headline = res.getString(
+                R.string.notifications_item_replied_activity,
+                actorName(res, rep.user),
+                activityNoun(res, rep.activity)
+            ),
             activity = rep.activity,
             activityId = rep.activityId
         )
         is ActivityReplySubscribedNotification -> activitySingleActorPayload(
             user = rep.user,
-            verb = "replied to a post you're subscribed to",
+            headline = res.getString(
+                R.string.notifications_item_replied_subscribed,
+                actorName(res, rep.user)
+            ),
             activity = rep.activity,
             activityId = rep.activityId
         )
         is ActivityMentionNotification -> activitySingleActorPayload(
             user = rep.user,
-            verb = "mentioned you in ${activityNoun(rep.activity, possessive = "a")}",
+            headline = res.getString(
+                R.string.notifications_item_mentioned_activity,
+                actorName(res, rep.user),
+                activityNoun(res, rep.activity, indefinite = true)
+            ),
             activity = rep.activity,
             activityId = rep.activityId
         )
         is ActivityMessageNotification -> {
-            val name = rep.user?.name ?: "Someone"
+            val name = actorName(res, rep.user)
             GroupPayload(
-                headline = "$name sent you a message",
+                headline = res.getString(R.string.notifications_item_message, name),
                 subtitleHtml = rep.messagePreview?.takeIf { it.isNotBlank() },
                 actors = listOfNotNull(rep.user),
                 fallbackIcon = Icons.Default.Person,
@@ -521,14 +540,20 @@ private fun NotificationEntry.toPayload(): GroupPayload {
             )
         }
         is ThreadLikeNotification -> GroupPayload(
-            headline = combineActors(actors, verb = "liked your thread"),
+            headline = res.getString(
+                R.string.notifications_item_liked_thread,
+                combineActors(res, actors)
+            ),
             subtitlePlain = rep.threadTitle.takeIf { it.isNotBlank() },
             actors = actors,
             fallbackIcon = Icons.Default.Person,
             threadId = rep.threadId
         )
         is ThreadCommentLikeNotification -> GroupPayload(
-            headline = combineActors(actors, verb = "liked your comment"),
+            headline = res.getString(
+                R.string.notifications_item_liked_comment,
+                combineActors(res, actors)
+            ),
             subtitlePlain = rep.threadTitle.takeIf { it.isNotBlank() },
             subtitleHtml = rep.commentPreview?.takeIf { it.isNotBlank() },
             actors = actors,
@@ -538,7 +563,10 @@ private fun NotificationEntry.toPayload(): GroupPayload {
         )
         is ThreadCommentReplyNotification -> threadCommentPayload(
             user = rep.user,
-            verb = "replied to your comment",
+            headline = res.getString(
+                R.string.notifications_item_replied_comment,
+                actorName(res, rep.user)
+            ),
             threadTitle = rep.threadTitle,
             threadId = rep.threadId,
             commentId = rep.commentId,
@@ -546,7 +574,10 @@ private fun NotificationEntry.toPayload(): GroupPayload {
         )
         is ThreadCommentSubscribedNotification -> threadCommentPayload(
             user = rep.user,
-            verb = "commented in a thread you're subscribed to",
+            headline = res.getString(
+                R.string.notifications_item_commented_subscribed,
+                actorName(res, rep.user)
+            ),
             threadTitle = rep.threadTitle,
             threadId = rep.threadId,
             commentId = rep.commentId,
@@ -554,22 +585,29 @@ private fun NotificationEntry.toPayload(): GroupPayload {
         )
         is ThreadCommentMentionNotification -> threadCommentPayload(
             user = rep.user,
-            verb = "mentioned you in a comment",
+            headline = res.getString(
+                R.string.notifications_item_mentioned_comment,
+                actorName(res, rep.user)
+            ),
             threadTitle = rep.threadTitle,
             threadId = rep.threadId,
             commentId = rep.commentId,
             html = rep.commentPreview
         )
         is RelatedMediaAdditionNotification -> GroupPayload(
-            headline = rep.media?.title ?: "A new title",
-            subtitlePlain = rep.context.trim().ifEmpty { "was added to the site" },
+            headline = rep.media?.title
+                ?: res.getString(R.string.notifications_item_media_added_fallback),
+            subtitlePlain = rep.context.trim()
+                .ifEmpty { res.getString(R.string.notifications_item_media_added_context) },
             leadingMediaCover = rep.media?.coverUrl,
             fallbackIcon = Icons.Default.PlayCircleOutline,
             mediaId = rep.mediaId
         )
         is MediaDataChangeNotification -> GroupPayload(
-            headline = rep.media?.title ?: "A title on your list",
-            subtitlePlain = rep.context.trim().ifBlank { "had data updated" },
+            headline = rep.media?.title
+                ?: res.getString(R.string.notifications_item_media_changed_fallback),
+            subtitlePlain = rep.context.trim()
+                .ifBlank { res.getString(R.string.notifications_item_media_changed_context) },
             // Moderation note rides the body slot so the card can expand to show all of it.
             subtitleHtml = rep.reason.takeIf { it.isNotBlank() },
             leadingMediaCover = rep.media?.coverUrl,
@@ -578,10 +616,12 @@ private fun NotificationEntry.toPayload(): GroupPayload {
             expandableNote = rep.reason.isNotBlank()
         )
         is MediaMergeNotification -> {
-            val merged = rep.deletedMediaTitles.joinToString(", ").ifBlank { "Entries" }
-            val target = rep.media?.title ?: "another entry"
+            val merged = rep.deletedMediaTitles.joinToString(", ")
+                .ifBlank { res.getString(R.string.notifications_item_media_merged_fallback) }
+            val target = rep.media?.title
+                ?: res.getString(R.string.notifications_item_media_merged_target)
             GroupPayload(
-                headline = "$merged merged into $target",
+                headline = res.getString(R.string.notifications_item_media_merged, merged, target),
                 subtitleHtml = rep.reason.takeIf { it.isNotBlank() },
                 leadingMediaCover = rep.media?.coverUrl,
                 fallbackIcon = Icons.AutoMirrored.Filled.MergeType,
@@ -590,24 +630,29 @@ private fun NotificationEntry.toPayload(): GroupPayload {
             )
         }
         is MediaDeletionNotification -> GroupPayload(
-            headline = "${rep.deletedMediaTitle} was removed from the site",
+            headline = res.getString(
+                R.string.notifications_item_media_deleted,
+                rep.deletedMediaTitle
+            ),
             subtitleHtml = rep.reason.takeIf { it.isNotBlank() },
             fallbackIcon = Icons.Default.Delete,
             expandableNote = rep.reason.isNotBlank()
         )
-        is UnknownNotification -> GroupPayload(headline = "New notification")
+        is UnknownNotification -> GroupPayload(
+            headline = res.getString(R.string.notifications_item_unknown)
+        )
     }
 }
 
 private fun activityLikePayload(
     actors: List<User>,
-    verb: String,
+    headline: String,
     activity: ActivitySnapshot?,
     activityId: Int?
 ): GroupPayload {
     val (plain, html) = activitySubtitle(activity)
     return GroupPayload(
-        headline = combineActors(actors, verb = verb),
+        headline = headline,
         subtitlePlain = plain,
         subtitleHtml = html,
         actors = actors,
@@ -618,34 +663,32 @@ private fun activityLikePayload(
 
 private fun activitySingleActorPayload(
     user: User?,
-    verb: String,
+    headline: String,
     activity: ActivitySnapshot?,
     activityId: Int?
 ): GroupPayload {
-    val name = user?.name ?: "Someone"
     val (plain, html) = activitySubtitle(activity)
     return GroupPayload(
-        headline = "$name $verb",
+        headline = headline,
         subtitlePlain = plain,
         subtitleHtml = html,
         actors = listOfNotNull(user),
         fallbackIcon = Icons.Default.Person,
         activityId = activityId,
-        userName = name
+        userName = user?.name
     )
 }
 
 private fun threadCommentPayload(
     user: User?,
-    verb: String,
+    headline: String,
     threadTitle: String,
     threadId: Int,
     commentId: Int?,
     html: String?
 ): GroupPayload {
-    val name = user?.name ?: "Someone"
     return GroupPayload(
-        headline = "$name $verb",
+        headline = headline,
         subtitlePlain = threadTitle.takeIf { it.isNotBlank() },
         subtitleHtml = html?.takeIf { it.isNotBlank() },
         actors = listOfNotNull(user),
@@ -655,16 +698,22 @@ private fun threadCommentPayload(
     )
 }
 
-private fun combineActors(actors: List<User>, verb: String): String {
-    return when (actors.size) {
-        0 -> "Someone $verb"
-        1 -> "${actors[0].name} $verb"
-        2 -> "${actors[0].name} and ${actors[1].name} $verb"
-        else -> {
-            val others = actors.size - 2
-            val tail = if (others == 1) "1 other" else "$others others"
-            "${actors[0].name}, ${actors[1].name} and $tail $verb"
-        }
+private fun actorName(res: Resources, user: User?): String =
+    user?.name ?: res.getString(R.string.notification_actor_someone)
+
+/** "Hameru", "Hameru and Bob", "Hameru, Bob and 2 others". */
+private fun combineActors(res: Resources, actors: List<User>): String = when (actors.size) {
+    0 -> res.getString(R.string.notification_actor_someone)
+    1 -> actors[0].name
+    2 -> res.getString(R.string.notification_actors_two, actors[0].name, actors[1].name)
+    else -> {
+        val others = actors.size - 2
+        res.getString(
+            R.string.notifications_actors_list,
+            actors[0].name,
+            actors[1].name,
+            res.getQuantityString(R.plurals.notifications_actors_tail, others, others)
+        )
     }
 }
 
@@ -673,10 +722,30 @@ private fun combineActors(actors: List<User>, verb: String): String {
  * AniList serves a generic "activity" string for all three subtypes, but the
  * activity union itself tells us whether the post is a text status, a list
  * update, or a DM — surface that distinction directly in the headline.
- * "a" as the possessive picks the right indefinite article ("an anime list update").
  */
-private fun activityNoun(activity: ActivitySnapshot?, possessive: String): String =
-    if (possessive == "a") activity?.kind.indefiniteNoun() else "$possessive ${activity?.kind.noun()}"
+private fun activityNoun(
+    res: Resources,
+    activity: ActivitySnapshot?,
+    indefinite: Boolean = false
+): String = res.getString(
+    when (activity?.kind) {
+        ActivityKind.TEXT ->
+            if (indefinite) R.string.notification_kind_status_indefinite
+            else R.string.notification_kind_status
+        ActivityKind.ANIME_LIST ->
+            if (indefinite) R.string.notification_kind_anime_list_indefinite
+            else R.string.notification_kind_anime_list
+        ActivityKind.MANGA_LIST ->
+            if (indefinite) R.string.notification_kind_manga_list_indefinite
+            else R.string.notification_kind_manga_list
+        ActivityKind.MESSAGE ->
+            if (indefinite) R.string.notification_kind_message_indefinite
+            else R.string.notification_kind_message
+        ActivityKind.UNKNOWN, null ->
+            if (indefinite) R.string.notification_kind_post_indefinite
+            else R.string.notification_kind_post
+    }
+)
 
 /**
  * Splits an activity snapshot into the two subtitle slots — list activities
@@ -714,19 +783,5 @@ private fun formatListActivity(activity: ActivitySnapshot): String? {
         title.isNotEmpty() && status.isNotEmpty() -> "$status $title"
         title.isNotEmpty() -> title
         else -> status
-    }
-}
-
-private fun formatRelative(timestampSeconds: Long): String {
-    val now = System.currentTimeMillis() / 1000
-    val diff = now - timestampSeconds
-    return when {
-        diff < 60 -> "just now"
-        diff < 3600 -> "${diff / 60}m ago"
-        diff < 86400 -> "${diff / 3600}h ago"
-        diff < 604800 -> "${diff / 86400}d ago"
-        diff < 2592000 -> "${diff / 604800}w ago"
-        diff < 31536000 -> "${diff / 2592000}mo ago"
-        else -> "${diff / 31536000}y ago"
     }
 }
