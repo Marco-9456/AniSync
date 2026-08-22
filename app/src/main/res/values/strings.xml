@@ -735,7 +735,7 @@
     <string name="themes_open_source">Open on AnimeThemes</string>
     <string name="themes_attribution">Theme data and video from AnimeThemes.moe</string>
     <string name="themes_actions_label">Elsewhere</string>
-    <string name="themes_action_youtube">YouTube</string>
+    <string name="themes_action_youtube" translatable="false">YouTube</string>
     <string name="themes_action_animethemes">AnimeThemes</string>
     <string name="themes_action_share">Share</string>
     <string name="themes_share_subject">%1$s by %2$s</string>
@@ -921,7 +921,7 @@
     <string name="a11y_widget_open_discover">Open Discover</string>
     <string name="a11y_widget_type_anime">Show anime</string>
     <string name="a11y_widget_type_manga">Show manga</string>
-    <string name="a11y_widget_day">%1$s %2$d</string>
+    <string name="a11y_widget_day" translatable="false">%1$s %2$d</string>
     <string name="a11y_widget_day_selected">%1$s %2$d, selected</string>
     <string name="a11y_widget_up_next_row">%1$s, episode %2$d, %3$s</string>
     <string name="a11y_widget_airing_row">%1$s, episode %2$d, airs at %3$s</string>
@@ -986,12 +986,12 @@
     <!-- Activity history: week breakdown -->
     <string name="statistics_activity_period_month">Month</string>
     <string name="statistics_activity_period_week">Week</string>
-    <string name="statistics_activity_week_range">%1$s – %2$s</string>
+    <string name="statistics_activity_week_range" translatable="false">%1$s – %2$s</string>
     <string name="statistics_activity_week_current">This week</string>
     <string name="statistics_activity_week_previous">Last week</string>
     <string name="statistics_activity_per_day">%1$s / day</string>
     <string name="statistics_activity_busiest_day">Busiest day</string>
-    <string name="statistics_activity_busiest_value">%1$s · %2$d</string>
+    <string name="statistics_activity_busiest_value" translatable="false">%1$s · %2$d</string>
     <string name="statistics_activity_active_days">Active days</string>
     <string name="statistics_activity_days_counted">Days counted</string>
     <string name="statistics_activity_awaiting">Awaiting stats</string>
@@ -999,9 +999,9 @@
     <string name="statistics_activity_today_pending">Today · not counted yet</string>
     <string name="statistics_activity_vs_previous">vs last week</string>
     <string name="statistics_activity_day_ratio">%1$d of %2$d</string>
-    <string name="statistics_activity_percent_up">+%1$d%%</string>
-    <string name="statistics_activity_percent_down">-%1$d%%</string>
-    <string name="statistics_activity_no_value">—</string>
+    <string name="statistics_activity_percent_up" translatable="false">+%1$d%%</string>
+    <string name="statistics_activity_percent_down" translatable="false">-%1$d%%</string>
+    <string name="statistics_activity_no_value" translatable="false">—</string>
     <plurals name="statistics_activity_weeks_ago">
         <item quantity="one">%d week ago</item>
         <item quantity="other">%d weeks ago</item>
@@ -1015,7 +1015,7 @@
     <string name="statistics_activity_day_posted">Posted a status</string>
     <string name="cd_activity_week_previous">Previous week</string>
     <string name="cd_activity_week_next">Next week</string>
-    <string name="a11y_activity_day">%1$s: %2$s</string>
+    <string name="a11y_activity_day" translatable="false">%1$s: %2$s</string>
     <string name="a11y_activity_day_awaiting">%1$s: not counted yet</string>
 
     <!-- Accessibility: Statistics -->
@@ -1537,7 +1537,7 @@
     <string name="onboarding_welcome_new_action">Create a free account</string>
 
     <string name="onboarding_signin_title">Sign in on AniList</string>
-    <string name="onboarding_signin_domain">anilist.co</string>
+    <string name="onboarding_signin_domain" translatable="false">anilist.co</string>
     <string name="onboarding_signin_body">The browser opens on AniList, you approve AniSync there, and Android hands the app back an access token.</string>
     <string name="onboarding_signin_point_password">Your password stays with AniList</string>
     <string name="onboarding_signin_point_token">The token is kept on this device only</string>
@@ -1578,7 +1578,7 @@
     <string name="onboarding_perm_links_body">anilist.co links open in AniSync instead of the browser.</string>
     <string name="onboarding_perm_hibernation_title">Idle app pause</string>
     <string name="onboarding_perm_hibernation_body">Stops Android pausing AniSync after months idle.</string>
-    <string name="onboarding_perm_badge_android12">ANDROID 12+</string>
+    <string name="onboarding_perm_badge_android12" translatable="false">ANDROID 12+</string>
     <string name="onboarding_perm_action_allow">Allow</string>
     <string name="onboarding_perm_action_turn_off">Turn off</string>
     <string name="onboarding_perm_action_open">Open</string>
@@ -1592,7 +1592,7 @@
     <string name="setting_start_screen">Open on</string>
     <string name="start_screen_last_visited">Last visited</string>
     <string name="onboarding_personalise_note">The accent carries through cards, buttons and widgets.</string>
-    <string name="onboarding_preview_title">Frieren: Beyond Journey\'s End</string>
+    <string name="onboarding_preview_title" translatable="false">Frieren: Beyond Journey\'s End</string>
 
     <string name="onboarding_done_headline">You\'re all set</string>
     <string name="onboarding_done_body">Your lists are here and the alerts are armed.</string>
@@ -1604,7 +1604,7 @@
     <string name="onboarding_done_widget_body">One tap to the next episode.</string>
     <string name="onboarding_done_cta">Start watching</string>
 
-    <string name="cd_anilist_logo">AniList</string>
+    <string name="cd_anilist_logo" translatable="false">AniList</string>
 
     <string name="dev_tools_onboarding_section">Onboarding</string>
     <string name="dev_tools_replay_onboarding">Replay onboarding</string>
@@ -1613,7 +1613,7 @@
     <!-- Media details: tags -->
     <string name="tags_expand">Expand</string>
     <string name="tags_collapse">Collapse</string>
-    <string name="tags_rank_percent">%1$d%%</string>
+    <string name="tags_rank_percent" translatable="false">%1$d%%</string>
     <plurals name="tags_more">
         <item quantity="one">+%1$d more</item>
         <item quantity="other">+%1$d more</item>
