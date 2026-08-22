@@ -1877,4 +1877,11 @@
     <string name="notifications_item_media_merged_target">عنصر آخر</string>
     <string name="notifications_item_media_deleted">تمت إزالة %1$s من الموقع</string>
     <string name="notifications_item_unknown">إشعار جديد</string>
+
+    <!-- Top alert toast -->
+    <string name="alert_rate_limit_notice">جارٍ التمهّل للبقاء ضمن حد طلبات AniList…</string>
+    <string name="alert_retrying_in">إعادة المحاولة خلال %1$d ث</string>
+
+    <!-- AniList link card -->
+    <string name="link_card_view_activity">عرض النشاط</string>
 </resources>
