@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -60,22 +61,71 @@ fun PermissionsStep(
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null
 ) {
+    val wide = isWideOnboarding()
+    val margin = onboardingMargin()
+
     Column(modifier = modifier.fillMaxSize()) {
         OnboardingStepHeader(
             step = 1,
             total = 2,
             onSkip = onSkip,
             onBack = onBack,
-            modifier = Modifier
-                .padding(horizontal = OnboardingMargin)
-                .padding(top = 12.dp)
+            modifier = if (wide) {
+                Modifier
+                    .padding(horizontal = OnboardingWidePadding)
+                    .padding(top = 12.dp)
+            } else {
+                Modifier
+                    .onboardingColumn(StepMaxWidth)
+                    .padding(horizontal = margin)
+                    .padding(top = 12.dp)
+            }
         )
+
+        if (wide) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = OnboardingWidePadding)
+                    .padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(OnboardingPaneGap)
+            ) {
+                OnboardingCentredScroll(
+                    modifier = Modifier
+                        .weight(OnboardingContextPaneWeight)
+                        .fillMaxHeight()
+                ) {
+                    OnboardingHeadline(stringResource(R.string.onboarding_permissions_headline))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OnboardingBody(stringResource(R.string.onboarding_permissions_body))
+                    Spacer(modifier = Modifier.height(22.dp))
+                    GrantedCounter(granted = permissions.grantedCount, total = permissions.total)
+                    Spacer(modifier = Modifier.height(28.dp))
+                    OnboardingNote(text = stringResource(R.string.onboarding_permissions_note))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OnboardingPrimaryButton(
+                        text = stringResource(R.string.onboarding_continue),
+                        onClick = onContinue
+                    )
+                }
+
+                OnboardingCentredScroll(
+                    modifier = Modifier
+                        .weight(OnboardingContentPaneWeight)
+                        .fillMaxHeight()
+                ) {
+                    PermissionCards(permissions = permissions, onRequest = onRequest)
+                }
+            }
+            return@Column
+        }
 
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = OnboardingMargin)
+                .onboardingColumn(StepMaxWidth)
+                .padding(horizontal = margin)
         ) {
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -91,52 +141,16 @@ fun PermissionsStep(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                PermissionCard(
-                    icon = Icons.Outlined.NotificationsActive,
-                    tint = OnboardingAccents.Red,
-                    title = stringResource(R.string.onboarding_perm_alerts_title),
-                    body = stringResource(R.string.onboarding_perm_alerts_body),
-                    granted = permissions.notifications,
-                    actionLabel = stringResource(R.string.onboarding_perm_action_allow),
-                    onClick = { onRequest(PermissionRow.Notifications) }
-                )
-                PermissionCard(
-                    icon = Icons.Outlined.Autorenew,
-                    tint = OnboardingAccents.Amber,
-                    title = stringResource(R.string.onboarding_perm_battery_title),
-                    body = stringResource(R.string.onboarding_perm_battery_body),
-                    granted = permissions.batteryExempt,
-                    actionLabel = stringResource(R.string.onboarding_perm_action_allow),
-                    onClick = { onRequest(PermissionRow.Battery) }
-                )
-                PermissionCard(
-                    icon = Icons.Outlined.Link,
-                    tint = OnboardingAccents.Green,
-                    title = stringResource(R.string.onboarding_perm_links_title),
-                    body = stringResource(R.string.onboarding_perm_links_body),
-                    granted = permissions.linksVerified,
-                    actionLabel = stringResource(R.string.onboarding_perm_action_open),
-                    onClick = { onRequest(PermissionRow.Links) }
-                )
-                PermissionCard(
-                    icon = Icons.Outlined.Bedtime,
-                    tint = OnboardingAccents.Blue,
-                    title = stringResource(R.string.onboarding_perm_hibernation_title),
-                    body = stringResource(R.string.onboarding_perm_hibernation_body),
-                    badge = stringResource(R.string.onboarding_perm_badge_android12),
-                    granted = permissions.hibernationExempt,
-                    actionLabel = stringResource(R.string.onboarding_perm_action_turn_off),
-                    onClick = { onRequest(PermissionRow.Hibernation) }
-                )
-            }
+            PermissionCards(permissions = permissions, onRequest = onRequest)
 
             Spacer(modifier = Modifier.height(20.dp))
         }
 
         OnboardingNote(
             text = stringResource(R.string.onboarding_permissions_note),
-            modifier = Modifier.padding(horizontal = OnboardingMargin)
+            modifier = Modifier
+                .onboardingColumn(StepMaxWidth)
+                .padding(horizontal = margin)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -145,9 +159,82 @@ fun PermissionsStep(
             text = stringResource(R.string.onboarding_continue),
             onClick = onContinue,
             modifier = Modifier
-                .padding(horizontal = OnboardingMargin)
+                .onboardingColumn()
+                .padding(horizontal = margin)
                 .padding(bottom = 24.dp)
         )
+    }
+}
+
+/** Widest the set-up step runs: enough for two cards side by side without cramping them. */
+private val StepMaxWidth = 840.dp
+
+/** The four rows, stacked. Both layouts give them a column narrow enough to read as cards. */
+@Composable
+private fun PermissionCards(
+    permissions: PermissionStates,
+    onRequest: (PermissionRow) -> Unit
+) {
+    PermissionCardStack(
+        cards = listOf(
+            { cardModifier ->
+                PermissionCard(
+                    icon = Icons.Outlined.NotificationsActive,
+                    tint = OnboardingAccents.Red,
+                    title = stringResource(R.string.onboarding_perm_alerts_title),
+                    body = stringResource(R.string.onboarding_perm_alerts_body),
+                    granted = permissions.notifications,
+                    actionLabel = stringResource(R.string.onboarding_perm_action_allow),
+                    onClick = { onRequest(PermissionRow.Notifications) },
+                    modifier = cardModifier
+                )
+            },
+            { cardModifier ->
+                PermissionCard(
+                    icon = Icons.Outlined.Autorenew,
+                    tint = OnboardingAccents.Amber,
+                    title = stringResource(R.string.onboarding_perm_battery_title),
+                    body = stringResource(R.string.onboarding_perm_battery_body),
+                    granted = permissions.batteryExempt,
+                    actionLabel = stringResource(R.string.onboarding_perm_action_allow),
+                    onClick = { onRequest(PermissionRow.Battery) },
+                    modifier = cardModifier
+                )
+            },
+            { cardModifier ->
+                PermissionCard(
+                    icon = Icons.Outlined.Link,
+                    tint = OnboardingAccents.Green,
+                    title = stringResource(R.string.onboarding_perm_links_title),
+                    body = stringResource(R.string.onboarding_perm_links_body),
+                    granted = permissions.linksVerified,
+                    actionLabel = stringResource(R.string.onboarding_perm_action_open),
+                    onClick = { onRequest(PermissionRow.Links) },
+                    modifier = cardModifier
+                )
+            },
+            { cardModifier ->
+                PermissionCard(
+                    icon = Icons.Outlined.Bedtime,
+                    tint = OnboardingAccents.Blue,
+                    title = stringResource(R.string.onboarding_perm_hibernation_title),
+                    body = stringResource(R.string.onboarding_perm_hibernation_body),
+                    badge = stringResource(R.string.onboarding_perm_badge_android12),
+                    granted = permissions.hibernationExempt,
+                    actionLabel = stringResource(R.string.onboarding_perm_action_turn_off),
+                    onClick = { onRequest(PermissionRow.Hibernation) },
+                    modifier = cardModifier
+                )
+            }
+        )
+    )
+}
+
+/** Stacks the cards with the flow's row spacing. */
+@Composable
+private fun PermissionCardStack(cards: List<@Composable (Modifier) -> Unit>) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        cards.forEach { card -> card(Modifier) }
     }
 }
 
