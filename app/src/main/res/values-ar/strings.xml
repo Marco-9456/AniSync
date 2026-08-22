@@ -1824,4 +1824,57 @@
     <!-- %1$s is the error reported by AniList -->
     <string name="toast_update_failed_reason">فشل التحديث: %1$s</string>
     <string name="toast_update_failed">تعذّر تحديث القائمة</string>
+
+    <!-- Relative timestamps, shown on cards and in the inbox -->
+    <string name="time_ago_just_now">الآن</string>
+    <string name="time_ago_minutes">قبل %1$d د</string>
+    <string name="time_ago_hours">قبل %1$d س</string>
+    <string name="time_ago_days">قبل %1$d ي</string>
+    <string name="time_ago_weeks">قبل %1$d أسبوع</string>
+    <string name="time_ago_months">قبل %1$d شهر</string>
+    <string name="time_ago_years">قبل %1$d سنة</string>
+
+    <!-- Last reply line on a thread or activity card: %1$s is the user, %2$s a relative time -->
+    <string name="forum_last_by">آخر مشاركة من %1$s • %2$s</string>
+
+    <!-- Expandable cards -->
+    <string name="show_more">عرض المزيد</string>
+    <string name="show_less">عرض أقل</string>
+
+    <!-- Notifications inbox: who acted, when several people did the same thing -->
+    <string name="notifications_actors_list">%1$s و%2$s و%3$s</string>
+    <plurals name="notifications_actors_tail">
+        <item quantity="zero">%1$d آخر</item>
+        <item quantity="one">%1$d آخر</item>
+        <item quantity="two">%1$d آخران</item>
+        <item quantity="few">%1$d آخرين</item>
+        <item quantity="many">%1$d آخرين</item>
+        <item quantity="other">%1$d آخر</item>
+    </plurals>
+
+    <!-- Notifications inbox headlines. %1$s is who acted; %2$s, where present, is one of the
+         notification_kind_* nouns -->
+    <string name="notifications_item_liked_activity">%1$s أعجب بـ: %2$s</string>
+    <string name="notifications_item_liked_reply">%1$s أعجب بردك</string>
+    <string name="notifications_item_replied_activity">%1$s رد على: %2$s</string>
+    <string name="notifications_item_replied_subscribed">%1$s رد على منشور مشترَك به</string>
+    <string name="notifications_item_mentioned_activity">%1$s أشار إليك في: %2$s</string>
+    <string name="notifications_item_message">%1$s أرسل إليك رسالة</string>
+    <string name="notifications_item_liked_thread">%1$s أعجب بموضوعك</string>
+    <string name="notifications_item_liked_comment">%1$s أعجب بتعليقك</string>
+    <string name="notifications_item_replied_comment">%1$s رد على تعليقك</string>
+    <string name="notifications_item_commented_subscribed">%1$s علّق في موضوع مشترَك به</string>
+    <string name="notifications_item_mentioned_comment">%1$s أشار إليك في تعليق</string>
+    <string name="notifications_item_following">%1$s بدأ بمتابعتك</string>
+    <string name="notifications_item_episode">الحلقة %1$d</string>
+    <!-- Site-wide media changes announced by AniList moderators -->
+    <string name="notifications_item_media_added_fallback">عنوان جديد</string>
+    <string name="notifications_item_media_added_context">أُضيف إلى الموقع</string>
+    <string name="notifications_item_media_changed_fallback">عنوان في قائمتك</string>
+    <string name="notifications_item_media_changed_context">جرى تحديث بياناته</string>
+    <string name="notifications_item_media_merged">تم دمج %1$s في %2$s</string>
+    <string name="notifications_item_media_merged_fallback">عناصر</string>
+    <string name="notifications_item_media_merged_target">عنصر آخر</string>
+    <string name="notifications_item_media_deleted">تمت إزالة %1$s من الموقع</string>
+    <string name="notifications_item_unknown">إشعار جديد</string>
 </resources>
