@@ -330,7 +330,9 @@ private fun TagCloud(
     onOverflowClick: (() -> Unit)? = null
 ) {
     // ContextualFlowRow, not FlowRow: the "+N more" chip needs shownItemCount during
-    // composition, and FlowRow only settles that count in the draw phase.
+    // composition, and FlowRow only settles that count in the draw phase. Compose marks
+    // both this and FlowRow's overflow as no longer maintained, so if either is removed
+    // the count has to be measured by hand rather than swapped for the plain FlowRow.
     ContextualFlowRow(
         itemCount = tags.size,
         modifier = modifier.fillMaxWidth(),
