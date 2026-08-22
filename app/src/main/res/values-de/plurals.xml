@@ -6,13 +6,13 @@
         <item quantity="other">%d Eps</item>
     </plurals>
 
-    <!-- Chapter counts: "1 Kap" / "10 Kap" -->
+    <!-- Chapter counts: "1 Ch" / "10 Ch" -->
     <plurals name="chapters_count">
         <item quantity="one">%d Kap</item>
         <item quantity="other">%d Kap</item>
     </plurals>
 
-    <!-- Episodes behind: "1 EP IM RÜCKSTAND" / "3 EPS IM RÜCKSTAND" -->
+    <!-- Episodes behind: "1 EP BEHIND" / "3 EPS BEHIND" -->
     <plurals name="episodes_behind">
         <item quantity="one">%d EP IM RÜCKSTAND</item>
         <item quantity="other">%d EPS IM RÜCKSTAND</item>
@@ -36,7 +36,7 @@
         <item quantity="other">%dMin</item>
     </plurals>
 
-    <!-- Days unit for profile: "Tag" / "Tage" -->
+    <!-- Days unit for profile: "Day" / "Days" -->
     <plurals name="days_unit">
         <item quantity="one">Tag</item>
         <item quantity="other">Tage</item>

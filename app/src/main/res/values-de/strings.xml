@@ -6,7 +6,67 @@
     <string name="nav_library">Bibliothek</string>
     <string name="nav_discover">Entdecken</string>
     <string name="nav_feed">Feed</string>
+    <string name="nav_forum">Forum</string>
     <string name="nav_profile">Profil</string>
+
+    <!-- Feed Screen -->
+    <string name="feed_filter_all">Alle</string>
+    <string name="feed_filter_status">Status</string>
+    <string name="feed_filter_list">Listen</string>
+    <string name="feed_scope_global">Global</string>
+    <string name="feed_scope_following">Folge ich</string>
+    <string name="feed_empty_global">Noch keine Aktivität — zum Aktualisieren ziehen.</string>
+    <string name="feed_empty_following">Folge anderen, um ihre Aktivität hier zu sehen.</string>
+    <string name="feed_compose_title">Status schreiben</string>
+    <string name="feed_compose_placeholder">Teile, was dich beschäftigt…</string>
+    <string name="feed_compose_submit">Posten</string>
+
+    <!-- Forum Screen -->
+    <string name="forum_browse_categories">Kategorien durchsuchen</string>
+    <string name="forum_recent_discussions">Aktuelle Diskussionen</string>
+    <string name="forum_create_thread">Neuer Thread</string>
+    <string name="forum_post_thread">Thread posten</string>
+    <string name="forum_reply">Antworten</string>
+    <string name="forum_write_reply">Antwort schreiben</string>
+    <string name="forum_reply_hint">Teile deine Gedanken...</string>
+    <string name="forum_post_reply">Antwort posten</string>
+    <string name="forum_comments">Kommentare</string>
+    <string name="forum_load_more_comments">Mehr Kommentare laden</string>
+    <string name="forum_comments_count">%1$d Kommentare</string>
+    <string name="forum_page_of">Seite %1$d von %2$d</string>
+    <string name="forum_load_earlier_count">Frühere laden · %1$d darüber</string>
+    <string name="forum_load_more_count">%1$d weitere laden · %2$d verbleibend</string>
+    <string name="forum_jump_to_page">Zu Seite springen</string>
+    <string name="forum_first_page">Erste</string>
+    <string name="forum_latest_page">Neueste</string>
+    <string name="forum_current_page_label">Aktuell</string>
+    <string name="forum_jump">Springen</string>
+    <string name="forum_comment_unavailable">Kommentar nicht verfügbar, Thread wird von Anfang an angezeigt</string>
+    <string name="forum_a11y_open_page_jumper">Seitenauswahl öffnen</string>
+    <string name="forum_search_threads">Threads suchen...</string>
+    <string name="forum_search_placeholder">Foren-Threads suchen</string>
+    <string name="forum_search_prompt">Diskussionen durchsuchen oder nach Medium, Kategorie, Autor oder Sortierung filtern</string>
+    <string name="forum_discussions_title">Diskussionen</string>
+    <string name="forum_discussions_view_all">Alle Diskussionen ansehen</string>
+    <string name="forum_discussions_empty">Noch keine Diskussionen — starte eine</string>
+    <string name="forum_discussions_start">Diskussion starten</string>
+    <string name="cd_scroll_to_top">Nach oben scrollen</string>
+    <string name="forum_select_categories">Kategorien auswählen</string>
+    <string name="forum_thread_title">Titel</string>
+    <string name="forum_thread_title_hint">Was möchtest du diskutieren?</string>
+    <string name="forum_thread_body">Inhalt</string>
+    <string name="forum_thread_body_hint">Schreibe hier deine Nachricht...</string>
+    <string name="forum_empty_threads">Keine Threads gefunden.</string>
+    <string name="forum_thread_locked">Dieser Thread ist gesperrt.</string>
+    <string name="forum_view_on_anilist">Auf AniList ansehen</string>
+    <string name="forum_recently_active">Kürzlich aktiv</string>
+    <string name="forum_new_threads">Neueste Threads</string>
+    <string name="forum_subscribed_threads">Abonnierte Threads</string>
+    <string name="forum_saved_threads">Gespeicherte Threads</string>
+    <string name="forum_replying_to">Antwort an %1$s</string>
+    <string name="forum_thread_appbar">Thread</string>
+    <string name="forum_op_badge">OP</string>
+
     <!-- Common -->
     <string name="back">Zurück</string>
     <string name="search">Suchen</string>
@@ -21,12 +81,14 @@
     <string name="error_oops">Hoppla!</string>
     <string name="feature_coming_soon">Bald</string>
     <string name="not_available">k. A.</string>
+
     <!-- Media Types -->
     <string name="media_type_anime">Anime</string>
     <string name="media_type_manga">Manga</string>
     <string name="media_type_tv">TV</string>
     <string name="media_type_media">MEDIEN</string>
     <string name="format_tv_series">TV-Serie</string>
+
     <!-- Status Labels -->
     <string name="status_watching">Schaue ich</string>
     <string name="status_reading">Lese ich</string>
@@ -37,15 +99,23 @@
     <string name="status_repeating">Wiederholung</string>
     <string name="status_rewatching">Erneut schauen</string>
     <string name="status_rereading">Erneut lesen</string>
+    <string name="list_indicator_custom">Eigene Liste</string>
+
     <!-- Discover Screen -->
     <string name="search_anime_placeholder">Anime suchen…</string>
     <string name="search_manga_placeholder">Manga suchen…</string>
     <string name="section_trending_now">Gerade im Trend</string>
     <string name="section_all_time_popular">Allzeit beliebt</string>
     <string name="section_upcoming_season">Kommende Saison</string>
+    <string name="section_newly_added">Neu hinzugefügt</string>
+    <string name="section_recent_reviews">Neueste Rezensionen</string>
     <string name="section_tba">TBA</string>
+    <string name="recent_reviews_title">Neueste Rezensionen</string>
+    <string name="recent_reviews_empty">Keine Rezensionen gefunden.</string>
+    <string name="reviews_filter_all">Alle</string>
     <string name="error_failed_to_load">Inhalte konnten nicht geladen werden</string>
     <string name="search_no_results">Keine Ergebnisse gefunden.</string>
+
     <!-- Library Screen -->
     <string name="library_title">Bibliothek</string>
     <string name="search_library_placeholder">Bibliothek durchsuchen…</string>
@@ -67,20 +137,39 @@
     <string name="airing_episode_in">Ep %1$d in %2$s</string>
     <string name="progress_format">%1$d / %2$s</string>
     <string name="progress_unknown">\?</string>
+
     <!-- Library Empty States -->
     <string name="empty_watching">Du schaust gerade nichts.</string>
     <string name="empty_reading">Du liest gerade nichts.</string>
     <string name="empty_planning">Deine Merkliste ist leer.</string>
     <string name="empty_completed">Noch keine abgeschlossenen Einträge.</string>
     <string name="empty_default">Hier gibt es nichts anzuzeigen.</string>
+
     <!-- Details Screen -->
     <string name="section_cast">Besetzung</string>
+    <string name="section_staff">Staff</string>
+    <string name="details_filter_role">Rolle</string>
+    <string name="details_filter_language">Sprache der Synchronsprecher</string>
     <string name="section_related">Verwandt</string>
+    <string name="section_recommendations">Empfehlungen</string>
+    <string name="section_reviews">Rezensionen</string>
+    <string name="no_review_text">Kein vollständiger Rezensionstext verfügbar.</string>
+    <string name="section_voice_actors">Synchronsprecher</string>
+    <string name="all_reviews">Alle Rezensionen</string>
+    <string name="section_following">Folge ich</string>
+    <string name="all_following">Alle, denen ich folge</string>
+    <string name="activity_likes_title">Geliked von</string>
+    <string name="activity_likes_empty">Noch keine Likes</string>
+    <string name="found_helpful">fanden dies hilfreich</string>
     <string name="section_synopsis">ZUSAMMENFASSUNG</string>
     <string name="stat_episodes">Episoden</string>
     <string name="stat_chapters">Kapitel</string>
     <string name="stat_status">Status</string>
     <string name="stat_source">Quelle</string>
+    <string name="stat_popularity">Beliebtheit</string>
+    <string name="stat_favorites">Favoriten</string>
+    <string name="stat_next_episode">Nächste Episode</string>
+    <string name="airing_countdown_value">Ep %1$d in %2$s</string>
     <string name="source_original">Original</string>
     <string name="source_manga">Manga</string>
     <string name="source_light_novel">Light Novel</string>
@@ -100,6 +189,8 @@
     <string name="action_go_back">Zurück</string>
     <string name="synopsis_show_less">Weniger anzeigen</string>
     <string name="synopsis_read_more">Mehr lesen</string>
+    <string name="translate">Übersetzen</string>
+    <string name="no_translation_app_found">Keine Übersetzungs-App gefunden</string>
     <string name="fab_close_menu">Menü schließen</string>
     <string name="fab_open_menu">Menü öffnen</string>
     <string name="fab_open_menu_library">Menü öffnen, um Bibliotheksstatus zu verwalten</string>
@@ -113,6 +204,8 @@
     <string name="stat_format">Format</string>
     <string name="badge_up_to_date">Aktuell</string>
     <string name="empty_no_characters">Keine Charaktere gefunden</string>
+    <string name="empty_no_staff">Kein Staff gefunden</string>
+    <string name="empty_no_recommendations">Noch keine Empfehlungen</string>
     <string name="empty_no_related">Keine verwandten Medien gefunden</string>
     <string name="action_favorite">Favorit</string>
     <string name="action_share">Teilen</string>
@@ -126,6 +219,15 @@
     <string name="episodes_suffix">Eps</string>
     <string name="chapters_suffix">Kap</string>
     <string name="minutes_suffix">Min.</string>
+
+    <!-- Media details: expandable "array" info pills (Titles / Synonyms / Producers) and their sheets -->
+    <string name="details_label_titles">Titel</string>
+    <string name="details_label_romaji">Romaji</string>
+    <string name="details_label_english">Englisch</string>
+    <string name="details_label_native">Originalsprache</string>
+    <string name="details_label_synonyms">Synonyme</string>
+    <string name="details_label_producers">Produzenten</string>
+
     <!-- Profile Screen -->
     <string name="profile_id">ID: %1$d</string>
     <string name="stat_time_watched">Geschaute Zeit</string>
@@ -141,6 +243,12 @@
     <string name="theme_light">Hell</string>
     <string name="theme_dark">Dunkel</string>
     <string name="theme_system">System</string>
+    <string name="theme_light_desc">Immer das helle Design verwenden</string>
+    <string name="theme_dark_desc">Immer das dunkle Design verwenden</string>
+    <string name="theme_system_desc">Der Geräteeinstellung folgen</string>
+    <string name="setting_amoled">AMOLED-Dunkeldesign</string>
+    <string name="setting_amoled_desc">Reines Schwarz im Dunkelmodus verwenden, um auf OLED-Bildschirmen Strom zu sparen</string>
+
     <!-- Theme Palette Selection -->
     <string name="color_and_style">Farbe &amp; Stil</string>
     <string name="palette_style">Palettenstil</string>
@@ -155,6 +263,36 @@
     <string name="dark_mode_override">Systemeinstellung überschreiben</string>
     <string name="setting_haptic_feedback">Haptisches Feedback</string>
     <string name="setting_haptic_description">Vibration bei Berührungsinteraktionen</string>
+    <string name="settings_navigation">Navigation</string>
+    <string name="setting_nav_bar_style">Stil der unteren Leiste</string>
+    <string name="setting_nav_bar_style_anchored">Verankert</string>
+    <string name="setting_nav_bar_style_anchored_desc">Liegt an der unteren Kante mit abgerundeten oberen Ecken</string>
+    <string name="setting_nav_bar_style_floating">Schwebende Pille</string>
+    <string name="setting_nav_bar_style_floating_desc">Abgesetzte Pille mit Abstand zu den Rändern</string>
+    <string name="setting_nav_bar_show_labels">Beschriftungen anzeigen</string>
+    <string name="setting_nav_bar_show_labels_desc">Titel neben jedem Symbol anzeigen</string>
+    <string name="nav_bar_style_dialog_title">Stil der unteren Leiste</string>
+    <string name="setting_nav_bar_corner_radius">Eckenradius</string>
+    <string name="setting_avatar_shape">Avatar-Form</string>
+    <string name="avatar_shape_dialog_title">Avatar-Form</string>
+    <string name="avatar_shape_disable_profile">Form für eigenes Profil deaktivieren</string>
+    <string name="avatar_shape_disable_profile_desc">Zeigt nur bei deinem eigenen Profil die Originalform des Bildes</string>
+    <string name="avatar_shape_background">Avatar-Hintergrund</string>
+    <string name="avatar_shape_background_desc">Fügt einen farblich passenden Hintergrund hinter dem Avatar hinzu</string>
+    <string name="avatar_shape_show_frame">Rahmen anzeigen</string>
+    <string name="avatar_shape_show_frame_desc">Zeichnet einen Ring und Hintergrund hinter Avataren</string>
+    <string name="setting_respect_profile_colors">Profilfarben verwenden</string>
+    <string name="setting_respect_profile_colors_desc">Färbt die App in der vom Nutzer gewählten Farbe, wenn du sein Profil besuchst. Profile mit der Standardfarbe behalten dein Design.</string>
+    <string name="avatar_shape_clover">Achtblättriges Kleeblatt</string>
+    <string name="avatar_shape_clover_desc">Die Standardform mit acht Kleeblättern</string>
+    <string name="avatar_shape_circle">Kreis</string>
+    <string name="avatar_shape_circle_desc">Klassischer runder Avatar</string>
+    <string name="avatar_shape_clover_4_leaf">Vierblättriges Kleeblatt</string>
+    <string name="avatar_shape_clover_4_leaf_desc">Eine weichere Alternative zum Quadrat mit vier Kleeblättern</string>
+    <string name="avatar_shape_ghostish">Geisterhaft</string>
+    <string name="avatar_shape_ghostish_desc">Eine verspielte, geisterartige Form</string>
+    <string name="avatar_shape_none">Keine</string>
+    <string name="avatar_shape_none_desc">Zeigt das Avatarbild in seiner natürlichen Form</string>
     <string name="setting_streaming_service">Streaming-Dienst</string>
     <string name="setting_streaming_service_desc">Wähle deine bevorzugte Streaming-Plattform für das Gleich-Ansehen-Widget-Symbol</string>
     <string name="control_notifications">Benachrichtigungen</string>
@@ -164,11 +302,59 @@
     <string name="notification_planning_desc">Benachrichtigung, wenn Episode 1 einer geplanten Serie ausgestrahlt wird</string>
     <string name="notification_upcoming">Kommende Premieren</string>
     <string name="notification_upcoming_desc">Vorab-Benachrichtigung vor Episodenausstrahlung</string>
+    <string name="notification_streaming_delay">Verzögerung der Streaming-Verfügbarkeit</string>
+    <string name="notification_streaming_delay_desc">Warte nach der Ausstrahlung einer Episode so viele Minuten, bevor du benachrichtigt wirst. Nützlich, wenn deine Streaming-Seite Episoden nach der offiziellen Ausstrahlungszeit veröffentlicht. Benachrichtigungen laufen über eine Prüfung alle 15 Minuten, die tatsächliche Verzögerung kann also einige Minuten länger sein als der gewählte Wert.</string>
+    <string name="notification_streaming_delay_value">%1$d Min.</string>
+    <string name="notification_streaming_delay_off">Aus</string>
+    <string name="notification_thread_comment_reply">Kommentar-Antworten</string>
+    <string name="notification_thread_comment_reply_desc">Wenn jemand auf deinen Kommentar antwortet</string>
+    <string name="notification_thread_subscribed">Abonnierte Threads</string>
+    <string name="notification_thread_subscribed_desc">Neue Kommentare in abonnierten Threads</string>
+    <string name="notification_thread_comment_mention">Erwähnungen</string>
+    <string name="notification_thread_comment_mention_desc">Wenn dich jemand in einem Kommentar erwähnt</string>
+    <string name="notification_thread_like">Thread-Likes</string>
+    <string name="notification_thread_like_desc">Wenn jemand deinen Thread liked</string>
+    <string name="notification_thread_comment_like">Kommentar-Likes</string>
+    <string name="notification_thread_comment_like_desc">Wenn jemand deinen Kommentar liked</string>
+    <string name="notification_group_airing">Ausstrahlung</string>
+    <string name="notification_group_forum">Forum</string>
+    <string name="notification_group_activity">Aktivität</string>
+    <string name="notification_group_other">Sonstiges</string>
+    <string name="notification_follows">Neue Follower</string>
+    <string name="notification_follows_desc">Wenn dir jemand folgt</string>
+    <string name="notification_channel_watching">Watching-Liste</string>
+    <string name="notification_channel_watching_desc">Neue Folgen für Serien, die du ansiehst</string>
+    <string name="notification_channel_planning">Planungsliste</string>
+    <string name="notification_channel_planning_desc">Hinweise, wenn Episode 1 von geplanten Titeln erscheint</string>
+    <string name="notification_channel_upcoming">Bevorstehende Premieren</string>
+    <string name="notification_channel_upcoming_desc">Frühzeitige Hinweise vor Ausstrahlung</string>
+    <string name="notification_channel_thread_comment_reply">Kommentar-Antworten</string>
+    <string name="notification_channel_thread_comment_reply_desc">Wenn jemand auf deinen Kommentar antwortet</string>
+    <string name="notification_channel_thread_subscribed">Abonnierte Threads</string>
+    <string name="notification_channel_thread_subscribed_desc">Neue Kommentare in abonnierten Threads</string>
+    <string name="notification_channel_thread_comment_mention">Erwähnungen</string>
+    <string name="notification_channel_thread_comment_mention_desc">Wenn dich jemand in einem Kommentar erwähnt</string>
+    <string name="notification_channel_thread_like">Thread-Likes</string>
+    <string name="notification_channel_thread_like_desc">Wenn jemand deinen Thread liked</string>
+    <string name="notification_channel_thread_comment_like">Kommentar-Likes</string>
+    <string name="notification_channel_thread_comment_like_desc">Wenn jemand deinen Kommentar liked</string>
     <string name="notification_permission_revoked">Benachrichtigungsberechtigung wurde entzogen. Tippe, um die Einstellungen zu öffnen.</string>
+
     <!-- Settings Screens -->
     <string name="navigate_back">Zurück</string>
     <string name="settings_look_and_feel">Erscheinungsbild</string>
     <string name="settings_look_and_feel_desc">Design, Sprache, Streaming-Dienst</string>
+
+    <!-- App lock (biometric / device credential) -->
+    <string name="settings_app_lock">App-Sperre</string>
+    <string name="settings_app_lock_desc">Fingerabdruck, Gesicht oder Bildschirmsperre zum Öffnen von AniSync verlangen</string>
+    <string name="app_lock_title">AniSync entsperren</string>
+    <string name="app_lock_subtitle">Bestätige, dass du es bist, um fortzufahren</string>
+    <string name="app_lock_message">AniSync ist gesperrt</string>
+    <string name="app_lock_unlock">Entsperren</string>
+    <string name="app_lock_unavailable">Richte zuerst eine Bildschirmsperre (PIN, Muster, Passwort oder Biometrie) in den Geräteeinstellungen ein</string>
+    <string name="settings_anilist_account">AniList-Einstellungen</string>
+    <string name="settings_anilist_account_desc">Konten, Inhalte für Erwachsene, Sprachen, Bewertungsformat</string>
     <string name="settings_notifications">Benachrichtigungen</string>
     <string name="settings_notifications_desc">Episodenhinweise, Planungserinnerungen</string>
     <string name="settings_storage">Speicher</string>
@@ -179,9 +365,55 @@
     <string name="settings_account_desc">Profil, Abmelden</string>
     <string name="settings_about">Über</string>
     <string name="settings_version">Version %1$s</string>
+    <string name="settings_updates">Updates</string>
+    <string name="settings_updates_desc">Nach neuen Versionen suchen</string>
+    <string name="settings_links">Links</string>
+    <string name="settings_links_desc">Projekt-Repository und Entwicklerprofil</string>
+    <string name="auto_update">Automatisches Update</string>
+    <string name="enable_auto_update">Beim Start auf Updates hinweisen</string>
+    <string name="check_for_updates">Nach Updates suchen</string>
+    <string name="update_channel">Update-Kanal</string>
+    <string name="update_channel_desc">Vorab- oder stabile Builds erhalten</string>
+    <string name="app_update_failed">Update fehlgeschlagen</string>
+    <string name="channel_stable">Stabil</string>
+    <string name="channel_prerelease">Vorabversion</string>
+    <string name="channel_stable_desc">Empfohlen für die meisten Nutzer</string>
+    <string name="channel_prerelease_desc">Erhalte frühzeitigen Zugriff auf neue Funktionen</string>
+    <string name="download_update">Herunterladen</string>
+    <string name="update_check_failed">Update-Prüfung fehlgeschlagen</string>
+    <string name="update_notification_channel_name">App-Updates</string>
+    <string name="update_notification_channel_desc">Benachrichtigungen, wenn eine neue AniSync-Version verfügbar ist</string>
+    <string name="update_notification_title">%s-Update verfügbar</string>
+    <string name="update_notification_body">Version %1$s ist verfügbar. Tippe zum Aktualisieren.</string>
+    <string name="release_notes">Versionshinweise</string>
+    <string name="latest_version">Neueste Version</string>
+    <string name="new_update_available">Neues Update verfügbar</string>
+    <string name="downloading_update">Update wird heruntergeladen: %1$d%%</string>
+    <string name="install_update">Update installieren</string>
+    <string name="update_is_up_to_date">%s ist auf dem neuesten Stand.</string>
+    <string name="about_improve_translations">Übersetzungen verbessern</string>
+    <string name="about_improve_translations_desc">Hilf dabei, %s zu übersetzen</string>
     <string name="settings_title_language">Titelsprache</string>
     <string name="settings_app_language">App-Sprache</string>
     <string name="settings_app_language_system_desc">Verwendet die Spracheinstellung deines Geräts</string>
+    <string name="settings_cover_quality">Qualität der Coverbilder</string>
+    <string name="settings_cover_quality_desc">Gilt für jedes Cover in der App. Höhere Qualität wirkt schärfer, verbraucht aber mehr Daten und Speicher.</string>
+    <string name="library_view_title">Ansicht</string>
+    <string name="library_view_list">Liste</string>
+    <string name="library_view_grid">Raster</string>
+    <string name="library_view_automatic">Automatisch</string>
+    <string name="library_view_automatic_desc">Spaltenanzahl an die Bildschirmgröße anpassen</string>
+    <string name="library_view_columns">Spalten</string>
+    <string name="library_view_columns_value">%1$d Spalten</string>
+    <string name="library_view_show_score">Bewertung anzeigen</string>
+    <string name="library_view_show_score_desc">Deine Bewertung auf Listen- und Rasterkarten anzeigen</string>
+    <string name="list_detail_select_prompt">Wähle einen Titel, um Details zu sehen</string>
+    <string name="cover_quality_extra_large">Sehr groß</string>
+    <string name="cover_quality_extra_large_desc">Maximale Schärfe überall. Am besten im WLAN.</string>
+    <string name="cover_quality_large">Groß</string>
+    <string name="cover_quality_large_desc">Scharf auf den meisten Flächen. Empfohlen.</string>
+    <string name="cover_quality_medium">Mittel</string>
+    <string name="cover_quality_medium_desc">Am kleinsten, am schnellsten. Sichtbare Unschärfe auf Detailseiten.</string>
     <string name="title_language_romaji">Romaji</string>
     <string name="title_language_english">Englisch</string>
     <string name="title_language_native">Originalsprache</string>
@@ -199,7 +431,26 @@
     <string name="settings_account_anilist">Angemeldet mit AniList</string>
     <string name="settings_view_on_anilist">Auf AniList ansehen</string>
     <string name="settings_view_on_anilist_desc">Dein Profil auf AniList öffnen</string>
+    <string name="settings_open_in_web">Im Web öffnen</string>
+    <string name="options_conflict_title">Einstellungen anderswo geändert</string>
+    <string name="options_conflict_intro">Diese Optionen wurden auf der AniList-Website geändert und weichen von diesem Gerät ab:</string>
+    <string name="options_conflict_field_values">Dieses Gerät: %1$s   ·   Website: %2$s</string>
+    <string name="options_conflict_question">Änderungen dieses Geräts behalten oder die der Website verwenden?</string>
+    <string name="options_conflict_keep_local">Dieses Gerät behalten</string>
+    <string name="options_conflict_use_website">Website verwenden</string>
     <string name="settings_logout_warning">Beim Abmelden wird deine Sitzung entfernt. Du kannst dich jederzeit wieder anmelden.</string>
+    <!-- Multiple accounts -->
+    <string name="account_add">Konto hinzufügen</string>
+    <string name="account_add_desc">Bei einem weiteren AniList-Konto anmelden</string>
+    <string name="account_active">Aktiv</string>
+    <string name="account_expired">Sitzung abgelaufen</string>
+    <string name="account_switch">Konto wechseln</string>
+    <string name="account_remove">Konto entfernen</string>
+    <string name="account_reauthenticate">Erneut anmelden</string>
+    <string name="account_sign_in_failed">Anmeldung fehlgeschlagen. Bitte versuche es erneut.</string>
+    <string name="account_remove_dialog_title">Konto entfernen?</string>
+    <string name="account_remove_dialog_message">%1$s wird von diesem Gerät entfernt. Du kannst dich jederzeit wieder anmelden.</string>
+    <string name="account_switch_to">Zu %1$s wechseln</string>
     <string name="settings_open_source_licenses">Open-Source-Lizenzen</string>
     <string name="settings_acknowledgments">Danksagungen</string>
     <string name="settings_acknowledgments_desc">Dank an Mitwirkende und Bibliotheken</string>
@@ -207,12 +458,17 @@
     <string name="settings_anilist_api_desc">Daten bereitgestellt durch die AniList GraphQL API</string>
     <string name="settings_made_with_love">Mit Liebe für Anime-Fans gemacht</string>
     <string name="settings_search_placeholder">Einstellungen durchsuchen</string>
+    <string name="search_settings">Einstellungen durchsuchen</string>
+    <string name="clear_search">Suche löschen</string>
+    <string name="no_settings_found">Keine Einstellungen gefunden</string>
     <string name="settings_oss_description">AniSync wurde mit den folgenden Open-Source-Bibliotheken erstellt:</string>
     <string name="settings_oss_footer">Alle Bibliotheken werden gemäß ihren jeweiligen Lizenzen verwendet.</string>
+
     <!-- Logout Dialog -->
     <string name="logout_dialog_title">Abmelden</string>
     <string name="logout_dialog_message">Möchtest du dich wirklich abmelden?</string>
     <string name="logout_dialog_confirm">Abmelden</string>
+
     <!-- Settings Accessibility -->
     <string name="a11y_settings_search">Einstellungen durchsuchen</string>
     <string name="a11y_settings_clear_search">Suche löschen</string>
@@ -225,8 +481,10 @@
     <string name="a11y_settings_selected">Ausgewählt</string>
     <string name="a11y_back_button">Zurück</string>
     <string name="a11y_app_icon">App-Symbol</string>
+
     <!-- Theme Mode Dialog -->
     <string name="theme_mode_dialog_title">Design</string>
+
     <!-- Acknowledgments Screen -->
     <string name="settings_acknowledgments_description">AniSync wäre ohne die großartige Open-Source-Community und die folgenden Mitwirkenden nicht möglich:</string>
     <string name="acknowledgments_section_data">Datenanbieter</string>
@@ -238,6 +496,7 @@
     <string name="acknowledgments_users">Unsere Nutzer</string>
     <string name="acknowledgments_users_desc">Danke, dass ihr AniSync nutzt und wertvolles Feedback gebt</string>
     <string name="acknowledgments_footer">Mit Liebe für Anime-Fans überall gemacht.</string>
+
     <!-- Developer Debug (debug builds only) -->
     <string name="section_developer">Entwickler</string>
     <string name="debug_notifications">Benachrichtigungs-Debug</string>
@@ -245,32 +504,240 @@
     <string name="debug_test_planning">Test Merkliste</string>
     <string name="debug_test_advance">Test Vorab (12 Std.)</string>
     <string name="debug_test_imminent">Test Bevorstehend (2 Std.)</string>
+    <string name="debug_bump_inbox_badge">Posteingangs-Badge erhöhen</string>
     <string name="debug_clear_all">Alle löschen</string>
+    <string name="settings_developer_tools">Entwicklertools</string>
+    <string name="settings_developer_tools_desc">Debug-Dienstprogramme und Testwerkzeuge</string>
+    <string name="settings_font_playground">Schrift-Spielwiese</string>
+    <string name="settings_font_playground_subtitle">Live-Regler für Variable-Font-Achsen</string>
+    <string name="dev_tools_unlocked">Entwicklertools freigeschaltet</string>
+    <string name="dev_tools_already_unlocked">Entwicklertools bereits freigeschaltet</string>
+    <string name="dev_tools_taps_remaining">Noch %1$d Tippen, um die Entwicklertools freizuschalten</string>
+    <string name="dev_tools_lock_section">Deaktivieren</string>
+    <string name="dev_tools_lock_button">Entwicklertools ausblenden</string>
+    <string name="dev_tools_lock_subtitle">Entfernt den Eintrag Entwicklertools. Tippe im Über-Bereich siebenmal auf die Versionsnummer, um ihn zurückzuholen.</string>
+    <string name="dev_tools_lock_dialog_title">Entwicklertools ausblenden?</string>
+    <string name="dev_tools_lock_dialog_message">Der Eintrag Entwicklertools wird aus den Einstellungen entfernt. Du kannst ihn wieder aktivieren, indem du im Über-Bereich siebenmal auf die Versionsnummer tippst.</string>
+    <string name="dev_tools_lock_dialog_confirm">Ausblenden</string>
+    <string name="dev_tools_lock_dialog_cancel">Abbrechen</string>
+    <string name="dev_tools_locked_toast">Entwicklertools ausgeblendet</string>
+    <string name="font_playground_title">Typografie</string>
+    <string name="font_playground_reset">Schriftachsen zurücksetzen</string>
+    <string name="font_axis_weight">Stärke (wght)</string>
+    <string name="font_axis_width">Breite (wdth)</string>
+    <string name="font_axis_optical_size">Optische Größe (opsz)</string>
+    <string name="font_axis_slant">Neigung (slnt)</string>
+    <string name="font_axis_rounded">Rundung (ROND)</string>
+    <string name="font_category_all">Alle</string>
+    <string name="font_category_display">Display</string>
+    <string name="font_category_headline">Headline</string>
+    <string name="font_category_title">Titel</string>
+    <string name="font_category_body">Fließtext</string>
+    <string name="font_category_label">Label</string>
+    <string name="debug_build_info">Build-Informationen</string>
+    <string name="debug_update_section">Update-Debug</string>
+    <string name="debug_force_update_check">Update-Prüfung erzwingen</string>
+    <string name="debug_fetch_latest_release">Neueste Version abrufen</string>
+    <string name="debug_trigger_crash">Absturz auslösen</string>
+    <string name="debug_crash_section">Absturzbericht</string>
+    <string name="settings_copy_app_info">App-Infos kopieren</string>
+    <string name="settings_copy_app_info_desc">Für Fehlerberichte — kopiert Version, Android-Version und ABIs in die Zwischenablage</string>
+    <string name="settings_app_info_copied">App-Infos in die Zwischenablage kopiert</string>
+    <string name="copied_to_clipboard">In die Zwischenablage kopiert</string>
+    <string name="a11y_action_copy">In die Zwischenablage kopieren</string>
+    <string name="copied_name">Name in die Zwischenablage kopiert</string>
+    <string name="copied_title">Titel in die Zwischenablage kopiert</string>
+    <string name="copied_link">%1$s-Link in die Zwischenablage kopiert</string>
+    <string name="clip_label_title">Titel</string>
+    <string name="clip_label_synopsis">Zusammenfassung</string>
+    <string name="clip_label_character_name">Charaktername</string>
+    <string name="clip_label_staff_name">Name des Staffs</string>
+    <string name="clip_label_studio_name">Studioname</string>
+    <string name="studio_label_animation_studio">Animationsstudio</string>
+    <string name="studio_label_other_studio">Studio</string>
+    <string name="studio_label_works">Werke</string>
+    <string name="studio_label_total_works">Werke gesamt</string>
+    <string name="studio_label_website">Website</string>
+    <string name="studio_label_type">Typ</string>
+    <string name="studio_main_studio_chip">Hauptstudio</string>
+    <string name="clip_label_external_link">Externer Link (%1$s)</string>
+
     <string name="control_log_out">Abmelden</string>
     <string name="content_description_avatar">Avatar</string>
     <string name="profile_level">Level %1$d</string>
     <string name="profile_active">Aktiv %1$s</string>
+    <string name="notifications_title">Benachrichtigungen</string>
+    <string name="notifications_filter_all">Alle</string>
+    <string name="notifications_filter_airing">Ausstrahlung</string>
+    <string name="notifications_filter_status">Status</string>
+    <string name="notifications_filter_messages">Nachrichten</string>
+    <string name="notifications_filter_forum">Forum</string>
+    <string name="notifications_filter_follows">Follower</string>
+    <string name="notifications_filter_media">Medien</string>
+    <string name="notifications_open">Benachrichtigungen öffnen</string>
+    <string name="notifications_unread_overflow_a11y">Mehr als 999 ungelesene Benachrichtigungen</string>
+    <string name="notifications_unread_indicator_a11y">Neue Benachrichtigungen</string>
+    <plurals name="notifications_unread_count_a11y">
+        <item quantity="one">%1$d ungelesene Benachrichtigung</item>
+        <item quantity="other">%1$d ungelesene Benachrichtigungen</item>
+    </plurals>
+    <string name="notifications_section_new">Neu</string>
+    <string name="notifications_section_earlier">Früher</string>
+    <string name="notifications_new_count">%1$s neu</string>
+    <string name="notifications_mark_all_read">Alle als gelesen markieren</string>
+    <string name="a11y_notification_unread">Ungelesen</string>
     <string name="profile_edit">Profil bearbeiten</string>
+    <string name="profile_unknown_error">Beim Laden deines Profils ist etwas schiefgelaufen.</string>
+    <string name="profile_user_load_error">Dieses Benutzerprofil konnte derzeit nicht geladen werden. Das Konto ist möglicherweise privat, nicht verfügbar oder vorübergehend rate-limitiert.</string>
+    <string name="profile_tab_overview">Übersicht</string>
+    <string name="profile_tab_activity">Aktivität</string>
+    <string name="profile_tab_social">Soziales</string>
+    <!-- Media details section tabs -->
+    <string name="details_tab_overview">Übersicht</string>
+    <string name="details_tab_characters">Charaktere</string>
+    <string name="details_tab_staff">Staff</string>
+    <string name="details_tab_stats">Statistiken</string>
+    <string name="details_tab_social">Soziales</string>
+    <!-- Media details Stats tab -->
+    <string name="media_stats_rankings">Platzierungen</string>
+    <string name="media_stats_activity_per_day">Aktivität pro Tag</string>
+    <string name="media_stats_score_progression">Bewertungsverlauf während der Ausstrahlung</string>
+    <string name="media_stats_watchers_progression">Zuschauerverlauf während der Ausstrahlung</string>
+    <string name="media_stats_status_distribution">Statusverteilung</string>
+    <string name="media_stats_score_distribution">Bewertungsverteilung</string>
+    <string name="media_stats_peak_activity">Höchste Aktivität</string>
+    <string name="media_stats_latest_score">Bewertung der letzten Episode</string>
+    <string name="media_stats_peak_watchers">Meiste Zuschauer</string>
+    <string name="media_stats_total_entries">Einträge gesamt</string>
+    <string name="media_stats_episode_byline">Ep %1$d</string>
+    <string name="media_stats_episode_eyebrow">Episode %1$d</string>
+    <string name="media_stats_day_activity">Tagesaktivität</string>
+    <string name="media_stats_score_bucket_eyebrow">Bewertung %1$d</string>
+    <string name="stat_hashtag">Hashtag</string>
+    <string name="media_stats_percent_of_ratings">%1$d%% der Bewertungen</string>
+    <string name="media_stats_empty">Für diesen Titel gibt es noch keine Community-Statistiken.</string>
+    <string name="media_stats_error">Statistiken konnten nicht geladen werden.</string>
+    <string name="media_stats_activity_chart_a11y">Diagramm der täglichen Aktivität über %1$d Tage, Höchstwert %2$s am %3$s</string>
+    <string name="media_stats_score_chart_a11y">Diagramm der Bewertung nach Episode, Episoden %1$d bis %2$d, niedrigste Bewertung %3$d, höchste Bewertung %4$d</string>
+    <string name="media_stats_watchers_chart_a11y">Diagramm der Zuschauer nach Episode, Episoden %1$d bis %2$d, Höchstwert %3$s um Episode %4$d</string>
+    <string name="media_stats_score_dist_a11y">Histogramm der Bewertungsverteilung, häufigste Bewertung %1$d mit %2$s Bewertungen</string>
+    <string name="profile_activity_all">Alle</string>
+    <string name="profile_activity_status">Status</string>
+    <string name="profile_activity_messages">Nachrichten</string>
+    <string name="profile_activity_lists">Listen</string>
+    <string name="profile_social_following">Folge ich</string>
+    <string name="profile_social_followers">Follower</string>
+    <string name="profile_social_forum_threads">Forum-Threads</string>
+    <string name="profile_social_forum_comments">Forum-Kommentare</string>
+    <string name="profile_view_biography">Biografie anzeigen</string>
+    <string name="profile_biography_title">Biografie</string>
+    <string name="profile_follow">Folgen</string>
+    <string name="profile_following">Folge ich</string>
+    <string name="profile_follows_you">Folgt dir</string>
+    <string name="profile_mutual">Gegenseitig</string>
+    <string name="profile_message">Nachricht</string>
+    <string name="profile_more_options">Mehr Optionen</string>
+    <string name="profile_no_recent_updates">Keine aktuellen Updates.</string>
+    <string name="profile_no_activity_for_filter">Keine %1$s-Aktivität gefunden.</string>
+    <string name="profile_placeholder_activity_status">Statusaktivitäten erscheinen hier.</string>
+    <string name="profile_placeholder_activity_messages">Nachrichtenaktivitäten erscheinen hier.</string>
+    <string name="profile_placeholder_activity_lists">Aktivitäten für Listen erscheinen hier.</string>
+    <string name="profile_social_placeholder">Inhalt für %1$s erscheint hier.</string>
+    <string name="profile_placeholder_anime">Anime-Listeninhalt erscheint hier.</string>
+    <string name="profile_placeholder_manga">Manga-Listeninhalt erscheint hier.</string>
+    <string name="profile_placeholder_cast">Cast-Inhalt erscheint hier.</string>
+    <string name="profile_placeholder_favorites">Favoriteninhalt erscheint hier.</string>
+    <string name="profile_placeholder_reviews">Rezensionen erscheinen hier.</string>
+    <string name="profile_placeholder_stats">Detaillierte Statistiken erscheinen hier.</string>
+    <string name="profile_manga_stats_coming_soon">Weitere Manga-Statistiken folgen bald</string>
+
+    <!-- Edit Profile Dialog -->
+    <string name="edit_profile_title">Profil bearbeiten</string>
+    <string name="edit_profile_about_label">Über mich</string>
+
+    <string name="profile_cast_characters">Charaktere</string>
+    <string name="profile_cast_staff">Staff</string>
     <string name="stat_days_watched">Tage geschaut</string>
     <string name="stat_manga_read">Manga gelesen</string>
     <string name="section_anime_status">Anime-Status</string>
     <string name="section_recent_updates">Letzte Aktualisierungen</string>
+    <string name="snapshot_days">%1$s Tage</string>
+    <string name="snapshot_chapters">%1$s Kapitel</string>
     <string name="status_watching_count">Schaue ich %1$d</string>
     <string name="status_completed_count">Abgeschlossen %1$d</string>
     <string name="status_on_hold">Pausiert</string>
     <string name="status_on_hold_count">Pausiert %1$d</string>
     <string name="status_dropped_count">Abgebrochen %1$d</string>
-    <string name="profile_favorites_studios">Studios</string>
     <string name="content_description_profile_avatar">Profilavatar</string>
     <string name="content_description_media_cover">Cover von %1$s</string>
+
     <!-- Notification Dialog -->
     <string name="dialog_enable_notifications_title">Benachrichtigungen aktivieren</string>
     <string name="dialog_enable_notifications_message">Bitte aktiviere Benachrichtigungen in den Systemeinstellungen.</string>
+
     <!-- External Links -->
     <string name="section_external_links">Externe &amp; Streaming-Links</string>
     <string name="subsection_streaming">Ansehen auf</string>
     <string name="subsection_reading">Lesen auf</string>
     <string name="subsection_external">Externe Links</string>
+
+    <!-- Video playback errors -->
+    <string name="player_error_network">Keine Verbindung. Prüfe dein Netzwerk und versuche es erneut.</string>
+    <string name="player_error_server">Der Video-Host hat gerade Probleme. Versuche es gleich noch einmal.</string>
+    <string name="player_error_rate_limited">Der Video-Host lehnt Anfragen ab. Warte einen Moment und versuche es erneut.</string>
+    <string name="player_error_missing">Dieses Video ist nicht mehr beim Host vorhanden.</string>
+    <string name="player_error_format">Dieses Videoformat wird nicht unterstützt.</string>
+    <string name="player_error_generic">Dieses Video kann nicht abgespielt werden.</string>
+
+    <!-- Openings &amp; Endings (AnimeThemes) -->
+    <string name="section_themes">Openings &amp; Endings</string>
+    <plurals name="themes_openings_count">
+        <item quantity="one">%d Opening</item>
+        <item quantity="other">%d Openings</item>
+    </plurals>
+    <plurals name="themes_endings_count">
+        <item quantity="one">%d Ending</item>
+        <item quantity="other">%d Endings</item>
+    </plurals>
+    <plurals name="themes_versions_count">
+        <item quantity="one">%d Version</item>
+        <item quantity="other">%d Versionen</item>
+    </plurals>
+    <string name="themes_filter_all">Alle</string>
+    <string name="themes_group_openings">Openings</string>
+    <string name="themes_group_endings">Endings</string>
+    <plurals name="themes_episodes">
+        <item quantity="one">Episode %1$s</item>
+        <item quantity="other">Episoden %1$s</item>
+    </plurals>
+    <string name="themes_all_episodes">Alle Episoden</string>
+    <string name="themes_coverage">%1$d von %2$d Episoden</string>
+    <string name="themes_episode_scale">Ep 1 – %1$d</string>
+    <string name="themes_opening_number">Opening %1$d</string>
+    <string name="themes_ending_number">Ending %1$d</string>
+    <string name="themes_spoiler_tag">Spoiler</string>
+    <string name="cd_theme_spoiler">Dieses Theme könnte die Serie spoilern</string>
+    <string name="themes_failed_title">Themes konnten nicht geladen werden</string>
+    <string name="themes_failed_body">Die AniList-Daten auf dieser Seite sind nicht betroffen. Nur die Anfrage an AnimeThemes ist fehlgeschlagen.</string>
+    <string name="themes_retry">Erneut versuchen</string>
+    <string name="themes_retry_in">Erneut in %1$ds</string>
+    <string name="themes_empty">AnimeThemes führt diesen Titel noch nicht.</string>
+    <string name="themes_video">Video</string>
+    <string name="themes_appears_in">Erscheint in</string>
+    <string name="themes_versions">Versionen</string>
+    <string name="themes_version_label">Version %1$d</string>
+    <string name="themes_variant_creditless">Ohne Credits</string>
+    <string name="themes_variant_with_credits">Mit Credits</string>
+    <string name="themes_variant_subbed">Untertitelt</string>
+    <string name="themes_variant_lyrics">Songtext</string>
+    <string name="themes_open_source">Auf AnimeThemes öffnen</string>
+    <string name="themes_attribution">Theme-Daten und Video von AnimeThemes.moe</string>
+    <string name="themes_actions_label">Anderswo</string>
+    <string name="themes_action_animethemes">AnimeThemes</string>
+    <string name="themes_action_share">Teilen</string>
+    <string name="themes_share_subject">%1$s von %2$s</string>
+    <string name="cd_theme_play">%1$s abspielen</string>
+
     <!-- Edit Library Entry -->
     <string name="edit_entry">Eintrag bearbeiten</string>
     <string name="no_score">Keine Bewertung</string>
@@ -282,11 +749,26 @@
     <string name="times_reread">Erneut gelesen</string>
     <string name="notes">Notizen</string>
     <string name="notes_placeholder">Füge hier deine Notizen hinzu…</string>
+    <string name="your_notes">Deine Notizen</string>
+    <string name="a11y_edit_notes">Notizen bearbeiten</string>
+    <string name="a11y_has_notes">Hat Notizen</string>
+    <!-- Notes journal -->
+    <string name="notes_journal_title">Notizen</string>
+    <string name="a11y_open_notes_journal">Notizen öffnen</string>
+    <string name="notes_journal_search_hint">Notizen durchsuchen</string>
+    <string name="notes_journal_empty_title">Noch keine Notizen</string>
+    <string name="notes_journal_empty_subtitle">Notizen, die du zu Einträgen in deiner Bibliothek hinzufügst, erscheinen hier.</string>
+    <string name="notes_journal_no_results">Keine Notizen passen zu deiner Suche.</string>
     <string name="save">Speichern</string>
     <string name="delete_entry_confirm">Diesen Eintrag aus deiner Bibliothek entfernen?</string>
     <string name="entry_saved">Eintrag gespeichert</string>
     <string name="entry_deleted">Eintrag entfernt</string>
+
     <!-- Login Screen -->
+    <string name="login_welcome_to">Willkommen bei</string>
+    <string name="login_tagline_short">Deine Anime-Bibliothek, nahtlos synchronisiert.</string>
+    <string name="login_lets_get_started">Los geht\'s</string>
+    <string name="login_with_anilist">Mit AniList anmelden</string>
     <string name="login_sync_your">Synchronisiere deine</string>
     <string name="login_world">Welt</string>
     <string name="login_tagline">Der ultimative Begleiter für Anime- &amp; Manga-Tracking, unterstützt von AniList.</string>
@@ -294,6 +776,8 @@
     <string name="login_description">Melde dich an, um auf deine Bibliothek zuzugreifen und neue Favoriten zu entdecken.</string>
     <string name="login_continue_with_anilist">Weiter mit AniList</string>
     <string name="login_terms">Durch Fortfahren stimmst du unseren Nutzungsbedingungen zu.</string>
+    <string name="cd_login">Anmelden</string>
+
     <!-- Search Filters -->
     <string name="filter">Filter</string>
     <string name="filter_clear_all">Alle löschen</string>
@@ -302,17 +786,23 @@
     <string name="filter_season">Saison</string>
     <string name="filter_format">Format</string>
     <string name="filter_status">Status</string>
+    <string name="year_picker_hint_empty">Tippe auf ein Jahr. Tippe auf ein zweites für einen Zeitraum.</string>
+    <string name="year_picker_hint_single">Tippe auf ein weiteres Jahr für einen Zeitraum</string>
+    <string name="year_picker_hint_range">Tippe auf ein beliebiges Jahr, um neu zu beginnen</string>
+
     <!-- Seasons -->
     <string name="season_winter">Winter</string>
     <string name="season_spring">Frühling</string>
     <string name="season_summer">Sommer</string>
     <string name="season_fall">Herbst</string>
+
     <!-- Media Status (for search filter) -->
     <string name="media_status_airing">Laufend</string>
     <string name="media_status_finished">Abgeschlossen</string>
     <string name="media_status_not_yet_released">Noch nicht erschienen</string>
     <string name="media_status_cancelled">Eingestellt</string>
     <string name="media_status_hiatus">Pause</string>
+
     <!-- Media Formats -->
     <string name="format_tv">TV</string>
     <string name="format_tv_short">TV-Kurzfilm</string>
@@ -323,13 +813,97 @@
     <string name="format_music">Musik</string>
     <string name="format_novel">Roman</string>
     <string name="format_one_shot">One Shot</string>
-    <string name="separator_bullet" translatable="false">•</string>
+
     <!-- Widget Descriptions -->
     <string name="widget_weekly_calendar_description">Sieh deinen 7-Tage-Anime-Zeitplan auf einen Blick</string>
     <string name="widget_airing_today_description">Zeigt heute ausgestrahlte Anime-Episoden</string>
     <string name="widget_up_next_description">Schnellzugriff auf deine nächste Episode</string>
     <string name="widget_quick_update_description">Episodenfortschritt schnell aktualisieren</string>
     <string name="widget_trending_description">Sieh, was gerade im Anime-Bereich angesagt ist</string>
+    <string name="widget_watch_progress_description">Sieh, wie nah deine Serien am Abschluss sind</string>
+
+    <!-- Widget titles, also the labels shown in the widget picker -->
+    <string name="widget_up_next_title">Gleich ansehen</string>
+    <string name="widget_airing_today_title">Heute ausgestrahlt</string>
+    <string name="widget_calendar_title">Wochenplan</string>
+    <string name="widget_trending_title">Gerade im Trend</string>
+    <string name="widget_watch_progress_title">Sehfortschritt</string>
+
+    <!-- Shared widget labels -->
+    <string name="widget_filter_all">Alle</string>
+    <string name="widget_filter_mine">Meine Liste</string>
+    <string name="widget_episode_short">Ep %1$d</string>
+    <string name="widget_episode_long">Episode %1$d</string>
+    <!-- Pill on the calendar card. Upper case in the shipped design. -->
+    <string name="widget_episode_badge">EPISODE %1$d</string>
+    <string name="widget_error_title">Kann das gerade nicht anzeigen</string>
+    <string name="widget_error_action">Zum Wiederholen tippen</string>
+
+    <!-- Widget countdowns -->
+    <string name="widget_time_airing_now">Läuft jetzt</string>
+    <string name="widget_time_in_days">In %1$dd %2$dh</string>
+    <string name="widget_time_in_hours">In %1$dh %2$dm</string>
+    <string name="widget_time_in_minutes">In %1$dm</string>
+    <string name="widget_time_short_days">%1$dT</string>
+    <string name="widget_time_short_hours">%1$dh</string>
+    <string name="widget_time_short_minutes">%1$dm</string>
+
+    <!-- Up Next widget -->
+    <string name="widget_up_next_empty_title">Du bist auf dem neuesten Stand</string>
+    <string name="widget_up_next_empty_body">Aus deiner Liste läuft bald nichts</string>
+
+    <!-- Airing Today widget -->
+    <string name="widget_airing_at">Läuft um %1$s</string>
+    <string name="widget_airing_today_empty_all">Heute läuft nichts</string>
+    <string name="widget_airing_today_empty_all_hint">Schau morgen wieder vorbei</string>
+    <string name="widget_airing_today_empty_mine">Heute nichts aus deiner Liste</string>
+    <string name="widget_airing_today_empty_mine_hint">Wechsle zu Alle, um alles zu sehen</string>
+
+    <!-- Weekly Calendar widget -->
+    <string name="widget_calendar_empty_all">Keine Episoden geplant</string>
+    <string name="widget_calendar_empty_mine">Aus deiner Liste läuft nichts</string>
+    <string name="widget_calendar_empty_hint">Wähle einen anderen Tag</string>
+
+    <!-- Trending widget -->
+    <string name="widget_trending_score">%1$d%% Bewertung</string>
+    <string name="widget_trending_empty_title">Noch keine Trenddaten</string>
+    <string name="widget_trending_empty_body">Öffne AniSync, um sie zu laden</string>
+
+    <!-- Watch Progress widget -->
+    <string name="widget_type_anime">Anime</string>
+    <string name="widget_type_manga">Manga</string>
+    <string name="widget_wp_left">Noch %1$d</string>
+    <string name="widget_wp_left_manga">Noch %1$d Kap.</string>
+    <string name="widget_wp_ongoing">Laufend</string>
+    <!-- A series with no published total measures against what has aired so far instead. -->
+    <string name="widget_wp_behind">%1$d im Rückstand</string>
+    <string name="widget_wp_caught_up">Aufgeholt</string>
+    <string name="widget_wp_syncing_manga">Öffne AniSync einmal, um deine Manga zu synchronisieren</string>
+    <string name="widget_wp_read">%1$d gelesen</string>
+    <string name="widget_wp_current_ep">Ep %1$d</string>
+    <string name="widget_wp_next_ep">Ep %1$d in %2$s</string>
+    <string name="widget_wp_finale">Finale läuft %1$s</string>
+    <string name="widget_wp_empty_title">Nichts in Arbeit</string>
+    <string name="widget_wp_empty_body">Serien, die du schaust, erscheinen hier, die kurz vor dem Abschluss zuerst.</string>
+    <string name="widget_wp_empty_body_manga">Serien, die du liest, erscheinen hier, die kurz vor dem Abschluss zuerst.</string>
+
+    <!-- Placeholder content for the widget picker previews, never shown in a live widget. -->
+
+    <!-- Widget content descriptions -->
+    <string name="a11y_widget_filter_all">Alles Laufende anzeigen</string>
+    <string name="a11y_widget_filter_mine">Nur deine Liste anzeigen</string>
+    <string name="a11y_widget_open_discover">Entdecken öffnen</string>
+    <string name="a11y_widget_type_anime">Anime anzeigen</string>
+    <string name="a11y_widget_type_manga">Manga anzeigen</string>
+    <string name="a11y_widget_day_selected">%1$s %2$d, ausgewählt</string>
+    <string name="a11y_widget_up_next_row">%1$s, Episode %2$d, %3$s</string>
+    <string name="a11y_widget_airing_row">%1$s, Episode %2$d, läuft um %3$s</string>
+    <string name="a11y_widget_trending_row">Nummer %1$d, %2$s</string>
+    <string name="a11y_wp_card_anime">%1$s, %2$d von %3$d Episoden, noch %4$d</string>
+    <string name="a11y_wp_card_manga">%1$s, %2$d von %3$d Kapiteln, noch %4$d</string>
+    <string name="a11y_wp_card_unknown">%1$s, Episode %2$d, Gesamtzahl unbekannt</string>
+    <string name="a11y_wp_card_unknown_manga">%1$s, %2$d Kapitel gelesen, Gesamtzahl unbekannt</string>
+
     <!-- Widget Configuration -->
     <string name="widget_config_title">Widget konfigurieren</string>
     <string name="widget_config_subtitle">Passe Aussehen und Verhalten deines Gleich-Ansehen-Widgets an</string>
@@ -345,6 +919,7 @@
     <string name="widget_config_include_planning_desc">Einträge aus deiner Merkliste anzeigen</string>
     <string name="widget_config_add_widget">Widget hinzufügen</string>
     <string name="widget_config_items_visible">Sichtbare Einträge im Widget</string>
+
     <!-- Statistics Screen -->
     <string name="statistics_title">Statistiken</string>
     <string name="statistics_total_anime">Anime gesamt</string>
@@ -355,9 +930,11 @@
     <string name="statistics_top_genres">Top-Genres</string>
     <string name="statistics_formats">Formate</string>
     <string name="statistics_top_studios">Top-Studios</string>
+    <string name="profile_favorites_studios">Studios</string>
     <string name="statistics_by_year">Nach Erscheinungsjahr</string>
     <string name="statistics_anime_label">Anime</string>
     <string name="statistics_view">Statistiken ansehen</string>
+
     <string name="statistics_anime">Anime</string>
     <string name="statistics_manga">Manga</string>
     <string name="statistics_total_manga">Manga gesamt</string>
@@ -366,6 +943,48 @@
     <string name="statistics_no_manga_stats">Keine Manga-Statistiken verfügbar</string>
     <string name="statistics_entries">%d Einträge</string>
     <string name="statistics_no_data">Keine Statistikdaten verfügbar</string>
+
+    <!-- Activity heatmap -->
+    <string name="statistics_activity_history">Aktivitätsverlauf</string>
+    <string name="statistics_activity_summary">%1$d Aktivitäten an %2$d Tagen</string>
+    <string name="statistics_activity_less">Weniger</string>
+    <string name="statistics_activity_more">Mehr</string>
+    <string name="statistics_activity_a11y">Aktivitäts-Heatmap mit %1$d Aktivitäten im letzten Jahr</string>
+    <string name="statistics_activity_update_info">AniList aktualisiert deine Statistiken automatisch alle 48 Stunden</string>
+    <plurals name="statistics_activity_count">
+        <item quantity="one">%d Aktivität</item>
+        <item quantity="other">%d Aktivitäten</item>
+    </plurals>
+
+    <!-- Activity history: week breakdown -->
+    <string name="statistics_activity_period_month">Monat</string>
+    <string name="statistics_activity_period_week">Woche</string>
+    <string name="statistics_activity_week_current">Diese Woche</string>
+    <string name="statistics_activity_week_previous">Letzte Woche</string>
+    <string name="statistics_activity_per_day">%1$s / Tag</string>
+    <string name="statistics_activity_busiest_day">Aktivster Tag</string>
+    <string name="statistics_activity_active_days">Aktive Tage</string>
+    <string name="statistics_activity_days_counted">Gezählte Tage</string>
+    <string name="statistics_activity_awaiting">Warte auf Statistiken</string>
+    <string name="statistics_activity_awaiting_inline">Warte auf AniList-Statistiken</string>
+    <string name="statistics_activity_today_pending">Heute · noch nicht gezählt</string>
+    <string name="statistics_activity_vs_previous">ggü. letzter Woche</string>
+    <string name="statistics_activity_day_ratio">%1$d von %2$d</string>
+    <plurals name="statistics_activity_weeks_ago">
+        <item quantity="one">vor %d Woche</item>
+        <item quantity="other">vor %d Wochen</item>
+    </plurals>
+    <plurals name="statistics_activity_days">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tage</item>
+    </plurals>
+    <string name="statistics_activity_day_empty">AniList hat an diesem Tag Aktivität gezählt, aber nichts davon ist noch im Aktivitäts-Feed.</string>
+    <string name="statistics_activity_day_status">Aktivität</string>
+    <string name="statistics_activity_day_posted">Status gepostet</string>
+    <string name="cd_activity_week_previous">Vorherige Woche</string>
+    <string name="cd_activity_week_next">Nächste Woche</string>
+    <string name="a11y_activity_day_awaiting">%1$s: noch nicht gezählt</string>
+
     <!-- Accessibility: Statistics -->
     <string name="a11y_stat_card">%1$s: %2$s</string>
     <string name="a11y_score_bar">Bewertung %1$d: %2$d Einträge</string>
@@ -373,6 +992,9 @@
     <string name="a11y_studio_stat">Studio %1$s: %2$d Anime, Durchschnittsbewertung %3$.1f</string>
     <string name="a11y_format_stat">Format %1$s: %2$d Einträge, Durchschnittsbewertung %3$.1f</string>
     <string name="a11y_year_stat">Jahr %1$d: %2$d Einträge</string>
+
+    <!-- ==================== ACCESSIBILITY ==================== -->
+
     <!-- Accessibility: Actions -->
     <string name="a11y_action_increment_progress">Fortschritt um eins erhöhen</string>
     <string name="a11y_action_decrement_progress">Fortschritt um eins verringern</string>
@@ -386,13 +1008,17 @@
     <string name="a11y_action_collapse_synopsis">Zusammenfassung einklappen</string>
     <string name="a11y_action_select_tab">Tab %1$s auswählen</string>
     <string name="a11y_action_open_search_result">%1$s öffnen</string>
+
     <!-- Accessibility: Content Descriptions -->
     <string name="a11y_media_poster">Poster von %1$s</string>
+    <string name="a11y_in_your_list">In deiner Liste: %1$s</string>
     <string name="a11y_character_image">Bild von %1$s</string>
+    <string name="a11y_staff_image">Bild von %1$s</string>
     <string name="a11y_user_avatar">Profilbild von %1$s</string>
     <string name="a11y_banner_image">Bannerbild von %1$s</string>
     <string name="a11y_rating_score">Bewertung: %1$.1f von 10</string>
     <string name="a11y_media_card">%1$s, %2$s, bewertet mit %3$.1f</string>
+
     <!-- Accessibility: State Descriptions -->
     <string name="a11y_state_progress">Fortschritt: %1$d von %2$s</string>
     <string name="a11y_state_airing_soon">Nächste Episode wird ausgestrahlt in %1$s</string>
@@ -404,6 +1030,7 @@
     <string name="a11y_state_tab_not_selected">%1$s</string>
     <string name="a11y_state_expanded">Ausgeklappt</string>
     <string name="a11y_state_collapsed">Eingeklappt, doppeltippen zum Ausklappen</string>
+
     <!-- Accessibility: Headings -->
     <string name="a11y_heading_trending">Bereich Trends</string>
     <string name="a11y_heading_popular">Bereich Beliebt</string>
@@ -411,148 +1038,336 @@
     <string name="a11y_heading_relations">Bereich Verwandte Medien</string>
     <string name="a11y_heading_synopsis">Bereich Zusammenfassung</string>
     <string name="a11y_heading_information">Bereich Informationen</string>
+
     <!-- Accessibility: Live Region Announcements -->
     <string name="a11y_progress_updated">Fortschritt aktualisiert auf %1$d</string>
     <string name="a11y_error_occurred">Fehler: %1$s</string>
     <string name="action_play_trailer">Trailer ansehen</string>
+
     <!-- App Links Prompt -->
     <string name="enable_app_links_title">App-Links aktivieren</string>
     <string name="samsung_app_links_instructions">Um AniList-Links direkt in AniSync zu öffnen, erlaube bitte unterstützte Weblinks in deinen Android-Einstellungen.\n\n1. Tippe auf \'Einstellungen öffnen\'\n2. Suche und tippe auf \'AniSync\' in der Liste\n3. Tippe auf \'Link hinzufügen\'\n4. Wähle \'anilist.co\' aus und speichere.</string>
     <string name="default_app_links_instructions">Um AniList-Links direkt in AniSync zu öffnen, erlaube bitte unterstützte Weblinks für diese App in deinen Android-Einstellungen.\n\n1. Tippe auf \'Einstellungen öffnen\'\n2. Tippe auf \'Link hinzufügen\'\n3. Wähle \'anilist.co\' aus und speichere.</string>
     <string name="open_settings">Einstellungen öffnen</string>
-    <!-- Missing translations -->
-    <string name="about_improve_translations">Übersetzungen verbessern</string>
-    <string name="about_improve_translations_desc">Hilf dabei, AniSync zu übersetzen</string>
-    <string name="all_reviews">Alle Rezensionen</string>
-    <string name="app_update_failed">Update fehlgeschlagen</string>
-    <string name="auto_update">Automatisches Update</string>
-    <string name="channel_prerelease">Vorabversion</string>
-    <string name="channel_prerelease_desc">Erhalte frühzeitigen Zugriff auf neue Funktionen</string>
-    <string name="channel_stable">Stabil</string>
-    <string name="channel_stable_desc">Empfohlen für die meisten Nutzer</string>
-    <string name="check_for_updates">Nach Updates suchen</string>
-    <string name="debug_build_info">Build-Informationen</string>
-    <string name="debug_fetch_latest_release">Neueste Version abrufen</string>
-    <string name="debug_force_update_check">Update-Prüfung erzwingen</string>
-    <string name="debug_update_section">Update-Debug</string>
-    <string name="download_update">Herunterladen</string>
-    <string name="downloading_update">Update wird heruntergeladen: %1$d%%</string>
-    <string name="enable_auto_update">Beim Start auf Updates hinweisen</string>
-    <string name="forum_browse_categories">Kategorien durchsuchen</string>
-    <string name="forum_comments">Kommentare</string>
-    <string name="forum_create_thread">Neuer Thread</string>
-    <string name="forum_empty_threads">Keine Threads gefunden.</string>
-    <string name="forum_load_more_comments">Mehr Kommentare laden</string>
-    <string name="forum_new_threads">Neueste Threads</string>
-    <string name="forum_op_badge">OP</string>
-    <string name="forum_post_reply">Antwort posten</string>
-    <string name="forum_post_thread">Thread posten</string>
-    <string name="forum_recent_discussions">Aktuelle Diskussionen</string>
-    <string name="forum_recently_active">Kürzlich aktiv</string>
-    <string name="forum_reply">Antworten</string>
-    <string name="forum_reply_hint">Teile deine Gedanken...</string>
-    <string name="forum_replying_to">Antwort an %1$s</string>
-    <string name="forum_saved_threads">Gespeicherte Threads</string>
-    <string name="forum_search_placeholder">Foren-Threads suchen</string>
-    <string name="forum_search_threads">Threads suchen...</string>
-    <string name="forum_select_categories">Kategorien auswählen</string>
-    <string name="forum_subscribed_threads">Abonnierte Threads</string>
-    <string name="forum_thread_appbar">Thread</string>
-    <string name="forum_thread_body">Inhalt</string>
-    <string name="forum_thread_body_hint">Schreibe hier deine Nachricht...</string>
-    <string name="forum_thread_locked">Dieser Thread ist gesperrt.</string>
-    <string name="forum_thread_title">Titel</string>
-    <string name="forum_thread_title_hint">Was möchtest du diskutieren?</string>
-    <string name="forum_view_on_anilist">Auf AniList ansehen</string>
-    <string name="forum_write_reply">Antwort schreiben</string>
-    <string name="found_helpful">fanden dies hilfreich</string>
-    <string name="install_update">Update installieren</string>
-    <string name="latest_version">Neueste Version</string>
-    <string name="nav_forum">Forum</string>
-    <string name="new_update_available">Neues Update verfügbar</string>
-    <string name="no_review_text">Kein vollständiger Rezensionstext verfügbar.</string>
-    <string name="notification_channel_planning">Planungsliste</string>
-    <string name="notification_channel_planning_desc">Hinweise, wenn Episode 1 von geplanten Titeln erscheint</string>
-    <string name="notification_channel_thread_comment_like">Kommentar-Likes</string>
-    <string name="notification_channel_thread_comment_like_desc">Wenn jemand deinen Kommentar liked</string>
-    <string name="notification_channel_thread_comment_mention">Erwähnungen</string>
-    <string name="notification_channel_thread_comment_mention_desc">Wenn dich jemand in einem Kommentar erwähnt</string>
-    <string name="notification_channel_thread_comment_reply">Kommentar-Antworten</string>
-    <string name="notification_channel_thread_comment_reply_desc">Wenn jemand auf deinen Kommentar antwortet</string>
-    <string name="notification_channel_thread_like">Thread-Likes</string>
-    <string name="notification_channel_thread_like_desc">Wenn jemand deinen Thread liked</string>
-    <string name="notification_channel_thread_subscribed">Abonnierte Threads</string>
-    <string name="notification_channel_thread_subscribed_desc">Neue Kommentare in abonnierten Threads</string>
-    <string name="notification_channel_upcoming">Bevorstehende Premieren</string>
-    <string name="notification_channel_upcoming_desc">Frühzeitige Hinweise vor Ausstrahlung</string>
-    <string name="notification_channel_watching">Watching-Liste</string>
-    <string name="notification_channel_watching_desc">Neue Folgen für Serien, die du ansiehst</string>
-    <string name="notification_group_airing">Austrahlung</string>
-    <string name="notification_group_forum">Forum</string>
-    <string name="notification_group_other">Sonstiges</string>
-    <string name="notification_follows">Neue Follower</string>
-    <string name="notification_follows_desc">Wenn dir jemand folgt</string>
-    <string name="notification_thread_comment_like">Kommentar-Likes</string>
-    <string name="notification_thread_comment_like_desc">Wenn jemand deinen Kommentar liked</string>
-    <string name="notification_thread_comment_mention">Erwähnungen</string>
-    <string name="notification_thread_comment_mention_desc">Wenn dich jemand in einem Kommentar erwähnt</string>
-    <string name="notification_thread_comment_reply">Kommentar-Antworten</string>
-    <string name="notification_thread_comment_reply_desc">Wenn jemand auf deinen Kommentar antwortet</string>
-    <string name="notification_thread_like">Thread-Likes</string>
-    <string name="notification_thread_like_desc">Wenn jemand deinen Thread liked</string>
-    <string name="notification_thread_subscribed">Abonnierte Threads</string>
-    <string name="notification_thread_subscribed_desc">Neue Kommentare in abonnierten Threads</string>
-    <string name="profile_activity_all">Alle</string>
-    <string name="profile_activity_lists">Listen</string>
-    <string name="profile_activity_messages">Nachrichten</string>
-    <string name="profile_activity_status">Status</string>
-    <string name="profile_biography_title">Biografie</string>
-    <string name="profile_cast_characters">Charaktere</string>
-    <string name="profile_cast_staff">Staff</string>
-    <string name="profile_follow">Folgen</string>
-    <string name="profile_following">Folge ich</string>
-    <string name="profile_message">Nachricht</string>
-    <string name="profile_more_options">Mehr Optionen</string>
-    <string name="profile_no_activity_for_filter">Keine %1$s-Aktivität gefunden.</string>
-    <string name="profile_no_recent_updates">Keine aktuellen Updates.</string>
-    <string name="profile_placeholder_activity_lists">Aktivitäten für Listen erscheinen hier.</string>
-    <string name="profile_placeholder_activity_messages">Nachrichtenaktivitäten erscheinen hier.</string>
-    <string name="profile_placeholder_activity_status">Statusaktivitäten erscheinen hier.</string>
-    <string name="profile_placeholder_anime">Anime-Listeninhalt erscheint hier.</string>
-    <string name="profile_placeholder_cast">Cast-Inhalt erscheint hier.</string>
-    <string name="profile_placeholder_favorites">Favoriteninhalt erscheint hier.</string>
-    <string name="profile_placeholder_manga">Manga-Listeninhalt erscheint hier.</string>
-    <string name="profile_placeholder_reviews">Rezensionen erscheinen hier.</string>
-    <string name="profile_placeholder_stats">Detaillierte Statistiken erscheinen hier.</string>
-    <string name="profile_social_followers">Follower</string>
-    <string name="profile_social_following">Folge ich</string>
-    <string name="profile_social_forum_comments">Forum-Kommentare</string>
-    <string name="profile_social_forum_threads">Forum-Threads</string>
-    <string name="profile_social_placeholder">Inhalt für %1$s erscheint hier.</string>
-    <string name="profile_tab_activity">Aktivität</string>
-    <string name="profile_tab_overview">Übersicht</string>
-    <string name="profile_tab_social">Soziales</string>
-    <string name="profile_unknown_error">Beim Laden deines Profils ist etwas schiefgelaufen.</string>
-    <string name="profile_user_load_error">Dieses Benutzerprofil konnte derzeit nicht geladen werden. Das Konto ist möglicherweise privat, nicht verfügbar oder vorübergehend rate-limitiert.</string>
-    <string name="profile_view_biography">Biografie anzeigen</string>
-    <string name="release_notes">Versionshinweise</string>
-    <string name="section_recommendations">Empfehlungen</string>
-    <string name="section_reviews">Rezensionen</string>
-    <string name="section_voice_actors">Synchronsprecher</string>
-    <string name="settings_developer_tools">Entwicklertools</string>
-    <string name="settings_developer_tools_desc">Debug-Dienstprogramme und Testwerkzeuge</string>
-    <string name="settings_links">Links</string>
-    <string name="settings_links_desc">Projekt-Repository und Entwicklerprofil</string>
-    <string name="settings_updates">Updates</string>
-    <string name="settings_updates_desc">Nach neuen Versionen suchen</string>
-    <string name="update_channel">Update-Kanal</string>
-    <string name="update_channel_desc">Vorab- oder stabile Builds erhalten</string>
-    <string name="update_check_failed">Update-Prüfung fehlgeschlagen</string>
-    <string name="update_is_up_to_date">AniSync ist auf dem neuesten Stand.</string>
-    <string name="update_notification_body">Version %1$s ist verfügbar. Tippe zum Aktualisieren.</string>
-    <string name="update_notification_channel_desc">Benachrichtigungen, wenn eine neue AniSync-Version verfügbar ist</string>
-    <string name="update_notification_channel_name">App-Updates</string>
-    <string name="update_notification_title">AniSync-Update verfügbar</string>
+
+    <!-- Message Composer -->
+    <string name="message_composer_title">Nachricht an %1$s</string>
+    <string name="message_composer_hint">Schreibe eine Nachricht…</string>
+    <string name="message_composer_private">Privat senden</string>
+    <string name="message_composer_send">Senden</string>
+    <string name="message_composer_sent">Nachricht gesendet</string>
+    <string name="message_composer_char_count">%1$d / %2$d</string>
+
+    <!-- Notification Channels -->
+    <string name="notification_channel_activity_name">Soziale Aktivität</string>
+    <string name="notification_channel_activity_description">Nachrichten, Antworten, Erwähnungen und Likes</string>
+    <string name="notification_channel_activity_reply">Antworten auf Aktivitäten</string>
+    <string name="notification_channel_activity_reply_desc">Wenn jemand auf deine Aktivität antwortet</string>
+    <string name="notification_channel_activity_mention">Erwähnungen in Aktivitäten</string>
+    <string name="notification_channel_activity_mention_desc">Wenn dich jemand in einer Aktivität erwähnt</string>
+    <string name="notification_channel_activity_like">Likes für Aktivitäten</string>
+    <string name="notification_channel_activity_like_desc">Wenn jemand deine Aktivität oder Antwort liked</string>
+    <string name="notification_channel_activity_message">Direktnachrichten</string>
+    <string name="notification_channel_activity_message_desc">Wenn dir jemand eine Direktnachricht sendet</string>
+    <string name="notification_activity_replies">Antworten auf Aktivitäten</string>
+    <string name="notification_activity_mentions">Erwähnungen in Aktivitäten</string>
+    <string name="notification_activity_likes">Likes für Aktivitäten</string>
+    <string name="notification_activity_messages">Direktnachrichten</string>
+
+    <!-- Activity Detail -->
+    <string name="activity_detail_title">Aktivität</string>
+    <string name="activity_detail_reply">Antworten</string>
+    <string name="activity_detail_replies">Antworten (%d)</string>
+    <string name="activity_detail_no_replies">Noch keine Antworten</string>
+    <string name="activity_detail_private">Privat</string>
+    <string name="activity_detail_wrote_to">%1$s schrieb an %2$s</string>
+    <string name="activity_delete_confirm_title">Aktivität löschen?</string>
+    <string name="activity_delete_confirm_body">Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="reply_delete_confirm_title">Antwort löschen?</string>
+    <string name="reply_delete_confirm_body">Deine Antwort wird endgültig entfernt und kann nicht wiederhergestellt werden.</string>
+    <string name="thread_delete_confirm_title">Thread löschen?</string>
+    <string name="thread_delete_confirm_body">Der Thread und alle Kommentare werden endgültig entfernt und können nicht wiederhergestellt werden.</string>
+    <string name="activity_edit_status_title">Status bearbeiten</string>
+    <string name="activity_edit_reply_title">Antwort bearbeiten</string>
+    <string name="activity_edit_save">Speichern</string>
+    <string name="forum_edit_thread_title">Thread bearbeiten</string>
+    <string name="editor_discard_title">Änderungen verwerfen?</string>
+    <string name="editor_discard_body">Du hast ungespeicherte Änderungen. Trotzdem verlassen?</string>
+    <string name="editor_discard_confirm">Verwerfen</string>
+    <string name="editor_discard_keep">Weiter bearbeiten</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="delete">Löschen</string>
+    <string name="more_options">Mehr Optionen</string>
+    <string name="write">Schreiben</string>
+    <string name="post">Posten</string>
+    <string name="richtext_preview_show">Vorschau anzeigen</string>
+    <string name="richtext_preview_hide">Vorschau ausblenden</string>
+    <string name="richtext_format_bold">Fett</string>
+    <string name="richtext_format_italic">Kursiv</string>
+    <string name="richtext_format_strikethrough">Durchgestrichen</string>
+    <string name="richtext_format_code">Code</string>
+    <string name="richtext_format_link">Link</string>
+    <string name="richtext_format_spoiler">Spoiler</string>
+    <string name="richtext_char_count">%1$d / %2$d</string>
+    <string name="forum_categories_title">Kategorien</string>
+    <string name="forum_add_categories">Kategorien hinzufügen</string>
+    <string name="forum_link_media_title">Verwandte Medien hinzufügen</string>
+    <string name="forum_media_search_hint">Anime oder Manga suchen…</string>
+    <string name="forum_search_results_label">Suchergebnisse</string>
+    <string name="forum_media_searching">Suche läuft…</string>
+    <string name="forum_media_no_results">Keine Ergebnisse für \"%1$s\"</string>
+    <string name="forum_remove_media_category">Medium entfernen</string>
+
+    <!-- Recommendations (media details) -->
+    <string name="cd_add_recommendation">Ähnliches Medium empfehlen</string>
+    <string name="recommend_media_title">Ähnliches empfehlen</string>
+    <string name="recommend_media_hint">Zum Empfehlen suchen…</string>
+    <string name="recommend_added">Empfehlung hinzugefügt</string>
+
+    <!-- Reviews (media details) -->
+    <string name="cd_write_review">Rezension schreiben</string>
+    <string name="write_review_title">Rezension schreiben</string>
+    <string name="edit_review_title">Rezension bearbeiten</string>
+    <string name="review_summary_hint">Kurzfassung der Rezension</string>
+    <string name="review_body_hint">Schreibe deine Rezension…</string>
+    <string name="review_score_label">Bewertung</string>
+    <string name="review_private_label">Privat</string>
+    <string name="review_delete">Rezension löschen</string>
+    <string name="review_delete_confirm_title">Rezension löschen?</string>
+    <string name="review_delete_confirm_body">Dies löscht deine Rezension endgültig. Das kann nicht rückgängig gemacht werden.</string>
+    <string name="review_body_error">Die Rezension muss mindestens %1$d Zeichen lang sein. Fülle deine Rezensionen nicht künstlich auf, um diese Vorgabe zu erfüllen.</string>
+    <string name="review_summary_error">Die Kurzfassung muss zwischen %1$d und %2$d Zeichen lang sein.</string>
+    <string name="review_score_error">Die Bewertung muss zwischen %1$d und %2$d liegen.</string>
+    <string name="review_guidelines_notice">Bitte lies vor dem Veröffentlichen die Richtlinien für Rezensionen.</string>
+    <string name="review_publish">Veröffentlichen</string>
+
+    <!-- Media upload (settings + composer attach) -->
+    <string name="settings_media_upload">Medien-Upload</string>
+    <string name="settings_media_upload_desc">Wo angehängte Fotos, GIFs und Videos gehostet werden</string>
+    <string name="media_upload_intro">AniList hostet keine Uploads. Wähle einen Drittanbieter für Medien, die du in Threads, Antworten, Statusbeiträgen, Nachrichten und Biografien anhängst.</string>
+    <string name="media_upload_host_catbox">Catbox.moe</string>
+    <string name="media_upload_host_catbox_desc">Dauerhaftes kostenloses Hosting, bis zu 200 MB pro Datei</string>
+    <string name="media_upload_catbox_account">Konto-Userhash</string>
+    <string name="media_upload_catbox_account_connected">Verbunden · %1$s</string>
+    <string name="media_upload_catbox_account_anonymous">Nicht verbunden · Uploads sind anonym</string>
+    <string name="media_upload_catbox_dialog_title">Catbox-Konto</string>
+    <string name="media_upload_catbox_userhash">Userhash</string>
+    <string name="media_upload_catbox_userhash_hint">Zu finden unter Manage Account auf catbox.moe</string>
+    <string name="media_upload_catbox_userhash_help">Verknüpfe Uploads mit deinem Catbox-Konto, um sie später ansehen und löschen zu können. Leer lassen, um anonym hochzuladen.</string>
+    <string name="media_upload_host_litterbox">Litterbox</string>
+    <string name="media_upload_host_litterbox_desc">Temporäres Hosting im selben Netzwerk wie Catbox</string>
+    <string name="media_upload_host_custom">Eigener Host</string>
+    <string name="media_upload_host_custom_desc">Jeder Dienst, der ein Multipart-POST annimmt</string>
+    <string name="media_upload_litterbox_expiry">Automatisch löschen nach</string>
+    <string name="media_upload_litterbox_1h">1 Stunde</string>
+    <string name="media_upload_litterbox_24h">24 Stunden</string>
+    <string name="media_upload_litterbox_72h">72 Stunden</string>
+    <string name="media_upload_custom_url">Endpunkt-URL</string>
+    <string name="media_upload_custom_url_hint">https://example.com/upload</string>
+    <string name="media_upload_custom_field">Name des Dateifelds</string>
+    <string name="media_upload_custom_auth">Auth-Header (optional)</string>
+    <string name="media_upload_custom_auth_hint">Authorization: Bearer …</string>
+    <string name="media_upload_custom_json_path">JSON-Pfad der Antwort (optional)</string>
+    <string name="media_upload_custom_json_path_hint">z. B. data.url — leer, wenn die Antwort die URL ist</string>
+    <string name="media_upload_custom_help">Lass den JSON-Pfad leer, wenn der Server die URL direkt im Antworttext zurückgibt.</string>
+
+    <!-- Media attach sheet (composer) -->
+    <string name="media_attach">Medien anhängen</string>
+    <string name="media_attach_pick_image">Foto oder GIF</string>
+    <string name="media_attach_pick_image_desc">Aus deiner Galerie oder deinen Downloads</string>
+    <string name="media_attach_pick_video">Video</string>
+    <string name="media_attach_pick_video_desc">webm oder mp4</string>
+    <string name="media_attach_paste_url">URL einfügen</string>
+    <string name="media_attach_paste_url_desc">Bereits gehostetes Bild oder Video</string>
+    <string name="media_attach_size_title">Anzeigegröße</string>
+    <string name="media_attach_size_small">Klein</string>
+    <string name="media_attach_size_medium">Mittel</string>
+    <string name="media_attach_size_large">Groß</string>
+    <string name="media_attach_size_original">Original</string>
+    <string name="media_attach_size_custom">Eigene</string>
+    <string name="media_attach_size_custom_hint">z. B. 250 oder 60%</string>
+    <string name="media_attach_upload">Hochladen</string>
+    <string name="media_attach_uploading">Wird hochgeladen…</string>
+    <string name="media_attach_cancel">Abbrechen</string>
+    <string name="media_attach_retry">Erneut versuchen</string>
+    <string name="media_attach_url_input">Öffentliche URL</string>
+    <string name="media_attach_url_input_hint">https://…</string>
+    <string name="media_attach_insert">Einfügen</string>
+    <string name="media_attach_error_invalid_url">Gib eine gültige http(s)-URL ein</string>
+    <string name="media_attach_error_catbox_rejected">Catbox hat diese Datei abgelehnt. Versuche eine andere Datei oder wechsle in den Einstellungen unter Medien-Upload zu Litterbox.</string>
+    <string name="media_attach_size_output">Fügt ein: %s</string>
+
+    <!-- Search / Discover -->
+    <string name="search_header_anime_manga">Anime &amp; Manga</string>
+    <string name="search_header_characters">Charaktere</string>
+    <string name="search_header_staff">Staff</string>
+    <string name="search_header_users">Nutzer</string>
+    <string name="search_header_studios">Studios</string>
+    <string name="search_view_all_results">Alle %1$d Ergebnisse ansehen</string>
+    <string name="search_favourites_count">%d Favoriten</string>
+    <string name="empty_no_items">Keine Einträge gefunden</string>
+    <string name="filter_show_results">Ergebnisse anzeigen</string>
+    <string name="all">Alle</string>
+
+    <!-- Details Screens -->
+    <string name="featured_media">Vorgestellte Medien</string>
+    <string name="filter_on_my_list">Auf meiner Liste</string>
+    <string name="voiced_characters">Gesprochene Charaktere</string>
+    <string name="production_roles">Produktionsrollen</string>
+    <string name="label_custom">Eigene</string>
+    <string name="label_categories">Kategorien</string>
+    <string name="label_genres">Genres</string>
+    <string name="label_tags">Tags</string>
+    <string name="label_spoilers">Spoiler</string>
+    <string name="label_spoiler">Spoiler</string>
+    <string name="label_attributes">Attribute</string>
+    <string name="label_all_languages">Alle Sprachen</string>
+    <string name="label_character">Charakter</string>
+    <string name="also_known_as">Auch bekannt als: %s</string>
+
+    <!-- Library / Lists -->
+    <string name="custom_lists">Eigene Listen</string>
+    <string name="privacy">Privatsphäre</string>
+    <string name="private_entry">Privater Eintrag</string>
+    <string name="private_entry_desc">Diesen Eintrag vor anderen Nutzern verbergen</string>
+    <string name="hide_from_status_lists">Aus Status-Listen ausblenden</string>
+    <string name="hide_from_status_lists_desc">Nicht in den globalen letzten Aktualisierungen anzeigen</string>
+    <string name="char_count">%d Zeichen</string>
+    <string name="manage_tabs">Tabs verwalten</string>
+    <string name="new_list_name">Name der neuen Liste</string>
+    <string name="create_new_list">Neue Liste erstellen</string>
+
+    <!-- Profile / Activity / Forum -->
+    <string name="pinned">Angepinnt</string>
+    <string name="replied_to">Antwort auf: %s</string>
+    <string name="thread_locked_desc">Dieser Thread ist gesperrt und kann keine neuen Antworten erhalten.</string>
+    <string name="dialog_delete_activity_title">Aktivität löschen?</string>
+    <string name="dialog_delete_activity_body">Diese Aktion kann nicht rückgängig gemacht werden.</string>
+
+    <!-- Settings / About -->
+    <string name="cd_developer_avatar">Avatar des Entwicklers</string>
+    <string name="sponsor_project">Das Projekt unterstützen</string>
+    <string name="support_anisync">%s unterstützen</string>
+    <string name="support_description">AniSync ist ein Herzensprojekt, das komplett in meiner Freizeit entsteht. Wenn dir die App gefällt, kannst du mit einer Spende helfen, die Entwicklung am Leben zu halten.</string>
+
+    <!-- Donate screen -->
+    <string name="settings_sponsors">Spenden</string>
+    <string name="settings_sponsors_desc">Spendiere mir einen Kaffee, um AniSync zu unterstützen</string>
+    <string name="sponsors_title">Spenden</string>
+    <string name="sponsors_hero_headline">Spendiere mir einen Kaffee</string>
+    <string name="sponsors_hero_body">AniSync ist kostenlos, werbefrei und quelloffen — entstanden in meiner Freizeit. Wenn es deinen Tag verschönert, kannst du mit einem Trinkgeld die Entwicklung unterstützen. Trinkgelder sind völlig freiwillig, es gibt nichts zu kaufen und keine Vorteile dabei. Die Namen unten sind einfach mein Dankeschön an alle, die geholfen haben.</string>
+    <string name="sponsors_become_button">Kaffee spendieren</string>
+    <string name="sponsors_github_button">GitHub</string>
+    <string name="sponsors_kofi_button">Ko-fi</string>
+    <string name="sponsors_refresh">Aktualisieren</string>
+    <string name="sponsors_updated_at">Aktualisiert %1$s</string>
+    <string name="sponsor_tier_generous">Großzügig</string>
+    <string name="sponsor_tier_backer">Unterstützer</string>
+    <string name="sponsor_tier_count">%1$s · %2$d</string>
+    <string name="sponsors_empty_tier_cta">Noch niemand hier — sei der Erste</string>
+    <string name="sponsors_load_error">Sponsoren konnten nicht geladen werden. Zum Wiederholen ziehen.</string>
+    <string name="sponsors_open_external">Auf GitHub öffnen</string>
+    <string name="a11y_sponsor_avatar">Avatar von %1$s</string>
+    <string name="lead_developer">Hauptentwickler</string>
+    <string name="sponsor">Sponsor</string>
+    <string name="link_repository">Repository</string>
+    <string name="link_developer">Entwickler</string>
+    <string name="test_code">Test %s</string>
+    <string name="by_author">von %s</string>
+
+    <!-- Empty States -->
+    <string name="empty_list_title">Deine %s-Liste ist leer</string>
+    <string name="empty_list_anime_action">Beginne, Anime zu verfolgen, indem du Serien aus dem Entdecken-Tab hinzufügst</string>
+    <string name="empty_list_anime_button">Anime durchsuchen</string>
+    <string name="empty_list_manga_action">Beginne, Manga zu verfolgen, indem du Titel aus dem Entdecken-Tab hinzufügst</string>
+    <string name="empty_list_manga_button">Manga durchsuchen</string>
+    <string name="empty_search_results_title">Keine Ergebnisse für \"%s\"</string>
+    <string name="empty_search_results_action">Passe deine Suche oder Filter an</string>
+    <string name="empty_search_results_button">Suche löschen</string>
+    <string name="empty_search_alt_action">Versuche andere Suchbegriffe</string>
+    <string name="empty_favorites_title">Noch keine Favoriten</string>
+    <string name="empty_favorites_action">Füge Anime oder Manga von ihren Detailseiten zu deinen Favoriten hinzu</string>
+    <string name="empty_favorites_button">Neue Serien entdecken</string>
+    <string name="empty_connection_title">Verbindungsproblem</string>
+    <string name="empty_connection_action">Prüfe deine Internetverbindung und versuche es erneut</string>
+    <string name="empty_generic_title">Etwas ist schiefgelaufen</string>
+    <string name="empty_sign_in_title">Bei AniList anmelden</string>
+    <string name="empty_sign_in_action">Verbinde dein AniList-Konto, um deine Bibliothek geräteübergreifend zu synchronisieren</string>
+    <string name="empty_sign_in_button">Anmelden</string>
+    <string name="empty_airing_today_title">Heute laufen keine Episoden</string>
+    <string name="empty_airing_today_action">Schau später wieder vorbei oder füge weitere Serien zu deiner Liste hinzu</string>
+    <string name="empty_upcoming_title">Keine kommenden Episoden</string>
+    <string name="empty_upcoming_action">Füge laufende Anime zu deiner Schauliste hinzu, um kommende Episoden zu sehen</string>
+    <string name="empty_upcoming_button">Laufende durchsuchen</string>
+    <string name="empty_notifications_title">Keine Benachrichtigungen</string>
+    <string name="empty_notifications_action">Du bist auf dem neuesten Stand!</string>
+    <string name="empty_characters_title">Keine Charaktere gelistet</string>
+    <string name="empty_characters_action">Für diesen Titel sind keine Charakterinformationen verfügbar</string>
+    <string name="empty_discussions_title">Noch keine Diskussionen</string>
+    <string name="empty_discussions_action">Sei der Erste, der ein Gespräch beginnt</string>
+    <string name="empty_discussions_button">Diskussion starten</string>
+    <string name="empty_comments_title">Noch keine Kommentare</string>
+    <string name="empty_comments_action">Sei der Erste, der seine Gedanken teilt</string>
+    <string name="empty_forum_search_title">Keine Threads für \"%s\" gefunden</string>
+    <string name="empty_forum_search_action">Versuche andere Suchbegriffe</string>
+
+    <!-- Snackbar / Toast messages -->
+    <string name="test_message_error_code">Dies ist eine Testnachricht für Fehlercode %s.</string>
+    <string name="missing_recipient">Empfänger fehlt</string>
+    <string name="cannot_edit_activity_type">Dieser Aktivitätstyp kann nicht bearbeitet werden</string>
+    <string name="activity_updated">Aktivität aktualisiert</string>
+    <string name="activity_deleted">Aktivität gelöscht</string>
+    <string name="message_sent">Nachricht gesendet</string>
+    <string name="status_posted">Status gepostet</string>
+    <string name="list_created">Liste \'%s\' erstellt.</string>
+    <string name="list_deleted">Liste \'%s\' gelöscht.</string>
+    <string name="thread_unsaved">Thread nicht mehr gespeichert</string>
+    <string name="thread_saved">Thread gespeichert</string>
+    <string name="subscribed_to_thread">Thread abonniert</string>
+    <string name="unsubscribed_from_thread">Thread abbestellt</string>
+    <string name="failed_to_load_review">Rezension konnte nicht geladen werden</string>
+    <string name="review_not_found">Rezension nicht gefunden</string>
+    <string name="downloading_high_res_image">Bild in hoher Auflösung wird heruntergeladen…</string>
+    <string name="download_started">Download gestartet</string>
+    <string name="download_failed">Download fehlgeschlagen</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_like">Like</string>
+    <string name="cd_dislike">Dislike</string>
+    <string name="cd_download">Herunterladen</string>
+    <string name="cd_zoomable_image">Zoombares Bild</string>
+    <string name="cd_play">Abspielen</string>
+    <string name="cd_youtube_thumbnail">YouTube-Vorschaubild</string>
+    <string name="cd_play_video">Video abspielen</string>
+    <string name="cd_navigate_back">Zurück navigieren</string>
+    <string name="cd_author_avatar">Avatar des Autors</string>
+    <string name="cd_to">bis</string>
+    <string name="cd_comments">Kommentare</string>
+    <string name="label_review">Rezension</string>
+    <string name="label_pinned">ANGEPINNT</string>
+    <string name="label_locked">GESPERRT</string>
+    <string name="episodes_behind">%d im Rückstand</string>
+    <string name="cd_toggle_subscription">Abo umschalten</string>
+    <string name="cd_toggle_save">Speichern umschalten</string>
+    <string name="cd_expand">Ausklappen</string>
+    <string name="cd_continue_thread">Thread fortsetzen</string>
+    <string name="cd_write_status">Status schreiben</string>
+    <string name="cd_manage_lists">Listen verwalten</string>
+    <string name="cd_reorder">Neu anordnen</string>
+    <string name="cd_delete_list">Liste löschen</string>
+    <string name="cd_like_review">Rezension liken</string>
+    <string name="cd_dislike_review">Rezension disliken</string>
+    <string name="cd_share">Teilen</string>
+    <string name="cd_reply">Antworten</string>
+    <string name="cd_clear_search">Suche löschen</string>
+    <string name="mute">Stummschalten</string>
+    <string name="unmute">Stummschaltung aufheben</string>
+    <string name="cd_pause">Pausieren</string>
+    <string name="cd_fullscreen">Vollbild starten</string>
+    <string name="cd_exit_fullscreen">Vollbild beenden</string>
+    <string name="locked">Gesperrt</string>
+    <string name="cd_go_back_one_level">Eine Ebene zurück</string>
+    <string name="cd_thread_depth">Thread-Tiefe: %d Ebenen. Zum Zurückgehen tippen.</string>
     <string name="statistics_std_dev">Standardabweichung</string>
     <string name="statistics_days_of_your_life">≈ %1$s Tage deines Lebens</string>
     <string name="statistics_top_tags">Top-Tags</string>
@@ -568,4 +1383,353 @@
     <string name="statistics_taste_focused">Dein Geschmack ist fokussiert</string>
     <string name="statistics_taste_balanced">Ausgewogener Geschmack</string>
     <string name="statistics_taste_eclectic">Breit gefächerter Geschmack</string>
+
+    <!-- Airing calendar -->
+    <string name="calendar_title">Ausstrahlungskalender</string>
+    <string name="calendar_open">Ausstrahlungskalender</string>
+    <string name="calendar_following_only">Nur Serien auf deiner Liste anzeigen</string>
+    <string name="calendar_previous_week">Vorherige Woche</string>
+    <string name="calendar_next_week">Nächste Woche</string>
+    <string name="calendar_jump_to_today">Zu dieser Woche springen</string>
+    <string name="calendar_today">Heute</string>
+    <string name="calendar_previous_month">Vorheriger Monat</string>
+    <string name="calendar_next_month">Nächster Monat</string>
+    <string name="calendar_jump_to_this_month">Dieser Monat</string>
+    <plurals name="calendar_airing_count">
+        <item quantity="one">%1$d Ausstrahlung</item>
+        <item quantity="other">%1$d Ausstrahlungen</item>
+    </plurals>
+    <string name="calendar_episode_number">Episode %1$d</string>
+    <string name="calendar_aired">Ausgestrahlt</string>
+    <string name="calendar_airs_in">in %1$s</string>
+    <string name="calendar_chip_watching">Schaue ich</string>
+    <string name="calendar_chip_planning">Geplant</string>
+    <string name="calendar_empty_title">Nichts wird ausgestrahlt</string>
+    <string name="calendar_empty_desc">An diesem Tag laufen keine Episoden.</string>
+    <string name="calendar_empty_following_desc">An diesem Tag läuft nichts von deiner Liste.</string>
+
+    <!-- Two-pane list/detail resize handle -->
+    <string name="pane_resize_handle">Bereiche anpassen</string>
+    <string name="pane_resize_cycle">Breite der Listenspalte durchschalten</string>
+    <string name="pane_resize_toggle">Listenspalte ein- oder ausklappen</string>
+    <string name="pane_close">Schließen</string>
+
+    <!-- Two-pane empty/placeholder detail panes (shown on wide screens before a selection) -->
+    <string name="pane_placeholder_thread">Wähle einen Thread, um ihn hier zu lesen</string>
+    <string name="pane_placeholder_activity">Wähle einen Status, um ihn hier zu sehen</string>
+    <string name="pane_placeholder_notification">Wähle eine Benachrichtigung, um sie hier zu öffnen</string>
+    <string name="pane_placeholder_settings">Wähle eine Einstellung, um sie hier anzupassen</string>
+    <string name="pane_placeholder_theme">Wähle ein Theme, um es hier abzuspielen</string>
+
+    <!-- Collapsible wide navigation rail (rail layouts) -->
+    <string name="rail_expand">Navigation ausklappen</string>
+    <string name="rail_collapse">Navigation einklappen</string>
+    <string name="rail_expanded">Navigation ausgeklappt</string>
+    <string name="rail_collapsed">Navigation eingeklappt</string>
+
+    <!-- Share-as-image cards -->
+    <string name="share_stats_card">Statistiken teilen</string>
+    <string name="share_favourites_card">Favoriten teilen</string>
+    <string name="share_action_save">Speichern</string>
+    <string name="share_action_copy">Kopieren</string>
+    <string name="share_action_share">Teilen</string>
+    <string name="share_saved_to_gallery">In der Galerie gespeichert</string>
+    <string name="share_save_failed">Bild konnte nicht gespeichert werden</string>
+    <string name="share_copied">Link kopiert</string>
+    <string name="share_card_source">AniList</string>
+    <string name="share_stats_eyebrow_anime">Anime-Statistiken</string>
+    <string name="share_stats_eyebrow_manga">Manga-Statistiken</string>
+    <string name="share_stats_unit_anime">Anime</string>
+    <string name="share_stats_unit_manga">Manga</string>
+    <string name="share_stats_days">Tage</string>
+    <string name="share_stats_episodes">Episoden</string>
+    <string name="share_stats_chapters">Kapitel</string>
+    <string name="share_stats_volumes">Bände</string>
+    <string name="share_stats_mean">Bewertung</string>
+    <string name="share_stats_top_genres">Top-Genres</string>
+    <string name="share_media_episodes">Episoden</string>
+    <string name="share_media_chapters">Kapitel</string>
+    <string name="share_media_popularity">Beliebtheit</string>
+    <string name="share_media_favourites">Favoriten</string>
+    <string name="share_media_ep_number">Ep %1$d</string>
+    <string name="share_media_tba">TBA</string>
+    <!-- Release status shown ONLY when the title is not on the viewer's list; worded to read as
+         the show's airing state, never as a personal tracking status. -->
+    <string name="share_media_status_finished">Ausstrahlung beendet</string>
+    <string name="share_media_status_airing">Läuft gerade</string>
+    <string name="share_media_status_upcoming">Demnächst</string>
+    <string name="share_media_status_cancelled">Eingestellt</string>
+    <string name="share_media_status_hiatus">Pausiert</string>
+    <string name="share_review_score">%1$d/100</string>
+    <string name="share_review_byline">Rezension von</string>
+    <string name="share_fav_eyebrow">Favoriten</string>
+    <string name="share_fav_heading_anime">Lieblings-Anime</string>
+    <string name="share_fav_heading_manga">Lieblings-Manga</string>
+    <!-- Share-card customization sheet -->
+    <string name="share_customize_theme">Design</string>
+    <string name="share_customize_format">Format</string>
+    <string name="share_customize_template">Stil</string>
+    <string name="share_customize_show">Anzeigen</string>
+    <string name="share_theme_auto">Automatisch</string>
+    <string name="share_theme_light">Hell</string>
+    <string name="share_theme_dark">Dunkel</string>
+    <string name="share_theme_amoled">AMOLED</string>
+    <string name="share_theme_cover">Cover</string>
+    <string name="share_format_compact">Kompakt</string>
+    <string name="share_format_square">Quadratisch</string>
+    <string name="share_format_story">Story</string>
+    <string name="share_template_standard">Karte</string>
+    <string name="share_template_hero">Poster</string>
+    <string name="share_toggle_score">Bewertung</string>
+    <string name="share_toggle_progress">Fortschritt</string>
+    <string name="share_caption_hint">Bildunterschrift hinzufügen (optional)</string>
+    <string name="share_person_character">Charakter</string>
+    <string name="share_person_staff">Staff</string>
+    <string name="share_known_for">Bekannt für</string>
+    <string name="share_template_stats">Statistiken</string>
+    <string name="share_template_recap">Rückblick</string>
+    <string name="share_template_grid">Raster</string>
+    <string name="share_template_ranked">Rangliste</string>
+    <string name="share_recap_eyebrow">Gesamtrückblick</string>
+    <string name="share_recap_completed">Abgeschlossen</string>
+    <string name="share_recap_top_studio">Meistgesehenes Studio</string>
+    <string name="share_recap_top_staff">Meistgelesener Autor</string>
+
+    <!-- ONBOARDING (first-run flow) -->
+    <string name="onboarding_welcome_headline">Deine Bibliothek,\nimmer synchron.</string>
+    <string name="onboarding_welcome_body">Verfolge Anime und Manga und verpasse keine ausgestrahlte Episode.</string>
+    <string name="onboarding_welcome_cta">Weiter mit AniList</string>
+    <string name="onboarding_welcome_new_prompt">Neu bei AniList?</string>
+    <string name="onboarding_welcome_new_action">Kostenloses Konto erstellen</string>
+
+    <string name="onboarding_signin_title">Bei AniList anmelden</string>
+    <string name="onboarding_signin_body">Der Browser öffnet AniList, du bestätigst AniSync dort, und Android gibt der App ein Zugriffstoken zurück.</string>
+    <string name="onboarding_signin_point_password">Dein Passwort bleibt bei AniList</string>
+    <string name="onboarding_signin_point_token">Das Token bleibt nur auf diesem Gerät</string>
+    <string name="onboarding_signin_point_revoke">Zugriff jederzeit bei AniList widerrufen</string>
+    <string name="onboarding_signin_open">AniList öffnen</string>
+    <string name="onboarding_signin_dismiss">Nicht jetzt</string>
+
+    <string name="onboarding_sync_signed_in_as">ANGEMELDET ALS</string>
+    <string name="onboarding_sync_body">Deine Listen kommen von AniList herüber.\nDas passiert nur einmal.</string>
+    <string name="onboarding_sync_card_label">DEIN KONTO WIRD ÜBERTRAGEN</string>
+    <string name="onboarding_sync_row_library">Bibliothek</string>
+    <string name="onboarding_sync_row_airing">Ausstrahlungsplan</string>
+    <string name="onboarding_sync_row_notifications">Benachrichtigungen</string>
+    <string name="onboarding_sync_row_widgets">Widgets</string>
+    <string name="onboarding_sync_entries">%1$d Einträge</string>
+    <string name="onboarding_sync_this_week">%1$d diese Woche</string>
+    <string name="onboarding_sync_checking">Wird geprüft</string>
+    <string name="onboarding_sync_waiting">Wartet</string>
+    <string name="onboarding_sync_widgets_none">Noch keine</string>
+    <string name="onboarding_sync_widgets_placed">%1$d platziert</string>
+    <string name="onboarding_sync_note">Alles Weitere aktualisiert sich still im Hintergrund.</string>
+
+    <string name="onboarding_continue">Weiter</string>
+    <string name="onboarding_skip">Überspringen</string>
+    <string name="onboarding_step_of">SCHRITT %1$d VON %2$d</string>
+    <string name="onboarding_state_on">An</string>
+    <string name="onboarding_state_off">Aus</string>
+
+    <string name="onboarding_permissions_headline">Lass es im Hintergrund laufen</string>
+    <string name="onboarding_permissions_body">Hinweise und Ausstrahlungszeiten hängen von Arbeit ab, die läuft, während AniSync geschlossen ist.</string>
+    <string name="onboarding_permissions_progress">%1$d von %2$d erledigt</string>
+    <string name="onboarding_permissions_note">Du kannst das alles später in den Einstellungen ändern.</string>
+    <string name="onboarding_perm_alerts_title">Benachrichtigungen</string>
+    <string name="onboarding_perm_alerts_body">Neue Episoden, Forenantworten, Erwähnungen und Follower. Schaltet auch die Hinweise in AniSync ein.</string>
+    <string name="onboarding_perm_battery_title">Hintergrundaktualisierung</string>
+    <string name="onboarding_perm_battery_body">Android legt ungenutzte Apps schlafen. Eine Ausnahme hält die Prüfungen pünktlich.</string>
+    <string name="onboarding_perm_links_title">AniList-Links</string>
+    <string name="onboarding_perm_links_body">anilist.co-Links öffnen sich in AniSync statt im Browser.</string>
+    <string name="onboarding_perm_hibernation_title">Pause bei Nichtnutzung</string>
+    <string name="onboarding_perm_hibernation_body">Verhindert, dass Android AniSync nach Monaten ohne Nutzung pausiert.</string>
+    <string name="onboarding_perm_action_allow">Erlauben</string>
+    <string name="onboarding_perm_action_turn_off">Ausschalten</string>
+    <string name="onboarding_perm_action_open">Öffnen</string>
+
+    <string name="onboarding_personalise_headline">Mach es zu deinem</string>
+    <string name="onboarding_personalise_body">Vier kleine Entscheidungen. Jede davon findest du später unter Erscheinungsbild.</string>
+    <string name="onboarding_personalise_accent">AKZENT</string>
+    <string name="onboarding_personalise_theme">DESIGN</string>
+    <string name="onboarding_personalise_titles">TITEL</string>
+    <string name="onboarding_personalise_open_on">ÖFFNEN MIT</string>
+    <string name="setting_start_screen">Öffnen mit</string>
+    <string name="start_screen_last_visited">Zuletzt besucht</string>
+    <string name="onboarding_personalise_note">Der Akzent zieht sich durch Karten, Buttons und Widgets.</string>
+
+    <string name="onboarding_done_headline">Alles bereit</string>
+    <string name="onboarding_done_body">Deine Listen sind da und die Hinweise sind scharf gestellt.</string>
+    <string name="onboarding_done_pill_alerts_on">Hinweise an</string>
+    <string name="onboarding_done_pill_alerts_off">Hinweise aus</string>
+    <string name="onboarding_done_pill_links_on">Links an</string>
+    <string name="onboarding_done_pill_links_off">Links aus</string>
+    <string name="onboarding_done_widget_title">Widget Gleich ansehen hinzufügen</string>
+    <string name="onboarding_done_widget_body">Ein Tippen zur nächsten Episode.</string>
+    <string name="onboarding_done_cta">Losschauen</string>
+
+    <string name="dev_tools_onboarding_section">Onboarding</string>
+    <string name="dev_tools_replay_onboarding">Onboarding erneut abspielen</string>
+    <string name="dev_tools_replay_onboarding_subtitle">Öffnet den Erststart-Ablauf über der laufenden App. Beim Verlassen landest du wieder im Bibliothek-Tab.</string>
+
+    <!-- Media details: tags -->
+    <string name="tags_expand">Ausklappen</string>
+    <string name="tags_collapse">Einklappen</string>
+    <plurals name="tags_more">
+        <item quantity="one">+%1$d weiterer</item>
+        <item quantity="other">+%1$d weitere</item>
+    </plurals>
+    <plurals name="tags_spoiler_hidden">
+        <item quantity="one">%1$d Tag, zum Anzeigen tippen</item>
+        <item quantity="other">%1$d Tags, zum Anzeigen tippen</item>
+    </plurals>
+    <plurals name="tags_spoiler_revealed">
+        <item quantity="one">%1$d Tag</item>
+        <item quantity="other">%1$d Tags</item>
+    </plurals>
+    <string name="a11y_tag_rank">%1$s, Rang %2$d Prozent</string>
+    <string name="cd_tags_show_spoilers">Spoiler-Tags anzeigen</string>
+    <string name="cd_tags_hide_spoilers">Spoiler-Tags ausblenden</string>
+
+    <!-- Session expiry dialog -->
+    <string name="ok">OK</string>
+    <string name="session_expired_title">Sitzung abgelaufen</string>
+    <string name="session_expired_message">Deine Sitzung ist abgelaufen. Bitte melde dich erneut an, um AniSync weiter zu nutzen.</string>
+
+    <!-- Filter sheets -->
+    <string name="reset">Zurücksetzen</string>
+    <string name="done">Fertig</string>
+    <string name="search_tags_hint">Tags suchen</string>
+    <string name="forum_filter_subscribed">Abonniert</string>
+    <string name="forum_start_discussion">Eine Diskussion darüber starten</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_subscribe">Abonnieren</string>
+    <string name="cd_unsubscribe">Abo beenden</string>
+    <string name="cd_unsave">Nicht mehr speichern</string>
+    <string name="cd_unlike">Like entfernen</string>
+    <string name="cd_add_to_favorites">Zu Favoriten hinzufügen</string>
+    <string name="cd_remove_from_favorites">Aus Favoriten entfernen</string>
+    <string name="cd_view_grid">Rasteransicht</string>
+    <string name="cd_view_list">Listenansicht</string>
+    <string name="cd_switch_to_grid_view">Zur Rasteransicht wechseln</string>
+    <string name="cd_switch_to_list_view">Zur Listenansicht wechseln</string>
+    <string name="cd_expand_all">Alle ausklappen</string>
+    <string name="cd_collapse_all">Alle einklappen</string>
+    <string name="cd_trending_carousel">Trend-Karussell</string>
+    <string name="cd_clear_media_filter">Medienfilter löschen</string>
+    <string name="cd_media_cover">Cover des Mediums</string>
+    <string name="cd_show_tab">Tab einblenden</string>
+    <string name="cd_hide_tab">Tab ausblenden</string>
+    <string name="cd_cover_quality_preview">Vorschau der Coverqualität</string>
+    <!-- %1$s is the title of the entry being edited -->
+    <string name="a11y_editing_entry">%1$s wird bearbeitet</string>
+    <!-- %1$s is the current progress, %2$s the total, or "Unknown" when no total is published -->
+    <string name="a11y_progress_of">Fortschritt %1$s von %2$s</string>
+
+    <!-- Notifications: who acted. %1$s and %2$s are user names, %2$d a count of further users -->
+    <string name="notification_actor_someone">Jemand</string>
+    <string name="notification_actors_two">%1$s und %2$s</string>
+    <plurals name="notification_actors_others">
+        <item quantity="one">%1$s und %2$d weiterer</item>
+        <item quantity="other">%1$s und %2$d weitere</item>
+    </plurals>
+
+    <!-- Notifications: forum. %1$s, or %2$s in the counted forms, is the thread title -->
+    <string name="notification_thread_reply">Hat auf deinen Kommentar in \"%1$s\" geantwortet</string>
+    <string name="notification_thread_reply_untitled">Hat auf deinen Kommentar geantwortet</string>
+    <plurals name="notification_thread_replies">
+        <item quantity="one">%1$d neue Antwort in \"%2$s\"</item>
+        <item quantity="other">%1$d neue Antworten in \"%2$s\"</item>
+    </plurals>
+    <plurals name="notification_thread_replies_untitled">
+        <item quantity="one">%1$d neue Antwort</item>
+        <item quantity="other">%1$d neue Antworten</item>
+    </plurals>
+    <string name="notification_thread_comment">Hat in \"%1$s\" kommentiert</string>
+    <string name="notification_thread_comment_untitled">Hat in einem von dir abonnierten Thread kommentiert</string>
+    <plurals name="notification_thread_comments">
+        <item quantity="one">%1$d neuer Kommentar in \"%2$s\"</item>
+        <item quantity="other">%1$d neue Kommentare in \"%2$s\"</item>
+    </plurals>
+    <plurals name="notification_thread_comments_untitled">
+        <item quantity="one">%1$d neuer Kommentar</item>
+        <item quantity="other">%1$d neue Kommentare</item>
+    </plurals>
+    <string name="notification_thread_mention">Hat dich in einem Kommentar in \"%1$s\" erwähnt</string>
+    <string name="notification_thread_mention_untitled">Hat dich in einem Kommentar erwähnt</string>
+    <string name="notification_liked_thread">Gefällt dein Thread \"%1$s\"</string>
+    <string name="notification_liked_thread_untitled">Gefällt dein Thread</string>
+    <string name="notification_liked_comment">Gefällt dein Kommentar in \"%1$s\"</string>
+    <string name="notification_liked_comment_untitled">Gefällt dein Kommentar</string>
+
+    <!-- Notifications: activity feed. %1$s is one of the notification_kind_* nouns below -->
+    <string name="notification_activity_reply">Antwort auf: %1$s</string>
+    <plurals name="notification_activity_replies">
+        <item quantity="one">%1$d neue Antwort auf: %2$s</item>
+        <item quantity="other">%1$d neue Antworten auf: %2$s</item>
+    </plurals>
+    <string name="notification_activity_reply_subscribed">Hat auf einen von dir abonnierten Beitrag geantwortet</string>
+    <plurals name="notification_activity_replies_subscribed">
+        <item quantity="one">%1$d neue Antwort auf einen abonnierten Beitrag</item>
+        <item quantity="other">%1$d neue Antworten auf einen abonnierten Beitrag</item>
+    </plurals>
+    <string name="notification_activity_mention">Erwähnung in: %1$s</string>
+    <string name="notification_activity_like">Like für: %1$s</string>
+    <string name="notification_activity_reply_like">Gefällt deine Antwort</string>
+    <string name="notification_activity_message">Hat dir eine Nachricht gesendet</string>
+    <plurals name="notification_activity_messages">
+        <item quantity="one">%1$d neue Nachricht</item>
+        <item quantity="other">%1$d neue Nachrichten</item>
+    </plurals>
+    <string name="notification_following">Folgt dir jetzt</string>
+
+    <!-- Notifications: the kind of post a notification points at, substituted into the lines above -->
+    <string name="notification_kind_status">Status-Update</string>
+    <string name="notification_kind_anime_list">Anime-Listen-Update</string>
+    <string name="notification_kind_manga_list">Manga-Listen-Update</string>
+    <string name="notification_kind_message">Nachricht</string>
+    <string name="notification_kind_post">Beitrag</string>
+    <!-- The same nouns with an indefinite article, for "Mentioned you in a status update" -->
+    <string name="notification_kind_status_indefinite">Status-Update</string>
+    <string name="notification_kind_anime_list_indefinite">Anime-Listen-Update</string>
+    <string name="notification_kind_manga_list_indefinite">Manga-Listen-Update</string>
+    <string name="notification_kind_message_indefinite">Nachricht</string>
+    <string name="notification_kind_post_indefinite">Beitrag</string>
+
+    <!-- Notifications: tray summary for stacked social notifications -->
+    <string name="notification_social_summary_title">Neue Aktivität</string>
+    <plurals name="notification_social_summary_count">
+        <item quantity="one">%1$d Benachrichtigung</item>
+        <item quantity="other">%1$d Benachrichtigungen</item>
+    </plurals>
+
+    <!-- Notifications: airing episodes -->
+    <string name="notification_episode_title_fallback">Neue Episode</string>
+    <string name="notification_episode_aired">Episode %1$d ist erschienen</string>
+    <!-- %1$s is a day, one of the three strings below, and %2$s the local airing time -->
+    <string name="notification_episode_one_airs_at">Episode 1 läuft %1$s um %2$s</string>
+    <string name="notification_day_today">heute</string>
+    <string name="notification_day_tomorrow">morgen</string>
+    <!-- %1$s is a formatted date -->
+    <string name="notification_day_on_date">am %1$s</string>
+    <string name="notification_episode_one_airs_under_hour">Episode 1 läuft in weniger als einer Stunde</string>
+    <plurals name="notification_episode_one_airs_in_hours">
+        <item quantity="one">Episode 1 läuft in etwa einer Stunde</item>
+        <item quantity="other">Episode 1 läuft in etwa %1$d Stunden</item>
+    </plurals>
+    <string name="notification_episode_one_available">Episode 1 ist jetzt verfügbar</string>
+    <string name="notification_action_add_to_watching">Zu Schaue ich hinzufügen</string>
+    <plurals name="notification_episodes_aired_summary">
+        <item quantity="one">%1$d neue Episode erschienen</item>
+        <item quantity="other">%1$d neue Episoden erschienen</item>
+    </plurals>
+    <!-- One line of the stacked airing summary: %1$s is the title, %2$d the episode number -->
+    <string name="notification_episode_summary_line">%1$s — Episode %2$d</string>
+    <string name="notification_media_title_fallback">Anime</string>
+
+    <!-- Toasts fired from the "Add to Watching" notification action -->
+    <string name="toast_added_to_watching">\"%1$s\" zu Schaue ich hinzugefügt</string>
+    <!-- %1$s is the error reported by AniList -->
+    <string name="toast_update_failed_reason">Aktualisierung fehlgeschlagen: %1$s</string>
+    <string name="toast_update_failed">Liste konnte nicht aktualisiert werden</string>
 </resources>
