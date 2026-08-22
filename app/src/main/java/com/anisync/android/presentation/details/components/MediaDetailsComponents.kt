@@ -16,7 +16,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.FlowRowOverflow
+import androidx.compose.foundation.layout.ContextualFlowRow
+import androidx.compose.foundation.layout.ContextualFlowRowOverflow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -328,30 +329,31 @@ private fun TagCloud(
     maxLines: Int = Int.MAX_VALUE,
     onOverflowClick: (() -> Unit)? = null
 ) {
-    FlowRow(
+    // ContextualFlowRow, not FlowRow: the "+N more" chip needs shownItemCount during
+    // composition, and FlowRow only settles that count in the draw phase.
+    ContextualFlowRow(
+        itemCount = tags.size,
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         maxLines = maxLines,
         overflow = if (onOverflowClick != null) {
-            FlowRowOverflow.expandIndicator {
+            ContextualFlowRowOverflow.expandIndicator {
                 MoreTagsChip(
                     count = totalItemCount - shownItemCount,
                     onClick = onOverflowClick
                 )
             }
         } else {
-            FlowRowOverflow.Clip
+            ContextualFlowRowOverflow.Clip
         }
-    ) {
-        tags.forEach { tag ->
-            TagChip(
-                tag = tag,
-                expanded = expanded,
-                isSpoiler = isSpoiler,
-                onTagClick = onTagClick
-            )
-        }
+    ) { index ->
+        TagChip(
+            tag = tags[index],
+            expanded = expanded,
+            isSpoiler = isSpoiler,
+            onTagClick = onTagClick
+        )
     }
 }
 
