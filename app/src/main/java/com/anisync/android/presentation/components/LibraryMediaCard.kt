@@ -75,6 +75,10 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.getTitle
 
+/** One line of the badge/countdown row, and the gap between two of them. */
+private val BadgeRowHeight = 20.dp
+private val BadgeRowSpacing = 2.dp
+
 /**
  * Configuration for the LibraryMediaCard content display.
  */
@@ -317,14 +321,24 @@ fun LibraryMediaCard(
 
                     // Both stay on screen. They sit side by side while the card is wide enough and
                     // drop onto a second line when a many-column grid makes it too narrow, rather
-                    // than the badge clipping the countdown out of view. The min height keeps card
-                    // heights aligned across the grid when neither piece applies.
+                    // than the badge clipping the countdown out of view.
+                    //
+                    // Whichever list can show both reserves the second line on every card, even the
+                    // ones with nothing to say. A grid row is only as tall as its tallest card and
+                    // the rest sit top-aligned inside it, so reserving a single line would leave a
+                    // title with no airing date visibly shorter than the one beside it.
+                    val reservedRowHeight = if (config.showBehindBadge && config.showAiringInfo) {
+                        BadgeRowHeight * 2 + BadgeRowSpacing
+                    } else {
+                        BadgeRowHeight
+                    }
+
                     FlowRow(
                         itemVerticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalArrangement = Arrangement.spacedBy(BadgeRowSpacing),
                         maxLines = 2,
-                        modifier = Modifier.heightIn(min = 20.dp)
+                        modifier = Modifier.heightIn(min = reservedRowHeight)
                     ) {
                         if (behindText != null) {
                             StatusBadge(

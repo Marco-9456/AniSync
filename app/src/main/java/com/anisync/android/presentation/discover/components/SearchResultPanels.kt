@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.R
 import com.anisync.android.data.DiscoverViewMode
 import com.anisync.android.data.TitleLanguage
@@ -500,7 +501,7 @@ private fun SearchGridCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(imageAspect)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(ExpressiveShapes.mediaCover)
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center,
             ) {

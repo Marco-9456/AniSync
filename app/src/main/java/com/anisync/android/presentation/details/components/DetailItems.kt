@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.details.components
 
+import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.url
 
@@ -93,7 +94,7 @@ fun CharacterItem(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
-    val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
+    val imageShape = ExpressiveShapes.mediaCover
     val copyToClipboard = rememberCopyToClipboard()
     val copyLabel = stringResource(R.string.a11y_action_copy)
     val nameClipLabel = stringResource(R.string.clip_label_character_name)
@@ -195,7 +196,7 @@ fun StaffItem(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
-    val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
+    val imageShape = ExpressiveShapes.mediaCover
     val copyToClipboard = rememberCopyToClipboard()
     val copyLabel = stringResource(R.string.a11y_action_copy)
     val nameClipLabel = stringResource(R.string.clip_label_staff_name)
@@ -365,7 +366,7 @@ fun RelationItem(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
-    val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
+    val imageShape = ExpressiveShapes.mediaCover
 
     val widthModifier = if (fillCell) {
         Modifier.fillMaxWidth()
@@ -451,7 +452,7 @@ fun RecommendationItem(
     modifier: Modifier = Modifier,
     fillCell: Boolean = false
 ) {
-    val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
+    val imageShape = ExpressiveShapes.mediaCover
     val isUpvoted = recommendation.userRating == "RATE_UP"
     val isDownvoted = recommendation.userRating == "RATE_DOWN"
 

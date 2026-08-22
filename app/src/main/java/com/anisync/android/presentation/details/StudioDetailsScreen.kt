@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Business
@@ -418,7 +419,7 @@ private fun StudioWorkItem(
     modifier: Modifier = Modifier
 ) {
     val cardShape = RoundedCornerShape(24.dp)
-    val coverShape = RoundedCornerShape(8.dp)
+    val coverShape = ExpressiveShapes.mediaCover
     val mainChipLabel = stringResource(R.string.studio_main_studio_chip)
     val listStatus = LocalLibraryStatuses.current[media.mediaId]
     // This card sets its own description, which replaces anything its children say, so the

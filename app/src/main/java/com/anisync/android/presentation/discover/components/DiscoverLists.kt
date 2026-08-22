@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.discover.components
 
+import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.domain.url
 
 import androidx.compose.animation.AnimatedVisibility
@@ -200,9 +201,8 @@ fun DiscoverMediaCard(
 ) {
     val cardShape = remember(style) {
         when (style) {
-            is CardStyle.Hero -> RoundedCornerShape(28.dp)
-            is CardStyle.Standard, is CardStyle.Grid -> RoundedCornerShape(24.dp)
-            is CardStyle.ListItem -> RoundedCornerShape(16.dp)
+            is CardStyle.Hero, is CardStyle.Standard, is CardStyle.Grid, is CardStyle.ListItem ->
+                ExpressiveShapes.mediaCover
         }
     }
 

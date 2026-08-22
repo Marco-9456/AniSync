@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LocalCoverQuality
@@ -192,7 +193,7 @@ private fun HeroCarouselItem(
     animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
-    val itemShape = MaterialTheme.shapes.extraLarge
+    val itemShape = ExpressiveShapes.mediaCover
     val spatialSpec = AppMotion.rememberSpatialSpec()
 
     // Section-scoped prefix: the same media often sits in the rows below too, and duplicate

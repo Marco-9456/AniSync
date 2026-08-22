@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
@@ -52,7 +53,7 @@ import java.util.Locale
 /** Poster aspect from the design: a 171dp card carries a 243dp cover. */
 private const val PosterAspect = 171f / 243f
 
-private val CoverShape = RoundedCornerShape(18.dp)
+private val CoverShape = ExpressiveShapes.mediaCover
 
 private val CoverToTextGap = 10.dp
 private val TitleToMetaGap = 10.dp

@@ -179,7 +179,7 @@ private fun NoteJournalCard(
     val title = entry.getTitle(titleLanguage)
     val snippet = entry.notes.orEmpty().replace("\n", " ").trim()
     val edited = entry.updatedAt?.takeIf { it > 0L }?.let { formatProfileRelativeTime(it) }
-    val coverShape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
+    val coverShape = RoundedCornerShape(topStart = 18.dp, bottomStart = 18.dp)
 
     Card(
         shape = RoundedCornerShape(16.dp),

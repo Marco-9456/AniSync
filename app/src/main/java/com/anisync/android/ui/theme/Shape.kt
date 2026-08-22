@@ -65,4 +65,12 @@ object ExpressiveShapes {
      * Maximum expressiveness for prominent UI elements
      */
     val extraLarge = RoundedCornerShape(28.dp)
+
+    /**
+     * Media cover art (18dp). One radius for every poster in the app outside the Library screen,
+     * which keeps its own. The list-indicator corner tab is drawn against this radius — its concave
+     * fillets are cut for 18dp — so a cover that deviates leaves the tab welded on at the wrong
+     * curve. Change this and [com.anisync.android.R.drawable.ic_list_corner_tab] together.
+     */
+    val mediaCover = RoundedCornerShape(18.dp)
 }
