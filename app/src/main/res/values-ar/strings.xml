@@ -6,7 +6,67 @@
     <string name="nav_library">المكتبة</string>
     <string name="nav_discover">اكتشاف</string>
     <string name="nav_feed">الموجز</string>
+    <string name="nav_forum">المنتدى</string>
     <string name="nav_profile">الملف الشخصي</string>
+
+    <!-- Feed Screen -->
+    <string name="feed_filter_all">الكل</string>
+    <string name="feed_filter_status">الحالة</string>
+    <string name="feed_filter_list">القوائم</string>
+    <string name="feed_scope_global">عام</string>
+    <string name="feed_scope_following">من أتابعهم</string>
+    <string name="feed_empty_global">لا يوجد نشاط بعد — اسحب للتحديث.</string>
+    <string name="feed_empty_following">تابع أشخاصًا لترى نشاطهم هنا.</string>
+    <string name="feed_compose_title">اكتب حالة</string>
+    <string name="feed_compose_placeholder">شارك ما يدور في ذهنك…</string>
+    <string name="feed_compose_submit">نشر</string>
+
+    <!-- Forum Screen -->
+    <string name="forum_browse_categories">تصفح التصنيفات</string>
+    <string name="forum_recent_discussions">نقاشات حديثة</string>
+    <string name="forum_create_thread">موضوع جديد</string>
+    <string name="forum_post_thread">نشر موضوع</string>
+    <string name="forum_reply">رد</string>
+    <string name="forum_write_reply">اكتب ردًا</string>
+    <string name="forum_reply_hint">شارك أفكارك...</string>
+    <string name="forum_post_reply">نشر رد</string>
+    <string name="forum_comments">التعليقات</string>
+    <string name="forum_load_more_comments">تحميل المزيد من التعليقات</string>
+    <string name="forum_comments_count">%1$d تعليق</string>
+    <string name="forum_page_of">الصفحة %1$d من %2$d</string>
+    <string name="forum_load_earlier_count">تحميل الأقدم · %1$d أعلاه</string>
+    <string name="forum_load_more_count">تحميل %1$d إضافية · %2$d متبقية</string>
+    <string name="forum_jump_to_page">الانتقال إلى صفحة</string>
+    <string name="forum_first_page">الأولى</string>
+    <string name="forum_latest_page">الأحدث</string>
+    <string name="forum_current_page_label">الحالية</string>
+    <string name="forum_jump">انتقال</string>
+    <string name="forum_comment_unavailable">التعليق غير متاح، يتم عرض الموضوع من البداية</string>
+    <string name="forum_a11y_open_page_jumper">فتح منتقي الصفحات</string>
+    <string name="forum_search_threads">ابحث في المواضيع...</string>
+    <string name="forum_search_placeholder">ابحث في مواضيع المنتدى</string>
+    <string name="forum_search_prompt">ابحث في النقاشات أو صفِّ حسب الوسائط أو التصنيف أو الكاتب أو الترتيب</string>
+    <string name="forum_discussions_title">النقاشات</string>
+    <string name="forum_discussions_view_all">عرض كل النقاشات</string>
+    <string name="forum_discussions_empty">لا توجد نقاشات بعد — ابدأ واحدًا</string>
+    <string name="forum_discussions_start">ابدأ نقاشًا</string>
+    <string name="cd_scroll_to_top">التمرير إلى الأعلى</string>
+    <string name="forum_select_categories">اختر التصنيفات</string>
+    <string name="forum_thread_title">العنوان</string>
+    <string name="forum_thread_title_hint">عمّ تريد أن تناقش؟</string>
+    <string name="forum_thread_body">المحتوى</string>
+    <string name="forum_thread_body_hint">اكتب رسالتك هنا...</string>
+    <string name="forum_empty_threads">لم يتم العثور على مواضيع.</string>
+    <string name="forum_thread_locked">هذا الموضوع مغلق.</string>
+    <string name="forum_view_on_anilist">عرض على AniList</string>
+    <string name="forum_recently_active">نشط مؤخرًا</string>
+    <string name="forum_new_threads">أحدث المواضيع</string>
+    <string name="forum_subscribed_threads">المواضيع المشترَك بها</string>
+    <string name="forum_saved_threads">المواضيع المحفوظة</string>
+    <string name="forum_replying_to">الرد على %1$s</string>
+    <string name="forum_thread_appbar">موضوع</string>
+    <string name="forum_op_badge">صاحب الموضوع</string>
+
     <!-- Common -->
     <string name="back">رجوع</string>
     <string name="search">بحث</string>
@@ -21,12 +81,14 @@
     <string name="error_oops">عذرًا!</string>
     <string name="feature_coming_soon">قريبًا</string>
     <string name="not_available">غ/م</string>
+
     <!-- Media Types -->
     <string name="media_type_anime">أنمي</string>
     <string name="media_type_manga">مانجا</string>
     <string name="media_type_tv">TV</string>
     <string name="media_type_media">وسائط</string>
     <string name="format_tv_series">مسلسل تلفزيوني</string>
+
     <!-- Status Labels -->
     <string name="status_watching">أشاهد حاليًا</string>
     <string name="status_reading">أقرأ حاليًا</string>
@@ -37,15 +99,23 @@
     <string name="status_repeating">إعادة</string>
     <string name="status_rewatching">إعادة مشاهدة</string>
     <string name="status_rereading">إعادة قراءة</string>
+    <string name="list_indicator_custom">قائمة مخصصة</string>
+
     <!-- Discover Screen -->
     <string name="search_anime_placeholder">ابحث عن أنمي…</string>
     <string name="search_manga_placeholder">ابحث عن مانجا…</string>
     <string name="section_trending_now">الرائج الآن</string>
     <string name="section_all_time_popular">الأكثر شعبية على الإطلاق</string>
     <string name="section_upcoming_season">الموسم القادم</string>
+    <string name="section_newly_added">المضاف حديثًا</string>
+    <string name="section_recent_reviews">أحدث المراجعات</string>
     <string name="section_tba">سيُعلن لاحقًا</string>
+    <string name="recent_reviews_title">أحدث المراجعات</string>
+    <string name="recent_reviews_empty">لم يتم العثور على مراجعات.</string>
+    <string name="reviews_filter_all">الكل</string>
     <string name="error_failed_to_load">فشل تحميل المحتوى</string>
     <string name="search_no_results">لم يتم العثور على نتائج.</string>
+
     <!-- Library Screen -->
     <string name="library_title">المكتبة</string>
     <string name="search_library_placeholder">ابحث في المكتبة…</string>
@@ -67,20 +137,39 @@
     <string name="airing_episode_in">الحلقة %1$d خلال %2$s</string>
     <string name="progress_format">%1$d / %2$s</string>
     <string name="progress_unknown">؟</string>
+
     <!-- Library Empty States -->
     <string name="empty_watching">لا تشاهد شيئًا حاليًا.</string>
     <string name="empty_reading">لا تقرأ شيئًا حاليًا.</string>
     <string name="empty_planning">قائمة خططك فارغة.</string>
     <string name="empty_completed">لا توجد عناصر مكتملة بعد.</string>
     <string name="empty_default">لا يوجد شيء لعرضه هنا.</string>
+
     <!-- Details Screen -->
     <string name="section_cast">طاقم التمثيل</string>
+    <string name="section_staff">طاقم العمل</string>
+    <string name="details_filter_role">الدور</string>
+    <string name="details_filter_language">لغة المؤدين الصوتيين</string>
     <string name="section_related">ذو صلة</string>
+    <string name="section_recommendations">التوصيات</string>
+    <string name="section_reviews">المراجعات</string>
+    <string name="no_review_text">لا يتوفر نص مراجعة كامل.</string>
+    <string name="section_voice_actors">ممثلو الأداء الصوتي</string>
+    <string name="all_reviews">كل المراجعات</string>
+    <string name="section_following">من أتابعهم</string>
+    <string name="all_following">كل من أتابعهم</string>
+    <string name="activity_likes_title">أعجب به</string>
+    <string name="activity_likes_empty">لا توجد إعجابات بعد</string>
+    <string name="found_helpful">وجدوا هذا مفيدًا</string>
     <string name="section_synopsis">القصة</string>
     <string name="stat_episodes">الحلقات</string>
     <string name="stat_chapters">الفصول</string>
     <string name="stat_status">الحالة</string>
     <string name="stat_source">المصدر</string>
+    <string name="stat_popularity">الشعبية</string>
+    <string name="stat_favorites">المفضلة</string>
+    <string name="stat_next_episode">الحلقة التالية</string>
+    <string name="airing_countdown_value">الحلقة %1$d خلال %2$s</string>
     <string name="source_original">أصلي</string>
     <string name="source_manga">مانجا</string>
     <string name="source_light_novel">رواية خفيفة</string>
@@ -100,6 +189,8 @@
     <string name="action_go_back">الرجوع</string>
     <string name="synopsis_show_less">عرض أقل</string>
     <string name="synopsis_read_more">اقرأ المزيد</string>
+    <string name="translate">ترجمة</string>
+    <string name="no_translation_app_found">لم يتم العثور على تطبيق ترجمة</string>
     <string name="fab_close_menu">إغلاق القائمة</string>
     <string name="fab_open_menu">فتح القائمة</string>
     <string name="fab_open_menu_library">فتح القائمة لإدارة حالة المكتبة</string>
@@ -113,6 +204,8 @@
     <string name="stat_format">الصيغة</string>
     <string name="badge_up_to_date">محدّث</string>
     <string name="empty_no_characters">لم يتم العثور على شخصيات</string>
+    <string name="empty_no_staff">لم يتم العثور على طاقم عمل</string>
+    <string name="empty_no_recommendations">لا توجد توصيات بعد</string>
     <string name="empty_no_related">لم يتم العثور على وسائط ذات صلة</string>
     <string name="action_favorite">المفضلة</string>
     <string name="action_share">مشاركة</string>
@@ -126,6 +219,15 @@
     <string name="episodes_suffix">حلقات</string>
     <string name="chapters_suffix">فصول</string>
     <string name="minutes_suffix">دقيقة</string>
+
+    <!-- Media details: expandable "array" info pills (Titles / Synonyms / Producers) and their sheets -->
+    <string name="details_label_titles">العناوين</string>
+    <string name="details_label_romaji">Romaji</string>
+    <string name="details_label_english">الإنجليزية</string>
+    <string name="details_label_native">اللغة الأصلية</string>
+    <string name="details_label_synonyms">مرادفات</string>
+    <string name="details_label_producers">المنتجون</string>
+
     <!-- Profile Screen -->
     <string name="profile_id">المعرّف: %1$d</string>
     <string name="stat_time_watched">وقت المشاهدة</string>
@@ -141,6 +243,12 @@
     <string name="theme_light">فاتح</string>
     <string name="theme_dark">داكن</string>
     <string name="theme_system">حسب النظام</string>
+    <string name="theme_light_desc">استخدم السمة الفاتحة دائمًا</string>
+    <string name="theme_dark_desc">استخدم السمة الداكنة دائمًا</string>
+    <string name="theme_system_desc">اتبع إعداد الجهاز</string>
+    <string name="setting_amoled">سمة AMOLED الداكنة</string>
+    <string name="setting_amoled_desc">استخدم خلفيات سوداء نقية في الوضع الداكن لتوفير الطاقة على شاشات OLED</string>
+
     <!-- Theme Palette Selection -->
     <string name="color_and_style">اللون &amp; الأسلوب</string>
     <string name="palette_style">نمط الألوان</string>
@@ -155,6 +263,36 @@
     <string name="dark_mode_override">تجاوز إعدادات النظام</string>
     <string name="setting_haptic_feedback">الاستجابة اللمسية</string>
     <string name="setting_haptic_description">اهتزاز عند التفاعل باللمس</string>
+    <string name="settings_navigation">التنقل</string>
+    <string name="setting_nav_bar_style">نمط الشريط السفلي</string>
+    <string name="setting_nav_bar_style_anchored">مثبّت</string>
+    <string name="setting_nav_bar_style_anchored_desc">يستقر على الحافة السفلية بزوايا علوية دائرية</string>
+    <string name="setting_nav_bar_style_floating">شريط عائم</string>
+    <string name="setting_nav_bar_style_floating_desc">شريط منفصل بهوامش عن الحواف</string>
+    <string name="setting_nav_bar_show_labels">إظهار التسميات</string>
+    <string name="setting_nav_bar_show_labels_desc">إظهار عناوين الوجهات بجانب كل أيقونة</string>
+    <string name="nav_bar_style_dialog_title">نمط الشريط السفلي</string>
+    <string name="setting_nav_bar_corner_radius">نصف قطر الزوايا</string>
+    <string name="setting_avatar_shape">شكل الصورة الرمزية</string>
+    <string name="avatar_shape_dialog_title">شكل الصورة الرمزية</string>
+    <string name="avatar_shape_disable_profile">تعطيل الشكل لملفي الشخصي</string>
+    <string name="avatar_shape_disable_profile_desc">يعرض شكل الصورة الأصلي لملفك الشخصي فقط</string>
+    <string name="avatar_shape_background">خلفية الصورة الرمزية</string>
+    <string name="avatar_shape_background_desc">يضيف خلفية متناسقة مع السمة خلف الصورة الرمزية</string>
+    <string name="avatar_shape_show_frame">إظهار الإطار</string>
+    <string name="avatar_shape_show_frame_desc">يرسم حلقة وخلفية خلف الصور الرمزية</string>
+    <string name="setting_respect_profile_colors">استخدام ألوان الملف الشخصي</string>
+    <string name="setting_respect_profile_colors_desc">يلوّن التطبيق باللون الذي اختاره المستخدم عند زيارة ملفه الشخصي. الملفات التي تستخدم اللون الافتراضي تُبقي سمتك كما هي.</string>
+    <string name="avatar_shape_clover">برسيم بثماني وريقات</string>
+    <string name="avatar_shape_clover_desc">الشكل الافتراضي ذو الوريقات الثماني</string>
+    <string name="avatar_shape_circle">دائرة</string>
+    <string name="avatar_shape_circle_desc">صورة رمزية دائرية كلاسيكية</string>
+    <string name="avatar_shape_clover_4_leaf">برسيم بأربع وريقات</string>
+    <string name="avatar_shape_clover_4_leaf_desc">بديل أنعم للمربع بأربع وريقات</string>
+    <string name="avatar_shape_ghostish">شبحي</string>
+    <string name="avatar_shape_ghostish_desc">شكل مرح يشبه الشبح</string>
+    <string name="avatar_shape_none">بلا</string>
+    <string name="avatar_shape_none_desc">يعرض الصورة الرمزية بشكلها الطبيعي</string>
     <string name="setting_streaming_service">خدمة البث</string>
     <string name="setting_streaming_service_desc">اختر منصة البث المفضلة لأيقونة أداة الحلقة التالية</string>
     <string name="control_notifications">الإشعارات</string>
@@ -164,11 +302,59 @@
     <string name="notification_planning_desc">تنبيهات عند عرض الحلقة الأولى للمسلسلات التي تخطط لمشاهدتها</string>
     <string name="notification_upcoming">العروض الأولى القادمة</string>
     <string name="notification_upcoming_desc">إشعار مسبق قبل عرض الحلقات</string>
+    <string name="notification_streaming_delay">تأخير توفر البث</string>
+    <string name="notification_streaming_delay_desc">انتظر هذا العدد من الدقائق بعد بث الحلقة قبل إشعارك. مفيد إذا كان موقع البث لديك ينشر الحلقات بعد موعد العرض الرسمي. تعمل الإشعارات عبر فحص كل 15 دقيقة تقريبًا، لذا قد يكون التأخير الفعلي أطول بعدة دقائق من القيمة التي تختارها.</string>
+    <string name="notification_streaming_delay_value">%1$d دقيقة</string>
+    <string name="notification_streaming_delay_off">إيقاف</string>
+    <string name="notification_thread_comment_reply">الردود على التعليقات</string>
+    <string name="notification_thread_comment_reply_desc">عندما يرد أحدهم على تعليقك</string>
+    <string name="notification_thread_subscribed">المواضيع المشترَك بها</string>
+    <string name="notification_thread_subscribed_desc">تعليقات جديدة في المواضيع التي اشتركت بها</string>
+    <string name="notification_thread_comment_mention">الإشارات</string>
+    <string name="notification_thread_comment_mention_desc">عندما يذكرك أحدهم في تعليق</string>
+    <string name="notification_thread_like">إعجابات المواضيع</string>
+    <string name="notification_thread_like_desc">عندما يعجب أحدهم بموضوعك</string>
+    <string name="notification_thread_comment_like">إعجابات التعليقات</string>
+    <string name="notification_thread_comment_like_desc">عندما يعجب أحدهم بتعليقك</string>
+    <string name="notification_group_airing">البث</string>
+    <string name="notification_group_forum">المنتدى</string>
+    <string name="notification_group_activity">النشاط</string>
+    <string name="notification_group_other">أخرى</string>
+    <string name="notification_follows">متابعون جدد</string>
+    <string name="notification_follows_desc">عندما يبدأ شخص ما بمتابعتك</string>
+    <string name="notification_channel_watching">قائمة المشاهدة</string>
+    <string name="notification_channel_watching_desc">حلقات جديدة للعروض التي تشاهدها</string>
+    <string name="notification_channel_planning">قائمة التخطيط</string>
+    <string name="notification_channel_planning_desc">تنبيهات عند صدور الحلقة الأولى للعروض التي تخطط لمشاهدتها</string>
+    <string name="notification_channel_upcoming">العروض القادمة</string>
+    <string name="notification_channel_upcoming_desc">تنبيهات مسبقة قبل بث الحلقات</string>
+    <string name="notification_channel_thread_comment_reply">الردود على التعليقات</string>
+    <string name="notification_channel_thread_comment_reply_desc">عندما يرد أحدهم على تعليقك</string>
+    <string name="notification_channel_thread_subscribed">المواضيع المشترَك بها</string>
+    <string name="notification_channel_thread_subscribed_desc">تعليقات جديدة في المواضيع التي اشتركت بها</string>
+    <string name="notification_channel_thread_comment_mention">الإشارات</string>
+    <string name="notification_channel_thread_comment_mention_desc">عندما يذكرك أحدهم في تعليق</string>
+    <string name="notification_channel_thread_like">إعجابات المواضيع</string>
+    <string name="notification_channel_thread_like_desc">عندما يعجب أحدهم بموضوعك</string>
+    <string name="notification_channel_thread_comment_like">إعجابات التعليقات</string>
+    <string name="notification_channel_thread_comment_like_desc">عندما يعجب أحدهم بتعليقك</string>
     <string name="notification_permission_revoked">تم إلغاء إذن الإشعارات. انقر لفتح الإعدادات.</string>
+
     <!-- Settings Screens -->
     <string name="navigate_back">الرجوع</string>
     <string name="settings_look_and_feel">المظهر والأسلوب</string>
     <string name="settings_look_and_feel_desc">السمة، اللغة، خدمة البث</string>
+
+    <!-- App lock (biometric / device credential) -->
+    <string name="settings_app_lock">قفل التطبيق</string>
+    <string name="settings_app_lock_desc">اطلب بصمتك أو وجهك أو قفل الشاشة لفتح AniSync</string>
+    <string name="app_lock_title">إلغاء قفل AniSync</string>
+    <string name="app_lock_subtitle">أكّد هويتك للمتابعة</string>
+    <string name="app_lock_message">AniSync مقفل</string>
+    <string name="app_lock_unlock">إلغاء القفل</string>
+    <string name="app_lock_unavailable">أعدّ أولًا قفل شاشة (رقم تعريف شخصي أو نمط أو كلمة مرور أو بصمة) في إعدادات جهازك</string>
+    <string name="settings_anilist_account">إعدادات AniList</string>
+    <string name="settings_anilist_account_desc">الحسابات، محتوى البالغين، اللغات، صيغة التقييم</string>
     <string name="settings_notifications">الإشعارات</string>
     <string name="settings_notifications_desc">تنبيهات الحلقات، تذكيرات الخطط</string>
     <string name="settings_storage">التخزين</string>
@@ -179,9 +365,55 @@
     <string name="settings_account_desc">الملف الشخصي، تسجيل الخروج</string>
     <string name="settings_about">حول التطبيق</string>
     <string name="settings_version">الإصدار %1$s</string>
+    <string name="settings_updates">التحديثات</string>
+    <string name="settings_updates_desc">التحقق من الإصدارات الجديدة</string>
+    <string name="settings_links">روابط</string>
+    <string name="settings_links_desc">مستودع المشروع وملف المطور</string>
+    <string name="auto_update">تحديث تلقائي</string>
+    <string name="enable_auto_update">تلقي تنبيهات التحديث عند التشغيل</string>
+    <string name="check_for_updates">التحقق من التحديثات</string>
+    <string name="update_channel">قناة التحديث</string>
+    <string name="update_channel_desc">استلام إصدارات مستقرة أو تجريبية</string>
+    <string name="app_update_failed">فشل التحديث</string>
+    <string name="channel_stable">مستقر</string>
+    <string name="channel_prerelease">إصدار تجريبي</string>
+    <string name="channel_stable_desc">موصى به لمعظم المستخدمين</string>
+    <string name="channel_prerelease_desc">احصل على وصول مبكر للميزات الجديدة</string>
+    <string name="download_update">تنزيل</string>
+    <string name="update_check_failed">فشل التحقق من التحديثات</string>
+    <string name="update_notification_channel_name">تحديثات التطبيق</string>
+    <string name="update_notification_channel_desc">إشعارات عند توفر إصدار جديد من AniSync</string>
+    <string name="update_notification_title">تحديث %s متاح</string>
+    <string name="update_notification_body">الإصدار %1$s متاح. اضغط للتحديث.</string>
+    <string name="release_notes">ملاحظات الإصدار</string>
+    <string name="latest_version">أحدث إصدار</string>
+    <string name="new_update_available">تحديث جديد متاح</string>
+    <string name="downloading_update">جارٍ تنزيل التحديث: %1$d%%</string>
+    <string name="install_update">تثبيت التحديث</string>
+    <string name="update_is_up_to_date">%s محدث إلى أحدث إصدار.</string>
+    <string name="about_improve_translations">تحسين الترجمات</string>
+    <string name="about_improve_translations_desc">ساعد في ترجمة %s</string>
     <string name="settings_title_language">لغة العناوين</string>
     <string name="settings_app_language">لغة التطبيق</string>
     <string name="settings_app_language_system_desc">يستخدم إعداد لغة جهازك</string>
+    <string name="settings_cover_quality">جودة صور الأغلفة</string>
+    <string name="settings_cover_quality_desc">ينطبق على كل غلاف يظهر في التطبيق. الجودة الأعلى تبدو أوضح لكنها تستهلك بيانات ومساحة أكثر.</string>
+    <string name="library_view_title">العرض</string>
+    <string name="library_view_list">قائمة</string>
+    <string name="library_view_grid">شبكة</string>
+    <string name="library_view_automatic">تلقائي</string>
+    <string name="library_view_automatic_desc">اضبط عدد الأعمدة حسب حجم الشاشة</string>
+    <string name="library_view_columns">الأعمدة</string>
+    <string name="library_view_columns_value">%1$d أعمدة</string>
+    <string name="library_view_show_score">إظهار التقييم</string>
+    <string name="library_view_show_score_desc">أظهر تقييمك على بطاقات القائمة والشبكة</string>
+    <string name="list_detail_select_prompt">اختر عنوانًا لعرض التفاصيل</string>
+    <string name="cover_quality_extra_large">كبيرة جدًا</string>
+    <string name="cover_quality_extra_large_desc">أقصى وضوح في كل مكان. الأفضل عبر Wi-Fi.</string>
+    <string name="cover_quality_large">كبيرة</string>
+    <string name="cover_quality_large_desc">واضحة في معظم الواجهات. موصى بها.</string>
+    <string name="cover_quality_medium">متوسطة</string>
+    <string name="cover_quality_medium_desc">الأصغر والأسرع. تشوّش مرئي في صفحات التفاصيل.</string>
     <string name="title_language_romaji">Romaji</string>
     <string name="title_language_english">الإنجليزية</string>
     <string name="title_language_native">اللغة الأصلية</string>
@@ -199,7 +431,26 @@
     <string name="settings_account_anilist">تم تسجيل الدخول عبر AniList</string>
     <string name="settings_view_on_anilist">عرض على AniList</string>
     <string name="settings_view_on_anilist_desc">فتح ملفك الشخصي على AniList</string>
+    <string name="settings_open_in_web">فتح في الويب</string>
+    <string name="options_conflict_title">تغيّرت الإعدادات في مكان آخر</string>
+    <string name="options_conflict_intro">تغيّرت هذه الخيارات على موقع AniList وتختلف عن هذا الجهاز:</string>
+    <string name="options_conflict_field_values">هذا الجهاز: %1$s   ·   الموقع: %2$s</string>
+    <string name="options_conflict_question">هل تريد الاحتفاظ بتغييرات هذا الجهاز أم استخدام تغييرات الموقع؟</string>
+    <string name="options_conflict_keep_local">الاحتفاظ بهذا الجهاز</string>
+    <string name="options_conflict_use_website">استخدام الموقع</string>
     <string name="settings_logout_warning">سيؤدي تسجيل الخروج إلى إزالة جلستك. يمكنك تسجيل الدخول مرة أخرى في أي وقت.</string>
+    <!-- Multiple accounts -->
+    <string name="account_add">إضافة حساب</string>
+    <string name="account_add_desc">سجّل الدخول إلى حساب AniList آخر</string>
+    <string name="account_active">نشط</string>
+    <string name="account_expired">انتهت الجلسة</string>
+    <string name="account_switch">تبديل الحساب</string>
+    <string name="account_remove">إزالة الحساب</string>
+    <string name="account_reauthenticate">إعادة المصادقة</string>
+    <string name="account_sign_in_failed">تعذّر تسجيل الدخول. يرجى المحاولة مرة أخرى.</string>
+    <string name="account_remove_dialog_title">إزالة الحساب؟</string>
+    <string name="account_remove_dialog_message">ستتم إزالة %1$s من هذا الجهاز. يمكنك تسجيل الدخول مرة أخرى في أي وقت.</string>
+    <string name="account_switch_to">التبديل إلى %1$s</string>
     <string name="settings_open_source_licenses">تراخيص المصادر المفتوحة</string>
     <string name="settings_acknowledgments">شكر وتقدير</string>
     <string name="settings_acknowledgments_desc">شكرًا للمساهمين والمكتبات</string>
@@ -207,12 +458,17 @@
     <string name="settings_anilist_api_desc">البيانات مقدمة من واجهة AniList GraphQL API</string>
     <string name="settings_made_with_love">صُنع بحب لعشاق الأنمي</string>
     <string name="settings_search_placeholder">البحث في الإعدادات</string>
+    <string name="search_settings">البحث في الإعدادات</string>
+    <string name="clear_search">مسح البحث</string>
+    <string name="no_settings_found">لم يتم العثور على إعدادات</string>
     <string name="settings_oss_description">تم بناء AniSync باستخدام مكتبات المصادر المفتوحة التالية:</string>
     <string name="settings_oss_footer">جميع المكتبات مستخدمة وفقًا لتراخيصها الخاصة.</string>
+
     <!-- Logout Dialog -->
     <string name="logout_dialog_title">تسجيل الخروج</string>
     <string name="logout_dialog_message">هل أنت متأكد أنك تريد تسجيل الخروج؟</string>
     <string name="logout_dialog_confirm">تسجيل الخروج</string>
+
     <!-- Settings Accessibility -->
     <string name="a11y_settings_search">البحث في الإعدادات</string>
     <string name="a11y_settings_clear_search">مسح البحث</string>
@@ -225,8 +481,10 @@
     <string name="a11y_settings_selected">محدد</string>
     <string name="a11y_back_button">الرجوع</string>
     <string name="a11y_app_icon">أيقونة التطبيق</string>
+
     <!-- Theme Mode Dialog -->
     <string name="theme_mode_dialog_title">السمة</string>
+
     <!-- Acknowledgments Screen -->
     <string name="settings_acknowledgments_description">لم يكن AniSync ممكنًا لولا مجتمع المصادر المفتوحة الرائع والمساهمين التالين:</string>
     <string name="acknowledgments_section_data">مزودو البيانات</string>
@@ -238,6 +496,7 @@
     <string name="acknowledgments_users">مستخدمونا</string>
     <string name="acknowledgments_users_desc">شكرًا لاستخدامكم AniSync وتقديم ملاحظاتكم القيّمة</string>
     <string name="acknowledgments_footer">صُنع بحب لعشاق الأنمي في كل مكان.</string>
+
     <!-- Developer Debug (debug builds only) -->
     <string name="section_developer">المطوّر</string>
     <string name="debug_notifications">تصحيح الإشعارات</string>
@@ -245,32 +504,260 @@
     <string name="debug_test_planning">اختبار الخطط</string>
     <string name="debug_test_advance">اختبار متقدم (١٢ ساعة)</string>
     <string name="debug_test_imminent">اختبار وشيك (ساعتان)</string>
+    <string name="debug_bump_inbox_badge">زيادة شارة صندوق الوارد</string>
     <string name="debug_clear_all">مسح الكل</string>
+    <string name="settings_developer_tools">أدوات المطور</string>
+    <string name="settings_developer_tools_desc">أدوات تصحيح واختبار</string>
+    <string name="settings_font_playground">مختبر الخطوط</string>
+    <string name="settings_font_playground_subtitle">تحكم مباشر بمحاور الخطوط المتغيرة</string>
+    <string name="dev_tools_unlocked">تم فتح أدوات المطور</string>
+    <string name="dev_tools_already_unlocked">أدوات المطور مفتوحة بالفعل</string>
+    <string name="dev_tools_taps_remaining">%1$d نقرات لفتح أدوات المطور</string>
+    <string name="dev_tools_lock_section">تعطيل</string>
+    <string name="dev_tools_lock_button">إخفاء أدوات المطور</string>
+    <string name="dev_tools_lock_subtitle">يزيل عنصر أدوات المطور. انقر على رقم الإصدار سبع مرات في صفحة حول التطبيق لإعادته.</string>
+    <string name="dev_tools_lock_dialog_title">إخفاء أدوات المطور؟</string>
+    <string name="dev_tools_lock_dialog_message">سيُزال عنصر أدوات المطور من الإعدادات. يمكنك إعادة تفعيله بالنقر على رقم الإصدار سبع مرات في صفحة حول التطبيق.</string>
+    <string name="dev_tools_lock_dialog_confirm">إخفاء</string>
+    <string name="dev_tools_lock_dialog_cancel">إلغاء</string>
+    <string name="dev_tools_locked_toast">تم إخفاء أدوات المطور</string>
+    <string name="font_playground_title">الخطوط</string>
+    <string name="font_playground_reset">إعادة ضبط محاور الخط</string>
+    <string name="font_axis_weight">السماكة (wght)</string>
+    <string name="font_axis_width">العرض (wdth)</string>
+    <string name="font_axis_optical_size">الحجم البصري (opsz)</string>
+    <string name="font_axis_slant">الميل (slnt)</string>
+    <string name="font_axis_rounded">الاستدارة (ROND)</string>
+    <string name="font_category_all">الكل</string>
+    <string name="font_category_display">عرض</string>
+    <string name="font_category_headline">عنوان رئيسي</string>
+    <string name="font_category_title">عنوان</string>
+    <string name="font_category_body">متن</string>
+    <string name="font_category_label">تسمية</string>
+    <string name="debug_build_info">معلومات البناء</string>
+    <string name="debug_update_section">تصحيح التحديث</string>
+    <string name="debug_force_update_check">فرض التحقق من التحديث</string>
+    <string name="debug_fetch_latest_release">جلب أحدث إصدار</string>
+    <string name="debug_trigger_crash">إطلاق تعطل</string>
+    <string name="debug_crash_section">مُبلّغ الأعطال</string>
+    <string name="settings_copy_app_info">نسخ معلومات التطبيق</string>
+    <string name="settings_copy_app_info_desc">لتقارير الأخطاء — ينسخ الإصدار وإصدار Android وبنى المعالج إلى الحافظة</string>
+    <string name="settings_app_info_copied">تم نسخ معلومات التطبيق إلى الحافظة</string>
+    <string name="copied_to_clipboard">تم النسخ إلى الحافظة</string>
+    <string name="a11y_action_copy">نسخ إلى الحافظة</string>
+    <string name="copied_name">تم نسخ الاسم إلى الحافظة</string>
+    <string name="copied_title">تم نسخ العنوان إلى الحافظة</string>
+    <string name="copied_link">تم نسخ رابط %1$s إلى الحافظة</string>
+    <string name="clip_label_title">العنوان</string>
+    <string name="clip_label_synopsis">القصة</string>
+    <string name="clip_label_character_name">اسم الشخصية</string>
+    <string name="clip_label_staff_name">اسم أحد الطاقم</string>
+    <string name="clip_label_studio_name">اسم الاستوديو</string>
+    <string name="studio_label_animation_studio">استوديو الرسوم المتحركة</string>
+    <string name="studio_label_other_studio">استوديو</string>
+    <string name="studio_label_works">الأعمال</string>
+    <string name="studio_label_total_works">إجمالي الأعمال</string>
+    <string name="studio_label_website">الموقع الإلكتروني</string>
+    <string name="studio_label_type">النوع</string>
+    <string name="studio_main_studio_chip">الاستوديو الرئيسي</string>
+    <string name="clip_label_external_link">رابط خارجي (%1$s)</string>
+
     <string name="control_log_out">تسجيل الخروج</string>
     <string name="content_description_avatar">الصورة الرمزية</string>
     <string name="profile_level">المستوى %1$d</string>
     <string name="profile_active">نشط %1$s</string>
+    <string name="notifications_title">الإشعارات</string>
+    <string name="notifications_filter_all">الكل</string>
+    <string name="notifications_filter_airing">البث</string>
+    <string name="notifications_filter_status">الحالة</string>
+    <string name="notifications_filter_messages">الرسائل</string>
+    <string name="notifications_filter_forum">المنتدى</string>
+    <string name="notifications_filter_follows">المتابعات</string>
+    <string name="notifications_filter_media">الوسائط</string>
+    <string name="notifications_open">فتح الإشعارات</string>
+    <string name="notifications_unread_overflow_a11y">أكثر من 999 إشعارًا غير مقروء</string>
+    <string name="notifications_unread_indicator_a11y">إشعارات جديدة</string>
+    <plurals name="notifications_unread_count_a11y">
+        <item quantity="zero">%1$d إشعار غير مقروء</item>
+        <item quantity="one">%1$d إشعار غير مقروء</item>
+        <item quantity="two">%1$d إشعاران غير مقروءان</item>
+        <item quantity="few">%1$d إشعارات غير مقروءة</item>
+        <item quantity="many">%1$d إشعارًا غير مقروء</item>
+        <item quantity="other">%1$d إشعار غير مقروء</item>
+    </plurals>
+    <string name="notifications_section_new">جديد</string>
+    <string name="notifications_section_earlier">سابقًا</string>
+    <string name="notifications_new_count">%1$s جديد</string>
+    <string name="notifications_mark_all_read">تعليم الكل كمقروء</string>
+    <string name="a11y_notification_unread">غير مقروء</string>
     <string name="profile_edit">تعديل الملف الشخصي</string>
+    <string name="profile_unknown_error">حدث خطأ أثناء تحميل ملفك الشخصي.</string>
+    <string name="profile_user_load_error">تعذّر تحميل هذا الملف الشخصي الآن. قد يكون الحساب خاصًا أو غير متاح أو مقيدًا مؤقتًا بالمعدل.</string>
+    <string name="profile_tab_overview">نظرة عامة</string>
+    <string name="profile_tab_activity">النشاط</string>
+    <string name="profile_tab_social">اجتماعي</string>
+    <!-- Media details section tabs -->
+    <string name="details_tab_overview">نظرة عامة</string>
+    <string name="details_tab_characters">الشخصيات</string>
+    <string name="details_tab_staff">طاقم العمل</string>
+    <string name="details_tab_stats">إحصائيات</string>
+    <string name="details_tab_social">اجتماعي</string>
+    <!-- Media details Stats tab -->
+    <string name="media_stats_rankings">التصنيفات</string>
+    <string name="media_stats_activity_per_day">النشاط اليومي الأخير</string>
+    <string name="media_stats_score_progression">تطور التقييم أثناء العرض</string>
+    <string name="media_stats_watchers_progression">تطور عدد المشاهدين أثناء العرض</string>
+    <string name="media_stats_status_distribution">توزيع الحالات</string>
+    <string name="media_stats_score_distribution">توزيع التقييمات</string>
+    <string name="media_stats_peak_activity">ذروة النشاط</string>
+    <string name="media_stats_latest_score">تقييم آخر حلقة</string>
+    <string name="media_stats_peak_watchers">ذروة المشاهدين</string>
+    <string name="media_stats_total_entries">إجمالي العناصر</string>
+    <string name="media_stats_episode_byline">الحلقة %1$d</string>
+    <string name="media_stats_episode_eyebrow">الحلقة %1$d</string>
+    <string name="media_stats_day_activity">نشاط اليوم</string>
+    <string name="media_stats_score_bucket_eyebrow">التقييم %1$d</string>
+    <string name="stat_hashtag">الوسم</string>
+    <string name="media_stats_percent_of_ratings">%1$d%% من التقييمات</string>
+    <string name="media_stats_empty">لا توجد إحصائيات مجتمعية لهذا العنوان بعد.</string>
+    <string name="media_stats_error">تعذّر تحميل الإحصائيات.</string>
+    <string name="media_stats_activity_chart_a11y">مخطط النشاط اليومي على مدى %1$d يوم، بلغ ذروته %2$s في %3$s</string>
+    <string name="media_stats_score_chart_a11y">مخطط التقييم حسب الحلقة، من الحلقة %1$d إلى %2$d، أدنى تقييم %3$d، أعلى تقييم %4$d</string>
+    <string name="media_stats_watchers_chart_a11y">مخطط المشاهدين حسب الحلقة، من الحلقة %1$d إلى %2$d، بلغ ذروته %3$s عند الحلقة %4$d</string>
+    <string name="media_stats_score_dist_a11y">رسم بياني لتوزيع التقييمات، أكثر تقييم شيوعًا %1$d بـ %2$s تقييم</string>
+    <string name="profile_activity_all">الكل</string>
+    <string name="profile_activity_status">الحالة</string>
+    <string name="profile_activity_messages">الرسائل</string>
+    <string name="profile_activity_lists">القوائم</string>
+    <string name="profile_social_following">يتابع</string>
+    <string name="profile_social_followers">المتابعون</string>
+    <string name="profile_social_forum_threads">مواضيع المنتدى</string>
+    <string name="profile_social_forum_comments">تعليقات المنتدى</string>
+    <string name="profile_view_biography">عرض السيرة</string>
+    <string name="profile_biography_title">السيرة</string>
+    <string name="profile_follow">متابعة</string>
+    <string name="profile_following">يتابع</string>
+    <string name="profile_follows_you">يتابعك</string>
+    <string name="profile_mutual">متابعة متبادلة</string>
+    <string name="profile_message">رسالة</string>
+    <string name="profile_more_options">خيارات أكثر</string>
+    <string name="profile_no_recent_updates">لا توجد تحديثات حديثة.</string>
+    <string name="profile_no_activity_for_filter">لا يوجد نشاط %1$s.</string>
+    <string name="profile_placeholder_activity_status">سيظهر نشاط الحالة هنا.</string>
+    <string name="profile_placeholder_activity_messages">سيظهر نشاط الرسائل هنا.</string>
+    <string name="profile_placeholder_activity_lists">سيظهر نشاط القوائم هنا.</string>
+    <string name="profile_social_placeholder">سيظهر محتوى %1$s هنا.</string>
+    <string name="profile_placeholder_anime">سيظهر محتوى قائمة الأنمي هنا.</string>
+    <string name="profile_placeholder_manga">سيظهر محتوى قائمة المانغا هنا.</string>
+    <string name="profile_placeholder_cast">سيظهر محتوى الطاقم هنا.</string>
+    <string name="profile_placeholder_favorites">سيظهر محتوى المفضلة هنا.</string>
+    <string name="profile_placeholder_reviews">سيظهر محتوى المراجعات هنا.</string>
+    <string name="profile_placeholder_stats">ستظهر الإحصاءات التفصيلية هنا.</string>
+    <string name="profile_manga_stats_coming_soon">المزيد من إحصائيات المانجا قريبًا</string>
+
+    <!-- Edit Profile Dialog -->
+    <string name="edit_profile_title">تعديل الملف الشخصي</string>
+    <string name="edit_profile_about_label">نبذة</string>
+
+    <string name="profile_cast_characters">الشخصيات</string>
+    <string name="profile_cast_staff">طاقم العمل</string>
     <string name="stat_days_watched">أيام المشاهدة</string>
     <string name="stat_manga_read">مانجا مقروءة</string>
     <string name="section_anime_status">حالة الأنمي</string>
     <string name="section_recent_updates">التحديثات الأخيرة</string>
+    <string name="snapshot_days">%1$s يوم</string>
+    <string name="snapshot_chapters">%1$s فصل</string>
     <string name="status_watching_count">يشاهد %1$d</string>
     <string name="status_completed_count">مكتمل %1$d</string>
     <string name="status_on_hold">متوقف مؤقتًا</string>
     <string name="status_on_hold_count">متوقف مؤقتًا %1$d</string>
     <string name="status_dropped_count">متروك %1$d</string>
-    <string name="profile_favorites_studios">الاستوديوهات</string>
     <string name="content_description_profile_avatar">الصورة الرمزية للملف الشخصي</string>
     <string name="content_description_media_cover">غلاف %1$s</string>
+
     <!-- Notification Dialog -->
     <string name="dialog_enable_notifications_title">تفعيل الإشعارات</string>
     <string name="dialog_enable_notifications_message">يرجى تفعيل الإشعارات من إعدادات النظام.</string>
+
     <!-- External Links -->
     <string name="section_external_links">روابط خارجية &amp; بث</string>
     <string name="subsection_streaming">شاهد على</string>
     <string name="subsection_reading">اقرأ على</string>
     <string name="subsection_external">روابط خارجية</string>
+
+    <!-- Video playback errors -->
+    <string name="player_error_network">لا يوجد اتصال. تحقق من شبكتك وحاول مرة أخرى.</string>
+    <string name="player_error_server">يواجه مضيف الفيديو مشكلة الآن. حاول مرة أخرى بعد قليل.</string>
+    <string name="player_error_rate_limited">مضيف الفيديو يرفض الطلبات. انتظر قليلًا ثم حاول مرة أخرى.</string>
+    <string name="player_error_missing">لم يعد هذا الفيديو موجودًا لدى المضيف.</string>
+    <string name="player_error_format">صيغة الفيديو هذه غير مدعومة.</string>
+    <string name="player_error_generic">تعذّر تشغيل هذا الفيديو.</string>
+
+    <!-- Openings &amp; Endings (AnimeThemes) -->
+    <string name="section_themes">المقدمات &amp; النهايات</string>
+    <plurals name="themes_openings_count">
+        <item quantity="zero">%d مقدمة</item>
+        <item quantity="one">%d مقدمة</item>
+        <item quantity="two">%d مقدمتان</item>
+        <item quantity="few">%d مقدمات</item>
+        <item quantity="many">%d مقدمة</item>
+        <item quantity="other">%d مقدمة</item>
+    </plurals>
+    <plurals name="themes_endings_count">
+        <item quantity="zero">%d نهاية</item>
+        <item quantity="one">%d نهاية</item>
+        <item quantity="two">%d نهايتان</item>
+        <item quantity="few">%d نهايات</item>
+        <item quantity="many">%d نهاية</item>
+        <item quantity="other">%d نهاية</item>
+    </plurals>
+    <plurals name="themes_versions_count">
+        <item quantity="zero">%d إصدار</item>
+        <item quantity="one">%d إصدار</item>
+        <item quantity="two">%d إصداران</item>
+        <item quantity="few">%d إصدارات</item>
+        <item quantity="many">%d إصدارًا</item>
+        <item quantity="other">%d إصدار</item>
+    </plurals>
+    <string name="themes_filter_all">الكل</string>
+    <string name="themes_group_openings">المقدمات</string>
+    <string name="themes_group_endings">النهايات</string>
+    <plurals name="themes_episodes">
+        <item quantity="zero">الحلقة %1$s</item>
+        <item quantity="one">الحلقة %1$s</item>
+        <item quantity="two">الحلقتان %1$s</item>
+        <item quantity="few">الحلقات %1$s</item>
+        <item quantity="many">الحلقات %1$s</item>
+        <item quantity="other">الحلقات %1$s</item>
+    </plurals>
+    <string name="themes_all_episodes">كل الحلقات</string>
+    <string name="themes_coverage">%1$d من %2$d حلقة</string>
+    <string name="themes_episode_scale">الحلقة 1 – %1$d</string>
+    <string name="themes_opening_number">المقدمة %1$d</string>
+    <string name="themes_ending_number">النهاية %1$d</string>
+    <string name="themes_spoiler_tag">حرق أحداث</string>
+    <string name="cd_theme_spoiler">قد يكشف هذا المقطع أحداث المسلسل</string>
+    <string name="themes_failed_title">تعذّر تحميل المقاطع</string>
+    <string name="themes_failed_body">بيانات AniList في هذه الصفحة غير متأثرة. فشل طلب AnimeThemes فقط.</string>
+    <string name="themes_retry">إعادة المحاولة</string>
+    <string name="themes_retry_in">إعادة المحاولة خلال %1$d ث</string>
+    <string name="themes_empty">لا يدرج AnimeThemes هذا العنوان بعد.</string>
+    <string name="themes_video">فيديو</string>
+    <string name="themes_appears_in">يظهر في</string>
+    <string name="themes_versions">الإصدارات</string>
+    <string name="themes_version_label">الإصدار %1$d</string>
+    <string name="themes_variant_creditless">بدون أسماء</string>
+    <string name="themes_variant_with_credits">مع الأسماء</string>
+    <string name="themes_variant_subbed">مترجم</string>
+    <string name="themes_variant_lyrics">كلمات الأغنية</string>
+    <string name="themes_open_source">فتح على AnimeThemes</string>
+    <string name="themes_attribution">بيانات المقاطع والفيديو من AnimeThemes.moe</string>
+    <string name="themes_actions_label">في مواقع أخرى</string>
+    <string name="themes_action_animethemes">AnimeThemes</string>
+    <string name="themes_action_share">مشاركة</string>
+    <string name="themes_share_subject">%1$s لـ %2$s</string>
+    <string name="cd_theme_play">تشغيل %1$s</string>
+
     <!-- Edit Library Entry -->
     <string name="edit_entry">تعديل العنصر</string>
     <string name="no_score">بدون تقييم</string>
@@ -282,11 +769,26 @@
     <string name="times_reread">مرات إعادة القراءة</string>
     <string name="notes">ملاحظات</string>
     <string name="notes_placeholder">أضف ملاحظاتك هنا…</string>
+    <string name="your_notes">ملاحظاتك</string>
+    <string name="a11y_edit_notes">تعديل الملاحظات</string>
+    <string name="a11y_has_notes">يحتوي على ملاحظات</string>
+    <!-- Notes journal -->
+    <string name="notes_journal_title">الملاحظات</string>
+    <string name="a11y_open_notes_journal">فتح الملاحظات</string>
+    <string name="notes_journal_search_hint">ابحث في الملاحظات</string>
+    <string name="notes_journal_empty_title">لا توجد ملاحظات بعد</string>
+    <string name="notes_journal_empty_subtitle">تظهر هنا الملاحظات التي تضيفها إلى عناصر مكتبتك.</string>
+    <string name="notes_journal_no_results">لا توجد ملاحظات تطابق بحثك.</string>
     <string name="save">حفظ</string>
     <string name="delete_entry_confirm">هل تريد إزالة هذا العنصر من مكتبتك؟</string>
     <string name="entry_saved">تم حفظ العنصر</string>
     <string name="entry_deleted">تمت إزالة العنصر</string>
+
     <!-- Login Screen -->
+    <string name="login_welcome_to">مرحبًا بك في</string>
+    <string name="login_tagline_short">مكتبة الأنمي الخاصة بك، متزامنة بسلاسة.</string>
+    <string name="login_lets_get_started">لنبدأ</string>
+    <string name="login_with_anilist">تسجيل الدخول عبر AniList</string>
     <string name="login_sync_your">زامن</string>
     <string name="login_world">عالمك</string>
     <string name="login_tagline">الرفيق المثالي لتتبع الأنمي &amp; المانجا، مدعوم من AniList.</string>
@@ -294,6 +796,8 @@
     <string name="login_description">سجّل الدخول للوصول إلى مكتبتك واكتشاف مفضلات جديدة.</string>
     <string name="login_continue_with_anilist">المتابعة عبر AniList</string>
     <string name="login_terms">بالمتابعة، فإنك توافق على شروط الخدمة الخاصة بنا.</string>
+    <string name="cd_login">تسجيل الدخول</string>
+
     <!-- Search Filters -->
     <string name="filter">تصفية</string>
     <string name="filter_clear_all">مسح الكل</string>
@@ -302,17 +806,23 @@
     <string name="filter_season">الموسم</string>
     <string name="filter_format">الصيغة</string>
     <string name="filter_status">الحالة</string>
+    <string name="year_picker_hint_empty">انقر على سنة. انقر على أخرى لتحديد نطاق.</string>
+    <string name="year_picker_hint_single">انقر على سنة أخرى لتحديد نطاق</string>
+    <string name="year_picker_hint_range">انقر على أي سنة للبدء من جديد</string>
+
     <!-- Seasons -->
     <string name="season_winter">الشتاء</string>
     <string name="season_spring">الربيع</string>
     <string name="season_summer">الصيف</string>
     <string name="season_fall">الخريف</string>
+
     <!-- Media Status (for search filter) -->
     <string name="media_status_airing">يُعرض حاليًا</string>
     <string name="media_status_finished">منتهٍ</string>
     <string name="media_status_not_yet_released">لم يصدر بعد</string>
     <string name="media_status_cancelled">ملغى</string>
     <string name="media_status_hiatus">متوقف</string>
+
     <!-- Media Formats -->
     <string name="format_tv">TV</string>
     <string name="format_tv_short">TV قصير</string>
@@ -323,13 +833,97 @@
     <string name="format_music">موسيقى</string>
     <string name="format_novel">رواية</string>
     <string name="format_one_shot">ون شوت</string>
-    <string name="separator_bullet" translatable="false">•</string>
+
     <!-- Widget Descriptions -->
     <string name="widget_weekly_calendar_description">عرض جدول الأنمي لسبعة أيام بنظرة سريعة</string>
     <string name="widget_airing_today_description">يعرض حلقات الأنمي التي تُبث اليوم</string>
     <string name="widget_up_next_description">وصول سريع إلى حلقتك التالية</string>
     <string name="widget_quick_update_description">تحديث تقدم الحلقات بسرعة</string>
     <string name="widget_trending_description">اطّلع على ما هو رائج في عالم الأنمي</string>
+    <string name="widget_watch_progress_description">اطّلع على مدى اقتراب مسلسلاتك من الاكتمال</string>
+
+    <!-- Widget titles, also the labels shown in the widget picker -->
+    <string name="widget_up_next_title">الحلقة التالية</string>
+    <string name="widget_airing_today_title">يُعرض اليوم</string>
+    <string name="widget_calendar_title">الجدول الأسبوعي</string>
+    <string name="widget_trending_title">الرائج الآن</string>
+    <string name="widget_watch_progress_title">تقدم المشاهدة</string>
+
+    <!-- Shared widget labels -->
+    <string name="widget_filter_all">الكل</string>
+    <string name="widget_filter_mine">قائمتي</string>
+    <string name="widget_episode_short">الحلقة %1$d</string>
+    <string name="widget_episode_long">الحلقة %1$d</string>
+    <!-- Pill on the calendar card. Upper case in the shipped design. -->
+    <string name="widget_episode_badge">الحلقة %1$d</string>
+    <string name="widget_error_title">تعذّر عرض هذا الآن</string>
+    <string name="widget_error_action">انقر لإعادة المحاولة</string>
+
+    <!-- Widget countdowns -->
+    <string name="widget_time_airing_now">يُعرض الآن</string>
+    <string name="widget_time_in_days">خلال %1$dي %2$dس</string>
+    <string name="widget_time_in_hours">خلال %1$dس %2$dد</string>
+    <string name="widget_time_in_minutes">خلال %1$dد</string>
+    <string name="widget_time_short_days">%1$dي</string>
+    <string name="widget_time_short_hours">%1$dس</string>
+    <string name="widget_time_short_minutes">%1$dد</string>
+
+    <!-- Up Next widget -->
+    <string name="widget_up_next_empty_title">أنت متابع لكل شيء</string>
+    <string name="widget_up_next_empty_body">لا شيء من قائمتك يُعرض قريبًا</string>
+
+    <!-- Airing Today widget -->
+    <string name="widget_airing_at">يُعرض في %1$s</string>
+    <string name="widget_airing_today_empty_all">لا شيء يُعرض اليوم</string>
+    <string name="widget_airing_today_empty_all_hint">عد غدًا</string>
+    <string name="widget_airing_today_empty_mine">لا شيء من قائمتك اليوم</string>
+    <string name="widget_airing_today_empty_mine_hint">بدّل إلى الكل لرؤية كل ما يُعرض</string>
+
+    <!-- Weekly Calendar widget -->
+    <string name="widget_calendar_empty_all">لا توجد حلقات مجدولة</string>
+    <string name="widget_calendar_empty_mine">لا شيء من قائمتك يُعرض</string>
+    <string name="widget_calendar_empty_hint">جرّب اختيار يوم آخر</string>
+
+    <!-- Trending widget -->
+    <string name="widget_trending_score">تقييم %1$d%%</string>
+    <string name="widget_trending_empty_title">لا توجد بيانات رائجة بعد</string>
+    <string name="widget_trending_empty_body">افتح AniSync لتحميلها</string>
+
+    <!-- Watch Progress widget -->
+    <string name="widget_type_anime">أنمي</string>
+    <string name="widget_type_manga">مانجا</string>
+    <string name="widget_wp_left">بقي %1$d</string>
+    <string name="widget_wp_left_manga">بقي %1$d فصل</string>
+    <string name="widget_wp_ongoing">مستمر</string>
+    <!-- A series with no published total measures against what has aired so far instead. -->
+    <string name="widget_wp_behind">متأخر %1$d</string>
+    <string name="widget_wp_caught_up">متابع</string>
+    <string name="widget_wp_syncing_manga">افتح AniSync مرة لمزامنة المانجا لديك</string>
+    <string name="widget_wp_read">%1$d مقروء</string>
+    <string name="widget_wp_current_ep">الحلقة %1$d</string>
+    <string name="widget_wp_next_ep">الحلقة %1$d خلال %2$s</string>
+    <string name="widget_wp_finale">النهاية تُعرض %1$s</string>
+    <string name="widget_wp_empty_title">لا شيء قيد المتابعة</string>
+    <string name="widget_wp_empty_body">تظهر هنا المسلسلات التي تشاهدها، الأقرب إلى الاكتمال أولًا.</string>
+    <string name="widget_wp_empty_body_manga">تظهر هنا السلاسل التي تقرأها، الأقرب إلى الاكتمال أولًا.</string>
+
+    <!-- Placeholder content for the widget picker previews, never shown in a live widget. -->
+
+    <!-- Widget content descriptions -->
+    <string name="a11y_widget_filter_all">إظهار كل ما يُعرض</string>
+    <string name="a11y_widget_filter_mine">إظهار قائمتك فقط</string>
+    <string name="a11y_widget_open_discover">فتح اكتشاف</string>
+    <string name="a11y_widget_type_anime">إظهار الأنمي</string>
+    <string name="a11y_widget_type_manga">إظهار المانجا</string>
+    <string name="a11y_widget_day_selected">%1$s %2$d، محدد</string>
+    <string name="a11y_widget_up_next_row">%1$s، الحلقة %2$d، %3$s</string>
+    <string name="a11y_widget_airing_row">%1$s، الحلقة %2$d، تُعرض في %3$s</string>
+    <string name="a11y_widget_trending_row">رقم %1$d، %2$s</string>
+    <string name="a11y_wp_card_anime">%1$s، %2$d من %3$d حلقة، بقي %4$d</string>
+    <string name="a11y_wp_card_manga">%1$s، %2$d من %3$d فصل، بقي %4$d</string>
+    <string name="a11y_wp_card_unknown">%1$s، الحلقة %2$d، الإجمالي غير معروف</string>
+    <string name="a11y_wp_card_unknown_manga">%1$s، %2$d فصل مقروء، الإجمالي غير معروف</string>
+
     <!-- Widget Configuration -->
     <string name="widget_config_title">إعداد الأداة</string>
     <string name="widget_config_subtitle">خصّص مظهر وسلوك أداة الحلقة التالية</string>
@@ -345,6 +939,7 @@
     <string name="widget_config_include_planning_desc">عرض العناصر من قائمة خططك</string>
     <string name="widget_config_add_widget">إضافة الأداة</string>
     <string name="widget_config_items_visible">العناصر المرئية في الأداة</string>
+
     <!-- Statistics Screen -->
     <string name="statistics_title">الإحصائيات</string>
     <string name="statistics_total_anime">إجمالي الأنمي</string>
@@ -355,9 +950,11 @@
     <string name="statistics_top_genres">أبرز الأنواع</string>
     <string name="statistics_formats">الصيغ</string>
     <string name="statistics_top_studios">أبرز الاستوديوهات</string>
+    <string name="profile_favorites_studios">الاستوديوهات</string>
     <string name="statistics_by_year">حسب سنة الإصدار</string>
     <string name="statistics_anime_label">أنمي</string>
     <string name="statistics_view">عرض الإحصائيات</string>
+
     <string name="statistics_anime">أنمي</string>
     <string name="statistics_manga">مانجا</string>
     <string name="statistics_total_manga">إجمالي المانجا</string>
@@ -366,6 +963,60 @@
     <string name="statistics_no_manga_stats">لا تتوفر إحصائيات مانجا</string>
     <string name="statistics_entries">%d عنصر</string>
     <string name="statistics_no_data">لا تتوفر بيانات إحصائية</string>
+
+    <!-- Activity heatmap -->
+    <string name="statistics_activity_history">سجل النشاط</string>
+    <string name="statistics_activity_summary">%1$d نشاط خلال %2$d يوم</string>
+    <string name="statistics_activity_less">أقل</string>
+    <string name="statistics_activity_more">أكثر</string>
+    <string name="statistics_activity_a11y">خريطة حرارية للنشاط تضم %1$d نشاطًا خلال العام الماضي</string>
+    <string name="statistics_activity_update_info">يحدّث AniList إحصائياتك تلقائيًا كل 48 ساعة</string>
+    <plurals name="statistics_activity_count">
+        <item quantity="zero">%d نشاط</item>
+        <item quantity="one">%d نشاط</item>
+        <item quantity="two">%d نشاطان</item>
+        <item quantity="few">%d أنشطة</item>
+        <item quantity="many">%d نشاطًا</item>
+        <item quantity="other">%d نشاط</item>
+    </plurals>
+
+    <!-- Activity history: week breakdown -->
+    <string name="statistics_activity_period_month">شهر</string>
+    <string name="statistics_activity_period_week">أسبوع</string>
+    <string name="statistics_activity_week_current">هذا الأسبوع</string>
+    <string name="statistics_activity_week_previous">الأسبوع الماضي</string>
+    <string name="statistics_activity_per_day">%1$s / يوم</string>
+    <string name="statistics_activity_busiest_day">أكثر الأيام نشاطًا</string>
+    <string name="statistics_activity_active_days">الأيام النشطة</string>
+    <string name="statistics_activity_days_counted">الأيام المحتسبة</string>
+    <string name="statistics_activity_awaiting">بانتظار الإحصائيات</string>
+    <string name="statistics_activity_awaiting_inline">بانتظار إحصائيات AniList</string>
+    <string name="statistics_activity_today_pending">اليوم · لم يُحتسب بعد</string>
+    <string name="statistics_activity_vs_previous">مقارنة بالأسبوع الماضي</string>
+    <string name="statistics_activity_day_ratio">%1$d من %2$d</string>
+    <plurals name="statistics_activity_weeks_ago">
+        <item quantity="zero">قبل %d أسبوع</item>
+        <item quantity="one">قبل %d أسبوع</item>
+        <item quantity="two">قبل %d أسبوعين</item>
+        <item quantity="few">قبل %d أسابيع</item>
+        <item quantity="many">قبل %d أسبوعًا</item>
+        <item quantity="other">قبل %d أسبوع</item>
+    </plurals>
+    <plurals name="statistics_activity_days">
+        <item quantity="zero">%d يوم</item>
+        <item quantity="one">%d يوم</item>
+        <item quantity="two">%d يومان</item>
+        <item quantity="few">%d أيام</item>
+        <item quantity="many">%d يومًا</item>
+        <item quantity="other">%d يوم</item>
+    </plurals>
+    <string name="statistics_activity_day_empty">احتسب AniList نشاطًا في هذا اليوم، لكن لم يعد أي منه موجودًا في موجز النشاط.</string>
+    <string name="statistics_activity_day_status">نشاط</string>
+    <string name="statistics_activity_day_posted">نشر حالة</string>
+    <string name="cd_activity_week_previous">الأسبوع السابق</string>
+    <string name="cd_activity_week_next">الأسبوع التالي</string>
+    <string name="a11y_activity_day_awaiting">%1$s: لم يُحتسب بعد</string>
+
     <!-- Accessibility: Statistics -->
     <string name="a11y_stat_card">%1$s: %2$s</string>
     <string name="a11y_score_bar">التقييم %1$d: %2$d عنصر</string>
@@ -373,6 +1024,9 @@
     <string name="a11y_studio_stat">استوديو %1$s: %2$d أنمي، متوسط التقييم %3$.1f</string>
     <string name="a11y_format_stat">صيغة %1$s: %2$d عنصر، متوسط التقييم %3$.1f</string>
     <string name="a11y_year_stat">سنة %1$d: %2$d عنصر</string>
+
+    <!-- ==================== ACCESSIBILITY ==================== -->
+
     <!-- Accessibility: Actions -->
     <string name="a11y_action_increment_progress">زيادة التقدم بمقدار واحد</string>
     <string name="a11y_action_decrement_progress">إنقاص التقدم بمقدار واحد</string>
@@ -386,13 +1040,17 @@
     <string name="a11y_action_collapse_synopsis">طي القصة</string>
     <string name="a11y_action_select_tab">تحديد تبويب %1$s</string>
     <string name="a11y_action_open_search_result">فتح %1$s</string>
+
     <!-- Accessibility: Content Descriptions -->
     <string name="a11y_media_poster">ملصق %1$s</string>
+    <string name="a11y_in_your_list">في قائمتك: %1$s</string>
     <string name="a11y_character_image">صورة %1$s</string>
+    <string name="a11y_staff_image">صورة %1$s</string>
     <string name="a11y_user_avatar">الصورة الشخصية لـ %1$s</string>
     <string name="a11y_banner_image">صورة الغلاف لـ %1$s</string>
     <string name="a11y_rating_score">التقييم: %1$.1f من 10</string>
     <string name="a11y_media_card">%1$s، %2$s، التقييم %3$.1f</string>
+
     <!-- Accessibility: State Descriptions -->
     <string name="a11y_state_progress">التقدم: %1$d من %2$s</string>
     <string name="a11y_state_airing_soon">الحلقة التالية تُعرض خلال %1$s</string>
@@ -404,6 +1062,7 @@
     <string name="a11y_state_tab_not_selected">%1$s</string>
     <string name="a11y_state_expanded">موسّع</string>
     <string name="a11y_state_collapsed">مطوي، انقر مرتين للتوسيع</string>
+
     <!-- Accessibility: Headings -->
     <string name="a11y_heading_trending">قسم الرائج</string>
     <string name="a11y_heading_popular">قسم الشائع</string>
@@ -411,148 +1070,336 @@
     <string name="a11y_heading_relations">قسم الوسائط ذات الصلة</string>
     <string name="a11y_heading_synopsis">قسم القصة</string>
     <string name="a11y_heading_information">قسم المعلومات</string>
+
     <!-- Accessibility: Live Region Announcements -->
     <string name="a11y_progress_updated">تم تحديث التقدم إلى %1$d</string>
     <string name="a11y_error_occurred">خطأ: %1$s</string>
     <string name="action_play_trailer">تشغيل العرض الدعائي</string>
+
     <!-- App Links Prompt -->
     <string name="enable_app_links_title">تفعيل روابط التطبيق</string>
     <string name="samsung_app_links_instructions">لفتح روابط AniList مباشرة في AniSync، يرجى تفعيل الروابط المدعومة في إعدادات Android لديك.\n\n1. اضغط على \'فتح الإعدادات\'\n2. ابحث عن \'AniSync\' في القائمة واضغط عليه\n3. اضغط على \'إضافة رابط\'\n4. حدد \'anilist.co\' واحفظ.</string>
     <string name="default_app_links_instructions">لفتح روابط AniList مباشرة في AniSync، يرجى تفعيل الروابط المدعومة لهذا التطبيق في إعدادات Android لديك.\n\n1. اضغط على \'فتح الإعدادات\'\n2. اضغط على \'إضافة رابط\'\n3. حدد \'anilist.co\' واحفظ.</string>
     <string name="open_settings">فتح الإعدادات</string>
-    <!-- Missing translations -->
-    <string name="about_improve_translations">تحسين الترجمات</string>
-    <string name="about_improve_translations_desc">ساعد في ترجمة AniSync</string>
-    <string name="all_reviews">كل المراجعات</string>
-    <string name="app_update_failed">فشل التحديث</string>
-    <string name="auto_update">تحديث تلقائي</string>
-    <string name="channel_prerelease">إصدار تجريبي</string>
-    <string name="channel_prerelease_desc">احصل على وصول مبكر للميزات الجديدة</string>
-    <string name="channel_stable">مستقر</string>
-    <string name="channel_stable_desc">موصى به لمعظم المستخدمين</string>
-    <string name="check_for_updates">التحقق من التحديثات</string>
-    <string name="debug_build_info">معلومات البناء</string>
-    <string name="debug_fetch_latest_release">جلب أحدث إصدار</string>
-    <string name="debug_force_update_check">فرض التحقق من التحديث</string>
-    <string name="debug_update_section">تصحيح التحديث</string>
-    <string name="download_update">تنزيل</string>
-    <string name="downloading_update">جارٍ تنزيل التحديث: %1$d%%</string>
-    <string name="enable_auto_update">تلقي تنبيهات التحديث عند التشغيل</string>
-    <string name="forum_browse_categories">تصفح التصنيفات</string>
-    <string name="forum_comments">التعليقات</string>
-    <string name="forum_create_thread">موضوع جديد</string>
-    <string name="forum_empty_threads">لم يتم العثور على مواضيع.</string>
-    <string name="forum_load_more_comments">تحميل المزيد من التعليقات</string>
-    <string name="forum_new_threads">أحدث المواضيع</string>
-    <string name="forum_op_badge">صاحب الموضوع</string>
-    <string name="forum_post_reply">نشر رد</string>
-    <string name="forum_post_thread">نشر موضوع</string>
-    <string name="forum_recent_discussions">نقاشات حديثة</string>
-    <string name="forum_recently_active">نشط مؤخرًا</string>
-    <string name="forum_reply">رد</string>
-    <string name="forum_reply_hint">شارك أفكارك...</string>
-    <string name="forum_replying_to">الرد على %1$s</string>
-    <string name="forum_saved_threads">المواضيع المحفوظة</string>
-    <string name="forum_search_placeholder">ابحث في مواضيع المنتدى</string>
-    <string name="forum_search_threads">ابحث في المواضيع...</string>
-    <string name="forum_select_categories">اختر التصنيفات</string>
-    <string name="forum_subscribed_threads">المواضيع المشترَك بها</string>
-    <string name="forum_thread_appbar">موضوع</string>
-    <string name="forum_thread_body">المحتوى</string>
-    <string name="forum_thread_body_hint">اكتب رسالتك هنا...</string>
-    <string name="forum_thread_locked">هذا الموضوع مغلق.</string>
-    <string name="forum_thread_title">العنوان</string>
-    <string name="forum_thread_title_hint">عمّ تريد أن تناقش؟</string>
-    <string name="forum_view_on_anilist">عرض على AniList</string>
-    <string name="forum_write_reply">اكتب ردًا</string>
-    <string name="found_helpful">وجدوا هذا مفيدًا</string>
-    <string name="install_update">تثبيت التحديث</string>
-    <string name="latest_version">أحدث إصدار</string>
-    <string name="nav_forum">المنتدى</string>
-    <string name="new_update_available">تحديث جديد متاح</string>
-    <string name="no_review_text">لا يتوفر نص مراجعة كامل.</string>
-    <string name="notification_channel_planning">قائمة التخطيط</string>
-    <string name="notification_channel_planning_desc">تنبيهات عند صدور الحلقة الأولى للعروض التي تخطط لمشاهدتها</string>
-    <string name="notification_channel_thread_comment_like">إعجابات التعليقات</string>
-    <string name="notification_channel_thread_comment_like_desc">عندما يعجب أحدهم بتعليقك</string>
-    <string name="notification_channel_thread_comment_mention">الإشارات</string>
-    <string name="notification_channel_thread_comment_mention_desc">عندما يذكرك أحدهم في تعليق</string>
-    <string name="notification_channel_thread_comment_reply">الردود على التعليقات</string>
-    <string name="notification_channel_thread_comment_reply_desc">عندما يرد أحدهم على تعليقك</string>
-    <string name="notification_channel_thread_like">إعجابات المواضيع</string>
-    <string name="notification_channel_thread_like_desc">عندما يعجب أحدهم بموضوعك</string>
-    <string name="notification_channel_thread_subscribed">المواضيع المشترَك بها</string>
-    <string name="notification_channel_thread_subscribed_desc">تعليقات جديدة في المواضيع التي اشتركت بها</string>
-    <string name="notification_channel_upcoming">العروض القادمة</string>
-    <string name="notification_channel_upcoming_desc">تنبيهات مسبقة قبل بث الحلقات</string>
-    <string name="notification_channel_watching">قائمة المشاهدة</string>
-    <string name="notification_channel_watching_desc">حلقات جديدة للعروض التي تشاهدها</string>
-    <string name="notification_group_airing">البث</string>
-    <string name="notification_group_forum">المنتدى</string>
-    <string name="notification_group_other">أخرى</string>
-    <string name="notification_follows">متابعون جدد</string>
-    <string name="notification_follows_desc">عندما يبدأ شخص ما بمتابعتك</string>
-    <string name="notification_thread_comment_like">إعجابات التعليقات</string>
-    <string name="notification_thread_comment_like_desc">عندما يعجب أحدهم بتعليقك</string>
-    <string name="notification_thread_comment_mention">الإشارات</string>
-    <string name="notification_thread_comment_mention_desc">عندما يذكرك أحدهم في تعليق</string>
-    <string name="notification_thread_comment_reply">الردود على التعليقات</string>
-    <string name="notification_thread_comment_reply_desc">عندما يرد أحدهم على تعليقك</string>
-    <string name="notification_thread_like">إعجابات المواضيع</string>
-    <string name="notification_thread_like_desc">عندما يعجب أحدهم بموضوعك</string>
-    <string name="notification_thread_subscribed">المواضيع المشترَك بها</string>
-    <string name="notification_thread_subscribed_desc">تعليقات جديدة في المواضيع التي اشتركت بها</string>
-    <string name="profile_activity_all">الكل</string>
-    <string name="profile_activity_lists">القوائم</string>
-    <string name="profile_activity_messages">الرسائل</string>
-    <string name="profile_activity_status">الحالة</string>
-    <string name="profile_biography_title">السيرة</string>
-    <string name="profile_cast_characters">الشخصيات</string>
-    <string name="profile_cast_staff">طاقم العمل</string>
-    <string name="profile_follow">متابعة</string>
-    <string name="profile_following">يتابع</string>
-    <string name="profile_message">رسالة</string>
-    <string name="profile_more_options">خيارات أكثر</string>
-    <string name="profile_no_activity_for_filter">لا يوجد نشاط %1$s.</string>
-    <string name="profile_no_recent_updates">لا توجد تحديثات حديثة.</string>
-    <string name="profile_placeholder_activity_lists">سيظهر نشاط القوائم هنا.</string>
-    <string name="profile_placeholder_activity_messages">سيظهر نشاط الرسائل هنا.</string>
-    <string name="profile_placeholder_activity_status">سيظهر نشاط الحالة هنا.</string>
-    <string name="profile_placeholder_anime">سيظهر محتوى قائمة الأنمي هنا.</string>
-    <string name="profile_placeholder_cast">سيظهر محتوى الطاقم هنا.</string>
-    <string name="profile_placeholder_favorites">سيظهر محتوى المفضلة هنا.</string>
-    <string name="profile_placeholder_manga">سيظهر محتوى قائمة المانغا هنا.</string>
-    <string name="profile_placeholder_reviews">سيظهر محتوى المراجعات هنا.</string>
-    <string name="profile_placeholder_stats">ستظهر الإحصاءات التفصيلية هنا.</string>
-    <string name="profile_social_followers">المتابعون</string>
-    <string name="profile_social_following">يتابع</string>
-    <string name="profile_social_forum_comments">تعليقات المنتدى</string>
-    <string name="profile_social_forum_threads">مواضيع المنتدى</string>
-    <string name="profile_social_placeholder">سيظهر محتوى %1$s هنا.</string>
-    <string name="profile_tab_activity">النشاط</string>
-    <string name="profile_tab_overview">نظرة عامة</string>
-    <string name="profile_tab_social">اجتماعي</string>
-    <string name="profile_unknown_error">حدث خطأ أثناء تحميل ملفك الشخصي.</string>
-    <string name="profile_user_load_error">تعذّر تحميل هذا الملف الشخصي الآن. قد يكون الحساب خاصًا أو غير متاح أو مقيدًا مؤقتًا بالمعدل.</string>
-    <string name="profile_view_biography">عرض السيرة</string>
-    <string name="release_notes">ملاحظات الإصدار</string>
-    <string name="section_recommendations">التوصيات</string>
-    <string name="section_reviews">المراجعات</string>
-    <string name="section_voice_actors">ممثلو الأداء الصوتي</string>
-    <string name="settings_developer_tools">أدوات المطور</string>
-    <string name="settings_developer_tools_desc">أدوات تصحيح واختبار</string>
-    <string name="settings_links">روابط</string>
-    <string name="settings_links_desc">مستودع المشروع وملف المطور</string>
-    <string name="settings_updates">التحديثات</string>
-    <string name="settings_updates_desc">التحقق من الإصدارات الجديدة</string>
-    <string name="update_channel">قناة التحديث</string>
-    <string name="update_channel_desc">استلام إصدارات مستقرة أو تجريبية</string>
-    <string name="update_check_failed">فشل التحقق من التحديثات</string>
-    <string name="update_is_up_to_date">AniSync محدث إلى أحدث إصدار.</string>
-    <string name="update_notification_body">الإصدار %1$s متاح. اضغط للتحديث.</string>
-    <string name="update_notification_channel_desc">إشعارات عند توفر إصدار جديد من AniSync</string>
-    <string name="update_notification_channel_name">تحديثات التطبيق</string>
-    <string name="update_notification_title">تحديث AniSync متاح</string>
+
+    <!-- Message Composer -->
+    <string name="message_composer_title">رسالة إلى %1$s</string>
+    <string name="message_composer_hint">اكتب رسالة…</string>
+    <string name="message_composer_private">إرسال كرسالة خاصة</string>
+    <string name="message_composer_send">إرسال</string>
+    <string name="message_composer_sent">تم إرسال الرسالة</string>
+    <string name="message_composer_char_count">%1$d / %2$d</string>
+
+    <!-- Notification Channels -->
+    <string name="notification_channel_activity_name">النشاط الاجتماعي</string>
+    <string name="notification_channel_activity_description">الرسائل والردود والإشارات والإعجابات</string>
+    <string name="notification_channel_activity_reply">الردود على النشاط</string>
+    <string name="notification_channel_activity_reply_desc">عندما يرد أحدهم على نشاطك</string>
+    <string name="notification_channel_activity_mention">الإشارات في النشاط</string>
+    <string name="notification_channel_activity_mention_desc">عندما يذكرك أحدهم في نشاط</string>
+    <string name="notification_channel_activity_like">إعجابات النشاط</string>
+    <string name="notification_channel_activity_like_desc">عندما يعجب أحدهم بنشاطك أو ردك</string>
+    <string name="notification_channel_activity_message">الرسائل المباشرة</string>
+    <string name="notification_channel_activity_message_desc">عندما يرسل لك أحدهم رسالة مباشرة</string>
+    <string name="notification_activity_replies">الردود على النشاط</string>
+    <string name="notification_activity_mentions">الإشارات في النشاط</string>
+    <string name="notification_activity_likes">إعجابات النشاط</string>
+    <string name="notification_activity_messages">الرسائل المباشرة</string>
+
+    <!-- Activity Detail -->
+    <string name="activity_detail_title">النشاط</string>
+    <string name="activity_detail_reply">رد</string>
+    <string name="activity_detail_replies">الردود (%d)</string>
+    <string name="activity_detail_no_replies">لا توجد ردود بعد</string>
+    <string name="activity_detail_private">خاص</string>
+    <string name="activity_detail_wrote_to">%1$s كتب إلى %2$s</string>
+    <string name="activity_delete_confirm_title">حذف النشاط؟</string>
+    <string name="activity_delete_confirm_body">لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="reply_delete_confirm_title">حذف الرد؟</string>
+    <string name="reply_delete_confirm_body">سيُحذف ردك نهائيًا ولا يمكن استعادته.</string>
+    <string name="thread_delete_confirm_title">حذف الموضوع؟</string>
+    <string name="thread_delete_confirm_body">سيُحذف الموضوع وكل تعليقاته نهائيًا ولا يمكن استعادتها.</string>
+    <string name="activity_edit_status_title">تعديل الحالة</string>
+    <string name="activity_edit_reply_title">تعديل الرد</string>
+    <string name="activity_edit_save">حفظ</string>
+    <string name="forum_edit_thread_title">تعديل الموضوع</string>
+    <string name="editor_discard_title">تجاهل التغييرات؟</string>
+    <string name="editor_discard_body">لديك تعديلات غير محفوظة. هل تريد المغادرة على أي حال؟</string>
+    <string name="editor_discard_confirm">تجاهل</string>
+    <string name="editor_discard_keep">متابعة التعديل</string>
+    <string name="edit">تعديل</string>
+    <string name="delete">حذف</string>
+    <string name="more_options">خيارات أكثر</string>
+    <string name="write">كتابة</string>
+    <string name="post">نشر</string>
+    <string name="richtext_preview_show">إظهار المعاينة</string>
+    <string name="richtext_preview_hide">إخفاء المعاينة</string>
+    <string name="richtext_format_bold">عريض</string>
+    <string name="richtext_format_italic">مائل</string>
+    <string name="richtext_format_strikethrough">يتوسطه خط</string>
+    <string name="richtext_format_code">كود</string>
+    <string name="richtext_format_link">رابط</string>
+    <string name="richtext_format_spoiler">حرق أحداث</string>
+    <string name="richtext_char_count">%1$d / %2$d</string>
+    <string name="forum_categories_title">التصنيفات</string>
+    <string name="forum_add_categories">إضافة تصنيفات</string>
+    <string name="forum_link_media_title">إضافة وسائط ذات صلة</string>
+    <string name="forum_media_search_hint">ابحث عن أنمي أو مانجا…</string>
+    <string name="forum_search_results_label">نتائج البحث</string>
+    <string name="forum_media_searching">جارٍ البحث…</string>
+    <string name="forum_media_no_results">لا نتائج لـ \"%1$s\"</string>
+    <string name="forum_remove_media_category">إزالة الوسائط</string>
+
+    <!-- Recommendations (media details) -->
+    <string name="cd_add_recommendation">اقترح عملًا مشابهًا</string>
+    <string name="recommend_media_title">اقترح عملًا مشابهًا</string>
+    <string name="recommend_media_hint">ابحث لتقترح…</string>
+    <string name="recommend_added">تمت إضافة التوصية</string>
+
+    <!-- Reviews (media details) -->
+    <string name="cd_write_review">اكتب مراجعة</string>
+    <string name="write_review_title">كتابة مراجعة</string>
+    <string name="edit_review_title">تعديل المراجعة</string>
+    <string name="review_summary_hint">ملخص المراجعة</string>
+    <string name="review_body_hint">اكتب مراجعتك…</string>
+    <string name="review_score_label">التقييم</string>
+    <string name="review_private_label">خاصة</string>
+    <string name="review_delete">حذف المراجعة</string>
+    <string name="review_delete_confirm_title">حذف المراجعة؟</string>
+    <string name="review_delete_confirm_body">سيؤدي هذا إلى حذف مراجعتك نهائيًا. لا يمكن التراجع عن ذلك.</string>
+    <string name="review_body_error">يجب ألا تقل المراجعة عن %1$d حرف. لا تحشُ مراجعتك بكلام زائد لتحقيق هذا الشرط.</string>
+    <string name="review_summary_error">يجب أن يتراوح الملخص بين %1$d و%2$d حرف.</string>
+    <string name="review_score_error">يجب أن يتراوح التقييم بين %1$d و%2$d.</string>
+    <string name="review_guidelines_notice">يرجى قراءة إرشادات المراجعات قبل النشر.</string>
+    <string name="review_publish">نشر</string>
+
+    <!-- Media upload (settings + composer attach) -->
+    <string name="settings_media_upload">رفع الوسائط</string>
+    <string name="settings_media_upload_desc">أين تُستضاف الصور وصور GIF ومقاطع الفيديو المرفقة</string>
+    <string name="media_upload_intro">لا يستضيف AniList الملفات المرفوعة. اختر خدمة خارجية لاستخدامها عند إرفاق وسائط في المواضيع والردود ومنشورات الحالة والرسائل والنبذات.</string>
+    <string name="media_upload_host_catbox">Catbox.moe</string>
+    <string name="media_upload_host_catbox_desc">استضافة مجانية دائمة، حتى 200 ميجابايت لكل ملف</string>
+    <string name="media_upload_catbox_account">معرّف الحساب (userhash)</string>
+    <string name="media_upload_catbox_account_connected">متصل · %1$s</string>
+    <string name="media_upload_catbox_account_anonymous">غير متصل · الرفع يتم بشكل مجهول</string>
+    <string name="media_upload_catbox_dialog_title">حساب Catbox</string>
+    <string name="media_upload_catbox_userhash">معرّف المستخدم</string>
+    <string name="media_upload_catbox_userhash_hint">تجده ضمن Manage Account في catbox.moe</string>
+    <string name="media_upload_catbox_userhash_help">اربط الملفات المرفوعة بحساب Catbox لتتمكن من عرضها وحذفها لاحقًا. اتركه فارغًا للرفع بشكل مجهول.</string>
+    <string name="media_upload_host_litterbox">Litterbox</string>
+    <string name="media_upload_host_litterbox_desc">استضافة مؤقتة على نفس شبكة Catbox</string>
+    <string name="media_upload_host_custom">مضيف مخصص</string>
+    <string name="media_upload_host_custom_desc">أي خدمة تقبل طلب POST متعدد الأجزاء</string>
+    <string name="media_upload_litterbox_expiry">الحذف التلقائي بعد</string>
+    <string name="media_upload_litterbox_1h">ساعة واحدة</string>
+    <string name="media_upload_litterbox_24h">24 ساعة</string>
+    <string name="media_upload_litterbox_72h">72 ساعة</string>
+    <string name="media_upload_custom_url">رابط نقطة الرفع</string>
+    <string name="media_upload_custom_url_hint">https://example.com/upload</string>
+    <string name="media_upload_custom_field">اسم حقل الملف</string>
+    <string name="media_upload_custom_auth">ترويسة المصادقة (اختياري)</string>
+    <string name="media_upload_custom_auth_hint">Authorization: Bearer …</string>
+    <string name="media_upload_custom_json_path">مسار JSON في الاستجابة (اختياري)</string>
+    <string name="media_upload_custom_json_path_hint">مثال: data.url — اتركه فارغًا إذا كانت الاستجابة هي الرابط</string>
+    <string name="media_upload_custom_help">اترك مسار JSON فارغًا إذا كان الخادم يعيد الرابط مباشرة في جسم الاستجابة.</string>
+
+    <!-- Media attach sheet (composer) -->
+    <string name="media_attach">إرفاق وسائط</string>
+    <string name="media_attach_pick_image">صورة أو GIF</string>
+    <string name="media_attach_pick_image_desc">من معرضك أو تنزيلاتك</string>
+    <string name="media_attach_pick_video">فيديو</string>
+    <string name="media_attach_pick_video_desc">webm أو mp4</string>
+    <string name="media_attach_paste_url">إدراج رابط</string>
+    <string name="media_attach_paste_url_desc">صورة أو فيديو مستضاف مسبقًا</string>
+    <string name="media_attach_size_title">حجم العرض</string>
+    <string name="media_attach_size_small">صغير</string>
+    <string name="media_attach_size_medium">متوسط</string>
+    <string name="media_attach_size_large">كبير</string>
+    <string name="media_attach_size_original">الأصلي</string>
+    <string name="media_attach_size_custom">مخصص</string>
+    <string name="media_attach_size_custom_hint">مثال: 250 أو 60%</string>
+    <string name="media_attach_upload">رفع</string>
+    <string name="media_attach_uploading">جارٍ الرفع…</string>
+    <string name="media_attach_cancel">إلغاء</string>
+    <string name="media_attach_retry">إعادة المحاولة</string>
+    <string name="media_attach_url_input">رابط عام</string>
+    <string name="media_attach_url_input_hint">https://…</string>
+    <string name="media_attach_insert">إدراج</string>
+    <string name="media_attach_error_invalid_url">أدخل رابط http(s) صالحًا</string>
+    <string name="media_attach_error_catbox_rejected">رفض Catbox هذا الملف. جرّب ملفًا آخر، أو بدّل إلى Litterbox من الإعدادات ثم رفع الوسائط.</string>
+    <string name="media_attach_size_output">يُدرج: %s</string>
+
+    <!-- Search / Discover -->
+    <string name="search_header_anime_manga">أنمي &amp; مانجا</string>
+    <string name="search_header_characters">الشخصيات</string>
+    <string name="search_header_staff">طاقم العمل</string>
+    <string name="search_header_users">المستخدمون</string>
+    <string name="search_header_studios">الاستوديوهات</string>
+    <string name="search_view_all_results">عرض كل النتائج %1$d</string>
+    <string name="search_favourites_count">%d مفضلة</string>
+    <string name="empty_no_items">لم يتم العثور على عناصر</string>
+    <string name="filter_show_results">عرض النتائج</string>
+    <string name="all">الكل</string>
+
+    <!-- Details Screens -->
+    <string name="featured_media">وسائط مميزة</string>
+    <string name="filter_on_my_list">في قائمتي</string>
+    <string name="voiced_characters">الشخصيات التي أدّاها</string>
+    <string name="production_roles">أدوار الإنتاج</string>
+    <string name="label_custom">مخصص</string>
+    <string name="label_categories">التصنيفات</string>
+    <string name="label_genres">الأنواع</string>
+    <string name="label_tags">الوسوم</string>
+    <string name="label_spoilers">حرق الأحداث</string>
+    <string name="label_spoiler">حرق أحداث</string>
+    <string name="label_attributes">السمات</string>
+    <string name="label_all_languages">كل اللغات</string>
+    <string name="label_character">شخصية</string>
+    <string name="also_known_as">يُعرف أيضًا بـ: %s</string>
+
+    <!-- Library / Lists -->
+    <string name="custom_lists">قوائم مخصصة</string>
+    <string name="privacy">الخصوصية</string>
+    <string name="private_entry">عنصر خاص</string>
+    <string name="private_entry_desc">إخفاء هذا العنصر عن المستخدمين الآخرين</string>
+    <string name="hide_from_status_lists">إخفاء من قوائم الحالة</string>
+    <string name="hide_from_status_lists_desc">لا تعرضه في التحديثات الأخيرة العامة</string>
+    <string name="char_count">%d حرف</string>
+    <string name="manage_tabs">إدارة التبويبات</string>
+    <string name="new_list_name">اسم القائمة الجديدة</string>
+    <string name="create_new_list">إنشاء قائمة جديدة</string>
+
+    <!-- Profile / Activity / Forum -->
+    <string name="pinned">مثبّت</string>
+    <string name="replied_to">رد على: %s</string>
+    <string name="thread_locked_desc">هذا الموضوع مغلق ولا يمكن تلقي ردود جديدة فيه.</string>
+    <string name="dialog_delete_activity_title">حذف النشاط؟</string>
+    <string name="dialog_delete_activity_body">لا يمكن التراجع عن هذا الإجراء.</string>
+
+    <!-- Settings / About -->
+    <string name="cd_developer_avatar">الصورة الرمزية للمطور</string>
+    <string name="sponsor_project">ادعم المشروع</string>
+    <string name="support_anisync">ادعم %s</string>
+    <string name="support_description">AniSync مشروع شغف أبنيه بالكامل في وقت فراغي. إذا كنت تستمتع باستخدام التطبيق، ففكّر في دعمه للمساعدة في استمرار التطوير.</string>
+
+    <!-- Donate screen -->
+    <string name="settings_sponsors">تبرّع</string>
+    <string name="settings_sponsors_desc">اشترِ لي قهوة لدعم AniSync</string>
+    <string name="sponsors_title">تبرّع</string>
+    <string name="sponsors_hero_headline">اشترِ لي قهوة</string>
+    <string name="sponsors_hero_body">AniSync مجاني وبلا إعلانات ومفتوح المصدر — صُنع في وقت فراغي. إذا كان يضيف شيئًا إلى يومك، يمكنك ترك إكرامية لدعم التطوير. الإكراميات اختيارية تمامًا، فلا شيء للشراء ولا مزايا مرتبطة بها. الأسماء أدناه هي شكري لكل من ساعد.</string>
+    <string name="sponsors_become_button">اشترِ قهوة</string>
+    <string name="sponsors_github_button">GitHub</string>
+    <string name="sponsors_kofi_button">Ko-fi</string>
+    <string name="sponsors_refresh">تحديث</string>
+    <string name="sponsors_updated_at">حُدّث %1$s</string>
+    <string name="sponsor_tier_generous">كريم</string>
+    <string name="sponsor_tier_backer">داعم</string>
+    <string name="sponsor_tier_count">%1$s · %2$d</string>
+    <string name="sponsors_empty_tier_cta">لا أحد هنا بعد — كن أول المساهمين</string>
+    <string name="sponsors_load_error">تعذّر تحميل الداعمين. اسحب لإعادة المحاولة.</string>
+    <string name="sponsors_open_external">فتح على GitHub</string>
+    <string name="a11y_sponsor_avatar">الصورة الرمزية لـ %1$s</string>
+    <string name="lead_developer">المطوّر الرئيسي</string>
+    <string name="sponsor">داعم</string>
+    <string name="link_repository">المستودع</string>
+    <string name="link_developer">المطوّر</string>
+    <string name="test_code">اختبار %s</string>
+    <string name="by_author">بقلم %s</string>
+
+    <!-- Empty States -->
+    <string name="empty_list_title">قائمة %s لديك فارغة</string>
+    <string name="empty_list_anime_action">ابدأ بتتبع الأنمي بإضافة أعمال من تبويب اكتشاف</string>
+    <string name="empty_list_anime_button">تصفح الأنمي</string>
+    <string name="empty_list_manga_action">ابدأ بتتبع المانجا بإضافة عناوين من تبويب اكتشاف</string>
+    <string name="empty_list_manga_button">تصفح المانجا</string>
+    <string name="empty_search_results_title">لا نتائج لـ \"%s\"</string>
+    <string name="empty_search_results_action">جرّب تعديل بحثك أو عوامل التصفية</string>
+    <string name="empty_search_results_button">مسح البحث</string>
+    <string name="empty_search_alt_action">جرّب كلمات مفتاحية مختلفة</string>
+    <string name="empty_favorites_title">لا توجد مفضلات بعد</string>
+    <string name="empty_favorites_action">أضف أنمي أو مانجا إلى مفضلاتك من صفحات التفاصيل</string>
+    <string name="empty_favorites_button">اكتشف أعمالًا جديدة</string>
+    <string name="empty_connection_title">مشكلة في الاتصال</string>
+    <string name="empty_connection_action">تحقق من اتصالك بالإنترنت وحاول مرة أخرى</string>
+    <string name="empty_generic_title">حدث خطأ ما</string>
+    <string name="empty_sign_in_title">سجّل الدخول إلى AniList</string>
+    <string name="empty_sign_in_action">اربط حساب AniList لمزامنة مكتبتك عبر أجهزتك</string>
+    <string name="empty_sign_in_button">تسجيل الدخول</string>
+    <string name="empty_airing_today_title">لا توجد حلقات تُعرض اليوم</string>
+    <string name="empty_airing_today_action">عد لاحقًا أو أضف المزيد من الأعمال إلى قائمتك</string>
+    <string name="empty_upcoming_title">لا توجد حلقات قادمة</string>
+    <string name="empty_upcoming_action">أضف أنمي يُعرض حاليًا إلى قائمة مشاهدتك لترى الحلقات القادمة</string>
+    <string name="empty_upcoming_button">تصفح ما يُعرض حاليًا</string>
+    <string name="empty_notifications_title">لا توجد إشعارات</string>
+    <string name="empty_notifications_action">أنت متابع لكل شيء!</string>
+    <string name="empty_characters_title">لا توجد شخصيات مدرجة</string>
+    <string name="empty_characters_action">لا تتوفر معلومات عن الشخصيات لهذا العنوان</string>
+    <string name="empty_discussions_title">لا توجد نقاشات بعد</string>
+    <string name="empty_discussions_action">كن أول من يبدأ نقاشًا</string>
+    <string name="empty_discussions_button">ابدأ نقاشًا</string>
+    <string name="empty_comments_title">لا توجد تعليقات بعد</string>
+    <string name="empty_comments_action">كن أول من يشارك أفكاره</string>
+    <string name="empty_forum_search_title">لم يتم العثور على مواضيع لـ \"%s\"</string>
+    <string name="empty_forum_search_action">جرّب كلمات مفتاحية مختلفة</string>
+
+    <!-- Snackbar / Toast messages -->
+    <string name="test_message_error_code">هذه رسالة اختبار لرمز الخطأ %s.</string>
+    <string name="missing_recipient">المستلم غير محدد</string>
+    <string name="cannot_edit_activity_type">لا يمكن تعديل هذا النوع من النشاط</string>
+    <string name="activity_updated">تم تحديث النشاط</string>
+    <string name="activity_deleted">تم حذف النشاط</string>
+    <string name="message_sent">تم إرسال الرسالة</string>
+    <string name="status_posted">تم نشر الحالة</string>
+    <string name="list_created">تم إنشاء القائمة \'%s\'.</string>
+    <string name="list_deleted">تم حذف القائمة \'%s\'.</string>
+    <string name="thread_unsaved">تمت إزالة الموضوع من المحفوظات</string>
+    <string name="thread_saved">تم حفظ الموضوع</string>
+    <string name="subscribed_to_thread">تم الاشتراك في الموضوع</string>
+    <string name="unsubscribed_from_thread">تم إلغاء الاشتراك في الموضوع</string>
+    <string name="failed_to_load_review">تعذّر تحميل المراجعة</string>
+    <string name="review_not_found">لم يتم العثور على المراجعة</string>
+    <string name="downloading_high_res_image">جارٍ تنزيل صورة عالية الدقة…</string>
+    <string name="download_started">بدأ التنزيل</string>
+    <string name="download_failed">فشل التنزيل</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_like">إعجاب</string>
+    <string name="cd_dislike">عدم إعجاب</string>
+    <string name="cd_download">تنزيل</string>
+    <string name="cd_zoomable_image">صورة قابلة للتكبير</string>
+    <string name="cd_play">تشغيل</string>
+    <string name="cd_youtube_thumbnail">صورة YouTube المصغرة</string>
+    <string name="cd_play_video">تشغيل الفيديو</string>
+    <string name="cd_navigate_back">الرجوع</string>
+    <string name="cd_author_avatar">الصورة الرمزية للكاتب</string>
+    <string name="cd_to">إلى</string>
+    <string name="cd_comments">التعليقات</string>
+    <string name="label_review">مراجعة</string>
+    <string name="label_pinned">مثبّت</string>
+    <string name="label_locked">مغلق</string>
+    <string name="episodes_behind">متأخر %d</string>
+    <string name="cd_toggle_subscription">تبديل الاشتراك</string>
+    <string name="cd_toggle_save">تبديل الحفظ</string>
+    <string name="cd_expand">توسيع</string>
+    <string name="cd_continue_thread">متابعة الموضوع</string>
+    <string name="cd_write_status">اكتب حالة</string>
+    <string name="cd_manage_lists">إدارة القوائم</string>
+    <string name="cd_reorder">إعادة الترتيب</string>
+    <string name="cd_delete_list">حذف القائمة</string>
+    <string name="cd_like_review">إعجاب بالمراجعة</string>
+    <string name="cd_dislike_review">عدم إعجاب بالمراجعة</string>
+    <string name="cd_share">مشاركة</string>
+    <string name="cd_reply">رد</string>
+    <string name="cd_clear_search">مسح البحث</string>
+    <string name="mute">كتم</string>
+    <string name="unmute">إلغاء الكتم</string>
+    <string name="cd_pause">إيقاف مؤقت</string>
+    <string name="cd_fullscreen">الدخول إلى ملء الشاشة</string>
+    <string name="cd_exit_fullscreen">الخروج من ملء الشاشة</string>
+    <string name="locked">مغلق</string>
+    <string name="cd_go_back_one_level">الرجوع مستوى واحدًا</string>
+    <string name="cd_thread_depth">عمق الموضوع: %d مستويات. انقر للرجوع.</string>
     <string name="statistics_std_dev">الانحراف المعياري</string>
     <string name="statistics_days_of_your_life">≈ %1$s يوماً من حياتك</string>
     <string name="statistics_top_tags">أبرز الوسوم</string>
@@ -568,6 +1415,413 @@
     <string name="statistics_taste_focused">ذوقك مركّز جداً</string>
     <string name="statistics_taste_balanced">ذوق متوازن</string>
     <string name="statistics_taste_eclectic">ذوق متنوع وواسع</string>
-    <string name="feed_filter_all">الكل</string>
-    <string name="feed_filter_status">الحالة</string>
+
+    <!-- Airing calendar -->
+    <string name="calendar_title">تقويم العرض</string>
+    <string name="calendar_open">تقويم العرض</string>
+    <string name="calendar_following_only">إظهار الأعمال المدرجة في قائمتك فقط</string>
+    <string name="calendar_previous_week">الأسبوع السابق</string>
+    <string name="calendar_next_week">الأسبوع التالي</string>
+    <string name="calendar_jump_to_today">الانتقال إلى هذا الأسبوع</string>
+    <string name="calendar_today">اليوم</string>
+    <string name="calendar_previous_month">الشهر السابق</string>
+    <string name="calendar_next_month">الشهر التالي</string>
+    <string name="calendar_jump_to_this_month">هذا الشهر</string>
+    <plurals name="calendar_airing_count">
+        <item quantity="zero">%1$d حلقة تُعرض</item>
+        <item quantity="one">%1$d حلقة تُعرض</item>
+        <item quantity="two">%1$d حلقتان تُعرضان</item>
+        <item quantity="few">%1$d حلقات تُعرض</item>
+        <item quantity="many">%1$d حلقة تُعرض</item>
+        <item quantity="other">%1$d حلقة تُعرض</item>
+    </plurals>
+    <string name="calendar_episode_number">الحلقة %1$d</string>
+    <string name="calendar_aired">عُرضت</string>
+    <string name="calendar_airs_in">خلال %1$s</string>
+    <string name="calendar_chip_watching">أشاهد حاليًا</string>
+    <string name="calendar_chip_planning">أخطط لمشاهدته</string>
+    <string name="calendar_empty_title">لا شيء يُعرض</string>
+    <string name="calendar_empty_desc">لا تُعرض أي حلقات في هذا اليوم.</string>
+    <string name="calendar_empty_following_desc">لا يُعرض أي عمل من قائمتك في هذا اليوم.</string>
+
+    <!-- Two-pane list/detail resize handle -->
+    <string name="pane_resize_handle">تغيير حجم الأجزاء</string>
+    <string name="pane_resize_cycle">تبديل عرض جزء القائمة</string>
+    <string name="pane_resize_toggle">طي جزء القائمة أو توسيعه</string>
+    <string name="pane_close">إغلاق</string>
+
+    <!-- Two-pane empty/placeholder detail panes (shown on wide screens before a selection) -->
+    <string name="pane_placeholder_thread">اختر موضوعًا لقراءته هنا</string>
+    <string name="pane_placeholder_activity">اختر حالة لعرضها هنا</string>
+    <string name="pane_placeholder_notification">اختر إشعارًا لفتحه هنا</string>
+    <string name="pane_placeholder_settings">اختر إعدادًا لضبطه هنا</string>
+    <string name="pane_placeholder_theme">اختر مقطعًا لتشغيله هنا</string>
+
+    <!-- Collapsible wide navigation rail (rail layouts) -->
+    <string name="rail_expand">توسيع شريط التنقل</string>
+    <string name="rail_collapse">طي شريط التنقل</string>
+    <string name="rail_expanded">تم توسيع شريط التنقل</string>
+    <string name="rail_collapsed">تم طي شريط التنقل</string>
+
+    <!-- Share-as-image cards -->
+    <string name="share_stats_card">مشاركة الإحصائيات</string>
+    <string name="share_favourites_card">مشاركة المفضلات</string>
+    <string name="share_action_save">حفظ</string>
+    <string name="share_action_copy">نسخ</string>
+    <string name="share_action_share">مشاركة</string>
+    <string name="share_saved_to_gallery">تم الحفظ في المعرض</string>
+    <string name="share_save_failed">تعذّر حفظ الصورة</string>
+    <string name="share_copied">تم نسخ الرابط</string>
+    <string name="share_card_source">AniList</string>
+    <string name="share_stats_eyebrow_anime">إحصائيات الأنمي</string>
+    <string name="share_stats_eyebrow_manga">إحصائيات المانجا</string>
+    <string name="share_stats_unit_anime">أنمي</string>
+    <string name="share_stats_unit_manga">مانجا</string>
+    <string name="share_stats_days">أيام</string>
+    <string name="share_stats_episodes">حلقات</string>
+    <string name="share_stats_chapters">فصول</string>
+    <string name="share_stats_volumes">مجلدات</string>
+    <string name="share_stats_mean">التقييم</string>
+    <string name="share_stats_top_genres">أبرز الأنواع</string>
+    <string name="share_media_episodes">حلقات</string>
+    <string name="share_media_chapters">فصول</string>
+    <string name="share_media_popularity">الشعبية</string>
+    <string name="share_media_favourites">المفضلات</string>
+    <string name="share_media_ep_number">الحلقة %1$d</string>
+    <string name="share_media_tba">سيُعلن لاحقًا</string>
+    <!-- Release status shown ONLY when the title is not on the viewer's list; worded to read as
+         the show's airing state, never as a personal tracking status. -->
+    <string name="share_media_status_finished">انتهى العرض</string>
+    <string name="share_media_status_airing">يُعرض الآن</string>
+    <string name="share_media_status_upcoming">قادم</string>
+    <string name="share_media_status_cancelled">ملغى</string>
+    <string name="share_media_status_hiatus">متوقف مؤقتًا</string>
+    <string name="share_review_score">%1$d/100</string>
+    <string name="share_review_byline">مراجعة بقلم</string>
+    <string name="share_fav_eyebrow">المفضلات</string>
+    <string name="share_fav_heading_anime">الأنمي المفضل</string>
+    <string name="share_fav_heading_manga">المانجا المفضلة</string>
+    <!-- Share-card customization sheet -->
+    <string name="share_customize_theme">السمة</string>
+    <string name="share_customize_format">الصيغة</string>
+    <string name="share_customize_template">النمط</string>
+    <string name="share_customize_show">إظهار</string>
+    <string name="share_theme_auto">تلقائي</string>
+    <string name="share_theme_light">فاتح</string>
+    <string name="share_theme_dark">داكن</string>
+    <string name="share_theme_amoled">AMOLED</string>
+    <string name="share_theme_cover">الغلاف</string>
+    <string name="share_format_compact">مضغوط</string>
+    <string name="share_format_square">مربع</string>
+    <string name="share_format_story">ستوري</string>
+    <string name="share_template_standard">بطاقة</string>
+    <string name="share_template_hero">ملصق</string>
+    <string name="share_toggle_score">التقييم</string>
+    <string name="share_toggle_progress">التقدم</string>
+    <string name="share_caption_hint">أضف تعليقًا (اختياري)</string>
+    <string name="share_person_character">شخصية</string>
+    <string name="share_person_staff">طاقم العمل</string>
+    <string name="share_known_for">معروف بـ</string>
+    <string name="share_template_stats">إحصائيات</string>
+    <string name="share_template_recap">ملخص</string>
+    <string name="share_template_grid">شبكة</string>
+    <string name="share_template_ranked">ترتيب</string>
+    <string name="share_recap_eyebrow">ملخص شامل</string>
+    <string name="share_recap_completed">مكتمل</string>
+    <string name="share_recap_top_studio">الاستوديو الأكثر مشاهدة</string>
+    <string name="share_recap_top_staff">الكاتب الأكثر قراءة</string>
+
+    <!-- ONBOARDING (first-run flow) -->
+    <string name="onboarding_welcome_headline">مكتبتك،\nمتزامنة دائمًا.</string>
+    <string name="onboarding_welcome_body">تابع الأنمي والمانجا ولا تفوّت أي حلقة تُعرض.</string>
+    <string name="onboarding_welcome_cta">المتابعة عبر AniList</string>
+    <string name="onboarding_welcome_new_prompt">جديد على AniList؟</string>
+    <string name="onboarding_welcome_new_action">أنشئ حسابًا مجانيًا</string>
+
+    <string name="onboarding_signin_title">سجّل الدخول على AniList</string>
+    <string name="onboarding_signin_body">يفتح المتصفح موقع AniList، وتوافق على AniSync هناك، ثم يسلّم Android التطبيق رمز وصول.</string>
+    <string name="onboarding_signin_point_password">تبقى كلمة مرورك لدى AniList</string>
+    <string name="onboarding_signin_point_token">يبقى الرمز على هذا الجهاز فقط</string>
+    <string name="onboarding_signin_point_revoke">يمكنك سحب الإذن في أي وقت من AniList</string>
+    <string name="onboarding_signin_open">فتح AniList</string>
+    <string name="onboarding_signin_dismiss">ليس الآن</string>
+
+    <string name="onboarding_sync_signed_in_as">تم تسجيل الدخول باسم</string>
+    <string name="onboarding_sync_body">يجري نقل قوائمك من AniList.\nيحدث هذا مرة واحدة.</string>
+    <string name="onboarding_sync_card_label">جارٍ نقل حسابك</string>
+    <string name="onboarding_sync_row_library">المكتبة</string>
+    <string name="onboarding_sync_row_airing">جدول العرض</string>
+    <string name="onboarding_sync_row_notifications">الإشعارات</string>
+    <string name="onboarding_sync_row_widgets">الأدوات</string>
+    <string name="onboarding_sync_entries">%1$d عنصر</string>
+    <string name="onboarding_sync_this_week">%1$d هذا الأسبوع</string>
+    <string name="onboarding_sync_checking">جارٍ التحقق</string>
+    <string name="onboarding_sync_waiting">في الانتظار</string>
+    <string name="onboarding_sync_widgets_none">لا شيء بعد</string>
+    <string name="onboarding_sync_widgets_placed">%1$d مُضافة</string>
+    <string name="onboarding_sync_note">كل ما يأتي بعد ذلك يُحدَّث بهدوء في الخلفية.</string>
+
+    <string name="onboarding_continue">متابعة</string>
+    <string name="onboarding_skip">تخطي</string>
+    <string name="onboarding_step_of">الخطوة %1$d من %2$d</string>
+    <string name="onboarding_state_on">مفعّل</string>
+    <string name="onboarding_state_off">معطّل</string>
+
+    <string name="onboarding_permissions_headline">دعه يعمل في الخلفية</string>
+    <string name="onboarding_permissions_body">تعتمد التنبيهات ومواعيد العرض على عمل يجري بينما يكون AniSync مغلقًا.</string>
+    <string name="onboarding_permissions_progress">%1$d من %2$d مكتمل</string>
+    <string name="onboarding_permissions_note">يمكنك تغيير أي من هذا لاحقًا من الإعدادات.</string>
+    <string name="onboarding_perm_alerts_title">الإشعارات</string>
+    <string name="onboarding_perm_alerts_body">حلقات جديدة وردود المنتدى والإشارات والمتابعات. يفعّل أيضًا التنبيهات داخل AniSync.</string>
+    <string name="onboarding_perm_battery_title">التحديث في الخلفية</string>
+    <string name="onboarding_perm_battery_body">يوقف Android التطبيقات الخاملة. الاستثناء يبقي عمليات الفحص في وقتها.</string>
+    <string name="onboarding_perm_links_title">روابط AniList</string>
+    <string name="onboarding_perm_links_body">تُفتح روابط anilist.co في AniSync بدلًا من المتصفح.</string>
+    <string name="onboarding_perm_hibernation_title">إيقاف التطبيق الخامل</string>
+    <string name="onboarding_perm_hibernation_body">يمنع Android من إيقاف AniSync بعد شهور من عدم الاستخدام.</string>
+    <string name="onboarding_perm_action_allow">السماح</string>
+    <string name="onboarding_perm_action_turn_off">إيقاف</string>
+    <string name="onboarding_perm_action_open">فتح</string>
+
+    <string name="onboarding_personalise_headline">اجعله على ذوقك</string>
+    <string name="onboarding_personalise_body">أربعة خيارات صغيرة. كل واحد منها موجود لاحقًا في المظهر والأسلوب.</string>
+    <string name="onboarding_personalise_accent">اللون المميز</string>
+    <string name="onboarding_personalise_theme">السمة</string>
+    <string name="onboarding_personalise_titles">العناوين</string>
+    <string name="onboarding_personalise_open_on">يفتح على</string>
+    <string name="setting_start_screen">يفتح على</string>
+    <string name="start_screen_last_visited">آخر شاشة زُرتها</string>
+    <string name="onboarding_personalise_note">يمتد اللون المميز إلى البطاقات والأزرار والأدوات.</string>
+
+    <string name="onboarding_done_headline">كل شيء جاهز</string>
+    <string name="onboarding_done_body">قوائمك جاهزة والتنبيهات مفعّلة.</string>
+    <string name="onboarding_done_pill_alerts_on">التنبيهات مفعّلة</string>
+    <string name="onboarding_done_pill_alerts_off">التنبيهات معطّلة</string>
+    <string name="onboarding_done_pill_links_on">الروابط مفعّلة</string>
+    <string name="onboarding_done_pill_links_off">الروابط معطّلة</string>
+    <string name="onboarding_done_widget_title">أضف أداة الحلقة التالية</string>
+    <string name="onboarding_done_widget_body">نقرة واحدة إلى الحلقة التالية.</string>
+    <string name="onboarding_done_cta">ابدأ المشاهدة</string>
+
+    <string name="dev_tools_onboarding_section">الإعداد الأول</string>
+    <string name="dev_tools_replay_onboarding">إعادة تشغيل الإعداد الأول</string>
+    <string name="dev_tools_replay_onboarding_subtitle">يعيد فتح تدفق التشغيل الأول فوق التطبيق الجاري. عند مغادرته تعود إلى تبويب المكتبة.</string>
+
+    <!-- Media details: tags -->
+    <string name="tags_expand">توسيع</string>
+    <string name="tags_collapse">طي</string>
+    <plurals name="tags_more">
+        <item quantity="zero">+%1$d</item>
+        <item quantity="one">+%1$d آخر</item>
+        <item quantity="two">+%1$d آخران</item>
+        <item quantity="few">+%1$d أخرى</item>
+        <item quantity="many">+%1$d أخرى</item>
+        <item quantity="other">+%1$d أخرى</item>
+    </plurals>
+    <plurals name="tags_spoiler_hidden">
+        <item quantity="zero">%1$d وسم، انقر للعرض</item>
+        <item quantity="one">%1$d وسم، انقر للعرض</item>
+        <item quantity="two">%1$d وسمان، انقر للعرض</item>
+        <item quantity="few">%1$d وسوم، انقر للعرض</item>
+        <item quantity="many">%1$d وسمًا، انقر للعرض</item>
+        <item quantity="other">%1$d وسم، انقر للعرض</item>
+    </plurals>
+    <plurals name="tags_spoiler_revealed">
+        <item quantity="zero">%1$d وسم</item>
+        <item quantity="one">%1$d وسم</item>
+        <item quantity="two">%1$d وسمان</item>
+        <item quantity="few">%1$d وسوم</item>
+        <item quantity="many">%1$d وسمًا</item>
+        <item quantity="other">%1$d وسم</item>
+    </plurals>
+    <string name="a11y_tag_rank">%1$s، الرتبة %2$d بالمئة</string>
+    <string name="cd_tags_show_spoilers">إظهار وسوم حرق الأحداث</string>
+    <string name="cd_tags_hide_spoilers">إخفاء وسوم حرق الأحداث</string>
+
+    <!-- Session expiry dialog -->
+    <string name="ok">حسنًا</string>
+    <string name="session_expired_title">انتهت الجلسة</string>
+    <string name="session_expired_message">انتهت جلستك. يرجى تسجيل الدخول مرة أخرى لمتابعة استخدام AniSync.</string>
+
+    <!-- Filter sheets -->
+    <string name="reset">إعادة تعيين</string>
+    <string name="done">تم</string>
+    <string name="search_tags_hint">ابحث في الوسوم</string>
+    <string name="forum_filter_subscribed">مشترَك</string>
+    <string name="forum_start_discussion">ابدأ نقاشًا حول هذا</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_subscribe">اشتراك</string>
+    <string name="cd_unsubscribe">إلغاء الاشتراك</string>
+    <string name="cd_unsave">إلغاء الحفظ</string>
+    <string name="cd_unlike">إلغاء الإعجاب</string>
+    <string name="cd_add_to_favorites">إضافة إلى المفضلة</string>
+    <string name="cd_remove_from_favorites">إزالة من المفضلة</string>
+    <string name="cd_view_grid">عرض شبكي</string>
+    <string name="cd_view_list">عرض قائمة</string>
+    <string name="cd_switch_to_grid_view">التبديل إلى العرض الشبكي</string>
+    <string name="cd_switch_to_list_view">التبديل إلى عرض القائمة</string>
+    <string name="cd_expand_all">توسيع الكل</string>
+    <string name="cd_collapse_all">طي الكل</string>
+    <string name="cd_trending_carousel">شريط الرائج</string>
+    <string name="cd_clear_media_filter">مسح عامل تصفية الوسائط</string>
+    <string name="cd_media_cover">غلاف العمل</string>
+    <string name="cd_show_tab">إظهار التبويب</string>
+    <string name="cd_hide_tab">إخفاء التبويب</string>
+    <string name="cd_cover_quality_preview">معاينة جودة الغلاف</string>
+    <!-- %1$s is the title of the entry being edited -->
+    <string name="a11y_editing_entry">جارٍ تعديل %1$s</string>
+    <!-- %1$s is the current progress, %2$s the total, or "Unknown" when no total is published -->
+    <string name="a11y_progress_of">التقدم %1$s من %2$s</string>
+
+    <!-- Notifications: who acted. %1$s and %2$s are user names, %2$d a count of further users -->
+    <string name="notification_actor_someone">شخص ما</string>
+    <string name="notification_actors_two">%1$s و%2$s</string>
+    <plurals name="notification_actors_others">
+        <item quantity="zero">%1$s و%2$d آخر</item>
+        <item quantity="one">%1$s و%2$d آخر</item>
+        <item quantity="two">%1$s و%2$d آخران</item>
+        <item quantity="few">%1$s و%2$d آخرين</item>
+        <item quantity="many">%1$s و%2$d آخرين</item>
+        <item quantity="other">%1$s و%2$d آخر</item>
+    </plurals>
+
+    <!-- Notifications: forum. %1$s, or %2$s in the counted forms, is the thread title -->
+    <string name="notification_thread_reply">رد على تعليقك في \"%1$s\"</string>
+    <string name="notification_thread_reply_untitled">رد على تعليقك</string>
+    <plurals name="notification_thread_replies">
+        <item quantity="zero">%1$d رد جديد في \"%2$s\"</item>
+        <item quantity="one">%1$d رد جديد في \"%2$s\"</item>
+        <item quantity="two">%1$d ردان جديدان في \"%2$s\"</item>
+        <item quantity="few">%1$d ردود جديدة في \"%2$s\"</item>
+        <item quantity="many">%1$d ردًا جديدًا في \"%2$s\"</item>
+        <item quantity="other">%1$d رد جديد في \"%2$s\"</item>
+    </plurals>
+    <plurals name="notification_thread_replies_untitled">
+        <item quantity="zero">%1$d رد جديد</item>
+        <item quantity="one">%1$d رد جديد</item>
+        <item quantity="two">%1$d ردان جديدان</item>
+        <item quantity="few">%1$d ردود جديدة</item>
+        <item quantity="many">%1$d ردًا جديدًا</item>
+        <item quantity="other">%1$d رد جديد</item>
+    </plurals>
+    <string name="notification_thread_comment">علّق في \"%1$s\"</string>
+    <string name="notification_thread_comment_untitled">علّق في موضوع مشترَك به</string>
+    <plurals name="notification_thread_comments">
+        <item quantity="zero">%1$d تعليق جديد في \"%2$s\"</item>
+        <item quantity="one">%1$d تعليق جديد في \"%2$s\"</item>
+        <item quantity="two">%1$d تعليقان جديدان في \"%2$s\"</item>
+        <item quantity="few">%1$d تعليقات جديدة في \"%2$s\"</item>
+        <item quantity="many">%1$d تعليقًا جديدًا في \"%2$s\"</item>
+        <item quantity="other">%1$d تعليق جديد في \"%2$s\"</item>
+    </plurals>
+    <plurals name="notification_thread_comments_untitled">
+        <item quantity="zero">%1$d تعليق جديد</item>
+        <item quantity="one">%1$d تعليق جديد</item>
+        <item quantity="two">%1$d تعليقان جديدان</item>
+        <item quantity="few">%1$d تعليقات جديدة</item>
+        <item quantity="many">%1$d تعليقًا جديدًا</item>
+        <item quantity="other">%1$d تعليق جديد</item>
+    </plurals>
+    <string name="notification_thread_mention">أشار إليك في تعليق في \"%1$s\"</string>
+    <string name="notification_thread_mention_untitled">أشار إليك في تعليق</string>
+    <string name="notification_liked_thread">أعجب بموضوعك \"%1$s\"</string>
+    <string name="notification_liked_thread_untitled">أعجب بموضوعك</string>
+    <string name="notification_liked_comment">أعجب بتعليقك في \"%1$s\"</string>
+    <string name="notification_liked_comment_untitled">أعجب بتعليقك</string>
+
+    <!-- Notifications: activity feed. %1$s is one of the notification_kind_* nouns below -->
+    <string name="notification_activity_reply">رد على: %1$s</string>
+    <plurals name="notification_activity_replies">
+        <item quantity="zero">%1$d رد جديد على: %2$s</item>
+        <item quantity="one">%1$d رد جديد على: %2$s</item>
+        <item quantity="two">%1$d ردان جديدان على: %2$s</item>
+        <item quantity="few">%1$d ردود جديدة على: %2$s</item>
+        <item quantity="many">%1$d ردًا جديدًا على: %2$s</item>
+        <item quantity="other">%1$d رد جديد على: %2$s</item>
+    </plurals>
+    <string name="notification_activity_reply_subscribed">رد على منشور مشترَك به</string>
+    <plurals name="notification_activity_replies_subscribed">
+        <item quantity="zero">%1$d رد جديد على منشور مشترَك به</item>
+        <item quantity="one">%1$d رد جديد على منشور مشترَك به</item>
+        <item quantity="two">%1$d ردان جديدان على منشور مشترَك به</item>
+        <item quantity="few">%1$d ردود جديدة على منشور مشترَك به</item>
+        <item quantity="many">%1$d ردًا جديدًا على منشور مشترَك به</item>
+        <item quantity="other">%1$d رد جديد على منشور مشترَك به</item>
+    </plurals>
+    <string name="notification_activity_mention">إشارة إليك في: %1$s</string>
+    <string name="notification_activity_like">إعجاب بـ: %1$s</string>
+    <string name="notification_activity_reply_like">أعجب بردك</string>
+    <string name="notification_activity_message">أرسل إليك رسالة</string>
+    <plurals name="notification_activity_messages">
+        <item quantity="zero">%1$d رسالة جديدة</item>
+        <item quantity="one">%1$d رسالة جديدة</item>
+        <item quantity="two">%1$d رسالتان جديدتان</item>
+        <item quantity="few">%1$d رسائل جديدة</item>
+        <item quantity="many">%1$d رسالة جديدة</item>
+        <item quantity="other">%1$d رسالة جديدة</item>
+    </plurals>
+    <string name="notification_following">بدأ بمتابعتك</string>
+
+    <!-- Notifications: the kind of post a notification points at, substituted into the lines above -->
+    <string name="notification_kind_status">تحديث حالة</string>
+    <string name="notification_kind_anime_list">تحديث قائمة أنمي</string>
+    <string name="notification_kind_manga_list">تحديث قائمة مانجا</string>
+    <string name="notification_kind_message">رسالة</string>
+    <string name="notification_kind_post">منشور</string>
+    <!-- The same nouns with an indefinite article, for "Mentioned you in a status update" -->
+    <string name="notification_kind_status_indefinite">تحديث حالة</string>
+    <string name="notification_kind_anime_list_indefinite">تحديث قائمة أنمي</string>
+    <string name="notification_kind_manga_list_indefinite">تحديث قائمة مانجا</string>
+    <string name="notification_kind_message_indefinite">رسالة</string>
+    <string name="notification_kind_post_indefinite">منشور</string>
+
+    <!-- Notifications: tray summary for stacked social notifications -->
+    <string name="notification_social_summary_title">نشاط جديد</string>
+    <plurals name="notification_social_summary_count">
+        <item quantity="zero">%1$d إشعار</item>
+        <item quantity="one">%1$d إشعار</item>
+        <item quantity="two">%1$d إشعاران</item>
+        <item quantity="few">%1$d إشعارات</item>
+        <item quantity="many">%1$d إشعارًا</item>
+        <item quantity="other">%1$d إشعار</item>
+    </plurals>
+
+    <!-- Notifications: airing episodes -->
+    <string name="notification_episode_title_fallback">حلقة جديدة</string>
+    <string name="notification_episode_aired">عُرضت الحلقة %1$d</string>
+    <!-- %1$s is a day, one of the three strings below, and %2$s the local airing time -->
+    <string name="notification_episode_one_airs_at">تُعرض الحلقة 1 %1$s في %2$s</string>
+    <string name="notification_day_today">اليوم</string>
+    <string name="notification_day_tomorrow">غدًا</string>
+    <!-- %1$s is a formatted date -->
+    <string name="notification_day_on_date">في %1$s</string>
+    <string name="notification_episode_one_airs_under_hour">تُعرض الحلقة 1 خلال أقل من ساعة</string>
+    <plurals name="notification_episode_one_airs_in_hours">
+        <item quantity="zero">تُعرض الحلقة 1 خلال أقل من ساعة</item>
+        <item quantity="one">تُعرض الحلقة 1 خلال ساعة تقريبًا</item>
+        <item quantity="two">تُعرض الحلقة 1 خلال ساعتين تقريبًا</item>
+        <item quantity="few">تُعرض الحلقة 1 خلال %1$d ساعات تقريبًا</item>
+        <item quantity="many">تُعرض الحلقة 1 خلال %1$d ساعة تقريبًا</item>
+        <item quantity="other">تُعرض الحلقة 1 خلال %1$d ساعة تقريبًا</item>
+    </plurals>
+    <string name="notification_episode_one_available">الحلقة 1 متاحة الآن</string>
+    <string name="notification_action_add_to_watching">أضف إلى المشاهدة</string>
+    <plurals name="notification_episodes_aired_summary">
+        <item quantity="zero">عُرضت %1$d حلقة جديدة</item>
+        <item quantity="one">عُرضت %1$d حلقة جديدة</item>
+        <item quantity="two">عُرضت %1$d حلقتان جديدتان</item>
+        <item quantity="few">عُرضت %1$d حلقات جديدة</item>
+        <item quantity="many">عُرضت %1$d حلقة جديدة</item>
+        <item quantity="other">عُرضت %1$d حلقة جديدة</item>
+    </plurals>
+    <!-- One line of the stacked airing summary: %1$s is the title, %2$d the episode number -->
+    <string name="notification_episode_summary_line">%1$s — الحلقة %2$d</string>
+    <string name="notification_media_title_fallback">أنمي</string>
+
+    <!-- Toasts fired from the "Add to Watching" notification action -->
+    <string name="toast_added_to_watching">تمت إضافة \"%1$s\" إلى المشاهدة</string>
+    <!-- %1$s is the error reported by AniList -->
+    <string name="toast_update_failed_reason">فشل التحديث: %1$s</string>
+    <string name="toast_update_failed">تعذّر تحديث القائمة</string>
 </resources>
