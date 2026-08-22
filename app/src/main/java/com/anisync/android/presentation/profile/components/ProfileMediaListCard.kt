@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
@@ -102,7 +103,7 @@ fun ProfileMediaListCard(
 
     var showNoteSheet by remember(entry.id) { mutableStateOf(false) }
 
-    val coverShape = RoundedCornerShape(10.dp)
+    val coverShape = ExpressiveShapes.mediaCover
     val coverSharedModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         with(sharedTransitionScope) {
             Modifier.sharedBounds(

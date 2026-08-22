@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.AiringEpisode
@@ -103,7 +104,7 @@ fun AiringEpisodeCard(
                 modifier = Modifier
                     .width(58.dp)
                     .aspectRatio(0.7f)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(ExpressiveShapes.mediaCover)
             )
 
             Spacer(Modifier.width(12.dp))

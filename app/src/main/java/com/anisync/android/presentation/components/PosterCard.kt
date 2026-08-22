@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.components
 
+import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.domain.url
 
 import androidx.compose.animation.AnimatedVisibility
@@ -72,7 +73,7 @@ fun PosterCard(
     modifier: Modifier = Modifier,
     transitionPrefix: String = TransitionKeys.POSTER,
     aspectRatio: Float = 0.7f,
-    shape: Shape = RoundedCornerShape(12.dp)
+    shape: Shape = ExpressiveShapes.mediaCover
 ) {
     // Use memoized motion specs from AppMotion
     val spatialSpec = AppMotion.rememberSpatialSpec()

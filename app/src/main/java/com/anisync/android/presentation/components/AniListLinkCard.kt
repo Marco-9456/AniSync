@@ -40,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.domain.LinkPreview
 import com.anisync.android.domain.parser.RichTextBlock
 import com.anisync.android.ui.theme.emphasis
@@ -51,7 +52,7 @@ private val MediaCoverHeight = 90.dp        // 2:3, matches AniList covers (no c
 private val ProfileCardWidth = 132.dp
 private val ProfileAvatarSize = 76.dp
 private val CardShape = RoundedCornerShape(12.dp)
-private val PosterShape = RoundedCornerShape(10.dp)
+private val PosterShape = ExpressiveShapes.mediaCover
 
 private fun typeColor(type: String): Color = when (type.lowercase()) {
     "anime" -> Color(0xFF3DB4F2)

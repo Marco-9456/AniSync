@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.details.components
 
+import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.url
 
@@ -388,7 +389,7 @@ fun FeaturedMediaItem(
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     modifier: Modifier = Modifier
 ) {
-    val cardShape = RoundedCornerShape(16.dp)
+    val cardShape = ExpressiveShapes.mediaCover
     val spatialSpec = if (sharedTransitionScope != null) {
         AppMotion.rememberSpatialSpec()
     } else {
