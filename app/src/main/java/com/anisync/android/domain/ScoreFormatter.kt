@@ -54,3 +54,37 @@ fun formatCommunityScore(averageScore: Int?, format: ScoreFormat): String? {
         }
     }
 }
+
+/** The top of the scale the viewer rates on. */
+val ScoreFormat.max: Double
+    get() = when (this) {
+        ScoreFormat.POINT_100 -> 100.0
+        ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> 10.0
+        ScoreFormat.POINT_5 -> 5.0
+        ScoreFormat.POINT_3 -> 3.0
+    }
+
+/** Slider stops between 0 and [max], so a drag can only land on a value the format can hold. */
+val ScoreFormat.sliderSteps: Int
+    get() = when (this) {
+        // A hundred tick marks is noise, so the fine formats run continuous and snap on change.
+        ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL -> 0
+        ScoreFormat.POINT_10 -> 9
+        ScoreFormat.POINT_5 -> 4
+        ScoreFormat.POINT_3 -> 2
+    }
+
+/** Rounds a raw drag to the nearest value this format can hold. */
+fun ScoreFormat.snap(score: Double): Double = when (this) {
+    ScoreFormat.POINT_10_DECIMAL -> Math.round(score * 10.0) / 10.0
+    else -> Math.round(score).toDouble()
+}
+
+/**
+ * The score as a number, whatever the format draws it with. [formatScore] renders POINT_5 and
+ * POINT_3 as glyphs, which is right for a badge but not for a field the viewer types into.
+ */
+fun ScoreFormat.displayValue(score: Double): String = when (this) {
+    ScoreFormat.POINT_10_DECIMAL -> formatOneDecimal(score)
+    else -> score.toInt().toString()
+}

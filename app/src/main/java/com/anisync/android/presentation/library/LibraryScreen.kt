@@ -900,6 +900,7 @@ fun LibraryScreen(
 
         EditLibraryEntrySheet(
             entry = entry,
+            titleLanguage = titleLanguage,
             scoreFormat = uiState.userScoreFormat,
             availableCustomLists = uiState.customListNames,
             onDismiss = { editingEntry = null },
