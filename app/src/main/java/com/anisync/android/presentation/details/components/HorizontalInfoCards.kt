@@ -140,17 +140,18 @@ fun MediaInformationSection(
                     modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium)),
                     verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
                 ) {
-                    factRows(infoItems).forEach { rowItems ->
+                    infoItems.chunked(2).forEach { rowItems ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+                            verticalAlignment = Alignment.Top
                         ) {
                             rowItems.forEach { item ->
                                 FactCell(item = item, modifier = Modifier.weight(1f))
                             }
-                            if (rowItems.size == 1 && !rowItems.first().wide) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
+                            // An odd count leaves the last cell in its own column rather than
+                            // stretching it across both.
+                            if (rowItems.size == 1) Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }
@@ -171,27 +172,6 @@ fun MediaInformationSection(
             onDismiss = { activeSheet = null }
         )
     }
-}
-
-/**
- * Pairs the facts two per row, except the long ones ([InfoItem.wide]) which take the row to
- * themselves so a date range or a studio name never has to ellipsize.
- */
-private fun factRows(items: List<InfoItem>): List<List<InfoItem>> = buildList {
-    var pending: InfoItem? = null
-    items.forEach { item ->
-        if (item.wide) {
-            pending?.let { add(listOf(it)) }
-            pending = null
-            add(listOf(item))
-        } else if (pending == null) {
-            pending = item
-        } else {
-            add(listOf(pending!!, item))
-            pending = null
-        }
-    }
-    pending?.let { add(listOf(it)) }
 }
 
 @Composable
@@ -232,7 +212,9 @@ private fun FactCell(item: InfoItem, modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
+                    // A date range or a long studio name wraps instead of being cut, which is what
+                    // lets every fact keep to half the card and the two columns stay even.
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
@@ -307,8 +289,6 @@ private data class InfoItem(
     val iconTint: Color,
     val isStatus: Boolean = false,
     val showChevron: Boolean = false,
-    /** Takes a whole grid row: dates, hashtags and studio names outgrow half the width. */
-    val wide: Boolean = false,
     val onClick: (() -> Unit)? = null
 )
 
@@ -466,7 +446,6 @@ private fun buildInfoItems(
                 label = stringResource(R.string.stat_aired),
                 value = aired,
                 iconTint = MaterialTheme.colorScheme.primary,
-                wide = true
             )
         )
     }
@@ -490,7 +469,6 @@ private fun buildInfoItems(
                 label = stringResource(R.string.stat_studio),
                 value = studio.name,
                 iconTint = Color(0xFFFF9800), // Orange
-                wide = studio.name.length > 12,
                 onClick = { onStudioClick(studio.id) }
             )
         )
@@ -505,7 +483,6 @@ private fun buildInfoItems(
                 label = stringResource(R.string.stat_hashtag),
                 value = details.hashtags.joinToString(" "),
                 iconTint = MaterialTheme.colorScheme.secondary,
-                wide = true,
                 onClick = {
                     val query = android.net.Uri.encode(details.hashtags.joinToString(" OR "))
                     uriHandler.openUri("https://x.com/search?q=$query")

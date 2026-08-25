@@ -820,18 +820,14 @@ private fun DetailsTabsButtonGroup(
     onTabSelected: (DetailsTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // fillEqually, and labels without icons: four equal segments span the gutter with room to
-    // spare, so the whole set is reachable without a horizontal drag.
+    // Four labels, no icons: the set measures inside the gutter, so the strip no longer has to be
+    // dragged sideways to reach Stats and Social the way the five-tab version did.
     SegmentedTabGroup(
         options = tabs,
         selected = selectedTab,
         onSelect = onTabSelected,
         label = { stringResource(it.titleRes) },
-        modifier = modifier
-            .padding(horizontal = dimensionResource(R.dimen.spacing_medium))
-            .padding(vertical = 8.dp),
-        fillEqually = true,
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+        modifier = modifier.padding(vertical = 8.dp)
     )
 }
 
@@ -1283,7 +1279,6 @@ fun DetailsPageContent(
                                 onSelect = { castSection = it },
                                 label = { stringResource(it.titleRes) },
                                 fillEqually = true,
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                                 modifier = Modifier
                                     .padding(horizontal = dimensionResource(R.dimen.spacing_large))
                                     .padding(top = dimensionResource(R.dimen.spacing_small))
