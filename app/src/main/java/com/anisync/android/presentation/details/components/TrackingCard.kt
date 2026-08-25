@@ -2,6 +2,7 @@ package com.anisync.android.presentation.details.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +28,6 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -99,8 +100,8 @@ fun TrackingCard(
 
     if (details.listEntryId == null) {
         NotTrackedActions(
-            onAddClick = onEditClick,
-            onPlanClick = { onStatusSelect(LibraryStatus.PLANNING) },
+            mediaType = details.type,
+            onStatusSelect = onStatusSelect,
             modifier = modifier
         )
         return
@@ -238,31 +239,44 @@ fun TrackingCard(
 
 @Composable
 private fun NotTrackedActions(
-    onAddClick: () -> Unit,
-    onPlanClick: () -> Unit,
+    mediaType: MediaType?,
+    onStatusSelect: (LibraryStatus) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var expanded by remember { mutableStateOf(false) }
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_normal))
     ) {
-        Button(
-            onClick = onAddClick,
-            modifier = Modifier
-                .weight(1f)
-                .height(56.dp),
-            shape = CircleShape
-        ) {
-            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_small)))
-            Text(
-                text = stringResource(R.string.details_add_to_list),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+        Box(modifier = Modifier.weight(1f)) {
+            Button(
+                onClick = { expanded = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = CircleShape
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_small)))
+                Text(
+                    text = stringResource(R.string.details_add_to_list),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            // The same menu the status pill opens. Adding a title is picking a list, so it should
+            // cost one menu, not the whole edit sheet with scores, dates and rewatch counts.
+            ListStatusMenu(
+                expanded = expanded,
+                onDismiss = { expanded = false },
+                selected = null,
+                mediaType = mediaType,
+                onSelect = onStatusSelect
             )
         }
         OutlinedButton(
-            onClick = onPlanClick,
+            onClick = { onStatusSelect(LibraryStatus.PLANNING) },
             modifier = Modifier.height(56.dp),
             shape = CircleShape,
             colors = ButtonDefaults.outlinedButtonColors(
@@ -327,63 +341,138 @@ private fun StatusPill(
             }
         }
 
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            QUICK_STATUSES.forEach { option ->
-                val selected = option == status
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = option.toLabel(mediaType),
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurface
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = option.toIcon(mediaType),
-                            contentDescription = null,
-                            tint = if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    trailingIcon = if (selected) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    } else null,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                        expanded = false
-                        onSelect(option)
-                    }
-                )
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = dimensionResource(R.dimen.spacing_tiny)))
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = stringResource(R.string.details_remove_from_list),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                },
+        ListStatusMenu(
+            expanded = expanded,
+            onDismiss = { expanded = false },
+            selected = status,
+            mediaType = mediaType,
+            onSelect = onSelect,
+            onRemove = onRemove
+        )
+    }
+}
+
+/**
+ * The list picker, shared by the status pill and the Add to list button.
+ *
+ * Drawn to the Material 3 expressive menu spec rather than the baseline one: a 16dp container,
+ * 48dp rows inset from its edges and rounded in their own right, and a filled container on the
+ * selected row instead of a tinted label. The fill is the list's own colour, the same pair the
+ * library indicator uses, so the menu names the list by hue as well as by word.
+ */
+@Composable
+private fun ListStatusMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    selected: LibraryStatus?,
+    mediaType: MediaType?,
+    onSelect: (LibraryStatus) -> Unit,
+    onRemove: (() -> Unit)? = null
+) {
+    val haptic = rememberHapticFeedback()
+
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        shadowElevation = 6.dp,
+        modifier = Modifier.width(236.dp)
+    ) {
+        QUICK_STATUSES.forEach { option ->
+            val isSelected = option == selected
+            val colors = listIndicatorColor(option.toIndicatorKind())
+            MenuRow(
+                icon = option.toIcon(mediaType),
+                label = option.toLabel(mediaType),
+                container = if (isSelected) colors.container else Color.Transparent,
+                content = if (isSelected) colors.content else MaterialTheme.colorScheme.onSurface,
+                iconTint = if (isSelected) colors.content else MaterialTheme.colorScheme.onSurfaceVariant,
+                emphasised = isSelected,
+                trailing = if (isSelected) Icons.Default.Check else null,
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                    expanded = false
+                    onDismiss()
+                    onSelect(option)
+                }
+            )
+        }
+
+        if (onRemove != null) {
+            HorizontalDivider(
+                modifier = Modifier.padding(
+                    horizontal = dimensionResource(R.dimen.spacing_normal),
+                    vertical = dimensionResource(R.dimen.spacing_tiny)
+                )
+            )
+            MenuRow(
+                icon = Icons.Default.Delete,
+                label = stringResource(R.string.details_remove_from_list),
+                container = Color.Transparent,
+                content = MaterialTheme.colorScheme.error,
+                iconTint = MaterialTheme.colorScheme.error,
+                emphasised = false,
+                trailing = null,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                    onDismiss()
                     onRemove()
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun MenuRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    container: androidx.compose.ui.graphics.Color,
+    content: androidx.compose.ui.graphics.Color,
+    iconTint: androidx.compose.ui.graphics.Color,
+    emphasised: Boolean,
+    trailing: androidx.compose.ui.graphics.vector.ImageVector?,
+    onClick: () -> Unit
+) {
+    val shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
+    Surface(
+        shape = shape,
+        color = container,
+        modifier = Modifier
+            .padding(horizontal = dimensionResource(R.dimen.spacing_small), vertical = 2.dp)
+            .fillMaxWidth()
+            .height(48.dp)
+            .clip(shape)
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_normal)),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = iconTint
+            )
+            Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_normal)))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (emphasised) FontWeight.Bold else FontWeight.Medium,
+                color = content,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            if (trailing != null) {
+                Icon(
+                    imageVector = trailing,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = content
+                )
+            }
         }
     }
 }
