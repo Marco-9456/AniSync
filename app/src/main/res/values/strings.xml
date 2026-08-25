@@ -590,6 +590,7 @@
     <string name="profile_edit">Edit Profile</string>
     <string name="profile_unknown_error">Something went wrong while loading your profile.</string>
     <string name="profile_user_load_error">We could not load this user profile right now. The account may be private, unavailable, or temporarily rate-limited.</string>
+    <string name="profile_rate_limited_error">AniList is limiting requests right now. Wait a moment, then try again.</string>
     <string name="profile_tab_overview">Overview</string>
     <string name="profile_tab_activity">Activity</string>
     <string name="profile_tab_social">Social</string>

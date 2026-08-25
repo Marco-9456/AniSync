@@ -26,6 +26,8 @@ data class ProfileUiState(
     val isRefreshing: Boolean = false,
     val profile: UserProfile? = null,
     val errorMessage: String? = null,
+    /** Localized load failure, used where the message is ours rather than the API's. */
+    @StringRes val loadErrorRes: Int? = null,
     val isFollowingUser: Boolean = false,
     /** Whether the viewed user follows the authenticated viewer back (drives the Follows you / Mutual chip). */
     val isFollowerOfViewer: Boolean = false,

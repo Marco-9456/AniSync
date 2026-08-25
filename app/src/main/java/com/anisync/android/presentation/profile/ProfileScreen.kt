@@ -99,6 +99,8 @@ fun ProfileScreen(
                 .windowInsetsPadding(WindowInsets.statusBars)
         ) {
             val profile = uiState.profile
+            val errorText = uiState.errorMessage
+                ?: uiState.loadErrorRes?.let { stringResource(it) }
             when {
                 uiState.isLoading && profile == null -> {
                     Box(
@@ -109,13 +111,9 @@ fun ProfileScreen(
                     }
                 }
 
-                uiState.errorMessage != null && profile == null -> {
+                errorText != null && profile == null -> {
                     ErrorState(
-                        message = uiState.errorMessage ?: if (isOwnProfile) {
-                            stringResource(R.string.profile_unknown_error)
-                        } else {
-                            stringResource(R.string.profile_user_load_error)
-                        },
+                        message = errorText,
                         onRetry = { viewModel.onAction(ProfileAction.Refresh()) }
                     )
                 }
