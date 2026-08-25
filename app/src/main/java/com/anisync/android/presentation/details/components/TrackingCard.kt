@@ -28,7 +28,10 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.DropdownMenuGroup
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
@@ -58,6 +62,7 @@ import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.ExternalLinkType
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.presentation.components.iconRes
 import com.anisync.android.presentation.components.toIndicatorKind
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.formatCountdownAdaptive
@@ -355,11 +360,13 @@ private fun StatusPill(
 /**
  * The list picker, shared by the status pill and the Add to list button.
  *
- * Drawn to the Material 3 expressive menu spec rather than the baseline one: a 16dp container,
- * 48dp rows inset from its edges and rounded in their own right, and a filled container on the
- * selected row instead of a tinted label. The fill is the list's own colour, the same pair the
- * library indicator uses, so the menu names the list by hue as well as by word.
+ * Built from the Material 3 expressive menu API rather than a hand-rolled popup: a grouped
+ * container, per-position item shapes (rounder at the ends of the group, tighter between them) and
+ * the component's own selected treatment. Only the palette is ours, so the selected row carries the
+ * list's colour pair, the same one the library indicator uses, and names the list by hue as well as
+ * by word.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ListStatusMenu(
     expanded: Boolean,
@@ -374,103 +381,76 @@ private fun ListStatusMenu(
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)),
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        shadowElevation = 6.dp,
-        modifier = Modifier.width(236.dp)
+        // The group is the surface in an expressive menu, so the popup behind it gets out of the
+        // way. Left opaque, its 4dp corners show through the group's rounder ones.
+        containerColor = Color.Transparent,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp
     ) {
-        QUICK_STATUSES.forEach { option ->
-            val isSelected = option == selected
-            val colors = listIndicatorColor(option.toIndicatorKind())
-            MenuRow(
-                icon = option.toIcon(mediaType),
-                label = option.toLabel(mediaType),
-                container = if (isSelected) colors.container else Color.Transparent,
-                content = if (isSelected) colors.content else MaterialTheme.colorScheme.onSurface,
-                iconTint = if (isSelected) colors.content else MaterialTheme.colorScheme.onSurfaceVariant,
-                emphasised = isSelected,
-                trailing = if (isSelected) Icons.Default.Check else null,
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                    onDismiss()
-                    onSelect(option)
-                }
-            )
-        }
-
-        if (onRemove != null) {
-            HorizontalDivider(
-                modifier = Modifier.padding(
-                    horizontal = dimensionResource(R.dimen.spacing_normal),
-                    vertical = dimensionResource(R.dimen.spacing_tiny)
+        val groupCount = if (onRemove != null) 2 else 1
+        DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = groupCount)) {
+            QUICK_STATUSES.forEachIndexed { index, option ->
+                val isSelected = option == selected
+                val listColors = listIndicatorColor(option.toIndicatorKind())
+                DropdownMenuItem(
+                    selected = isSelected,
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                        onDismiss()
+                        onSelect(option)
+                    },
+                    text = { Text(option.toLabel(mediaType)) },
+                    shapes = MenuDefaults.itemShape(index, QUICK_STATUSES.size),
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(option.toIndicatorKind().iconRes()),
+                            contentDescription = null,
+                            modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+                        )
+                    },
+                    trailingIcon = if (isSelected) {
+                        {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(MenuDefaults.TrailingIconSize)
+                            )
+                        }
+                    } else null,
+                    colors = MenuDefaults.selectableItemColors(
+                        selectedContainerColor = listColors.container,
+                        selectedTextColor = listColors.content,
+                        selectedLeadingIconColor = listColors.content,
+                        selectedTrailingIconColor = listColors.content
+                    )
                 )
-            )
-            MenuRow(
-                icon = Icons.Default.Delete,
-                label = stringResource(R.string.details_remove_from_list),
-                container = Color.Transparent,
-                content = MaterialTheme.colorScheme.error,
-                iconTint = MaterialTheme.colorScheme.error,
-                emphasised = false,
-                trailing = null,
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                    onDismiss()
-                    onRemove()
-                }
-            )
+            }
         }
-    }
-}
 
-@Composable
-private fun MenuRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    container: androidx.compose.ui.graphics.Color,
-    content: androidx.compose.ui.graphics.Color,
-    iconTint: androidx.compose.ui.graphics.Color,
-    emphasised: Boolean,
-    trailing: androidx.compose.ui.graphics.vector.ImageVector?,
-    onClick: () -> Unit
-) {
-    val shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
-    Surface(
-        shape = shape,
-        color = container,
-        modifier = Modifier
-            .padding(horizontal = dimensionResource(R.dimen.spacing_small), vertical = 2.dp)
-            .fillMaxWidth()
-            .height(48.dp)
-            .clip(shape)
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_normal)),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = iconTint
-            )
-            Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_normal)))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = if (emphasised) FontWeight.Bold else FontWeight.Medium,
-                color = content,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-            if (trailing != null) {
-                Icon(
-                    imageVector = trailing,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = content
+        // Its own group rather than a divider: leaving the list is a different kind of act from
+        // moving between lists, and the gap says so without a rule across the menu.
+        if (onRemove != null) {
+            Spacer(modifier = Modifier.height(MenuDefaults.GroupSpacing))
+            DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 1, count = 2)) {
+                DropdownMenuItem(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                        onDismiss()
+                        onRemove()
+                    },
+                    text = { Text(stringResource(R.string.details_remove_from_list)) },
+                    shape = MenuDefaults.standaloneItemShape,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+                        )
+                    },
+                    colors = MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.error,
+                        leadingIconColor = MaterialTheme.colorScheme.error
+                    )
                 )
             }
         }
