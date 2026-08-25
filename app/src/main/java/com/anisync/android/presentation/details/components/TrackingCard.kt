@@ -18,8 +18,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -283,7 +283,7 @@ private fun NotTrackedActions(
                 contentColor = MaterialTheme.colorScheme.primary
             )
         ) {
-            Icon(Icons.Default.Bookmark, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(Icons.Outlined.BookmarkBorder, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_small)))
             Text(
                 text = stringResource(R.string.details_quick_plan),
