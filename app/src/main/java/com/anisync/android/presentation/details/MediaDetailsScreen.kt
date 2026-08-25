@@ -42,15 +42,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -812,6 +817,18 @@ enum class CastSection(@StringRes val titleRes: Int) {
     STAFF(R.string.details_tab_staff)
 }
 
+private fun detailsTabIcon(tab: DetailsTab): ImageVector = when (tab) {
+    DetailsTab.OVERVIEW -> Icons.Outlined.Info
+    DetailsTab.CAST -> Icons.Default.Group
+    DetailsTab.STATS -> Icons.Default.BarChart
+    DetailsTab.SOCIAL -> Icons.Default.Forum
+}
+
+private fun castSectionIcon(section: CastSection): ImageVector = when (section) {
+    CastSection.CHARACTERS -> Icons.Default.Group
+    CastSection.STAFF -> Icons.Default.Badge
+}
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DetailsTabsButtonGroup(
@@ -820,14 +837,13 @@ private fun DetailsTabsButtonGroup(
     onTabSelected: (DetailsTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Four labels, no icons: the set measures inside the gutter, so the strip no longer has to be
-    // dragged sideways to reach Stats and Social the way the five-tab version did.
     SegmentedTabGroup(
         options = tabs,
         selected = selectedTab,
         onSelect = onTabSelected,
         label = { stringResource(it.titleRes) },
-        modifier = modifier.padding(vertical = 8.dp)
+        modifier = modifier.padding(vertical = 8.dp),
+        icon = ::detailsTabIcon
     )
 }
 
@@ -1278,6 +1294,7 @@ fun DetailsPageContent(
                                 selected = effectiveCastSection,
                                 onSelect = { castSection = it },
                                 label = { stringResource(it.titleRes) },
+                                icon = ::castSectionIcon,
                                 fillEqually = true,
                                 modifier = Modifier
                                     .padding(horizontal = dimensionResource(R.dimen.spacing_large))
