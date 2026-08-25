@@ -759,10 +759,13 @@ fun StatsCard(details: MediaDetails) {
 fun ExternalLinksSection(
     externalLinks: List<ExternalLink>,
     mediaType: MediaType?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Off on the details page, where streaming has its own row above the fold. */
+    showStreaming: Boolean = true
 ) {
-    val streamingLinks = remember(externalLinks) {
-        externalLinks.filter { it.type == ExternalLinkType.STREAMING }
+    val streamingLinks = remember(externalLinks, showStreaming) {
+        if (showStreaming) externalLinks.filter { it.type == ExternalLinkType.STREAMING }
+        else emptyList()
     }
 
     val otherLinks = remember(externalLinks) {
