@@ -86,13 +86,13 @@ fun DetailsSkeletonContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(340.dp)
+                    .height(330.dp)
             ) {
                 // Banner Image Layer
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(240.dp)
+                        .height(220.dp)
                         .shimmerEffect()
                 )
 
@@ -125,8 +125,8 @@ fun DetailsSkeletonContent(
                     // Cover Image Placeholder
                     Box(
                         modifier = Modifier
-                            .width(115.dp)
-                            .height(165.dp)
+                            .width(120.dp)
+                            .height(180.dp)
                             .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)))
                             .shimmerEffect()
                     )
@@ -184,32 +184,17 @@ fun DetailsSkeletonContent(
             }
         }
 
-        // Action Row (Buttons)
-        item(key = "action_buttons_skeleton") {
+        // Tracking card
+        item(key = "tracking_skeleton") {
             Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
-                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Favorite Toggle Button
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .shimmerEffect()
-                        )
-
-                    // Share Button
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp)
-                            .clip(CircleShape)
-                            .shimmerEffect()
-                    )
-                }
+                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(138.dp)
+                        .clip(RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)))
+                        .shimmerEffect()
+                )
             }
         }
 

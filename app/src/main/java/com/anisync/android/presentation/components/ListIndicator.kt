@@ -202,7 +202,8 @@ fun LibraryStatus.toIndicatorKind(): ListIndicatorKind = when (this) {
     LibraryStatus.UNKNOWN -> ListIndicatorKind.CUSTOM
 }
 
-private fun ListIndicatorKind.iconRes(): Int = when (this) {
+/** The list's own glyph, shared with any surface that names a list (the details status menu). */
+fun ListIndicatorKind.iconRes(): Int = when (this) {
     ListIndicatorKind.WATCHING -> R.drawable.ic_list_watching
     ListIndicatorKind.REPEATING -> R.drawable.ic_list_repeating
     ListIndicatorKind.PLANNING -> R.drawable.ic_list_planning

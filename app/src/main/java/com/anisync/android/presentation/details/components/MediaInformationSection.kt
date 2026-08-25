@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -55,6 +56,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.MediaDetails
@@ -72,11 +74,16 @@ import com.anisync.android.type.MediaType
 import kotlinx.coroutines.delay
 
 /**
- * Displays media information in a scrollable horizontal list with pill-style cards.
- * Order: Status, Rankings, Episodes, Duration, Season, Aired, Source, Studio, Hashtag
+ * The Information block: two headline rankings, then every scalar fact in one static two-column
+ * grid, then the array facts (titles, synonyms, producers) as full-width rows.
+ *
+ * This used to be three independently scrolling rows of pills, which clipped values at the right
+ * edge, hid whichever facts happened to land off screen, and gave a wide window nothing to do with
+ * its extra width. The pill anatomy survives — a tinted round icon beside a label over a bold
+ * value — the horizontal scrolling does not.
  */
 @Composable
-fun HorizontalInfoCards(
+fun MediaInformationSection(
     details: MediaDetails,
     modifier: Modifier = Modifier,
     onStudioClick: (Int) -> Unit = {},
@@ -84,14 +91,12 @@ fun HorizontalInfoCards(
 ) {
     var activeSheet by remember { mutableStateOf<InfoSheetKind?>(null) }
 
-    // Scalar facts (Status, Episodes, ...) followed by tappable "expand" pills (Titles,
-    // Synonyms, Producers) whose array contents open in a bottom sheet.
-    val infoItems = buildInfoItems(details, onStudioClick)
+    // The airing countdown has its own strip under the tracker now, so it is not repeated here.
+    val infoItems = buildInfoItems(details, onStudioClick, includeAiringCountdown = false)
     val expandableItems = buildExpandableInfoItems(details) { activeSheet = it }
-    val allItems = infoItems + expandableItems
     val headlineRankings = details.rankings.take(2)
 
-    if (allItems.isEmpty() && headlineRankings.isEmpty()) return
+    if (infoItems.isEmpty() && expandableItems.isEmpty() && headlineRankings.isEmpty()) return
 
     Column(modifier = modifier) {
         SectionHeader(
@@ -101,28 +106,61 @@ fun HorizontalInfoCards(
 
         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
 
-        // Headline community rankings (AniList orders the all-time pair first) ride
-        // their own leading row; tapping opens Discover search scoped to the ranking.
+        // Headline community rankings (AniList orders the all-time pair first).
+        // Tapping opens Discover search scoped to the ranking.
         if (headlineRankings.isNotEmpty()) {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimensionResource(R.dimen.spacing_large)),
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
             ) {
-                items(headlineRankings, key = { it.context + it.season + it.year }) { ranking ->
-                    RankingInfoPill(ranking = ranking, onClick = { onRankingClick(ranking) })
+                headlineRankings.forEach { ranking ->
+                    RankingInfoPill(
+                        ranking = ranking,
+                        onClick = { onRankingClick(ranking) },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
+                // A lone ranking keeps its half rather than stretching across the row.
+                if (headlineRankings.size == 1) Spacer(modifier = Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
         }
 
-        // Remaining pills wrap across up to three stacked rows.
-        val perRow = (allItems.size + 2) / 3
-        allItems.chunked(perRow).forEachIndexed { index, rowItems ->
-            if (index > 0) {
-                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+        if (infoItems.isNotEmpty()) {
+            Surface(
+                shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_extra_large)),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimensionResource(R.dimen.spacing_large))
+            ) {
+                Column(
+                    modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium)),
+                    verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+                ) {
+                    infoItems.chunked(2).forEach { rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            rowItems.forEach { item ->
+                                FactCell(item = item, modifier = Modifier.weight(1f))
+                            }
+                            // An odd count leaves the last cell in its own column rather than
+                            // stretching it across both.
+                            if (rowItems.size == 1) Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
             }
-            InfoPillsRow(rowItems = rowItems)
+        }
+
+        expandableItems.forEach { item ->
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
+            ExpandRow(item = item)
         }
     }
 
@@ -137,23 +175,107 @@ fun HorizontalInfoCards(
 }
 
 @Composable
-private fun InfoPillsRow(rowItems: List<InfoItem>) {
-    if (rowItems.isEmpty()) return
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
-        modifier = Modifier.fillMaxWidth()
+private fun FactCell(item: InfoItem, modifier: Modifier = Modifier) {
+    val content: @Composable () -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(item.iconTint.copy(alpha = 0.14f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                if (item.iconResId != null) {
+                    Icon(
+                        painter = painterResource(id = item.iconResId),
+                        contentDescription = null,
+                        tint = item.iconTint,
+                        modifier = Modifier.size(18.dp)
+                    )
+                } else if (item.icon != null) {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = null,
+                        tint = item.iconTint,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_normal)))
+            Column {
+                Text(
+                    text = item.label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = item.value,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    // A date range or a long studio name wraps instead of being cut, which is what
+                    // lets every fact keep to half the card and the two columns stay even.
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+
+    val onClick = item.onClick
+    if (onClick != null) {
+        Box(modifier = modifier.clickable(onClick = onClick)) { content() }
+    } else {
+        Box(modifier = modifier) { content() }
+    }
+}
+
+/** Titles, synonyms and producers: a count and a chevron onto the sheet that lists them. */
+@Composable
+private fun ExpandRow(item: InfoItem) {
+    Surface(
+        shape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large)),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = dimensionResource(R.dimen.spacing_large))
+            .clickable(enabled = item.onClick != null) { item.onClick?.invoke() }
     ) {
-        items(rowItems, key = { it.label }) { item ->
-            InfoPill(
-                icon = item.icon,
-                iconResId = item.iconResId,
-                label = item.label,
-                value = item.value,
-                iconTint = item.iconTint,
-                isStatus = item.isStatus,
-                showChevron = item.showChevron,
-                onClick = item.onClick
+        Row(
+            modifier = Modifier.padding(
+                horizontal = dimensionResource(R.dimen.spacing_medium),
+                vertical = dimensionResource(R.dimen.spacing_normal)
+            ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            item.icon?.let {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = item.iconTint,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_normal)))
+            }
+            Text(
+                text = item.label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            if (item.value.isNotBlank()) {
+                Text(
+                    text = item.value,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(dimensionResource(R.dimen.spacing_small)))
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
             )
         }
     }
@@ -177,9 +299,11 @@ private data class InfoItem(
 @Composable
 fun RankingInfoPill(
     ranking: MediaRanking,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     InfoPill(
+        modifier = modifier,
         icon = when (ranking.type) {
             MediaRankingType.RATED -> Icons.Rounded.Star
             MediaRankingType.POPULAR -> Icons.Filled.Favorite
@@ -198,7 +322,8 @@ fun RankingInfoPill(
 @Composable
 private fun buildInfoItems(
     details: MediaDetails,
-    onStudioClick: (Int) -> Unit
+    onStudioClick: (Int) -> Unit,
+    includeAiringCountdown: Boolean = true
 ): List<InfoItem> {
     val items = mutableListOf<InfoItem>()
     val uriHandler = LocalUriHandler.current
@@ -220,7 +345,7 @@ private fun buildInfoItems(
     )
 
     // 1b. Airing countdown (only when next episode known)
-    details.nextAiringEpisode?.let { airing ->
+    if (includeAiringCountdown) details.nextAiringEpisode?.let { airing ->
         val remaining = rememberLiveCountdownSeconds(airing.airingAt, airing.timeUntilAiring)
         if (remaining > 0) {
             items.add(
@@ -320,7 +445,7 @@ private fun buildInfoItems(
                 icon = Icons.Default.DateRange,
                 label = stringResource(R.string.stat_aired),
                 value = aired,
-                iconTint = MaterialTheme.colorScheme.primary
+                iconTint = MaterialTheme.colorScheme.primary,
             )
         )
     }
@@ -376,11 +501,13 @@ private fun InfoPill(
     label: String,
     value: String,
     iconTint: Color,
+    modifier: Modifier = Modifier,
     isStatus: Boolean = false,
     showChevron: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
-    val cardModifier = Modifier.height(56.dp) // Slightly taller for better touch target
+    // Grows when a two-line ranking label needs the room; 56dp is the resting touch target.
+    val cardModifier = modifier.heightIn(min = 56.dp)
     val cardShape = RoundedCornerShape(16.dp)
     val cardColors = CardDefaults.cardColors(
         containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -417,7 +544,7 @@ private fun InfoPillContent(
     Row(
         modifier = Modifier
             .padding(horizontal = 14.dp, vertical = 8.dp)
-            .height(40.dp),
+            .heightIn(min = 40.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -468,7 +595,9 @@ private fun InfoPillContent(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = value,
@@ -490,7 +619,7 @@ private fun InfoPillContent(
  * (e.g., clock skew vs. server-snapshot time).
  */
 @Composable
-private fun rememberLiveCountdownSeconds(airingAt: Long, fallbackSeconds: Int): Int {
+internal fun rememberLiveCountdownSeconds(airingAt: Long, fallbackSeconds: Int): Int {
     var secs by remember(airingAt) {
         val now = System.currentTimeMillis() / 1000
         val initial = (airingAt - now).toInt()

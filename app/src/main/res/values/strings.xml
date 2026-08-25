@@ -596,10 +596,26 @@
     <string name="profile_tab_social">Social</string>
     <!-- Media details section tabs -->
     <string name="details_tab_overview">Overview</string>
+    <string name="details_tab_cast">Cast</string>
     <string name="details_tab_characters">Characters</string>
     <string name="details_tab_staff">Staff</string>
     <string name="details_tab_stats">Stats</string>
     <string name="details_tab_social">Social</string>
+    <!-- Media details tracking card -->
+    <string name="details_add_to_list">Add to list</string>
+    <string name="details_quick_plan">Plan</string>
+    <string name="details_remove_from_list">Remove from list</string>
+    <string name="details_progress_watched">%1$d watched</string>
+    <string name="details_progress_read">%1$d read</string>
+    <string name="details_progress_of">%1$d of %2$d</string>
+    <string name="details_no_episode_total">AniList lists no episode total for this series</string>
+    <string name="details_no_chapter_total">AniList lists no chapter total for this series</string>
+    <string name="details_next_episode_in">Episode %1$d airs in %2$s</string>
+    <string name="details_trailer">Trailer</string>
+    <string name="details_duration_minutes">%1$d min</string>
+    <string name="details_score_average">avg</string>
+    <string name="details_score_average_ranked">avg · #%1$d all-time</string>
+    <string name="cd_change_list_status">Change list status</string>
     <!-- Media details Stats tab -->
     <string name="media_stats_rankings">Rankings</string>
     <string name="media_stats_activity_per_day">Recent Activity Per Day</string>

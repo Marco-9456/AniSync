@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.details
 
 import android.app.Activity
-import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -14,7 +13,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,14 +41,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.PlayArrow
@@ -64,12 +61,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FloatingActionButtonMenu
-import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -78,8 +71,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleFloatingActionButton
-import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -132,7 +123,6 @@ import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.coverageEpisodeCount
 import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.url
-import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.SegmentedTabGroup
@@ -151,9 +141,12 @@ import com.anisync.android.presentation.details.components.ThemeSheet
 import com.anisync.android.presentation.details.components.FollowingListSheet
 import com.anisync.android.presentation.settings.components.SettingsPickerSheet
 import com.anisync.android.presentation.details.components.FollowingRow
-import com.anisync.android.presentation.details.components.HorizontalInfoCards
 import com.anisync.android.presentation.details.components.UserNotesCard
 import com.anisync.android.presentation.details.components.RecommendMediaSheet
+import com.anisync.android.presentation.details.components.MediaInformationSection
+import com.anisync.android.presentation.details.components.NextEpisodeStrip
+import com.anisync.android.presentation.details.components.TrackingCard
+import com.anisync.android.presentation.details.components.WatchOnRow
 import com.anisync.android.presentation.details.components.RecommendationItem
 import com.anisync.android.presentation.details.components.RelationItem
 import com.anisync.android.presentation.details.components.ReviewsListSheet
@@ -227,7 +220,6 @@ fun MediaDetailsScreen(
 
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
-    var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var showShareImageSheet by rememberSaveable { mutableStateOf(false) }
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     // Hoisted to the screen (alongside listState) so the selected tab survives a character/staff
@@ -343,16 +335,6 @@ fun MediaDetailsScreen(
         }
     }
 
-    val statuses = remember {
-        listOf(
-            LibraryStatus.CURRENT,
-            LibraryStatus.PLANNING,
-            LibraryStatus.COMPLETED,
-            LibraryStatus.PAUSED,
-            LibraryStatus.DROPPED
-        )
-    }
-
     with(sharedTransitionScope) {
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
@@ -405,6 +387,32 @@ fun MediaDetailsScreen(
                                 }
                             },
                             actions = {
+                                // Favourite and share live here now. They used to be the two
+                                // loudest controls on the page — a filled 56dp button and a
+                                // full-width pill — above a page whose job is tracking.
+                                (state as? DetailsUiState.Success)?.details?.let { details ->
+                                    val chromeTint = animateColorAsState(
+                                        if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                                        label = "chromeIconTint"
+                                    ).value
+                                    IconButton(onClick = viewModel::toggleFavourite) {
+                                        Icon(
+                                            imageVector = if (details.isFavourite) Icons.Filled.Favorite
+                                            else Icons.Outlined.FavoriteBorder,
+                                            contentDescription = stringResource(R.string.a11y_action_toggle_favorite),
+                                            tint = if (details.isFavourite) MaterialTheme.colorScheme.error
+                                            else chromeTint
+                                        )
+                                    }
+                                    IconButton(onClick = { showShareImageSheet = true }) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Share,
+                                            contentDescription = stringResource(R.string.action_share),
+                                            tint = chromeTint
+                                        )
+                                    }
+                                }
+
                                 // At a two-pane detail root the close (✕) sits on the trailing edge
                                 // (easy right-thumb reach) instead of a leading back arrow.
                                 if (LocalPaneIsRoot.current) {
@@ -435,143 +443,6 @@ fun MediaDetailsScreen(
                             // Root already insets below the status bar; don't add it again here.
                             windowInsets = WindowInsets(0, 0, 0, 0)
                         )
-                    }
-                },
-                floatingActionButton = {
-                    val state = uiState
-                    if (state is DetailsUiState.Success) {
-                        val details = state.details
-                        val haptic = rememberHapticFeedback()
-                        // The whole details content Box uses sharedBounds, so during a
-                        // transition it renders in the shared-element overlay (on top).
-                        // The FAB must be lifted into that same overlay at a higher
-                        // zIndex while THIS screen is animating in, otherwise it's drawn
-                        // behind the page until the transition ends — a square stub
-                        // poking out from under the content (forward enter included).
-                        //
-                        // Gate on the screen *targeting visible* so the FAB only lifts
-                        // while entering/returning, never while exiting. isTransitionActive
-                        // is scope-global: without the targeting-visible guard, the FAB of
-                        // the screen being navigated AWAY from also lifts into the overlay
-                        // and floats over the destination (another detail page, a cast/
-                        // staff grid, ...) as a stray FAB.
-                        val fabOverlayModifier = with(sharedTransitionScope) {
-                            Modifier
-                                .renderInSharedTransitionScopeOverlay(
-                                    zIndexInOverlay = 1f,
-                                    renderInOverlay = {
-                                        (isSharedTransitionRunning && isDetailsTargetingVisible) ||
-                                                shouldRenderChromeInOverlay
-                                    }
-                                )
-                                .graphicsLayer {
-                                    alpha =
-                                        if (shouldRenderChromeInOverlay) chromeOverlayAlpha else 1f
-                                }
-                        }
-
-                        BackHandler(enabled = fabMenuExpanded) {
-                            fabMenuExpanded = false
-                        }
-
-                        // Library Management FAB
-                        FloatingActionButtonMenu(
-                            expanded = fabMenuExpanded,
-                            modifier = fabOverlayModifier
-                                .padding(dimensionResource(R.dimen.fab_menu_padding)),
-                            button = {
-                                ToggleFloatingActionButton(
-                                    checked = fabMenuExpanded,
-                                    onCheckedChange = { fabMenuExpanded = !fabMenuExpanded }
-                                ) {
-                                    val imageVector = if (checkedProgress > 0.5f) Icons.Filled.Close
-                                        else if (details.listEntryId != null) Icons.Filled.Edit
-                                        else Icons.Filled.Add
-                                    Icon(
-                                        painter = rememberVectorPainter(imageVector),
-                                        contentDescription = if (fabMenuExpanded) stringResource(R.string.fab_close_menu) else stringResource(
-                                            R.string.fab_open_menu_library
-                                        ),
-                                        modifier = Modifier.animateIcon({ checkedProgress })
-                                    )
-                                }
-                            }
-                        ) {
-                            statuses.forEach { status ->
-                                val isSelected = status == details.listStatus
-                                val statusLabel = status.toLabel(details.type)
-                                FloatingActionButtonMenuItem(
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                                        viewModel.saveMediaListEntry(
-                                            status,
-                                            details.listProgress ?: 0
-                                        )
-                                        fabMenuExpanded = false
-                                    },
-                                    icon = {
-                                        Icon(
-                                            imageVector = status.toIcon(details.type),
-                                            contentDescription = statusLabel,
-                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    },
-                                    text = {
-                                        Text(
-                                            text = statusLabel,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    },
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh
-                                )
-                            }
-                            FloatingActionButtonMenuItem(
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                                    viewModel.openEditSheet()
-                                    fabMenuExpanded = false
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = stringResource(R.string.label_custom),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                text = {
-                                    Text(
-                                        text = stringResource(R.string.label_custom),
-                                        fontWeight = FontWeight.Normal,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                            )
-                            if (details.listEntryId != null) {
-                                FloatingActionButtonMenuItem(
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                                        viewModel.deleteMediaListEntry()
-                                        fabMenuExpanded = false
-                                    },
-                                    icon = {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            stringResource(R.string.a11y_remove_from_library),
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                    },
-                                    text = {
-                                        Text(
-                                            stringResource(R.string.action_remove),
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    },
-                                    containerColor = MaterialTheme.colorScheme.errorContainer
-                                )
-                            }
-                        }
                     }
                 }
             ) { paddingValues ->
@@ -719,8 +590,20 @@ fun MediaDetailsScreen(
                                 },
                                 onRecommendMedia = viewModel::recommendMedia,
                                 onUserClick = onUserClick,
-                                onFavouriteClick = viewModel::toggleFavourite,
-                                onShareClick = { showShareImageSheet = true },
+                                onStatusSelect = { status ->
+                                    viewModel.saveMediaListEntry(
+                                        status,
+                                        state.details.listProgress ?: 0
+                                    )
+                                },
+                                onProgressChange = { progress ->
+                                    viewModel.saveMediaListEntry(
+                                        state.details.listStatus ?: LibraryStatus.CURRENT,
+                                        progress.coerceAtLeast(0)
+                                    )
+                                },
+                                onEditEntry = viewModel::openEditSheet,
+                                onRemoveEntry = viewModel::deleteMediaListEntry,
                                 onRateRecommendation = viewModel::rateRecommendation,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope,
@@ -916,20 +799,34 @@ private fun DiscussionStat(icon: ImageVector, value: Int) {
  * favorite/share row sit above the tab bar; everything else lives under one of these tabs so the
  * page reads as a few focused screens instead of one long scroll.
  */
+/**
+ * Four sections, down from five: Characters and Staff are both "who made this", so they share the
+ * Cast tab behind an inner switch. Four labels fit the width, which is what lets the strip stop
+ * scrolling — Stats and Social used to sit off screen on arrival.
+ */
 enum class DetailsTab(@StringRes val titleRes: Int) {
     OVERVIEW(R.string.details_tab_overview),
-    CHARACTERS(R.string.details_tab_characters),
-    STAFF(R.string.details_tab_staff),
+    CAST(R.string.details_tab_cast),
     STATS(R.string.details_tab_stats),
     SOCIAL(R.string.details_tab_social)
 }
 
+/** The two halves of the Cast tab. */
+enum class CastSection(@StringRes val titleRes: Int) {
+    CHARACTERS(R.string.details_tab_characters),
+    STAFF(R.string.details_tab_staff)
+}
+
 private fun detailsTabIcon(tab: DetailsTab): ImageVector = when (tab) {
     DetailsTab.OVERVIEW -> Icons.Outlined.Info
-    DetailsTab.CHARACTERS -> Icons.Default.Group
-    DetailsTab.STAFF -> Icons.Default.Badge
+    DetailsTab.CAST -> Icons.Default.Group
     DetailsTab.STATS -> Icons.Default.BarChart
     DetailsTab.SOCIAL -> Icons.Default.Forum
+}
+
+private fun castSectionIcon(section: CastSection): ImageVector = when (section) {
+    CastSection.CHARACTERS -> Icons.Default.Group
+    CastSection.STAFF -> Icons.Default.Badge
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -938,7 +835,6 @@ private fun DetailsTabsButtonGroup(
     tabs: List<DetailsTab>,
     selectedTab: DetailsTab,
     onTabSelected: (DetailsTab) -> Unit,
-    scrollState: ScrollState,
     modifier: Modifier = Modifier
 ) {
     SegmentedTabGroup(
@@ -947,8 +843,7 @@ private fun DetailsTabsButtonGroup(
         onSelect = onTabSelected,
         label = { stringResource(it.titleRes) },
         modifier = modifier.padding(vertical = 8.dp),
-        icon = ::detailsTabIcon,
-        scrollState = scrollState
+        icon = ::detailsTabIcon
     )
 }
 
@@ -995,8 +890,10 @@ fun DetailsPageContent(
     onStartDiscussion: () -> Unit,
     onRecommendMedia: (Int) -> Unit,
     onUserClick: (String) -> Unit,
-    onFavouriteClick: () -> Unit,
-    onShareClick: () -> Unit,
+    onStatusSelect: (LibraryStatus) -> Unit,
+    onProgressChange: (Int) -> Unit,
+    onEditEntry: () -> Unit,
+    onRemoveEntry: () -> Unit,
     onRateRecommendation: (Int, com.anisync.android.type.RecommendationRating) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -1049,12 +946,23 @@ fun DetailsPageContent(
     val availableTabs = remember(displayCharacters, displayStaff) {
         buildList {
             add(DetailsTab.OVERVIEW)
-            if (displayCharacters.isNotEmpty()) add(DetailsTab.CHARACTERS)
-            if (displayStaff.isNotEmpty()) add(DetailsTab.STAFF)
+            if (displayCharacters.isNotEmpty() || displayStaff.isNotEmpty()) add(DetailsTab.CAST)
             add(DetailsTab.STATS)
             add(DetailsTab.SOCIAL)
         }
     }
+
+    // Which half of the Cast tab is showing. A manga with no voiced cast still has staff, so the
+    // switch starts on whichever side actually has people.
+    val castSections = remember(displayCharacters, displayStaff) {
+        buildList {
+            if (displayCharacters.isNotEmpty()) add(CastSection.CHARACTERS)
+            if (displayStaff.isNotEmpty()) add(CastSection.STAFF)
+        }
+    }
+    var castSection by rememberSaveable { mutableStateOf(CastSection.CHARACTERS) }
+    val effectiveCastSection = if (castSection in castSections) castSection
+    else castSections.firstOrNull() ?: CastSection.CHARACTERS
 
     // The tab actually rendered this frame. [selectedTab] is the viewer's persisted choice (hoisted
     // to the screen so it survives a character/staff round-trip). If the data backing that choice is
@@ -1090,11 +998,13 @@ fun DetailsPageContent(
     // Staff sort is server-side (see StaffSortOption), so the loaded list is already ordered.
     val displayedStaff = if (staff.items.isNotEmpty()) staff.items else details.staff
 
-    // Lazily fetch the full list the first time its tab is opened.
-    LaunchedEffect(effectiveTab) {
+    // Lazily fetch the full list the first time its tab (or, for Cast, its half) is opened.
+    LaunchedEffect(effectiveTab, effectiveCastSection) {
         when (effectiveTab) {
-            DetailsTab.CHARACTERS -> onEnsureCastLoaded()
-            DetailsTab.STAFF -> onEnsureStaffLoaded()
+            DetailsTab.CAST -> when (effectiveCastSection) {
+                CastSection.CHARACTERS -> onEnsureCastLoaded()
+                CastSection.STAFF -> onEnsureStaffLoaded()
+            }
             DetailsTab.STATS -> onEnsureStatsLoaded()
             else -> {}
         }
@@ -1114,12 +1024,6 @@ fun DetailsPageContent(
     val tabsDocked by remember {
         derivedStateOf { inlineTabsTopWindow <= contentTopWindow + dockPx }
     }
-    // ONE horizontal scroll state for both copies of the strip. Each copy holding its own
-    // (remembered inside SegmentedTabGroup) reset the visible tabs whenever a copy (re)composed:
-    // the pinned copy always came up at offset 0, and the in-list copy lost its offset once
-    // LazyColumn recycled the item. Shared + saveable, the strip is picked up and laid down at
-    // exactly the offset the viewer left it, across docking, recycling and rotation.
-    val tabsScrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
 
     Box(
         modifier = Modifier
@@ -1129,7 +1033,8 @@ fun DetailsPageContent(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp) // Sufficient padding for FAB
+            // No floating action button to clear any more: the tracker took its job.
+            contentPadding = PaddingValues(bottom = dimensionResource(R.dimen.spacing_extra_large))
         ) {
             // Header (Cover, Banner, Title) — always visible above the tabs
             item(key = "header") {
@@ -1143,16 +1048,34 @@ fun DetailsPageContent(
                 )
             }
 
-            // Action Row (Favorite / Share) — always visible above the tabs
-            item(key = "action_buttons") {
-                Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
-                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                    SmartActionButtonsRow(
-                        isFavorite = details.isFavourite,
-                        onFavoriteClick = onFavouriteClick,
-                        onShareClick = onShareClick
+            // The tracker, the countdown and the streaming links: everything a viewer acts on,
+            // above the tabs and above the fold.
+            item(key = "tracking") {
+                Column {
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                    TrackingCard(
+                        details = details,
+                        onStatusSelect = onStatusSelect,
+                        onProgressChange = onProgressChange,
+                        onEditClick = onEditEntry,
+                        onRemoveClick = onRemoveEntry,
+                        modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))
                     )
-                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                    if (details.nextAiringEpisode != null) {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_normal)))
+                        NextEpisodeStrip(
+                            details = details,
+                            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                        )
+                    }
+                    if (details.externalLinks.any { it.type == com.anisync.android.domain.ExternalLinkType.STREAMING }) {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                        WatchOnRow(
+                            externalLinks = details.externalLinks,
+                            mediaType = details.type
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
                 }
             }
 
@@ -1170,8 +1093,7 @@ fun DetailsPageContent(
                     DetailsTabsButtonGroup(
                         tabs = availableTabs,
                         selectedTab = effectiveTab,
-                        onTabSelected = onTabSelected,
-                        scrollState = tabsScrollState
+                        onTabSelected = onTabSelected
                     )
                 }
             }
@@ -1194,22 +1116,24 @@ fun DetailsPageContent(
                     }
 
                     // Information (Info Cards)
-                    item(key = "info_cards") {
-                        Column {
-                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                            HorizontalInfoCards(
-                                details = details,
-                                onStudioClick = onStudioClick,
-                                onRankingClick = onRankingClick
-                            )
-                        }
-                    }
-
-                    // Synopsis
+                    // Synopsis leads the tab. It is what most viewers open the page for, and it
+                    // used to sit under a carousel of trivia.
                     item(key = "synopsis") {
                         Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
                             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
                             ExpandableSynopsis(details.description)
+                        }
+                    }
+
+                    // Information
+                    item(key = "info_cards") {
+                        Column {
+                            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
+                            MediaInformationSection(
+                                details = details,
+                                onStudioClick = onStudioClick,
+                                onRankingClick = onRankingClick
+                            )
                         }
                     }
 
@@ -1228,14 +1152,16 @@ fun DetailsPageContent(
                         }
                     }
 
-                    // External & Streaming Links
+                    // External links. Streaming is not repeated here: it sits above the fold in
+                    // the Watch On row now.
                     item(key = "external_links") {
-                        if (details.externalLinks.isNotEmpty()) {
+                        if (details.externalLinks.any { it.type != com.anisync.android.domain.ExternalLinkType.STREAMING }) {
                             Column {
                                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
                                 ExternalLinksSection(
                                     externalLinks = details.externalLinks,
-                                    mediaType = details.type
+                                    mediaType = details.type,
+                                    showStreaming = false
                                 )
                             }
                         }
@@ -1360,8 +1286,25 @@ fun DetailsPageContent(
                     }
                 }
 
-                DetailsTab.CHARACTERS -> {
-                    castTabContent(
+                DetailsTab.CAST -> {
+                    if (castSections.size > 1) {
+                        item(key = "cast_switch") {
+                            SegmentedTabGroup(
+                                options = castSections,
+                                selected = effectiveCastSection,
+                                onSelect = { castSection = it },
+                                label = { stringResource(it.titleRes) },
+                                icon = ::castSectionIcon,
+                                fillEqually = true,
+                                modifier = Modifier
+                                    .padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                                    .padding(top = dimensionResource(R.dimen.spacing_small))
+                            )
+                        }
+                    }
+
+                    if (effectiveCastSection == CastSection.CHARACTERS) {
+                        castTabContent(
                         characters = displayedCast,
                         columns = peopleColumns,
                         viewMode = peopleViewMode,
@@ -1387,30 +1330,29 @@ fun DetailsPageContent(
                         },
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
-                    )
-                }
-
-                DetailsTab.STAFF -> {
-                    staffTabContent(
-                        staff = displayedStaff,
-                        columns = peopleColumns,
-                        viewMode = peopleViewMode,
-                        hasNextPage = staff.hasNextPage,
-                        loadedCount = staff.items.size,
-                        isPaginating = staff.isLoading,
-                        onLoadMore = onLoadMoreStaff,
-                        onStaffClick = onStaffClick,
-                        filterBar = {
-                            StaffFilterBar(
-                                viewMode = peopleViewMode,
-                                sort = staffSort,
-                                onToggleView = { peopleViewMode = peopleViewMode.toggled() },
-                                onSortClick = { showStaffSortSheet = true }
-                            )
-                        },
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope
-                    )
+                        )
+                    } else {
+                        staffTabContent(
+                            staff = displayedStaff,
+                            columns = peopleColumns,
+                            viewMode = peopleViewMode,
+                            hasNextPage = staff.hasNextPage,
+                            loadedCount = staff.items.size,
+                            isPaginating = staff.isLoading,
+                            onLoadMore = onLoadMoreStaff,
+                            onStaffClick = onStaffClick,
+                            filterBar = {
+                                StaffFilterBar(
+                                    viewMode = peopleViewMode,
+                                    sort = staffSort,
+                                    onToggleView = { peopleViewMode = peopleViewMode.toggled() },
+                                    onSortClick = { showStaffSortSheet = true }
+                                )
+                            },
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                    }
                 }
 
                 DetailsTab.STATS -> {
@@ -1575,8 +1517,7 @@ fun DetailsPageContent(
                 DetailsTabsButtonGroup(
                     tabs = availableTabs,
                     selectedTab = effectiveTab,
-                    onTabSelected = onTabSelected,
-                    scrollState = tabsScrollState
+                    onTabSelected = onTabSelected
                 )
             }
         }
@@ -1725,7 +1666,7 @@ fun PageHeaderSection(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(340.dp)
+            .height(330.dp)
     ) {
         // 1. Banner Image Layer
         BannerImage(
@@ -1733,13 +1674,13 @@ fun PageHeaderSection(
             needsZoom = needsZoom,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(240.dp)
+                .height(220.dp)
         )
 
-        // 2. Trailer Button Overlay
-        // Only show if we have a valid YouTube trailer
+        // 2. Trailer affordance. A labelled chip rather than the unlabelled circle that used to
+        // float mid-banner, where it read as "play the show" instead of "play the trailer".
         if (details.trailer?.site == "youtube" && details.trailer.id != null) {
-            TrailerPlayButton(
+            TrailerChip(
                 onClick = {
                     try {
                         uriHandler.openUri("https://www.youtube.com/watch?v=${details.trailer.id}")
@@ -1748,9 +1689,8 @@ fun PageHeaderSection(
                     }
                 },
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    // adjust alignment slightly up since the banner is only top 240dp
-                    .padding(bottom = 100.dp)
+                    .align(Alignment.TopEnd)
+                    .padding(end = dimensionResource(R.dimen.spacing_medium), top = 104.dp)
             )
         }
 
@@ -1823,22 +1763,22 @@ private fun BannerGradients(themeBackground: Color) {
 
     Box(
         modifier = Modifier
-            .fillMaxSize() // Fill the 340dp container to align relative to it
+            .fillMaxSize() // Fill the 330dp container to align relative to it
     ) {
         // Gradient transitioning from image to solid background
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(160.dp)
+                .height(240.dp)
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 100.dp) // Starts fading before the solid block
+                .padding(bottom = 110.dp) // Starts fading before the solid block
                 .background(bottomGradient)
         )
         // Solid background block for the text area
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(100.dp)
+                .height(110.dp)
                 .align(Alignment.BottomCenter)
                 .background(themeBackground)
         )
@@ -1866,25 +1806,38 @@ private fun StatusBarScrim(alpha: Float, modifier: Modifier = Modifier) {
     )
 }
 
+/**
+ * Trailer entry point on the banner. Labelled, because an unlabelled play circle over cover art
+ * reads as "watch the episode" and this opens YouTube.
+ */
 @Composable
-private fun TrailerPlayButton(
+private fun TrailerChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    val shape = CircleShape
+    Row(
         modifier = modifier
-            .size(64.dp)
-            .clip(CircleShape)
-            .background(Color.Black.copy(alpha = 0.4f))
-            .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+            .height(32.dp)
+            .clip(shape)
+            .background(Color.Black.copy(alpha = 0.55f))
+            .border(1.dp, Color.White.copy(alpha = 0.22f), shape)
+            .clickable(onClick = onClick)
+            .padding(start = 10.dp, end = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Filled.PlayArrow,
-            contentDescription = R.string.action_play_trailer.toString(),
+            contentDescription = null,
             tint = Color.White,
-            modifier = Modifier.size(32.dp)
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = stringResource(R.string.details_trailer),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White
         )
     }
 }
@@ -1932,8 +1885,8 @@ private fun ContentRow(
         with(sharedTransitionScope) {
             Card(
                 modifier = Modifier
-                    .width(115.dp)
-                    .height(165.dp)
+                    .width(120.dp)
+                    .height(180.dp)
                     // sharedBounds (not sharedElement) to match the library card's cover, which
                     // also uses sharedBounds for this key — mixing the two APIs on one key made the
                     // cover mis-size mid-flight.
@@ -1995,15 +1948,33 @@ private fun ContentRow(
                 )
             }
 
+            // Native title. It was previously reachable only by opening the Titles sheet, yet it
+            // is how a lot of viewers recognise a series.
+            val nativeTitle = remember(details.titleNative, displayTitle) {
+                details.titleNative?.takeIf { it.isNotBlank() && it != displayTitle }
+            }
+            if (nativeTitle != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = nativeTitle,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Row 1: Format · Year
+            // Row 1: Format · Season Year · Duration
             MetadataTags(details)
 
-            if (details.score != null || details.popularity != null || details.favourites != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                // Row 2: ★ Score · 👥 Popularity · ♥ Favorites
-                StatsStrip(details = details, formattedScore = formattedScore)
+            if (formattedScore != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                // Row 2: the score, said in words. Popularity and favourites move to the Stats
+                // tab and the Information grid, where they can carry a label instead of an icon
+                // the viewer has to decode.
+                ScoreLine(details = details, formattedScore = formattedScore)
             }
         }
     }
@@ -2011,88 +1982,66 @@ private fun ContentRow(
 
 @Composable
 private fun MetadataTags(details: MediaDetails) {
-    val formattedFormat = remember(details.format) { details.format?.formatAsTitle() }
-    val formattedYear = remember(details.seasonYear) { details.seasonYear?.toString() }
+    val parts = buildList {
+        details.format?.formatAsTitle()?.let { add(it) }
+        details.seasonYear?.let { year ->
+            val season = details.season?.lowercase()?.replaceFirstChar { it.uppercase() }
+            add(if (season != null) "$season $year" else year.toString())
+        }
+        details.duration?.let { add(stringResource(R.string.details_duration_minutes, it)) }
+    }
 
-    if (formattedFormat == null && formattedYear == null) return
+    if (parts.isEmpty()) return
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        if (formattedFormat != null) {
-            MetadataText(formattedFormat)
-        }
-
-        if (formattedFormat != null && formattedYear != null) {
-            MetadataSeparator()
-        }
-
-        if (formattedYear != null) {
-            MetadataText(formattedYear)
+        parts.forEachIndexed { index, part ->
+            if (index > 0) MetadataSeparator()
+            MetadataText(part)
         }
     }
 }
 
+/**
+ * Score, worded. The old strip put three unlabelled numbers behind a star, a trend arrow and a
+ * heart, which asked the viewer to work out which was which.
+ */
 @Composable
-private fun StatsStrip(details: MediaDetails, formattedScore: String?) {
+private fun ScoreLine(details: MediaDetails, formattedScore: String) {
+    val topRank = remember(details.rankings) {
+        details.rankings.firstOrNull {
+            it.allTime && it.type == com.anisync.android.domain.MediaRankingType.RATED
+        }
+    }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        var hasPrevious = false
-
-        if (formattedScore != null) {
-            StatItem(
-                icon = Icons.Filled.Star,
-                iconTint = Color(0xFFFFC107),
-                text = formattedScore
-            )
-            hasPrevious = true
-        }
-
-        if (details.popularity != null && details.popularity > 0) {
-            if (hasPrevious) MetadataSeparator()
-            StatItem(
-                icon = Icons.AutoMirrored.Filled.TrendingUp,
-                iconTint = MaterialTheme.colorScheme.primary,
-                text = com.anisync.android.presentation.util.formatCompactNumber(details.popularity)
-            )
-            hasPrevious = true
-        }
-
-        if (details.favourites != null && details.favourites > 0) {
-            if (hasPrevious) MetadataSeparator()
-            StatItem(
-                icon = Icons.Filled.Favorite,
-                iconTint = MaterialTheme.colorScheme.error,
-                text = com.anisync.android.presentation.util.formatCompactNumber(details.favourites)
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconTint: Color,
-    text: String
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Icon(
-            imageVector = icon,
+            imageVector = Icons.Filled.Star,
             contentDescription = null,
-            tint = iconTint,
-            modifier = Modifier.size(14.dp)
+            tint = Color(0xFFFFC107),
+            modifier = Modifier.size(15.dp)
         )
         Text(
-            text = text,
+            text = formattedScore,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = if (topRank != null) {
+                stringResource(R.string.details_score_average_ranked, topRank.rank)
+            } else {
+                stringResource(R.string.details_score_average)
+            },
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -2113,73 +2062,6 @@ private fun MetadataSeparator() {
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
     )
-}
-
-@Composable
-fun SmartActionButtonsRow(
-    isFavorite: Boolean = false,
-    onFavoriteClick: () -> Unit = {},
-    onShareClick: () -> Unit = {},
-    modifier: Modifier = Modifier
-) {
-
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // --- SOCIAL ACTIONS ---
-        FilledIconButton(
-            onClick = onFavoriteClick,
-            modifier = Modifier.size(56.dp), // Larger touch target
-            shape = CircleShape,
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = if (isFavorite)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.surfaceContainerHighest,
-                contentColor = if (isFavorite)
-                    MaterialTheme.colorScheme.onPrimary
-                else
-                    MaterialTheme.colorScheme.primary
-            )
-        ) {
-            AnimatedFavoriteButton(
-                isFavorite = isFavorite,
-                onClick = onFavoriteClick,
-                iconSize = 28.dp,
-                activeColor = if (isFavorite) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
-            )
-        }
-
-        // Share
-        OutlinedButton(
-            onClick = onShareClick,
-            modifier = Modifier
-                .weight(1f)
-                .height(56.dp), // Match height of fav button
-            shape = CircleShape, // Pill shape
-            border = androidx.compose.foundation.BorderStroke(
-                1.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-            ),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                containerColor = Color.Transparent
-            )
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Share,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                stringResource(R.string.action_share),
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
