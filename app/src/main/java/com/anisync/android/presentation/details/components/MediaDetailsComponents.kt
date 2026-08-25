@@ -774,7 +774,12 @@ fun ExternalLinksSection(
 
     Column(modifier = modifier) {
         SectionHeader(
-            title = stringResource(R.string.section_external_links),
+            // Without the streaming half, the section is just the official and social links, and
+            // saying "Streaming" over a row that has none reads as a bug.
+            title = stringResource(
+                if (showStreaming) R.string.section_external_links
+                else R.string.subsection_external
+            ),
             level = HeaderLevel.Section
         )
 
@@ -804,14 +809,14 @@ fun ExternalLinksSection(
         if (otherLinks.isNotEmpty()) {
             if (streamingLinks.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_medium)))
+                Text(
+                    text = stringResource(R.string.subsection_external),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                )
+                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
             }
-            Text(
-                text = stringResource(R.string.subsection_external),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))
-            )
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_small)))
             LazyRow(
                 contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_large)),
                 horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))

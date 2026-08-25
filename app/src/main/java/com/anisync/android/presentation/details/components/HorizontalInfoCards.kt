@@ -55,6 +55,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.MediaDetails
@@ -230,7 +231,8 @@ private fun FactCell(item: InfoItem, modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -487,7 +489,7 @@ private fun buildInfoItems(
                 label = stringResource(R.string.stat_studio),
                 value = studio.name,
                 iconTint = Color(0xFFFF9800), // Orange
-                wide = studio.name.length > 14,
+                wide = studio.name.length > 12,
                 onClick = { onStudioClick(studio.id) }
             )
         )
