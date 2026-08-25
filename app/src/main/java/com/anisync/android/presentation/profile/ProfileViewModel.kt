@@ -81,6 +81,16 @@ class ProfileViewModel @Inject constructor(
 
         /** Minimum gap between user-initiated refreshes (pull-to-refresh). */
         private const val GESTURE_REFRESH_COOLDOWN_MS = 5_000L
+
+        /** Extra attempts a failed own-profile load gets before the retry button is offered. */
+        private const val OWN_PROFILE_LOAD_RETRIES = 2
+
+        /**
+         * Backoff between those attempts. Short on purpose: a 429 has already cost the interceptor
+         * its own `Retry-After` wait, so a longer one here only extends the spinner instead of
+         * handing the user a button.
+         */
+        private const val OWN_PROFILE_RETRY_BASE_MS = 3_000L
     }
 
     /**
@@ -880,22 +890,32 @@ class ProfileViewModel @Inject constructor(
      * row and its profile flow can only emit null until a fetch lands. Swallowing the failure there
      * left the screen spinning forever with nothing to retry from. A failure with a profile already
      * on screen stays silent, as before.
+     *
+     * The same account change rebuilds every screen at once, so that first load arrives inside a
+     * burst AniList readily rate-limits. Retrying a few times absorbs that without the user having
+     * to do anything.
      */
     private suspend fun loadOwnProfile(
         forceNetwork: Boolean
     ): com.anisync.android.domain.ProfileRefreshTimings? {
         ownProfileError.value = null
-        return when (val result = profileRepository.refreshProfileTimed("", forceNetwork = forceNetwork)) {
-            is Result.Success -> result.data
-            is Result.Error -> {
-                if (!hasCachedOwnProfile) {
-                    ownProfileError.value = if (result.code == 429) {
-                        R.string.profile_rate_limited_error
-                    } else {
-                        R.string.profile_unknown_error
+        var attempt = 0
+        while (true) {
+            when (val result = profileRepository.refreshProfileTimed("", forceNetwork = forceNetwork)) {
+                is Result.Success -> return result.data
+                is Result.Error -> {
+                    if (hasCachedOwnProfile) return null
+                    if (attempt == OWN_PROFILE_LOAD_RETRIES) {
+                        ownProfileError.value = if (result.code == 429) {
+                            R.string.profile_rate_limited_error
+                        } else {
+                            R.string.profile_unknown_error
+                        }
+                        return null
                     }
+                    attempt++
+                    delay(OWN_PROFILE_RETRY_BASE_MS * attempt)
                 }
-                null
             }
         }
     }
