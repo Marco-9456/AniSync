@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -528,7 +529,8 @@ private fun InfoPill(
     showChevron: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
-    val cardModifier = modifier.height(56.dp) // Slightly taller for better touch target
+    // Grows when a two-line ranking label needs the room; 56dp is the resting touch target.
+    val cardModifier = modifier.heightIn(min = 56.dp)
     val cardShape = RoundedCornerShape(16.dp)
     val cardColors = CardDefaults.cardColors(
         containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -565,7 +567,7 @@ private fun InfoPillContent(
     Row(
         modifier = Modifier
             .padding(horizontal = 14.dp, vertical = 8.dp)
-            .height(40.dp),
+            .heightIn(min = 40.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -616,7 +618,9 @@ private fun InfoPillContent(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = value,
