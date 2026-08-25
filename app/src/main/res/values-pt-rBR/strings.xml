@@ -1593,4 +1593,20 @@
     <string name="alert_rate_limit_notice">Reduzindo a frequência para respeitar o limite de requisições do AniList…</string>
     <string name="alert_retrying_in">Tentando novamente em %1$ds</string>
     <string name="link_card_view_activity">Ver atividade</string>
+    <string name="profile_rate_limited_error">O AniList está limitando as requisições agora. Espere um momento e tente novamente.</string>
+    <string name="details_tab_cast">Elenco</string>
+    <string name="details_add_to_list">Adicionar à lista</string>
+    <string name="details_quick_plan">Planejar</string>
+    <string name="details_remove_from_list">Remover da lista</string>
+    <string name="details_progress_watched">%1$d assistido</string>
+    <string name="details_progress_read">%1$d lido</string>
+    <string name="details_progress_of">%1$d de %2$d</string>
+    <string name="details_no_episode_total">O AniList não lista o total de episódios para esta série</string>
+    <string name="details_no_chapter_total">O AniList não lista o total de capítulos para esta série</string>
+    <string name="details_next_episode_in">Episódio %1$d lança em %2$s</string>
+    <string name="details_trailer">Trailer</string>
+    <string name="details_duration_minutes">%1$dmin</string>
+    <string name="details_score_average">média</string>
+    <string name="details_score_average_ranked">média · #%1$d geral</string>
+    <string name="cd_change_list_status">Mudar o status da lista</string>
 </resources>
