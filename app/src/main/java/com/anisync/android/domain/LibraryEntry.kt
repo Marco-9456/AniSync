@@ -54,7 +54,14 @@ data class LibraryEntry(
     val mediaStartDate: Long? = null,
     val customLists: List<String> = emptyList(),
     val isPrivate: Boolean = false,
-    val hiddenFromStatusLists: Boolean = false
+    val hiddenFromStatusLists: Boolean = false,
+    /** Volumes read. Manga only, and null when the entry has never recorded one. */
+    val progressVolumes: Int? = null,
+    /**
+     * Per-category scores, keyed by the category names in the viewer's AniList advanced scoring
+     * settings. Empty when the viewer has advanced scoring off, which is the default.
+     */
+    val advancedScores: Map<String, Double> = emptyMap()
 ) {
     /**
      * Computes the dynamic time until airing based on the absolute timestamp.

@@ -72,5 +72,9 @@ data class LibraryEntryEntity(
     val isPrivate: Boolean = false,
     @androidx.room.ColumnInfo(defaultValue = "0")
     val hiddenFromStatusLists: Boolean = false,
+    @androidx.room.ColumnInfo(defaultValue = "NULL")
+    val progressVolumes: Int? = null,
+    @androidx.room.ColumnInfo(defaultValue = "{}")
+    val advancedScores: Map<String, Double> = emptyMap(),
     val lastUpdated: Long = System.currentTimeMillis()
 )

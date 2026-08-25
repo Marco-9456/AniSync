@@ -119,6 +119,39 @@ class MigrationTest {
         }
     }
 
+    /**
+     * v24 to v25 gave `library_entries` its volume progress and per-category scores.
+     *
+     * Both columns are auto-migrated with defaults, so the point of the test is that the defaults
+     * actually land: an entry saved before the upgrade has to come back with no volume progress and
+     * an empty score map rather than a null the JSON converter would throw on.
+     */
+    @Test
+    fun migrate24To25_defaultsVolumeProgressAndAdvancedScores() {
+        helper.createDatabase(TEST_DB, 24).apply {
+            execSQL(
+                """
+                INSERT INTO library_entries (
+                    id, mediaId, titleUserPreferred, progress, status, rewatches, lastUpdated
+                ) VALUES (1, 100, 'Test Anime', 5, 'CURRENT', 0, 1700000000)
+                """.trimIndent()
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(TEST_DB, 25, true)
+
+        db.query(
+            "SELECT progressVolumes, advancedScores, progress FROM library_entries WHERE id = 1"
+        ).use { cursor ->
+            assertEquals(1, cursor.count)
+            cursor.moveToFirst()
+            assertEquals(true, cursor.isNull(0))
+            assertEquals("{}", cursor.getString(1))
+            assertEquals(5, cursor.getInt(2))
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════════
     //                         MIGRATION TEST TEMPLATES
     // ═══════════════════════════════════════════════════════════════════════════
