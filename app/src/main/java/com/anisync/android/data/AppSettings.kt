@@ -322,6 +322,23 @@ class AppSettings @Inject constructor(
     )
     val mangaListOrder: StateFlow<List<String>> = _mangaListOrder.asStateFlow()
 
+    /**
+     * The viewer's advanced scoring categories, in AniList's order. The order is what the save
+     * mutation sends scores in, so it is persisted as JSON rather than joined on a separator a
+     * category name could contain.
+     */
+    private val _animeAdvancedScoring = MutableStateFlow(readStringList(KEY_ANIME_ADVANCED_SCORING))
+    val animeAdvancedScoring: StateFlow<List<String>> = _animeAdvancedScoring.asStateFlow()
+
+    private val _mangaAdvancedScoring = MutableStateFlow(readStringList(KEY_MANGA_ADVANCED_SCORING))
+    val mangaAdvancedScoring: StateFlow<List<String>> = _mangaAdvancedScoring.asStateFlow()
+
+    private val _animeAdvancedScoringEnabled = MutableStateFlow(prefs.getBoolean(KEY_ANIME_ADVANCED_SCORING_ENABLED, false))
+    val animeAdvancedScoringEnabled: StateFlow<Boolean> = _animeAdvancedScoringEnabled.asStateFlow()
+
+    private val _mangaAdvancedScoringEnabled = MutableStateFlow(prefs.getBoolean(KEY_MANGA_ADVANCED_SCORING_ENABLED, false))
+    val mangaAdvancedScoringEnabled: StateFlow<Boolean> = _mangaAdvancedScoringEnabled.asStateFlow()
+
     private val _hiddenAnimeLists = MutableStateFlow(
         prefs.getStringSet(KEY_HIDDEN_ANIME_LISTS, emptySet()) ?: emptySet()
     )
@@ -835,6 +852,27 @@ class AppSettings @Inject constructor(
         prefs.edit().putString(KEY_MANGA_LIST_ORDER, order.joinToString(",")).apply()
     }
 
+    fun setAdvancedScoring(type: MediaType, categories: List<String>, enabled: Boolean) {
+        val isAnime = type == MediaType.ANIME
+        val categoryFlow = if (isAnime) _animeAdvancedScoring else _mangaAdvancedScoring
+        val enabledFlow = if (isAnime) _animeAdvancedScoringEnabled else _mangaAdvancedScoringEnabled
+        categoryFlow.value = categories
+        enabledFlow.value = enabled
+        prefs.edit()
+            .putString(if (isAnime) KEY_ANIME_ADVANCED_SCORING else KEY_MANGA_ADVANCED_SCORING, Json.encodeToString(categories))
+            .putBoolean(if (isAnime) KEY_ANIME_ADVANCED_SCORING_ENABLED else KEY_MANGA_ADVANCED_SCORING_ENABLED, enabled)
+            .apply()
+    }
+
+    private fun readStringList(key: String): List<String> {
+        val raw = prefs.getString(key, null) ?: return emptyList()
+        return try {
+            Json.decodeFromString<List<String>>(raw)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     fun setHiddenAnimeLists(hidden: Set<String>) {
         _hiddenAnimeLists.value = hidden
         prefs.edit().putStringSet(KEY_HIDDEN_ANIME_LISTS, hidden).apply()
@@ -1078,6 +1116,10 @@ class AppSettings @Inject constructor(
         _hiddenMangaLists.value = emptySet()
         _animeListOrder.value = emptyList()
         _mangaListOrder.value = emptyList()
+        _animeAdvancedScoring.value = emptyList()
+        _mangaAdvancedScoring.value = emptyList()
+        _animeAdvancedScoringEnabled.value = false
+        _mangaAdvancedScoringEnabled.value = false
         _lastSelectedAnimeTab.value = null
         _lastSelectedMangaTab.value = null
         _showPrivateEntries.value = true
@@ -1089,6 +1131,10 @@ class AppSettings @Inject constructor(
             .remove(KEY_HIDDEN_MANGA_LISTS)
             .remove(KEY_ANIME_LIST_ORDER)
             .remove(KEY_MANGA_LIST_ORDER)
+            .remove(KEY_ANIME_ADVANCED_SCORING)
+            .remove(KEY_MANGA_ADVANCED_SCORING)
+            .remove(KEY_ANIME_ADVANCED_SCORING_ENABLED)
+            .remove(KEY_MANGA_ADVANCED_SCORING_ENABLED)
             .remove(KEY_LAST_SELECTED_ANIME_TAB)
             .remove(KEY_LAST_SELECTED_MANGA_TAB)
             .remove(KEY_SHOW_PRIVATE_ENTRIES)
@@ -1161,6 +1207,10 @@ companion object {
         private const val KEY_APP_LOCALE = "app_locale"
         private const val KEY_AUTO_UPDATE_ENABLED = "auto_update_enabled"
         private const val KEY_ALLOW_PRERELEASE = "allow_prerelease"
+        private const val KEY_ANIME_ADVANCED_SCORING = "anime_advanced_scoring"
+        private const val KEY_MANGA_ADVANCED_SCORING = "manga_advanced_scoring"
+        private const val KEY_ANIME_ADVANCED_SCORING_ENABLED = "anime_advanced_scoring_enabled"
+        private const val KEY_MANGA_ADVANCED_SCORING_ENABLED = "manga_advanced_scoring_enabled"
         private const val KEY_ANIME_LIST_ORDER = "anime_list_order"
         private const val KEY_MANGA_LIST_ORDER = "manga_list_order"
         private const val KEY_HIDDEN_ANIME_LISTS = "hidden_anime_lists"
