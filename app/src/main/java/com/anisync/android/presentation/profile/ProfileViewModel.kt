@@ -904,6 +904,7 @@ class ProfileViewModel @Inject constructor(
             when (val result = profileRepository.refreshProfileTimed("", forceNetwork = forceNetwork)) {
                 is Result.Success -> return result.data
                 is Result.Error -> {
+                    Log.w("AniSyncPerf", "profile.load failed attempt=$attempt code=${result.code} msg=${result.message}")
                     if (hasCachedOwnProfile) return null
                     if (attempt == OWN_PROFILE_LOAD_RETRIES) {
                         ownProfileError.value = if (result.code == 429) {
