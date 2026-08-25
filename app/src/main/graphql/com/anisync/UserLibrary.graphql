@@ -45,6 +45,7 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
         }
         status
         progress
+        progressVolumes
         score
         repeat
         notes
