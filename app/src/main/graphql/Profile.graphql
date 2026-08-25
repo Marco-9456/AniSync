@@ -91,18 +91,20 @@ query GetUserProfile($name: String, $includeViewer: Boolean = false) {
 }
 
 """
-Single-request profile fetch. Folds the former GetUserProfile + GetUserActivities
-into one operation. Activity feeds are gated by `$includeActivities` so the
-own-profile path (cached/known userId) gets everything in one round-trip, while
-the target-by-name path (userId unknown until User resolves) sets it false and
-issues GetUserActivities as a follow-up. Favourites are page-1 only here — the
-rest is paginated lazily when the Favorites tab opens (no eager fan-out).
+Profile fetch: identity, statistics and page-1 favourites in one operation, with the
+viewer block gated by `$includeViewer` so the own-profile path also gets its unread
+notification count without a second GetViewer.
+
+The activity feeds are deliberately NOT folded in here. This query plus those four
+activity pages costs 611 against AniList's 500 query-complexity budget, and the
+budget is charged on the query shape, so no `perPage` is small enough to fit them.
+Every caller issues GetUserActivities as a follow-up instead. Favourites are page-1
+only — the rest is paginated lazily when the Favorites tab opens (no eager fan-out).
 """
 query GetFullUserProfile(
   $userId: Int,
   $name: String,
-  $includeViewer: Boolean = false,
-  $includeActivities: Boolean = false
+  $includeViewer: Boolean = false
 ) {
   Viewer @include(if: $includeViewer) {
     id
@@ -194,26 +196,6 @@ query GetFullUserProfile(
           name
         }
       }
-    }
-  }
-  allActivities: Page(perPage: 50) @include(if: $includeActivities) {
-    activities(userId: $userId, sort: [PINNED, ID_DESC], type_in: [ANIME_LIST, MANGA_LIST, TEXT, MESSAGE]) {
-      ...ActivityFields
-    }
-  }
-  textActivities: Page(perPage: 20) @include(if: $includeActivities) {
-    activities(userId: $userId, sort: [PINNED, ID_DESC], type_in: [TEXT]) {
-      ...ActivityFields
-    }
-  }
-  messageReceived: Page(perPage: 20) @include(if: $includeActivities) {
-    activities(userId: $userId, sort: [ID_DESC], type_in: [MESSAGE]) {
-      ...ActivityFields
-    }
-  }
-  messageSent: Page(perPage: 20) @include(if: $includeActivities) {
-    activities(messengerId: $userId, sort: [ID_DESC], type_in: [MESSAGE]) {
-      ...ActivityFields
     }
   }
 }

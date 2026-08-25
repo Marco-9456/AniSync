@@ -100,12 +100,8 @@ class ProfileRepositoryImpl @Inject constructor(
 
             // Resolve the userId up front when we can. The own profile reuses its
             // cached id; a cold first launch with no cache pays a one-time
-            // GetViewer to learn id + name. Knowing the id lets us fold the
-            // activity feeds into the single GetFullUserProfile request via
-            // `includeActivities`. Target profiles are addressed by name (their id
-            // is unknown until User resolves), so they fetch activities as a
-            // lightweight follow-up — still fewer round-trips than before and with
-            // no favourites fan-out.
+            // GetViewer to learn id + name. Target profiles are addressed by name,
+            // their id being unknown until User resolves.
             var knownUserId: Int? = null
             var queryName: String? = null
             if (isOwnProfile) {
@@ -123,7 +119,6 @@ class ProfileRepositoryImpl @Inject constructor(
                 queryName = username
             }
 
-            val includeActivities = knownUserId != null
             val policy = if (forceNetwork) FetchPolicy.NetworkOnly else FetchPolicy.CacheFirst
 
             val profileQueryStart = SystemClock.elapsedRealtime()
@@ -135,10 +130,7 @@ class ProfileRepositoryImpl @Inject constructor(
                         name = queryName?.let { Optional.present(it) } ?: Optional.absent(),
                         // Own-profile path piggybacks viewer fields so the notification
                         // badge updates without a separate GetViewer round-trip.
-                        includeViewer = Optional.present(isOwnProfile),
-                        // Activity feeds only resolve when the userId is already known;
-                        // otherwise they're fetched once User has resolved the id below.
-                        includeActivities = Optional.present(includeActivities)
+                        includeViewer = Optional.present(isOwnProfile)
                     )
                 )
                     .fetchPolicy(policy)
@@ -147,6 +139,11 @@ class ProfileRepositoryImpl @Inject constructor(
                 Trace.endSection()
             }
             val profileQueryMs = SystemClock.elapsedRealtime() - profileQueryStart
+
+            // A transport or parse failure leaves data AND errors null, so hasErrors() is false and
+            // the null-User branch below would report a missing user for what is really an HTTP
+            // status. That is how a hard 400 read as "User not found" for months.
+            response.exception?.let { throw it }
 
             if (response.hasErrors()) {
                 val firstError = response.errors?.firstOrNull()?.message
@@ -192,29 +189,22 @@ class ProfileRepositoryImpl @Inject constructor(
                 )
             }.orEmpty()
 
-            // Activities: folded into the unified response when the userId was known
-            // up front; otherwise fetched now that User has resolved the id.
+            // Activities are a follow-up rather than part of the profile response: together they
+            // cost 611 against AniList's 500 query-complexity budget (see GetFullUserProfile).
             val activitiesStart = SystemClock.elapsedRealtime()
             val rawActivities = mutableListOf<com.anisync.android.fragment.ActivityFields>()
-            if (includeActivities) {
-                response.data?.allActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-                response.data?.textActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-                response.data?.messageReceived?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-                response.data?.messageSent?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-            } else {
-                Trace.beginSection("AniSync.Profile.Query.UserActivities")
-                val activitiesResponse = try {
-                    apolloClient.query(GetUserActivitiesQuery(userId = Optional.present(user.id)))
-                        .fetchPolicy(policy)
-                        .execute()
-                } finally {
-                    Trace.endSection()
-                }
-                activitiesResponse.data?.allActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-                activitiesResponse.data?.textActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-                activitiesResponse.data?.messageReceived?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-                activitiesResponse.data?.messageSent?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            Trace.beginSection("AniSync.Profile.Query.UserActivities")
+            val activitiesResponse = try {
+                apolloClient.query(GetUserActivitiesQuery(userId = Optional.present(user.id)))
+                    .fetchPolicy(policy)
+                    .execute()
+            } finally {
+                Trace.endSection()
             }
+            activitiesResponse.data?.allActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            activitiesResponse.data?.textActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            activitiesResponse.data?.messageReceived?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            activitiesResponse.data?.messageSent?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
             val activitiesMs = SystemClock.elapsedRealtime() - activitiesStart
 
             val activities = rawActivities
