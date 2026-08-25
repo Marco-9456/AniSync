@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
@@ -787,6 +789,10 @@ private fun ScoreCard(
                 .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // POINT_5 and POINT_3 are glyph scales on AniList, so they get their glyphs as targets
+            // rather than a track cut into five or three.
+            val glyphFormat = scoreFormat == ScoreFormat.POINT_5 || scoreFormat == ScoreFormat.POINT_3
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -794,13 +800,25 @@ private fun ScoreCard(
             ) {
                 SectionLabel(text = stringResource(R.string.stat_score), modifier = Modifier.weight(1f))
 
-                ValueField(
-                    value = if (score > 0) scoreFormat.displayValue(score) else stringResource(R.string.no_score),
-                    suffix = if (score > 0) stringResource(R.string.edit_entry_of_total, scoreFormat.max.toInt()) else null,
-                    onClick = onTypeRequest,
-                    stretch = false,
-                    emphasised = score > 0
-                )
+                if (glyphFormat) {
+                    Text(
+                        text = if (score > 0) {
+                            stringResource(R.string.edit_entry_score_of_max, score.toInt(), scoreFormat.max.toInt())
+                        } else {
+                            stringResource(R.string.no_score)
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    ValueField(
+                        value = if (score > 0) scoreFormat.displayValue(score) else stringResource(R.string.no_score),
+                        suffix = if (score > 0) stringResource(R.string.edit_entry_of_total, scoreFormat.max.toInt()) else null,
+                        onClick = onTypeRequest,
+                        stretch = false,
+                        emphasised = score > 0
+                    )
+                }
 
                 if (score > 0) {
                     TextButton(onClick = onClear) {
@@ -809,13 +827,82 @@ private fun ScoreCard(
                 }
             }
 
-            Slider(
-                value = score.toFloat().coerceIn(0f, scoreFormat.max.toFloat()),
-                onValueChange = { onScoreChange(scoreFormat.snap(it.toDouble())) },
-                valueRange = 0f..scoreFormat.max.toFloat(),
-                steps = scoreFormat.sliderSteps,
-                modifier = Modifier.fillMaxWidth()
-            )
+            when (scoreFormat) {
+                ScoreFormat.POINT_5 -> StarRow(score = score.toInt(), onScoreChange = { onScoreChange(it.toDouble()) })
+                ScoreFormat.POINT_3 -> SmileyRow(score = score.toInt(), onScoreChange = { onScoreChange(it.toDouble()) })
+                else -> Slider(
+                    value = score.toFloat().coerceIn(0f, scoreFormat.max.toFloat()),
+                    onValueChange = { onScoreChange(scoreFormat.snap(it.toDouble())) },
+                    valueRange = 0f..scoreFormat.max.toFloat(),
+                    steps = scoreFormat.sliderSteps,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+/** Tapping the star that is already the score clears it, which is the only way back to unrated. */
+@Composable
+private fun StarRow(score: Int, onScoreChange: (Int) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        (1..5).forEach { star ->
+            IconButton(onClick = { onScoreChange(if (score == star) 0 else star) }) {
+                Icon(
+                    imageVector = if (star <= score) Icons.Default.Star else Icons.Default.StarBorder,
+                    contentDescription = stringResource(R.string.edit_entry_score_of_max, star, 5),
+                    modifier = Modifier.size(32.dp),
+                    tint = if (star <= score) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
+        }
+    }
+}
+
+/** The same three faces [formatScore] prints, sized as targets instead of thirds of a track. */
+@Composable
+private fun SmileyRow(score: Int, onScoreChange: (Int) -> Unit) {
+    val faces = listOf(1 to ":(", 2 to ":|", 3 to ":)")
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        faces.forEach { (value, glyph) ->
+            val selected = score == value
+            Surface(
+                onClick = { onScoreChange(if (selected) 0 else value) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp),
+                shape = ControlShape,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                },
+                contentColor = if (selected) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = glyph,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
     }
 }

@@ -793,6 +793,7 @@
     <string name="edit_entry_finished">Finished</string>
     <string name="edit_entry_add_date">Add date</string>
     <string name="edit_entry_clear_score">Clear</string>
+    <string name="edit_entry_score_of_max">%1$d of %2$d</string>
     <string name="edit_entry_set_progress">Set progress</string>
     <string name="edit_entry_set_score">Set score</string>
     <string name="edit_entry_more_summary_anime">Notes, rewatches, privacy</string>
