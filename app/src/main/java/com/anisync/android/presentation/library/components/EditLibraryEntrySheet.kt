@@ -137,6 +137,7 @@ fun EditLibraryEntrySheet(
 ) {
     var status by rememberSaveable(entry.id) { mutableStateOf(entry.status) }
     var progress by rememberSaveable(entry.id) { mutableIntStateOf(entry.progress) }
+    var progressVolumes by rememberSaveable(entry.id) { mutableIntStateOf(entry.progressVolumes ?: 0) }
     var score by rememberSaveable(entry.id) { mutableDoubleStateOf(entry.score ?: 0.0) }
     var notes by rememberSaveable(entry.id) { mutableStateOf(entry.notes.orEmpty()) }
     var startedAt by rememberSaveable(entry.id) { mutableStateOf(entry.startedAt) }
@@ -161,6 +162,7 @@ fun EditLibraryEntrySheet(
         derivedStateOf {
             status != entry.status ||
                 progress != entry.progress ||
+                progressVolumes != (entry.progressVolumes ?: 0) ||
                 score != (entry.score ?: 0.0) ||
                 notes != entry.notes.orEmpty() ||
                 startedAt != entry.startedAt ||
@@ -192,6 +194,7 @@ fun EditLibraryEntrySheet(
     fun edited() = entry.copy(
         status = status,
         progress = progress,
+        progressVolumes = progressVolumes.takeIf { entry.type == MediaType.MANGA },
         score = score.takeIf { it > 0 },
         // The raw text goes out, empty string included: collapsing it to null makes the repository
         // send Optional.absent(), which leaves the old note on AniList instead of clearing it.
@@ -243,6 +246,12 @@ fun EditLibraryEntrySheet(
                     progress = progress,
                     total = total,
                     isAnime = isAnime,
+                    volumes = if (isAnime) null else progressVolumes,
+                    totalVolumes = entry.totalVolumes,
+                    onVolumesChange = {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        progressVolumes = it.coerceIn(0, entry.totalVolumes ?: Int.MAX_VALUE)
+                    },
                     onProgressChange = {
                         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                         progress = it.coerceIn(0, total ?: Int.MAX_VALUE)
@@ -481,7 +490,10 @@ private fun ProgressCard(
     progress: Int,
     total: Int?,
     isAnime: Boolean,
+    volumes: Int?,
+    totalVolumes: Int?,
     onProgressChange: (Int) -> Unit,
+    onVolumesChange: (Int) -> Unit,
     onTypeRequest: () -> Unit
 ) {
     val remaining = total?.let { (it - progress).coerceAtLeast(0) }
@@ -549,6 +561,14 @@ private fun ProgressCard(
                 )
             }
 
+            if (volumes != null) {
+                VolumesRow(
+                    volumes = volumes,
+                    totalVolumes = totalVolumes,
+                    onChange = onVolumesChange
+                )
+            }
+
             if (total != null && total > 0) {
                 LinearProgressIndicator(
                     progress = { progress.toFloat() / total.toFloat() },
@@ -561,6 +581,57 @@ private fun ProgressCard(
                     strokeCap = StrokeCap.Round
                 )
             }
+        }
+    }
+}
+
+/** Manga carry a second count AniList tracks separately, so volumes get their own row. */
+@Composable
+private fun VolumesRow(
+    volumes: Int,
+    totalVolumes: Int?,
+    onChange: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        SectionLabel(
+            text = stringResource(R.string.edit_entry_volumes_read),
+            modifier = Modifier.weight(1f)
+        )
+        FilledTonalIconButton(
+            onClick = { onChange(volumes - 1) },
+            enabled = volumes > 0,
+            modifier = Modifier.size(36.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Remove,
+                contentDescription = stringResource(R.string.cd_decrease_progress),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Text(
+            text = if (totalVolumes != null) {
+                stringResource(R.string.edit_entry_score_of_max, volumes, totalVolumes)
+            } else {
+                volumes.toString()
+            },
+            style = MaterialTheme.typography.titleSmall,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.width(64.dp)
+        )
+        FilledTonalIconButton(
+            onClick = { onChange(volumes + 1) },
+            enabled = totalVolumes == null || volumes < totalVolumes,
+            modifier = Modifier.size(36.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = stringResource(R.string.cd_increase_progress),
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

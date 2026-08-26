@@ -785,6 +785,7 @@
     <string name="entry_deleted">Entry removed</string>
     <string name="edit_entry_episodes_watched">Episodes watched</string>
     <string name="edit_entry_chapters_read">Chapters read</string>
+    <string name="edit_entry_volumes_read">Volumes read</string>
     <string name="edit_entry_of_total">of %1$d</string>
     <string name="edit_entry_remaining">%1$d left</string>
     <string name="edit_entry_all_watched">All watched</string>
