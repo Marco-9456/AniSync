@@ -134,6 +134,7 @@ fun EditLibraryEntrySheet(
     titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     scoreFormat: ScoreFormat = ScoreFormat.POINT_100,
     availableCustomLists: List<String> = emptyList(),
+    advancedScoringCategories: List<String> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (LibraryEntry) -> Unit,
     onDelete: () -> Unit
@@ -149,6 +150,7 @@ fun EditLibraryEntrySheet(
     var isPrivate by rememberSaveable(entry.id) { mutableStateOf(entry.isPrivate) }
     var hiddenFromStatusLists by rememberSaveable(entry.id) { mutableStateOf(entry.hiddenFromStatusLists) }
     var selectedCustomLists by remember(entry.id) { mutableStateOf(entry.customLists.toSet()) }
+    var advancedScores by remember(entry.id) { mutableStateOf(entry.advancedScores) }
 
     var finishPromptDismissed by rememberSaveable(entry.id) { mutableStateOf(false) }
     var moreExpanded by rememberSaveable { mutableStateOf(false) }
@@ -174,7 +176,8 @@ fun EditLibraryEntrySheet(
                 rewatches != entry.rewatches ||
                 isPrivate != entry.isPrivate ||
                 hiddenFromStatusLists != entry.hiddenFromStatusLists ||
-                selectedCustomLists != entry.customLists.toSet()
+                selectedCustomLists != entry.customLists.toSet() ||
+                advancedScores != entry.advancedScores
         }
     }
 
@@ -207,6 +210,7 @@ fun EditLibraryEntrySheet(
         completedAt = completedAt,
         rewatches = rewatches,
         customLists = selectedCustomLists.toList(),
+        advancedScores = advancedScores,
         isPrivate = isPrivate,
         hiddenFromStatusLists = hiddenFromStatusLists
     )
@@ -308,8 +312,21 @@ fun EditLibraryEntrySheet(
                 ScoreCard(
                     score = score,
                     scoreFormat = scoreFormat,
+                    categories = advancedScoringCategories,
+                    advancedScores = advancedScores,
                     onScoreChange = { score = it },
-                    onClear = { score = 0.0 },
+                    onClear = {
+                        score = 0.0
+                        advancedScores = emptyMap()
+                    },
+                    onCategoryChange = { name, value ->
+                        val next = advancedScores.toMutableMap()
+                        if (value <= 0.0) next.remove(name) else next[name] = value
+                        advancedScores = next
+                        // AniList treats the overall score as the average of the rated categories.
+                        val rated = next.values.filter { it > 0.0 }
+                        if (rated.isNotEmpty()) score = scoreFormat.snap(rated.average())
+                    },
                     onTypeRequest = { numberPrompt = NumberPrompt.Score(score, scoreFormat) }
                 )
 
@@ -926,8 +943,11 @@ private fun CustomListsRow(
 private fun ScoreCard(
     score: Double,
     scoreFormat: ScoreFormat,
+    categories: List<String>,
+    advancedScores: Map<String, Double>,
     onScoreChange: (Double) -> Unit,
     onClear: () -> Unit,
+    onCategoryChange: (String, Double) -> Unit,
     onTypeRequest: () -> Unit
 ) {
     Surface(shape = CardShape, color = MaterialTheme.colorScheme.surfaceContainer) {
@@ -985,6 +1005,74 @@ private fun ScoreCard(
                     steps = scoreFormat.sliderSteps,
                     modifier = Modifier.fillMaxWidth()
                 )
+            }
+
+            if (categories.isNotEmpty()) {
+                CategoryScores(
+                    categories = categories,
+                    scores = advancedScores,
+                    scoreFormat = scoreFormat,
+                    onCategoryChange = onCategoryChange
+                )
+            }
+        }
+    }
+}
+
+/**
+ * AniList's advanced scoring: the viewer names the categories, rates any of them, and the overall
+ * score follows their average. A category left at zero is unrated and stays out of that average.
+ */
+@Composable
+private fun CategoryScores(
+    categories: List<String>,
+    scores: Map<String, Double>,
+    scoreFormat: ScoreFormat,
+    onCategoryChange: (String, Double) -> Unit
+) {
+    Surface(shape = ControlShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SectionLabel(text = stringResource(R.string.edit_entry_by_category))
+            Text(
+                text = stringResource(R.string.edit_entry_by_category_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            categories.forEach { category ->
+                val value = scores[category] ?: 0.0
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = category,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = if (value > 0) scoreFormat.displayValue(value) else "–",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (value > 0) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+                    Slider(
+                        value = value.toFloat().coerceIn(0f, scoreFormat.max.toFloat()),
+                        onValueChange = { onCategoryChange(category, scoreFormat.snap(it.toDouble())) },
+                        valueRange = 0f..scoreFormat.max.toFloat(),
+                        steps = scoreFormat.sliderSteps,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }

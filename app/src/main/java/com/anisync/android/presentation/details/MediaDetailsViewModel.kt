@@ -115,6 +115,17 @@ class MediaDetailsViewModel @Inject constructor(
         .map { order -> order.filterNot { it.startsWith("status:") } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    val animeAdvancedScoring: StateFlow<List<String>> = combine(
+        appSettings.animeAdvancedScoring,
+        appSettings.animeAdvancedScoringEnabled
+    ) { categories, enabled -> if (enabled) categories else emptyList() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val mangaAdvancedScoring: StateFlow<List<String>> = combine(
+        appSettings.mangaAdvancedScoring,
+        appSettings.mangaAdvancedScoringEnabled
+    ) { categories, enabled -> if (enabled) categories else emptyList() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     // Get the ID directly from the navigation route "details/{mediaId}"
     private val mediaId: Int = checkNotNull(savedStateHandle["mediaId"]) {
         "Media ID is required for MediaDetailsViewModel"

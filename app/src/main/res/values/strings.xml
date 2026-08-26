@@ -794,6 +794,8 @@
     <string name="edit_entry_finished">Finished</string>
     <string name="edit_entry_add_date">Add date</string>
     <string name="edit_entry_clear_score">Clear</string>
+    <string name="edit_entry_by_category">By category</string>
+    <string name="edit_entry_by_category_desc">Rate any of these and the overall score follows their average. An empty one is left out.</string>
     <string name="edit_entry_score_of_max">%1$d of %2$d</string>
     <string name="edit_entry_set_progress">Set progress</string>
     <string name="edit_entry_set_score">Set score</string>

@@ -203,6 +203,8 @@ fun MediaDetailsScreen(
     val draftEntry by viewModel.draftEntry.collectAsStateWithLifecycle()
     val userScoreFormat by viewModel.userScoreFormat.collectAsStateWithLifecycle()
     val animeCustomLists by viewModel.animeCustomLists.collectAsStateWithLifecycle()
+    val animeAdvancedScoring by viewModel.animeAdvancedScoring.collectAsStateWithLifecycle()
+    val mangaAdvancedScoring by viewModel.mangaAdvancedScoring.collectAsStateWithLifecycle()
     val mangaCustomLists by viewModel.mangaCustomLists.collectAsStateWithLifecycle()
     val following by viewModel.following.collectAsStateWithLifecycle()
     val hasMoreFollowing by viewModel.hasMoreFollowing.collectAsStateWithLifecycle()
@@ -646,6 +648,11 @@ fun MediaDetailsScreen(
                     titleLanguage = titleLanguage,
                     scoreFormat = userScoreFormat,
                     availableCustomLists = availableLists,
+                    advancedScoringCategories = if (mediaType == com.anisync.android.type.MediaType.MANGA) {
+                        mangaAdvancedScoring
+                    } else {
+                        animeAdvancedScoring
+                    },
                     onDismiss = viewModel::closeEditSheet,
                     onSave = viewModel::saveLibraryEntry,
                     onDelete = {

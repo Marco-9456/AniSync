@@ -99,6 +99,22 @@ class LibraryViewModel @Inject constructor(
             _uiState.update { it.copy(userScoreFormat = format) }
         }.launchIn(viewModelScope)
 
+        combine(
+            appSettings.animeAdvancedScoring,
+            appSettings.animeAdvancedScoringEnabled,
+            appSettings.mangaAdvancedScoring,
+            appSettings.mangaAdvancedScoringEnabled,
+            _uiState.map { it.mediaType }.distinctUntilChanged()
+        ) { animeCategories, animeEnabled, mangaCategories, mangaEnabled, type ->
+            when {
+                type == com.anisync.android.type.MediaType.MANGA && mangaEnabled -> mangaCategories
+                type != com.anisync.android.type.MediaType.MANGA && animeEnabled -> animeCategories
+                else -> emptyList()
+            }
+        }.onEach { categories ->
+            _uiState.update { it.copy(advancedScoringCategories = categories) }
+        }.launchIn(viewModelScope)
+
         appSettings.showScoreOnCards.onEach { show ->
             _uiState.update { it.copy(showScoreOnCards = show) }
         }.launchIn(viewModelScope)
