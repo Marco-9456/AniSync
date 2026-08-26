@@ -1068,6 +1068,18 @@ fun DetailsPageContent(
                         onRemoveClick = onRemoveEntry,
                         modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))
                     )
+                    // The viewer's own note rides with the tracker rather than sitting in the
+                    // Overview tab: it is their data about this entry, like status and progress,
+                    // so it should not be behind a tab.
+                    val viewerNotes = details.listNotes
+                    if (!viewerNotes.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_normal)))
+                        UserNotesCard(
+                            notes = viewerNotes,
+                            onEditClick = onEditNotes,
+                            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))
+                        )
+                    }
                     if (details.nextAiringEpisode != null) {
                         Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_normal)))
                         NextEpisodeStrip(
@@ -1107,22 +1119,6 @@ fun DetailsPageContent(
 
             when (effectiveTab) {
                 DetailsTab.OVERVIEW -> {
-                    // Your notes — surfaced read-first so the viewer can re-read their own note
-                    // without opening the edit sheet (#75). Only shown when a note exists.
-                    val viewerNotes = details.listNotes
-                    if (!viewerNotes.isNullOrBlank()) {
-                        item(key = "user_notes") {
-                            Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_large))) {
-                                Spacer(modifier = Modifier.height(dimensionResource(R.dimen.spacing_large)))
-                                UserNotesCard(
-                                    notes = viewerNotes,
-                                    onEditClick = onEditNotes
-                                )
-                            }
-                        }
-                    }
-
-                    // Information (Info Cards)
                     // Synopsis leads the tab. It is what most viewers open the page for, and it
                     // used to sit under a carousel of trivia.
                     item(key = "synopsis") {
