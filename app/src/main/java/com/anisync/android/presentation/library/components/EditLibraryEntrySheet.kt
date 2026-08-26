@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.DeleteOutline
@@ -110,6 +111,8 @@ import com.anisync.android.ui.theme.ListIndicatorKind
 import com.anisync.android.ui.theme.listIndicatorColor
 import com.anisync.android.util.getTitle
 import java.text.DateFormat
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.Date
 import java.util.TimeZone
 import kotlin.math.roundToInt
@@ -147,6 +150,7 @@ fun EditLibraryEntrySheet(
     var hiddenFromStatusLists by rememberSaveable(entry.id) { mutableStateOf(entry.hiddenFromStatusLists) }
     var selectedCustomLists by remember(entry.id) { mutableStateOf(entry.customLists.toSet()) }
 
+    var finishPromptDismissed by rememberSaveable(entry.id) { mutableStateOf(false) }
     var moreExpanded by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
@@ -248,18 +252,34 @@ fun EditLibraryEntrySheet(
                     isAnime = isAnime,
                     volumes = if (isAnime) null else progressVolumes,
                     totalVolumes = entry.totalVolumes,
-                    onVolumesChange = {
-                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                        progressVolumes = it.coerceIn(0, entry.totalVolumes ?: Int.MAX_VALUE)
-                    },
                     onProgressChange = {
                         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                         progress = it.coerceIn(0, total ?: Int.MAX_VALUE)
+                    },
+                    onVolumesChange = {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        progressVolumes = it.coerceIn(0, entry.totalVolumes ?: Int.MAX_VALUE)
                     },
                     onTypeRequest = {
                         numberPrompt = NumberPrompt.Progress(progress, total)
                     }
                 )
+
+                val atTheEnd = total != null && total > 0 && progress >= total
+                AnimatedVisibility(
+                    visible = atTheEnd && status != LibraryStatus.COMPLETED && !finishPromptDismissed
+                ) {
+                    FinishPrompt(
+                        isAnime = isAnime,
+                        onDismiss = { finishPromptDismissed = true },
+                        onConfirm = {
+                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                            status = LibraryStatus.COMPLETED
+                            if (completedAt == null) completedAt = todayUtcMillis()
+                            finishPromptDismissed = true
+                        }
+                    )
+                }
 
                 StatusGrid(
                     status = status,
@@ -692,6 +712,63 @@ private fun ValueField(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Reaching the last episode is the moment the entry is finished, so the sheet offers the two edits
+ * that always follow rather than leaving them to be found separately.
+ */
+@Composable
+private fun FinishPrompt(
+    isAnime: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = ControlShape,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
+        Column(
+            modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(
+                            if (isAnime) R.string.edit_entry_finish_title_anime else R.string.edit_entry_finish_title_manga
+                        ),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Text(
+                        text = stringResource(R.string.edit_entry_finish_body),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(text = stringResource(R.string.edit_entry_finish_dismiss))
+                }
+                TextButton(onClick = onConfirm) {
+                    Text(
+                        text = stringResource(R.string.edit_entry_finish_apply),
+                        style = MaterialTheme.typography.labelLarge.emphasis()
+                    )
+                }
             }
         }
     }
@@ -1468,3 +1545,6 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
         modifier = modifier.semantics { heading() }
     )
 }
+
+/** Fuzzy dates are UTC anchored, so "today" has to be UTC midnight and not the local one. */
+private fun todayUtcMillis(): Long = LocalDate.now(ZoneOffset.UTC).toEpochDay() * 86_400_000L

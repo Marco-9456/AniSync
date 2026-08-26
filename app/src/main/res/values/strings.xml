@@ -800,6 +800,11 @@
     <string name="edit_entry_more_summary_anime">Notes, rewatches, privacy</string>
     <string name="edit_entry_more_summary_manga">Notes, rereads, privacy</string>
     <string name="edit_entry_remove">Remove from your list</string>
+    <string name="edit_entry_finish_title_anime">That was the last episode</string>
+    <string name="edit_entry_finish_title_manga">That was the last chapter</string>
+    <string name="edit_entry_finish_body">Move it to Completed and set today as the finish date.</string>
+    <string name="edit_entry_finish_apply">Mark completed</string>
+    <string name="edit_entry_finish_dismiss">Not now</string>
     <string name="edit_entry_discard_title">Discard your changes?</string>
     <string name="edit_entry_discard_body">This entry has edits you have not saved yet.</string>
     <string name="edit_entry_discard_confirm">Discard</string>
