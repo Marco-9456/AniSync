@@ -44,6 +44,27 @@ fun LibraryStatus.toApiStatus(): MediaListStatus {
 }
 
 /**
+ * Reads AniList's `advancedScores` Json blob into a category-keyed map.
+ *
+ * The scalar arrives as `kotlin.Any`, a map whose values are whatever the JSON parser produced
+ * (Int, Double or a numeric String depending on the entry), so every value goes through [Number] or
+ * a parse rather than a cast. Unrated categories come back as 0 from AniList and are dropped, which
+ * is what keeps them out of the average the sheet shows.
+ */
+fun Any?.toScoreMap(): Map<String, Double> {
+    val raw = this as? Map<*, *> ?: return emptyMap()
+    return raw.mapNotNull { (key, value) ->
+        val name = key as? String ?: return@mapNotNull null
+        val score = when (value) {
+            is Number -> value.toDouble()
+            is String -> value.toDoubleOrNull()
+            else -> null
+        } ?: return@mapNotNull null
+        if (score <= 0.0) null else name to score
+    }.toMap()
+}
+
+/**
  * Maps fuzzy date components to epoch millis at UTC 00:00 of the given date.
  */
 fun mapFuzzyDateToLong(year: Int?, month: Int?, day: Int?): Long? {

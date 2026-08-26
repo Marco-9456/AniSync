@@ -900,8 +900,10 @@ fun LibraryScreen(
 
         EditLibraryEntrySheet(
             entry = entry,
+            titleLanguage = titleLanguage,
             scoreFormat = uiState.userScoreFormat,
             availableCustomLists = uiState.customListNames,
+            advancedScoringCategories = uiState.advancedScoringCategories,
             onDismiss = { editingEntry = null },
             onSave = { updatedEntry ->
                 viewModel.onAction(LibraryAction.UpdateEntry(updatedEntry))

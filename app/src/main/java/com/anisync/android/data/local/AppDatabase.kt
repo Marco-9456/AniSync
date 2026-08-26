@@ -20,6 +20,13 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v25 (Aug 2026):
+ *   - Added fields to library_entries:
+ *     • progressVolumes - volumes read, manga only, null until one is recorded
+ *     • advancedScores - per-category scores as a JSON object keyed by the
+ *       viewer's advanced scoring category names, '{}' when the feature is off
+ *     Auto-migration, both columns default so existing rows are untouched.
+ *
  * v24 (Aug 2026):
  *   - Added media_themes table for the AnimeThemes openings and endings lookup:
  *     • mediaId, themes (JSON blob), fetchedAt
@@ -111,7 +118,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         SavedForumThreadEntity::class,
         MediaThemesEntity::class
     ],
-    version = 24,
+    version = 25,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
@@ -133,7 +140,8 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         androidx.room.AutoMigration(from = 19, to = 20),
         androidx.room.AutoMigration(from = 20, to = 21),
         androidx.room.AutoMigration(from = 21, to = 22),
-        androidx.room.AutoMigration(from = 23, to = 24)
+        androidx.room.AutoMigration(from = 23, to = 24),
+        androidx.room.AutoMigration(from = 24, to = 25)
     ]
 )
 @TypeConverters(Converters::class)

@@ -4,8 +4,8 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
       id
       mediaListOptions {
         scoreFormat
-        animeList { customLists }
-        mangaList { customLists }
+        animeList { customLists advancedScoring advancedScoringEnabled }
+        mangaList { customLists advancedScoring advancedScoringEnabled }
       }
     }
     lists {
@@ -45,7 +45,9 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
         }
         status
         progress
+        progressVolumes
         score
+        advancedScores
         repeat
         notes
         startedAt {

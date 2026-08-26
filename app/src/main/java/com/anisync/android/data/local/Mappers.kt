@@ -44,7 +44,9 @@ fun LibraryEntryEntity.toDomain(): LibraryEntry = LibraryEntry(
     mediaStartDate = mediaStartDate,
     customLists = customLists,
     isPrivate = isPrivate,
-    hiddenFromStatusLists = hiddenFromStatusLists
+    hiddenFromStatusLists = hiddenFromStatusLists,
+    progressVolumes = progressVolumes,
+    advancedScores = advancedScores
 )
 
 fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEntryEntity(
@@ -80,7 +82,9 @@ fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEnt
     mediaStartDate = mediaStartDate,
     customLists = customLists,
     isPrivate = isPrivate,
-    hiddenFromStatusLists = hiddenFromStatusLists
+    hiddenFromStatusLists = hiddenFromStatusLists,
+    progressVolumes = progressVolumes,
+    advancedScores = advancedScores
 )
 
 // --- MediaDetails ---

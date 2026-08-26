@@ -21,6 +21,8 @@ data class LibraryUiState(
     val entries: List<LibraryEntry> = emptyList(),
     val groupedEntries: Map<LibraryStatus, List<LibraryEntry>> = emptyMap(),
     val customListNames: List<String> = emptyList(),
+    /** The viewer's advanced scoring categories for the open tab; empty when the feature is off. */
+    val advancedScoringCategories: List<String> = emptyList(),
     val customListEntries: Map<String, List<LibraryEntry>> = emptyMap(),
     val favoriteEntries: List<LibraryEntry> = emptyList(),
     val hiddenListNames: Set<String> = emptySet(),

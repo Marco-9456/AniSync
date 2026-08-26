@@ -10,6 +10,7 @@ import com.anisync.android.data.mapper.mapFuzzyDateToLong
 import com.anisync.android.data.mapper.toApiStatus
 import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.mapper.toFuzzyDateInput
+import com.anisync.android.data.mapper.toScoreMap
 import com.anisync.android.data.mapper.todayUtcMillis
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.LibraryEntry
@@ -126,6 +127,19 @@ class LibraryRepositoryImpl @Inject constructor(
             val animeCustomLists = options?.animeList?.customLists?.filterNotNull() ?: emptyList()
             val mangaCustomLists = options?.mangaList?.customLists?.filterNotNull() ?: emptyList()
 
+            // The categories are the key to the per-entry scores: the save mutation takes a bare
+            // array, so the order AniList returns them in is the order scores go back in.
+            appSettings.setAdvancedScoring(
+                MediaType.ANIME,
+                options?.animeList?.advancedScoring?.filterNotNull() ?: emptyList(),
+                options?.animeList?.advancedScoringEnabled == true
+            )
+            appSettings.setAdvancedScoring(
+                MediaType.MANGA,
+                options?.mangaList?.advancedScoring?.filterNotNull() ?: emptyList(),
+                options?.mangaList?.advancedScoringEnabled == true
+            )
+
             val apiAnimeSet = animeCustomLists.toHashSet()
             val apiMangaSet = mangaCustomLists.toHashSet()
 
@@ -172,6 +186,7 @@ class LibraryRepositoryImpl @Inject constructor(
                             coverUrl = media?.coverImage?.extraLarge,
                             cover = com.anisync.android.domain.CoverImage.of(media?.coverImage?.medium, media?.coverImage?.large, media?.coverImage?.extraLarge),
                             progress = entry.progress ?: 0,
+                            progressVolumes = entry.progressVolumes,
                             totalEpisodes = media?.episodes,
                             totalChapters = media?.chapters,
                             totalVolumes = media?.volumes,
@@ -182,6 +197,7 @@ class LibraryRepositoryImpl @Inject constructor(
                             mediaStatus = media?.status?.name,
                             nextAiringEpisodeTime = media?.nextAiringEpisode?.airingAt?.toLong(),
                             score = entry.score,
+                            advancedScores = entry.advancedScores.toScoreMap(),
                             rewatches = entry.repeat ?: 0,
                             notes = entry.notes,
                             startedAt = entry.startedAt?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
@@ -325,7 +341,9 @@ class LibraryRepositoryImpl @Inject constructor(
                     mediaId = Optional.present(updatedEntry.mediaId),
                     status = Optional.present(apiStatus),
                     progress = Optional.present(updatedEntry.progress),
+                    progressVolumes = Optional.presentIfNotNull(updatedEntry.progressVolumes),
                     score = Optional.presentIfNotNull(updatedEntry.score),
+                    advancedScores = advancedScoresFor(updatedEntry),
                     repeat = Optional.present(updatedEntry.rewatches),
                     notes = Optional.presentIfNotNull(updatedEntry.notes?.let(::encodeForAniList)),
                     startedAt = updatedEntry.startedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
@@ -343,6 +361,21 @@ class LibraryRepositoryImpl @Inject constructor(
                 throw Exception(errorMessage)
             }
         }
+    }
+
+    /**
+     * The categories the viewer configured for this media type, in AniList's order, paired with the
+     * entry's scores. Absent when the viewer has no categories, so a save never clears scores that
+     * this client simply does not know about.
+     */
+    private fun advancedScoresFor(entry: LibraryEntry): Optional<List<Double>> {
+        val categories = if (entry.type == MediaType.MANGA) {
+            appSettings.mangaAdvancedScoring.value
+        } else {
+            appSettings.animeAdvancedScoring.value
+        }
+        if (categories.isEmpty()) return Optional.absent()
+        return Optional.present(categories.map { entry.advancedScores[it] ?: 0.0 })
     }
 
     override suspend fun deleteEntry(entryId: Int, mediaId: Int): Result<Unit> {

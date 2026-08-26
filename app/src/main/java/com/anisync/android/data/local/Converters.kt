@@ -54,6 +54,16 @@ class Converters {
     fun toStringList(list: List<String>): String = json.encodeToString(list)
 
     @TypeConverter
+    fun fromAdvancedScores(value: String): Map<String, Double> = try {
+        json.decodeFromString(value)
+    } catch (e: Exception) {
+        emptyMap()
+    }
+
+    @TypeConverter
+    fun toAdvancedScores(scores: Map<String, Double>): String = json.encodeToString(scores)
+
+    @TypeConverter
     fun fromCharacterList(value: String): List<CharacterInfo> = json.decodeFromString(value)
 
     @TypeConverter
