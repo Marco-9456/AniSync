@@ -1258,6 +1258,7 @@ class DetailsRepositoryImpl @Inject constructor(
         }
     }
 }
+
 // One edge per character, already server-ordered by the characters' own favourites
 // (FAVOURITES_DESC); edge.media carries the roles, so no client-side regrouping.
 private fun StaffVoicedCharacterFields.toDomain(): VoicedCharacter? {

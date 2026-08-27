@@ -2,6 +2,8 @@ package com.anisync.android.presentation.details.components
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -80,6 +82,9 @@ fun MediaSortBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // Landscape fits about two rows, so the list has to scroll or the options
+                    // below the fold are unreachable.
+                    .verticalScroll(rememberScrollState())
                     .padding(bottom = 32.dp)
             ) {
                 Text(
