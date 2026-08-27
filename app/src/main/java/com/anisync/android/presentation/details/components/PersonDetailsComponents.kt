@@ -53,8 +53,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,15 +61,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -92,7 +86,6 @@ import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.ui.theme.emphasis
-import kotlin.math.roundToInt
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -105,52 +98,6 @@ import java.util.Locale
 private val CardShape = RoundedCornerShape(16.dp)
 private val RowShape = RoundedCornerShape(12.dp)
 private val ThumbShape = RoundedCornerShape(8.dp)
-
-/**
- * How far the wide-layout hero has collapsed, in pixels, mirroring what the profile screen does
- * with its identity header: the space the portrait and the identity lines occupy is handed back to
- * the columns as the user scrolls, and the banner trims to a strip rather than holding a third of
- * a 800dp window for a picture the reader is done with.
- *
- * [collapsedPx] is written synchronously inside the nested-scroll callbacks, so the scroll reported
- * as consumed always matches how far the header actually moved — the same rule
- * `CollapsingTopBarScaffold` and `ProfileWideLayout` follow.
- */
-@Stable
-class PersonHeroCollapse(val maxPx: Float) {
-    var collapsedPx by mutableFloatStateOf(0f)
-        private set
-
-    val fraction: Float get() = if (maxPx <= 0f) 0f else collapsedPx / maxPx
-
-    /** Absorbs [delta] and returns the part taken, in the caller's sign convention. */
-    fun consume(delta: Float): Float {
-        if (maxPx <= 0f) return 0f
-        val next = (collapsedPx - delta).coerceIn(0f, maxPx)
-        val consumed = collapsedPx - next
-        if (consumed != 0f) collapsedPx = next
-        return consumed
-    }
-}
-
-@Composable
-fun rememberPersonHeroCollapse(maxCollapse: Dp): PersonHeroCollapse {
-    val maxPx = with(LocalDensity.current) { maxCollapse.toPx() }
-    return remember(maxPx) { PersonHeroCollapse(maxPx) }
-}
-
-/**
- * Trims [amountPx] off the node's bottom edge, top anchored, so the banner keeps showing the top of
- * the image instead of sliding out of frame. Reads the amount in the layout pass, so scrolling
- * re-measures without recomposing.
- */
-private fun Modifier.trimBottom(amountPx: () -> Float) = this
-    .clipToBounds()
-    .layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints)
-        val height = (placeable.height - amountPx()).roundToInt().coerceIn(0, placeable.height)
-        layout(placeable.width, height) { placeable.place(0, 0) }
-    }
 
 /** One key/value fact rendered as an icon tile inside [PersonFactsCard]. */
 @Immutable
@@ -186,19 +133,16 @@ fun PersonHero(
     transitionKey: String,
     onImageClick: () -> Unit,
     modifier: Modifier = Modifier,
-    wide: Boolean = false,
-    collapse: PersonHeroCollapse? = null,
     backdropCredit: String? = null,
-    aliasLine: (@Composable () -> Unit)? = null,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
-    val bannerHeight = if (wide) 300.dp else 220.dp
-    val portraitWidth = if (wide) 168.dp else 120.dp
+    val bannerHeight = 220.dp
+    val portraitWidth = 120.dp
     val portraitTop = 150.dp
-    val portraitStart = if (wide) 32.dp else 24.dp
+    val portraitStart = 24.dp
     val textStart = portraitStart + portraitWidth + 16.dp
-    val portraitShape = RoundedCornerShape(if (wide) 16.dp else 12.dp)
+    val portraitShape = RoundedCornerShape(12.dp)
     val portraitHeight = portraitWidth * 7 / 5
 
     val portraitModifier = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
@@ -215,19 +159,7 @@ fun PersonHero(
         Modifier
     }
 
-    // Identity fades out over the first part of the collapse; the banner carries the rest.
-    val identityAlpha: () -> Float = {
-        if (collapse == null) 1f else (1f - collapse.fraction / 0.55f).coerceIn(0f, 1f)
-    }
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .wrapContentHeight()
-            .then(
-                if (collapse == null) Modifier else Modifier.trimBottom { collapse.collapsedPx }
-            )
-    ) {
+    Box(modifier = modifier.fillMaxWidth().wrapContentHeight()) {
         if (backdropUrl != null) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
@@ -289,7 +221,6 @@ fun PersonHero(
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .padding(start = portraitStart, top = portraitTop)
-                .graphicsLayer { alpha = identityAlpha() }
                 .width(portraitWidth)
                 .aspectRatio(5f / 7f)
                 .then(portraitModifier)
@@ -303,18 +234,13 @@ fun PersonHero(
                 .padding(
                     start = textStart,
                     end = 16.dp,
-                    top = portraitTop + portraitHeight - if (wide) 132.dp else 100.dp
+                    top = portraitTop + portraitHeight - 100.dp
                 )
-                .graphicsLayer { alpha = identityAlpha() }
                 .fillMaxWidth()
         ) {
             Text(
                 text = name,
-                style = if (wide) {
-                    MaterialTheme.typography.headlineSmall
-                } else {
-                    MaterialTheme.typography.titleLarge
-                }.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -340,10 +266,6 @@ fun PersonHero(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-            }
-            if (aliasLine != null) {
-                Spacer(Modifier.height(6.dp))
-                aliasLine()
             }
             if (favourites != null) {
                 Spacer(Modifier.height(8.dp))
@@ -867,7 +789,7 @@ fun PersonToggleChip(
  * is the whole point: the old screen flattened every actor into a separate tab where it was
  * impossible to tell who voiced the character in which show.
  */
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun AppearanceRow(
     mediaId: Int,
@@ -941,9 +863,12 @@ fun AppearanceRow(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(6.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Wraps rather than truncating: in a two-column tablet pane the role, score and
+                // list-status pills do not always fit on one line, and a clipped "Watch…" chip is
+                // worse than a second row.
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     if (!role.isNullOrBlank()) {
                         RolePill(role = role)
@@ -1094,6 +1019,7 @@ fun RolePill(role: String, modifier: Modifier = Modifier) {
  * are a count — the old card expanded inline into every appearance, which for a long-running role
  * meant dozens of rows unfolding inside a five-item preview.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PersonCharacterRow(
     name: String,
@@ -1144,9 +1070,9 @@ fun PersonCharacterRow(
                     )
                 }
                 Spacer(Modifier.height(6.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     if (!role.isNullOrBlank()) RolePill(role = role)
                     if (primaryTitle != null) {
