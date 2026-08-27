@@ -1,3 +1,78 @@
+"""
+One edge of a staff member's `characters` connection: the character plus every media
+they voiced it in. Shared by the full details query and the paging query so the two
+cannot drift apart.
+"""
+fragment StaffVoicedCharacterFields on CharacterEdge {
+    role
+    node {
+        id
+        name {
+            full
+            native
+            userPreferred
+        }
+        image {
+            medium
+        }
+    }
+    media {
+        id
+        title {
+            userPreferred
+            romaji
+            english
+            native
+        }
+        coverImage {
+            medium
+            large
+            extraLarge
+        }
+        startDate {
+            year
+        }
+        type
+        popularity
+        averageScore
+        favourites
+        mediaListEntry {
+            id
+        }
+    }
+}
+
+"""
+One edge of a staff member's `staffMedia` connection: a production credit.
+"""
+fragment StaffProductionMediaFields on MediaEdge {
+    staffRole
+    node {
+        id
+        title {
+            userPreferred
+            romaji
+            english
+            native
+        }
+        coverImage {
+            medium
+            large
+            extraLarge
+        }
+        startDate {
+            year
+        }
+        type
+        popularity
+        averageScore
+        favourites
+        mediaListEntry {
+            id
+        }
+    }
+}
+
 query GetStaffDetails($id: Int!, $page: Int = 1, $staffMediaPage: Int = 1) {
     Staff(id: $id) {
         id
@@ -38,42 +113,7 @@ query GetStaffDetails($id: Int!, $page: Int = 1, $staffMediaPage: Int = 1) {
                 hasNextPage
             }
             edges {
-                role
-                node {
-                    id
-                    name {
-                        full
-                        native
-                        userPreferred
-                    }
-                    image {
-                        medium
-                    }
-                }
-                media {
-                    id
-                    title {
-                        userPreferred
-                        romaji
-                        english
-                        native
-                    }
-                    coverImage {
-                        medium
-                        large
-                        extraLarge
-                    }
-                    startDate {
-                        year
-                    }
-                    type
-                    popularity
-                    averageScore
-                    favourites
-                    mediaListEntry {
-                        id
-                    }
-                }
+                ...StaffVoicedCharacterFields
             }
         }
         staffMedia(page: $staffMediaPage, sort: [START_DATE_DESC], perPage: 25) {
@@ -81,31 +121,43 @@ query GetStaffDetails($id: Int!, $page: Int = 1, $staffMediaPage: Int = 1) {
                 hasNextPage
             }
             edges {
-                staffRole
-                node {
-                    id
-                    title {
-                        userPreferred
-                        romaji
-                        english
-                        native
-                    }
-                    coverImage {
-                        medium
-                        large
-                        extraLarge
-                    }
-                    startDate {
-                        year
-                    }
-                    type
-                    popularity
-                    averageScore
-                    favourites
-                    mediaListEntry {
-                        id
-                    }
-                }
+                ...StaffProductionMediaFields
+            }
+        }
+    }
+}
+
+"""
+Page 2+ of the voiced-characters grid. GetStaffDetails re-fetches the whole Staff object
+including a full staffMedia page whose 25 media the caller throws away, which is most of
+the cost of scrolling a prolific VA (#125). This selects only what paging consumes.
+"""
+query GetStaffCharactersPage($id: Int!, $page: Int!) {
+    Staff(id: $id) {
+        id
+        characters(page: $page, sort: [FAVOURITES_DESC], perPage: 25) {
+            pageInfo {
+                hasNextPage
+            }
+            edges {
+                ...StaffVoicedCharacterFields
+            }
+        }
+    }
+}
+
+"""
+Page 2+ of the production-roles grid. Mirror of GetStaffCharactersPage.
+"""
+query GetStaffProductionPage($id: Int!, $page: Int!) {
+    Staff(id: $id) {
+        id
+        staffMedia(page: $page, sort: [START_DATE_DESC], perPage: 25) {
+            pageInfo {
+                hasNextPage
+            }
+            edges {
+                ...StaffProductionMediaFields
             }
         }
     }

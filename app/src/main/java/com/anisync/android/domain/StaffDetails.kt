@@ -29,6 +29,20 @@ data class StaffDetails(
     val productionMediaHasNextPage: Boolean = false
 )
 
+/** One page of a staff member's voiced characters, fetched without the rest of the Staff object. */
+@Serializable
+data class StaffVoicedCharactersPage(
+    val characters: List<VoicedCharacter>,
+    val hasNextPage: Boolean
+)
+
+/** One page of a staff member's production credits. */
+@Serializable
+data class StaffProductionMediaPage(
+    val media: List<StaffProductionMedia>,
+    val hasNextPage: Boolean
+)
+
 @Serializable
 data class StaffProductionMedia(
     val mediaId: Int,

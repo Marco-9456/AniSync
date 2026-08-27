@@ -58,6 +58,16 @@ interface DetailsRepository {
         staffMediaPage: Int = 1
     ): Result<StaffDetails>
 
+    /**
+     * Page 2+ of the voiced-characters grid. [getStaffDetails] re-fetches the whole Staff
+     * object including a staffMedia page the caller discards, so paging a prolific VA goes
+     * through this instead (#125).
+     */
+    suspend fun getStaffCharactersPage(id: Int, page: Int): Result<StaffVoicedCharactersPage>
+
+    /** Page 2+ of the production-roles grid. Mirror of [getStaffCharactersPage]. */
+    suspend fun getStaffProductionPage(id: Int, page: Int): Result<StaffProductionMediaPage>
+
     suspend fun getStudioDetails(id: Int, page: Int = 1): Result<StudioDetails>
 
     /**

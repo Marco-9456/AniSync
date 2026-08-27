@@ -63,12 +63,11 @@ class StaffDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             isFetching = true
             currentPage++
-            // Pin staffMediaPage to 1 here — paging only voiced characters.
-            when (val result = detailsRepository.getStaffDetails(staffId, currentPage, staffMediaPage = 1)) {
+            when (val result = detailsRepository.getStaffCharactersPage(staffId, currentPage)) {
                 is Result.Success -> {
                     val newVoicedCharacters = mergeVoicedCharacters(
                         currentState.details.voicedCharacters,
-                        result.data.voicedCharacters
+                        result.data.characters
                     )
                     _uiState.value = StaffDetailsUiState.Success(
                         currentState.details.copy(
@@ -93,17 +92,16 @@ class StaffDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             isFetchingProduction = true
             currentStaffMediaPage++
-            // Pin characterMedia page to 1 — paging only production media.
-            when (val result = detailsRepository.getStaffDetails(staffId, page = 1, staffMediaPage = currentStaffMediaPage)) {
+            when (val result = detailsRepository.getStaffProductionPage(staffId, currentStaffMediaPage)) {
                 is Result.Success -> {
                     val mergedProduction = mergeProductionMedia(
                         currentState.details.productionMedia,
-                        result.data.productionMedia
+                        result.data.media
                     )
                     _uiState.value = StaffDetailsUiState.Success(
                         currentState.details.copy(
                             productionMedia = mergedProduction,
-                            productionMediaHasNextPage = result.data.productionMediaHasNextPage
+                            productionMediaHasNextPage = result.data.hasNextPage
                         )
                     )
                 }

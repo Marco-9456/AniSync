@@ -6,7 +6,9 @@ import com.anisync.android.GetMediaCharactersQuery
 import com.anisync.android.GetMediaDetailsQuery
 import com.anisync.android.GetMediaStaffQuery
 import com.anisync.android.GetMediaStatsQuery
+import com.anisync.android.GetStaffCharactersPageQuery
 import com.anisync.android.GetStaffDetailsQuery
+import com.anisync.android.GetStaffProductionPageQuery
 import com.anisync.android.GetStudioDetailsQuery
 import com.anisync.android.SaveMediaListEntryMutation
 import com.anisync.android.ToggleFavouriteMutation
@@ -18,10 +20,13 @@ import com.anisync.android.data.mapper.toApiStatus
 import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.mapper.todayUtcMillis
 import com.anisync.android.data.util.safeApiCall
+import com.anisync.android.fragment.StaffProductionMediaFields
+import com.anisync.android.fragment.StaffVoicedCharacterFields
 import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.CharacterMedia
 import com.anisync.android.domain.CharacterMediaAppearance
+import com.anisync.android.domain.CoverImage
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.ExternalLinkType
@@ -40,6 +45,9 @@ import com.anisync.android.domain.RecommendedMedia
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.StaffDetails
+import com.anisync.android.domain.StaffProductionMedia
+import com.anisync.android.domain.StaffProductionMediaPage
+import com.anisync.android.domain.StaffVoicedCharactersPage
 import com.anisync.android.domain.StudioDetails
 import com.anisync.android.domain.StudioMediaEntry
 import com.anisync.android.domain.Tag
@@ -930,68 +938,20 @@ class DetailsRepositoryImpl @Inject constructor(
             val pageInfo = staffData.characters?.pageInfo
             val hasNextPage = pageInfo?.hasNextPage ?: false
 
-            // One edge per character, already server-ordered by the characters' own favourites
-            // (FAVOURITES_DESC); edge.media carries the roles, so no client-side regrouping.
-            val voicedCharacters = staffData.characters?.edges?.filterNotNull()?.mapNotNull { edge ->
-                val character = edge.node ?: return@mapNotNull null
-                val charId = character.id ?: return@mapNotNull null
-                VoicedCharacter(
-                    characterId = charId,
-                    characterName = character.name?.full ?: "Unknown",
-                    characterNameNative = character.name?.native,
-                    characterNameUserPreferred = character.name?.userPreferred
-                        ?: character.name?.full ?: "Unknown",
-                    characterImageUrl = character.image?.medium,
-                    mediaAppearances = edge.media?.filterNotNull()?.mapNotNull { node ->
-                        val mediaId = node.id ?: return@mapNotNull null
-                        CharacterMediaAppearance(
-                            mediaId = mediaId,
-                            mediaTitle = node.title?.userPreferred ?: "Unknown",
-                            mediaTitleRomaji = node.title?.romaji,
-                            mediaTitleEnglish = node.title?.english,
-                            mediaTitleNative = node.title?.native,
-                            coverUrl = node.coverImage?.large,
-                            cover = com.anisync.android.domain.CoverImage.of(node.coverImage?.medium, node.coverImage?.large, node.coverImage?.extraLarge),
-                            startYear = node.startDate?.year,
-                            characterRole = edge.role?.name,
-                            popularity = node.popularity,
-                            averageScore = node.averageScore,
-                            favourites = node.favourites,
-                            isOnList = node.mediaListEntry?.id != null
-                        )
-                    }.orEmpty()
-                )
-            } ?: emptyList()
+            val voicedCharacters = staffData.characters?.edges
+                ?.mapNotNull { it?.staffVoicedCharacterFields?.toDomain() }
+                ?.distinctBy { it.characterId }
+                ?: emptyList()
 
             val serverIsFav = staffData.isFavourite ?: false
             favouriteOverrideStore.clearIfMatches(FavouriteEntity.STAFF, id, serverIsFav)
             val effectiveIsFav =
                 favouriteOverrideStore.get(FavouriteEntity.STAFF, id) ?: serverIsFav
 
-            val productionMedia = staffData.staffMedia?.edges?.filterNotNull()?.mapNotNull { edge ->
-                val node = edge.node ?: return@mapNotNull null
-                val nodeId = node.id ?: return@mapNotNull null
-                com.anisync.android.domain.StaffProductionMedia(
-                    mediaId = nodeId,
-                    titleUserPreferred = node.title?.userPreferred ?: "Unknown",
-                    titleRomaji = node.title?.romaji,
-                    titleEnglish = node.title?.english,
-                    titleNative = node.title?.native,
-                    coverUrl = node.coverImage?.large,
-                    cover = com.anisync.android.domain.CoverImage.of(
-                        node.coverImage?.medium,
-                        node.coverImage?.large,
-                        node.coverImage?.extraLarge
-                    ),
-                    type = node.type,
-                    startYear = node.startDate?.year,
-                    staffRole = edge.staffRole,
-                    popularity = node.popularity,
-                    averageScore = node.averageScore,
-                    favourites = node.favourites,
-                    isOnList = node.mediaListEntry?.id != null
-                )
-            }?.distinctBy { "${it.mediaId}_${it.staffRole.orEmpty()}" } ?: emptyList()
+            val productionMedia = staffData.staffMedia?.edges
+                ?.mapNotNull { it?.staffProductionMediaFields?.toDomain() }
+                ?.distinctBy { "${it.mediaId}_${it.staffRole.orEmpty()}" }
+                ?: emptyList()
             val productionMediaHasNextPage =
                 staffData.staffMedia?.pageInfo?.hasNextPage ?: false
 
@@ -1022,6 +982,50 @@ class DetailsRepositoryImpl @Inject constructor(
                 hasNextPage = hasNextPage,
                 productionMedia = productionMedia,
                 productionMediaHasNextPage = productionMediaHasNextPage
+            )
+        }
+    }
+
+    override suspend fun getStaffCharactersPage(
+        id: Int,
+        page: Int
+    ): Result<StaffVoicedCharactersPage> {
+        return safeApiCall {
+            val response = apolloClient.query(GetStaffCharactersPageQuery(id = id, page = page))
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
+
+            val characters = response.data?.Staff?.characters
+                ?: throw Exception("Staff not found")
+
+            StaffVoicedCharactersPage(
+                characters = characters.edges
+                    ?.mapNotNull { it?.staffVoicedCharacterFields?.toDomain() }
+                    ?.distinctBy { it.characterId }
+                    ?: emptyList(),
+                hasNextPage = characters.pageInfo?.hasNextPage ?: false
+            )
+        }
+    }
+
+    override suspend fun getStaffProductionPage(
+        id: Int,
+        page: Int
+    ): Result<StaffProductionMediaPage> {
+        return safeApiCall {
+            val response = apolloClient.query(GetStaffProductionPageQuery(id = id, page = page))
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .execute()
+
+            val staffMedia = response.data?.Staff?.staffMedia
+                ?: throw Exception("Staff not found")
+
+            StaffProductionMediaPage(
+                media = staffMedia.edges
+                    ?.mapNotNull { it?.staffProductionMediaFields?.toDomain() }
+                    ?.distinctBy { "${it.mediaId}_${it.staffRole.orEmpty()}" }
+                    ?: emptyList(),
+                hasNextPage = staffMedia.pageInfo?.hasNextPage ?: false
             )
         }
     }
@@ -1253,4 +1257,65 @@ class DetailsRepositoryImpl @Inject constructor(
             )
         }
     }
+}
+// One edge per character, already server-ordered by the characters' own favourites
+// (FAVOURITES_DESC); edge.media carries the roles, so no client-side regrouping.
+private fun StaffVoicedCharacterFields.toDomain(): VoicedCharacter? {
+    val character = node ?: return null
+    val charId = character.id ?: return null
+    return VoicedCharacter(
+        characterId = charId,
+        characterName = character.name?.full ?: "Unknown",
+        characterNameNative = character.name?.native,
+        characterNameUserPreferred = character.name?.userPreferred
+            ?: character.name?.full ?: "Unknown",
+        characterImageUrl = character.image?.medium,
+        mediaAppearances = media?.filterNotNull()?.mapNotNull { node ->
+            val mediaId = node.id ?: return@mapNotNull null
+            CharacterMediaAppearance(
+                mediaId = mediaId,
+                mediaTitle = node.title?.userPreferred ?: "Unknown",
+                mediaTitleRomaji = node.title?.romaji,
+                mediaTitleEnglish = node.title?.english,
+                mediaTitleNative = node.title?.native,
+                coverUrl = node.coverImage?.large,
+                cover = CoverImage.of(
+                    node.coverImage?.medium,
+                    node.coverImage?.large,
+                    node.coverImage?.extraLarge
+                ),
+                startYear = node.startDate?.year,
+                characterRole = role?.name,
+                popularity = node.popularity,
+                averageScore = node.averageScore,
+                favourites = node.favourites,
+                isOnList = node.mediaListEntry?.id != null
+            )
+        }.orEmpty()
+    )
+}
+
+private fun StaffProductionMediaFields.toDomain(): StaffProductionMedia? {
+    val media = node ?: return null
+    val mediaId = media.id ?: return null
+    return StaffProductionMedia(
+        mediaId = mediaId,
+        titleUserPreferred = media.title?.userPreferred ?: "Unknown",
+        titleRomaji = media.title?.romaji,
+        titleEnglish = media.title?.english,
+        titleNative = media.title?.native,
+        coverUrl = media.coverImage?.large,
+        cover = CoverImage.of(
+            media.coverImage?.medium,
+            media.coverImage?.large,
+            media.coverImage?.extraLarge
+        ),
+        type = media.type,
+        startYear = media.startDate?.year,
+        staffRole = staffRole,
+        popularity = media.popularity,
+        averageScore = media.averageScore,
+        favourites = media.favourites,
+        isOnList = media.mediaListEntry?.id != null
+    )
 }
