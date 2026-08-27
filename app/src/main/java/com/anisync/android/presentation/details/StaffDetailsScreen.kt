@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -81,7 +82,6 @@ import com.anisync.android.presentation.details.components.PersonEmptyState
 import com.anisync.android.presentation.details.components.PersonFact
 import com.anisync.android.presentation.details.components.PersonFactsCard
 import com.anisync.android.presentation.details.components.PersonHero
-import com.anisync.android.presentation.details.components.PersonHeroCollapse
 import com.anisync.android.presentation.details.components.PersonNamesRow
 import com.anisync.android.presentation.details.components.PersonNamesSheetContent
 import com.anisync.android.presentation.details.components.PersonNoteStrip
@@ -121,6 +121,10 @@ fun StaffDetailsScreen(
         derivedStateOf { scrollBehavior.state.contentOffset < -50f }
     }
     val details = (uiState as? StaffDetailsUiState.Success)?.details
+    // The wide layout hands the name to the banner as the header collapses, so the app bar title
+    // would only say it twice.
+    val adaptive = LocalAdaptiveInfo.current
+    val wideLayout = adaptive.isExpandedOrWider && adaptive.isTabletDevice
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -136,7 +140,7 @@ fun StaffDetailsScreen(
             TopAppBar(
                 title = {
                     AnimatedVisibility(
-                        visible = isScrolled,
+                        visible = isScrolled && !wideLayout,
                         enter = fadeIn(),
                         exit = fadeOut()
                     ) {
@@ -348,7 +352,7 @@ private fun StaffDetailsContent(
     val tab = if (selectedTab == 1) StaffTab.Credits else StaffTab.Characters
     val facts = staffFacts(staff)
 
-    val hero: @Composable (PersonHeroCollapse?) -> Unit = { collapse ->
+    val hero: @Composable () -> Unit = {
         PersonHero(
             imageUrl = staff.imageUrl,
             backdropUrl = backdrop?.first,
@@ -359,22 +363,15 @@ private fun StaffDetailsContent(
             contentDescription = staff.getName(titleLanguage),
             transitionKey = TransitionKeys.staffImage(staff.id),
             onImageClick = { showImageViewer = true },
-            wide = wide,
-            collapse = collapse,
             backdropCredit = backdrop?.second,
-            aliasLine = if (wide && staff.alternativeNames.isNotEmpty()) {
-                { StaffAliasLine(staff.alternativeNames) { showNamesSheet = true } }
-            } else {
-                null
-            },
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope
         )
     }
 
-    val sidebar: @Composable () -> Unit = {
+    val sidebar: @Composable ColumnScope.() -> Unit = {
         PersonFactsCard(facts = facts)
-        if (staff.alternativeNames.isNotEmpty() && !wide) {
+        if (staff.alternativeNames.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
             PersonNamesRow(
                 count = staff.alternativeNames.size,
@@ -387,17 +384,15 @@ private fun StaffDetailsContent(
         }
     }
 
-    val listContent: LazyListScope.() -> Unit = {
-        item(key = "tabs") {
-            PersonTabs(
-                tabs = tabs,
-                selectedIndex = selectedTab,
-                onSelect = { selectedTab = it },
-                modifier = gutter
-            )
-            Spacer(Modifier.height(16.dp))
-        }
+    val tabsBar: @Composable () -> Unit = {
+        PersonTabs(
+            tabs = tabs,
+            selectedIndex = selectedTab,
+            onSelect = { selectedTab = it }
+        )
+    }
 
+    val listContent: LazyListScope.() -> Unit = {
         when (tab) {
             StaffTab.Characters -> {
                 item(key = "character_filters") {
@@ -540,12 +535,33 @@ private fun StaffDetailsContent(
         }
     }
 
-    PersonScaffold(
-        wide = wide,
-        hero = hero,
-        sidebar = sidebar,
-        listContent = listContent
-    )
+    if (wide) {
+        PersonWideLayout(
+            backdropUrl = backdrop?.first,
+            backdropCredit = backdrop?.second,
+            portraitUrl = staff.imageUrl,
+            portraitTransitionKey = TransitionKeys.staffImage(staff.id),
+            onPortraitClick = { showImageViewer = true },
+            name = staff.getName(titleLanguage),
+            nativeName = staff.nativeName,
+            metaLine = staffMetaLine(staff),
+            favourites = staff.favourites,
+            identityKey = staff.id,
+            aliasLine = null,
+            identityContent = { sidebar() },
+            tabs = tabsBar,
+            listContent = listContent,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope
+        )
+    } else {
+        PersonScaffold(
+            hero = hero,
+            sidebar = sidebar,
+            tabs = tabsBar,
+            listContent = listContent
+        )
+    }
 
     if (showImageViewer && staff.imageUrl != null) {
         ImageViewerDialog(

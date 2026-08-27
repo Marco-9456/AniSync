@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -83,8 +84,6 @@ import com.anisync.android.presentation.details.components.PersonEmptyState
 import com.anisync.android.presentation.details.components.PersonFact
 import com.anisync.android.presentation.details.components.PersonFactsCard
 import com.anisync.android.presentation.details.components.PersonHero
-import com.anisync.android.presentation.details.components.PersonHeroCollapse
-import com.anisync.android.presentation.details.components.rememberPersonHeroCollapse
 import com.anisync.android.presentation.details.components.PersonNamesRow
 import com.anisync.android.presentation.details.components.PersonNamesSheetContent
 import com.anisync.android.presentation.details.components.PersonSeeAllRow
@@ -108,9 +107,6 @@ import com.anisync.android.type.MediaType
 /** How many rows a tab previews before handing off to the full grid. */
 private const val PreviewCount = 6
 
-/** How much of the wide hero the columns can claim back by scrolling. */
-private val HeroCollapseDistance = 230.dp
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun CharacterDetailsScreen(
@@ -132,6 +128,10 @@ fun CharacterDetailsScreen(
         derivedStateOf { scrollBehavior.state.contentOffset < -50f }
     }
     val details = (uiState as? CharacterDetailsUiState.Success)?.details
+    // The wide layout hands the name to the banner as the header collapses, so the app bar title
+    // would only say it twice.
+    val adaptive = LocalAdaptiveInfo.current
+    val wideLayout = adaptive.isExpandedOrWider && adaptive.isTabletDevice
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -147,7 +147,7 @@ fun CharacterDetailsScreen(
             TopAppBar(
                 title = {
                     AnimatedVisibility(
-                        visible = isScrolled,
+                        visible = isScrolled && !wideLayout,
                         enter = fadeIn(),
                         exit = fadeOut()
                     ) {
@@ -359,7 +359,7 @@ private fun CharacterDetailsContent(
     )
     val tab = if (selectedTab == 1) CharacterTab.VoiceActors else CharacterTab.Appearances
 
-    val hero: @Composable (PersonHeroCollapse?) -> Unit = { collapse ->
+    val hero: @Composable () -> Unit = {
         PersonHero(
             imageUrl = character.imageUrl,
             backdropUrl = backdropUrl,
@@ -370,21 +370,14 @@ private fun CharacterDetailsContent(
             contentDescription = character.getName(titleLanguage),
             transitionKey = TransitionKeys.characterImage(character.id),
             onImageClick = { showImageViewer = true },
-            wide = wide,
-            collapse = collapse,
-            aliasLine = if (wide && character.alternativeNames.isNotEmpty()) {
-                { AliasLine(character.alternativeNames) { showNamesSheet = true } }
-            } else {
-                null
-            },
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope
         )
     }
 
-    val sidebar: @Composable () -> Unit = {
+    val sidebar: @Composable ColumnScope.() -> Unit = {
         PersonFactsCard(facts = facts)
-        if (character.alternativeNames.isNotEmpty() && !wide) {
+        if (character.alternativeNames.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
             PersonNamesRow(
                 count = character.alternativeNames.size,
@@ -397,17 +390,15 @@ private fun CharacterDetailsContent(
         }
     }
 
-    val listContent: LazyListScope.() -> Unit = {
-        item(key = "tabs") {
-            PersonTabs(
-                tabs = tabs,
-                selectedIndex = selectedTab,
-                onSelect = { selectedTab = it },
-                modifier = gutter
-            )
-            Spacer(Modifier.height(16.dp))
-        }
+    val tabsBar: @Composable () -> Unit = {
+        PersonTabs(
+            tabs = tabs,
+            selectedIndex = selectedTab,
+            onSelect = { selectedTab = it }
+        )
+    }
 
+    val listContent: LazyListScope.() -> Unit = {
         when (tab) {
             CharacterTab.Appearances -> {
                 item(key = "appearance_filters") {
@@ -553,12 +544,33 @@ private fun CharacterDetailsContent(
         }
     }
 
-    PersonScaffold(
-        wide = wide,
-        hero = hero,
-        sidebar = sidebar,
-        listContent = listContent
-    )
+    if (wide) {
+        PersonWideLayout(
+            backdropUrl = backdropUrl,
+            backdropCredit = null,
+            portraitUrl = character.imageUrl,
+            portraitTransitionKey = TransitionKeys.characterImage(character.id),
+            onPortraitClick = { showImageViewer = true },
+            name = character.getName(titleLanguage),
+            nativeName = character.nativeName,
+            metaLine = characterMetaLine(character, appearanceTotal),
+            favourites = character.favourites,
+            identityKey = character.id,
+            aliasLine = null,
+            identityContent = { sidebar() },
+            tabs = tabsBar,
+            listContent = listContent,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope
+        )
+    } else {
+        PersonScaffold(
+            hero = hero,
+            sidebar = sidebar,
+            tabs = tabsBar,
+            listContent = listContent
+        )
+    }
 
     if (showImageViewer && character.imageUrl != null) {
         ImageViewerDialog(
@@ -596,82 +608,35 @@ private fun CharacterDetailsContent(
 }
 
 /**
- * Phone: one scrolling column. Tablet: the identity block stays put on the left and only the list
- * scrolls, so a 1280dp window no longer stretches the biography into full-width lines.
+ * Phone: hero, identity block and the tabbed list in one scrolling column. The wide layout lives in
+ * [PersonWideLayout], which follows the profile screen's supporting-pane shape instead.
  */
 @Composable
 internal fun PersonScaffold(
-    wide: Boolean,
-    hero: @Composable (PersonHeroCollapse?) -> Unit,
-    sidebar: @Composable () -> Unit,
+    hero: @Composable () -> Unit,
+    sidebar: @Composable ColumnScope.() -> Unit,
+    tabs: @Composable () -> Unit,
     listContent: LazyListScope.() -> Unit
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-    if (wide) {
-        // Same deal as the profile's wide header: the hero holds a third of the window, so it hands
-        // that height back to both columns as either of them scrolls, and takes it back on the way
-        // down. Either column drives it, because on this screen both of them are lists.
-        val collapse = rememberPersonHeroCollapse(HeroCollapseDistance)
-        val heroNestedScroll = remember(collapse) {
-            object : NestedScrollConnection {
-                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    val delta = available.y
-                    return if (delta < 0f) Offset(0f, collapse.consume(delta)) else Offset.Zero
-                }
-
-                override fun onPostScroll(
-                    consumed: Offset,
-                    available: Offset,
-                    source: NestedScrollSource
-                ): Offset {
-                    val delta = available.y
-                    return if (delta > 0f) Offset(0f, collapse.consume(delta)) else Offset.Zero
-                }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = bottomInset + 24.dp)
+    ) {
+        item(key = "hero") { hero() }
+        item(key = "sidebar") {
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Spacer(Modifier.height(16.dp))
+                sidebar()
+                Spacer(Modifier.height(24.dp))
             }
         }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(heroNestedScroll)
-        ) {
-            hero(collapse)
-            Row(modifier = Modifier.fillMaxSize()) {
-                Column(
-                    modifier = Modifier
-                        .width(380.dp)
-                        .verticalScroll(rememberScrollState())
-                        .padding(start = 24.dp, end = 12.dp, top = 16.dp)
-                        .padding(bottom = bottomInset + 24.dp)
-                ) {
-                    sidebar()
-                }
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(
-                        top = 16.dp,
-                        bottom = bottomInset + 24.dp
-                    ),
-                    content = listContent
-                )
-            }
+        item(key = "tabs") {
+            Box(modifier = Modifier.padding(horizontal = 24.dp)) { tabs() }
+            Spacer(Modifier.height(16.dp))
         }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = bottomInset + 24.dp)
-        ) {
-            item(key = "hero") { hero(null) }
-            item(key = "sidebar") {
-                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    Spacer(Modifier.height(16.dp))
-                    sidebar()
-                    Spacer(Modifier.height(24.dp))
-                }
-            }
-            listContent()
-        }
+        listContent()
     }
 }
 
