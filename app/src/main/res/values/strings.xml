@@ -1348,8 +1348,10 @@
     <string name="person_no_voice_cast">No voice cast</string>
     <string name="person_voice_actor_titles">%1$s · %2$d titles</string>
     <string name="person_media_and_more">+%1$d titles</string>
-    <string name="person_show_more">Show more</string>
-    <string name="person_showing_count">Showing %1$d of %2$d</string>
+    <plurals name="person_titles_count">
+        <item quantity="one">%1$d title</item>
+        <item quantity="other">%1$d titles</item>
+    </plurals>
     <string name="person_filter_main_roles">Main roles</string>
     <string name="person_filter_media_type">Media type</string>
     <string name="person_filter_role">Role</string>

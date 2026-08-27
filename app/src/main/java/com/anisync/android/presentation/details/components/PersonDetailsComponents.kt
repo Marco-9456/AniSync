@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -67,6 +65,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -78,7 +77,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.CoverImage
-import com.anisync.android.domain.VoiceActor
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.ListIndicator
 import com.anisync.android.presentation.components.ListIndicatorStyle
@@ -86,6 +84,7 @@ import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.ui.theme.emphasis
 import java.text.NumberFormat
 import java.util.Locale
@@ -98,10 +97,9 @@ import java.util.Locale
 
 /**
  * Every row in every tab is this tall. A list whose cards breathe differently because one title
- * wrapped and the next did not reads as broken, so the title always reserves two lines and the
- * meta line always reserves one.
+ * wrapped and the next did not reads as broken, so the title takes one line and ellipsises.
  */
-private val PersonRowHeight = 104.dp
+private val PersonRowHeight = 96.dp
 
 private val CardShape = RoundedCornerShape(16.dp)
 private val RowShape = RoundedCornerShape(12.dp)
@@ -807,12 +805,9 @@ fun AppearanceRow(
     meta: String,
     role: String?,
     score: Int?,
-    voiceActors: List<VoiceActor>,
     onClick: () -> Unit,
-    onVoiceActorClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
     transitionPrefix: String = TransitionKeys.CHARACTER,
-    showVoiceCast: Boolean = true,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
@@ -844,39 +839,24 @@ fun AppearanceRow(
             modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box {
-                AsyncImage(
-                    model = cover.url() ?: coverUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .width(56.dp)
-                        .height(80.dp)
-                        .then(coverModifier)
-                        .clip(ThumbShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
-                // On the cover, not in the text column: the status chip is the widest thing on the
-                // row and pushed the score and role onto a second line in a narrow pane.
-                LocalLibraryStatuses.current[mediaId]?.let { status ->
-                    ListIndicator(
-                        status = status,
-                        type = null,
-                        style = ListIndicatorStyle.Overlay,
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(4.dp)
-                    )
-                }
-            }
+            AsyncImage(
+                model = cover.url() ?: coverUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .width(56.dp)
+                    .height(80.dp)
+                    .then(coverModifier)
+                    .clip(ThumbShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelLarge.emphasis(),
                     color = MaterialTheme.colorScheme.onSurface,
-                    minLines = 2,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(2.dp))
@@ -900,7 +880,7 @@ fun AppearanceRow(
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
+                                tint = StarGold,
                                 modifier = Modifier.size(13.dp)
                             )
                             Spacer(Modifier.width(3.dp))
@@ -911,92 +891,14 @@ fun AppearanceRow(
                             )
                         }
                     }
+                    LocalLibraryStatuses.current[mediaId]?.let { status ->
+                        ListIndicator(
+                            status = status,
+                            type = null,
+                            style = ListIndicatorStyle.Chip
+                        )
+                    }
                 }
-            }
-            if (showVoiceCast) {
-                Spacer(Modifier.width(8.dp))
-                VoiceCastColumn(
-                    voiceActors = voiceActors,
-                    onVoiceActorClick = onVoiceActorClick
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun VoiceCastColumn(
-    voiceActors: List<VoiceActor>,
-    onVoiceActorClick: (Int) -> Unit
-) {
-    Column(horizontalAlignment = Alignment.Start) {
-        if (voiceActors.isEmpty()) {
-            Text(
-                text = stringResource(R.string.person_no_voice_cast),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.width(84.dp)
-            )
-            return@Column
-        }
-        Text(
-            text = stringResource(R.string.person_voiced_by).uppercase(),
-            style = MaterialTheme.typography.labelSmall.emphasis(),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            letterSpacing = 0.6.sp,
-            maxLines = 1
-        )
-        Spacer(Modifier.height(6.dp))
-        AvatarStack(
-            voiceActors = voiceActors,
-            onVoiceActorClick = onVoiceActorClick
-        )
-    }
-}
-
-/** Up to three overlapping avatars plus a "+n" badge for the rest of the cast. */
-@Composable
-fun AvatarStack(
-    voiceActors: List<VoiceActor>,
-    onVoiceActorClick: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    maxVisible: Int = 3,
-    avatarSize: Dp = 28.dp
-) {
-    val visible = voiceActors.take(maxVisible)
-    val overflow = voiceActors.size - visible.size
-    val ringColor = MaterialTheme.colorScheme.surfaceContainer
-
-    Row(modifier = modifier) {
-        visible.forEachIndexed { index, actor ->
-            AsyncImage(
-                model = actor.imageUrl,
-                contentDescription = actor.nameFull,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .offset(x = if (index == 0) 0.dp else -(6.dp) * index)
-                    .size(avatarSize)
-                    .clip(CircleShape)
-                    .border(2.dp, ringColor, CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { onVoiceActorClick(actor.id) }
-            )
-        }
-        if (overflow > 0) {
-            Box(
-                modifier = Modifier
-                    .offset(x = -(6.dp) * visible.size)
-                    .size(avatarSize)
-                    .clip(CircleShape)
-                    .border(2.dp, ringColor, CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "+$overflow",
-                    style = MaterialTheme.typography.labelSmall.emphasis(),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }
@@ -1185,100 +1087,108 @@ fun CreditRow(
     }
 }
 
-/** Grid card for the voice actor tab: name, language and how many of this character's titles. */
+/**
+ * One voice actor, shaped like an appearance row so the two tabs read as one list in two moods:
+ * portrait, name, the language they voice in, and how many of this character's titles they carry.
+ */
 @Composable
-fun PersonVoiceActorCard(
+fun VoiceActorRow(
     name: String,
-    caption: String,
+    nativeName: String?,
+    language: String?,
+    titleCount: Int,
     imageUrl: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.clickable(onClick = onClick)
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(PersonRowHeight),
+        shape = RowShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        onClick = onClick
     ) {
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(4f / 5f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = name,
-            style = MaterialTheme.typography.labelMedium.emphasis(),
-            color = MaterialTheme.colorScheme.onSurface,
-            minLines = 2,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = caption,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
-        )
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .width(56.dp)
+                    .height(80.dp)
+                    .clip(ThumbShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.labelLarge.emphasis(),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = language.orEmpty().uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
+                        Text(
+                            text = pluralStringResource(
+                                R.plurals.person_titles_count,
+                                titleCount,
+                                titleCount
+                            ),
+                            style = MaterialTheme.typography.labelSmall.emphasis(),
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            maxLines = 1,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                    if (!nativeName.isNullOrBlank()) {
+                        Text(
+                            text = nativeName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
 /**
- * Grows the list in place instead of pushing a grid screen on top of it. Leaving the screen to read
- * more of the same list broke the visit in two — the reader lost the tabs, the filters and their
- * place in the list to see row seven.
+ * End of what has been loaded. Composing this is what asks for the next page — a button to reach
+ * row seven was a tap the reader should never have had to make.
  */
 @Composable
-fun PersonShowMoreRow(
-    shown: Int,
-    total: Int,
-    isLoading: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RowShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        onClick = onClick,
-        enabled = !isLoading
+fun PersonListFooter(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(64.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 15.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.person_show_more),
-                style = MaterialTheme.typography.labelLarge.emphasis(),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = stringResource(R.string.person_showing_count, shown, total),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
-            if (isLoading) {
-                CircularProgressIndicator(
-                    strokeWidth = 2.dp,
-                    modifier = Modifier.size(16.dp)
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
+        CircularProgressIndicator(
+            strokeWidth = 3.dp,
+            modifier = Modifier.size(32.dp)
+        )
     }
 }
 
