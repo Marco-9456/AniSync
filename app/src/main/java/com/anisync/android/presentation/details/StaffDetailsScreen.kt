@@ -7,25 +7,35 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bloodtype
+import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Close
-import com.anisync.android.presentation.util.LocalPaneIsRoot
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.HourglassBottom
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.Update
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -39,6 +49,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -54,23 +65,39 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.StaffDetails
-import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.domain.StaffProductionMedia
+import com.anisync.android.domain.VoicedCharacter
+import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.ImageViewerDialog
-import com.anisync.android.presentation.components.SectionHeader
-import com.anisync.android.presentation.details.components.AttributesCard
 import com.anisync.android.presentation.details.components.CharacterSkeletonContent
-import com.anisync.android.presentation.details.components.DetailHeroImage
+import com.anisync.android.presentation.details.components.CreditRow
 import com.anisync.android.presentation.details.components.ExpandableBiography
-import com.anisync.android.presentation.details.components.FeaturedMediaItem
-import com.anisync.android.presentation.details.components.NameCard
-import com.anisync.android.presentation.details.components.VoicedCharacterItem
+import com.anisync.android.presentation.details.components.PersonCharacterRow
+import com.anisync.android.presentation.details.components.PersonDropdownChip
+import com.anisync.android.presentation.details.components.PersonEmptyState
+import com.anisync.android.presentation.details.components.PersonFact
+import com.anisync.android.presentation.details.components.PersonFactsCard
+import com.anisync.android.presentation.details.components.PersonHero
+import com.anisync.android.presentation.details.components.PersonHeroCollapse
+import com.anisync.android.presentation.details.components.PersonNamesRow
+import com.anisync.android.presentation.details.components.PersonNamesSheetContent
+import com.anisync.android.presentation.details.components.PersonNoteStrip
+import com.anisync.android.presentation.details.components.PersonSeeAllRow
+import com.anisync.android.presentation.details.components.PersonTab
+import com.anisync.android.presentation.details.components.PersonTabs
+import com.anisync.android.presentation.details.components.personGridItems
 import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.share.StaffShareCard
-import com.anisync.android.util.AniListUrls
-import com.anisync.android.util.getTitle
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
+import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.rememberCopyToClipboard
+import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.getName
+import com.anisync.android.util.getTitle
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -90,18 +117,21 @@ fun StaffDetailsScreen(
     var showShareSheet by rememberSaveable { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-
     val isScrolled by remember {
         derivedStateOf { scrollBehavior.state.contentOffset < -50f }
     }
+    val details = (uiState as? StaffDetailsUiState.Success)?.details
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            val title = (uiState as? StaffDetailsUiState.Success)?.details
-                ?.getName(titleLanguage) ?: ""
+            val title = details?.getName(titleLanguage) ?: ""
+            val iconTint by animateColorAsState(
+                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                label = "personIconTint"
+            )
 
             TopAppBar(
                 title = {
@@ -124,23 +154,24 @@ fun StaffDetailsScreen(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.back),
-                                tint = animateColorAsState(
-                                    if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                    label = "navIconTint"
-                                ).value
+                                tint = iconTint
                             )
                         }
                     }
                 },
                 actions = {
+                    if (details != null) {
+                        AnimatedFavoriteButton(
+                            isFavorite = details.isFavourite,
+                            onClick = viewModel::toggleFavourite,
+                            inactiveColor = iconTint
+                        )
+                    }
                     IconButton(onClick = { showShareSheet = true }) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = stringResource(R.string.cd_share),
-                            tint = animateColorAsState(
-                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                label = "actionIconTint"
-                            ).value
+                            tint = iconTint
                         )
                     }
                     // At a two-pane detail root the close (✕) is the trailing-most action (right-thumb
@@ -150,10 +181,7 @@ fun StaffDetailsScreen(
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = stringResource(R.string.pane_close),
-                                tint = animateColorAsState(
-                                    if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                    label = "closeIconTint"
-                                ).value
+                                tint = iconTint
                             )
                         }
                     }
@@ -184,14 +212,15 @@ fun StaffDetailsScreen(
                         titleLanguage = titleLanguage,
                         onMediaClick = onMediaClick,
                         onCharacterClick = onCharacterClick,
-                        onMediaSeeAllClick = {
+                        onCharactersSeeAllClick = {
                             onMediaSeeAllClick(state.details.id, state.details.getName(titleLanguage))
                         },
-                        onProductionSeeAllClick = {
-                            onProductionSeeAllClick(state.details.id, state.details.getName(titleLanguage))
+                        onCreditsSeeAllClick = {
+                            onProductionSeeAllClick(
+                                state.details.id,
+                                state.details.getName(titleLanguage)
+                            )
                         },
-                        transitionPrefix = TransitionKeys.STAFF,
-                        onFavouriteClick = viewModel::toggleFavourite,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
                     )
@@ -208,14 +237,14 @@ fun StaffDetailsScreen(
         }
 
         if (showShareSheet) {
-            (uiState as? StaffDetailsUiState.Success)?.details?.let { details ->
+            details?.let {
                 ShareImageSheet(
                     onDismiss = { showShareSheet = false },
-                    link = AniListUrls.staffUrl(details.id)
+                    link = AniListUrls.staffUrl(it.id)
                 ) {
                     StaffShareCard(
-                        details = details,
-                        displayName = details.getName(titleLanguage)
+                        details = it,
+                        displayName = it.getName(titleLanguage)
                     )
                 }
             }
@@ -223,174 +252,300 @@ fun StaffDetailsScreen(
     }
 }
 
+private enum class StaffTab { Characters, Credits }
+
+/** How many rows a tab previews before handing off to the full grid. */
+private const val StaffPreviewCount = 6
+
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun StaffDetailsContent(
     staff: StaffDetails,
-    titleLanguage: com.anisync.android.data.TitleLanguage,
+    titleLanguage: TitleLanguage,
     onMediaClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
-    onMediaSeeAllClick: () -> Unit,
-    onProductionSeeAllClick: () -> Unit,
-    transitionPrefix: String,
-    onFavouriteClick: () -> Unit,
+    onCharactersSeeAllClick: () -> Unit,
+    onCreditsSeeAllClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     var showImageViewer by rememberSaveable { mutableStateOf(false) }
+    var showNamesSheet by rememberSaveable { mutableStateOf(false) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var characterSortIndex by rememberSaveable { mutableIntStateOf(0) }
+    var roleIndex by rememberSaveable { mutableIntStateOf(0) }
+    var creditSortIndex by rememberSaveable { mutableIntStateOf(0) }
 
-    val displayAttributes = remember(staff) {
-        buildList {
-            staff.age?.let { add("Age" to it.toString()) }
-            staff.gender?.takeUnless { it.isEmpty() }?.let { add("Gender" to it) }
-            staff.bloodType?.takeUnless { it.isEmpty() }?.let { add("Blood Type" to it) }
-            staff.dateOfBirth?.let { add("Birthday" to it) }
-            staff.dateOfDeath?.let { add("Date of Death" to it) }
-            staff.homeTown?.takeUnless { it.isEmpty() }?.let { add("Hometown" to it) }
-            if (staff.yearsActive.isNotEmpty()) {
-                val yearsText = if (staff.yearsActive.size == 2) {
-                    "${staff.yearsActive[0]} - ${staff.yearsActive[1]}"
+    val adaptive = LocalAdaptiveInfo.current
+    val wide = adaptive.isExpandedOrWider && adaptive.isTabletDevice
+    val columns = if (wide) 2 else 1
+    val gutter = Modifier.padding(horizontal = 24.dp)
+
+    // A staff member has no banner of their own, so the hero borrows the one from the title they
+    // are best known for and says so — rather than blurring their portrait into a backdrop.
+    // Voiced work first: for a voice actor the show people know them from is a role, not a
+    // production credit. Directors and composers have no voiced characters and fall through.
+    val backdrop = remember(staff.productionMedia, staff.voicedCharacters) {
+        staff.voicedCharacters
+            .flatMap { it.mediaAppearances }
+            .firstOrNull { it.bannerUrl != null }
+            ?.let { it.bannerUrl to it.mediaTitle }
+            ?: staff.productionMedia
+                .firstOrNull { it.bannerUrl != null }
+                ?.let { it.bannerUrl to it.titleUserPreferred }
+    }
+
+    val charactersTotal = staff.charactersTotal ?: staff.voicedCharacters.size
+    val creditsTotal = staff.productionTotal ?: staff.productionMedia.size
+
+    val characterSortOptions = listOf(
+        stringResource(R.string.person_sort_favourites),
+        stringResource(R.string.person_sort_name)
+    )
+    val roleOptions = listOf(
+        stringResource(R.string.person_filter_any_role),
+        stringResource(R.string.person_meta_role_main),
+        stringResource(R.string.person_filter_supporting)
+    )
+    val creditSortOptions = listOf(
+        stringResource(R.string.person_sort_popularity),
+        stringResource(R.string.person_sort_newest)
+    )
+
+    val characters = remember(staff.voicedCharacters, characterSortIndex, roleIndex) {
+        staff.voicedCharacters
+            .filter { character ->
+                when (roleIndex) {
+                    1 -> character.mediaAppearances.any { it.characterRole.equals("MAIN", true) }
+                    2 -> character.mediaAppearances.any {
+                        it.characterRole.equals("SUPPORTING", true)
+                    }
+                    else -> true
+                }
+            }
+            .let { list ->
+                if (characterSortIndex == 1) {
+                    list.sortedBy { it.characterName }
                 } else {
-                    "${staff.yearsActive[0]} - Present"
+                    list
                 }
-                add("Years Active" to yearsText)
             }
-            if (staff.primaryOccupations.isNotEmpty()) {
-                add("Occupations" to staff.primaryOccupations.joinToString(", "))
+    }
+
+    val credits = remember(staff.productionMedia, creditSortIndex) {
+        staff.productionMedia.sortedWith(
+            when (creditSortIndex) {
+                1 -> compareByDescending<StaffProductionMedia> { it.startYear ?: 0 }
+                else -> compareByDescending<StaffProductionMedia> { it.popularity ?: 0 }
             }
-        }
-    }
-
-    val previewCharacters = remember(staff.voicedCharacters) {
-        staff.voicedCharacters.take(5)
-    }
-
-    val previewProduction = remember(staff.productionMedia) {
-        staff.productionMedia.take(10)
-    }
-    val hasMoreProduction =
-        staff.productionMedia.size > previewProduction.size || staff.productionMediaHasNextPage
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp
         )
-    ) {
-        // Hero Image
-        item(key = "hero") {
-            DetailHeroImage(
-                imageUrl = staff.imageUrl,
-                contentDescription = staff.getName(titleLanguage),
-                id = staff.id,
-                onImageClick = { showImageViewer = true },
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-                transitionKey = TransitionKeys.staffImage(staff.id)
+    }
+
+    val tabs = listOf(
+        PersonTab(stringResource(R.string.person_tab_characters), charactersTotal),
+        PersonTab(stringResource(R.string.person_tab_credits), creditsTotal)
+    )
+    val tab = if (selectedTab == 1) StaffTab.Credits else StaffTab.Characters
+    val facts = staffFacts(staff)
+
+    val hero: @Composable (PersonHeroCollapse?) -> Unit = { collapse ->
+        PersonHero(
+            imageUrl = staff.imageUrl,
+            backdropUrl = backdrop?.first,
+            name = staff.getName(titleLanguage),
+            nativeName = staff.nativeName,
+            metaLine = staffMetaLine(staff),
+            favourites = staff.favourites,
+            contentDescription = staff.getName(titleLanguage),
+            transitionKey = TransitionKeys.staffImage(staff.id),
+            onImageClick = { showImageViewer = true },
+            wide = wide,
+            collapse = collapse,
+            backdropCredit = backdrop?.second,
+            aliasLine = if (wide && staff.alternativeNames.isNotEmpty()) {
+                { StaffAliasLine(staff.alternativeNames) { showNamesSheet = true } }
+            } else {
+                null
+            },
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope
+        )
+    }
+
+    val sidebar: @Composable () -> Unit = {
+        PersonFactsCard(facts = facts)
+        if (staff.alternativeNames.isNotEmpty() && !wide) {
+            Spacer(Modifier.height(16.dp))
+            PersonNamesRow(
+                count = staff.alternativeNames.size,
+                onClick = { showNamesSheet = true }
             )
         }
-
-        // Name Card
-        item(key = "name") {
-            Spacer(modifier = Modifier.height(12.dp))
-            NameCard(
-                name = staff.getName(titleLanguage),
-                nativeName = staff.nativeName,
-                alternativeNames = staff.alternativeNames,
-                favourites = staff.favourites,
-                isFavourite = staff.isFavourite,
-                onFavouriteClick = onFavouriteClick,
-                nameClipLabel = stringResource(R.string.clip_label_staff_name)
-            )
-        }
-
-        // Biography - expandable box with rich text renderer
         if (!staff.description.isNullOrBlank()) {
-            item(key = "bio") {
-                Spacer(modifier = Modifier.height(24.dp))
-                Box(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    ExpandableBiography(html = staff.description)
-                }
-            }
+            Spacer(Modifier.height(16.dp))
+            ExpandableBiography(html = staff.description)
         }
+    }
 
-        if (displayAttributes.isNotEmpty()) {
-            item(key = "attr_header") {
-                Spacer(modifier = Modifier.height(24.dp))
-            SectionHeader(
-                title = stringResource(R.string.label_attributes),
-                level = HeaderLevel.Section,
-                iconColor = MaterialTheme.colorScheme.primary
+    val listContent: LazyListScope.() -> Unit = {
+        item(key = "tabs") {
+            PersonTabs(
+                tabs = tabs,
+                selectedIndex = selectedTab,
+                onSelect = { selectedTab = it },
+                modifier = gutter
             )
-            }
-            item(key = "attr") {
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    AttributesCard(attributes = displayAttributes)
-                }
-            }
+            Spacer(Modifier.height(16.dp))
         }
 
-        if (previewProduction.isNotEmpty()) {
-            item(key = "production_header") {
-                Spacer(modifier = Modifier.height(24.dp))
-                SectionHeader(
-                    title = stringResource(R.string.production_roles),
-                    level = HeaderLevel.Section,
-                    iconColor = MaterialTheme.colorScheme.primary,
-                    onActionClick = if (hasMoreProduction) onProductionSeeAllClick else null
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-            item(key = "production_row") {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(
-                        previewProduction,
-                        key = { media -> "${media.mediaId}_${media.staffRole.orEmpty()}" }
-                    ) { media ->
-                        FeaturedMediaItem(
-                            mediaId = media.mediaId,
-                            coverUrl = media.coverUrl,
-                            cover = media.cover,
-                            title = media.getTitle(titleLanguage),
-                            role = media.staffRole,
-                            year = media.startYear,
-                            type = media.type?.name,
-                            onClick = { onMediaClick(media.mediaId) },
-                            transitionPrefix = transitionPrefix
+        when (tab) {
+            StaffTab.Characters -> {
+                item(key = "character_filters") {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(gutter)
+                    ) {
+                        PersonDropdownChip(
+                            label = characterSortOptions[characterSortIndex],
+                            options = characterSortOptions,
+                            selectedIndex = characterSortIndex,
+                            onSelect = { characterSortIndex = it },
+                            leadingIcon = Icons.Default.SwapVert,
+                            appliedWhenNotDefault = false
                         )
+                        PersonDropdownChip(
+                            label = roleOptions[roleIndex],
+                            options = roleOptions,
+                            selectedIndex = roleIndex,
+                            onSelect = { roleIndex = it }
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                if (characters.isEmpty()) {
+                    item(key = "characters_empty") {
+                        PersonEmptyState(
+                            text = stringResource(R.string.person_empty_characters),
+                            modifier = gutter
+                        )
+                    }
+                } else {
+                    personGridItems(
+                        items = characters.take(StaffPreviewCount * columns),
+                        columns = columns,
+                        key = { "character_${it.characterId}" },
+                        rowModifier = gutter.padding(bottom = 12.dp)
+                    ) { character ->
+                        val primary = character.mediaAppearances.firstOrNull()
+                        PersonCharacterRow(
+                            name = character.getName(titleLanguage),
+                            nativeName = character.characterNameNative,
+                            imageUrl = character.characterImageUrl,
+                            role = primary?.characterRole,
+                            primaryTitle = primary?.getTitle(titleLanguage),
+                            otherTitles = (character.mediaAppearances.size - 1).coerceAtLeast(0),
+                            onClick = { onCharacterClick(character.characterId) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (charactersTotal > StaffPreviewCount) {
+                        item(key = "characters_see_all") {
+                            PersonSeeAllRow(
+                                label = stringResource(
+                                    R.string.person_see_all_characters,
+                                    charactersTotal
+                                ),
+                                onClick = onCharactersSeeAllClick,
+                                modifier = gutter
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        if (previewCharacters.isNotEmpty()) {
-            item(key = "vc_header") {
-                Column {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    SectionHeader(
-                        title = stringResource(R.string.voiced_characters),
-                        level = HeaderLevel.Section,
-                        iconColor = MaterialTheme.colorScheme.primary,
-                        onActionClick = if (staff.voicedCharacters.size > 5) onMediaSeeAllClick else null
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    previewCharacters.forEach { voicedChar ->
-                        VoicedCharacterItem(
-                            voicedCharacter = voicedChar,
-                            titleLanguage = titleLanguage,
-                            onCharacterClick = { onCharacterClick(voicedChar.characterId) },
-                            onMediaClick = onMediaClick,
-                            transitionPrefix = transitionPrefix,
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            StaffTab.Credits -> {
+                item(key = "credit_filters") {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(gutter)
+                    ) {
+                        PersonDropdownChip(
+                            label = creditSortOptions[creditSortIndex],
+                            options = creditSortOptions,
+                            selectedIndex = creditSortIndex,
+                            onSelect = { creditSortIndex = it },
+                            leadingIcon = Icons.Default.SwapVert,
+                            appliedWhenNotDefault = false
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                if (credits.isEmpty()) {
+                    item(key = "credits_empty") {
+                        PersonEmptyState(
+                            text = stringResource(R.string.person_empty_credits),
+                            modifier = gutter
+                        )
+                    }
+                } else {
+                    personGridItems(
+                        items = credits.take(StaffPreviewCount * columns),
+                        columns = columns,
+                        key = { "credit_${it.mediaId}_${it.staffRole.orEmpty()}" },
+                        rowModifier = gutter.padding(bottom = 12.dp)
+                    ) { credit ->
+                        CreditRow(
+                            title = credit.getTitle(titleLanguage),
+                            role = credit.staffRole,
+                            meta = creditMeta(credit),
+                            coverUrl = credit.coverUrl,
+                            cover = credit.cover,
+                            onClick = { onMediaClick(credit.mediaId) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (creditsTotal > StaffPreviewCount) {
+                        item(key = "credits_see_all") {
+                            PersonSeeAllRow(
+                                label = stringResource(
+                                    R.string.person_see_all_credits,
+                                    creditsTotal
+                                ),
+                                onClick = onCreditsSeeAllClick,
+                                modifier = gutter
+                            )
+                        }
+                    }
+                }
+
+                // A voice actor's credit list is short by definition; without this the tab reads as
+                // though the app lost their career.
+                if (charactersTotal > 0) {
+                    item(key = "credits_note") {
+                        Spacer(Modifier.height(4.dp))
+                        PersonNoteStrip(
+                            text = stringResource(R.string.person_credits_note, charactersTotal),
+                            icon = Icons.Default.Info,
+                            modifier = gutter
                         )
                     }
                 }
             }
         }
     }
+
+    PersonScaffold(
+        wide = wide,
+        hero = hero,
+        sidebar = sidebar,
+        listContent = listContent
+    )
 
     if (showImageViewer && staff.imageUrl != null) {
         ImageViewerDialog(
@@ -399,7 +554,173 @@ private fun StaffDetailsContent(
             onDismiss = { showImageViewer = false }
         )
     }
+
+    if (showNamesSheet) {
+        val copyToClipboard = rememberCopyToClipboard()
+        val clipLabel = stringResource(R.string.clip_label_staff_name)
+        val copiedMessage = stringResource(R.string.copied_name)
+        AppModalBottomSheet(onDismissRequest = { showNamesSheet = false }) {
+            PersonNamesSheetContent(
+                subject = staff.getName(titleLanguage),
+                preferredName = staff.nameUserPreferred,
+                fullName = staff.name,
+                nativeName = staff.nativeName,
+                alternativeNames = staff.alternativeNames,
+                spoilerNames = emptyList(),
+                onCopy = { copyToClipboard(clipLabel, it, copiedMessage) },
+                onCopyAll = {
+                    val all = buildList {
+                        add(staff.nameUserPreferred)
+                        if (staff.name != staff.nameUserPreferred) add(staff.name)
+                        staff.nativeName?.let { add(it) }
+                        addAll(staff.alternativeNames)
+                    }
+                    copyToClipboard(clipLabel, all.joinToString("\n"), copiedMessage)
+                }
+            )
+        }
+    }
 }
+
+@Composable
+private fun StaffAliasLine(alternativeNames: List<String>, onClick: () -> Unit) {
+    val shown = alternativeNames.take(3)
+    val overflow = alternativeNames.size - shown.size
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.clickable(onClick = onClick)
+    ) {
+        Text(
+            text = stringResource(R.string.also_known_as, shown.joinToString(" · ")),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
+        )
+        if (overflow > 0) {
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = stringResource(R.string.person_names_more, overflow),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun staffFacts(staff: StaffDetails): List<PersonFact> {
+    val scheme = MaterialTheme.colorScheme
+    return buildList {
+        staff.age?.let {
+            add(
+                PersonFact(
+                    stringResource(R.string.person_attr_age),
+                    it.toString(),
+                    Icons.Default.HourglassBottom,
+                    scheme.tertiary
+                )
+            )
+        }
+        staff.gender?.takeUnless { it.isBlank() }?.let {
+            add(
+                PersonFact(
+                    stringResource(R.string.person_attr_gender),
+                    it,
+                    Icons.Default.Person,
+                    scheme.primary
+                )
+            )
+        }
+        staff.bloodType?.takeUnless { it.isBlank() }?.let {
+            add(
+                PersonFact(
+                    stringResource(R.string.person_attr_blood_type),
+                    it,
+                    Icons.Default.Bloodtype,
+                    scheme.error
+                )
+            )
+        }
+        staff.dateOfBirth?.takeUnless { it.isBlank() }?.let {
+            add(
+                PersonFact(
+                    stringResource(R.string.person_attr_birthday),
+                    it,
+                    Icons.Default.Cake,
+                    scheme.secondary
+                )
+            )
+        }
+        staff.dateOfDeath?.takeUnless { it.isBlank() }?.let {
+            add(
+                PersonFact(
+                    stringResource(R.string.person_attr_date_of_death),
+                    it,
+                    Icons.Default.Event,
+                    scheme.onSurfaceVariant
+                )
+            )
+        }
+        staff.homeTown?.takeUnless { it.isBlank() }?.let {
+            add(
+                PersonFact(
+                    stringResource(R.string.person_attr_hometown),
+                    it,
+                    Icons.Default.Place,
+                    scheme.primary
+                )
+            )
+        }
+        if (staff.yearsActive.isNotEmpty()) {
+            val label = if (staff.yearsActive.size >= 2) {
+                stringResource(R.string.person_attr_years_active)
+            } else {
+                stringResource(R.string.person_attr_active_since)
+            }
+            val value = if (staff.yearsActive.size >= 2) {
+                "${staff.yearsActive[0]} – ${staff.yearsActive[1]}"
+            } else {
+                staff.yearsActive[0].toString()
+            }
+            add(PersonFact(label, value, Icons.Default.Update, scheme.tertiary))
+        }
+        staff.primaryOccupations.firstOrNull()?.let {
+            add(
+                PersonFact(
+                    stringResource(R.string.person_attr_occupation),
+                    staff.primaryOccupations.joinToString(", "),
+                    Icons.Default.Work,
+                    scheme.secondary
+                )
+            )
+        }
+        staff.language?.takeUnless { it.isBlank() }?.let {
+            add(
+                PersonFact(
+                    stringResource(R.string.person_attr_language),
+                    it,
+                    Icons.Default.Translate,
+                    scheme.primary
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun staffMetaLine(staff: StaffDetails): String = buildList {
+    staff.primaryOccupations.firstOrNull()?.let { add(it) }
+        ?: add(stringResource(R.string.person_meta_voice_actor))
+    staff.language?.takeUnless { it.isBlank() }?.let { add(it) }
+}.joinToString(" · ")
+
+private fun creditMeta(credit: StaffProductionMedia): String = buildList {
+    credit.type?.name?.let { add(it) }
+    credit.startYear?.let { add(it.toString()) }
+}.joinToString(" · ")
 
 @Composable
 private fun StaffErrorState(
