@@ -58,6 +58,7 @@ class CharacterDetailsViewModel @Inject constructor(
 
         viewModelScope.launch {
             isFetching = true
+            _uiState.value = currentState.copy(isLoadingMore = true)
             currentPage++
             when (val result = detailsRepository.getCharacterDetails(characterId, currentPage)) {
                 is Result.Success -> {
@@ -73,6 +74,7 @@ class CharacterDetailsViewModel @Inject constructor(
 
                 is Result.Error -> {
                     currentPage--
+                    _uiState.value = currentState.copy(isLoadingMore = false)
                 }
             }
             isFetching = false

@@ -62,6 +62,7 @@ class StaffDetailsViewModel @Inject constructor(
 
         viewModelScope.launch {
             isFetching = true
+            _uiState.value = currentState.copy(isLoadingMore = true)
             currentPage++
             when (val result = detailsRepository.getStaffCharactersPage(staffId, currentPage)) {
                 is Result.Success -> {
@@ -79,6 +80,7 @@ class StaffDetailsViewModel @Inject constructor(
 
                 is Result.Error -> {
                     currentPage--
+                    _uiState.value = currentState.copy(isLoadingMore = false)
                 }
             }
             isFetching = false
@@ -91,6 +93,7 @@ class StaffDetailsViewModel @Inject constructor(
 
         viewModelScope.launch {
             isFetchingProduction = true
+            _uiState.value = currentState.copy(isLoadingMore = true)
             currentStaffMediaPage++
             when (val result = detailsRepository.getStaffProductionPage(staffId, currentStaffMediaPage)) {
                 is Result.Success -> {
@@ -108,6 +111,7 @@ class StaffDetailsViewModel @Inject constructor(
 
                 is Result.Error -> {
                     currentStaffMediaPage--
+                    _uiState.value = currentState.copy(isLoadingMore = false)
                 }
             }
             isFetchingProduction = false

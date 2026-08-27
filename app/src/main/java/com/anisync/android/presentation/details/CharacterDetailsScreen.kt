@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -33,6 +34,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bloodtype
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
@@ -86,7 +89,7 @@ import com.anisync.android.presentation.details.components.PersonFactsCard
 import com.anisync.android.presentation.details.components.PersonHero
 import com.anisync.android.presentation.details.components.PersonNamesRow
 import com.anisync.android.presentation.details.components.PersonNamesSheetContent
-import com.anisync.android.presentation.details.components.PersonSeeAllRow
+import com.anisync.android.presentation.details.components.PersonShowMoreRow
 import com.anisync.android.presentation.details.components.PersonTab
 import com.anisync.android.presentation.details.components.PersonTabs
 import com.anisync.android.presentation.details.components.PersonToggleChip
@@ -113,7 +116,6 @@ fun CharacterDetailsScreen(
     characterId: Int,
     onBackClick: () -> Unit,
     onMediaClick: (Int) -> Unit = {},
-    onMediaSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onStaffClick: (Int) -> Unit = {},
     viewModel: CharacterDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
@@ -133,11 +135,37 @@ fun CharacterDetailsScreen(
     val adaptive = LocalAdaptiveInfo.current
     val wideLayout = adaptive.isExpandedOrWider && adaptive.isTabletDevice
 
+    val chromeActions: @Composable RowScope.() -> Unit = {
+        details?.let {
+            BannerIconButton(
+                icon = if (it.isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = stringResource(R.string.a11y_person_favourite),
+                onClick = viewModel::toggleFavourite,
+                tint = if (it.isFavourite) MaterialTheme.colorScheme.error else Color.White
+            )
+        }
+        BannerIconButton(
+            icon = Icons.Default.Share,
+            contentDescription = stringResource(R.string.cd_share),
+            onClick = { showShareSheet = true }
+        )
+        if (LocalPaneIsRoot.current) {
+            BannerIconButton(
+                icon = Icons.Default.Close,
+                contentDescription = stringResource(R.string.pane_close),
+                onClick = onBackClick
+            )
+        }
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
+            // The wide layout carries its own chrome on the banner, the way the profile does; an app
+            // bar above the banner card would leave an empty band and cover the collapsed strip.
+            if (wideLayout) return@Scaffold
             val title = details?.getName(titleLanguage) ?: ""
             val iconTint by animateColorAsState(
                 if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
@@ -223,10 +251,11 @@ fun CharacterDetailsScreen(
                         character = state.details,
                         titleLanguage = titleLanguage,
                         onMediaClick = onMediaClick,
-                        onMediaSeeAllClick = {
-                            onMediaSeeAllClick(state.details.id, state.details.getName(titleLanguage))
-                        },
+                        isLoadingMore = state.isLoadingMore,
+                        onLoadMore = viewModel::loadMoreMedia,
                         onStaffClick = onStaffClick,
+                        onBackClick = onBackClick,
+                        chromeActions = chromeActions,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
                     )
@@ -266,8 +295,11 @@ private fun CharacterDetailsContent(
     character: CharacterDetails,
     titleLanguage: TitleLanguage,
     onMediaClick: (Int) -> Unit,
-    onMediaSeeAllClick: () -> Unit,
+    isLoadingMore: Boolean,
+    onLoadMore: () -> Unit,
     onStaffClick: (Int) -> Unit,
+    onBackClick: () -> Unit,
+    chromeActions: @Composable RowScope.() -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
@@ -279,11 +311,14 @@ private fun CharacterDetailsContent(
     var sortIndex by rememberSaveable { mutableIntStateOf(0) }
     var languageIndex by rememberSaveable { mutableIntStateOf(0) }
     var actorSortIndex by rememberSaveable { mutableIntStateOf(0) }
+    var visibleAppearances by rememberSaveable { mutableIntStateOf(0) }
 
     val adaptive = LocalAdaptiveInfo.current
     val wide = adaptive.isExpandedOrWider && adaptive.isTabletDevice
     // A 700dp pane fits two rows side by side; one stretched row wastes half the width.
     val columns = if (wide) 2 else 1
+    val pageSize = PreviewCount * columns
+    val shownAppearances = if (visibleAppearances == 0) pageSize else visibleAppearances
 
     val backdropUrl = remember(character.media) {
         character.media.firstNotNullOfOrNull { it.bannerUrl }
@@ -440,7 +475,7 @@ private fun CharacterDetailsContent(
                     }
                 } else {
                     personGridItems(
-                        items = appearances.take(PreviewCount * columns),
+                        items = appearances.take(shownAppearances),
                         columns = columns,
                         key = { "appearance_${it.id}" },
                         rowModifier = gutter.padding(bottom = 12.dp)
@@ -462,14 +497,18 @@ private fun CharacterDetailsContent(
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    if (appearanceTotal > PreviewCount) {
-                        item(key = "appearances_see_all") {
-                            PersonSeeAllRow(
-                                label = stringResource(
-                                    R.string.person_see_all_appearances,
-                                    appearanceTotal
-                                ),
-                                onClick = onMediaSeeAllClick,
+                    val canShowMore = appearances.size > shownAppearances || character.hasNextPage
+                    if (canShowMore) {
+                        item(key = "appearances_show_more") {
+                            PersonShowMoreRow(
+                                shown = minOf(shownAppearances, appearances.size),
+                                total = appearanceTotal,
+                                isLoading = isLoadingMore,
+                                onClick = {
+                                    visibleAppearances = shownAppearances + pageSize
+                                    // Only reaches the network once the loaded page runs out.
+                                    if (appearances.size <= shownAppearances + pageSize) onLoadMore()
+                                },
                                 modifier = gutter
                             )
                         }
@@ -548,6 +587,8 @@ private fun CharacterDetailsContent(
         PersonWideLayout(
             backdropUrl = backdropUrl,
             backdropCredit = null,
+            onBackClick = onBackClick,
+            actions = chromeActions,
             portraitUrl = character.imageUrl,
             portraitTransitionKey = TransitionKeys.characterImage(character.id),
             onPortraitClick = { showImageViewer = true },

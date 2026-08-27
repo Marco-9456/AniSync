@@ -472,7 +472,6 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             characterId = route.characterId,
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
             onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
-            onMediaSeeAllClick = { cId, cName -> paneNav.navigate(CharacterMediaGrid(cId, cName)) },
             onStaffClick = { paneNav.navigate(StaffDetails(it)) },
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
@@ -486,10 +485,6 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
             onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
-            onMediaSeeAllClick = { sId, sName -> paneNav.navigate(StaffMediaGrid(sId, sName)) },
-            onProductionSeeAllClick = { sId, sName ->
-                paneNav.navigate(StaffProductionMediaGrid(sId, sName))
-            },
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
         )

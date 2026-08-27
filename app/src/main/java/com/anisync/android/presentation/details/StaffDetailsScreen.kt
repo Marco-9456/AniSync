@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +29,8 @@ import androidx.compose.material.icons.filled.Bloodtype
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -85,7 +88,7 @@ import com.anisync.android.presentation.details.components.PersonHero
 import com.anisync.android.presentation.details.components.PersonNamesRow
 import com.anisync.android.presentation.details.components.PersonNamesSheetContent
 import com.anisync.android.presentation.details.components.PersonNoteStrip
-import com.anisync.android.presentation.details.components.PersonSeeAllRow
+import com.anisync.android.presentation.details.components.PersonShowMoreRow
 import com.anisync.android.presentation.details.components.PersonTab
 import com.anisync.android.presentation.details.components.PersonTabs
 import com.anisync.android.presentation.details.components.personGridItems
@@ -106,8 +109,6 @@ fun StaffDetailsScreen(
     onBackClick: () -> Unit,
     onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
-    onMediaSeeAllClick: (Int, String) -> Unit = { _, _ -> },
-    onProductionSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     viewModel: StaffDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
@@ -126,11 +127,35 @@ fun StaffDetailsScreen(
     val adaptive = LocalAdaptiveInfo.current
     val wideLayout = adaptive.isExpandedOrWider && adaptive.isTabletDevice
 
+    val chromeActions: @Composable RowScope.() -> Unit = {
+        details?.let {
+            BannerIconButton(
+                icon = if (it.isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = stringResource(R.string.a11y_person_favourite),
+                onClick = viewModel::toggleFavourite,
+                tint = if (it.isFavourite) MaterialTheme.colorScheme.error else Color.White
+            )
+        }
+        BannerIconButton(
+            icon = Icons.Default.Share,
+            contentDescription = stringResource(R.string.cd_share),
+            onClick = { showShareSheet = true }
+        )
+        if (LocalPaneIsRoot.current) {
+            BannerIconButton(
+                icon = Icons.Default.Close,
+                contentDescription = stringResource(R.string.pane_close),
+                onClick = onBackClick
+            )
+        }
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
+            if (wideLayout) return@Scaffold
             val title = details?.getName(titleLanguage) ?: ""
             val iconTint by animateColorAsState(
                 if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
@@ -216,15 +241,11 @@ fun StaffDetailsScreen(
                         titleLanguage = titleLanguage,
                         onMediaClick = onMediaClick,
                         onCharacterClick = onCharacterClick,
-                        onCharactersSeeAllClick = {
-                            onMediaSeeAllClick(state.details.id, state.details.getName(titleLanguage))
-                        },
-                        onCreditsSeeAllClick = {
-                            onProductionSeeAllClick(
-                                state.details.id,
-                                state.details.getName(titleLanguage)
-                            )
-                        },
+                        isLoadingMore = state.isLoadingMore,
+                        onLoadMoreCharacters = viewModel::loadMoreMedia,
+                        onLoadMoreCredits = viewModel::loadMoreProductionMedia,
+                        onBackClick = onBackClick,
+                        chromeActions = chromeActions,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope
                     )
@@ -268,8 +289,11 @@ private fun StaffDetailsContent(
     titleLanguage: TitleLanguage,
     onMediaClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
-    onCharactersSeeAllClick: () -> Unit,
-    onCreditsSeeAllClick: () -> Unit,
+    isLoadingMore: Boolean,
+    onLoadMoreCharacters: () -> Unit,
+    onLoadMoreCredits: () -> Unit,
+    onBackClick: () -> Unit,
+    chromeActions: @Composable RowScope.() -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
@@ -279,10 +303,15 @@ private fun StaffDetailsContent(
     var characterSortIndex by rememberSaveable { mutableIntStateOf(0) }
     var roleIndex by rememberSaveable { mutableIntStateOf(0) }
     var creditSortIndex by rememberSaveable { mutableIntStateOf(0) }
+    var visibleCharacters by rememberSaveable { mutableIntStateOf(0) }
+    var visibleCredits by rememberSaveable { mutableIntStateOf(0) }
 
     val adaptive = LocalAdaptiveInfo.current
     val wide = adaptive.isExpandedOrWider && adaptive.isTabletDevice
     val columns = if (wide) 2 else 1
+    val pageSize = StaffPreviewCount * columns
+    val shownCharacters = if (visibleCharacters == 0) pageSize else visibleCharacters
+    val shownCredits = if (visibleCredits == 0) pageSize else visibleCredits
     val gutter = Modifier.padding(horizontal = 24.dp)
 
     // A staff member has no banner of their own, so the hero borrows the one from the title they
@@ -429,7 +458,7 @@ private fun StaffDetailsContent(
                     }
                 } else {
                     personGridItems(
-                        items = characters.take(StaffPreviewCount * columns),
+                        items = characters.take(shownCharacters),
                         columns = columns,
                         key = { "character_${it.characterId}" },
                         rowModifier = gutter.padding(bottom = 12.dp)
@@ -446,14 +475,18 @@ private fun StaffDetailsContent(
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    if (charactersTotal > StaffPreviewCount) {
-                        item(key = "characters_see_all") {
-                            PersonSeeAllRow(
-                                label = stringResource(
-                                    R.string.person_see_all_characters,
-                                    charactersTotal
-                                ),
-                                onClick = onCharactersSeeAllClick,
+                    if (characters.size > shownCharacters || staff.hasNextPage) {
+                        item(key = "characters_show_more") {
+                            PersonShowMoreRow(
+                                shown = minOf(shownCharacters, characters.size),
+                                total = charactersTotal,
+                                isLoading = isLoadingMore,
+                                onClick = {
+                                    visibleCharacters = shownCharacters + pageSize
+                                    if (characters.size <= shownCharacters + pageSize) {
+                                        onLoadMoreCharacters()
+                                    }
+                                },
                                 modifier = gutter
                             )
                         }
@@ -490,7 +523,7 @@ private fun StaffDetailsContent(
                     }
                 } else {
                     personGridItems(
-                        items = credits.take(StaffPreviewCount * columns),
+                        items = credits.take(shownCredits),
                         columns = columns,
                         key = { "credit_${it.mediaId}_${it.staffRole.orEmpty()}" },
                         rowModifier = gutter.padding(bottom = 12.dp)
@@ -505,14 +538,16 @@ private fun StaffDetailsContent(
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    if (creditsTotal > StaffPreviewCount) {
-                        item(key = "credits_see_all") {
-                            PersonSeeAllRow(
-                                label = stringResource(
-                                    R.string.person_see_all_credits,
-                                    creditsTotal
-                                ),
-                                onClick = onCreditsSeeAllClick,
+                    if (credits.size > shownCredits || staff.productionMediaHasNextPage) {
+                        item(key = "credits_show_more") {
+                            PersonShowMoreRow(
+                                shown = minOf(shownCredits, credits.size),
+                                total = creditsTotal,
+                                isLoading = isLoadingMore,
+                                onClick = {
+                                    visibleCredits = shownCredits + pageSize
+                                    if (credits.size <= shownCredits + pageSize) onLoadMoreCredits()
+                                },
                                 modifier = gutter
                             )
                         }
@@ -539,6 +574,8 @@ private fun StaffDetailsContent(
         PersonWideLayout(
             backdropUrl = backdrop?.first,
             backdropCredit = backdrop?.second,
+            onBackClick = onBackClick,
+            actions = chromeActions,
             portraitUrl = staff.imageUrl,
             portraitTransitionKey = TransitionKeys.staffImage(staff.id),
             onPortraitClick = { showImageViewer = true },
