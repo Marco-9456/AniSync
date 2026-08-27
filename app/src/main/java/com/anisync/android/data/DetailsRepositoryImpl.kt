@@ -596,7 +596,10 @@ class DetailsRepositoryImpl @Inject constructor(
             val charData = response.data?.Character
                 ?: throw Exception("Character not found")
 
-            val alternativeNames = charData.name?.alternative?.filterNotNull() ?: emptyList()
+            val alternativeNames = charData.name?.alternative?.filterNotNull()
+                ?.filter { it.isNotBlank() } ?: emptyList()
+            val spoilerNames = charData.name?.alternativeSpoiler?.filterNotNull()
+                ?.filter { it.isNotBlank() } ?: emptyList()
 
             val pageInfo = charData.media?.pageInfo
             val hasNextPage = pageInfo?.hasNextPage ?: false
@@ -649,6 +652,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 nativeName = charData.name?.native,
                 nameUserPreferred = charData.name?.userPreferred ?: charData.name?.full ?: "Unknown",
                 alternativeNames = alternativeNames,
+                spoilerNames = spoilerNames,
                 imageUrl = charData.image?.large,
                 description = charData.description,
                 gender = charData.gender,
@@ -662,7 +666,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 favourites = charData.favourites,
                 isFavourite = effectiveIsFav,
                 media = mediaList,
-                hasNextPage = hasNextPage
+                hasNextPage = hasNextPage,
+                mediaTotal = pageInfo?.total
             )
         }
     }
@@ -981,7 +986,9 @@ class DetailsRepositoryImpl @Inject constructor(
                 voicedCharacters = voicedCharacters,
                 hasNextPage = hasNextPage,
                 productionMedia = productionMedia,
-                productionMediaHasNextPage = productionMediaHasNextPage
+                productionMediaHasNextPage = productionMediaHasNextPage,
+                charactersTotal = pageInfo?.total,
+                productionTotal = staffData.staffMedia?.pageInfo?.total
             )
         }
     }
@@ -1285,6 +1292,7 @@ private fun StaffVoicedCharacterFields.toDomain(): VoicedCharacter? {
                     node.coverImage?.large,
                     node.coverImage?.extraLarge
                 ),
+                bannerUrl = node.bannerImage,
                 startYear = node.startDate?.year,
                 characterRole = role?.name,
                 popularity = node.popularity,
@@ -1311,6 +1319,7 @@ private fun StaffProductionMediaFields.toDomain(): StaffProductionMedia? {
             media.coverImage?.large,
             media.coverImage?.extraLarge
         ),
+        bannerUrl = media.bannerImage,
         type = media.type,
         startYear = media.startDate?.year,
         staffRole = staffRole,

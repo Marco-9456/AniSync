@@ -6,6 +6,7 @@ query GetCharacterDetails($id: Int!, $page: Int = 1) {
             native
             userPreferred
             alternative
+            alternativeSpoiler
         }
         image {
             large
@@ -24,6 +25,7 @@ query GetCharacterDetails($id: Int!, $page: Int = 1) {
         media(page: $page, perPage: 25, sort: [POPULARITY_DESC]) {
             pageInfo {
                 hasNextPage
+                total
             }
             edges {
                 characterRole

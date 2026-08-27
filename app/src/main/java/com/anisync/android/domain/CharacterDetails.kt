@@ -10,6 +10,7 @@ data class CharacterDetails(
     val nativeName: String?,
     val nameUserPreferred: String,
     val alternativeNames: List<String> = emptyList(),
+    val spoilerNames: List<String> = emptyList(),
     val imageUrl: String?,
     val description: String?,
     val gender: String?,
@@ -19,7 +20,9 @@ data class CharacterDetails(
     val favourites: Int?,
     val isFavourite: Boolean = false,
     val media: List<CharacterMedia>,
-    val hasNextPage: Boolean = false
+    val hasNextPage: Boolean = false,
+    /** Total appearances AniList holds, not just the page loaded. */
+    val mediaTotal: Int? = null
 )
 
 @Serializable

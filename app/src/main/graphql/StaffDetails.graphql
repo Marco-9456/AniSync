@@ -29,6 +29,7 @@ fragment StaffVoicedCharacterFields on CharacterEdge {
             large
             extraLarge
         }
+        bannerImage
         startDate {
             year
         }
@@ -60,6 +61,7 @@ fragment StaffProductionMediaFields on MediaEdge {
             large
             extraLarge
         }
+        bannerImage
         startDate {
             year
         }
@@ -111,6 +113,7 @@ query GetStaffDetails($id: Int!, $page: Int = 1, $staffMediaPage: Int = 1) {
         characters(page: $page, sort: [FAVOURITES_DESC], perPage: 25) {
             pageInfo {
                 hasNextPage
+                total
             }
             edges {
                 ...StaffVoicedCharacterFields
@@ -119,6 +122,7 @@ query GetStaffDetails($id: Int!, $page: Int = 1, $staffMediaPage: Int = 1) {
         staffMedia(page: $staffMediaPage, sort: [START_DATE_DESC], perPage: 25) {
             pageInfo {
                 hasNextPage
+                total
             }
             edges {
                 ...StaffProductionMediaFields
@@ -138,6 +142,7 @@ query GetStaffCharactersPage($id: Int!, $page: Int!) {
         characters(page: $page, sort: [FAVOURITES_DESC], perPage: 25) {
             pageInfo {
                 hasNextPage
+                total
             }
             edges {
                 ...StaffVoicedCharacterFields
@@ -155,6 +160,7 @@ query GetStaffProductionPage($id: Int!, $page: Int!) {
         staffMedia(page: $page, sort: [START_DATE_DESC], perPage: 25) {
             pageInfo {
                 hasNextPage
+                total
             }
             edges {
                 ...StaffProductionMediaFields

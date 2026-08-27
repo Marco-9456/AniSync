@@ -26,7 +26,10 @@ data class StaffDetails(
     val voicedCharacters: List<VoicedCharacter>,
     val hasNextPage: Boolean = false,
     val productionMedia: List<StaffProductionMedia> = emptyList(),
-    val productionMediaHasNextPage: Boolean = false
+    val productionMediaHasNextPage: Boolean = false,
+    /** Totals AniList holds, not just the page loaded. */
+    val charactersTotal: Int? = null,
+    val productionTotal: Int? = null
 )
 
 /** One page of a staff member's voiced characters, fetched without the rest of the Staff object. */
@@ -52,6 +55,7 @@ data class StaffProductionMedia(
     val titleNative: String?,
     val coverUrl: String?,
     val cover: CoverImage? = null,
+    val bannerUrl: String? = null,
     val type: MediaType?,
     val startYear: Int?,
     val staffRole: String?,
@@ -80,6 +84,7 @@ data class CharacterMediaAppearance(
     val mediaTitleNative: String?,
     val coverUrl: String?,
     val cover: CoverImage? = null,
+    val bannerUrl: String? = null,
     val startYear: Int?,
     val characterRole: String?,
     val popularity: Int?,
