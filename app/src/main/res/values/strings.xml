@@ -132,6 +132,13 @@
     <string name="sort_last_added">Added At</string>
     <string name="sort_start_date">Started At</string>
     <string name="sort_release_date">Release Date</string>
+    <string name="sort_default">Default</string>
+    <string name="sort_popularity">Popularity</string>
+    <string name="sort_average_score">Average Score</string>
+    <string name="sort_favorites">Favorites</string>
+    <string name="sort_newest">Newest</string>
+    <string name="sort_oldest">Oldest</string>
+    <string name="sort_title">Title</string>
     <string name="ascending">Ascending</string>
     <string name="descending">Descending</string>
     <string name="airing_episode_in">Ep %1$d in %2$s</string>

@@ -319,8 +319,13 @@ private fun sortCharacterMedia(
     sort: MediaSort,
     ascending: Boolean
 ): List<CharacterMedia> {
+    // DEFAULT means "whatever order the API returned". Re-sorting a half-loaded list by a key
+    // the server did not page by inserts later pages above the viewport, so leave it alone.
+    if (sort == MediaSort.DEFAULT) return media
+
     val sorted = media.sortedWith(compareBy {
         when (sort) {
+            MediaSort.DEFAULT -> 0
             MediaSort.POPULARITY -> it.popularity ?: 0
             MediaSort.AVERAGE_SCORE -> it.averageScore ?: 0
             MediaSort.FAVORITES -> it.favourites ?: 0
@@ -348,7 +353,7 @@ fun StaffMediaGridScreen(
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
 
     var showSortSheet by rememberSaveable { mutableStateOf(false) }
-    var selectedSort by rememberSaveable { mutableStateOf(MediaSort.NEWEST) }
+    var selectedSort by rememberSaveable { mutableStateOf(MediaSort.DEFAULT) }
     var isSortAscending by rememberSaveable { mutableStateOf(false) }
     var onlyOnList by rememberSaveable { mutableStateOf(false) }
 
@@ -600,8 +605,13 @@ private fun sortVoicedCharacters(
     sort: MediaSort,
     ascending: Boolean
 ): List<com.anisync.android.domain.VoicedCharacter> {
+    // DEFAULT means "whatever order the API returned". Re-sorting a half-loaded list by a key
+    // the server did not page by inserts later pages above the viewport, so leave it alone.
+    if (sort == MediaSort.DEFAULT) return characters
+
     val sorted = characters.sortedWith(compareBy { vc ->
         when (sort) {
+            MediaSort.DEFAULT -> 0
             MediaSort.POPULARITY -> vc.mediaAppearances.maxOfOrNull { it.popularity ?: 0 } ?: 0
             MediaSort.AVERAGE_SCORE -> vc.mediaAppearances.maxOfOrNull { it.averageScore ?: 0 } ?: 0
             MediaSort.FAVORITES -> vc.mediaAppearances.maxOfOrNull { it.favourites ?: 0 } ?: 0
@@ -1074,8 +1084,13 @@ private fun sortStudioMedia(
     sort: MediaSort,
     ascending: Boolean
 ): List<StudioMediaEntry> {
+    // DEFAULT means "whatever order the API returned". Re-sorting a half-loaded list by a key
+    // the server did not page by inserts later pages above the viewport, so leave it alone.
+    if (sort == MediaSort.DEFAULT) return media
+
     val sorted = media.sortedWith(compareBy { m ->
         when (sort) {
+            MediaSort.DEFAULT -> 0
             MediaSort.POPULARITY -> m.popularity ?: 0
             MediaSort.AVERAGE_SCORE -> m.averageScore ?: 0
             MediaSort.FAVORITES -> m.favourites ?: 0
@@ -1345,8 +1360,13 @@ private fun sortProductionMedia(
     sort: MediaSort,
     ascending: Boolean
 ): List<StaffProductionMedia> {
+    // DEFAULT means "whatever order the API returned". Re-sorting a half-loaded list by a key
+    // the server did not page by inserts later pages above the viewport, so leave it alone.
+    if (sort == MediaSort.DEFAULT) return media
+
     val sorted = media.sortedWith(compareBy { m ->
         when (sort) {
+            MediaSort.DEFAULT -> 0
             MediaSort.POPULARITY -> m.popularity ?: 0
             MediaSort.AVERAGE_SCORE -> m.averageScore ?: 0
             MediaSort.FAVORITES -> m.favourites ?: 0
