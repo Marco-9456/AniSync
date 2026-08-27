@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,9 +28,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +59,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -94,7 +98,7 @@ import kotlinx.coroutines.launch
 // edge, and two resizable panes underneath — identity on the left, the tab-switched list on the
 // right.
 private val WideBannerHeight = 200.dp
-private val WideBannerCollapsedHeight = 96.dp
+private val WideBannerCollapsedHeight = 112.dp
 private val WideBannerTopMargin = 12.dp
 
 private val IdentityPanePadding = 20.dp
@@ -106,11 +110,14 @@ private val WidePortraitHeight = WidePortraitWidth * 7 / 5
 private val WidePortraitHalfHeight = WidePortraitHeight / 2
 private val WidePortraitStartInset = WideGutterStart + IdentityPanePadding
 
+/** Squarer than the panes below it: the banner is art, and a heavy radius eats into the picture. */
+private val BannerShape = RoundedCornerShape(16.dp)
+
 /** Gap between the banner's bottom edge and the name once it has handed off to the banner. */
 private val BannerNameBottomInset = 16.dp
 
 /** Room kept clear on the banner's end side for the app bar actions the name must not reach. */
-private val BannerNameEndInset = 132.dp
+private val BannerNameEndInset = 148.dp
 
 /** Where in the name stage the pane copy has finished fading and the banner copy takes over. */
 private const val NameHandoffPoint = 0.5f
@@ -241,6 +248,8 @@ private fun Modifier.trimBottom(amountPx: () -> Float) = layout { measurable, co
 fun PersonWideLayout(
     backdropUrl: String?,
     backdropCredit: String?,
+    onBackClick: () -> Unit,
+    actions: @Composable RowScope.() -> Unit,
     portraitUrl: String?,
     portraitTransitionKey: String,
     onPortraitClick: () -> Unit,
@@ -269,11 +278,13 @@ fun PersonWideLayout(
             PersonBannerCard(
                 backdropUrl = backdropUrl,
                 backdropCredit = backdropCredit,
+                onBackClick = onBackClick,
+                actions = actions,
                 modifier = Modifier
                     .padding(start = WideGutterStart, top = WideBannerTopMargin, end = 16.dp)
                     // Rounding sits outside the trim so the corners re-round against the collapsed
                     // height instead of being cut square.
-                    .clip(TwoPaneDefaults.PaneShape)
+                    .clip(BannerShape)
                     .trimBottom { collapse.bannerTrimPx }
             )
 
@@ -383,6 +394,8 @@ fun PersonWideLayout(
 private fun PersonBannerCard(
     backdropUrl: String?,
     backdropCredit: String?,
+    onBackClick: () -> Unit,
+    actions: @Composable RowScope.() -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -413,6 +426,30 @@ private fun PersonBannerCard(
                     )
                 )
         )
+        // Chrome lives on the banner, the way the profile puts its settings/share action there.
+        // A top app bar above the card would leave an empty band over it and, once the card has
+        // collapsed to a strip, cover the name that just landed on it.
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 8.dp, top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BannerIconButton(
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.back),
+                onClick = onBackClick
+            )
+        }
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 8.dp, top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            content = actions
+        )
+
         if (backdropCredit != null) {
             Text(
                 text = backdropCredit,
@@ -425,6 +462,32 @@ private fun PersonBannerCard(
                     .padding(end = 16.dp, bottom = 12.dp)
             )
         }
+    }
+}
+
+/** A chrome button on the banner: white on a soft scrim, so it survives any artwork under it. */
+@Composable
+fun BannerIconButton(
+    icon: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    tint: Color = Color.White
+) {
+    Box(
+        modifier = modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.32f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = tint,
+            modifier = Modifier.size(22.dp)
+        )
     }
 }
 
