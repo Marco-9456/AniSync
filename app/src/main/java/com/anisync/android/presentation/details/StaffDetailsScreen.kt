@@ -325,8 +325,18 @@ private fun StaffDetailsContent(
                 ?.let { it.bannerUrl to it.titleUserPreferred }
     }
 
-    val charactersTotal = staff.charactersTotal ?: staff.voicedCharacters.size
-    val creditsTotal = staff.productionTotal ?: staff.productionMedia.size
+    // Same rule as the character screen: show a count only when it is one. AniList caps these
+    // totals at 500, which is why every voice actor used to claim exactly 500 roles.
+    val charactersTotal = if (staff.hasNextPage) {
+        staff.charactersTotal
+    } else {
+        staff.voicedCharacters.size
+    }
+    val creditsTotal = if (staff.productionMediaHasNextPage) {
+        staff.productionTotal
+    } else {
+        staff.productionMedia.size
+    }
 
     val characterSortOptions = listOf(
         stringResource(R.string.person_sort_favourites),
@@ -535,11 +545,11 @@ private fun StaffDetailsContent(
 
                 // A voice actor's credit list is short by definition; without this the tab reads as
                 // though the app lost their career.
-                if (charactersTotal > 0) {
+                if (staff.voicedCharacters.isNotEmpty()) {
                     item(key = "credits_note") {
                         Spacer(Modifier.height(4.dp))
                         PersonNoteStrip(
-                            text = stringResource(R.string.person_credits_note, charactersTotal),
+                            text = stringResource(R.string.person_credits_note_plain),
                             icon = Icons.Default.Info,
                             modifier = gutter
                         )

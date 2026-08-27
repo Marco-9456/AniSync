@@ -1363,7 +1363,7 @@
     <string name="person_sort_favourites">Most favourited</string>
     <string name="person_sort_name">Name</string>
     <string name="person_sort_most_titles">Most titles</string>
-    <string name="person_credits_note">Voice roles are not credits. All %1$d of them live in the Characters tab.</string>
+    <string name="person_credits_note_plain">Voice roles are not credits. They live in the Characters tab.</string>
     <string name="person_empty_appearances">No appearances match these filters.</string>
     <string name="person_empty_voice_actors">No voice actors for these filters.</string>
     <string name="person_empty_characters">No characters match these filters.</string>

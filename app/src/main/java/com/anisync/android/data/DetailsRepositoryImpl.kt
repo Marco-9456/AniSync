@@ -667,7 +667,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 isFavourite = effectiveIsFav,
                 media = mediaList,
                 hasNextPage = hasNextPage,
-                mediaTotal = pageInfo?.total
+                mediaTotal = pageInfo?.total.exactConnectionTotal()
             )
         }
     }
@@ -987,8 +987,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 hasNextPage = hasNextPage,
                 productionMedia = productionMedia,
                 productionMediaHasNextPage = productionMediaHasNextPage,
-                charactersTotal = pageInfo?.total,
-                productionTotal = staffData.staffMedia?.pageInfo?.total
+                charactersTotal = pageInfo?.total.exactConnectionTotal(),
+                productionTotal = staffData.staffMedia?.pageInfo?.total.exactConnectionTotal()
             )
         }
     }
@@ -1268,6 +1268,17 @@ class DetailsRepositoryImpl @Inject constructor(
 
 // One edge per character, already server-ordered by the characters' own favourites
 // (FAVOURITES_DESC); edge.media carries the roles, so no client-side regrouping.
+/**
+ * AniList reports at most 500 for a nested connection's `pageInfo.total`, and it is the cap rather
+ * than the data: Mayumi Tanaka, Erica Schroeder and Renato Novara all come back as exactly 500
+ * however large their real cast lists are, at any page size (`lastPage` tracks the cap too). A total
+ * sitting on the cap therefore means "at least this many", so it is dropped instead of being shown
+ * as a count — every voice actor claiming 500 roles is worse than claiming none.
+ */
+private const val ANILIST_CONNECTION_TOTAL_CAP = 500
+
+private fun Int?.exactConnectionTotal(): Int? = this?.takeIf { it < ANILIST_CONNECTION_TOTAL_CAP }
+
 private fun StaffVoicedCharacterFields.toDomain(): VoicedCharacter? {
     val character = node ?: return null
     val charId = character.id ?: return null

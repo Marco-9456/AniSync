@@ -321,7 +321,13 @@ private fun CharacterDetailsContent(
     val backdropUrl = remember(character.media) {
         character.media.firstNotNullOfOrNull { it.bannerUrl }
     }
-    val appearanceTotal = character.mediaTotal ?: character.media.size
+    // Exact from the API for a short list, exact from what is loaded once the last page is in, and
+    // absent while AniList is only willing to say "500".
+    val appearanceTotal = if (character.hasNextPage) {
+        character.mediaTotal
+    } else {
+        character.media.size
+    }
 
     val gutter = Modifier.padding(horizontal = 24.dp)
     val mediaTypeOptions = listOf(
@@ -388,7 +394,11 @@ private fun CharacterDetailsContent(
     val facts = characterFacts(character)
     val tabs = listOf(
         PersonTab(stringResource(R.string.person_tab_appearances), appearanceTotal),
-        PersonTab(stringResource(R.string.person_tab_voice_actors), actorEntries.size)
+        PersonTab(
+            stringResource(R.string.person_tab_voice_actors),
+            // The cast is only whole once every appearance page is in.
+            actorEntries.size.takeUnless { character.hasNextPage }
+        )
     )
     val tab = if (selectedTab == 1) CharacterTab.VoiceActors else CharacterTab.Appearances
 
@@ -740,14 +750,18 @@ private fun characterFacts(character: CharacterDetails): List<PersonFact> {
 }
 
 @Composable
-private fun characterMetaLine(character: CharacterDetails, total: Int): String {
+private fun characterMetaLine(character: CharacterDetails, total: Int?): String {
     val mainCount = character.media.count { it.characterRole.equals("MAIN", ignoreCase = true) }
     val role = if (mainCount >= character.media.size - mainCount) {
         stringResource(R.string.person_meta_role_main)
     } else {
         stringResource(R.string.person_meta_role_supporting)
     }
-    return "$role · " + stringResource(R.string.person_meta_titles, total)
+    return if (total == null) {
+        role
+    } else {
+        "$role · " + stringResource(R.string.person_meta_titles, total)
+    }
 }
 
 private fun appearanceMeta(media: CharacterMedia): String = buildList {
