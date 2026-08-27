@@ -45,6 +45,7 @@ import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -94,6 +95,13 @@ import java.util.Locale
  * shell — hero, facts, names, biography, tabbed list — so everything that is not screen-specific
  * lives here rather than being written twice.
  */
+
+/**
+ * Every row in every tab is this tall. A list whose cards breathe differently because one title
+ * wrapped and the next did not reads as broken, so the title always reserves two lines and the
+ * meta line always reserves one.
+ */
+private val PersonRowHeight = 104.dp
 
 private val CardShape = RoundedCornerShape(16.dp)
 private val RowShape = RoundedCornerShape(12.dp)
@@ -789,7 +797,7 @@ fun PersonToggleChip(
  * is the whole point: the old screen flattened every actor into a separate tab where it was
  * impossible to tell who voiced the character in which show.
  */
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AppearanceRow(
     mediaId: Int,
@@ -825,7 +833,9 @@ fun AppearanceRow(
     }
 
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(PersonRowHeight),
         shape = RowShape,
         color = MaterialTheme.colorScheme.surfaceContainer,
         onClick = onClick
@@ -834,23 +844,38 @@ fun AppearanceRow(
             modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AsyncImage(
-                model = cover.url() ?: coverUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .width(56.dp)
-                    .height(80.dp)
-                    .then(coverModifier)
-                    .clip(ThumbShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
+            Box {
+                AsyncImage(
+                    model = cover.url() ?: coverUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .width(56.dp)
+                        .height(80.dp)
+                        .then(coverModifier)
+                        .clip(ThumbShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+                // On the cover, not in the text column: the status chip is the widest thing on the
+                // row and pushed the score and role onto a second line in a narrow pane.
+                LocalLibraryStatuses.current[mediaId]?.let { status ->
+                    ListIndicator(
+                        status = status,
+                        type = null,
+                        style = ListIndicatorStyle.Overlay,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(4.dp)
+                    )
+                }
+            }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelLarge.emphasis(),
                     color = MaterialTheme.colorScheme.onSurface,
+                    minLines = 2,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -863,12 +888,9 @@ fun AppearanceRow(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(6.dp))
-                // Wraps rather than truncating: in a two-column tablet pane the role, score and
-                // list-status pills do not always fit on one line, and a clipped "Watch…" chip is
-                // worse than a second row.
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (!role.isNullOrBlank()) {
                         RolePill(role = role)
@@ -888,13 +910,6 @@ fun AppearanceRow(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    }
-                    LocalLibraryStatuses.current[mediaId]?.let { status ->
-                        ListIndicator(
-                            status = status,
-                            type = null,
-                            style = ListIndicatorStyle.Chip
-                        )
                     }
                 }
             }
@@ -1019,7 +1034,6 @@ fun RolePill(role: String, modifier: Modifier = Modifier) {
  * are a count — the old card expanded inline into every appearance, which for a long-running role
  * meant dozens of rows unfolding inside a five-item preview.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PersonCharacterRow(
     name: String,
@@ -1032,7 +1046,9 @@ fun PersonCharacterRow(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(PersonRowHeight),
         shape = RowShape,
         color = MaterialTheme.colorScheme.surfaceContainer,
         onClick = onClick
@@ -1070,9 +1086,9 @@ fun PersonCharacterRow(
                     )
                 }
                 Spacer(Modifier.height(6.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (!role.isNullOrBlank()) RolePill(role = role)
                     if (primaryTitle != null) {
@@ -1117,7 +1133,9 @@ fun CreditRow(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(PersonRowHeight),
         shape = RowShape,
         color = MaterialTheme.colorScheme.surfaceContainer,
         onClick = onClick
@@ -1151,7 +1169,7 @@ fun CreditRow(
                         text = role,
                         style = MaterialTheme.typography.labelSmall.emphasis(),
                         color = MaterialTheme.colorScheme.primary,
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -1211,10 +1229,16 @@ fun PersonVoiceActorCard(
     }
 }
 
-/** Full-width row that opens the complete list; carries the real total, not "see all". */
+/**
+ * Grows the list in place instead of pushing a grid screen on top of it. Leaving the screen to read
+ * more of the same list broke the visit in two — the reader lost the tabs, the filters and their
+ * place in the list to see row seven.
+ */
 @Composable
-fun PersonSeeAllRow(
-    label: String,
+fun PersonShowMoreRow(
+    shown: Int,
+    total: Int,
+    isLoading: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1222,24 +1246,38 @@ fun PersonSeeAllRow(
         modifier = modifier.fillMaxWidth(),
         shape = RowShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        onClick = onClick
+        onClick = onClick,
+        enabled = !isLoading
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 15.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = label,
+                text = stringResource(R.string.person_show_more),
                 style = MaterialTheme.typography.labelLarge.emphasis(),
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.person_showing_count, shown, total),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f)
             )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(14.dp)
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(16.dp)
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }
