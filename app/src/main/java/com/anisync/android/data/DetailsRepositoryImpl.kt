@@ -634,7 +634,7 @@ class DetailsRepositoryImpl @Inject constructor(
                     isOnList = node.mediaListEntry?.id != null,
                     voiceActors = voiceActorsList
                 )
-            } ?: emptyList()
+            }?.distinctBy { it.id } ?: emptyList()
 
             val serverIsFav = charData.isFavourite ?: false
             // Bridge AniList eventual consistency: clear override if server caught up,
