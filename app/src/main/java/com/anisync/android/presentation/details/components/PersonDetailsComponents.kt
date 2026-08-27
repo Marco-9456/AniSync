@@ -43,7 +43,6 @@ import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -78,6 +77,7 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.domain.CoverImage
 import com.anisync.android.domain.url
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.ListIndicator
 import com.anisync.android.presentation.components.ListIndicatorStyle
 import com.anisync.android.presentation.components.menu.Menu
@@ -1182,13 +1182,12 @@ fun PersonListFooter(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(72.dp),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(
-            strokeWidth = 3.dp,
-            modifier = Modifier.size(32.dp)
-        )
+        // The app's own spinner rather than a bare CircularProgressIndicator: every other screen
+        // loads with the wavy one, and so does the design.
+        AppCircularProgressIndicator()
     }
 }
 
