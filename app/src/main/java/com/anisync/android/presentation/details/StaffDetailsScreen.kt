@@ -51,6 +51,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -88,7 +89,7 @@ import com.anisync.android.presentation.details.components.PersonHero
 import com.anisync.android.presentation.details.components.PersonNamesRow
 import com.anisync.android.presentation.details.components.PersonNamesSheetContent
 import com.anisync.android.presentation.details.components.PersonNoteStrip
-import com.anisync.android.presentation.details.components.PersonShowMoreRow
+import com.anisync.android.presentation.details.components.PersonListFooter
 import com.anisync.android.presentation.details.components.PersonTab
 import com.anisync.android.presentation.details.components.PersonTabs
 import com.anisync.android.presentation.details.components.personGridItems
@@ -303,15 +304,11 @@ private fun StaffDetailsContent(
     var characterSortIndex by rememberSaveable { mutableIntStateOf(0) }
     var roleIndex by rememberSaveable { mutableIntStateOf(0) }
     var creditSortIndex by rememberSaveable { mutableIntStateOf(0) }
-    var visibleCharacters by rememberSaveable { mutableIntStateOf(0) }
-    var visibleCredits by rememberSaveable { mutableIntStateOf(0) }
+
 
     val adaptive = LocalAdaptiveInfo.current
     val wide = adaptive.isExpandedOrWider && adaptive.isTabletDevice
     val columns = if (wide) 2 else 1
-    val pageSize = StaffPreviewCount * columns
-    val shownCharacters = if (visibleCharacters == 0) pageSize else visibleCharacters
-    val shownCredits = if (visibleCredits == 0) pageSize else visibleCredits
     val gutter = Modifier.padding(horizontal = 24.dp)
 
     // A staff member has no banner of their own, so the hero borrows the one from the title they
@@ -458,7 +455,7 @@ private fun StaffDetailsContent(
                     }
                 } else {
                     personGridItems(
-                        items = characters.take(shownCharacters),
+                        items = characters,
                         columns = columns,
                         key = { "character_${it.characterId}" },
                         rowModifier = gutter.padding(bottom = 12.dp)
@@ -475,20 +472,10 @@ private fun StaffDetailsContent(
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    if (characters.size > shownCharacters || staff.hasNextPage) {
-                        item(key = "characters_show_more") {
-                            PersonShowMoreRow(
-                                shown = minOf(shownCharacters, characters.size),
-                                total = charactersTotal,
-                                isLoading = isLoadingMore,
-                                onClick = {
-                                    visibleCharacters = shownCharacters + pageSize
-                                    if (characters.size <= shownCharacters + pageSize) {
-                                        onLoadMoreCharacters()
-                                    }
-                                },
-                                modifier = gutter
-                            )
+                    if (staff.hasNextPage) {
+                        item(key = "characters_footer") {
+                            LaunchedEffect(characters.size) { onLoadMoreCharacters() }
+                            PersonListFooter(modifier = gutter)
                         }
                     }
                 }
@@ -523,7 +510,7 @@ private fun StaffDetailsContent(
                     }
                 } else {
                     personGridItems(
-                        items = credits.take(shownCredits),
+                        items = credits,
                         columns = columns,
                         key = { "credit_${it.mediaId}_${it.staffRole.orEmpty()}" },
                         rowModifier = gutter.padding(bottom = 12.dp)
@@ -538,18 +525,10 @@ private fun StaffDetailsContent(
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    if (credits.size > shownCredits || staff.productionMediaHasNextPage) {
-                        item(key = "credits_show_more") {
-                            PersonShowMoreRow(
-                                shown = minOf(shownCredits, credits.size),
-                                total = creditsTotal,
-                                isLoading = isLoadingMore,
-                                onClick = {
-                                    visibleCredits = shownCredits + pageSize
-                                    if (credits.size <= shownCredits + pageSize) onLoadMoreCredits()
-                                },
-                                modifier = gutter
-                            )
+                    if (staff.productionMediaHasNextPage) {
+                        item(key = "credits_footer") {
+                            LaunchedEffect(credits.size) { onLoadMoreCredits() }
+                            PersonListFooter(modifier = gutter)
                         }
                     }
                 }

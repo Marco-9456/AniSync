@@ -51,6 +51,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -89,11 +90,11 @@ import com.anisync.android.presentation.details.components.PersonFactsCard
 import com.anisync.android.presentation.details.components.PersonHero
 import com.anisync.android.presentation.details.components.PersonNamesRow
 import com.anisync.android.presentation.details.components.PersonNamesSheetContent
-import com.anisync.android.presentation.details.components.PersonShowMoreRow
+import com.anisync.android.presentation.details.components.PersonListFooter
 import com.anisync.android.presentation.details.components.PersonTab
 import com.anisync.android.presentation.details.components.PersonTabs
 import com.anisync.android.presentation.details.components.PersonToggleChip
-import com.anisync.android.presentation.details.components.PersonVoiceActorCard
+import com.anisync.android.presentation.details.components.VoiceActorRow
 import com.anisync.android.presentation.details.components.formatPersonBirthday
 import com.anisync.android.presentation.details.components.personGridItems
 import com.anisync.android.presentation.share.CharacterShareCard
@@ -311,14 +312,11 @@ private fun CharacterDetailsContent(
     var sortIndex by rememberSaveable { mutableIntStateOf(0) }
     var languageIndex by rememberSaveable { mutableIntStateOf(0) }
     var actorSortIndex by rememberSaveable { mutableIntStateOf(0) }
-    var visibleAppearances by rememberSaveable { mutableIntStateOf(0) }
 
     val adaptive = LocalAdaptiveInfo.current
     val wide = adaptive.isExpandedOrWider && adaptive.isTabletDevice
     // A 700dp pane fits two rows side by side; one stretched row wastes half the width.
     val columns = if (wide) 2 else 1
-    val pageSize = PreviewCount * columns
-    val shownAppearances = if (visibleAppearances == 0) pageSize else visibleAppearances
 
     val backdropUrl = remember(character.media) {
         character.media.firstNotNullOfOrNull { it.bannerUrl }
@@ -475,7 +473,7 @@ private fun CharacterDetailsContent(
                     }
                 } else {
                     personGridItems(
-                        items = appearances.take(shownAppearances),
+                        items = appearances,
                         columns = columns,
                         key = { "appearance_${it.id}" },
                         rowModifier = gutter.padding(bottom = 12.dp)
@@ -488,29 +486,19 @@ private fun CharacterDetailsContent(
                             meta = appearanceMeta(media),
                             role = media.characterRole,
                             score = media.averageScore,
-                            voiceActors = media.voiceActors,
                             onClick = { onMediaClick(media.id) },
-                            onVoiceActorClick = onStaffClick,
                             transitionPrefix = TransitionKeys.CHARACTER,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope,
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    val canShowMore = appearances.size > shownAppearances || character.hasNextPage
-                    if (canShowMore) {
-                        item(key = "appearances_show_more") {
-                            PersonShowMoreRow(
-                                shown = minOf(shownAppearances, appearances.size),
-                                total = appearanceTotal,
-                                isLoading = isLoadingMore,
-                                onClick = {
-                                    visibleAppearances = shownAppearances + pageSize
-                                    // Only reaches the network once the loaded page runs out.
-                                    if (appearances.size <= shownAppearances + pageSize) onLoadMore()
-                                },
-                                modifier = gutter
-                            )
+                    if (character.hasNextPage) {
+                        item(key = "appearances_footer") {
+                            // Reaching the footer is the request: the list pages itself as it is
+                            // scrolled rather than making the reader tap for row seven.
+                            LaunchedEffect(appearances.size) { onLoadMore() }
+                            PersonListFooter(modifier = gutter)
                         }
                     }
                 }
@@ -550,32 +538,27 @@ private fun CharacterDetailsContent(
                         )
                     }
                 } else {
-                    val columns = if (wide) 5 else 3
-                    val rows = actors.chunked(columns)
-                    items(rows.size, key = { "actor_row_$it" }) { rowIndex ->
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .then(gutter)
-                                .padding(bottom = 16.dp)
-                        ) {
-                            rows[rowIndex].forEach { (actor, count) ->
-                                PersonVoiceActorCard(
-                                    name = actor.getName(titleLanguage),
-                                    caption = stringResource(
-                                        R.string.person_voice_actor_titles,
-                                        actor.language ?: "",
-                                        count
-                                    ),
-                                    imageUrl = actor.imageUrl,
-                                    onClick = { onStaffClick(actor.id) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            repeat(columns - rows[rowIndex].size) {
-                                Spacer(Modifier.weight(1f))
-                            }
+                    personGridItems(
+                        items = actors,
+                        columns = columns,
+                        key = { "actor_${it.first.id}" },
+                        rowModifier = gutter.padding(bottom = 12.dp)
+                    ) { (actor, count) ->
+                        VoiceActorRow(
+                            name = actor.getName(titleLanguage),
+                            nativeName = actor.nameNative,
+                            language = actor.language,
+                            titleCount = count,
+                            imageUrl = actor.imageUrl,
+                            onClick = { onStaffClick(actor.id) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (character.hasNextPage) {
+                        item(key = "actors_footer") {
+                            // The cast grows with the appearances it is derived from.
+                            LaunchedEffect(actors.size) { onLoadMore() }
+                            PersonListFooter(modifier = gutter)
                         }
                     }
                 }
