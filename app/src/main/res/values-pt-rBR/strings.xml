@@ -1640,4 +1640,11 @@
     <string name="cd_decrease_progress">Reduzir</string>
     <string name="cd_increase_progress">Aumentar</string>
     <string name="cd_clear_date">Limpar data</string>
+    <string name="sort_default">Padrão</string>
+    <string name="sort_popularity">Popularidade</string>
+    <string name="sort_average_score">Nota Média</string>
+    <string name="sort_favorites">Favoritos</string>
+    <string name="sort_newest">Mais novo</string>
+    <string name="sort_oldest">Mais antigo</string>
+    <string name="sort_title">Título</string>
 </resources>
