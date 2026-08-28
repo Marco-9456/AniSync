@@ -1,12 +1,60 @@
 package com.anisync.android.presentation.library
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
+import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
+
+/**
+ * The filters the library can apply on top of a list.
+ *
+ * Every field here is answerable from data already cached on [LibraryEntry], which is the whole
+ * constraint: a filter that needed a network round trip would be a different feature.
+ */
+@Immutable
+data class LibraryFilters(
+    val formats: Set<MediaFormat> = emptySet(),
+    /** Raw AniList `MediaStatus` names — RELEASING, FINISHED, NOT_YET_RELEASED, … */
+    val airingStatuses: Set<String> = emptySet(),
+    val genres: Set<String> = emptySet()
+) {
+    val activeCount: Int get() = formats.size + airingStatuses.size + genres.size
+    val isEmpty: Boolean get() = activeCount == 0
+
+    fun matches(entry: LibraryEntry): Boolean {
+        if (formats.isNotEmpty() && entry.format !in formats) return false
+        if (airingStatuses.isNotEmpty() && entry.mediaStatus !in airingStatuses) return false
+        if (genres.isNotEmpty() && entry.genres.none { it in genres }) return false
+        return true
+    }
+
+    companion object {
+        val None = LibraryFilters()
+    }
+}
+
+/** Which of the two batch operations that cost one request per entry is running. */
+enum class BulkKind { ADD_TO_LIST, REMOVE }
+
+/**
+ * Progress of a running batch.
+ *
+ * Only the per-entry operations report progress. Status, score and private are a single
+ * `UpdateMediaListEntries` call and complete without a dialog.
+ */
+@Immutable
+data class BulkOperation(
+    val kind: BulkKind,
+    val done: Int,
+    val total: Int,
+    /** The custom list being filled, for [BulkKind.ADD_TO_LIST]. */
+    val listName: String? = null
+)
 
 @Stable
 data class LibraryUiState(
@@ -37,11 +85,44 @@ data class LibraryUiState(
     val activeSearchCategory: String = LIBRARY_ALL_TAB_ID,
     val showPrivateEntries: Boolean = true,
     val showScoreOnCards: Boolean = true,
-    val isGridView: Boolean = true,
+    /** Layout per tab id; a tab absent here follows [defaultGridForTab]. */
+    val tabViewModes: Map<String, Boolean> = emptyMap(),
+    val filters: LibraryFilters = LibraryFilters.None,
+    /** Every genre present in the loaded library, sorted, for the filter sheet. */
+    val availableGenres: List<String> = emptyList(),
+    /** Every format present in the loaded library, in declaration order, for the filter sheet. */
+    val availableFormats: List<MediaFormat> = emptyList(),
+    /** Every AniList media status present in the loaded library, for the filter sheet. */
+    val availableAiringStatuses: List<String> = emptyList(),
+    /**
+     * Media list entry ids ([LibraryEntry.id]) in the current selection.
+     *
+     * Entry ids, not media ids: `UpdateMediaListEntries` and `DeleteMediaListEntry` both key off
+     * the list entry, while the +1 path keys off the media.
+     */
+    val selectedEntryIds: Set<Int> = emptySet(),
+    /** The tab the selection was started in. Selection never spans lists. */
+    val selectionTabId: String? = null,
+    val bulkOperation: BulkOperation? = null,
     val initialTabId: String? = null,
     val isLoading: Boolean = true,
     val errorMessage: String? = null
-)
+) {
+    val isSelectionMode: Boolean get() = selectionTabId != null
+
+    /** True when [tabId] should render the poster grid rather than the queue rows. */
+    fun isGridFor(tabId: String): Boolean = tabViewModes[tabId] ?: defaultGridForTab(tabId)
+}
+
+/**
+ * Rows for the two lists you advance episode by episode, a poster grid everywhere else.
+ *
+ * The library serves two jobs from one screen: a queue you act on, and a shelf you browse. The
+ * default splits them without asking, and [LibraryAction.SetTabViewMode] overrides it per list.
+ */
+fun defaultGridForTab(tabId: String): Boolean =
+    tabId != "status:${LibraryStatus.CURRENT.name}" &&
+        tabId != "status:${LibraryStatus.REPEATING.name}"
 
 enum class LibrarySort {
     TITLE,
@@ -71,7 +152,26 @@ sealed interface LibraryAction {
     data class CreateCustomList(val listName: String, val type: MediaType) : LibraryAction
     data class DeleteCustomList(val listName: String) : LibraryAction
     data class TogglePrivateVisibility(val show: Boolean) : LibraryAction
-    data class SetGridView(val isGrid: Boolean) : LibraryAction
+    data class SetTabViewMode(val tabId: String, val isGrid: Boolean) : LibraryAction
     data class OnTabSelected(val tabId: String) : LibraryAction
     data object ConsumeInitialTab : LibraryAction
+
+    data class SetFilters(val filters: LibraryFilters) : LibraryAction
+    data object ClearFilters : LibraryAction
+
+    /** Long-press on a row. Starts selection in [tabId] with [entryId] already ticked. */
+    data class EnterSelection(val entryId: Int, val tabId: String) : LibraryAction
+    data class ToggleSelection(val entryId: Int) : LibraryAction
+    data class SelectAll(val entryIds: List<Int>) : LibraryAction
+    data object ClearSelection : LibraryAction
+
+    /** One `UpdateMediaListEntries` call, whatever the selection size. */
+    data class BulkSetStatus(val status: LibraryStatus) : LibraryAction
+    data class BulkSetScore(val score: Double) : LibraryAction
+    data class BulkSetPrivate(val isPrivate: Boolean) : LibraryAction
+
+    /** One request per entry. Reports progress and can be cancelled. */
+    data class BulkAddToCustomList(val listName: String) : LibraryAction
+    data object BulkRemove : LibraryAction
+    data object CancelBulkOperation : LibraryAction
 }

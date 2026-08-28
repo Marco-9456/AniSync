@@ -1960,4 +1960,49 @@
 
     <!-- AniList link card -->
     <string name="link_card_view_activity">View activity</string>
+
+    <!-- Library redesign -->
+    <string name="select_all">Select all</string>
+    <string name="media_status_releasing">Releasing</string>
+    <string name="a11y_action_select_entry">Select entry</string>
+    <string name="a11y_action_mark_episode">Mark episode %1$d watched</string>
+    <string name="library_episode_out_now">EP %1$d out now</string>
+    <string name="library_all_caught_up">Up to date</string>
+    <string name="library_episode_count">%1$d eps</string>
+    <string name="library_chapter_count">%1$d ch</string>
+    <string name="library_filters">Filters</string>
+    <string name="library_sort_and_filter">Sort &amp; filter</string>
+    <string name="library_sort_by_label">Sort by</string>
+    <string name="library_filter_airing_status">Airing status</string>
+    <string name="library_filter_format">Format</string>
+    <string name="library_filter_genre">Genre</string>
+    <string name="library_filter_more">+ %1$d more</string>
+    <string name="library_show_results">Show %1$d titles</string>
+    <string name="library_group_ready">Ready to watch</string>
+    <string name="library_group_waiting">Waiting</string>
+    <string name="library_show_private">Private entries</string>
+    <string name="library_on">On</string>
+    <string name="library_off">Off</string>
+    <string name="library_refresh">Refresh library</string>
+    <string name="library_exit_selection">Leave selection</string>
+    <string name="library_selected_count">%1$d selected</string>
+    <string name="library_selection_scope">in %1$s · %2$s</string>
+    <string name="library_bulk_status">Status</string>
+    <string name="library_bulk_score">Score</string>
+    <string name="library_bulk_add_to_list">Add to list</string>
+    <string name="library_edit_entry">Edit entry</string>
+    <string name="library_make_private">Make private</string>
+    <string name="library_make_public">Make public</string>
+    <string name="library_remove_from_library">Remove from library</string>
+    <string name="library_set_status">Set status</string>
+    <string name="library_set_score">Set score</string>
+    <string name="library_add_to_list">Add to list</string>
+    <string name="library_no_custom_lists">You have no custom lists yet. Create one from the list manager.</string>
+    <string name="library_bulk_one_request">Applies to %1$d entries in one request.</string>
+    <string name="library_move_count_to">Move %1$d to %2$s</string>
+    <string name="library_score_count">Score %1$d entries</string>
+    <string name="library_removing_title">Removing %1$d entries</string>
+    <string name="library_adding_title">Adding %1$d entries to %2$s</string>
+    <string name="library_bulk_per_entry_explainer">AniList handles one entry per request here, so this runs at the client rate limit of 25 a minute. Leaving the screen keeps it running.</string>
+    <string name="library_bulk_progress">%1$d of %2$d done</string>
 </resources>
