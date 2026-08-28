@@ -134,7 +134,7 @@ fun CharacterDetailsScreen(
     // The wide layout hands the name to the banner as the header collapses, so the app bar title
     // would only say it twice.
     val adaptive = LocalAdaptiveInfo.current
-    val wideLayout = adaptive.isExpandedOrWider && adaptive.isTabletDevice
+    val wideLayout = adaptive.supportsTwoPane
 
     val chromeActions: @Composable RowScope.() -> Unit = {
         details?.let {
@@ -314,7 +314,7 @@ private fun CharacterDetailsContent(
     var actorSortIndex by rememberSaveable { mutableIntStateOf(0) }
 
     val adaptive = LocalAdaptiveInfo.current
-    val wide = adaptive.isExpandedOrWider && adaptive.isTabletDevice
+    val wide = adaptive.supportsTwoPane
     // A 700dp pane fits two rows side by side; one stretched row wastes half the width.
     val columns = if (wide) 2 else 1
 

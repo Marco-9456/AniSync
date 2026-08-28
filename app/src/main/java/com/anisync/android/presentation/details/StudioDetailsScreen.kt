@@ -117,7 +117,7 @@ fun StudioDetailsScreen(
     // The wide layout carries the name on the banner as the header collapses, so the app bar
     // would only say it twice.
     val adaptive = LocalAdaptiveInfo.current
-    val wideLayout = adaptive.isExpandedOrWider && adaptive.isTabletDevice
+    val wideLayout = adaptive.supportsTwoPane
 
     val chromeActions: @Composable RowScope.() -> Unit = {
         details?.let {
@@ -276,7 +276,7 @@ private fun StudioDetailsContent(
     var onListOnly by rememberSaveable { mutableStateOf(false) }
 
     val adaptive = LocalAdaptiveInfo.current
-    val wide = adaptive.isExpandedOrWider && adaptive.isTabletDevice
+    val wide = adaptive.supportsTwoPane
     val columns = if (wide) 2 else 1
     val gutter = Modifier.padding(horizontal = 24.dp)
     val uriHandler = LocalUriHandler.current

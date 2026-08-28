@@ -1,10 +1,13 @@
 package com.anisync.android.presentation.util
 
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
@@ -108,12 +111,7 @@ fun rememberAdaptiveInfo(): AdaptiveInfo {
     val windowSize = currentWindowSize()
     val widthDp = with(density) { windowSize.width.toDp() }
     val heightDp = with(density) { windowSize.height.toDp() }
-    val widthClass = when {
-        widthDp >= LARGE_LOWER_BOUND -> WidthSizeClass.LARGE
-        widthDp >= EXPANDED_LOWER_BOUND -> WidthSizeClass.EXPANDED
-        widthDp >= MEDIUM_LOWER_BOUND -> WidthSizeClass.MEDIUM
-        else -> WidthSizeClass.COMPACT
-    }
+    val widthClass = widthClassFor(widthDp)
     // Two panes only on tablet-class devices (see [TABLET_SW_MIN_DP]); a phone in landscape reports an
     // expanded width but must stay single-pane. smallestScreenWidthDp is orientation-independent, so
     // it identifies the device, not the current rotation.
@@ -126,17 +124,59 @@ fun rememberAdaptiveInfo(): AdaptiveInfo {
             isTabletDevice = isTabletClass,
             isCompactHeight = isCompactHeight,
             paneCount = if (isTabletClass && expandedWidth) 2 else 1,
-            contentMaxWidth = when (widthClass) {
-                WidthSizeClass.COMPACT -> Dp.Unspecified
-                WidthSizeClass.MEDIUM -> 600.dp
-                WidthSizeClass.EXPANDED -> 840.dp
-                WidthSizeClass.LARGE -> 960.dp
-            },
-            pagePadding = when (widthClass) {
-                WidthSizeClass.COMPACT -> 16.dp
-                else -> 24.dp
-            },
+            contentMaxWidth = contentMaxWidthFor(widthClass),
+            pagePadding = pagePaddingFor(widthClass),
         )
+    }
+}
+
+private fun widthClassFor(width: Dp): WidthSizeClass = when {
+    width >= LARGE_LOWER_BOUND -> WidthSizeClass.LARGE
+    width >= EXPANDED_LOWER_BOUND -> WidthSizeClass.EXPANDED
+    width >= MEDIUM_LOWER_BOUND -> WidthSizeClass.MEDIUM
+    else -> WidthSizeClass.COMPACT
+}
+
+private fun contentMaxWidthFor(widthClass: WidthSizeClass): Dp = when (widthClass) {
+    WidthSizeClass.COMPACT -> Dp.Unspecified
+    WidthSizeClass.MEDIUM -> 600.dp
+    WidthSizeClass.EXPANDED -> 840.dp
+    WidthSizeClass.LARGE -> 960.dp
+}
+
+private fun pagePaddingFor(widthClass: WidthSizeClass): Dp = when (widthClass) {
+    WidthSizeClass.COMPACT -> 16.dp
+    else -> 24.dp
+}
+
+/**
+ * Re-reads the window's [AdaptiveInfo] against a container [width] rather than the whole window.
+ *
+ * A pane never reports two panes however wide it gets: a screen that lays itself out as a two-pane
+ * would split the pane it is already sitting in, which is how a character or studio screen opened
+ * from search ended up as panes inside a pane.
+ */
+fun AdaptiveInfo.forContainerWidth(width: Dp): AdaptiveInfo {
+    val containerClass = widthClassFor(width)
+    return copy(
+        widthClass = containerClass,
+        paneCount = 1,
+        contentMaxWidth = contentMaxWidthFor(containerClass),
+        pagePadding = pagePaddingFor(containerClass),
+    )
+}
+
+/**
+ * Publishes an [AdaptiveInfo] measured from this container instead of the window, so everything
+ * inside lays itself out for the room it actually has. Wrap a detail pane's content in it.
+ */
+@Composable
+fun ContainerAdaptiveScope(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val window = LocalAdaptiveInfo.current
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val width = maxWidth
+        val scoped = remember(window, width) { window.forContainerWidth(width) }
+        CompositionLocalProvider(LocalAdaptiveInfo provides scoped, content = content)
     }
 }
 
