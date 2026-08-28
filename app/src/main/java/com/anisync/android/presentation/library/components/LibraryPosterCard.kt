@@ -394,6 +394,8 @@ private fun PosterMetaRow(
                 )
             } else {
                 Text(
+                    // A run with no length still reports where you are in it, rather than a bare
+                    // question mark.
                     text = if (total != null) {
                         stringResource(
                             if (mediaType == MediaType.MANGA) {
@@ -404,7 +406,11 @@ private fun PosterMetaRow(
                             total
                         )
                     } else {
-                        stringResource(R.string.progress_unknown)
+                        stringResource(
+                            R.string.progress_format,
+                            entry.progress,
+                            stringResource(R.string.progress_unknown)
+                        )
                     },
                     fontSize = 13.sp,
                     lineHeight = 18.sp,

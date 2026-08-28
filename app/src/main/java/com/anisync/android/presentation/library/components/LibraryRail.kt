@@ -100,9 +100,18 @@ fun LibraryRail(
         }
 
         // Pinned type toggle, with a short fade so a chip scrolling under it does not collide.
+        // The plate has to be opaque across the whole pinned width, including the leading inset and
+        // the seam between the two segments, or chips show through the gaps as they scroll past.
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Spacer(Modifier.width(16.dp))
-            MediaTypeToggle(selected = mediaType, onSelect = onMediaTypeChange)
+            Row(
+                modifier = Modifier
+                    .background(background)
+                    .height(RailHeight)
+                    .padding(start = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                MediaTypeToggle(selected = mediaType, onSelect = onMediaTypeChange)
+            }
             Box(
                 modifier = Modifier
                     .width(8.dp)

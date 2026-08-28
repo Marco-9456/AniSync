@@ -33,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -303,7 +304,11 @@ fun BulkStatusSheet(
         )
     }
 
-    FilterSheetScaffold(title = stringResource(R.string.library_set_status), onDismiss = onDismiss) {
+    FilterSheetScaffold(
+        title = stringResource(R.string.library_set_status),
+        onDismiss = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
         statuses.forEach { status ->
             FilterOptionRow(
                 label = status.toLabel(mediaType),
@@ -398,7 +403,11 @@ fun BulkScoreSheet(
     }
     var value by remember { mutableFloatStateOf(max / 2f) }
 
-    FilterSheetScaffold(title = stringResource(R.string.library_set_score), onDismiss = onDismiss) {
+    FilterSheetScaffold(
+        title = stringResource(R.string.library_set_score),
+        onDismiss = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             Text(
                 text = formatScore(value.toDouble(), format),
@@ -447,7 +456,11 @@ fun BulkAddToListSheet(
     onDismiss: () -> Unit
 ) {
     if (!visible) return
-    FilterSheetScaffold(title = stringResource(R.string.library_add_to_list), onDismiss = onDismiss) {
+    FilterSheetScaffold(
+        title = stringResource(R.string.library_add_to_list),
+        onDismiss = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
         if (lists.isEmpty()) {
             Text(
                 text = stringResource(R.string.library_no_custom_lists),

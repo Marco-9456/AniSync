@@ -501,7 +501,14 @@ fun LibraryScreen(
                             val isGrid = uiState.isGridFor(tabId)
                             val tabLabel = tab.getLabel(mediaType)
 
+                            // One state per layout. AnimatedContent composes both during the
+                            // crossfade, and a LazyGridState attached to two grids at once
+                            // scrambles the scroll position.
                             val gridState = rememberSaveable(
+                                tabLabel, sortOption, isAscending, uiState.filters,
+                                saver = LazyGridState.Saver
+                            ) { LazyGridState() }
+                            val rowState = rememberSaveable(
                                 tabLabel, sortOption, isAscending, uiState.filters,
                                 saver = LazyGridState.Saver
                             ) { LazyGridState() }
@@ -524,7 +531,7 @@ fun LibraryScreen(
                                     tab = tab,
                                     entries = entries,
                                     isGrid = grid,
-                                    gridState = gridState,
+                                    gridState = if (grid) gridState else rowState,
                                     hasQuickProgress = hasQuickProgress,
                                     mediaType = mediaType,
                                     titleLanguage = titleLanguage,

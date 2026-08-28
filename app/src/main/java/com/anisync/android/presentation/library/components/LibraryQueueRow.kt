@@ -44,7 +44,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,7 +64,6 @@ import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.bouncyCombinedClickable
-import com.anisync.android.presentation.util.formatEpisodesBehind
 import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
@@ -209,9 +212,9 @@ fun LibraryQueueRow(
                         entry = entry,
                         total = total,
                         aired = aired,
-                        modifier = Modifier.weight(1f, fill = false)
+                        modifier = Modifier.weight(1f)
                     )
-                    Spacer(Modifier.weight(1f))
+                    Spacer(Modifier.width(8.dp))
                     Text(
                         text = stringResource(
                             R.string.progress_format,
@@ -344,77 +347,71 @@ private fun QueueStateLine(
     val ready = behind > 0 && entry.status == LibraryStatus.CURRENT
     val countdown = entry.dynamicTimeUntilAiring
     val nextEpisode = entry.nextAiringEpisode
+    val tertiary = MaterialTheme.colorScheme.tertiary
+
+    // One annotated string rather than several Texts: separate nodes let the row clip the last one
+    // and leave an orphaned separator behind when a title runs long.
+    val readyText = stringResource(R.string.library_episode_out_now, entry.progress + 1)
+    val behindText = if (behind > 1) stringResource(R.string.library_episodes_behind_short, behind) else null
+    val label: AnnotatedString? = when {
+        ready -> buildAnnotatedString {
+            append(readyText)
+            if (behindText != null) {
+                append(" · ")
+                withStyle(SpanStyle(color = tertiary)) { append(behindText) }
+            }
+        }
+
+        countdown != null && nextEpisode != null -> AnnotatedString(
+            stringResource(
+                R.string.airing_episode_in,
+                nextEpisode,
+                formatTimeUntilAiring(countdown)
+            )
+        )
+
+        total != null && entry.progress >= total ->
+            AnnotatedString(stringResource(R.string.library_all_caught_up))
+
+        else -> null
+    }
+    if (label == null) return
 
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        when {
-            ready -> {
-                Box(
-                    modifier = Modifier
-                        .size(7.dp)
-                        .clip(CircleShape)
-                        .background(listIndicatorColor(ListIndicatorKind.WATCHING).content)
-                )
-                Text(
-                    text = stringResource(R.string.library_episode_out_now, entry.progress + 1),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (behind > 1) {
-                    Text(
-                        text = "·",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = formatEpisodesBehind(behind),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        maxLines = 1
-                    )
-                }
-            }
-
-            countdown != null && nextEpisode != null -> {
-                Icon(
-                    imageVector = Icons.Default.Schedule,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(13.dp)
-                )
-                Text(
-                    text = stringResource(
-                        R.string.airing_episode_in,
-                        nextEpisode,
-                        formatTimeUntilAiring(countdown)
-                    ),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            total != null && entry.progress >= total -> {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(13.dp)
-                )
-                Text(
-                    text = stringResource(R.string.library_all_caught_up),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
-            }
+        if (ready) {
+            Box(
+                modifier = Modifier
+                    .size(7.dp)
+                    .clip(CircleShape)
+                    .background(listIndicatorColor(ListIndicatorKind.WATCHING).content)
+            )
+        } else {
+            Icon(
+                imageVector = if (total != null && entry.progress >= total) {
+                    Icons.Default.Check
+                } else {
+                    Icons.Default.Schedule
+                },
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(13.dp)
+            )
         }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (ready) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

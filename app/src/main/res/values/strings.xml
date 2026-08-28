@@ -1978,6 +1978,7 @@
     <string name="library_filter_genre">Genre</string>
     <string name="library_filter_more">+ %1$d more</string>
     <string name="library_show_results">Show %1$d titles</string>
+    <string name="library_episodes_behind_short">%1$d behind</string>
     <string name="library_group_ready">Ready to watch</string>
     <string name="library_group_waiting">Waiting</string>
     <string name="library_show_private">Private entries</string>
