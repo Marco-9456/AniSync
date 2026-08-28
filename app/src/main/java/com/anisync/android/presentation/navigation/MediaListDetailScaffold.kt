@@ -496,7 +496,8 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             studioId = route.studioId,
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
             onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
-            onMediaSeeAllClick = { sId, sName -> paneNav.navigate(StudioMediaGrid(sId, sName)) },
+            sharedTransitionScope = sharedScope,
+            animatedVisibilityScope = this,
         )
     }
 

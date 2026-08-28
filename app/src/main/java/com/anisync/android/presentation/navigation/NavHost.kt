@@ -774,9 +774,8 @@ fun AniSyncNavHost(
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, "studio"))
                     },
-                    onMediaSeeAllClick = { studioId, studioName ->
-                        navController.navigate(StudioMediaGrid(studioId, studioName))
-                    }
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this
                 )
             }
 

@@ -563,10 +563,29 @@
     <string name="studio_label_animation_studio">Animation Studio</string>
     <string name="studio_label_other_studio">Studio</string>
     <string name="studio_label_works">Works</string>
+    <!-- Retired with the studio screen rebuild, kept until Weblate drops the translations. -->
     <string name="studio_label_total_works">Total works</string>
     <string name="studio_label_website">Website</string>
     <string name="studio_label_type">Type</string>
     <string name="studio_main_studio_chip">Main Studio</string>
+    <string name="studio_role_co_production">Co-production</string>
+    <string name="studio_stat_on_your_list">On your list</string>
+    <string name="studio_stat_average_score">Average score</string>
+    <string name="studio_stat_lead_studio">Lead studio</string>
+    <string name="studio_stat_span">Span</string>
+    <string name="studio_sort_title">Title</string>
+    <string name="studio_filter_any_format">Any format</string>
+    <string name="studio_open_on_anilist">View on AniList</string>
+    <string name="studio_empty_works">No works match these filters.</string>
+    <plurals name="studio_titles_count">
+        <item quantity="one">%d title</item>
+        <item quantity="other">%d titles</item>
+    </plurals>
+    <plurals name="studio_stats_scope">
+        <item quantity="one">Averaged over the %d title loaded so far</item>
+        <item quantity="other">Averaged over the %d titles loaded so far</item>
+    </plurals>
+    <string name="cd_studio_mark">Covers from %1$s</string>
     <string name="clip_label_external_link">External link (%1$s)</string>
 
     <string name="control_log_out">Log Out</string>

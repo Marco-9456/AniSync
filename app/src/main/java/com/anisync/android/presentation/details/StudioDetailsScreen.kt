@@ -1,106 +1,145 @@
 package com.anisync.android.presentation.details
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import com.anisync.android.ui.theme.ExpressiveShapes
-import com.anisync.android.presentation.util.LocalPaneIsRoot
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
-import com.anisync.android.presentation.components.AppCircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.StudioDetails
 import com.anisync.android.domain.StudioMediaEntry
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.HeaderLevel
-import com.anisync.android.presentation.components.ListIndicator
-import com.anisync.android.presentation.components.ListIndicatorStyle
-import com.anisync.android.presentation.util.LocalLibraryStatuses
-import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.presentation.components.SectionHeader
-import com.anisync.android.presentation.details.components.AttributesCard
+import com.anisync.android.presentation.details.components.AppearanceRow
+import com.anisync.android.presentation.details.components.CharacterSkeletonContent
+import com.anisync.android.presentation.details.components.PersonDropdownChip
+import com.anisync.android.presentation.details.components.PersonEmptyState
+import com.anisync.android.presentation.details.components.PersonFact
+import com.anisync.android.presentation.details.components.PersonFactsCard
+import com.anisync.android.presentation.details.components.PersonHero
+import com.anisync.android.presentation.details.components.PersonListFooter
+import com.anisync.android.presentation.details.components.PersonToggleChip
+import com.anisync.android.presentation.details.components.StudioCoverMark
+import com.anisync.android.presentation.details.components.StudioLinkRow
+import com.anisync.android.presentation.details.components.personGridItems
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
+import com.anisync.android.presentation.util.LocalLibraryStatuses
+import com.anisync.android.presentation.util.LocalPaneIsRoot
+import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.formatAsTitle
-import com.anisync.android.ui.theme.emphasis
-import java.text.NumberFormat
-import java.util.Locale
+import com.anisync.android.ui.theme.StarGold
+import com.anisync.android.util.getTitle
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun StudioDetailsScreen(
     studioId: Int,
     onBackClick: () -> Unit,
     onMediaClick: (Int) -> Unit = {},
-    onMediaSeeAllClick: (Int, String) -> Unit = { _, _ -> },
-    viewModel: StudioDetailsViewModel = hiltViewModel()
+    viewModel: StudioDetailsViewModel = hiltViewModel(),
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val isScrolled by remember {
         derivedStateOf { scrollBehavior.state.contentOffset < -50f }
+    }
+    val details = (uiState as? StudioDetailsUiState.Success)?.details
+    // The wide layout carries the name on the banner as the header collapses, so the app bar
+    // would only say it twice.
+    val adaptive = LocalAdaptiveInfo.current
+    val wideLayout = adaptive.isExpandedOrWider && adaptive.isTabletDevice
+
+    val chromeActions: @Composable RowScope.() -> Unit = {
+        details?.let {
+            BannerIconButton(
+                icon = if (it.isFavourite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = stringResource(R.string.a11y_person_favourite),
+                onClick = viewModel::toggleFavourite,
+                tint = if (it.isFavourite) MaterialTheme.colorScheme.error else Color.White
+            )
+        }
+        BannerIconButton(
+            icon = Icons.Default.Share,
+            contentDescription = stringResource(R.string.cd_share),
+            onClick = { viewModel.shareStudio(context) }
+        )
+        if (LocalPaneIsRoot.current) {
+            BannerIconButton(
+                icon = Icons.Default.Close,
+                contentDescription = stringResource(R.string.pane_close),
+                onClick = onBackClick
+            )
+        }
     }
 
     Scaffold(
@@ -108,7 +147,13 @@ fun StudioDetailsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            val title = (uiState as? StudioDetailsUiState.Success)?.details?.name ?: ""
+            if (wideLayout) return@Scaffold
+            val title = details?.name ?: ""
+            val iconTint by animateColorAsState(
+                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
+                label = "studioIconTint"
+            )
+
             TopAppBar(
                 title = {
                     AnimatedVisibility(
@@ -129,29 +174,41 @@ fun StudioDetailsScreen(
                         IconButton(onClick = onBackClick) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back)
+                                contentDescription = stringResource(R.string.back),
+                                tint = iconTint
                             )
                         }
                     }
                 },
                 actions = {
-                    val isLoaded = uiState is StudioDetailsUiState.Success
+                    // Favouriting lives here rather than in a pill beside the count: the old pill
+                    // only appeared once a studio already had favourites, so nobody could give the
+                    // first one.
+                    if (details != null) {
+                        AnimatedFavoriteButton(
+                            isFavorite = details.isFavourite,
+                            onClick = viewModel::toggleFavourite,
+                            inactiveColor = iconTint
+                        )
+                    }
                     IconButton(
                         onClick = { viewModel.shareStudio(context) },
-                        enabled = isLoaded
+                        enabled = details != null
                     ) {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = stringResource(R.string.cd_share)
+                            contentDescription = stringResource(R.string.cd_share),
+                            tint = iconTint
                         )
                     }
-                    // At a two-pane detail root the close (✕) is the trailing-most action (right-thumb
-                    // reach) in place of a leading back arrow.
+                    // At a two-pane detail root the close (✕) is the trailing-most action
+                    // (right-thumb reach) in place of a leading back arrow.
                     if (LocalPaneIsRoot.current) {
                         IconButton(onClick = onBackClick) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = stringResource(R.string.pane_close)
+                                contentDescription = stringResource(R.string.pane_close),
+                                tint = iconTint
                             )
                         }
                     }
@@ -160,7 +217,6 @@ fun StudioDetailsScreen(
                     containerColor = Color.Transparent,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
                     actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 scrollBehavior = scrollBehavior
@@ -174,22 +230,19 @@ fun StudioDetailsScreen(
         ) {
             when (val state = uiState) {
                 is StudioDetailsUiState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AppCircularProgressIndicator()
-                    }
+                    CharacterSkeletonContent(onBackClick = onBackClick)
                 }
 
                 is StudioDetailsUiState.Success -> {
                     StudioDetailsContent(
                         studio = state.details,
+                        titleLanguage = titleLanguage,
                         onMediaClick = onMediaClick,
-                        onFavouriteClick = viewModel::toggleFavourite,
-                        onMediaSeeAllClick = {
-                            onMediaSeeAllClick(state.details.id, state.details.name)
-                        }
+                        onLoadMore = viewModel::loadMoreMedia,
+                        onBackClick = onBackClick,
+                        chromeActions = chromeActions,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
                     )
                 }
 
@@ -205,315 +258,319 @@ fun StudioDetailsScreen(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun StudioDetailsContent(
     studio: StudioDetails,
+    titleLanguage: TitleLanguage,
     onMediaClick: (Int) -> Unit,
-    onFavouriteClick: () -> Unit,
-    onMediaSeeAllClick: () -> Unit
+    onLoadMore: () -> Unit,
+    onBackClick: () -> Unit,
+    chromeActions: @Composable RowScope.() -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
-    val uriHandler = LocalUriHandler.current
-    val listState = rememberLazyListState()
+    var sortIndex by rememberSaveable { mutableIntStateOf(0) }
+    var formatIndex by rememberSaveable { mutableIntStateOf(0) }
+    var mainStudioOnly by rememberSaveable { mutableStateOf(false) }
+    var onListOnly by rememberSaveable { mutableStateOf(false) }
 
-    val previewMedia = remember(studio.media) { studio.media.take(WORKS_PREVIEW_COUNT) }
-    val hasMore = studio.media.size > WORKS_PREVIEW_COUNT || studio.hasNextPage
+    val adaptive = LocalAdaptiveInfo.current
+    val wide = adaptive.isExpandedOrWider && adaptive.isTabletDevice
+    val columns = if (wide) 2 else 1
+    val gutter = Modifier.padding(horizontal = 24.dp)
+    val uriHandler = LocalUriHandler.current
+    val listStatuses = LocalLibraryStatuses.current
+
+    // A studio has no banner of its own, so the hero borrows the one from the work it is best
+    // known for and says so, exactly as the person screens do.
+    val backdrop = remember(studio.media, titleLanguage) {
+        studio.media.firstOrNull { it.bannerUrl != null }
+            ?.let { it.bannerUrl to it.getTitle(titleLanguage) }
+    }
+    // Work the studio led comes first: a co-production is a poor face for the studio, and the
+    // API already hands the list over in popularity order.
+    val markSources = remember(studio.media) { studio.media.sortedByDescending { it.isMainStudio } }
+    val markCovers = markSources.take(4).mapNotNull { it.cover.url() ?: it.coverUrl }
+
+    // Exact from the API for a short catalogue, exact from what is loaded once the last page is
+    // in, and absent while AniList is only willing to say "500".
+    val worksTotal = if (studio.hasNextPage) studio.mediaTotal else studio.media.size
 
     val typeLabel = stringResource(
         if (studio.isAnimationStudio) R.string.studio_label_animation_studio
         else R.string.studio_label_other_studio
     )
-    val typeRowLabel = stringResource(R.string.studio_label_type)
-    val totalWorksLabel = stringResource(R.string.studio_label_total_works)
-    val displayAttributes = remember(studio, typeLabel, typeRowLabel, totalWorksLabel) {
-        buildList {
-            add(typeRowLabel to typeLabel)
-            val total = if (studio.hasNextPage) "${studio.media.size}+" else studio.media.size.toString()
-            add(totalWorksLabel to total)
+    val metaLine = if (worksTotal != null) {
+        "$typeLabel · " + pluralStringResource(R.plurals.studio_titles_count, worksTotal, worksTotal)
+    } else {
+        typeLabel
+    }
+
+    val onListCount = studio.media.count { listStatuses.containsKey(it.mediaId) }
+    val facts = studioFacts(studio = studio, onListCount = onListCount)
+
+    val anyFormatLabel = stringResource(R.string.studio_filter_any_format)
+    val formats = remember(studio.media) {
+        studio.media.mapNotNull { it.format }.distinct().sorted()
+    }
+    val formatOptions = remember(formats, anyFormatLabel) {
+        listOf(anyFormatLabel) + formats.map { format -> format.formatAsTitle() ?: format }
+    }
+    val sortOptions = listOf(
+        stringResource(R.string.person_sort_popularity),
+        stringResource(R.string.person_sort_newest),
+        stringResource(R.string.person_sort_score),
+        stringResource(R.string.studio_sort_title)
+    )
+
+    val works = remember(
+        studio.media,
+        sortIndex,
+        formatIndex,
+        mainStudioOnly,
+        onListOnly,
+        listStatuses,
+        formats,
+        titleLanguage
+    ) {
+        val filtered = studio.media
+            .filter { !mainStudioOnly || it.isMainStudio }
+            .filter { !onListOnly || listStatuses.containsKey(it.mediaId) }
+            .filter { formatIndex == 0 || it.format == formats.getOrNull(formatIndex - 1) }
+        // Popularity is the order the API paged in, so leaving it alone is what keeps a later
+        // page from landing above the viewport. Every other order re-sorts what is loaded.
+        when (sortIndex) {
+            1 -> filtered.sortedByDescending { it.year ?: 0 }
+            2 -> filtered.sortedByDescending { it.averageScore ?: 0 }
+            3 -> filtered.sortedBy { it.getTitle(titleLanguage).lowercase() }
+            else -> filtered
         }
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 24.dp
-        )
-    ) {
-        item(key = "header") {
-            // Root insets content below the status bar, so the header only needs its own top room.
-            val statusBarPadding = 0.dp
-            StudioHeader(
-                studio = studio,
-                onFavouriteClick = onFavouriteClick,
-                topPadding = statusBarPadding + 56.dp
-            )
-        }
-
-        item(key = "attr_header") {
-            Spacer(modifier = Modifier.height(24.dp))
-            SectionHeader(
-                title = stringResource(R.string.label_attributes),
-                level = HeaderLevel.Section,
-                iconColor = MaterialTheme.colorScheme.primary
-            )
-        }
-
-        item(key = "attr") {
-            Spacer(modifier = Modifier.height(8.dp))
-            Box(modifier = Modifier.padding(horizontal = 24.dp)) {
-                AttributesCard(attributes = displayAttributes)
-            }
-            studio.siteUrl?.takeUnless { it.isBlank() }?.let { url ->
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(modifier = Modifier.padding(horizontal = 24.dp)) {
-                    TextButton(onClick = { uriHandler.openUri(url) }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.studio_label_website))
-                    }
-                }
-            }
-        }
-
-        if (studio.media.isNotEmpty()) {
-            item(key = "works_header") {
-                Spacer(modifier = Modifier.height(24.dp))
-                SectionHeader(
-                    title = stringResource(R.string.studio_label_works),
-                    level = HeaderLevel.Section,
-                    iconColor = MaterialTheme.colorScheme.primary,
-                    onActionClick = if (hasMore) onMediaSeeAllClick else null
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            items(
-                items = previewMedia,
-                key = { "studio_work_${it.mediaId}" }
-            ) { media ->
-                StudioWorkItem(
-                    media = media,
-                    onClick = { onMediaClick(media.mediaId) },
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp)
-                )
-            }
-        }
-    }
-}
-
-private const val WORKS_PREVIEW_COUNT = 10
-
-@Composable
-private fun StudioHeader(
-    studio: StudioDetails,
-    onFavouriteClick: () -> Unit,
-    topPadding: androidx.compose.ui.unit.Dp
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 24.dp, end = 24.dp, top = topPadding, bottom = 8.dp)
-    ) {
-        Row(verticalAlignment = Alignment.Top) {
-            StudioIconTile()
-            Spacer(Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                if (studio.isAnimationStudio) {
-                    StudioTypeChip(label = stringResource(R.string.studio_label_animation_studio))
-                    Spacer(Modifier.height(12.dp))
-                }
-                Text(
-                    text = studio.name,
-                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black),
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-        if (studio.favourites > 0) {
-            Spacer(Modifier.height(20.dp))
-            FavouritePill(
-                count = studio.favourites,
-                isFavourite = studio.isFavourite,
-                onClick = onFavouriteClick
-            )
-        }
-    }
-}
-
-@Composable
-private fun StudioIconTile() {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.size(60.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = Icons.Default.Business,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(32.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun StudioTypeChip(label: String) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.surfaceContainer
-    ) {
-        Text(
-            text = label.uppercase(Locale.getDefault()),
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = androidx.compose.ui.unit.TextUnit(0.8f, androidx.compose.ui.unit.TextUnitType.Sp)
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+    val hero: @Composable () -> Unit = {
+        PersonHero(
+            imageUrl = null,
+            backdropUrl = backdrop?.first,
+            name = studio.name,
+            nativeName = null,
+            metaLine = metaLine,
+            favourites = studio.favourites,
+            contentDescription = stringResource(R.string.cd_studio_mark, studio.name),
+            transitionKey = TransitionKeys.cover(TransitionKeys.STUDIO, studio.id),
+            onImageClick = null,
+            imageContent = { StudioCoverMark(covers = markCovers) },
+            backdropCredit = backdrop?.second
         )
     }
-}
 
-@Composable
-private fun FavouritePill(
-    count: Int,
-    isFavourite: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.errorContainer,
-        shape = CircleShape
-    ) {
-        Row(
-            modifier = Modifier.padding(start = 6.dp, end = 20.dp, top = 6.dp, bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AnimatedFavoriteButton(
-                isFavorite = isFavourite,
-                onClick = onClick,
-                iconSize = 22.dp,
-                activeColor = MaterialTheme.colorScheme.error
-            )
-            Spacer(Modifier.width(4.dp))
+    val sidebar: @Composable ColumnScope.() -> Unit = {
+        PersonFactsCard(facts = facts)
+        if (facts.isNotEmpty() && studio.hasNextPage) {
+            Spacer(Modifier.height(8.dp))
             Text(
-                text = NumberFormat.getNumberInstance(Locale.getDefault()).format(count),
-                style = MaterialTheme.typography.titleMedium.emphasis(),
-                color = MaterialTheme.colorScheme.onErrorContainer
+                text = pluralStringResource(
+                    R.plurals.studio_stats_scope,
+                    studio.media.size,
+                    studio.media.size
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        studio.siteUrl?.takeUnless { it.isBlank() }?.let { url ->
+            Spacer(Modifier.height(16.dp))
+            StudioLinkRow(
+                label = stringResource(R.string.studio_open_on_anilist),
+                value = url.removePrefix("https://").removePrefix("http://").substringBefore('/'),
+                onClick = { uriHandler.openUri(url) }
             )
         }
     }
-}
 
-@Composable
-private fun StudioWorkItem(
-    media: StudioMediaEntry,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val cardShape = RoundedCornerShape(24.dp)
-    val coverShape = ExpressiveShapes.mediaCover
-    val mainChipLabel = stringResource(R.string.studio_main_studio_chip)
-    val listStatus = LocalLibraryStatuses.current[media.mediaId]
-    // This card sets its own description, which replaces anything its children say, so the
-    // indicator has to be spelled out here or it never reaches a screen reader.
-    val listLabel = listStatus?.let { stringResource(R.string.a11y_in_your_list, it.toLabel(media.type)) }
-    val itemDescription = remember(media.titleUserPreferred, media.format, media.year, media.isMainStudio, mainChipLabel, listLabel) {
-        buildString {
-            append(media.titleUserPreferred)
-            media.format?.let { append(", $it") }
-            media.year?.let { append(", $it") }
-            if (media.isMainStudio) append(", $mainChipLabel")
-            listLabel?.let { append(", $it") }
-        }
-    }
-
-    ElevatedCard(
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        shape = cardShape,
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(cardShape)
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = itemDescription }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            AsyncImage(
-                model = media.cover.url() ?: media.coverUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
+    // A studio has one list, so the tab slot carries the section header and the controls that
+    // used to live on a separate grid screen.
+    val worksHeader: @Composable () -> Unit = {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            SectionHeader(
+                title = stringResource(R.string.studio_label_works),
+                level = HeaderLevel.Section,
+                padding = PaddingValues(0.dp)
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
-                    .size(width = 60.dp, height = 90.dp)
-                    .clip(coverShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
             ) {
-                Text(
-                    text = media.titleUserPreferred,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                PersonDropdownChip(
+                    label = sortOptions[sortIndex],
+                    options = sortOptions,
+                    selectedIndex = sortIndex,
+                    onSelect = { sortIndex = it },
+                    leadingIcon = Icons.Default.SwapVert,
+                    appliedWhenNotDefault = false
                 )
-                val subtitle = remember(media.format, media.year) {
-                    listOfNotNull(
-                        media.format?.formatAsTitle() ?: media.format,
-                        media.year?.toString()
-                    ).joinToString(" · ")
-                }
-                if (subtitle.isNotEmpty()) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                PersonToggleChip(
+                    label = stringResource(R.string.studio_main_studio_chip),
+                    selected = mainStudioOnly,
+                    onToggle = { mainStudioOnly = !mainStudioOnly }
+                )
+                PersonToggleChip(
+                    label = stringResource(R.string.filter_on_my_list),
+                    selected = onListOnly,
+                    onToggle = { onListOnly = !onListOnly }
+                )
+                if (formats.size > 1) {
+                    PersonDropdownChip(
+                        label = formatOptions[formatIndex],
+                        options = formatOptions,
+                        selectedIndex = formatIndex,
+                        onSelect = { formatIndex = it }
                     )
                 }
-                if (media.isMainStudio) {
-                    StudioMainChip(label = mainChipLabel)
-                }
-            }
-
-            listStatus?.let { status ->
-                ListIndicator(
-                    status = status,
-                    type = media.type,
-                    style = ListIndicatorStyle.Chip
-                )
             }
         }
     }
+
+    val mainStudioLabel = stringResource(R.string.studio_main_studio_chip)
+    val coProductionLabel = stringResource(R.string.studio_role_co_production)
+    val airingLabel = stringResource(R.string.media_status_airing)
+
+    val listContent: LazyListScope.() -> Unit = {
+        if (works.isEmpty()) {
+            item(key = "works_empty") {
+                PersonEmptyState(
+                    text = stringResource(R.string.studio_empty_works),
+                    modifier = gutter
+                )
+            }
+        } else {
+            personGridItems(
+                items = works,
+                columns = columns,
+                key = { "studio_work_${it.mediaId}" },
+                rowModifier = gutter.padding(bottom = 12.dp)
+            ) { work ->
+                AppearanceRow(
+                    mediaId = work.mediaId,
+                    coverUrl = work.coverUrl,
+                    cover = work.cover,
+                    title = work.getTitle(titleLanguage),
+                    meta = workMeta(work, airingLabel),
+                    role = if (work.isMainStudio) mainStudioLabel else coProductionLabel,
+                    roleHighlighted = work.isMainStudio,
+                    score = work.averageScore,
+                    onClick = { onMediaClick(work.mediaId) },
+                    transitionPrefix = TransitionKeys.STUDIO,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+        if (studio.hasNextPage) {
+            item(key = "works_footer") {
+                // Reaching the footer is the request. Keyed on the loaded count rather than the
+                // filtered one, so a filter that hides a whole page still walks forward.
+                LaunchedEffect(studio.media.size) { onLoadMore() }
+                PersonListFooter(modifier = gutter)
+            }
+        }
+    }
+
+    if (wide) {
+        PersonWideLayout(
+            backdropUrl = backdrop?.first,
+            backdropCredit = backdrop?.second,
+            onBackClick = onBackClick,
+            actions = chromeActions,
+            portraitUrl = null,
+            portraitTransitionKey = TransitionKeys.cover(TransitionKeys.STUDIO, studio.id),
+            onPortraitClick = null,
+            portraitContent = { StudioCoverMark(covers = markCovers) },
+            name = studio.name,
+            nativeName = null,
+            metaLine = metaLine,
+            favourites = studio.favourites,
+            identityKey = studio.id,
+            aliasLine = null,
+            identityContent = { sidebar() },
+            tabs = worksHeader,
+            listContent = listContent
+        )
+    } else {
+        PersonScaffold(
+            hero = hero,
+            sidebar = sidebar,
+            tabs = worksHeader,
+            listContent = listContent
+        )
+    }
 }
 
+/** Format, year and whether it is still going out: the fields the old row threw away. */
+private fun workMeta(work: StudioMediaEntry, airingLabel: String): String = listOfNotNull(
+    work.format?.formatAsTitle(),
+    work.year?.toString(),
+    airingLabel.takeIf { work.status == "RELEASING" }
+).joinToString(" · ")
+
+/**
+ * What the catalogue looks like, from the pages that are in: how much of it the reader has
+ * watched, how it scores, how often the studio leads rather than co-produces, and the years it
+ * spans. Every value here was already being fetched and thrown away.
+ */
 @Composable
-private fun StudioMainChip(label: String) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.primaryContainer
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-        )
+private fun studioFacts(studio: StudioDetails, onListCount: Int): List<PersonFact> {
+    val scheme = MaterialTheme.colorScheme
+    val media = studio.media
+    return buildList {
+        if (media.isNotEmpty()) {
+            add(
+                PersonFact(
+                    label = stringResource(R.string.studio_stat_on_your_list),
+                    value = onListCount.toString(),
+                    icon = Icons.AutoMirrored.Filled.PlaylistAddCheck,
+                    tint = scheme.primary
+                )
+            )
+        }
+        val scores = media.mapNotNull { it.averageScore }.filter { it > 0 }
+        if (scores.isNotEmpty()) {
+            add(
+                PersonFact(
+                    label = stringResource(R.string.studio_stat_average_score),
+                    value = "${scores.average().roundToInt()}%",
+                    icon = Icons.Default.Star,
+                    tint = StarGold
+                )
+            )
+        }
+        if (media.isNotEmpty()) {
+            add(
+                PersonFact(
+                    label = stringResource(R.string.studio_stat_lead_studio),
+                    value = "${media.count { it.isMainStudio } * 100 / media.size}%",
+                    icon = Icons.Default.Business,
+                    tint = scheme.secondary
+                )
+            )
+        }
+        val years = media.mapNotNull { it.year }
+        if (years.isNotEmpty()) {
+            val first = years.min()
+            val last = years.max()
+            add(
+                PersonFact(
+                    label = stringResource(R.string.studio_stat_span),
+                    value = if (first == last) "$first" else "$first–$last",
+                    icon = Icons.Default.CalendarMonth,
+                    tint = scheme.tertiary
+                )
+            )
+        }
     }
 }
 
