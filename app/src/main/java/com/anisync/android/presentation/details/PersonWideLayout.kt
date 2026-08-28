@@ -252,7 +252,9 @@ fun PersonWideLayout(
     actions: @Composable RowScope.() -> Unit,
     portraitUrl: String?,
     portraitTransitionKey: String,
-    onPortraitClick: () -> Unit,
+    onPortraitClick: (() -> Unit)?,
+    /** Drawn in the portrait slot instead of [portraitUrl]. The studio hands in its cover mark. */
+    portraitContent: (@Composable () -> Unit)? = null,
     name: String,
     nativeName: String?,
     metaLine: String?,
@@ -353,20 +355,32 @@ fun PersonWideLayout(
                 }
                 .then(if (portraitHidden) Modifier.clearAndSetSemantics {} else Modifier)
         ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(portraitUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(portraitModifier)
-                    .clip(portraitShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable(onClick = onPortraitClick)
-            )
+            val portraitSlot = Modifier
+                .fillMaxSize()
+                .then(portraitModifier)
+                .clip(portraitShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .then(
+                    if (onPortraitClick != null) {
+                        Modifier.clickable(onClick = onPortraitClick)
+                    } else {
+                        Modifier
+                    }
+                )
+
+            if (portraitContent != null) {
+                Box(modifier = portraitSlot) { portraitContent() }
+            } else {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(portraitUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = name,
+                    contentScale = ContentScale.Crop,
+                    modifier = portraitSlot
+                )
+            }
         }
 
         // The name's destination: it leaves the pane in stage 2 and lands here, in the slot the

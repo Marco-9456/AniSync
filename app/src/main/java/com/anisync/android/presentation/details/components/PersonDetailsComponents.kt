@@ -66,6 +66,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -102,7 +104,7 @@ import java.util.Locale
 private val PersonRowHeight = 96.dp
 
 private val CardShape = RoundedCornerShape(16.dp)
-private val RowShape = RoundedCornerShape(12.dp)
+internal val RowShape = RoundedCornerShape(12.dp)
 private val ThumbShape = RoundedCornerShape(8.dp)
 
 /** One key/value fact rendered as an icon tile inside [PersonFactsCard]. */
@@ -137,9 +139,11 @@ fun PersonHero(
     favourites: Int?,
     contentDescription: String,
     transitionKey: String,
-    onImageClick: () -> Unit,
+    onImageClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     backdropCredit: String? = null,
+    /** Drawn in the portrait slot instead of [imageUrl]. A studio hands in its cover mark here. */
+    imageContent: (@Composable () -> Unit)? = null,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
@@ -218,22 +222,32 @@ fun PersonHero(
             )
         }
 
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = contentDescription,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .padding(start = portraitStart, top = portraitTop)
-                .width(portraitWidth)
-                .aspectRatio(5f / 7f)
-                .then(portraitModifier)
-                .clip(portraitShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(onClick = onImageClick)
-        )
+        val portraitSlot = Modifier
+            .padding(start = portraitStart, top = portraitTop)
+            .width(portraitWidth)
+            .aspectRatio(5f / 7f)
+            .then(portraitModifier)
+            .clip(portraitShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .then(if (onImageClick != null) Modifier.clickable(onClick = onImageClick) else Modifier)
+
+        if (imageContent != null) {
+            Box(
+                modifier = portraitSlot.semantics { this.contentDescription = contentDescription }
+            ) {
+                imageContent()
+            }
+        } else {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(imageUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                modifier = portraitSlot
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -804,6 +818,7 @@ fun AppearanceRow(
     title: String,
     meta: String,
     role: String?,
+    roleHighlighted: Boolean = role.equals("MAIN", ignoreCase = true),
     score: Int?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -873,7 +888,7 @@ fun AppearanceRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (!role.isNullOrBlank()) {
-                        RolePill(role = role)
+                        RolePill(role = role, highlighted = roleHighlighted)
                     }
                     if (score != null && score > 0) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -906,8 +921,12 @@ fun AppearanceRow(
 
 /** MAIN / SUPPORTING, tinted so the leading role reads first. */
 @Composable
-fun RolePill(role: String, modifier: Modifier = Modifier) {
-    val isMain = role.equals("MAIN", ignoreCase = true)
+fun RolePill(
+    role: String,
+    modifier: Modifier = Modifier,
+    highlighted: Boolean = role.equals("MAIN", ignoreCase = true)
+) {
+    val isMain = highlighted
     Surface(
         shape = CircleShape,
         color = if (isMain) {
