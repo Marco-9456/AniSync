@@ -1070,6 +1070,7 @@ class DetailsRepositoryImpl @Inject constructor(
                         node.coverImage?.large,
                         node.coverImage?.extraLarge
                     ),
+                    bannerUrl = node.bannerImage,
                     format = node.format?.name,
                     type = node.type,
                     status = node.status?.name,
@@ -1098,7 +1099,8 @@ class DetailsRepositoryImpl @Inject constructor(
                 favourites = studioData.favourites ?: 0,
                 isFavourite = effectiveIsFav,
                 media = mediaList,
-                hasNextPage = hasNextPage
+                hasNextPage = hasNextPage,
+                mediaTotal = pageInfo?.total.exactConnectionTotal()
             )
         }
     }

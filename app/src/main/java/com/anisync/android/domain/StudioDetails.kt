@@ -12,7 +12,9 @@ data class StudioDetails(
     val favourites: Int,
     val isFavourite: Boolean,
     val media: List<StudioMediaEntry>,
-    val hasNextPage: Boolean
+    val hasNextPage: Boolean,
+    /** AniList's own count for the catalogue, or null while it only reports its 500 cap. */
+    val mediaTotal: Int? = null
 )
 
 @Immutable
@@ -24,6 +26,7 @@ data class StudioMediaEntry(
     val titleNative: String?,
     val coverUrl: String?,
     val cover: CoverImage? = null,
+    val bannerUrl: String? = null,
     val format: String?,
     val type: MediaType?,
     val status: String?,
