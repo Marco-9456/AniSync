@@ -47,6 +47,47 @@ interface LibraryRepository {
     suspend fun deleteEntry(entryId: Int, mediaId: Int): Result<Unit>
 
     /**
+     * Apply one field to a whole selection in a single request.
+     *
+     * Backed by AniList's `UpdateMediaListEntries(ids:)`, which takes **media list entry ids**
+     * ([LibraryEntry.id]) rather than media ids, and which accepts only the fields that make sense
+     * for every entry at once. Progress and dates are deliberately absent: the same progress value
+     * across different titles is meaningless.
+     */
+    suspend fun bulkUpdateEntries(
+        entryIds: List<Int>,
+        status: LibraryStatus? = null,
+        score: Double? = null,
+        isPrivate: Boolean? = null
+    ): Result<Unit>
+
+    /**
+     * Add every entry to [listName].
+     *
+     * One `SaveMediaListEntry` per entry, because `UpdateMediaListEntries` has no `customLists`
+     * argument. [onProgress] reports entries committed so far; cancelling the calling coroutine
+     * stops the run and leaves the already-committed ones in place.
+     */
+    suspend fun bulkAddToCustomList(
+        entries: List<LibraryEntry>,
+        listName: String,
+        onProgress: (Int) -> Unit
+    ): Result<Int>
+
+    /**
+     * Remove every entry from the library.
+     *
+     * One `DeleteMediaListEntry` per entry — AniList exposes no bulk delete — so this is paced by
+     * the client token bucket and can take minutes for a large selection. Each success is committed
+     * locally as it lands, so a cancel or a failure leaves Room and AniList agreeing on the part
+     * that finished.
+     */
+    suspend fun bulkDeleteEntries(
+        entries: List<LibraryEntry>,
+        onProgress: (Int) -> Unit
+    ): Result<Int>
+
+    /**
      * Delete a custom list from AniList.
      */
     suspend fun deleteCustomList(customList: String, type: MediaType): Result<Unit>

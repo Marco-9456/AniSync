@@ -53,6 +53,8 @@ data class LibraryEntry(
     val createdAt: Long? = null,
     val mediaStartDate: Long? = null,
     val customLists: List<String> = emptyList(),
+    /** Media genres, used by the library filter sheet. Empty until the next library refresh. */
+    val genres: List<String> = emptyList(),
     val isPrivate: Boolean = false,
     val hiddenFromStatusLists: Boolean = false,
     /** Volumes read. Manga only, and null when the entry has never recorded one. */

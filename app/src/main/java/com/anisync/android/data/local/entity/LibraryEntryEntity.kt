@@ -68,6 +68,8 @@ data class LibraryEntryEntity(
     val mediaStartDate: Long? = null,
     @androidx.room.ColumnInfo(defaultValue = "[]")
     val customLists: List<String> = emptyList(),
+    @androidx.room.ColumnInfo(defaultValue = "[]")
+    val genres: List<String> = emptyList(),
     @androidx.room.ColumnInfo(defaultValue = "0")
     val isPrivate: Boolean = false,
     @androidx.room.ColumnInfo(defaultValue = "0")

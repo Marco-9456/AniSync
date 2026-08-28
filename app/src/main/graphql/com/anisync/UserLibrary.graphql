@@ -32,6 +32,7 @@ query GetUserLibrary($username: String!, $type: MediaType!) {
           type
           format
           status
+          genres
           nextAiringEpisode {
             episode
             timeUntilAiring
