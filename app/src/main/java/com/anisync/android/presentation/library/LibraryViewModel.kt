@@ -93,6 +93,7 @@ class LibraryViewModel @Inject constructor(
         val tabCounts: Map<String, Int>,
         val searchMatches: List<LibraryEntry>,
         val searchMatchesByCategory: Map<String, List<LibraryEntry>>,
+        val unfilteredTabCounts: Map<String, Int>,
         val availableGenres: List<String>,
         val availableFormats: List<com.anisync.android.type.MediaFormat>,
         val availableAiringStatuses: List<String>
@@ -484,6 +485,7 @@ class LibraryViewModel @Inject constructor(
                     val availableAiringStatuses = AIRING_STATUS_ORDER
                         .filter { status -> sortedEntries.any { it.entry.mediaStatus == status } }
 
+                    val unfilteredEntries = visibilityFiltered.map { it.entry }
                     val allEntries = ArrayList<LibraryEntry>(visibilityFiltered.size).also { out ->
                         for (s in visibilityFiltered) if (filters.matches(s.entry)) out.add(s.entry)
                     }
@@ -505,6 +507,17 @@ class LibraryViewModel @Inject constructor(
                         grouped.forEach { (status, list) -> put("status:${status.name}", list.size) }
                         put(LIBRARY_FAVORITES_TAB_ID, sortedFavorites.size)
                         customEntriesMap.forEach { (name, list) -> put(name, list.size) }
+                    }
+
+                    val unfilteredTabCounts = buildMap {
+                        put(LIBRARY_ALL_TAB_ID, unfilteredEntries.size)
+                        unfilteredEntries.groupBy { it.status }
+                            .forEach { (status, list) -> put("status:${status.name}", list.size) }
+                        put(LIBRARY_FAVORITES_TAB_ID, favorites.size)
+                        unfilteredEntries
+                            .flatMap { entry -> entry.customLists.map { it to entry } }
+                            .groupBy({ it.first }, { it.second })
+                            .forEach { (name, list) -> put(name, list.size) }
                     }
 
                     // Search matches every title variant + notes, grouped by list so the overlay can
@@ -547,7 +560,8 @@ class LibraryViewModel @Inject constructor(
                         searchMatchesByCategory = searchMatchesByCategory,
                         availableGenres = availableGenres,
                         availableFormats = availableFormats,
-                        availableAiringStatuses = availableAiringStatuses
+                        availableAiringStatuses = availableAiringStatuses,
+                        unfilteredTabCounts = unfilteredTabCounts
                     )
                 }
                 .flowOn(Dispatchers.Default)
@@ -594,6 +608,7 @@ class LibraryViewModel @Inject constructor(
                             availableGenres = computed.availableGenres,
                             availableFormats = computed.availableFormats,
                             availableAiringStatuses = computed.availableAiringStatuses,
+                            unfilteredTabCounts = computed.unfilteredTabCounts,
                             initialTabId = resolvedInitialTab ?: it.initialTabId,
                             isLoading = false,
                             errorMessage = null

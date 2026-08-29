@@ -21,6 +21,7 @@ fun LibraryListDetail(
     onMediaClickFullScreen: (Int) -> Unit,
     onNavigateToCalendar: () -> Unit,
     onNavigateToNotes: () -> Unit,
+    onBrowseDiscover: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
@@ -29,6 +30,7 @@ fun LibraryListDetail(
             onMediaClick = onMediaClickFullScreen,
             onNavigateToCalendar = onNavigateToCalendar,
             onNavigateToNotes = onNavigateToNotes,
+            onBrowseDiscover = onBrowseDiscover,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )
@@ -41,6 +43,7 @@ fun LibraryListDetail(
             onMediaClick = onMediaClick,
             onNavigateToCalendar = onNavigateToCalendar,
             onNavigateToNotes = onNavigateToNotes,
+            onBrowseDiscover = onBrowseDiscover,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )

@@ -77,6 +77,13 @@ data class LibraryUiState(
     val tabOrder: List<String> = emptyList(),
     /** Raw entry count per tab id (incl. [LIBRARY_ALL_TAB_ID]); unaffected by [searchQuery]. */
     val tabCounts: Map<String, Int> = emptyMap(),
+    /**
+     * Per-tab counts before [filters] are applied.
+     *
+     * An empty tab has two possible causes once filtering exists, and only the difference between
+     * these two maps tells them apart.
+     */
+    val unfilteredTabCounts: Map<String, Int> = emptyMap(),
     /** Flat list of all entries matching [searchQuery] (across every status list). */
     val searchMatches: List<LibraryEntry> = emptyList(),
     /** Query matches grouped by tab id (status ids, favorites, custom names); non-empty only. */

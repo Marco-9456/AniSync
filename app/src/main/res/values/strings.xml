@@ -1977,7 +1977,6 @@
     <string name="library_filter_format">Format</string>
     <string name="library_filter_genre">Genre</string>
     <string name="library_filter_more">+ %1$d more</string>
-    <string name="library_show_results">Show %1$d titles</string>
     <string name="library_episode_short">EP %1$d</string>
     <string name="library_episodes_behind_short">%1$d behind</string>
     <string name="library_lists_title">Your lists</string>
@@ -2011,4 +2010,38 @@
     <string name="library_adding_title">Adding %1$d entries to %2$s</string>
     <string name="library_bulk_per_entry_explainer">AniList handles one entry per request here, so this runs at the client rate limit of 25 a minute. Leaving the screen keeps it running.</string>
     <string name="library_bulk_progress">%1$d of %2$d done</string>
+    <!-- Library empty states -->
+    <string name="library_empty_all_title">Your library is empty</string>
+    <string name="library_empty_all_desc">Anything you track on AniList turns up here.</string>
+    <string name="library_empty_current_title">Nothing on the go</string>
+    <string name="library_empty_current_desc">Start something and it sits at the top of this list.</string>
+    <string name="library_empty_repeating_title">Nothing on a rewatch</string>
+    <string name="library_empty_repeating_title_manga">Nothing on a reread</string>
+    <string name="library_empty_repeating_desc">Titles you start over land here.</string>
+    <string name="library_empty_planning_title">Nothing planned</string>
+    <string name="library_empty_planning_desc">Save what you mean to watch and it queues up here.</string>
+    <string name="library_empty_planning_desc_manga">Save what you mean to read and it queues up here.</string>
+    <string name="library_empty_paused_title">Nothing paused</string>
+    <string name="library_empty_paused_desc">Titles you set aside wait here until you come back.</string>
+    <string name="library_empty_completed_title">Nothing finished yet</string>
+    <string name="library_empty_completed_desc">Titles you finish are kept here with your score.</string>
+    <string name="library_empty_dropped_title">Nothing dropped</string>
+    <string name="library_empty_dropped_desc">Titles you give up on end up here.</string>
+    <string name="library_empty_favorites_title">No favourites yet</string>
+    <string name="library_empty_favorites_desc">Tap the heart on a title to keep it here.</string>
+    <string name="library_empty_custom_title">“%1$s” is empty</string>
+    <string name="library_empty_custom_desc">Add titles to this list from any entry, or from a selection.</string>
+    <string name="library_empty_filtered_title">No matches in %1$s</string>
+    <string name="library_empty_action_browse">Browse trending</string>
+    <string name="library_empty_action_go_to">Go to %1$s</string>
+    <string name="library_empty_action_choose">Choose titles</string>
+    <string name="library_empty_action_clear_filters">Clear filters</string>
+    <plurals name="library_show_results">
+        <item quantity="one">Show %1$d title</item>
+        <item quantity="other">Show %1$d titles</item>
+    </plurals>
+    <plurals name="library_empty_filtered_desc">
+        <item quantity="one">%1$d filter is hiding every title in this list.</item>
+        <item quantity="other">%1$d filters are hiding every title in this list.</item>
+    </plurals>
 </resources>

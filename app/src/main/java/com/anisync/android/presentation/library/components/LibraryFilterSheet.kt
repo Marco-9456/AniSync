@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -170,7 +171,7 @@ fun LibraryFilterSheet(
                 modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.library_show_results, resultCount),
+                    text = pluralStringResource(R.plurals.library_show_results, resultCount, resultCount),
                     style = MaterialTheme.typography.titleMedium
                 )
             }

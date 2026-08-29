@@ -99,7 +99,7 @@ import com.anisync.android.presentation.library.components.BulkProgressDialog
 import com.anisync.android.presentation.library.components.BulkScoreSheet
 import com.anisync.android.presentation.library.components.BulkStatusSheet
 import com.anisync.android.presentation.library.components.EditLibraryEntrySheet
-import com.anisync.android.presentation.library.components.EmptyLibraryTabState
+import com.anisync.android.presentation.library.components.LibraryEmptyState
 import com.anisync.android.presentation.library.components.LibraryBulkActionBar
 import com.anisync.android.presentation.library.components.LibraryBulkMoreMenu
 import com.anisync.android.presentation.library.components.LibraryFilterSheet
@@ -173,6 +173,7 @@ fun LibraryScreen(
     onMediaClick: (Int) -> Unit,
     onNavigateToCalendar: () -> Unit,
     onNavigateToNotes: () -> Unit,
+    onBrowseDiscover: () -> Unit,
     viewModel: LibraryViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -559,6 +560,14 @@ fun LibraryScreen(
                                     },
                                     onIncrement = handleIncrement,
                                     onEdit = handleEdit,
+                                    onBrowseDiscover = onBrowseDiscover,
+                                    onGoToTab = { targetId ->
+                                        val index = tabs.indexOfFirst { it.toId() == targetId }
+                                        if (index >= 0) {
+                                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                                        }
+                                    },
+                                    onClearFilters = { viewModel.onAction(LibraryAction.ClearFilters) },
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope
                                 )
@@ -758,6 +767,9 @@ private fun LibraryTabContent(
     onEntryLongPress: (LibraryEntry) -> Unit,
     onIncrement: (Int) -> Unit,
     onEdit: (LibraryEntry) -> Unit,
+    onBrowseDiscover: () -> Unit,
+    onGoToTab: (String) -> Unit,
+    onClearFilters: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -766,11 +778,20 @@ private fun LibraryTabContent(
         // pull-to-refresh cannot fire on an empty or glitched tab (#35).
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             item {
-                Box(
-                    modifier = Modifier.fillParentMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    EmptyLibraryTabState((tab as? LibraryTab.Standard)?.status, mediaType)
+                Box(modifier = Modifier.fillParentMaxSize()) {
+                    LibraryEmptyState(
+                        tab = tab,
+                        mediaType = mediaType,
+                        // Only report filtering when the list would otherwise have something in it.
+                        filterCount = if ((uiState.unfilteredTabCounts[tab.toId()] ?: 0) > 0) {
+                            uiState.filters.activeCount
+                        } else {
+                            0
+                        },
+                        onBrowseDiscover = onBrowseDiscover,
+                        onGoToTab = onGoToTab,
+                        onClearFilters = onClearFilters
+                    )
                 }
             }
         }
