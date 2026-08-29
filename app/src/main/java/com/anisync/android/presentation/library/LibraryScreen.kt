@@ -451,8 +451,7 @@ fun LibraryScreen(
                                 },
                                 onMediaTypeChange = {
                                     viewModel.onAction(LibraryAction.OnMediaTypeChange(it))
-                                },
-                                onManageLists = { showListManagement = true }
+                                }
                             )
                         }
                         Spacer(Modifier.height(8.dp))

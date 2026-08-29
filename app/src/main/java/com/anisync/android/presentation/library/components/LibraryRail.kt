@@ -78,7 +78,6 @@ fun LibraryRail(
     counts: Map<String, Int>,
     onTabClick: (Int) -> Unit,
     onMediaTypeChange: (MediaType) -> Unit,
-    onManageLists: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val background = MaterialTheme.colorScheme.background
@@ -96,7 +95,7 @@ fun LibraryRail(
         LazyRow(
             state = listState,
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(start = 100.dp, end = 72.dp),
+            contentPadding = PaddingValues(start = 100.dp, end = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -134,37 +133,15 @@ fun LibraryRail(
             )
         }
 
-        Row(
-            modifier = Modifier.align(Alignment.CenterEnd),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(28.dp)
-                    .height(RailHeight)
-                    .background(Brush.horizontalGradient(listOf(Color.Transparent, background)))
-            )
-            Box(
-                modifier = Modifier
-                    .width(44.dp)
-                    .height(RailHeight)
-                    .background(background)
-                    .bouncyClickable(
-                        onClick = onManageLists,
-                        role = Role.Button,
-                        onClickLabel = stringResource(R.string.cd_manage_lists),
-                        clipShape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.List,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
+        // A fade rather than a button: the last chip should read as scrollable, and managing the
+        // lists is one entry point in the overflow, not two.
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .width(24.dp)
+                .height(RailHeight)
+                .background(Brush.horizontalGradient(listOf(Color.Transparent, background)))
+        )
     }
 }
 
