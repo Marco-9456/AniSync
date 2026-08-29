@@ -211,11 +211,7 @@ fun LibraryQueueRow(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = stringResource(
-                            R.string.progress_format,
-                            entry.progress,
-                            total?.toString() ?: stringResource(R.string.progress_unknown)
-                        ),
+                        text = progressLabel(entry.progress, aired, total),
                         style = MaterialTheme.typography.labelSmall,
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -413,15 +409,18 @@ fun EpisodeProgressBar(
     aired: Int?,
     total: Int?,
     fraction: Float,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** A grid cell is too narrow for a tick per episode; it asks for the continuous form. */
+    allowTicks: Boolean = true
 ) {
     val watched = MaterialTheme.colorScheme.primary
     val available = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
     val track = MaterialTheme.colorScheme.surfaceContainerHighest
     val shape = RoundedCornerShape(3.dp)
 
-    if (total != null && total in 1..MaxTicks) {
-        Row(
+    when {
+        // Short runs get a tick per episode, because at that length the ticks are also the count.
+        allowTicks && total != null && total in 1..MaxTicks -> Row(
             modifier = modifier.height(6.dp),
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
@@ -440,24 +439,74 @@ fun EpisodeProgressBar(
                 )
             }
         }
-    } else {
-        val airedFraction = if (total != null && total > 0 && aired != null) {
-            (aired.toFloat() / total).coerceIn(0f, 1f)
-        } else {
-            fraction
+
+        total != null -> Box(modifier = modifier.height(6.dp).clip(shape).background(track)) {
+            val airedFraction = if (total > 0 && aired != null) {
+                (aired.toFloat() / total).coerceIn(0f, 1f)
+            } else {
+                fraction
+            }
+            Box(Modifier.fillMaxWidth(airedFraction).fillMaxSize().background(available))
+            Box(Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).fillMaxSize().background(watched))
         }
-        Box(modifier = modifier.height(6.dp).clip(shape).background(track)) {
+
+        // No announced ending. Measuring against a denominator that will not exist for years says
+        // nothing, so the bar measures against what has actually aired and a dotted tail carries
+        // the run past the end of the track. The gap between the fill and the tail is exactly
+        // what is waiting to be watched — the thing a "/ ?" bar can never draw.
+        aired != null && aired > 0 -> Row(
+            modifier = modifier.height(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(airedFraction)
-                    .fillMaxSize()
+                    .weight(1f)
+                    .height(6.dp)
+                    .clip(shape)
                     .background(available)
-            )
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth((progress.toFloat() / aired).coerceIn(0f, 1f))
+                        .fillMaxSize()
+                        .background(watched)
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+            OpenEndedTail(color = track)
+        }
+
+        // Nothing known at all: no length, no schedule. The rail claims no denominator.
+        else -> Row(
+            modifier = modifier.height(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            repeat(10) {
+                Box(
+                    modifier = Modifier
+                        .size(3.dp)
+                        .clip(CircleShape)
+                        .background(track)
+                )
+            }
+        }
+    }
+}
+
+/** The run continues past the track: four dots, fading out. */
+@Composable
+private fun OpenEndedTail(color: androidx.compose.ui.graphics.Color) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        repeat(4) { index ->
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(fraction.coerceIn(0f, 1f))
-                    .fillMaxSize()
-                    .background(watched)
+                    .size(3.dp)
+                    .clip(CircleShape)
+                    .background(color.copy(alpha = 1f - index * 0.2f))
             )
         }
     }
@@ -563,6 +612,23 @@ private fun SelectionCheck(selected: Boolean) {
             )
         }
     }
+}
+
+/**
+ * The count under a progress bar.
+ *
+ * With no announced ending the denominator is what has aired, not a question mark: "1175 / 1176
+ * out" is a number you can act on, and it is the same denominator the bar is drawn against.
+ */
+@Composable
+fun progressLabel(progress: Int, aired: Int?, total: Int?): String = when {
+    total != null -> stringResource(R.string.progress_format, progress, total.toString())
+    aired != null && aired > 0 -> stringResource(R.string.library_progress_out, progress, aired)
+    else -> stringResource(
+        R.string.progress_format,
+        progress,
+        stringResource(R.string.progress_unknown)
+    )
 }
 
 /**

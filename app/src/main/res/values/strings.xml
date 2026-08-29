@@ -1979,6 +1979,7 @@
     <string name="library_filter_more">+ %1$d more</string>
     <string name="library_episode_short">EP %1$d</string>
     <string name="library_episodes_behind_short">%1$d behind</string>
+    <string name="library_progress_out">%1$d / %2$d out</string>
     <string name="library_lists_title">Your lists</string>
     <string name="library_lists_caption">Drag to reorder. Hide a list to drop it from the rail.</string>
     <string name="library_new_list">New list</string>

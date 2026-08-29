@@ -107,7 +107,9 @@ fun LibraryPosterCard(
     val title = entry.getTitle(titleLanguage)
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val aired = airedCount(entry, total)
-    val hasProgress = total != null && entry.progress in 1 until total
+    // An open-ended run has progress worth drawing too; only a finished or unstarted one
+    // falls back to the browsing facts.
+    val hasProgress = entry.progress > 0 && (total == null || entry.progress < total)
 
     val cardShape = ExpressiveShapes.mediaCover
     val clickModifier = if (onLongPress != null) {
@@ -352,18 +354,13 @@ private fun PosterMetaRow(
             EpisodeProgressBar(
                 progress = entry.progress,
                 aired = aired,
-                // A grid cell is too narrow for a tick per episode, so this always takes the
-                // continuous form.
-                total = null,
+                total = total,
                 fraction = if ((total ?: 0) > 0) entry.progress.toFloat() / total!! else 0f,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                allowTicks = false
             )
             Text(
-                text = stringResource(
-                    R.string.progress_format,
-                    entry.progress,
-                    total?.toString() ?: stringResource(R.string.progress_unknown)
-                ),
+                text = progressLabel(entry.progress, aired, total),
                 fontSize = 13.sp,
                 lineHeight = 18.sp,
                 fontWeight = FontWeight.Bold,
