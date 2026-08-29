@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -202,9 +204,7 @@ fun LibraryPosterCard(
                     mediaType = mediaType,
                     total = total,
                     aired = aired,
-                    hasProgress = hasProgress,
-                    showScore = showScore,
-                    scoreFormat = scoreFormat
+                    hasProgress = hasProgress
                 )
             }
         }
@@ -249,13 +249,15 @@ private fun PosterArt(
         Modifier
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(PosterAspect)
             .then(coverModifier)
             .clip(shape)
     ) {
+        // 10dp inset either side, the 48dp action, and an 8dp gap the chip must never cross.
+        val chipMaxWidth = (maxWidth - ActionSize - 28.dp).coerceAtLeast(0.dp)
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(entry.cover.url() ?: entry.coverUrl)
@@ -294,7 +296,10 @@ private fun PosterArt(
             PosterStateChip(
                 entry = entry,
                 aired = aired,
-                modifier = Modifier.align(Alignment.BottomStart).padding(10.dp)
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(10.dp)
+                    .widthIn(max = chipMaxWidth)
             )
         }
 
@@ -336,9 +341,7 @@ private fun PosterMetaRow(
     mediaType: MediaType,
     total: Int?,
     aired: Int?,
-    hasProgress: Boolean,
-    showScore: Boolean,
-    scoreFormat: ScoreFormat
+    hasProgress: Boolean
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().height(18.dp),
@@ -388,27 +391,9 @@ private fun PosterMetaRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            if (showScore && (entry.score ?: 0.0) > 0.0) {
-                // POINT_5 and POINT_3 render as stars and smileys already; a leading star on top
-                // of those draws the rating twice.
-                if (scoreFormat != ScoreFormat.POINT_5 && scoreFormat != ScoreFormat.POINT_3) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = StarGold,
-                        modifier = Modifier.size(15.dp)
-                    )
-                }
-                Text(
-                    text = formatScore(entry.score, scoreFormat),
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1
-                )
-            } else {
+            // The score is the cover badge's job. Printing it here as well drew the rating twice
+            // on any title long enough to have no progress bar.
+            run {
                 Text(
                     // A run with no length still reports where you are in it, rather than a bare
                     // question mark.
