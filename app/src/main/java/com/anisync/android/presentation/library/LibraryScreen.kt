@@ -14,6 +14,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,8 +25,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -81,7 +84,6 @@ import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -108,11 +110,11 @@ import com.anisync.android.presentation.library.components.LibraryRail
 import com.anisync.android.presentation.library.components.LibrarySearchCategoryBar
 import com.anisync.android.presentation.library.components.LibrarySearchResultCard
 import com.anisync.android.presentation.library.components.LibrarySelectionTopBar
-import com.anisync.android.presentation.library.components.LibraryToolbar
 import com.anisync.android.presentation.library.components.LibraryViewOptionsSheet
 import com.anisync.android.presentation.library.components.ListManagementSheet
 import com.anisync.android.presentation.library.components.SkeletonGrid
 import com.anisync.android.presentation.library.components.SkeletonList
+import com.anisync.android.presentation.library.components.SortIcon
 import com.anisync.android.presentation.library.components.airedCount
 import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
 import com.anisync.android.presentation.util.LIBRARY_FAVORITES_TAB_ID
@@ -300,6 +302,9 @@ fun LibraryScreen(
             textFieldState = textFieldState,
             isSearchQueryEmpty = isSearchQueryEmpty,
             isGridView = isCurrentTabGrid,
+            isNonDefaultSort = sortOption != LibrarySort.AIRING_SOON || !isAscending ||
+                !uiState.filters.isEmpty,
+            isAscending = isAscending,
             showListManagement = showListManagement,
             onSearch = { keyboardController?.hide() },
             onBackClick = {
@@ -311,6 +316,7 @@ fun LibraryScreen(
             onToggleView = {
                 viewModel.onAction(LibraryAction.SetTabViewMode(currentTabId, !isCurrentTabGrid))
             },
+            onSortAndFilter = { showFilterSheet = true },
             onOverflow = { showOverflow = true },
             overflowMenu = {
                 LibraryOverflowMenu(
@@ -320,7 +326,8 @@ fun LibraryScreen(
                     onOpenCalendar = onNavigateToCalendar,
                     onOpenNotes = onNavigateToNotes,
                     onTogglePrivate = { viewModel.onAction(LibraryAction.TogglePrivateVisibility(it)) },
-                    onViewOptions = { showViewOptions = true },
+                    onManageLists = { showListManagement = true },
+                    onCardOptions = { showViewOptions = true },
                     onRefresh = { viewModel.onAction(LibraryAction.Refresh) }
                 )
             }
@@ -535,8 +542,6 @@ fun LibraryScreen(
                                     hasQuickProgress = hasQuickProgress,
                                     mediaType = mediaType,
                                     titleLanguage = titleLanguage,
-                                    onSortClick = { showFilterSheet = true },
-                                    onFiltersClick = { showFilterSheet = true },
                                     onEntryClick = { entry ->
                                         if (uiState.isSelectionMode) {
                                             viewModel.onAction(LibraryAction.ToggleSelection(entry.id))
@@ -592,7 +597,7 @@ fun LibraryScreen(
                             },
                             modifier = Modifier
                                 .padding(horizontal = 16.dp)
-                                .padding(bottom = 12.dp + LocalMainNavBarInset.current)
+                                .padding(bottom = 20.dp + LocalMainNavBarInset.current)
                         )
                     }
                 }
@@ -686,6 +691,7 @@ fun LibraryScreen(
         tabOrder = uiState.tabOrder,
         customLists = uiState.customListNames,
         hiddenLists = uiState.hiddenListNames,
+        counts = uiState.tabCounts,
         mediaType = mediaType,
         onVisibilityChanged = { name, hidden ->
             viewModel.onAction(LibraryAction.ToggleListVisibility(name, hidden))
@@ -749,8 +755,6 @@ private fun LibraryTabContent(
     hasQuickProgress: Boolean,
     mediaType: MediaType,
     titleLanguage: com.anisync.android.data.TitleLanguage,
-    onSortClick: () -> Unit,
-    onFiltersClick: () -> Unit,
     onEntryClick: (LibraryEntry) -> Unit,
     onEntryLongPress: (LibraryEntry) -> Unit,
     onIncrement: (Int) -> Unit,
@@ -763,21 +767,11 @@ private fun LibraryTabContent(
         // pull-to-refresh cannot fire on an empty or glitched tab (#35).
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             item {
-                Column(modifier = Modifier.fillParentMaxSize()) {
-                    LibraryToolbar(
-                        sort = uiState.sortOption,
-                        isAscending = uiState.isAscending,
-                        filters = uiState.filters,
-                        onSortClick = onSortClick,
-                        onFiltersClick = onFiltersClick,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        EmptyLibraryTabState(
-                            (tab as? LibraryTab.Standard)?.status,
-                            mediaType
-                        )
-                    }
+                Box(
+                    modifier = Modifier.fillParentMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    EmptyLibraryTabState((tab as? LibraryTab.Standard)?.status, mediaType)
                 }
             }
         }
@@ -800,24 +794,13 @@ private fun LibraryTabContent(
         contentPadding = PaddingValues(
             start = 24.dp,
             end = 24.dp,
-            top = 8.dp,
-            bottom = 24.dp + LocalMainNavBarInset.current + if (selectionMode) 84.dp else 0.dp
+            top = 12.dp,
+            bottom = 24.dp + LocalMainNavBarInset.current + if (selectionMode) 96.dp else 0.dp
         ),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(if (isGrid) 20.dp else 12.dp),
         modifier = Modifier.fillMaxSize()
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }, key = "toolbar", contentType = "toolbar") {
-            LibraryToolbar(
-                sort = uiState.sortOption,
-                isAscending = uiState.isAscending,
-                filters = uiState.filters,
-                onSortClick = onSortClick,
-                onFiltersClick = onFiltersClick,
-                horizontalPadding = 0.dp
-            )
-        }
-
         groups.forEach { group ->
             if (group.title != null) {
                 item(
@@ -1042,11 +1025,14 @@ private fun LibrarySearchBarInputField(
     textFieldState: TextFieldState,
     isSearchQueryEmpty: Boolean,
     isGridView: Boolean,
+    isNonDefaultSort: Boolean,
+    isAscending: Boolean,
     showListManagement: Boolean,
     onSearch: () -> Unit,
     onBackClick: () -> Unit,
     onClearClick: () -> Unit,
     onToggleView: () -> Unit,
+    onSortAndFilter: () -> Unit,
     onOverflow: () -> Unit,
     overflowMenu: @Composable () -> Unit
 ) {
@@ -1055,17 +1041,7 @@ private fun LibrarySearchBarInputField(
         searchBarState = searchBarState,
         textFieldState = textFieldState,
         onSearch = { onSearch() },
-        placeholder = {
-            if (searchBarState.currentValue == SearchBarValue.Collapsed) {
-                Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.search_library_placeholder),
-                    textAlign = TextAlign.Center
-                )
-            } else {
-                Text(stringResource(R.string.search_library_placeholder))
-            }
-        },
+        placeholder = { Text(stringResource(R.string.search_library_placeholder)) },
         leadingIcon = if (searchBarState.currentValue == SearchBarValue.Expanded) {
             {
                 IconButton(onClick = onBackClick) {
@@ -1090,6 +1066,32 @@ private fun LibrarySearchBarInputField(
                             imageVector = if (isGridView) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda,
                             contentDescription = stringResource(R.string.toggle_view)
                         )
+                    }
+                    IconButton(onClick = onSortAndFilter) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .then(
+                                    if (isNonDefaultSort) {
+                                        Modifier.background(
+                                            MaterialTheme.colorScheme.tertiaryContainer,
+                                            CircleShape
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                        ) {
+                            SortIcon(
+                                isAscending = isAscending,
+                                activeColor = if (isNonDefaultSort) {
+                                    MaterialTheme.colorScheme.onTertiaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                }
+                            )
+                        }
                     }
                     Box {
                         IconButton(onClick = onOverflow) {

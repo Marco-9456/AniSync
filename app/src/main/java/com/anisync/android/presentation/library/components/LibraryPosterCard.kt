@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -58,6 +59,7 @@ import com.anisync.android.presentation.components.ListIndicatorStyle
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.util.formatTimeUntilAiring
 import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
@@ -286,6 +288,16 @@ private fun PosterArt(
             )
         }
 
+        // The bottom-start corner is the only one the action and the indicator leave free, and a
+        // grid with no airing date is a grid you have to open a card to read.
+        if (!selectionMode) {
+            PosterStateChip(
+                entry = entry,
+                aired = aired,
+                modifier = Modifier.align(Alignment.BottomStart).padding(10.dp)
+            )
+        }
+
         when {
             selectionMode -> Box(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp)
@@ -377,12 +389,16 @@ private fun PosterMetaRow(
                 )
             }
             if (showScore && (entry.score ?: 0.0) > 0.0) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = StarGold,
-                    modifier = Modifier.size(15.dp)
-                )
+                // POINT_5 and POINT_3 render as stars and smileys already; a leading star on top
+                // of those draws the rating twice.
+                if (scoreFormat != ScoreFormat.POINT_5 && scoreFormat != ScoreFormat.POINT_3) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = StarGold,
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
                 Text(
                     text = formatScore(entry.score, scoreFormat),
                     fontSize = 13.sp,
@@ -574,6 +590,67 @@ private fun ScorePosterBadge(
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1
+        )
+    }
+}
+
+/**
+ * When the next episode lands, or how much is already waiting.
+ *
+ * Deliberately not "EP n out now": that phrasing reads as a release announcement even on a show
+ * that finished years ago. The count of what is waiting says the same thing without implying the
+ * series is still going out.
+ */
+@Composable
+private fun PosterStateChip(
+    entry: LibraryEntry,
+    aired: Int?,
+    modifier: Modifier = Modifier
+) {
+    val behind = if (aired != null && entry.progress < aired) aired - entry.progress else 0
+    val countdown = entry.dynamicTimeUntilAiring
+    val nextEpisode = entry.nextAiringEpisode
+    val label = when {
+        behind > 0 -> stringResource(R.string.library_episodes_behind_short, behind)
+        countdown != null && nextEpisode != null -> stringResource(
+            R.string.airing_episode_in,
+            nextEpisode,
+            formatTimeUntilAiring(countdown)
+        )
+
+        else -> null
+    } ?: return
+
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Black.copy(alpha = 0.55f))
+            .padding(horizontal = 6.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        if (behind > 0) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(listIndicatorColor(ListIndicatorKind.WATCHING).content)
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Schedule,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(11.dp)
+            )
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

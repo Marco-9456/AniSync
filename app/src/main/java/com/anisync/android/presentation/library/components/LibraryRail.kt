@@ -2,8 +2,8 @@ package com.anisync.android.presentation.library.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,16 +82,25 @@ fun LibraryRail(
     modifier: Modifier = Modifier
 ) {
     val background = MaterialTheme.colorScheme.background
+    val listState = rememberLazyListState()
+
+    // Swiping the pager changes the list; the rail has to follow, or the chip you just landed on
+    // stays off screen and the rail reads as out of sync with the content.
+    LaunchedEffect(selectedIndex, tabs.size) {
+        if (selectedIndex in tabs.indices) {
+            listState.animateScrollToItem(selectedIndex)
+        }
+    }
+
     Box(modifier = modifier.fillMaxWidth().height(RailHeight)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(start = 100.dp, end = 72.dp),
+        LazyRow(
+            state = listState,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(start = 100.dp, end = 72.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            tabs.forEachIndexed { index, tab ->
+            itemsIndexed(tabs, key = { _, tab -> tab.toId() }) { index, tab ->
                 LibraryRailChip(
                     tab = tab,
                     mediaType = mediaType,

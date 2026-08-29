@@ -44,11 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,7 +54,6 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
-import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
@@ -344,34 +339,24 @@ private fun QueueStateLine(
     modifier: Modifier = Modifier
 ) {
     val behind = if (aired != null && entry.progress < aired) aired - entry.progress else 0
-    val ready = behind > 0 && entry.status == LibraryStatus.CURRENT
+    val ready = behind > 0
     val countdown = entry.dynamicTimeUntilAiring
     val nextEpisode = entry.nextAiringEpisode
-    val tertiary = MaterialTheme.colorScheme.tertiary
 
-    // One annotated string rather than several Texts: separate nodes let the row clip the last one
-    // and leave an orphaned separator behind when a title runs long.
-    val readyText = stringResource(R.string.library_episode_out_now, entry.progress + 1)
-    val behindText = if (behind > 1) stringResource(R.string.library_episodes_behind_short, behind) else null
-    val label: AnnotatedString? = when {
-        ready -> buildAnnotatedString {
-            append(readyText)
-            if (behindText != null) {
-                append(" · ")
-                withStyle(SpanStyle(color = tertiary)) { append(behindText) }
-            }
-        }
+    // "EP 13 out now" reads as a release announcement, which is wrong for anything that finished
+    // years ago and is redundant for anything still running: the count of what is waiting says the
+    // same thing in fewer words and never implies the show is still going out.
+    val label: String? = when {
+        ready -> stringResource(R.string.library_episodes_behind_short, behind)
 
-        countdown != null && nextEpisode != null -> AnnotatedString(
-            stringResource(
-                R.string.airing_episode_in,
-                nextEpisode,
-                formatTimeUntilAiring(countdown)
-            )
+        countdown != null && nextEpisode != null -> stringResource(
+            R.string.airing_episode_in,
+            nextEpisode,
+            formatTimeUntilAiring(countdown)
         )
 
         total != null && entry.progress >= total ->
-            AnnotatedString(stringResource(R.string.library_all_caught_up))
+            stringResource(R.string.library_all_caught_up)
 
         else -> null
     }
