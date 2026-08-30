@@ -386,7 +386,7 @@ private fun ImmersiveCardContent(
                 .padding(contentPadding)
                 .fillMaxWidth()
         ) {
-            // Format chip + rating row — matches DiscoverHeroCarousel for visual parity
+            // Format chip + rating row
             // between Trending Now and Standard/Grid result cards.
             val showChipRow = style is CardStyle.Hero || style is CardStyle.Standard || style is CardStyle.Grid
             if (showChipRow) {

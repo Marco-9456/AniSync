@@ -46,6 +46,15 @@ object TransitionKeys {
 
     /** Discover TBA row prefix */
     const val DISCOVER_TBA = "discover_tba"
+
+    /** Discover spotlight card prefix (trending #1) */
+    const val DISCOVER_SPOTLIGHT = "discover_spotlight"
+
+    /** Discover airing-today timeline prefix */
+    const val DISCOVER_AIRING = "discover_airing"
+
+    /** Discover Releasing now row prefix (manga) */
+    const val DISCOVER_RELEASING = "discover_releasing"
     
     /** Profile tab/screen prefix */
     const val PROFILE = "profile"
