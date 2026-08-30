@@ -374,6 +374,34 @@ class AppSettings @Inject constructor(
     )
     val showAdultContent: StateFlow<Boolean> = _showAdultContent.asStateFlow()
 
+    /**
+     * Discover's rail order, per media type. The two tabs do not carry the same set (the airing
+     * timeline is anime only, Releasing now is manga only), so one shared order could not describe
+     * both. Stored as ids joined on a comma; [com.anisync.android.domain.DiscoverSection] repairs
+     * the list against the current build on read.
+     */
+    private val _discoverAnimeSectionOrder = MutableStateFlow(readCsv(KEY_DISCOVER_ANIME_SECTIONS))
+    val discoverAnimeSectionOrder: StateFlow<List<String>> = _discoverAnimeSectionOrder.asStateFlow()
+
+    private val _discoverMangaSectionOrder = MutableStateFlow(readCsv(KEY_DISCOVER_MANGA_SECTIONS))
+    val discoverMangaSectionOrder: StateFlow<List<String>> = _discoverMangaSectionOrder.asStateFlow()
+
+    /** Rails the viewer switched off, per media type. */
+    private val _hiddenDiscoverAnimeSections = MutableStateFlow(
+        prefs.getStringSet(KEY_DISCOVER_ANIME_HIDDEN, emptySet()) ?: emptySet()
+    )
+    val hiddenDiscoverAnimeSections: StateFlow<Set<String>> =
+        _hiddenDiscoverAnimeSections.asStateFlow()
+
+    private val _hiddenDiscoverMangaSections = MutableStateFlow(
+        prefs.getStringSet(KEY_DISCOVER_MANGA_HIDDEN, emptySet()) ?: emptySet()
+    )
+    val hiddenDiscoverMangaSections: StateFlow<Set<String>> =
+        _hiddenDiscoverMangaSections.asStateFlow()
+
+    private fun readCsv(key: String): List<String> =
+        prefs.getString(key, "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+
     private val _discoverSearchViewMode = MutableStateFlow(
         DiscoverViewMode.entries.getOrElse(
             prefs.getInt(KEY_DISCOVER_SEARCH_VIEW_MODE, DiscoverViewMode.LIST.ordinal)
@@ -903,6 +931,32 @@ class AppSettings @Inject constructor(
         }
     }
 
+    /** Persist Discover's rail order for one tab. */
+    fun setDiscoverSectionOrder(type: MediaType, order: List<String>) {
+        val isAnime = type == MediaType.ANIME
+        val flow = if (isAnime) _discoverAnimeSectionOrder else _discoverMangaSectionOrder
+        flow.value = order
+        prefs.edit()
+            .putString(
+                if (isAnime) KEY_DISCOVER_ANIME_SECTIONS else KEY_DISCOVER_MANGA_SECTIONS,
+                order.joinToString(",")
+            )
+            .apply()
+    }
+
+    /** Persist which Discover rails are switched off for one tab. */
+    fun setHiddenDiscoverSections(type: MediaType, hidden: Set<String>) {
+        val isAnime = type == MediaType.ANIME
+        val flow = if (isAnime) _hiddenDiscoverAnimeSections else _hiddenDiscoverMangaSections
+        flow.value = hidden
+        prefs.edit()
+            .putStringSet(
+                if (isAnime) KEY_DISCOVER_ANIME_HIDDEN else KEY_DISCOVER_MANGA_HIDDEN,
+                hidden
+            )
+            .apply()
+    }
+
     fun setHiddenAnimeLists(hidden: Set<String>) {
         _hiddenAnimeLists.value = hidden
         prefs.edit().putStringSet(KEY_HIDDEN_ANIME_LISTS, hidden).apply()
@@ -1270,6 +1324,10 @@ companion object {
         private const val KEY_FEED_FILTER = "feed_filter"
         private const val KEY_LIBRARY_GRID_VIEW = "library_grid_view"
         private const val KEY_LIBRARY_TAB_VIEW_MODES = "library_tab_view_modes"
+        private const val KEY_DISCOVER_ANIME_SECTIONS = "discover_anime_sections"
+        private const val KEY_DISCOVER_MANGA_SECTIONS = "discover_manga_sections"
+        private const val KEY_DISCOVER_ANIME_HIDDEN = "discover_anime_hidden_sections"
+        private const val KEY_DISCOVER_MANGA_HIDDEN = "discover_manga_hidden_sections"
         private const val KEY_GRID_COLUMNS_AUTO = "grid_columns_auto"
         private const val KEY_GRID_COLUMN_COUNT = "grid_column_count"
         private const val KEY_SHOW_SCORE_ON_CARDS = "show_score_on_cards"
