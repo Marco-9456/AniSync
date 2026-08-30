@@ -237,6 +237,16 @@ class LibraryRepositoryImpl @Inject constructor(
             // Smart merge to preserve locally-added entries during API sync delay.
             // Tag rows with the active account so each account's library persists independently.
             val owner = currentOwnerId()
+
+            // An empty response is far likelier to be a throttled or partial fetch than an account
+            // that just deleted its entire list for this media type — a 429 whose body still parses
+            // gets here with no lists at all. smartMergeByType reads "absent from the response" as
+            // "removed on the server", so without this the cached library is wiped and the screen
+            // shows an empty-state for a library that is still perfectly intact upstream.
+            if (entries.isEmpty() && libraryDao.getByType(owner, type).isNotEmpty()) {
+                return@safeApiCall
+            }
+
             libraryDao.smartMergeByType(owner, type, entries.map { it.toEntity(type).copy(ownerId = owner) })
         }
     }
