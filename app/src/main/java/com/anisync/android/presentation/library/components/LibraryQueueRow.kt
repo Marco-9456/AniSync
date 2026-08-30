@@ -36,6 +36,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -451,29 +454,65 @@ fun EpisodeProgressBar(
         }
 
         // No announced ending. Measuring against a denominator that will not exist for years says
-        // nothing, so the bar measures against what has actually aired and a dotted tail carries
-        // the run past the end of the track. The gap between the fill and the tail is exactly
-        // what is waiting to be watched — the thing a "/ ?" bar can never draw.
-        aired != null && aired > 0 -> Row(
-            modifier = modifier.height(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(6.dp)
-                    .clip(shape)
-                    .background(available)
-            ) {
+        // nothing, so the bar measures against what has actually aired and the run visibly carries
+        // on past the end of the track. The gap between the fill and that end is exactly what is
+        // waiting to be watched — the thing a "/ ?" bar can never draw.
+        aired != null && aired > 0 -> {
+            val fill = (progress.toFloat() / aired).coerceIn(0f, 1f)
+            if (allowTicks) {
+                // Roomy: a dotted tail past the track reads as "and it keeps going".
+                Row(
+                    modifier = modifier.height(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(6.dp)
+                            .clip(shape)
+                            .background(available)
+                    ) {
+                        Box(Modifier.fillMaxWidth(fill).fillMaxSize().background(watched))
+                    }
+                    Spacer(Modifier.width(6.dp))
+                    OpenEndedTail(color = track)
+                }
+            } else {
+                // A grid cell shares one line with a count that can run to four digits each side.
+                // The dotted tail costs 20dp there and leaves the bar a stub, so the open end is
+                // carried by the track fading out instead — no extra width at all.
                 Box(
-                    Modifier
-                        .fillMaxWidth((progress.toFloat() / aired).coerceIn(0f, 1f))
-                        .fillMaxSize()
-                        .background(watched)
-                )
+                    modifier = modifier
+                        .height(6.dp)
+                        .clip(shape)
+                        .background(
+                            Brush.horizontalGradient(
+                                0f to available,
+                                0.8f to available,
+                                1f to Color.Transparent
+                            )
+                        )
+                ) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth(fill)
+                            .fillMaxSize()
+                            .background(
+                                // Only a full fill needs its own fade; a partial one already has
+                                // visible track after it saying the run continues.
+                                if (fill > 0.98f) {
+                                    Brush.horizontalGradient(
+                                        0f to watched,
+                                        0.8f to watched,
+                                        1f to Color.Transparent
+                                    )
+                                } else {
+                                    SolidColor(watched)
+                                }
+                            )
+                    )
+                }
             }
-            Spacer(Modifier.width(6.dp))
-            OpenEndedTail(color = track)
         }
 
         // Nothing known at all: no length, no schedule. The rail claims no denominator.
@@ -496,7 +535,7 @@ fun EpisodeProgressBar(
 
 /** The run continues past the track: four dots, fading out. */
 @Composable
-private fun OpenEndedTail(color: androidx.compose.ui.graphics.Color) {
+private fun OpenEndedTail(color: Color) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(3.dp)
@@ -621,9 +660,14 @@ private fun SelectionCheck(selected: Boolean) {
  * out" is a number you can act on, and it is the same denominator the bar is drawn against.
  */
 @Composable
-fun progressLabel(progress: Int, aired: Int?, total: Int?): String = when {
+fun progressLabel(progress: Int, aired: Int?, total: Int?, compact: Boolean = false): String = when {
     total != null -> stringResource(R.string.progress_format, progress, total.toString())
-    aired != null && aired > 0 -> stringResource(R.string.library_progress_out, progress, aired)
+    aired != null && aired > 0 -> if (compact) {
+        // "1175 / 1175 out" beside a bar in a 150dp grid cell leaves the bar a stub.
+        stringResource(R.string.progress_format, progress, aired.toString())
+    } else {
+        stringResource(R.string.library_progress_out, progress, aired)
+    }
     else -> stringResource(
         R.string.progress_format,
         progress,

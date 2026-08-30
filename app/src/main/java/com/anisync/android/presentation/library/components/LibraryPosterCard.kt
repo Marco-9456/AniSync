@@ -360,7 +360,7 @@ private fun PosterMetaRow(
                 allowTicks = false
             )
             Text(
-                text = progressLabel(entry.progress, aired, total),
+                text = progressLabel(entry.progress, aired, total, compact = true),
                 fontSize = 13.sp,
                 lineHeight = 18.sp,
                 fontWeight = FontWeight.Bold,
@@ -594,11 +594,10 @@ private fun PosterStateChip(
     val nextEpisode = entry.nextAiringEpisode
     val label = when {
         behind > 0 -> stringResource(R.string.library_episodes_behind_short, behind)
-        countdown != null && nextEpisode != null -> stringResource(
-            R.string.airing_episode_in,
-            nextEpisode,
-            formatTimeUntilAiring(countdown)
-        )
+        // Just the time. "Ep 1176 in 1d" does not fit beside the action on a poster this narrow,
+        // and truncating it cuts off the countdown — the one part worth reading. The clock icon
+        // carries the meaning; the episode number is on the row layout and the detail page.
+        countdown != null && nextEpisode != null -> formatTimeUntilAiring(countdown)
 
         else -> null
     } ?: return
