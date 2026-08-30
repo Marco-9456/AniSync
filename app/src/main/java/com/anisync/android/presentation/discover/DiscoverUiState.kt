@@ -1,11 +1,15 @@
 package com.anisync.android.presentation.discover
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.anisync.android.data.DiscoverViewMode
+import com.anisync.android.domain.AiringEpisode
+import com.anisync.android.domain.DiscoverSection
 import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.SearchFilters
+import com.anisync.android.presentation.discover.components.BrowseChip
 import com.anisync.android.type.MediaType
 
 /**
@@ -44,41 +48,73 @@ data class SearchPaging(
     }
 }
 
-sealed interface DiscoverUiState {
-    data object Loading : DiscoverUiState
-
-    @Stable
-    data class Success(
-        val trending: List<LibraryEntry> = emptyList(),
-        val popular: List<LibraryEntry> = emptyList(),
-        val upcoming: List<LibraryEntry> = emptyList(),
-        val newlyAdded: List<LibraryEntry> = emptyList(),
-        val tba: List<LibraryEntry> = emptyList(),
-        // Short "Recent Reviews" strip fetched alongside the media feed.
-        val recentReviews: List<MediaReview> = emptyList(),
-        val mediaType: MediaType = MediaType.ANIME,
-        val isRefreshing: Boolean = false,
-        val searchQuery: String = "",
-        val isSearchActive: Boolean = false,
-        val searchAnime: List<LibraryEntry> = emptyList(),
-        val searchManga: List<LibraryEntry> = emptyList(),
-        val groupedResults: GroupedSearchResults = GroupedSearchResults(),
-        val isSearching: Boolean = false,
-        val searchFilters: SearchFilters = SearchFilters(),
-        val searchError: String? = null,
-        val viewMode: DiscoverViewMode = DiscoverViewMode.LIST,
-        val activeCategory: ResultCategory = ResultCategory.ALL,
-        val searchPaging: SearchPaging = SearchPaging(),
-        /**
-         * Monotonic counter bumped when an external screen asks Discover to open its
-         * search overlay with preset filters (see DiscoverSearchLauncher). The screen
-         * reacts to changes by clearing the query field and expanding the search bar.
-         */
-        val searchOverlayRequest: Long = 0L
-    ) : DiscoverUiState
-
-    data class Error(val message: String) : DiscoverUiState
+/**
+ * One rail's own load state.
+ *
+ * Discover used to gate the whole screen on all five media requests succeeding, so a single failed
+ * list replaced everything with one centred error. Each rail now carries its own state and a
+ * failure hides that rail alone.
+ */
+@Immutable
+data class SectionFeed<T>(
+    val items: List<T> = emptyList(),
+    val isLoading: Boolean = true,
+    val error: String? = null
+) {
+    /** True once the rail has finished and has nothing worth drawing. */
+    val isEmpty: Boolean get() = !isLoading && items.isEmpty()
 }
+
+/**
+ * Every rail's contents. Keyed by concrete field rather than a map so the screen reads each one
+ * with its own element type.
+ */
+@Stable
+data class DiscoverFeeds(
+    val trending: SectionFeed<LibraryEntry> = SectionFeed(),
+    val airingToday: SectionFeed<AiringEpisode> = SectionFeed(),
+    val releasing: SectionFeed<LibraryEntry> = SectionFeed(),
+    val popular: SectionFeed<LibraryEntry> = SectionFeed(),
+    val notYetReleased: SectionFeed<LibraryEntry> = SectionFeed(),
+    val newlyAdded: SectionFeed<LibraryEntry> = SectionFeed(),
+    val reviews: SectionFeed<MediaReview> = SectionFeed()
+) {
+    /** Nothing has come back yet, which is the only time the screen shows a shimmer. */
+    val isInitialLoad: Boolean
+        get() = trending.isLoading && popular.isLoading && notYetReleased.isLoading &&
+            newlyAdded.isLoading
+}
+
+@Stable
+data class DiscoverUiState(
+    val feeds: DiscoverFeeds = DiscoverFeeds(),
+    val mediaType: MediaType = MediaType.ANIME,
+    /**
+     * The rails to draw, in the viewer's order and already stripped of hidden ones and of
+     * anything the current tab cannot show.
+     */
+    val sectionOrder: List<DiscoverSection> = emptyList(),
+    /** Rails switched off for this tab, kept so the reorder sheet can list them. */
+    val hiddenSections: Set<DiscoverSection> = emptySet(),
+    val isRefreshing: Boolean = false,
+    val searchQuery: String = "",
+    val isSearchActive: Boolean = false,
+    val searchAnime: List<LibraryEntry> = emptyList(),
+    val searchManga: List<LibraryEntry> = emptyList(),
+    val groupedResults: GroupedSearchResults = GroupedSearchResults(),
+    val isSearching: Boolean = false,
+    val searchFilters: SearchFilters = SearchFilters(),
+    val searchError: String? = null,
+    val viewMode: DiscoverViewMode = DiscoverViewMode.LIST,
+    val activeCategory: ResultCategory = ResultCategory.ALL,
+    val searchPaging: SearchPaging = SearchPaging(),
+    /**
+     * Monotonic counter bumped when an external screen asks Discover to open its
+     * search overlay with preset filters (see DiscoverSearchLauncher). The screen
+     * reacts to changes by clearing the query field and expanding the search bar.
+     */
+    val searchOverlayRequest: Long = 0L
+)
 
 sealed interface DiscoverAction {
     data class OnMediaTypeChange(val type: MediaType) : DiscoverAction
@@ -92,4 +128,15 @@ sealed interface DiscoverAction {
     data object LoadTaxonomy : DiscoverAction
     data class OnViewModeChange(val mode: DiscoverViewMode) : DiscoverAction
     data class OnCategoryChange(val category: ResultCategory) : DiscoverAction
+
+    /** Reorder sheet: the full visible-plus-hidden order for the current tab. */
+    data class ReorderSections(val order: List<DiscoverSection>) : DiscoverAction
+    data class SetSectionVisible(val section: DiscoverSection, val visible: Boolean) : DiscoverAction
+    data object ResetSectionOrder : DiscoverAction
+
+    /** A browse chip in the header rail. Schedule is handled by the screen, not the viewmodel. */
+    data class OnBrowseChip(val chip: BrowseChip) : DiscoverAction
+
+    /** Spotlight's list button: put the title straight on Planning without leaving Discover. */
+    data class AddToPlanning(val mediaId: Int) : DiscoverAction
 }
