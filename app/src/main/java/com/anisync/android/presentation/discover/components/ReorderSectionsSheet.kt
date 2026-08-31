@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.discover.components
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -8,17 +9,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
@@ -33,11 +35,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.DiscoverSection
@@ -126,64 +130,71 @@ fun ReorderSectionsSheet(
                 ReorderableItem(reorderableState, key = section.id) { isDragging ->
                     val isHidden = section in hiddenSections
                     val elevation by animateDpAsState(
-                        if (isDragging) 4.dp else 0.dp,
+                        if (isDragging) 6.dp else 0.dp,
                         label = "discover_section_drag"
                     )
                     Surface(
                         shadowElevation = elevation,
-                        tonalElevation = if (isDragging) 2.dp else 0.dp,
-                        shape = MaterialTheme.shapes.medium,
+                        shape = RoundedCornerShape(16.dp),
                         color = if (isDragging) MaterialTheme.colorScheme.surfaceContainerHigh
-                        else MaterialTheme.colorScheme.surfaceContainerLow,
-                        modifier = Modifier.graphicsLayer { alpha = if (isHidden) 0.45f else 1f }
+                        else MaterialTheme.colorScheme.background,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                            .height(56.dp)
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(
-                                modifier = Modifier.draggableHandle(
-                                    onDragStarted = {
-                                        haptics.performHapticFeedback(
-                                            HapticFeedbackType.GestureThresholdActivate
-                                        )
-                                    },
-                                    onDragStopped = {
-                                        haptics.performHapticFeedback(HapticFeedbackType.GestureEnd)
-                                        onReorder(localOrder.toList())
-                                    }
-                                ),
-                                onClick = {}
-                            ) {
-                                Icon(
-                                    Icons.Default.DragHandle,
-                                    contentDescription = stringResource(R.string.cd_reorder),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.DragIndicator,
+                                contentDescription = stringResource(R.string.cd_reorder),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .draggableHandle(
+                                        onDragStarted = {
+                                            haptics.performHapticFeedback(
+                                                HapticFeedbackType.GestureThresholdActivate
+                                            )
+                                        },
+                                        onDragStopped = {
+                                            haptics.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                            onReorder(localOrder.toList())
+                                        }
+                                    )
+                            )
 
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(14.dp))
 
                             Text(
                                 text = stringResource(section.titleRes()),
                                 style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
                                 color = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant
                                 else MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f)
                             )
 
-                            IconButton(onClick = { onVisibilityChanged(section, isHidden) }) {
-                                Icon(
-                                    imageVector = if (isHidden) Icons.Default.VisibilityOff
-                                    else Icons.Default.Visibility,
-                                    contentDescription = stringResource(
-                                        if (isHidden) R.string.discover_section_show
-                                        else R.string.discover_section_hide
-                                    ),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Icon(
+                                imageVector = if (isHidden) Icons.Default.VisibilityOff
+                                else Icons.Default.Visibility,
+                                contentDescription = stringResource(
+                                    if (isHidden) R.string.discover_section_show
+                                    else R.string.discover_section_hide
+                                ),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .clickable(
+                                        role = Role.Switch,
+                                        onClick = { onVisibilityChanged(section, isHidden) }
+                                    )
+                            )
                         }
                     }
                 }

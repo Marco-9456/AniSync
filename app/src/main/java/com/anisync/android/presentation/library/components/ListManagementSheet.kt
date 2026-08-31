@@ -22,7 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -196,7 +196,7 @@ fun ListManagementSheet(
                                     onClick = {},
                                 ) {
                                     Icon(
-                                        Icons.Default.DragHandle,
+                                        Icons.Default.DragIndicator,
                                         contentDescription = stringResource(R.string.cd_reorder),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
