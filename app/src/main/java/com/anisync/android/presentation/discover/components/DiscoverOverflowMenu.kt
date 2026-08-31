@@ -51,7 +51,7 @@ fun DiscoverOverflowMenu(
         }
         gap()
         item(
-            text = stringResource(R.string.library_refresh),
+            text = stringResource(R.string.discover_refresh),
             leadingIcon = Icons.Default.Refresh,
             onClick = {
                 onDismiss()

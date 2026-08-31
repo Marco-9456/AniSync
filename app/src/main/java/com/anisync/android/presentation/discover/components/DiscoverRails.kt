@@ -59,6 +59,7 @@ private const val PosterAspect = 171f / 243f
 
 private val CoverToTitleGap = 8.dp
 private val TitleLineHeight = 20.sp
+private val TitleSlack = 6.dp
 
 /** The dark foot a cover marker sits on. */
 internal val MarkerScrim: Brush = Brush.verticalGradient(
@@ -74,7 +75,11 @@ object DiscoverRailDefaults {
      */
     @Composable
     fun height(cardWidth: Dp, titleLines: Int = 2): Dp = with(LocalDensity.current) {
-        cardWidth / PosterAspect + CoverToTitleGap + TitleLineHeight.toDp() * titleLines
+        // The slack matters: two lines of text measure a shade over two line heights once
+        // Compose has added its line-height distribution, and without it the title silently
+        // collapses to one ellipsised line.
+        cardWidth / PosterAspect + CoverToTitleGap +
+            TitleLineHeight.toDp() * titleLines + TitleSlack
     }
 }
 

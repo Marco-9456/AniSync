@@ -146,6 +146,7 @@
     <string name="discover_reorder_caption">Drag to reorder. Hide a section with the eye. Anime and Manga keep their own order.</string>
     <string name="discover_section_show">Show section</string>
     <string name="discover_section_hide">Hide section</string>
+    <string name="discover_refresh">Refresh</string>
     <string name="recent_reviews_title">Recent Reviews</string>
     <string name="recent_reviews_empty">No reviews found.</string>
     <string name="reviews_filter_all">All</string>

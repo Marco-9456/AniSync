@@ -86,7 +86,10 @@ fun AiringTimeline(
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val rowHeight = with(LocalDensity.current) {
-        AxisHeight + 6.dp + 16.dp + 8.dp + (CardWidth / PosterAspect) + 8.dp + 20.sp.toDp() * 2
+        // Trailing 6dp is slack for the two-line title, which otherwise measures a hair over
+        // two line heights and gets clamped to one.
+        AxisHeight + 6.dp + 16.dp + 8.dp + (CardWidth / PosterAspect) + 8.dp +
+            20.sp.toDp() * 2 + 6.dp
     }
     // Index of the first episode still to come; the marker slots in just before it.
     val nowIndex = remember(episodes, nowEpochSec) {

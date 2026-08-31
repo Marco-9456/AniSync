@@ -71,12 +71,12 @@ fun DiscoverSectionHeader(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
-                .weight(1f, fill = false)
+                .weight(1f)
                 .semantics { heading() }
         )
 
         if (onActionClick != null) {
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.width(8.dp))
             val label = actionLabel ?: stringResource(R.string.a11y_action_see_all_button)
             val description = stringResource(R.string.a11y_action_see_all, title)
             Row(
