@@ -121,7 +121,7 @@
     <string name="discover_section_popular">All-time popular</string>
     <string name="discover_section_not_yet_released">Not yet released</string>
     <string name="discover_section_newly_added">New to AniList</string>
-    <string name="discover_section_reviews">Latest reviews</string>
+    <string name="discover_section_reviews">Recent reviews</string>
 
     <string name="discover_spotlight_rank">#1</string>
     <string name="discover_add_to_list">Add to list</string>

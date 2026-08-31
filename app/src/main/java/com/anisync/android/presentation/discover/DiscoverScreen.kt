@@ -560,6 +560,10 @@ private fun SearchInputField(
     }
 
     SearchBarDefaults.InputField(
+        // Without this the collapsed bar is sized by whatever it happens to contain, so Discover
+        // (leading icon, longer placeholder) sat at the cap while Library sat under it and the two
+        // screens showed visibly different bars. Both fill the width instead.
+        modifier = if (isExpanded) Modifier else Modifier.fillMaxWidth(),
         searchBarState = searchBarState,
         textFieldState = textFieldState,
         onSearch = {

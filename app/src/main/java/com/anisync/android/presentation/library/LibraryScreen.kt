@@ -1057,6 +1057,12 @@ private fun LibrarySearchBarInputField(
     overflowMenu: @Composable () -> Unit
 ) {
     SearchBarDefaults.InputField(
+        // Matches Discover: a collapsed bar sized by its content differs screen to screen.
+        modifier = if (searchBarState.currentValue == SearchBarValue.Expanded) {
+            Modifier
+        } else {
+            Modifier.fillMaxWidth()
+        },
         enabled = !showListManagement,
         searchBarState = searchBarState,
         textFieldState = textFieldState,

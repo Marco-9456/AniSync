@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.library.LibraryTab
+import com.anisync.android.presentation.components.MediaTypeToggle
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toListIcon
@@ -219,86 +220,6 @@ private fun LibraryRailChip(
                     )
                 }
             }
-        }
-    }
-}
-
-/**
- * Anime and manga as two icons rather than a full-width labelled group.
- *
- * The switch is used a couple of times a session at most, and the icons are the ones the app
- * already pairs with those words everywhere else. The shapes are the connected-group shapes the
- * rest of the app's switchers use: full radius on the selected end, a tight inner corner on the seam.
- */
-@Composable
-private fun MediaTypeToggle(
-    selected: MediaType,
-    onSelect: (MediaType) -> Unit
-) {
-    val haptic = rememberHapticFeedback()
-    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        MediaTypeSegment(
-            icon = Icons.Default.Tv,
-            label = stringResource(R.string.media_type_anime),
-            selected = selected == MediaType.ANIME,
-            shape = RoundedCornerShape(topStart = 17.dp, bottomStart = 17.dp, topEnd = 7.dp, bottomEnd = 7.dp),
-            selectedShape = CircleShape,
-            onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onSelect(MediaType.ANIME)
-            }
-        )
-        MediaTypeSegment(
-            icon = Icons.AutoMirrored.Filled.MenuBook,
-            label = stringResource(R.string.media_type_manga),
-            selected = selected == MediaType.MANGA,
-            shape = RoundedCornerShape(topEnd = 17.dp, bottomEnd = 17.dp, topStart = 7.dp, bottomStart = 7.dp),
-            selectedShape = CircleShape,
-            onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onSelect(MediaType.MANGA)
-            }
-        )
-    }
-}
-
-@Composable
-private fun MediaTypeSegment(
-    icon: ImageVector,
-    label: String,
-    selected: Boolean,
-    shape: androidx.compose.ui.graphics.Shape,
-    selectedShape: androidx.compose.ui.graphics.Shape,
-    onClick: () -> Unit
-) {
-    val resolved = if (selected) selectedShape else shape
-    Surface(
-        color = if (selected) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.surfaceContainer
-        },
-        shape = resolved,
-        modifier = Modifier
-            .size(width = 35.dp, height = RailHeight)
-            .bouncyClickable(onClick = onClick, role = Role.Tab, clipShape = resolved)
-            .clearAndSetSemantics {
-                role = Role.Tab
-                this.selected = selected
-                contentDescription = label
-            }
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (selected) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                modifier = Modifier.size(18.dp)
-            )
         }
     }
 }

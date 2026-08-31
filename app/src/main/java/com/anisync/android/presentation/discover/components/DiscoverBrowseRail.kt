@@ -14,14 +14,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Domain
 import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,6 +37,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.presentation.components.MediaTypeToggle
+import com.anisync.android.presentation.components.MediaTypeToggleHeight
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.type.MediaType
 
@@ -93,10 +94,14 @@ fun DiscoverBrowseRail(
 ) {
     val background = MaterialTheme.colorScheme.background
     Row(
-        modifier = modifier.fillMaxWidth().height(34.dp),
+        modifier = modifier.fillMaxWidth().height(MediaTypeToggleHeight),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        MediaTypeSwitch(mediaType = mediaType, onSelect = onMediaTypeChange)
+        MediaTypeToggle(
+            selected = mediaType,
+            onSelect = onMediaTypeChange,
+            modifier = Modifier.padding(start = 16.dp)
+        )
 
         Box(modifier = Modifier.weight(1f)) {
             Row(
@@ -117,70 +122,17 @@ fun DiscoverBrowseRail(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
                     .width(8.dp)
-                    .height(34.dp)
+                    .height(MediaTypeToggleHeight)
                     .background(Brush.horizontalGradient(listOf(background, Color.Transparent)))
             )
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .width(32.dp)
-                    .height(34.dp)
+                    .height(MediaTypeToggleHeight)
                     .background(Brush.horizontalGradient(listOf(Color.Transparent, background)))
             )
         }
-    }
-}
-
-@Composable
-private fun MediaTypeSwitch(mediaType: MediaType, onSelect: (MediaType) -> Unit) {
-    Row(
-        modifier = Modifier.padding(start = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        MediaTypeSegment(
-            icon = Icons.Default.Tv,
-            label = stringResource(R.string.media_type_anime),
-            selected = mediaType == MediaType.ANIME,
-            onClick = { onSelect(MediaType.ANIME) }
-        )
-        MediaTypeSegment(
-            icon = Icons.AutoMirrored.Filled.MenuBook,
-            label = stringResource(R.string.media_type_manga),
-            selected = mediaType == MediaType.MANGA,
-            onClick = { onSelect(MediaType.MANGA) }
-        )
-    }
-}
-
-@Composable
-private fun MediaTypeSegment(
-    icon: ImageVector,
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val shape = RoundedCornerShape(50)
-    Box(
-        modifier = Modifier
-            .size(width = 35.dp, height = 34.dp)
-            .clip(shape)
-            .background(if (selected) MaterialTheme.colorScheme.primary else Color.Transparent)
-            .bouncyClickable(
-                onClick = onClick,
-                role = Role.Tab,
-                onClickLabel = label,
-                clipShape = shape
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = if (selected) MaterialTheme.colorScheme.onPrimary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp)
-        )
     }
 }
 
@@ -190,7 +142,7 @@ private fun BrowseChipItem(chip: BrowseChip, onClick: () -> Unit) {
     val label = stringResource(chip.labelRes())
     Row(
         modifier = Modifier
-            .height(34.dp)
+            .height(MediaTypeToggleHeight)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .bouncyClickable(
