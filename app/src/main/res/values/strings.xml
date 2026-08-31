@@ -110,6 +110,42 @@
     <string name="section_newly_added">Newly Added</string>
     <string name="section_recent_reviews">Recent Reviews</string>
     <string name="section_tba">TBA</string>
+
+    <!-- Discover sections. Each name states what its query actually returns: TRENDING_DESC is a
+         rolling activity score with no window, POPULARITY_DESC is a list count, ID_DESC is the
+         order things were added to AniList, and NOT_YET_RELEASED covers both the entries with a
+         season and the ones without. -->
+    <string name="discover_section_trending">Trending now</string>
+    <string name="discover_section_airing_today">Airing today</string>
+    <string name="discover_section_releasing_now">Releasing now</string>
+    <string name="discover_section_popular">All-time popular</string>
+    <string name="discover_section_not_yet_released">Not yet released</string>
+    <string name="discover_section_newly_added">New to AniList</string>
+    <string name="discover_section_reviews">Latest reviews</string>
+
+    <string name="discover_spotlight_rank">#1</string>
+    <string name="discover_add_to_list">Add to list</string>
+    <string name="discover_airing_now">NOW</string>
+    <string name="discover_episode_short">EP %1$d</string>
+    <string name="discover_tba_marker">TBA</string>
+    <string name="discover_search_placeholder_anime">Search anime, characters, studios</string>
+    <string name="discover_search_placeholder_manga">Search manga, characters, staff</string>
+    <string name="discover_section_failed">Couldn\'t load this section</string>
+
+    <string name="discover_browse_seasonal">Seasonal</string>
+    <string name="discover_browse_schedule">Schedule</string>
+    <string name="discover_browse_studios">Studios</string>
+    <string name="discover_browse_genres">Genres</string>
+    <string name="discover_browse_top_100">Top 100</string>
+    <string name="discover_browse_manhwa">Manhwa</string>
+    <string name="discover_browse_manhua">Manhua</string>
+    <string name="discover_browse_light_novels">Light novels</string>
+
+    <string name="discover_reorder_title">Reorder sections</string>
+    <string name="discover_reorder_reset">Reset</string>
+    <string name="discover_reorder_caption">Drag to reorder. Hide a section with the eye. Anime and Manga keep their own order.</string>
+    <string name="discover_section_show">Show section</string>
+    <string name="discover_section_hide">Hide section</string>
     <string name="recent_reviews_title">Recent Reviews</string>
     <string name="recent_reviews_empty">No reviews found.</string>
     <string name="reviews_filter_all">All</string>
