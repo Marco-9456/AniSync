@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +45,7 @@ import coil.request.ImageRequest
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.LocalCoverQuality
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.ListIndicator
@@ -54,6 +54,7 @@ import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.presentation.util.toListIcon
 import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
@@ -257,11 +258,13 @@ fun DiscoverSpotlight(
                 ),
             contentAlignment = Alignment.Center
         ) {
+            // The list's own glyph, not a generic plus: the button produces a Planning entry, and
+            // this is the mark that entry then carries on every cover and in the rail.
             Icon(
-                imageVector = Icons.Default.Add,
+                imageVector = LibraryStatus.PLANNING.toListIcon(),
                 contentDescription = stringResource(R.string.discover_add_to_list),
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(22.dp)
             )
         }
     }
