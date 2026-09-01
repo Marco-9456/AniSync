@@ -85,6 +85,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -1067,7 +1068,13 @@ private fun LibrarySearchBarInputField(
         searchBarState = searchBarState,
         textFieldState = textFieldState,
         onSearch = { onSearch() },
-        placeholder = { Text(stringResource(R.string.search_library_placeholder)) },
+        placeholder = {
+            Text(
+                text = stringResource(R.string.search_library_placeholder),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
         leadingIcon = if (searchBarState.currentValue == SearchBarValue.Expanded) {
             {
                 IconButton(onClick = onBackClick) {

@@ -75,6 +75,7 @@ import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -579,7 +580,15 @@ private fun SearchInputField(
             onSearch()
             keyboardController?.hide()
         },
-        placeholder = { Text(stringResource(placeholderTextRes)) },
+        // One line always: at a raised font scale the placeholder wrapped and took the whole
+        // search bar with it, so the bar's height depended on the wording.
+        placeholder = {
+            Text(
+                text = stringResource(placeholderTextRes),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
         leadingIcon = {
             if (isExpanded) {
                 IconButton(onClick = {
