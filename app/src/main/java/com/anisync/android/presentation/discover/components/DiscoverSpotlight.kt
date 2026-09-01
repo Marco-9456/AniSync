@@ -51,6 +51,7 @@ import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.ListIndicator
 import com.anisync.android.presentation.components.ListIndicatorStyle
 import com.anisync.android.presentation.util.AppMotion
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.toLabel
@@ -73,6 +74,14 @@ private val SpotlightScrim: Brush = Brush.verticalGradient(
 
 /** Wide enough to read as a banner, short enough to leave the rail beneath it above the fold. */
 private const val SpotlightAspect = 364f / 176f
+
+/**
+ * Past compact widths the aspect ratio stops being the right rule: holding 364:176 on a 1245dp
+ * tablet pane makes the card ~390dp tall, which is most of the viewport and pushes the ranked rail
+ * it is supposed to introduce off the bottom. A fixed height lets the banner get wider and shorter
+ * instead, which is closer to the shape AniList's banner art actually is.
+ */
+private val SpotlightHeightWide = 260.dp
 
 /**
  * The single card at the head of Trending.
@@ -124,10 +133,14 @@ fun DiscoverSpotlight(
         modifier
     }
 
+    val isCompact = LocalAdaptiveInfo.current.isCompact
     Box(
         modifier = rootModifier
             .fillMaxWidth()
-            .aspectRatio(SpotlightAspect)
+            .then(
+                if (isCompact) Modifier.aspectRatio(SpotlightAspect)
+                else Modifier.height(SpotlightHeightWide)
+            )
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(
