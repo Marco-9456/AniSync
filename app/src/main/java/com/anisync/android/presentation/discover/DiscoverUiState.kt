@@ -63,6 +63,9 @@ data class SectionFeed<T>(
 ) {
     /** True once the rail has finished and has nothing worth drawing. */
     val isEmpty: Boolean get() = !isLoading && items.isEmpty()
+
+    /** The rail finished and failed, which is what earns an inline message instead of silence. */
+    val hasFailed: Boolean get() = !isLoading && error != null
 }
 
 /**
@@ -83,7 +86,29 @@ data class DiscoverFeeds(
     val isInitialLoad: Boolean
         get() = trending.isLoading && popular.isLoading && notYetReleased.isLoading &&
             newlyAdded.isLoading
+
+    fun of(section: DiscoverSection): SectionFeed<*> = when (section) {
+        DiscoverSection.TRENDING -> trending
+        DiscoverSection.AIRING_TODAY -> airingToday
+        DiscoverSection.RELEASING_NOW -> releasing
+        DiscoverSection.POPULAR -> popular
+        DiscoverSection.NOT_YET_RELEASED -> notYetReleased
+        DiscoverSection.NEWLY_ADDED -> newlyAdded
+        DiscoverSection.REVIEWS -> reviews
+    }
+
+    fun markLoading(section: DiscoverSection): DiscoverFeeds = when (section) {
+        DiscoverSection.TRENDING -> copy(trending = trending.retrying())
+        DiscoverSection.AIRING_TODAY -> copy(airingToday = airingToday.retrying())
+        DiscoverSection.RELEASING_NOW -> copy(releasing = releasing.retrying())
+        DiscoverSection.POPULAR -> copy(popular = popular.retrying())
+        DiscoverSection.NOT_YET_RELEASED -> copy(notYetReleased = notYetReleased.retrying())
+        DiscoverSection.NEWLY_ADDED -> copy(newlyAdded = newlyAdded.retrying())
+        DiscoverSection.REVIEWS -> copy(reviews = reviews.retrying())
+    }
 }
+
+private fun <T> SectionFeed<T>.retrying(): SectionFeed<T> = copy(isLoading = true, error = null)
 
 @Stable
 data class DiscoverUiState(
@@ -114,7 +139,15 @@ data class DiscoverUiState(
      * reacts to changes by clearing the query field and expanding the search bar.
      */
     val searchOverlayRequest: Long = 0L
-)
+) {
+    /**
+     * Nothing is left to draw and it is not because requests are still out. Distinguishing this
+     * from "every section hidden" matters: one is a failure to report, the other is a choice the
+     * viewer made and can reverse.
+     */
+    val hasNothingToShow: Boolean
+        get() = !feeds.isInitialLoad && sectionOrder.none { feeds.of(it).items.isNotEmpty() }
+}
 
 sealed interface DiscoverAction {
     data class OnMediaTypeChange(val type: MediaType) : DiscoverAction
@@ -139,4 +172,7 @@ sealed interface DiscoverAction {
 
     /** Spotlight's list button: put the title straight on Planning without leaving Discover. */
     data class AddToPlanning(val mediaId: Int) : DiscoverAction
+
+    /** Re-run one rail's request, rather than the whole screen's. */
+    data class RetrySection(val section: DiscoverSection) : DiscoverAction
 }

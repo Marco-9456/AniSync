@@ -3,6 +3,7 @@ package com.anisync.android.data
 import com.anisync.android.GetMediaBySortQuery
 import com.anisync.android.GetPaginatedMediaQuery
 import com.anisync.android.GetUpcomingMediaQuery
+import com.anisync.android.data.util.dataOrThrow
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.LibraryEntry
@@ -105,10 +106,10 @@ class DiscoverRepositoryImpl @Inject constructor(
             .doNotStore(true)
             .execute()
 
-            response.data?.Page?.media?.filterNotNull()
+            response.dataOrThrow().Page?.media?.filterNotNull()
                 ?.filter { it.season != null }
                 ?.map { media -> media.toLibraryEntry("UPCOMING") }
-                ?: emptyList()
+                .orEmpty()
         }
     }
 
@@ -125,11 +126,11 @@ class DiscoverRepositoryImpl @Inject constructor(
             .doNotStore(true)
             .execute()
 
-            response.data?.Page?.media?.filterNotNull()
+            response.dataOrThrow().Page?.media?.filterNotNull()
                 ?.filter { it.season == null }
                 ?.take(10)
                 ?.map { media -> media.toLibraryEntry("TBA") }
-                ?: emptyList()
+                .orEmpty()
         }
     }
 
@@ -153,10 +154,10 @@ class DiscoverRepositoryImpl @Inject constructor(
                 .doNotStore(true)
                 .execute()
 
-            response.data?.Page?.media?.filterNotNull()
+            response.dataOrThrow().Page?.media?.filterNotNull()
                 ?.take(10)
                 ?.map { media -> media.toLibraryEntry(if (media.season != null) "UPCOMING" else "TBA") }
-                ?: emptyList()
+                .orEmpty()
         }
     }
 
@@ -203,8 +204,9 @@ class DiscoverRepositoryImpl @Inject constructor(
             .doNotStore(true)
             .execute()
 
-            val pageInfo = response.data?.Page?.pageInfo
-            val allMedia = response.data?.Page?.media?.filterNotNull() ?: emptyList()
+            val pageData = response.dataOrThrow().Page
+            val pageInfo = pageData?.pageInfo
+            val allMedia = pageData?.media?.filterNotNull().orEmpty()
             
             val filteredMedia = when (sectionType) {
                 "upcoming" -> allMedia.filter { it.season != null }
@@ -262,7 +264,7 @@ class DiscoverRepositoryImpl @Inject constructor(
             .doNotStore(true)
             .execute()
 
-            response.data?.Page?.media?.filterNotNull()?.map { media ->
+            response.dataOrThrow().Page?.media?.filterNotNull()?.map { media ->
                 LibraryEntry(
                     id = 0,
                     mediaId = media.id ?: 0,
@@ -285,7 +287,7 @@ class DiscoverRepositoryImpl @Inject constructor(
                     bannerUrl = media.bannerImage,
                     seasonYear = media.seasonYear
                 )
-            } ?: emptyList()
+            }.orEmpty()
         }
     }
 

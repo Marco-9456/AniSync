@@ -160,6 +160,7 @@ class DiscoverViewModel @Inject constructor(
             is DiscoverAction.ResetSectionOrder -> resetSectionOrder()
             is DiscoverAction.OnBrowseChip -> onBrowseChip(action.chip)
             is DiscoverAction.AddToPlanning -> addToPlanning(action.mediaId)
+            is DiscoverAction.RetrySection -> retrySection(action.section)
         }
     }
 
@@ -591,6 +592,34 @@ class DiscoverViewModel @Inject constructor(
     private fun addToPlanning(mediaId: Int) {
         viewModelScope.launch {
             detailsRepository.updateMediaListEntry(mediaId, LibraryStatus.PLANNING, progress = 0)
+        }
+    }
+
+    /**
+     * Re-run one rail's request.
+     *
+     * Reloading the whole screen to recover a single failed section would throw away six
+     * responses that already arrived, and spend six requests against the rate limit to do it.
+     */
+    private fun retrySection(section: DiscoverSection) {
+        val mediaType = _uiState.value.mediaType
+        if (!section.supports(mediaType)) return
+        _uiState.update { it.copy(feeds = it.feeds.markLoading(section)) }
+        viewModelScope.launch {
+            when (section) {
+                DiscoverSection.TRENDING ->
+                    loadEntries(mediaType, { discoverRepository.getTrending(it) }) { f, v -> f.copy(trending = v) }
+                DiscoverSection.POPULAR ->
+                    loadEntries(mediaType, { discoverRepository.getPopular(it) }) { f, v -> f.copy(popular = v) }
+                DiscoverSection.NOT_YET_RELEASED ->
+                    loadEntries(mediaType, { discoverRepository.getNotYetReleased(it) }) { f, v -> f.copy(notYetReleased = v) }
+                DiscoverSection.NEWLY_ADDED ->
+                    loadEntries(mediaType, { discoverRepository.getNewlyAdded(it) }) { f, v -> f.copy(newlyAdded = v) }
+                DiscoverSection.RELEASING_NOW ->
+                    loadEntries(mediaType, { discoverRepository.getReleasing(it) }) { f, v -> f.copy(releasing = v) }
+                DiscoverSection.AIRING_TODAY -> loadAiringToday(mediaType)
+                DiscoverSection.REVIEWS -> loadReviews(mediaType)
+            }
         }
     }
 

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -313,5 +314,38 @@ private fun MarkerCard(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+/**
+ * Stands in for a rail whose request is in flight.
+ *
+ * Only reachable after the first paint, which means a retry or a tab switch. Without it the
+ * section disappeared for the length of the request and reappeared afterwards, so tapping Retry
+ * looked like it had deleted the section.
+ */
+@Composable
+fun SectionSkeletonRail(
+    cardWidth: Dp,
+    modifier: Modifier = Modifier,
+    coverHeight: Dp? = null
+) {
+    val height = coverHeight ?: (cardWidth / PosterAspect)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(DiscoverRailDefaults.height(cardWidth))
+            .padding(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        repeat(3) {
+            Box(
+                modifier = Modifier
+                    .width(cardWidth)
+                    .height(height)
+                    .clip(ExpressiveShapes.mediaCover)
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+            )
+        }
     }
 }

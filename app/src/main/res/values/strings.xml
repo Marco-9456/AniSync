@@ -130,7 +130,6 @@
     <string name="discover_tba_marker">TBA</string>
     <string name="discover_search_placeholder_anime">Search anime, characters, studios</string>
     <string name="discover_search_placeholder_manga">Search manga, characters, staff</string>
-    <string name="discover_section_failed">Couldn\'t load this section</string>
 
     <string name="discover_browse_seasonal">Seasonal</string>
     <string name="discover_browse_schedule">Schedule</string>
@@ -147,6 +146,20 @@
     <string name="discover_section_show">Show section</string>
     <string name="discover_section_hide">Hide section</string>
     <string name="discover_refresh">Refresh</string>
+
+    <!-- Discover empty states. Each rail owns its request, so a single failure is a section-level
+         message and only a total failure takes the screen. -->
+    <string name="discover_empty_offline_title">Nothing loaded</string>
+    <string name="discover_empty_offline_desc">Discover needs the network. Check your connection and pull to refresh.</string>
+    <string name="discover_empty_hidden_title">Every section is off</string>
+    <string name="discover_empty_hidden_desc">Turn one back on, or drag them into the order you want.</string>
+    <string name="discover_empty_search_title">No matches</string>
+    <string name="discover_empty_search_desc">Nothing matched that search. Try fewer words.</string>
+    <string name="discover_empty_search_desc_filtered">Nothing matched that search with your filters on.</string>
+    <string name="discover_empty_action_retry">Retry</string>
+    <string name="discover_empty_action_clear_filters">Clear filters</string>
+    <string name="discover_section_error_title">Couldn\'t load</string>
+    <string name="discover_section_error_desc">The rest of Discover is fine.</string>
     <string name="recent_reviews_title">Recent Reviews</string>
     <string name="recent_reviews_empty">No reviews found.</string>
     <string name="reviews_filter_all">All</string>

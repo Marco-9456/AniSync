@@ -75,6 +75,7 @@ import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -86,12 +87,17 @@ import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.discover.components.AiringTimeline
 import com.anisync.android.presentation.discover.components.BrowseChip
+import com.anisync.android.presentation.discover.components.DiscoverAllHiddenState
 import com.anisync.android.presentation.discover.components.DiscoverBrowseRail
+import com.anisync.android.presentation.discover.components.DiscoverNoResultsState
+import com.anisync.android.presentation.discover.components.DiscoverOfflineState
 import com.anisync.android.presentation.discover.components.DiscoverOverflowMenu
 import com.anisync.android.presentation.discover.components.DiscoverSectionHeader
 import com.anisync.android.presentation.discover.components.DiscoverSpotlight
 import com.anisync.android.presentation.discover.components.MediaMarkerRail
 import com.anisync.android.presentation.discover.components.ReorderSectionsSheet
+import com.anisync.android.presentation.discover.components.SectionErrorCard
+import com.anisync.android.presentation.discover.components.SectionSkeletonRail
 import com.anisync.android.presentation.discover.components.TrendingRankRail
 import com.anisync.android.presentation.discover.components.titleRes
 import com.anisync.android.presentation.discover.components.DiscoverShimmer
@@ -354,6 +360,8 @@ fun DiscoverScreen(
             onRecentReviewsSeeAllClick = onRecentReviewsSeeAllClick,
             onOpenCalendar = onNavigateToCalendar,
             onAddToPlanning = { viewModel.onAction(DiscoverAction.AddToPlanning(it)) },
+            onRetrySection = { viewModel.onAction(DiscoverAction.RetrySection(it)) },
+            onReorderSections = { showReorderSheet = true },
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope
         )
@@ -437,6 +445,7 @@ fun DiscoverScreen(
         searchPaging = searchPaging,
         onLoadMore = { viewModel.onAction(DiscoverAction.LoadMoreResults) },
         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(it)) },
+        onClearFilters = { viewModel.onAction(DiscoverAction.ClearFilters) },
         onFiltersChange = { viewModel.onAction(DiscoverAction.UpdateFilters(it)) },
         onLoadTaxonomy = { viewModel.onAction(DiscoverAction.LoadTaxonomy) },
         onViewModeChange = { viewModel.onAction(DiscoverAction.OnViewModeChange(it)) },
@@ -630,6 +639,8 @@ private fun DiscoverContent(
     onRecentReviewsSeeAllClick: (MediaType) -> Unit,
     onOpenCalendar: () -> Unit,
     onAddToPlanning: (Int) -> Unit,
+    onRetrySection: (DiscoverSection) -> Unit,
+    onReorderSections: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -659,6 +670,26 @@ private fun DiscoverContent(
                 item(key = "shimmer", contentType = "shimmer") { DiscoverShimmer() }
                 return@LazyColumn
             }
+            // Two ways to end up with an empty feed, and they need different answers: every
+            // request failed, or the viewer switched every rail off.
+            if (state.sectionOrder.isEmpty()) {
+                item(key = "all_hidden", contentType = "empty_state") {
+                    DiscoverAllHiddenState(
+                        onReorder = onReorderSections,
+                        modifier = Modifier.fillParentMaxHeight()
+                    )
+                }
+                return@LazyColumn
+            }
+            if (state.hasNothingToShow) {
+                item(key = "offline", contentType = "empty_state") {
+                    DiscoverOfflineState(
+                        onRetry = onRefresh,
+                        modifier = Modifier.fillParentMaxHeight()
+                    )
+                }
+                return@LazyColumn
+            }
             state.sectionOrder.forEach { section ->
                 discoverSection(
                     section = section,
@@ -670,6 +701,7 @@ private fun DiscoverContent(
                     onRecentReviewsSeeAllClick = onRecentReviewsSeeAllClick,
                     onOpenCalendar = onOpenCalendar,
                     onAddToPlanning = onAddToPlanning,
+                    onRetrySection = onRetrySection,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope
                 )
@@ -696,6 +728,7 @@ private fun LazyListScope.discoverSection(
     onRecentReviewsSeeAllClick: (MediaType) -> Unit,
     onOpenCalendar: () -> Unit,
     onAddToPlanning: (Int) -> Unit,
+    onRetrySection: (DiscoverSection) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -710,7 +743,13 @@ private fun LazyListScope.discoverSection(
         DiscoverSection.NEWLY_ADDED -> feeds.newlyAdded.items.isNotEmpty()
         DiscoverSection.REVIEWS -> feeds.reviews.items.isNotEmpty()
     }
-    if (!hasContent) return
+    // A rail that failed keeps its header and says so; one that is simply empty says nothing,
+    // because an empty schedule is not a problem to report. A rail still waiting on a retry keeps
+    // its place too, or tapping Retry would look like it had deleted the section.
+    val feed = feeds.of(section)
+    val failed = feed.hasFailed
+    val reloading = feed.isLoading && !hasContent
+    if (!hasContent && !failed && !reloading) return
 
     item(key = "${section.id}_header", contentType = "section_header") {
         val title = stringResource(section.titleRes())
@@ -731,6 +770,20 @@ private fun LazyListScope.discoverSection(
             }
         )
         Spacer(Modifier.height(12.dp))
+    }
+
+    if (failed) {
+        item(key = "${section.id}_error", contentType = "section_error") {
+            SectionErrorCard(onRetry = { onRetrySection(section) })
+        }
+        return
+    }
+
+    if (reloading) {
+        item(key = "${section.id}_skeleton", contentType = "section_skeleton") {
+            SectionSkeletonRail(cardWidth = section.skeletonCardWidth())
+        }
+        return
     }
 
     when (section) {
@@ -839,6 +892,15 @@ private fun LazyListScope.discoverSection(
     }
 }
 
+/** The card width a rail's placeholder should reserve, so the layout does not jump on reload. */
+private fun DiscoverSection.skeletonCardWidth(): Dp = when (this) {
+    DiscoverSection.TRENDING -> 112.dp
+    DiscoverSection.AIRING_TODAY, DiscoverSection.RELEASING_NOW -> 132.dp
+    DiscoverSection.POPULAR -> 171.dp
+    DiscoverSection.NOT_YET_RELEASED, DiscoverSection.NEWLY_ADDED -> 148.dp
+    DiscoverSection.REVIEWS -> 310.dp
+}
+
 /** Which paginated grid a rail's See all opens. */
 private fun DiscoverSection.gridSectionType(): String = when (this) {
     DiscoverSection.TRENDING -> "trending"
@@ -905,6 +967,7 @@ private fun DiscoverSearchOverlay(
     searchPaging: SearchPaging,
     onLoadMore: () -> Unit,
     onSearch: (String) -> Unit,
+    onClearFilters: () -> Unit,
     onFiltersChange: (com.anisync.android.domain.SearchFilters) -> Unit,
     onLoadTaxonomy: () -> Unit,
     onViewModeChange: (com.anisync.android.data.DiscoverViewMode) -> Unit,
@@ -952,7 +1015,9 @@ private fun DiscoverSearchOverlay(
                 viewMode = viewMode,
                 activeCategory = activeCategory,
                 searchPaging = searchPaging,
+                searchFilters = searchFilters,
                 onLoadMore = onLoadMore,
+                onClearFilters = onClearFilters,
                 onViewModeChange = onViewModeChange,
                 onCategoryChange = onCategoryChange,
                 onSearchItemClick = onSearchItemClick,
@@ -994,7 +1059,9 @@ private fun SearchResultsContent(
     viewMode: com.anisync.android.data.DiscoverViewMode,
     activeCategory: ResultCategory,
     searchPaging: SearchPaging,
+    searchFilters: com.anisync.android.domain.SearchFilters,
     onLoadMore: () -> Unit,
+    onClearFilters: () -> Unit,
     onViewModeChange: (com.anisync.android.data.DiscoverViewMode) -> Unit,
     onCategoryChange: (ResultCategory) -> Unit,
     onSearchItemClick: (Int) -> Unit,
@@ -1029,13 +1096,10 @@ private fun SearchResultsContent(
         }
 
         !hasAnyResults && searchQuery.isNotEmpty() -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.search_no_results),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+            DiscoverNoResultsState(
+                hasFilters = searchFilters.hasActiveFilters,
+                onClearFilters = onClearFilters
+            )
         }
 
         else -> {
