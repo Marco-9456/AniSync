@@ -87,7 +87,7 @@ signing.properties
 
 # Release & distribution
 /release/
-app/stable/release/
+app/stable/
 *.signed.apk
 *.dm
 
