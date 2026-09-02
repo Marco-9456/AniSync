@@ -385,7 +385,13 @@ fun AppTheme(
     if (!view.isInEditMode) {
         androidx.compose.runtime.SideEffect {
             val window = (view.context as android.app.Activity).window
-            val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, view)
+            // Bound to the decor view, not the Compose view. enableEdgeToEdge() installs its own
+            // controller on the decor view, and a controller built over a different view does not
+            // reliably own the same appearance flags, so writes here were being ignored: with the
+            // app in light mode under a dark system theme, both bars kept their light icons and
+            // went invisible (issue #127).
+            val insetsController =
+                androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
             // Both bars: enableEdgeToEdge() styles them from the system theme once at creation,
             // which goes stale when the in-app theme differs or changes without a recreate.
             insetsController.isAppearanceLightStatusBars = !darkTheme

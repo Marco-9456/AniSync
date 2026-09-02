@@ -17,7 +17,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import android.content.res.Configuration
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import com.anisync.android.data.ThemeMode
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -167,7 +170,27 @@ class MainActivity : AppCompatActivity() {
         val onCreateTime = measureTimeMillis {
             super.onCreate(savedInstanceState)
 
-            enableEdgeToEdge()
+            // Styled from the app's own theme, not the system's. The no-argument overload derives
+            // the bar appearance from the system night mode, so on the first frame the bars can be
+            // styled for the opposite theme to the one about to be drawn, and nothing corrects them
+            // until the first composition (issue #127). ThemeMode.SYSTEM still resolves to the
+            // system value, which is what it means.
+            val startsDark = when (appSettings.themeMode.value) {
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+                ThemeMode.SYSTEM ->
+                    (applicationContext.resources.configuration.uiMode and
+                        Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+            }
+            val barStyle = if (startsDark) {
+                SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+            } else {
+                SystemBarStyle.light(
+                    android.graphics.Color.TRANSPARENT,
+                    android.graphics.Color.TRANSPARENT
+                )
+            }
+            enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
 
             val savedLocale = appSettings.appLocale.value
             if (savedLocale != AppLocale.SYSTEM) {
