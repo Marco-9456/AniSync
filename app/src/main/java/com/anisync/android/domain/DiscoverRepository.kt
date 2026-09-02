@@ -37,6 +37,21 @@ interface DiscoverRepository {
     suspend fun getTBA(type: MediaType): Result<List<LibraryEntry>>
 
     /**
+     * Every not-yet-released entry in one call, tagged UPCOMING when AniList gave it a season and
+     * TBA when it did not. Discover shows the two as one rail; [getUpcoming] and [getTBA] remain
+     * for the section grids, which page each half on its own.
+     * @param type Media type (ANIME or MANGA)
+     */
+    suspend fun getNotYetReleased(type: MediaType): Result<List<LibraryEntry>>
+
+    /**
+     * Media that is actively coming out (status RELEASING), most trending first. Discover uses it
+     * on the Manga tab, where the airing timeline has no counterpart.
+     * @param type Media type (ANIME or MANGA)
+     */
+    suspend fun getReleasing(type: MediaType): Result<List<LibraryEntry>>
+
+    /**
      * Get newly added media by type — the entries most recently added to AniList
      * (sorted by descending database id).
      * @param type Media type (ANIME or MANGA)
@@ -64,7 +79,8 @@ interface DiscoverRepository {
     
     /**
      * Fetches paginated media for grid screens with optional format filtering.
-     * @param sectionType One of: "trending", "popular", "upcoming", "tba"
+     * @param sectionType One of: "trending", "popular", "upcoming", "tba",
+     *   "newly_added", "releasing", "not_yet_released"
      * @param type MediaType (ANIME or MANGA)
      * @param page Page number (1-indexed)
      * @param format Optional format filter (TV, MOVIE, OVA, etc.)

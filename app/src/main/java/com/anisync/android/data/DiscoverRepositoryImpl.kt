@@ -3,12 +3,14 @@ package com.anisync.android.data
 import com.anisync.android.GetMediaBySortQuery
 import com.anisync.android.GetPaginatedMediaQuery
 import com.anisync.android.GetUpcomingMediaQuery
+import com.anisync.android.data.util.dataOrThrow
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.DiscoverRepository
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.PaginatedResult
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.map
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaSort
 import com.anisync.android.type.MediaStatus
@@ -104,10 +106,10 @@ class DiscoverRepositoryImpl @Inject constructor(
             .doNotStore(true)
             .execute()
 
-            response.data?.Page?.media?.filterNotNull()
+            response.dataOrThrow().Page?.media?.filterNotNull()
                 ?.filter { it.season != null }
                 ?.map { media -> media.toLibraryEntry("UPCOMING") }
-                ?: emptyList()
+                .orEmpty()
         }
     }
 
@@ -124,12 +126,48 @@ class DiscoverRepositoryImpl @Inject constructor(
             .doNotStore(true)
             .execute()
 
-            response.data?.Page?.media?.filterNotNull()
+            response.dataOrThrow().Page?.media?.filterNotNull()
                 ?.filter { it.season == null }
                 ?.take(10)
                 ?.map { media -> media.toLibraryEntry("TBA") }
-                ?: emptyList()
+                .orEmpty()
         }
+    }
+
+    /**
+     * The whole NOT_YET_RELEASED set in one request, each entry tagged UPCOMING or TBA by whether
+     * AniList gave it a season. [getUpcoming] and [getTBA] still serve the section grids, which
+     * page the two halves separately; Discover shows them as one rail because the split is an
+     * artefact of the data, not something a reader is browsing by. On Manga the split collapses
+     * entirely, since manga entries almost never carry a season.
+     */
+    override suspend fun getNotYetReleased(type: MediaType): Result<List<LibraryEntry>> {
+        return safeApiCall {
+            val response = apolloClient.query(
+                GetUpcomingMediaQuery(
+                    perPage = Optional.present(20),
+                    type = Optional.present(type),
+                    status = Optional.present(MediaStatus.NOT_YET_RELEASED)
+                )
+            )
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .doNotStore(true)
+                .execute()
+
+            response.dataOrThrow().Page?.media?.filterNotNull()
+                ?.take(10)
+                ?.map { media -> media.toLibraryEntry(if (media.season != null) "UPCOMING" else "TBA") }
+                .orEmpty()
+        }
+    }
+
+    /**
+     * Media that is actively coming out. Discover shows this on the Manga tab in the slot the
+     * airing timeline holds for anime, because `airingSchedules` has no manga counterpart.
+     */
+    override suspend fun getReleasing(type: MediaType): Result<List<LibraryEntry>> {
+        return getPaginatedSection("releasing", type, page = 1, format = null)
+            .map { it.items }
     }
 
     override suspend fun getPaginatedSection(
@@ -145,6 +183,10 @@ class DiscoverRepositoryImpl @Inject constructor(
                 "upcoming" -> listOf(MediaSort.POPULARITY_DESC) to MediaStatus.NOT_YET_RELEASED
                 "tba" -> listOf(MediaSort.POPULARITY_DESC) to MediaStatus.NOT_YET_RELEASED
                 "newly_added" -> listOf(MediaSort.ID_DESC) to null
+                "releasing" -> listOf(MediaSort.TRENDING_DESC) to MediaStatus.RELEASING
+                // The unreleased rail merges the season and no-season halves, so its grid must
+                // not re-apply the split "upcoming" and "tba" filter on.
+                "not_yet_released" -> listOf(MediaSort.POPULARITY_DESC) to MediaStatus.NOT_YET_RELEASED
                 else -> listOf(MediaSort.POPULARITY_DESC) to null
             }
 
@@ -162,8 +204,9 @@ class DiscoverRepositoryImpl @Inject constructor(
             .doNotStore(true)
             .execute()
 
-            val pageInfo = response.data?.Page?.pageInfo
-            val allMedia = response.data?.Page?.media?.filterNotNull() ?: emptyList()
+            val pageData = response.dataOrThrow().Page
+            val pageInfo = pageData?.pageInfo
+            val allMedia = pageData?.media?.filterNotNull().orEmpty()
             
             val filteredMedia = when (sectionType) {
                 "upcoming" -> allMedia.filter { it.season != null }
@@ -193,7 +236,9 @@ class DiscoverRepositoryImpl @Inject constructor(
                         "tba" -> "TBA"
                         else -> null
                     },
-                    averageScore = media.averageScore
+                    averageScore = media.averageScore,
+                    seasonYear = media.seasonYear,
+                    season = media.season
                 )
             }
 
@@ -219,7 +264,7 @@ class DiscoverRepositoryImpl @Inject constructor(
             .doNotStore(true)
             .execute()
 
-            response.data?.Page?.media?.filterNotNull()?.map { media ->
+            response.dataOrThrow().Page?.media?.filterNotNull()?.map { media ->
                 LibraryEntry(
                     id = 0,
                     mediaId = media.id ?: 0,
@@ -237,9 +282,12 @@ class DiscoverRepositoryImpl @Inject constructor(
                     format = media.format,
                     status = LibraryStatus.UNKNOWN,
                     mediaStatus = null,
-                    averageScore = media.averageScore
+                    averageScore = media.averageScore,
+                    genres = media.genres?.filterNotNull().orEmpty(),
+                    bannerUrl = media.bannerImage,
+                    seasonYear = media.seasonYear
                 )
-            } ?: emptyList()
+            }.orEmpty()
         }
     }
 
@@ -261,7 +309,9 @@ class DiscoverRepositoryImpl @Inject constructor(
             format = this.format,
             status = LibraryStatus.UNKNOWN,
             mediaStatus = mediaStatus,
-            averageScore = this.averageScore
+            averageScore = this.averageScore,
+            seasonYear = this.seasonYear,
+            season = this.season
         )
     }
 }

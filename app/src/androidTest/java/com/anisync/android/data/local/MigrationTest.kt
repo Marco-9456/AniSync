@@ -152,6 +152,42 @@ class MigrationTest {
         }
     }
 
+    /**
+     * v25 to v27 gave `library_entries` the two media columns the filter sheet reads: `genres` in
+     * v26 and `format` in v27.
+     *
+     * Both are added columns with defaults, so the risk is not the SQL — it is that a missing
+     * `@AutoMigration` entry would send `fallbackToDestructiveMigration` through instead and drop
+     * the user's whole library without a crash to show for it.
+     */
+    @Test
+    fun migrate25To27_addsGenresAndFormatWithoutLosingEntries() {
+        helper.createDatabase(TEST_DB, 25).apply {
+            execSQL(
+                """
+                INSERT INTO library_entries (
+                    id, mediaId, titleUserPreferred, progress, status, rewatches, lastUpdated
+                ) VALUES (1, 100, 'Test Anime', 5, 'CURRENT', 0, 1700000000)
+                """.trimIndent()
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(TEST_DB, 27, true)
+
+        db.query(
+            "SELECT genres, format, progress, titleUserPreferred FROM library_entries WHERE id = 1"
+        ).use { cursor ->
+            assertEquals(1, cursor.count)
+            cursor.moveToFirst()
+            // New columns take their declared defaults; the row itself survives untouched.
+            assertEquals("[]", cursor.getString(0))
+            assertEquals(true, cursor.isNull(1))
+            assertEquals(5, cursor.getInt(2))
+            assertEquals("Test Anime", cursor.getString(3))
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════════
     //                         MIGRATION TEST TEMPLATES
     // ═══════════════════════════════════════════════════════════════════════════

@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 
 /**
@@ -53,6 +54,8 @@ data class LibraryEntryEntity(
     val totalChapters: Int?,
     val totalVolumes: Int?,
     val mediaType: MediaType?,
+    @androidx.room.ColumnInfo(defaultValue = "NULL")
+    val format: MediaFormat? = null,
     val status: LibraryStatus,
     val nextAiringEpisode: Int?,
     val timeUntilAiring: Int?,
@@ -68,6 +71,8 @@ data class LibraryEntryEntity(
     val mediaStartDate: Long? = null,
     @androidx.room.ColumnInfo(defaultValue = "[]")
     val customLists: List<String> = emptyList(),
+    @androidx.room.ColumnInfo(defaultValue = "[]")
+    val genres: List<String> = emptyList(),
     @androidx.room.ColumnInfo(defaultValue = "0")
     val isPrivate: Boolean = false,
     @androidx.room.ColumnInfo(defaultValue = "0")

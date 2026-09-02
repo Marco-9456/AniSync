@@ -110,6 +110,56 @@
     <string name="section_newly_added">Newly Added</string>
     <string name="section_recent_reviews">Recent Reviews</string>
     <string name="section_tba">TBA</string>
+
+    <!-- Discover sections. Each name states what its query actually returns: TRENDING_DESC is a
+         rolling activity score with no window, POPULARITY_DESC is a list count, ID_DESC is the
+         order things were added to AniList, and NOT_YET_RELEASED covers both the entries with a
+         season and the ones without. -->
+    <string name="discover_section_trending">Trending now</string>
+    <string name="discover_section_airing_today">Airing today</string>
+    <string name="discover_section_releasing_now">Releasing now</string>
+    <string name="discover_section_popular">All-time popular</string>
+    <string name="discover_section_not_yet_released">Not yet released</string>
+    <string name="discover_section_newly_added">New to AniList</string>
+    <string name="discover_section_reviews">Recent reviews</string>
+
+    <string name="discover_spotlight_rank">#1</string>
+    <string name="discover_add_to_list">Add to list</string>
+    <string name="discover_airing_now">NOW</string>
+    <string name="discover_episode_short">EP %1$d</string>
+    <string name="discover_tba_marker">TBA</string>
+    <string name="discover_search_placeholder_anime">Search anime, characters, studios</string>
+    <string name="discover_search_placeholder_manga">Search manga, characters, staff</string>
+
+    <string name="discover_browse_seasonal">Seasonal</string>
+    <string name="discover_browse_schedule">Schedule</string>
+    <string name="discover_browse_studios">Studios</string>
+    <string name="discover_browse_genres">Genres</string>
+    <string name="discover_browse_top_100">Top 100</string>
+    <string name="discover_browse_manhwa">Manhwa</string>
+    <string name="discover_browse_manhua">Manhua</string>
+    <string name="discover_browse_light_novels">Light novels</string>
+
+    <string name="discover_reorder_title">Reorder sections</string>
+    <string name="discover_reorder_reset">Reset</string>
+    <string name="discover_reorder_caption">Drag to reorder. Hide a section with the eye. Anime and Manga keep their own order.</string>
+    <string name="discover_section_show">Show section</string>
+    <string name="discover_section_hide">Hide section</string>
+    <string name="discover_refresh">Refresh</string>
+
+    <!-- Discover empty states. Each rail owns its request, so a single failure is a section-level
+         message and only a total failure takes the screen. -->
+    <string name="discover_empty_offline_title">Nothing loaded</string>
+    <string name="discover_empty_offline_desc">Discover needs the network. Check your connection and pull to refresh.</string>
+    <string name="discover_empty_hidden_title">Every section is off</string>
+    <string name="discover_empty_hidden_desc">Turn one back on, or drag them into the order you want.</string>
+    <string name="discover_empty_search_title">No matches</string>
+    <string name="discover_empty_search_desc">Nothing matched that search. Try fewer words.</string>
+    <string name="discover_empty_search_desc_filtered">Nothing matched that search with your filters on.</string>
+    <string name="discover_empty_action_retry">Retry</string>
+    <string name="discover_empty_action_clear_filters">Clear filters</string>
+    <string name="discover_section_error_title">Couldn\'t load</string>
+    <string name="discover_section_error_desc">The rest of Discover is fine.</string>
     <string name="recent_reviews_title">Recent Reviews</string>
     <string name="recent_reviews_empty">No reviews found.</string>
     <string name="reviews_filter_all">All</string>
@@ -1960,4 +2010,89 @@
 
     <!-- AniList link card -->
     <string name="link_card_view_activity">View activity</string>
+
+    <!-- Library redesign -->
+    <string name="select_all">Select all</string>
+    <string name="media_status_releasing">Releasing</string>
+    <string name="a11y_action_select_entry">Select entry</string>
+    <string name="a11y_action_mark_episode">Mark episode %1$d watched</string>
+    <string name="library_episode_out_now">EP %1$d out now</string>
+    <string name="library_all_caught_up">Up to date</string>
+    <string name="library_episode_count">%1$d eps</string>
+    <string name="library_chapter_count">%1$d ch</string>
+    <string name="library_filters">Filters</string>
+    <string name="library_sort_and_filter">Sort &amp; filter</string>
+    <string name="library_sort_by_label">Sort by</string>
+    <string name="library_filter_airing_status">Airing status</string>
+    <string name="library_filter_format">Format</string>
+    <string name="library_filter_genre">Genre</string>
+    <string name="library_filter_more">+ %1$d more</string>
+    <string name="library_episode_short">EP %1$d</string>
+    <string name="library_episodes_behind_short">%1$d behind</string>
+    <string name="library_progress_out">%1$d / %2$d out</string>
+    <string name="library_lists_title">Your lists</string>
+    <string name="library_lists_caption">Drag to reorder. Hide a list to drop it from the rail.</string>
+    <string name="library_new_list">New list</string>
+    <string name="library_card_options">Card options</string>
+    <string name="library_group_ready">Ready to watch</string>
+    <string name="library_group_waiting">Waiting</string>
+    <string name="library_show_private">Private entries</string>
+    <string name="library_on">On</string>
+    <string name="library_off">Off</string>
+    <string name="library_refresh">Refresh library</string>
+    <string name="library_exit_selection">Leave selection</string>
+    <string name="library_selected_count">%1$d selected</string>
+    <string name="library_selection_scope">in %1$s · %2$s</string>
+    <string name="library_bulk_status">Status</string>
+    <string name="library_bulk_score">Score</string>
+    <string name="library_bulk_add_to_list">Add to list</string>
+    <string name="library_edit_entry">Edit entry</string>
+    <string name="library_make_private">Make private</string>
+    <string name="library_make_public">Make public</string>
+    <string name="library_remove_from_library">Remove from library</string>
+    <string name="library_set_status">Set status</string>
+    <string name="library_set_score">Set score</string>
+    <string name="library_add_to_list">Add to list</string>
+    <string name="library_no_custom_lists">You have no custom lists yet. Create one from the list manager.</string>
+    <string name="library_bulk_one_request">Applies to %1$d entries in one request.</string>
+    <string name="library_move_count_to">Move %1$d to %2$s</string>
+    <string name="library_score_count">Score %1$d entries</string>
+    <string name="library_removing_title">Removing %1$d entries</string>
+    <string name="library_adding_title">Adding %1$d entries to %2$s</string>
+    <string name="library_bulk_per_entry_explainer">AniList handles one entry per request here, so this runs at the client rate limit of 25 a minute. Leaving the screen keeps it running.</string>
+    <string name="library_bulk_progress">%1$d of %2$d done</string>
+    <!-- Library empty states -->
+    <string name="library_empty_all_title">Your library is empty</string>
+    <string name="library_empty_all_desc">Anything you track on AniList turns up here.</string>
+    <string name="library_empty_current_title">Nothing on the go</string>
+    <string name="library_empty_current_desc">Start something and it sits at the top of this list.</string>
+    <string name="library_empty_repeating_title">Nothing on a rewatch</string>
+    <string name="library_empty_repeating_title_manga">Nothing on a reread</string>
+    <string name="library_empty_repeating_desc">Titles you start over land here.</string>
+    <string name="library_empty_planning_title">Nothing planned</string>
+    <string name="library_empty_planning_desc">Save what you mean to watch and it queues up here.</string>
+    <string name="library_empty_planning_desc_manga">Save what you mean to read and it queues up here.</string>
+    <string name="library_empty_paused_title">Nothing paused</string>
+    <string name="library_empty_paused_desc">Titles you set aside wait here until you come back.</string>
+    <string name="library_empty_completed_title">Nothing finished yet</string>
+    <string name="library_empty_completed_desc">Titles you finish are kept here with your score.</string>
+    <string name="library_empty_dropped_title">Nothing dropped</string>
+    <string name="library_empty_dropped_desc">Titles you give up on end up here.</string>
+    <string name="library_empty_favorites_title">No favourites yet</string>
+    <string name="library_empty_favorites_desc">Tap the heart on a title to keep it here.</string>
+    <string name="library_empty_custom_title">“%1$s” is empty</string>
+    <string name="library_empty_custom_desc">Add titles to this list from any entry, or from a selection.</string>
+    <string name="library_empty_filtered_title">No matches in %1$s</string>
+    <string name="library_empty_action_browse">Browse trending</string>
+    <string name="library_empty_action_go_to">Go to %1$s</string>
+    <string name="library_empty_action_choose">Choose titles</string>
+    <string name="library_empty_action_clear_filters">Clear filters</string>
+    <plurals name="library_show_results">
+        <item quantity="one">Show %1$d title</item>
+        <item quantity="other">Show %1$d titles</item>
+    </plurals>
+    <plurals name="library_empty_filtered_desc">
+        <item quantity="one">%1$d filter is hiding every title in this list.</item>
+        <item quantity="other">%1$d filters are hiding every title in this list.</item>
+    </plurals>
 </resources>

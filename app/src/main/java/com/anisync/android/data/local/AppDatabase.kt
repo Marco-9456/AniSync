@@ -118,7 +118,7 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         SavedForumThreadEntity::class,
         MediaThemesEntity::class
     ],
-    version = 25,
+    version = 27,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
@@ -141,7 +141,9 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         androidx.room.AutoMigration(from = 20, to = 21),
         androidx.room.AutoMigration(from = 21, to = 22),
         androidx.room.AutoMigration(from = 23, to = 24),
-        androidx.room.AutoMigration(from = 24, to = 25)
+        androidx.room.AutoMigration(from = 24, to = 25),
+        androidx.room.AutoMigration(from = 25, to = 26),
+        androidx.room.AutoMigration(from = 26, to = 27)
     ]
 )
 @TypeConverters(Converters::class)

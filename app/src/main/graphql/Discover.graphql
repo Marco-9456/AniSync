@@ -13,12 +13,15 @@ query GetMediaBySort($sort: [MediaSort], $type: MediaType, $perPage: Int) {
         large
         extraLarge
       }
+      bannerImage
+      genres
       episodes
       chapters
       volumes
       type
       format
       averageScore
+      seasonYear
     }
   }
 }
@@ -45,6 +48,7 @@ query GetUpcomingMedia($perPage: Int, $type: MediaType, $status: MediaStatus) {
       format
       averageScore
       season
+      seasonYear
     }
   }
 }
@@ -84,6 +88,7 @@ query GetPaginatedMedia(
       format
       averageScore
       season
+      seasonYear
     }
   }
 }

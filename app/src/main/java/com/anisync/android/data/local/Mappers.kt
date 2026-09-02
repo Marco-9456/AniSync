@@ -43,6 +43,8 @@ fun LibraryEntryEntity.toDomain(): LibraryEntry = LibraryEntry(
     createdAt = createdAt,
     mediaStartDate = mediaStartDate,
     customLists = customLists,
+    genres = genres,
+    format = format,
     isPrivate = isPrivate,
     hiddenFromStatusLists = hiddenFromStatusLists,
     progressVolumes = progressVolumes,
@@ -81,6 +83,8 @@ fun LibraryEntry.toEntity(mediaType: MediaType): LibraryEntryEntity = LibraryEnt
     createdAt = createdAt,
     mediaStartDate = mediaStartDate,
     customLists = customLists,
+    genres = genres,
+    format = format,
     isPrivate = isPrivate,
     hiddenFromStatusLists = hiddenFromStatusLists,
     progressVolumes = progressVolumes,
@@ -110,7 +114,8 @@ fun MediaDetailsEntity.toDomain(): MediaDetails = MediaDetails(
             com.anisync.android.domain.NextAiringEpisode(
                 episode = ep,
                 airingAt = airingAt,
-                timeUntilAiring = nextAiringTimeUntil ?: ((airingAt - System.currentTimeMillis() / 1000).toInt().coerceAtLeast(0))
+                timeUntilAiring = nextAiringTimeUntil
+                    ?: ((airingAt - System.currentTimeMillis() / 1000).toInt().coerceAtLeast(0))
             )
         }
     },

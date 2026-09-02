@@ -8,6 +8,7 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.anisync.android.presentation.navigation.Calendar
 import com.anisync.android.presentation.navigation.CharacterDetails
 import com.anisync.android.presentation.navigation.LIST_DETAIL_PANE_SOURCE
 import com.anisync.android.presentation.navigation.MediaDetails
@@ -15,6 +16,7 @@ import com.anisync.android.presentation.navigation.PaneDetailHost
 import com.anisync.android.presentation.navigation.RecentReviews
 import com.anisync.android.presentation.navigation.ReviewDetail
 import com.anisync.android.presentation.navigation.SectionGrid
+import com.anisync.android.presentation.navigation.Settings
 import com.anisync.android.presentation.navigation.StaffDetails
 import com.anisync.android.presentation.navigation.StudioDetails
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
@@ -90,6 +92,8 @@ fun DiscoverListDetail(
             onRecentReviewsSeeAllClick = { mediaType ->
                 navController.navigate(RecentReviews(mediaType.name))
             },
+            onNavigateToCalendar = { navController.navigate(Calendar) },
+            onNavigateToSettings = { navController.navigate(Settings) },
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )

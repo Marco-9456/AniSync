@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.anisync.android.R
+import com.anisync.android.data.AppSettings.Companion.MAX_GRID_COLUMNS
+import com.anisync.android.data.AppSettings.Companion.MIN_GRID_COLUMNS
 import com.anisync.android.domain.FeedFilter
 import com.anisync.android.domain.FeedScope
 import com.anisync.android.domain.ScoreFormat
@@ -25,10 +27,21 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.collections.List
+import kotlin.collections.Set
+import kotlin.collections.emptyList
+import kotlin.collections.emptySet
+import kotlin.collections.filter
+import kotlin.collections.getOrElse
+import kotlin.collections.joinToString
+import kotlin.text.getOrElse
+import kotlin.text.ifBlank
+import kotlin.text.isNotEmpty
+import kotlin.text.orEmpty
+import kotlin.text.split
 
 /**
  * Theme mode options for the app.
@@ -361,6 +374,34 @@ class AppSettings @Inject constructor(
     )
     val showAdultContent: StateFlow<Boolean> = _showAdultContent.asStateFlow()
 
+    /**
+     * Discover's rail order, per media type. The two tabs do not carry the same set (the airing
+     * timeline is anime only, Releasing now is manga only), so one shared order could not describe
+     * both. Stored as ids joined on a comma; [com.anisync.android.domain.DiscoverSection] repairs
+     * the list against the current build on read.
+     */
+    private val _discoverAnimeSectionOrder = MutableStateFlow(readCsv(KEY_DISCOVER_ANIME_SECTIONS))
+    val discoverAnimeSectionOrder: StateFlow<List<String>> = _discoverAnimeSectionOrder.asStateFlow()
+
+    private val _discoverMangaSectionOrder = MutableStateFlow(readCsv(KEY_DISCOVER_MANGA_SECTIONS))
+    val discoverMangaSectionOrder: StateFlow<List<String>> = _discoverMangaSectionOrder.asStateFlow()
+
+    /** Rails the viewer switched off, per media type. */
+    private val _hiddenDiscoverAnimeSections = MutableStateFlow(
+        prefs.getStringSet(KEY_DISCOVER_ANIME_HIDDEN, emptySet()) ?: emptySet()
+    )
+    val hiddenDiscoverAnimeSections: StateFlow<Set<String>> =
+        _hiddenDiscoverAnimeSections.asStateFlow()
+
+    private val _hiddenDiscoverMangaSections = MutableStateFlow(
+        prefs.getStringSet(KEY_DISCOVER_MANGA_HIDDEN, emptySet()) ?: emptySet()
+    )
+    val hiddenDiscoverMangaSections: StateFlow<Set<String>> =
+        _hiddenDiscoverMangaSections.asStateFlow()
+
+    private fun readCsv(key: String): List<String> =
+        prefs.getString(key, "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+
     private val _discoverSearchViewMode = MutableStateFlow(
         DiscoverViewMode.entries.getOrElse(
             prefs.getInt(KEY_DISCOVER_SEARCH_VIEW_MODE, DiscoverViewMode.LIST.ordinal)
@@ -394,6 +435,23 @@ class AppSettings @Inject constructor(
     // Persisted so the chosen layout survives app restarts instead of resetting to grid.
     private val _libraryGridView = MutableStateFlow(prefs.getBoolean(KEY_LIBRARY_GRID_VIEW, true))
     val libraryGridView: StateFlow<Boolean> = _libraryGridView.asStateFlow()
+
+    /**
+     * Per-list layout choice, keyed by tab id. A list the user has never switched follows
+     * [defaultGridForTab]: rows for the two lists you actively advance, a poster grid for the
+     * browsing lists. Stored as "tabId=grid" / "tabId=rows" so an unset list stays distinguishable
+     * from one explicitly set either way.
+     */
+    private val _libraryTabViewModes = MutableStateFlow(readTabViewModes())
+    val libraryTabViewModes: StateFlow<Map<String, Boolean>> = _libraryTabViewModes.asStateFlow()
+
+    private fun readTabViewModes(): Map<String, Boolean> =
+        (prefs.getStringSet(KEY_LIBRARY_TAB_VIEW_MODES, emptySet()) ?: emptySet())
+            .mapNotNull { raw ->
+                val idx = raw.lastIndexOf('=')
+                if (idx <= 0) null else raw.substring(0, idx) to (raw.substring(idx + 1) == "grid")
+            }
+            .toMap()
 
     // Poster-grid columns: automatic (adaptive to window width) vs a manual fixed count (2..8).
     // Surfaced via the Library view bottom sheet and applied app-wide via posterGridColumns().
@@ -873,6 +931,32 @@ class AppSettings @Inject constructor(
         }
     }
 
+    /** Persist Discover's rail order for one tab. */
+    fun setDiscoverSectionOrder(type: MediaType, order: List<String>) {
+        val isAnime = type == MediaType.ANIME
+        val flow = if (isAnime) _discoverAnimeSectionOrder else _discoverMangaSectionOrder
+        flow.value = order
+        prefs.edit()
+            .putString(
+                if (isAnime) KEY_DISCOVER_ANIME_SECTIONS else KEY_DISCOVER_MANGA_SECTIONS,
+                order.joinToString(",")
+            )
+            .apply()
+    }
+
+    /** Persist which Discover rails are switched off for one tab. */
+    fun setHiddenDiscoverSections(type: MediaType, hidden: Set<String>) {
+        val isAnime = type == MediaType.ANIME
+        val flow = if (isAnime) _hiddenDiscoverAnimeSections else _hiddenDiscoverMangaSections
+        flow.value = hidden
+        prefs.edit()
+            .putStringSet(
+                if (isAnime) KEY_DISCOVER_ANIME_HIDDEN else KEY_DISCOVER_MANGA_HIDDEN,
+                hidden
+            )
+            .apply()
+    }
+
     fun setHiddenAnimeLists(hidden: Set<String>) {
         _hiddenAnimeLists.value = hidden
         prefs.edit().putStringSet(KEY_HIDDEN_ANIME_LISTS, hidden).apply()
@@ -934,6 +1018,18 @@ class AppSettings @Inject constructor(
     fun setLibraryGridView(isGrid: Boolean) {
         _libraryGridView.value = isGrid
         prefs.edit().putBoolean(KEY_LIBRARY_GRID_VIEW, isGrid).apply()
+    }
+
+    /** Remember the layout for one list. */
+    fun setLibraryTabViewMode(tabId: String, isGrid: Boolean) {
+        val next = _libraryTabViewModes.value + (tabId to isGrid)
+        _libraryTabViewModes.value = next
+        prefs.edit()
+            .putStringSet(
+                KEY_LIBRARY_TAB_VIEW_MODES,
+                next.map { (id, grid) -> "$id=" + if (grid) "grid" else "rows" }.toSet()
+            )
+            .apply()
     }
 
     /** Toggle automatic (width-adaptive) poster-grid columns. */
@@ -1112,6 +1208,7 @@ class AppSettings @Inject constructor(
      * which reads the new account's MediaListOptions (see LibraryRepositoryImpl).
      */
     fun clearAccountScoped() {
+        _libraryTabViewModes.value = emptyMap()
         _hiddenAnimeLists.value = emptySet()
         _hiddenMangaLists.value = emptySet()
         _animeListOrder.value = emptyList()
@@ -1127,6 +1224,7 @@ class AppSettings @Inject constructor(
         _lastMainTab.value = null
         prefs.edit()
             .remove(KEY_LAST_MAIN_TAB)
+            .remove(KEY_LIBRARY_TAB_VIEW_MODES)
             .remove(KEY_HIDDEN_ANIME_LISTS)
             .remove(KEY_HIDDEN_MANGA_LISTS)
             .remove(KEY_ANIME_LIST_ORDER)
@@ -1225,6 +1323,11 @@ companion object {
         private const val KEY_FEED_SCOPE = "feed_scope"
         private const val KEY_FEED_FILTER = "feed_filter"
         private const val KEY_LIBRARY_GRID_VIEW = "library_grid_view"
+        private const val KEY_LIBRARY_TAB_VIEW_MODES = "library_tab_view_modes"
+        private const val KEY_DISCOVER_ANIME_SECTIONS = "discover_anime_sections"
+        private const val KEY_DISCOVER_MANGA_SECTIONS = "discover_manga_sections"
+        private const val KEY_DISCOVER_ANIME_HIDDEN = "discover_anime_hidden_sections"
+        private const val KEY_DISCOVER_MANGA_HIDDEN = "discover_manga_hidden_sections"
         private const val KEY_GRID_COLUMNS_AUTO = "grid_columns_auto"
         private const val KEY_GRID_COLUMN_COUNT = "grid_column_count"
         private const val KEY_SHOW_SCORE_ON_CARDS = "show_score_on_cards"

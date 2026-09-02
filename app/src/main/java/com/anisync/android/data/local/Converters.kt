@@ -16,6 +16,7 @@ import com.anisync.android.domain.StudioRef
 import com.anisync.android.domain.Tag
 import com.anisync.android.domain.Trailer
 import com.anisync.android.domain.UserActivity
+import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 import kotlinx.serialization.json.Json
 
@@ -26,12 +27,19 @@ class Converters {
     private val json = Json { ignoreUnknownKeys = true }
 
     // --- Enum Converters ---
-    
+
     @TypeConverter
     fun fromMediaType(value: String?): MediaType? = value?.let { MediaType.valueOf(it) }
 
     @TypeConverter
     fun toMediaType(type: MediaType?): String? = type?.name
+
+    @TypeConverter
+    fun fromMediaFormat(value: String?): MediaFormat? =
+        value?.let { MediaFormat.safeValueOf(it) }
+
+    @TypeConverter
+    fun toMediaFormat(format: MediaFormat?): String? = format?.rawValue
 
     @TypeConverter
     fun fromLibraryStatus(value: String): LibraryStatus = LibraryStatus.valueOf(value)
@@ -40,7 +48,8 @@ class Converters {
     fun toLibraryStatus(status: LibraryStatus): String = status.name
 
     @TypeConverter
-    fun fromNullableLibraryStatus(value: String?): LibraryStatus? = value?.let { LibraryStatus.valueOf(it) }
+    fun fromNullableLibraryStatus(value: String?): LibraryStatus? =
+        value?.let { LibraryStatus.valueOf(it) }
 
     @TypeConverter
     fun toNullableLibraryStatus(status: LibraryStatus?): String? = status?.name
@@ -77,7 +86,8 @@ class Converters {
     }
 
     @TypeConverter
-    fun toStaffInfoList(list: List<com.anisync.android.domain.StaffInfo>): String = json.encodeToString(list)
+    fun toStaffInfoList(list: List<com.anisync.android.domain.StaffInfo>): String =
+        json.encodeToString(list)
 
     @TypeConverter
     fun fromRelationList(value: String): List<RelatedMedia> = json.decodeFromString(value)
@@ -194,7 +204,8 @@ class Converters {
     }
 
     @TypeConverter
-    fun toStaffDetailsList(list: List<com.anisync.android.domain.StaffDetails>): String = json.encodeToString(list)
+    fun toStaffDetailsList(list: List<com.anisync.android.domain.StaffDetails>): String =
+        json.encodeToString(list)
 
     @TypeConverter
     fun fromGenreStatList(value: String): List<com.anisync.android.domain.GenreStat> = try {
@@ -204,7 +215,8 @@ class Converters {
     }
 
     @TypeConverter
-    fun toGenreStatList(list: List<com.anisync.android.domain.GenreStat>): String = json.encodeToString(list)
+    fun toGenreStatList(list: List<com.anisync.android.domain.GenreStat>): String =
+        json.encodeToString(list)
 
     @TypeConverter
     fun fromStudioInfoList(value: String): List<StudioInfo> = try {

@@ -1,0 +1,8 @@
+mutation UpdateMediaListEntries($ids: [Int], $status: MediaListStatus, $score: Float, $private: Boolean) {
+  UpdateMediaListEntries(ids: $ids, status: $status, score: $score, private: $private) {
+    id
+    status
+    score
+    private
+  }
+}

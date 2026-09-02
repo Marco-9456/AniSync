@@ -7,12 +7,10 @@ import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -21,19 +19,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AppBarWithSearch
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
@@ -68,7 +65,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -79,21 +75,32 @@ import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.anisync.android.R
+import com.anisync.android.domain.DiscoverSection
 import com.anisync.android.domain.LibraryEntry
-import com.anisync.android.domain.MediaReview
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
-import com.anisync.android.presentation.components.HeaderLevel
-import com.anisync.android.presentation.components.MediaTypeSelector
-import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
-import com.anisync.android.presentation.discover.components.DiscoverHeroCarousel
+import com.anisync.android.presentation.discover.components.AiringTimeline
+import com.anisync.android.presentation.discover.components.BrowseChip
+import com.anisync.android.presentation.discover.components.DiscoverAllHiddenState
+import com.anisync.android.presentation.discover.components.DiscoverBrowseRail
+import com.anisync.android.presentation.discover.components.DiscoverNoResultsState
+import com.anisync.android.presentation.discover.components.DiscoverOfflineState
+import com.anisync.android.presentation.discover.components.DiscoverOverflowMenu
+import com.anisync.android.presentation.discover.components.DiscoverSectionHeader
+import com.anisync.android.presentation.discover.components.DiscoverSpotlight
+import com.anisync.android.presentation.discover.components.MediaMarkerRail
+import com.anisync.android.presentation.discover.components.ReorderSectionsSheet
+import com.anisync.android.presentation.discover.components.SectionErrorCard
+import com.anisync.android.presentation.discover.components.SectionSkeletonRail
+import com.anisync.android.presentation.discover.components.TrendingRankRail
+import com.anisync.android.presentation.discover.components.titleRes
 import com.anisync.android.presentation.discover.components.DiscoverShimmer
 import com.anisync.android.presentation.discover.components.HorizontalMediaList
 import com.anisync.android.presentation.util.TransitionKeys
@@ -101,8 +108,9 @@ import com.anisync.android.presentation.discover.components.RecentReviewsRow
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
+import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.type.MediaSeason
 import com.anisync.android.type.MediaType
-import com.anisync.android.ui.theme.StarGold
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -110,10 +118,6 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "DiscoverScreen"
 
-private val TrendingIconColor = Color(0xFFFF5722)
-private val NewlyAddedIconColor = Color(0xFF26C6DA)
-private val RecentReviewsIconColor = Color(0xFFAB47BC)
-private val TbaIconColor = Color(0xFF9E9E9E)
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -134,6 +138,8 @@ fun DiscoverScreen(
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
     onReviewClick: (Int) -> Unit = {},
     onRecentReviewsSeeAllClick: (MediaType) -> Unit = {},
+    onNavigateToCalendar: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
     // App nav controller, threaded only so the wide (expanded) search overlay can host its results in a
     // two-pane list-detail. Null on compact/medium (and previews), where search push-navigates instead.
     navController: NavHostController? = null,
@@ -157,7 +163,7 @@ fun DiscoverScreen(
 
     val searchBarState = rememberSearchBarState()
 
-    val initialQuery = rememberSaveable { (uiState as? DiscoverUiState.Success)?.searchQuery ?: "" }
+    val initialQuery = rememberSaveable { uiState.searchQuery }
     val textFieldState = rememberTextFieldState(initialText = initialQuery)
 
     val coroutineScope = rememberCoroutineScope()
@@ -165,7 +171,7 @@ fun DiscoverScreen(
 
     val pullToRefreshState = rememberPullToRefreshState()
 
-    val currentMediaType = (uiState as? DiscoverUiState.Success)?.mediaType ?: MediaType.ANIME
+    val currentMediaType = uiState.mediaType
 
     // Separate scroll state memory for Anime vs Manga tabs
     val mainListState =
@@ -240,12 +246,8 @@ fun DiscoverScreen(
         }
     }
 
-    val trendingTitle = stringResource(R.string.section_trending_now)
-    val popularTitle = stringResource(R.string.section_all_time_popular)
-    val upcomingTitle = stringResource(R.string.section_upcoming_season)
-    val newlyAddedTitle = stringResource(R.string.section_newly_added)
-    val recentReviewsTitle = stringResource(R.string.section_recent_reviews)
-    val tbaTitle = stringResource(R.string.section_tba)
+    var showOverflow by remember { mutableStateOf(false) }
+    var showReorderSheet by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
@@ -262,7 +264,7 @@ fun DiscoverScreen(
     // composition (and its LaunchedEffect) is recreated on every return to Discover —
     // so remember the last consumed request in saveable state, or the relaunched effect
     // would keep re-opening the overlay on every re-entry for as long as the ViewModel lives.
-    val searchOverlayRequest = (uiState as? DiscoverUiState.Success)?.searchOverlayRequest ?: 0L
+    val searchOverlayRequest = uiState.searchOverlayRequest
     var consumedSearchOverlayRequest by rememberSaveable { mutableLongStateOf(0L) }
     LaunchedEffect(searchOverlayRequest) {
         if (searchOverlayRequest > consumedSearchOverlayRequest) {
@@ -301,8 +303,7 @@ fun DiscoverScreen(
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
-    val currentSearchFilters = (uiState as? DiscoverUiState.Success)?.searchFilters
-        ?: com.anisync.android.domain.SearchFilters()
+    val currentSearchFilters = uiState.searchFilters
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -329,57 +330,65 @@ fun DiscoverScreen(
                         mediaType = currentMediaType,
                         coroutineScope = coroutineScope,
                         keyboardController = keyboardController,
+                        overflowExpanded = showOverflow,
                         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
-                        onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) }
+                        onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) },
+                        onOverflowClick = { showOverflow = true },
+                        onOverflowDismiss = { showOverflow = false },
+                        onReorderSections = { showReorderSheet = true },
+                        onOpenCalendar = onNavigateToCalendar,
+                        onRefresh = onRefresh,
+                        onOpenSettings = onNavigateToSettings,
+                        onBrowseChip = { chip ->
+                            if (chip == BrowseChip.SCHEDULE) onNavigateToCalendar()
+                            else viewModel.onAction(DiscoverAction.OnBrowseChip(chip))
+                        }
                     )
                 }
             }
         }
     ) { paddingValues ->
-        val successState = uiState as? DiscoverUiState.Success
-
         DiscoverContent(
-            isLoading = uiState is DiscoverUiState.Loading,
-            errorMessage = (uiState as? DiscoverUiState.Error)?.message,
-            trending = successState?.trending ?: emptyList(),
-            popular = successState?.popular ?: emptyList(),
-            upcoming = successState?.upcoming ?: emptyList(),
-            newlyAdded = successState?.newlyAdded ?: emptyList(),
-            tba = successState?.tba ?: emptyList(),
-            recentReviews = successState?.recentReviews ?: emptyList(),
-            mediaType = currentMediaType,
+            state = uiState,
             titleLanguage = titleLanguage,
-            isRefreshing = successState?.isRefreshing ?: false,
             mainListState = mainListState,
             pullToRefreshState = pullToRefreshState,
-            paddingValues = PaddingValues(
-                top = paddingValues.calculateTopPadding()
-            ),
-            trendingTitle = trendingTitle,
-            popularTitle = popularTitle,
-            upcomingTitle = upcomingTitle,
-            newlyAddedTitle = newlyAddedTitle,
-            recentReviewsTitle = recentReviewsTitle,
-            tbaTitle = tbaTitle,
+            paddingValues = PaddingValues(top = paddingValues.calculateTopPadding()),
             onRefresh = onRefresh,
             onMediaClick = navigateToMediaDetails,
             onSectionSeeAllClick = onSectionSeeAllClick,
             onReviewClick = onReviewClick,
             onRecentReviewsSeeAllClick = onRecentReviewsSeeAllClick,
+            onOpenCalendar = onNavigateToCalendar,
+            onAddToPlanning = { viewModel.onAction(DiscoverAction.AddToPlanning(it)) },
+            onRetrySection = { viewModel.onAction(DiscoverAction.RetrySection(it)) },
+            onReorderSections = { showReorderSheet = true },
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope
         )
     }
 
-    val successState2 = uiState as? DiscoverUiState.Success
-    val searchQuery = successState2?.searchQuery ?: ""
-    val searchAnime = successState2?.searchAnime ?: emptyList()
-    val searchManga = successState2?.searchManga ?: emptyList()
-    val groupedResults = successState2?.groupedResults
-        ?: com.anisync.android.domain.GroupedSearchResults()
-    val isSearching = successState2?.isSearching ?: false
-    val searchError = successState2?.searchError
-    val searchPaging = successState2?.searchPaging ?: SearchPaging()
+    ReorderSectionsSheet(
+        visible = showReorderSheet,
+        sections = remember(uiState.sectionOrder, uiState.hiddenSections, uiState.mediaType) {
+            viewModel.sectionsForReorder()
+        },
+        hiddenSections = uiState.hiddenSections,
+        onDismiss = { showReorderSheet = false },
+        onReorder = { viewModel.onAction(DiscoverAction.ReorderSections(it)) },
+        onVisibilityChanged = { section, visible ->
+            viewModel.onAction(DiscoverAction.SetSectionVisible(section, visible))
+        },
+        onReset = { viewModel.onAction(DiscoverAction.ResetSectionOrder) }
+    )
+
+    val searchQuery = uiState.searchQuery
+    val searchAnime = uiState.searchAnime
+    val searchManga = uiState.searchManga
+    val groupedResults = uiState.groupedResults
+    val isSearching = uiState.isSearching
+    val searchError = uiState.searchError
+    val searchPaging = uiState.searchPaging
 
     val onCharacterItemClick: (Int) -> Unit = remember(onCharacterClick, searchBarState, coroutineScope, keyboardController) {
         { id ->
@@ -412,8 +421,8 @@ fun DiscoverScreen(
 
     val taxonomy by viewModel.taxonomy.collectAsStateWithLifecycle()
     val showAdultContent by viewModel.showAdultContent.collectAsStateWithLifecycle()
-    val viewMode = successState2?.viewMode ?: com.anisync.android.data.DiscoverViewMode.LIST
-    val activeCategory = successState2?.activeCategory ?: ResultCategory.ALL
+    val viewMode = uiState.viewMode
+    val activeCategory = uiState.activeCategory
 
     DiscoverSearchOverlay(
         searchBarState = searchBarState,
@@ -437,6 +446,7 @@ fun DiscoverScreen(
         searchPaging = searchPaging,
         onLoadMore = { viewModel.onAction(DiscoverAction.LoadMoreResults) },
         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(it)) },
+        onClearFilters = { viewModel.onAction(DiscoverAction.ClearFilters) },
         onFiltersChange = { viewModel.onAction(DiscoverAction.UpdateFilters(it)) },
         onLoadTaxonomy = { viewModel.onAction(DiscoverAction.LoadTaxonomy) },
         onViewModeChange = { viewModel.onAction(DiscoverAction.OnViewModeChange(it)) },
@@ -458,8 +468,16 @@ private fun DiscoverTopBar(
     mediaType: MediaType,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
+    overflowExpanded: Boolean,
     onSearch: () -> Unit,
-    onMediaTypeChange: (MediaType) -> Unit
+    onMediaTypeChange: (MediaType) -> Unit,
+    onOverflowClick: () -> Unit,
+    onOverflowDismiss: () -> Unit,
+    onReorderSections: () -> Unit,
+    onOpenCalendar: () -> Unit,
+    onRefresh: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onBrowseChip: (BrowseChip) -> Unit
 ) {
     val inputModeManager = LocalInputModeManager.current
     Column(
@@ -485,7 +503,26 @@ private fun DiscoverTopBar(
                     mediaType = mediaType,
                     coroutineScope = coroutineScope,
                     keyboardController = keyboardController,
-                    onSearch = onSearch
+                    onSearch = onSearch,
+                    collapsedTrailing = {
+                        Box {
+                            IconButton(onClick = onOverflowClick) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = stringResource(R.string.more)
+                                )
+                            }
+                            DiscoverOverflowMenu(
+                                expanded = overflowExpanded,
+                                mediaType = mediaType,
+                                onDismiss = onOverflowDismiss,
+                                onReorderSections = onReorderSections,
+                                onOpenCalendar = onOpenCalendar,
+                                onRefresh = onRefresh,
+                                onOpenSettings = onOpenSettings
+                            )
+                        }
+                    }
                 )
             },
             colors = SearchBarDefaults.appBarWithSearchColors(
@@ -494,12 +531,13 @@ private fun DiscoverTopBar(
             )
         )
 
-        MediaTypeSelector(
-            selected = mediaType,
-            onSelect = onMediaTypeChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp)
+        // One 34dp rail carries the media-type switch and every browse entry point, in place of
+        // the full-width segmented control that used to own a row on its own.
+        DiscoverBrowseRail(
+            mediaType = mediaType,
+            onMediaTypeChange = onMediaTypeChange,
+            onChipClick = onBrowseChip,
+            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
         )
     }
 }
@@ -512,39 +550,44 @@ private fun SearchInputField(
     mediaType: MediaType,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
-    onSearch: () -> Unit
+    onSearch: () -> Unit,
+    collapsedTrailing: (@Composable () -> Unit)? = null
 ) {
     val isExpanded = searchBarState.currentValue == SearchBarValue.Expanded
     val hasText by remember { derivedStateOf { textFieldState.text.isNotEmpty() } }
     val focusManager = LocalFocusManager.current
 
+    // The overlay searches characters, staff and users too, so the placeholder says so rather
+    // than promising only titles. Studios are an anime-side entity, so the manga wording drops them.
     val placeholderTextRes by remember(mediaType) {
         derivedStateOf {
             if (mediaType == MediaType.ANIME) {
-                R.string.search_anime_placeholder
+                R.string.discover_search_placeholder_anime
             } else {
-                R.string.search_manga_placeholder
+                R.string.discover_search_placeholder_manga
             }
         }
     }
 
     SearchBarDefaults.InputField(
+        // Without this the collapsed bar is sized by whatever it happens to contain, so Discover
+        // (leading icon, longer placeholder) sat at the cap while Library sat under it and the two
+        // screens showed visibly different bars. Both fill the width instead.
+        modifier = if (isExpanded) Modifier else Modifier.fillMaxWidth(),
         searchBarState = searchBarState,
         textFieldState = textFieldState,
         onSearch = {
             onSearch()
             keyboardController?.hide()
         },
+        // One line always: at a raised font scale the placeholder wrapped and took the whole
+        // search bar with it, so the bar's height depended on the wording.
         placeholder = {
-            if (!isExpanded) {
-                Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(placeholderTextRes),
-                    textAlign = TextAlign.Center
-                )
-            } else {
-                Text(stringResource(placeholderTextRes))
-            }
+            Text(
+                text = stringResource(placeholderTextRes),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         },
         leadingIcon = {
             if (isExpanded) {
@@ -568,6 +611,8 @@ private fun SearchInputField(
                     hasText = hasText,
                     onClearText = { textFieldState.edit { replace(0, length, "") } }
                 )
+            } else {
+                collapsedTrailing?.invoke()
             }
         }
     )
@@ -591,36 +636,25 @@ private fun SearchTrailingIcons(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 private fun DiscoverContent(
-    isLoading: Boolean,
-    errorMessage: String?,
-    trending: List<LibraryEntry>,
-    popular: List<LibraryEntry>,
-    upcoming: List<LibraryEntry>,
-    newlyAdded: List<LibraryEntry>,
-    tba: List<LibraryEntry>,
-    recentReviews: List<MediaReview>,
-    mediaType: MediaType,
+    state: DiscoverUiState,
     titleLanguage: com.anisync.android.data.TitleLanguage,
-    isRefreshing: Boolean,
     mainListState: LazyListState,
     pullToRefreshState: PullToRefreshState,
     paddingValues: PaddingValues,
-    trendingTitle: String,
-    popularTitle: String,
-    upcomingTitle: String,
-    newlyAddedTitle: String,
-    recentReviewsTitle: String,
-    tbaTitle: String,
     onRefresh: () -> Unit,
     onMediaClick: (mediaId: Int, sourceSection: String) -> Unit,
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
     onReviewClick: (Int) -> Unit,
     onRecentReviewsSeeAllClick: (MediaType) -> Unit,
+    onOpenCalendar: () -> Unit,
+    onAddToPlanning: (Int) -> Unit,
+    onRetrySection: (DiscoverSection) -> Unit,
+    onReorderSections: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     PullToRefreshBox(
-        isRefreshing = isRefreshing,
+        isRefreshing = state.isRefreshing,
         onRefresh = onRefresh,
         state = pullToRefreshState,
         modifier = Modifier
@@ -628,7 +662,7 @@ private fun DiscoverContent(
             .padding(paddingValues),
         indicator = {
             CustomPullToRefreshIndicator(
-                isRefreshing = isRefreshing,
+                isRefreshing = state.isRefreshing,
                 state = pullToRefreshState,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -641,210 +675,281 @@ private fun DiscoverContent(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 24.dp + LocalMainNavBarInset.current)
         ) {
-            when {
-                isLoading -> {
-                    item(key = "shimmer", contentType = "shimmer") { DiscoverShimmer() }
+            if (state.feeds.isInitialLoad) {
+                item(key = "shimmer", contentType = "shimmer") { DiscoverShimmer() }
+                return@LazyColumn
+            }
+            // Two ways to end up with an empty feed, and they need different answers: every
+            // request failed, or the viewer switched every rail off.
+            if (state.sectionOrder.isEmpty()) {
+                item(key = "all_hidden", contentType = "empty_state") {
+                    DiscoverAllHiddenState(
+                        onReorder = onReorderSections,
+                        modifier = Modifier.fillParentMaxHeight()
+                    )
                 }
-
-                errorMessage != null -> {
-                    item(key = "error", contentType = "error") {
-                        ErrorContent(message = errorMessage)
-                    }
+                return@LazyColumn
+            }
+            if (state.hasNothingToShow) {
+                item(key = "offline", contentType = "empty_state") {
+                    DiscoverOfflineState(
+                        onRetry = onRefresh,
+                        modifier = Modifier.fillParentMaxHeight()
+                    )
                 }
-
-                else -> {
-                    item(key = "trending_header", contentType = "section_header") {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        SectionHeader(
-                            title = trendingTitle,
-                            iconColor = TrendingIconColor,
-                            onActionClick = {
-                                onSectionSeeAllClick(
-                                    trendingTitle,
-                                    "trending",
-                                    mediaType
-                                )
-                            },
-                            level = HeaderLevel.Section
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-
-                    item(key = "trending_carousel", contentType = "hero_carousel") {
-                        val trendingItems = remember(trending) { trending.take(10) }
-                        DiscoverHeroCarousel(
-                            items = trendingItems,
-                            onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_TRENDING) },
-                            titleLanguage = titleLanguage,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    item(key = "popular_header", contentType = "section_header") {
-                        Spacer(modifier = Modifier.height(48.dp))
-                        SectionHeader(
-                            title = popularTitle,
-                            iconColor = StarGold,
-                            onActionClick = {
-                                onSectionSeeAllClick(
-                                    popularTitle,
-                                    "popular",
-                                    mediaType
-                                )
-                            },
-                            level = HeaderLevel.Section
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-
-                    item(key = "popular_list", contentType = "media_list") {
-                        HorizontalMediaList(
-                            items = popular,
-                            onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_POPULAR) },
-                            titleLanguage = titleLanguage,
-                            transitionPrefix = TransitionKeys.DISCOVER_POPULAR,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    if (mediaType == MediaType.ANIME) {
-                        item(key = "upcoming_header", contentType = "section_header") {
-                            Spacer(modifier = Modifier.height(48.dp))
-                            SectionHeader(
-                                title = upcomingTitle,
-                                iconColor = MaterialTheme.colorScheme.primary,
-                                onActionClick = {
-                                    onSectionSeeAllClick(
-                                        upcomingTitle,
-                                        "upcoming",
-                                        mediaType
-                                    )
-                                },
-                                level = HeaderLevel.Section
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
-
-                        item(key = "upcoming_list", contentType = "media_list") {
-                            val upcomingItems = remember(upcoming) { upcoming.take(10) }
-                            HorizontalMediaList(
-                                items = upcomingItems,
-                                onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_UPCOMING) },
-                                titleLanguage = titleLanguage,
-                                transitionPrefix = TransitionKeys.DISCOVER_UPCOMING,
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                    }
-
-                    item(key = "newly_added_header", contentType = "section_header") {
-                        Spacer(modifier = Modifier.height(48.dp))
-                        SectionHeader(
-                            title = newlyAddedTitle,
-                            iconColor = NewlyAddedIconColor,
-                            onActionClick = {
-                                onSectionSeeAllClick(
-                                    newlyAddedTitle,
-                                    "newly_added",
-                                    mediaType
-                                )
-                            },
-                            level = HeaderLevel.Section
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-
-                    item(key = "newly_added_list", contentType = "media_list") {
-                        val newlyAddedItems = remember(newlyAdded) { newlyAdded.take(10) }
-                        HorizontalMediaList(
-                            items = newlyAddedItems,
-                            onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_NEWLY_ADDED) },
-                            titleLanguage = titleLanguage,
-                            transitionPrefix = TransitionKeys.DISCOVER_NEWLY_ADDED,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    if (recentReviews.isNotEmpty()) {
-                        item(key = "recent_reviews_header", contentType = "section_header") {
-                            Spacer(modifier = Modifier.height(48.dp))
-                            SectionHeader(
-                                title = recentReviewsTitle,
-                                iconColor = RecentReviewsIconColor,
-                                onActionClick = { onRecentReviewsSeeAllClick(mediaType) },
-                                level = HeaderLevel.Section
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
-
-                        item(key = "recent_reviews_row", contentType = "review_row") {
-                            RecentReviewsRow(
-                                reviews = recentReviews.take(10),
-                                onReviewClick = onReviewClick,
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                    }
-
-                    item(key = "tba_header", contentType = "section_header") {
-                        Spacer(modifier = Modifier.height(48.dp))
-                        SectionHeader(
-                            title = tbaTitle,
-                            iconColor = TbaIconColor,
-                            onActionClick = { onSectionSeeAllClick(tbaTitle, "tba", mediaType) },
-                            level = HeaderLevel.Section
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-
-                    item(key = "tba_list", contentType = "media_list") {
-                        val tbaItems = remember(tba) { tba.take(10) }
-                        HorizontalMediaList(
-                            items = tbaItems,
-                            onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_TBA) },
-                            titleLanguage = titleLanguage,
-                            transitionPrefix = TransitionKeys.DISCOVER_TBA,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                }
+                return@LazyColumn
+            }
+            state.sectionOrder.forEach { section ->
+                discoverSection(
+                    section = section,
+                    state = state,
+                    titleLanguage = titleLanguage,
+                    onMediaClick = onMediaClick,
+                    onSectionSeeAllClick = onSectionSeeAllClick,
+                    onReviewClick = onReviewClick,
+                    onRecentReviewsSeeAllClick = onRecentReviewsSeeAllClick,
+                    onOpenCalendar = onOpenCalendar,
+                    onAddToPlanning = onAddToPlanning,
+                    onRetrySection = onRetrySection,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope
+                )
             }
         }
     }
 }
 
-@Composable
-private fun ErrorContent(message: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(400.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = stringResource(R.string.error_failed_to_load),
-                color = MaterialTheme.colorScheme.error
+/**
+ * One rail, header included.
+ *
+ * A rail that failed or came back empty emits nothing at all. That is the point of giving every
+ * section its own [SectionFeed]: the screen used to be replaced wholesale by a single centred
+ * error whenever any one of five requests failed.
+ */
+@OptIn(ExperimentalSharedTransitionApi::class)
+private fun LazyListScope.discoverSection(
+    section: DiscoverSection,
+    state: DiscoverUiState,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
+    onMediaClick: (mediaId: Int, sourceSection: String) -> Unit,
+    onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
+    onReviewClick: (Int) -> Unit,
+    onRecentReviewsSeeAllClick: (MediaType) -> Unit,
+    onOpenCalendar: () -> Unit,
+    onAddToPlanning: (Int) -> Unit,
+    onRetrySection: (DiscoverSection) -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
+) {
+    val feeds = state.feeds
+    val mediaType = state.mediaType
+    val hasContent = when (section) {
+        DiscoverSection.TRENDING -> feeds.trending.items.isNotEmpty()
+        DiscoverSection.AIRING_TODAY -> feeds.airingToday.items.isNotEmpty()
+        DiscoverSection.RELEASING_NOW -> feeds.releasing.items.isNotEmpty()
+        DiscoverSection.POPULAR -> feeds.popular.items.isNotEmpty()
+        DiscoverSection.NOT_YET_RELEASED -> feeds.notYetReleased.items.isNotEmpty()
+        DiscoverSection.NEWLY_ADDED -> feeds.newlyAdded.items.isNotEmpty()
+        DiscoverSection.REVIEWS -> feeds.reviews.items.isNotEmpty()
+    }
+    // A rail that failed keeps its header and says so; one that is simply empty says nothing,
+    // because an empty schedule is not a problem to report. A rail still waiting on a retry keeps
+    // its place too, or tapping Retry would look like it had deleted the section.
+    val feed = feeds.of(section)
+    val failed = feed.hasFailed
+    val reloading = feed.isLoading && !hasContent
+    if (!hasContent && !failed && !reloading) return
+
+    item(key = "${section.id}_header", contentType = "section_header") {
+        val title = stringResource(section.titleRes())
+        Spacer(Modifier.height(32.dp))
+        DiscoverSectionHeader(
+            title = title,
+            actionLabel = if (section == DiscoverSection.AIRING_TODAY) {
+                stringResource(R.string.discover_browse_schedule)
+            } else {
+                null
+            },
+            onActionClick = {
+                when (section) {
+                    DiscoverSection.AIRING_TODAY -> onOpenCalendar()
+                    DiscoverSection.REVIEWS -> onRecentReviewsSeeAllClick(mediaType)
+                    else -> onSectionSeeAllClick(title, section.gridSectionType(), mediaType)
+                }
+            }
+        )
+        Spacer(Modifier.height(12.dp))
+    }
+
+    if (failed) {
+        item(key = "${section.id}_error", contentType = "section_error") {
+            SectionErrorCard(onRetry = { onRetrySection(section) })
+        }
+        return
+    }
+
+    if (reloading) {
+        item(key = "${section.id}_skeleton", contentType = "section_skeleton") {
+            SectionSkeletonRail(cardWidth = section.skeletonCardWidth())
+        }
+        return
+    }
+
+    when (section) {
+        DiscoverSection.TRENDING -> {
+            val items = feeds.trending.items
+            item(key = "trending_spotlight", contentType = "spotlight") {
+                DiscoverSpotlight(
+                    item = items.first(),
+                    onClick = {
+                        onMediaClick(items.first().mediaId, TransitionKeys.DISCOVER_SPOTLIGHT)
+                    },
+                    onAddClick = { onAddToPlanning(items.first().mediaId) },
+                    titleLanguage = titleLanguage,
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope
+                )
+            }
+            if (items.size > 1) {
+                item(key = "trending_rank_rail", contentType = "rank_rail") {
+                    Spacer(Modifier.height(12.dp))
+                    TrendingRankRail(
+                        items = items.drop(1),
+                        startRank = 2,
+                        titleLanguage = titleLanguage,
+                        onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_TRENDING) },
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope
+                    )
+                }
+            }
+        }
+
+        DiscoverSection.AIRING_TODAY -> item(key = "airing_timeline", contentType = "timeline") {
+            AiringTimeline(
+                episodes = feeds.airingToday.items,
+                titleLanguage = titleLanguage,
+                onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_AIRING) },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope
             )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        }
+
+        DiscoverSection.RELEASING_NOW -> item(key = "releasing_rail", contentType = "media_rail") {
+            MediaMarkerRail(
+                items = feeds.releasing.items,
+                cardWidth = 132.dp,
+                transitionPrefix = TransitionKeys.DISCOVER_RELEASING,
+                titleLanguage = titleLanguage,
+                onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_RELEASING) },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+
+        DiscoverSection.POPULAR -> item(key = "popular_rail", contentType = "media_list") {
+            HorizontalMediaList(
+                items = feeds.popular.items,
+                onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_POPULAR) },
+                titleLanguage = titleLanguage,
+                transitionPrefix = TransitionKeys.DISCOVER_POPULAR,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+
+        DiscoverSection.NOT_YET_RELEASED -> item(
+            key = "not_yet_released_rail",
+            contentType = "media_rail"
+        ) {
+            val tba = stringResource(R.string.discover_tba_marker)
+            val seasonLabels = seasonLabels()
+            MediaMarkerRail(
+                items = feeds.notYetReleased.items,
+                cardWidth = 148.dp,
+                transitionPrefix = TransitionKeys.DISCOVER_UPCOMING,
+                titleLanguage = titleLanguage,
+                onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_UPCOMING) },
+                marker = { entry -> entry.releaseMarker(seasonLabels, tba) },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+
+        DiscoverSection.NEWLY_ADDED -> item(key = "newly_added_rail", contentType = "media_rail") {
+            MediaMarkerRail(
+                items = feeds.newlyAdded.items,
+                cardWidth = 148.dp,
+                transitionPrefix = TransitionKeys.DISCOVER_NEWLY_ADDED,
+                titleLanguage = titleLanguage,
+                onItemClick = { onMediaClick(it, TransitionKeys.DISCOVER_NEWLY_ADDED) },
+                marker = { entry -> entry.catalogueMarker() },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope
+            )
+        }
+
+        DiscoverSection.REVIEWS -> item(key = "reviews_rail", contentType = "review_row") {
+            RecentReviewsRow(
+                reviews = feeds.reviews.items.take(10),
+                onReviewClick = onReviewClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope
             )
         }
     }
+}
+
+/** The card width a rail's placeholder should reserve, so the layout does not jump on reload. */
+private fun DiscoverSection.skeletonCardWidth(): Dp = when (this) {
+    DiscoverSection.TRENDING -> 112.dp
+    DiscoverSection.AIRING_TODAY, DiscoverSection.RELEASING_NOW -> 132.dp
+    DiscoverSection.POPULAR -> 171.dp
+    DiscoverSection.NOT_YET_RELEASED, DiscoverSection.NEWLY_ADDED -> 148.dp
+    DiscoverSection.REVIEWS -> 310.dp
+}
+
+/** Which paginated grid a rail's See all opens. */
+private fun DiscoverSection.gridSectionType(): String = when (this) {
+    DiscoverSection.TRENDING -> "trending"
+    DiscoverSection.POPULAR -> "popular"
+    DiscoverSection.NOT_YET_RELEASED -> "not_yet_released"
+    DiscoverSection.NEWLY_ADDED -> "newly_added"
+    DiscoverSection.RELEASING_NOW -> "releasing"
+    // Neither of these reaches the grid: the timeline opens the calendar and reviews have a
+    // screen of their own.
+    DiscoverSection.AIRING_TODAY, DiscoverSection.REVIEWS -> "trending"
+}
+
+@Composable
+private fun seasonLabels(): Map<MediaSeason, String> = mapOf(
+    MediaSeason.WINTER to stringResource(R.string.season_winter),
+    MediaSeason.SPRING to stringResource(R.string.season_spring),
+    MediaSeason.SUMMER to stringResource(R.string.season_summer),
+    MediaSeason.FALL to stringResource(R.string.season_fall)
+)
+
+/**
+ * "Spring 2026" when AniList gave the entry a season, TBA when it did not.
+ *
+ * Manga almost never carries a season, so on that tab this is TBA nearly every time, which is the
+ * honest reading of a NOT_YET_RELEASED manga rather than a date the API never returned.
+ */
+private fun LibraryEntry.releaseMarker(seasonLabels: Map<MediaSeason, String>, tba: String): String {
+    val season = season?.let { seasonLabels[it] } ?: return tba
+    return seasonYear?.let { "$season $it" } ?: season
+}
+
+/**
+ * Format, plus the length or the year. ID_DESC returns entries somebody catalogued today, so
+ * `averageScore` is usually null on them and no star is drawn at all rather than an empty one.
+ */
+@Composable
+private fun LibraryEntry.catalogueMarker(): String? {
+    val format = format?.toLabel()
+    val detail = totalChapters?.let { "$it ch" } ?: seasonYear?.toString()
+    return listOfNotNull(format, detail).joinToString(" · ").ifEmpty { null }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -871,6 +976,7 @@ private fun DiscoverSearchOverlay(
     searchPaging: SearchPaging,
     onLoadMore: () -> Unit,
     onSearch: (String) -> Unit,
+    onClearFilters: () -> Unit,
     onFiltersChange: (com.anisync.android.domain.SearchFilters) -> Unit,
     onLoadTaxonomy: () -> Unit,
     onViewModeChange: (com.anisync.android.data.DiscoverViewMode) -> Unit,
@@ -918,7 +1024,9 @@ private fun DiscoverSearchOverlay(
                 viewMode = viewMode,
                 activeCategory = activeCategory,
                 searchPaging = searchPaging,
+                searchFilters = searchFilters,
                 onLoadMore = onLoadMore,
+                onClearFilters = onClearFilters,
                 onViewModeChange = onViewModeChange,
                 onCategoryChange = onCategoryChange,
                 onSearchItemClick = onSearchItemClick,
@@ -960,7 +1068,9 @@ private fun SearchResultsContent(
     viewMode: com.anisync.android.data.DiscoverViewMode,
     activeCategory: ResultCategory,
     searchPaging: SearchPaging,
+    searchFilters: com.anisync.android.domain.SearchFilters,
     onLoadMore: () -> Unit,
+    onClearFilters: () -> Unit,
     onViewModeChange: (com.anisync.android.data.DiscoverViewMode) -> Unit,
     onCategoryChange: (ResultCategory) -> Unit,
     onSearchItemClick: (Int) -> Unit,
@@ -995,13 +1105,10 @@ private fun SearchResultsContent(
         }
 
         !hasAnyResults && searchQuery.isNotEmpty() -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.search_no_results),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+            DiscoverNoResultsState(
+                hasFilters = searchFilters.hasActiveFilters,
+                onClearFilters = onClearFilters
+            )
         }
 
         else -> {

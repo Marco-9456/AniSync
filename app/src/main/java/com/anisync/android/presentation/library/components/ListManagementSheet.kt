@@ -22,7 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -54,6 +54,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
@@ -75,6 +76,7 @@ fun ListManagementSheet(
     tabOrder: List<String>,
     customLists: List<String>,
     hiddenLists: Set<String>,
+    counts: Map<String, Int>,
     mediaType: MediaType,
     onVisibilityChanged: (String, Boolean) -> Unit,
     onReorder: (List<String>) -> Unit,
@@ -137,12 +139,119 @@ fun ListManagementSheet(
                 // Header
                 item(key = "header") {
                     Text(
-                        text = stringResource(R.string.manage_tabs),
+                        text = stringResource(R.string.library_lists_title),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.library_lists_caption),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
+
+                // Reorderable Tab Items
+                items(localOrder, key = { it }) { tabId ->
+                    ReorderableItem(reorderableLazyListState, key = tabId) { isDragging ->
+                        // "All" isn't a custom list, so it must not offer the delete affordance.
+                        val isCustom = !tabId.startsWith("status:") && tabId != LIBRARY_ALL_TAB_ID
+                        val isHidden = hiddenLists.contains(tabId)
+
+                        val elevation by animateDpAsState(
+                            if (isDragging) 4.dp else 0.dp,
+                            label = "drag_elevation"
+                        )
+
+                        Surface(
+                            shadowElevation = elevation,
+                            tonalElevation = if (isDragging) 2.dp else 0.dp,
+                            shape = MaterialTheme.shapes.medium,
+                            color = if (isDragging) MaterialTheme.colorScheme.surfaceContainerHigh
+                                    else MaterialTheme.colorScheme.surfaceContainerLow,
+                            modifier = Modifier.graphicsLayer { alpha = if (isHidden) 0.45f else 1f }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                // Drag handle
+                                IconButton(
+                                    modifier = Modifier.draggableHandle(
+                                        onDragStarted = {
+                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                        },
+                                        onDragStopped = {
+                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                                            // Persist the new order
+                                            onReorder(localOrder.toList())
+                                        },
+                                    ),
+                                    onClick = {},
+                                ) {
+                                    Icon(
+                                        Icons.Default.DragIndicator,
+                                        contentDescription = stringResource(R.string.cd_reorder),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                // The list's own mark, so a list is recognisable by the same
+                                // colour and shape it carries in the rail and on cover art.
+                                LibraryListBadge(tabId = tabId)
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                // Tab label
+                                TabLabel(
+                                    tabId = tabId,
+                                    mediaType = mediaType,
+                                    isHidden = isHidden,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                counts[tabId]?.let { count ->
+                                    Text(
+                                        text = count.toString(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(end = 4.dp)
+                                    )
+                                }
+
+                                // Controls — visibility toggle for all, delete for custom lists only
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = { onVisibilityChanged(tabId, !isHidden) }) {
+                                        Icon(
+                                            imageVector = if (isHidden) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                            contentDescription = stringResource(
+                                                if (isHidden) R.string.cd_show_tab else R.string.cd_hide_tab
+                                            ),
+                                            tint = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant
+                                                   else MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    if (isCustom) {
+                                        IconButton(onClick = { onDeleteList(tabId) }) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = stringResource(R.string.cd_delete_list),
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                item(key = "create_spacer") { Spacer(modifier = Modifier.height(8.dp)) }
 
                 // Form / Button
                 item(key = "create_form") {
@@ -231,126 +340,33 @@ fun ListManagementSheet(
                             }
                         }
                     } else {
-                        Button(
+                        androidx.compose.material3.OutlinedButton(
                             onClick = { isCreatingList = true },
-                            modifier = Modifier.fillMaxWidth()
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            modifier = Modifier.fillMaxWidth().height(52.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_new_list))
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.create_new_list))
+                            Text(stringResource(R.string.library_new_list))
                         }
                     }
                 }
 
-                // Divider
-                item(key = "divider") {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                // Reorderable Tab Items
-                items(localOrder, key = { it }) { tabId ->
-                    ReorderableItem(reorderableLazyListState, key = tabId) { isDragging ->
-                        // "All" isn't a custom list, so it must not offer the delete affordance.
-                        val isCustom = !tabId.startsWith("status:") && tabId != LIBRARY_ALL_TAB_ID
-                        val isHidden = hiddenLists.contains(tabId)
-
-                        val elevation by animateDpAsState(
-                            if (isDragging) 4.dp else 0.dp,
-                            label = "drag_elevation"
-                        )
-
-                        Surface(
-                            shadowElevation = elevation,
-                            tonalElevation = if (isDragging) 2.dp else 0.dp,
-                            shape = MaterialTheme.shapes.medium,
-                            color = if (isDragging) MaterialTheme.colorScheme.surfaceContainerHigh
-                                    else MaterialTheme.colorScheme.surfaceContainerLow
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                // Drag handle
-                                IconButton(
-                                    modifier = Modifier.draggableHandle(
-                                        onDragStarted = {
-                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-                                        },
-                                        onDragStopped = {
-                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureEnd)
-                                            // Persist the new order
-                                            onReorder(localOrder.toList())
-                                        },
-                                    ),
-                                    onClick = {},
-                                ) {
-                                    Icon(
-                                        Icons.Default.DragHandle,
-                                        contentDescription = stringResource(R.string.cd_reorder),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                // Tab icon
-                                Icon(
-                                    imageVector = getTabIcon(tabId, mediaType),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant
-                                           else MaterialTheme.colorScheme.primary
-                                )
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                // Tab label
-                                TabLabel(
-                                    tabId = tabId,
-                                    mediaType = mediaType,
-                                    isHidden = isHidden,
-                                    modifier = Modifier.weight(1f)
-                                )
-
-                                // Controls — visibility toggle for all, delete for custom lists only
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    IconButton(onClick = { onVisibilityChanged(tabId, !isHidden) }) {
-                                        Icon(
-                                            imageVector = if (isHidden) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                            contentDescription = stringResource(
-                                                if (isHidden) R.string.cd_show_tab else R.string.cd_hide_tab
-                                            ),
-                                            tint = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant
-                                                   else MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                    if (isCustom) {
-                                        IconButton(onClick = { onDeleteList(tabId) }) {
-                                            Icon(
-                                                Icons.Default.Delete,
-                                                contentDescription = stringResource(R.string.cd_delete_list),
-                                                tint = MaterialTheme.colorScheme.error
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
     }
 }
 
 /**
- * Number of non-reorderable items before the reorderable items in the LazyColumn.
- * (header, create_form, divider)
+ * Items before the reorderable rows in the LazyColumn — the header alone, now that the create
+ * action sits at the bottom. The reorder callback subtracts it to map list indices back to
+ * positions in the tab order.
  */
-private const val NON_REORDERABLE_ITEM_COUNT = 3
+private const val NON_REORDERABLE_ITEM_COUNT = 1
 
 /**
  * Displays the localized label for a tab identifier.

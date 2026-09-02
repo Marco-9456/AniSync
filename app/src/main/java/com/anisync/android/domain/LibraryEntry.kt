@@ -2,6 +2,7 @@ package com.anisync.android.domain
 
 import androidx.compose.runtime.Immutable
 import com.anisync.android.type.MediaFormat
+import com.anisync.android.type.MediaSeason
 import com.anisync.android.type.MediaType
 import kotlinx.serialization.Serializable
 
@@ -53,6 +54,23 @@ data class LibraryEntry(
     val createdAt: Long? = null,
     val mediaStartDate: Long? = null,
     val customLists: List<String> = emptyList(),
+    /** Media genres, used by the library filter sheet. Empty until the next library refresh. */
+    val genres: List<String> = emptyList(),
+    /**
+     * Wide banner art. Only Discover's spotlight asks for it, and AniList leaves it null for a
+     * good share of titles, so every caller has to be able to fall back to the cover.
+     */
+    val bannerUrl: String? = null,
+    /**
+     * The year the media started. An anime carries it as `seasonYear`; manga usually does not,
+     * which is why nothing may render it as required.
+     */
+    val seasonYear: Int? = null,
+    /**
+     * Release season. Anime only in practice: AniList leaves it null on almost every manga, which
+     * is what collapses Discover's upcoming/TBA split on the Manga tab.
+     */
+    val season: MediaSeason? = null,
     val isPrivate: Boolean = false,
     val hiddenFromStatusLists: Boolean = false,
     /** Volumes read. Manga only, and null when the entry has never recorded one. */

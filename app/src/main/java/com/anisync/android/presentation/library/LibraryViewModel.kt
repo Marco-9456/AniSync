@@ -45,6 +45,15 @@ class LibraryViewModel @Inject constructor(
 
     companion object {
         /** Canonical tab identifiers for the built-in (non-custom) tabs. */
+        /** AniList `MediaStatus` values, in the order the filter sheet lists them. */
+        val AIRING_STATUS_ORDER = listOf(
+            "RELEASING",
+            "FINISHED",
+            "NOT_YET_RELEASED",
+            "HIATUS",
+            "CANCELLED"
+        )
+
         val DEFAULT_TAB_IDS = listOf(
             "status:CURRENT",
             "status:REPEATING",
@@ -59,7 +68,7 @@ class LibraryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         LibraryUiState(
             mediaType = appSettings.libraryMediaType.value,
-            isGridView = appSettings.libraryGridView.value,
+            tabViewModes = appSettings.libraryTabViewModes.value,
             sortOption = runCatching { LibrarySort.valueOf(appSettings.librarySortOption.value) }
                 .getOrDefault(LibrarySort.AIRING_SOON),
             isAscending = appSettings.librarySortAscending.value
@@ -83,7 +92,11 @@ class LibraryViewModel @Inject constructor(
         val tabOrder: List<String>,
         val tabCounts: Map<String, Int>,
         val searchMatches: List<LibraryEntry>,
-        val searchMatchesByCategory: Map<String, List<LibraryEntry>>
+        val searchMatchesByCategory: Map<String, List<LibraryEntry>>,
+        val unfilteredTabCounts: Map<String, Int>,
+        val availableGenres: List<String>,
+        val availableFormats: List<com.anisync.android.type.MediaFormat>,
+        val availableAiringStatuses: List<String>
     )
 
     init {
@@ -119,6 +132,10 @@ class LibraryViewModel @Inject constructor(
             _uiState.update { it.copy(showScoreOnCards = show) }
         }.launchIn(viewModelScope)
 
+        appSettings.libraryTabViewModes.onEach { modes ->
+            _uiState.update { it.copy(tabViewModes = modes) }
+        }.launchIn(viewModelScope)
+
         observeLibraryData()
     }
 
@@ -135,7 +152,11 @@ class LibraryViewModel @Inject constructor(
                         isLoading = true,
                         errorMessage = null,
                         initialTabId = null,
-                        activeSearchCategory = LIBRARY_ALL_TAB_ID
+                        activeSearchCategory = LIBRARY_ALL_TAB_ID,
+                        // Entry ids and filter vocabulary are per media type; neither survives the switch.
+                        selectedEntryIds = emptySet(),
+                        selectionTabId = null,
+                        filters = LibraryFilters.None
                     )
                 }
                 refresh()
@@ -184,14 +205,157 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.CreateCustomList -> createCustomList(action.listName, action.type)
             is LibraryAction.DeleteCustomList -> deleteCustomList(action.listName)
             is LibraryAction.TogglePrivateVisibility -> appSettings.setShowPrivateEntries(action.show)
-            is LibraryAction.SetGridView -> {
-                appSettings.setLibraryGridView(action.isGrid)
-                _uiState.update { it.copy(isGridView = action.isGrid) }
+            is LibraryAction.SetTabViewMode ->
+                appSettings.setLibraryTabViewMode(action.tabId, action.isGrid)
+
+            is LibraryAction.OnTabSelected -> {
+                // A selection belongs to the list it was started in; leaving that list ends it.
+                if (_uiState.value.selectionTabId != null &&
+                    _uiState.value.selectionTabId != action.tabId
+                ) {
+                    clearSelection()
+                }
+                saveSelectedTab(action.tabId)
             }
-            is LibraryAction.OnTabSelected -> saveSelectedTab(action.tabId)
+
             is LibraryAction.ConsumeInitialTab -> _uiState.update { it.copy(initialTabId = null) }
+
+            is LibraryAction.SetFilters -> _uiState.update { it.copy(filters = action.filters) }
+            is LibraryAction.ClearFilters ->
+                _uiState.update { it.copy(filters = LibraryFilters.None) }
+
+            is LibraryAction.EnterSelection -> _uiState.update {
+                it.copy(selectionTabId = action.tabId, selectedEntryIds = setOf(action.entryId))
+            }
+
+            is LibraryAction.ToggleSelection -> _uiState.update { st ->
+                val next = if (action.entryId in st.selectedEntryIds) {
+                    st.selectedEntryIds - action.entryId
+                } else {
+                    st.selectedEntryIds + action.entryId
+                }
+                // Unticking the last row leaves selection mode, matching every other list app.
+                if (next.isEmpty()) {
+                    st.copy(selectedEntryIds = emptySet(), selectionTabId = null)
+                } else {
+                    st.copy(selectedEntryIds = next)
+                }
+            }
+
+            is LibraryAction.SelectAll -> _uiState.update {
+                it.copy(selectedEntryIds = action.entryIds.toSet())
+            }
+
+            is LibraryAction.ClearSelection -> clearSelection()
+
+            is LibraryAction.BulkSetStatus -> bulkUpdate(status = action.status)
+            is LibraryAction.BulkSetScore -> bulkUpdate(score = action.score)
+            is LibraryAction.BulkSetPrivate -> bulkUpdate(isPrivate = action.isPrivate)
+            is LibraryAction.BulkAddToCustomList -> bulkAddToCustomList(action.listName)
+            is LibraryAction.BulkRemove -> bulkRemove()
+            is LibraryAction.CancelBulkOperation -> bulkJob?.cancel()
         }
     }
+
+    private fun clearSelection() {
+        _uiState.update { it.copy(selectedEntryIds = emptySet(), selectionTabId = null) }
+    }
+
+    /** The selected entries, resolved against the merged list so custom-list tabs work too. */
+    private fun selectedEntries(): List<LibraryEntry> {
+        val ids = _uiState.value.selectedEntryIds
+        if (ids.isEmpty()) return emptyList()
+        return _uiState.value.entries.filter { it.id in ids }
+    }
+
+    /**
+     * Status, score and private in one `UpdateMediaListEntries` call, whatever the selection size.
+     *
+     * The repository writes Room first, so a failure has to pull the server's truth back rather
+     * than leave the optimistic value sitting there.
+     */
+    private fun bulkUpdate(
+        status: LibraryStatus? = null,
+        score: Double? = null,
+        isPrivate: Boolean? = null
+    ) {
+        val ids = _uiState.value.selectedEntryIds.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            when (val result = libraryRepository.bulkUpdateEntries(ids, status, score, isPrivate)) {
+                is Result.Success -> {
+                    clearSelection()
+                    toastManager.showToast(
+                        ToastType.SUCCESS,
+                        message = "Updated ${ids.size} ${entryWord(ids.size)}"
+                    )
+                }
+
+                is Result.Error -> {
+                    showResultError(result)
+                    refresh()
+                }
+            }
+        }
+    }
+
+    private var bulkJob: kotlinx.coroutines.Job? = null
+
+    private fun bulkAddToCustomList(listName: String) {
+        val entries = selectedEntries()
+        if (entries.isEmpty()) return
+        _uiState.update {
+            it.copy(
+                bulkOperation = BulkOperation(
+                    kind = BulkKind.ADD_TO_LIST,
+                    done = 0,
+                    total = entries.size,
+                    listName = listName
+                )
+            )
+        }
+        bulkJob = viewModelScope.launch {
+            try {
+                val result = libraryRepository.bulkAddToCustomList(entries, listName) { done ->
+                    _uiState.update { st -> st.copy(bulkOperation = st.bulkOperation?.copy(done = done)) }
+                }
+                onBulkFinished(result) { count -> "Added $count ${entryWord(count)} to $listName" }
+            } finally {
+                _uiState.update { it.copy(bulkOperation = null) }
+            }
+        }
+    }
+
+    private fun bulkRemove() {
+        val entries = selectedEntries()
+        if (entries.isEmpty()) return
+        _uiState.update {
+            it.copy(bulkOperation = BulkOperation(BulkKind.REMOVE, done = 0, total = entries.size))
+        }
+        bulkJob = viewModelScope.launch {
+            try {
+                val result = libraryRepository.bulkDeleteEntries(entries) { done ->
+                    _uiState.update { st -> st.copy(bulkOperation = st.bulkOperation?.copy(done = done)) }
+                }
+                onBulkFinished(result) { count -> "Removed $count ${entryWord(count)}" }
+            } finally {
+                _uiState.update { it.copy(bulkOperation = null) }
+            }
+        }
+    }
+
+    private fun onBulkFinished(result: Result<Int>, message: (Int) -> String) {
+        when (result) {
+            is Result.Success -> {
+                clearSelection()
+                toastManager.showToast(ToastType.SUCCESS, message = message(result.data))
+            }
+
+            is Result.Error -> showResultError(result)
+        }
+    }
+
+    private fun entryWord(count: Int) = if (count == 1) "entry" else "entries"
 
     private fun observeLibraryData() {
         viewModelScope.launch {
@@ -220,7 +384,8 @@ class LibraryViewModel @Inject constructor(
                             state.isAscending,
                             state.searchQuery,
                             state.titleLanguage,
-                            state.showPrivateEntries
+                            state.showPrivateEntries,
+                            state.filters
                         )
                     }.distinctUntilChanged()
                 ) { (entries, favorites, listPrefs), combinedState ->
@@ -229,6 +394,7 @@ class LibraryViewModel @Inject constructor(
                     val query = combinedState[2] as String
                     val titleLang = combinedState[3] as com.anisync.android.data.TitleLanguage
                     val showPrivate = combinedState[4] as Boolean
+                    val filters = combinedState[5] as LibraryFilters
                     val (listOrder, hiddenLists) = listPrefs
 
                     // No early return for an empty library: the sort/group/count logic below all
@@ -294,7 +460,9 @@ class LibraryViewModel @Inject constructor(
                         if (notPrivate) {
                             for (name in e.customLists) {
                                 customNames.add(name)
-                                customEntriesMap.getOrPut(name) { ArrayList() }.add(e)
+                                if (filters.matches(e)) {
+                                    customEntriesMap.getOrPut(name) { ArrayList() }.add(e)
+                                }
                             }
                         }
                         if (notPrivate && !e.hiddenFromStatusLists) {
@@ -306,8 +474,20 @@ class LibraryViewModel @Inject constructor(
                     // The tabs (and their count badges) always show the full lists — the search box
                     // no longer shrinks them. Searching is computed separately below and surfaced
                     // only in the search overlay (#91).
+                    // The filter vocabulary is read off everything visible, not off the
+                    // filtered result, so the sheet's options don't vanish as you narrow.
+                    val availableGenres = sortedEntries
+                        .flatMap { it.entry.genres }
+                        .distinct()
+                        .sorted()
+                    val availableFormats = com.anisync.android.type.MediaFormat.entries
+                        .filter { format -> sortedEntries.any { it.entry.format == format } }
+                    val availableAiringStatuses = AIRING_STATUS_ORDER
+                        .filter { status -> sortedEntries.any { it.entry.mediaStatus == status } }
+
+                    val unfilteredEntries = visibilityFiltered.map { it.entry }
                     val allEntries = ArrayList<LibraryEntry>(visibilityFiltered.size).also { out ->
-                        for (s in visibilityFiltered) out.add(s.entry)
+                        for (s in visibilityFiltered) if (filters.matches(s.entry)) out.add(s.entry)
                     }
                     val grouped = allEntries.groupBy { it.status }
 
@@ -317,7 +497,9 @@ class LibraryViewModel @Inject constructor(
                     // Extract sorted custom names from the tab order for the UI
                     val sortedCustomNames = tabOrder.filter { !it.startsWith("status:") && it in customNamesSet }
 
-                    val sortedFavorites = favorites.sortedBy { it.getTitle(titleLang).lowercase() }
+                    val sortedFavorites = favorites
+                        .filter { filters.matches(it) }
+                        .sortedBy { it.getTitle(titleLang).lowercase() }
 
                     // Raw per-tab counts (independent of the query) for the tab badges.
                     val tabCounts = buildMap {
@@ -325,6 +507,17 @@ class LibraryViewModel @Inject constructor(
                         grouped.forEach { (status, list) -> put("status:${status.name}", list.size) }
                         put(LIBRARY_FAVORITES_TAB_ID, sortedFavorites.size)
                         customEntriesMap.forEach { (name, list) -> put(name, list.size) }
+                    }
+
+                    val unfilteredTabCounts = buildMap {
+                        put(LIBRARY_ALL_TAB_ID, unfilteredEntries.size)
+                        unfilteredEntries.groupBy { it.status }
+                            .forEach { (status, list) -> put("status:${status.name}", list.size) }
+                        put(LIBRARY_FAVORITES_TAB_ID, favorites.size)
+                        unfilteredEntries
+                            .flatMap { entry -> entry.customLists.map { it to entry } }
+                            .groupBy({ it.first }, { it.second })
+                            .forEach { (name, list) -> put(name, list.size) }
                     }
 
                     // Search matches every title variant + notes, grouped by list so the overlay can
@@ -364,7 +557,11 @@ class LibraryViewModel @Inject constructor(
                         tabOrder = tabOrder,
                         tabCounts = tabCounts,
                         searchMatches = searchMatches,
-                        searchMatchesByCategory = searchMatchesByCategory
+                        searchMatchesByCategory = searchMatchesByCategory,
+                        availableGenres = availableGenres,
+                        availableFormats = availableFormats,
+                        availableAiringStatuses = availableAiringStatuses,
+                        unfilteredTabCounts = unfilteredTabCounts
                     )
                 }
                 .flowOn(Dispatchers.Default)
@@ -408,6 +605,10 @@ class LibraryViewModel @Inject constructor(
                             tabCounts = computed.tabCounts,
                             searchMatches = computed.searchMatches,
                             searchMatchesByCategory = computed.searchMatchesByCategory,
+                            availableGenres = computed.availableGenres,
+                            availableFormats = computed.availableFormats,
+                            availableAiringStatuses = computed.availableAiringStatuses,
+                            unfilteredTabCounts = computed.unfilteredTabCounts,
                             initialTabId = resolvedInitialTab ?: it.initialTabId,
                             isLoading = false,
                             errorMessage = null

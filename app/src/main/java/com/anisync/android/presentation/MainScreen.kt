@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -52,10 +55,14 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -361,7 +368,19 @@ private fun CompactNavLayout(
     ) { _ ->
         // Bar's occupied bottom space — used by scrollable tab content as bottom contentPadding so
         // the last item is reachable above the bar.
-        val barInset = if (navBarShowLabels) 96.dp else 76.dp
+        //
+        // Measured rather than assumed. The two constants this replaces were tuned against gesture
+        // navigation, where the system inset is small; under three-button navigation the bar sits
+        // roughly 24dp lower and content ran right into it (issue #127). Measuring also keeps the
+        // reserve honest as the label setting, corner radius and font scale change.
+        val density = LocalDensity.current
+        var barHeightPx by remember { mutableIntStateOf(0) }
+        val fallbackInset = if (navBarShowLabels) 96.dp else 76.dp
+        val barInset = if (barHeightPx > 0) {
+            with(density) { barHeightPx.toDp() }
+        } else {
+            fallbackInset + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             // Scaffold padding is intentionally ignored to prevent the NavHost from remeasuring
@@ -379,6 +398,7 @@ private fun CompactNavLayout(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
+                        .onSizeChanged { barHeightPx = it.height }
                 ) {
                     MainBottomBar(
                         navController = navController,

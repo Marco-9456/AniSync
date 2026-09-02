@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
@@ -297,6 +298,15 @@ fun AniSyncNavHost(
                     onMediaClickFullScreen = onLibraryMediaClick,
                     onNavigateToCalendar = { navController.navigate(Calendar) },
                     onNavigateToNotes = { navController.navigate(Notes) },
+                    // An empty list is a dead end without this: same options the bottom bar uses,
+                    // so the tab switch saves and restores state rather than stacking a screen.
+                    onBrowseDiscover = {
+                        navController.navigate(Discover) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )

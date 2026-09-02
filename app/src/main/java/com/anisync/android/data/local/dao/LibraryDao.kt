@@ -104,7 +104,12 @@ interface LibraryDao {
      * Update progress for a specific media in an account.
      */
     @Query("UPDATE library_entries SET progress = :progress, lastUpdated = :timestamp WHERE ownerId = :ownerId AND mediaId = :mediaId")
-    suspend fun updateProgress(ownerId: Int, mediaId: Int, progress: Int, timestamp: Long = System.currentTimeMillis())
+    suspend fun updateProgress(
+        ownerId: Int,
+        mediaId: Int,
+        progress: Int,
+        timestamp: Long = System.currentTimeMillis()
+    )
 
     /**
      * Atomic transaction: delete an account's old entries of a type and insert new ones.
@@ -120,7 +125,11 @@ interface LibraryDao {
      * Smart merge: preserves locally-added entries while syncing with API, scoped to one account.
      */
     @Transaction
-    suspend fun smartMergeByType(ownerId: Int, type: MediaType, apiEntries: List<LibraryEntryEntity>) {
+    suspend fun smartMergeByType(
+        ownerId: Int,
+        type: MediaType,
+        apiEntries: List<LibraryEntryEntity>
+    ) {
         val localEntries = getByType(ownerId, type)
         // The API list holds one canonical entry id per media (it's deduped by media upstream).
         val apiIdByMedia = HashMap<Int, Int>(apiEntries.size)
@@ -164,11 +173,50 @@ interface LibraryDao {
     @Query("DELETE FROM library_entries WHERE ownerId = :ownerId AND id IN (:ids)")
     suspend fun deleteByIds(ownerId: Int, ids: List<Int>)
 
+    /** The entries behind a bulk selection, so a batch can be replayed or rolled back. */
+    @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND id IN (:ids)")
+    suspend fun getByIds(ownerId: Int, ids: List<Int>): List<LibraryEntryEntity>
+
+    /**
+     * Local half of a bulk `UpdateMediaListEntries`. Written per field rather than as a whole
+     * entity because that mutation only ever changes the one field the user picked, and rewriting
+     * whole rows would clobber progress landing from a concurrent +1.
+     */
+    @Query("UPDATE library_entries SET status = :status, lastUpdated = :timestamp WHERE ownerId = :ownerId AND id IN (:ids)")
+    suspend fun updateStatusForIds(
+        ownerId: Int,
+        ids: List<Int>,
+        status: LibraryStatus,
+        timestamp: Long = System.currentTimeMillis()
+    )
+
+    @Query("UPDATE library_entries SET score = :score, lastUpdated = :timestamp WHERE ownerId = :ownerId AND id IN (:ids)")
+    suspend fun updateScoreForIds(
+        ownerId: Int,
+        ids: List<Int>,
+        score: Double,
+        timestamp: Long = System.currentTimeMillis()
+    )
+
+    @Query("UPDATE library_entries SET isPrivate = :isPrivate, lastUpdated = :timestamp WHERE ownerId = :ownerId AND id IN (:ids)")
+    suspend fun updatePrivateForIds(
+        ownerId: Int,
+        ids: List<Int>,
+        isPrivate: Boolean,
+        timestamp: Long = System.currentTimeMillis()
+    )
+
     /**
      * Update status and progress for a specific media entry in an account.
      */
     @Query("UPDATE library_entries SET status = :status, progress = :progress, lastUpdated = :timestamp WHERE ownerId = :ownerId AND mediaId = :mediaId")
-    suspend fun updateStatusAndProgress(ownerId: Int, mediaId: Int, status: LibraryStatus, progress: Int, timestamp: Long = System.currentTimeMillis())
+    suspend fun updateStatusAndProgress(
+        ownerId: Int,
+        mediaId: Int,
+        status: LibraryStatus,
+        progress: Int,
+        timestamp: Long = System.currentTimeMillis()
+    )
 
     /**
      * Delete a specific entry by mediaId for an account.

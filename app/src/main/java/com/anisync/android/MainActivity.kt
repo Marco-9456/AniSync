@@ -167,6 +167,9 @@ class MainActivity : AppCompatActivity() {
         val onCreateTime = measureTimeMillis {
             super.onCreate(savedInstanceState)
 
+            // Device-theme styling only. The app's own light/dark setting drives the bar
+            // icons through WindowInsetsControllerCompat in AppTheme, which is the
+            // mechanism the edge-to-edge guide documents for an in-app theme.
             enableEdgeToEdge()
 
             val savedLocale = appSettings.appLocale.value

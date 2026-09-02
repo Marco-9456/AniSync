@@ -67,27 +67,13 @@ fun LibraryViewOptionsSheet(
                 .padding(bottom = 32.dp)
         ) {
             Text(
-                text = stringResource(R.string.library_view_title),
+                text = stringResource(R.string.library_card_options),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
             Spacer(Modifier.height(16.dp))
-
-            // List / Grid choice — the app's connected ToggleButton group (same as tab switchers).
-            SegmentedTabGroup(
-                options = listOf(false, true),
-                selected = isGridView,
-                onSelect = onSetGridView,
-                label = { grid ->
-                    stringResource(if (grid) R.string.library_view_grid else R.string.library_view_list)
-                },
-                icon = { grid -> if (grid) Icons.Outlined.GridView else Icons.Outlined.ViewAgenda },
-                fillEqually = true,
-            )
-
-            Spacer(Modifier.height(24.dp))
 
             // Automatic columns — only meaningful for the grid layout.
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -3,6 +3,7 @@ package com.anisync.android.data
 import android.content.Context
 import com.anisync.android.GetUserLibraryQuery
 import com.anisync.android.GetViewerQuery
+import com.anisync.android.data.account.AccountStore
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
@@ -17,16 +18,17 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.Result
-import com.anisync.android.data.account.AccountStore
-import com.anisync.android.util.AniListTextEncoder.encodeForAniList
 import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaType
+import com.anisync.android.util.AniListTextEncoder.encodeForAniList
 import com.anisync.android.widget.core.WidgetRefresh
 import com.apollographql.apollo.ApolloClient
-import dagger.hilt.android.qualifiers.ApplicationContext
 import com.apollographql.apollo.api.Optional
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import com.apollographql.cache.normalized.FetchPolicy
 import com.apollographql.cache.normalized.fetchPolicy
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -191,6 +193,7 @@ class LibraryRepositoryImpl @Inject constructor(
                             totalChapters = media?.chapters,
                             totalVolumes = media?.volumes,
                             type = media?.type,
+                            format = media?.format,
                             status = status,
                             nextAiringEpisode = media?.nextAiringEpisode?.episode,
                             timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring,
@@ -205,6 +208,7 @@ class LibraryRepositoryImpl @Inject constructor(
                             updatedAt = entry.updatedAt?.toLong()?.times(1000L),
                             createdAt = entry.createdAt?.toLong()?.times(1000L),
                             mediaStartDate = media?.startDate?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
+                            genres = media?.genres?.filterNotNull() ?: emptyList(),
                             customLists = if (isCustom) listOf(listName) else emptyList(),
                             isPrivate = entry.`private` ?: false,
                             hiddenFromStatusLists = entry.hiddenFromStatusLists ?: false
@@ -233,6 +237,16 @@ class LibraryRepositoryImpl @Inject constructor(
             // Smart merge to preserve locally-added entries during API sync delay.
             // Tag rows with the active account so each account's library persists independently.
             val owner = currentOwnerId()
+
+            // An empty response is far likelier to be a throttled or partial fetch than an account
+            // that just deleted its entire list for this media type — a 429 whose body still parses
+            // gets here with no lists at all. smartMergeByType reads "absent from the response" as
+            // "removed on the server", so without this the cached library is wiped and the screen
+            // shows an empty-state for a library that is still perfectly intact upstream.
+            if (entries.isEmpty() && libraryDao.getByType(owner, type).isNotEmpty()) {
+                return@safeApiCall
+            }
+
             libraryDao.smartMergeByType(owner, type, entries.map { it.toEntity(type).copy(ownerId = owner) })
         }
     }
@@ -399,7 +413,110 @@ class LibraryRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteCustomList(customList: String, type: com.anisync.android.type.MediaType): com.anisync.android.domain.Result<Unit> {
+    override suspend fun bulkUpdateEntries(
+        entryIds: List<Int>,
+        status: LibraryStatus?,
+        score: Double?,
+        isPrivate: Boolean?
+    ): Result<Unit> {
+        if (entryIds.isEmpty()) return Result.Success(Unit)
+        val owner = currentOwnerId()
+        val now = System.currentTimeMillis()
+
+        // Optimistic, one column at a time. Rewriting whole rows here would clobber progress
+        // landing from a concurrent +1 on a row that happens to be in the selection.
+        status?.let { libraryDao.updateStatusForIds(owner, entryIds, it, now) }
+        score?.let { libraryDao.updateScoreForIds(owner, entryIds, it, now) }
+        isPrivate?.let { libraryDao.updatePrivateForIds(owner, entryIds, it, now) }
+
+        return safeApiCall {
+            val response = apolloClient.mutation(
+                com.anisync.android.UpdateMediaListEntriesMutation(
+                    ids = Optional.present(entryIds),
+                    status = Optional.presentIfNotNull(status?.toApiStatus()),
+                    score = Optional.presentIfNotNull(score),
+                    `private` = Optional.presentIfNotNull(isPrivate)
+                )
+            ).execute()
+
+            if (response.data?.UpdateMediaListEntries == null || response.hasErrors()) {
+                throw Exception(response.errors?.firstOrNull()?.message ?: "Bulk update failed")
+            }
+        }
+    }
+
+    override suspend fun bulkAddToCustomList(
+        entries: List<LibraryEntry>,
+        listName: String,
+        onProgress: (Int) -> Unit
+    ): Result<Int> {
+        val owner = currentOwnerId()
+        var done = 0
+        for (entry in entries) {
+            if (listName in entry.customLists) {
+                done++
+                onProgress(done)
+                continue
+            }
+            coroutineContext.ensureActive()
+            val merged = entry.customLists + listName
+            val result = safeApiCall {
+                val response = apolloClient.mutation(
+                    com.anisync.android.SaveMediaListEntryMutation(
+                        mediaId = Optional.present(entry.mediaId),
+                        customLists = Optional.present(merged)
+                    )
+                ).execute()
+                if (response.data?.SaveMediaListEntry == null || response.hasErrors()) {
+                    throw Exception(response.errors?.firstOrNull()?.message ?: "Add to list failed")
+                }
+            }
+            when (result) {
+                is Result.Success -> {
+                    // Commit as each one lands, so a cancel leaves Room agreeing with AniList.
+                    libraryDao.updateEntry(
+                        entry.copy(customLists = merged)
+                            .toEntity(entry.type ?: MediaType.ANIME)
+                            .copy(ownerId = owner)
+                    )
+                    done++
+                    onProgress(done)
+                }
+                is Result.Error -> return if (done > 0) Result.Success(done) else result
+            }
+        }
+        return Result.Success(done)
+    }
+
+    override suspend fun bulkDeleteEntries(
+        entries: List<LibraryEntry>,
+        onProgress: (Int) -> Unit
+    ): Result<Int> {
+        val owner = currentOwnerId()
+        var done = 0
+        for (entry in entries) {
+            coroutineContext.ensureActive()
+            val result = safeApiCall {
+                val response = apolloClient.mutation(
+                    com.anisync.android.DeleteMediaListEntryMutation(id = Optional.present(entry.id))
+                ).execute()
+                if (response.data?.DeleteMediaListEntry?.deleted != true || response.hasErrors()) {
+                    throw Exception(response.errors?.firstOrNull()?.message ?: "Delete failed")
+                }
+            }
+            when (result) {
+                is Result.Success -> {
+                    libraryDao.deleteByMediaId(owner, entry.mediaId)
+                    done++
+                    onProgress(done)
+                }
+                is Result.Error -> return if (done > 0) Result.Success(done) else result
+            }
+        }
+        return Result.Success(done)
+    }
+
+    override suspend fun deleteCustomList(customList: String, type: MediaType): Result<Unit> {
         return safeApiCall {
             val response = apolloClient.mutation(
                 com.anisync.android.DeleteCustomListMutation(
@@ -417,9 +534,9 @@ class LibraryRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createCustomList(customList: String, type: com.anisync.android.type.MediaType): com.anisync.android.domain.Result<Unit> {
+    override suspend fun createCustomList(customList: String, type: MediaType): Result<Unit> {
         return safeApiCall {
-            val isAnime = type == com.anisync.android.type.MediaType.ANIME
+            val isAnime = type == MediaType.ANIME
             
             // Get the full stored order (may contain status: entries)
             val currentOrder = if (isAnime) appSettings.animeListOrder.value else appSettings.mangaListOrder.value

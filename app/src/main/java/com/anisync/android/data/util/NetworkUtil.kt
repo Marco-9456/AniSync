@@ -108,3 +108,21 @@ suspend fun <D : Operation.Data, T> safeApiCallWithResponse(
         transform(response)
     }
 }
+
+/**
+ * The response's payload, or the reason there isn't one.
+ *
+ * Apollo 4 does not throw on a transport failure: `execute()` returns a response carrying the
+ * exception with a null `data`. Code that read `response.data?...?: emptyList()` therefore turned
+ * every failed request into an empty success, which is why a section that could not load was
+ * indistinguishable from a section with nothing in it.
+ */
+fun <D : Operation.Data> ApolloResponse<D>.dataOrThrow(): D {
+    exception?.let { throw it }
+    if (hasErrors()) {
+        val messages = errors?.map { it.message } ?: listOf("Unknown error")
+        val statusCode = (errors?.firstOrNull()?.extensions?.get("status") as? Number)?.toInt()
+        throw ApiError.GraphQLError(messages, statusCode)
+    }
+    return data ?: throw ApiError.Unknown("The server returned no data.")
+}
