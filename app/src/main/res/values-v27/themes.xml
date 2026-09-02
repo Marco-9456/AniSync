@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- windowLightNavigationBar exists from API 27; the rest of the theme is in values/themes.xml. -->
+    <style name="Theme.AniSync" parent="Base.Theme.AniSync">
+        <item name="android:windowLightNavigationBar">@bool/light_system_bars</item>
+    </style>
+</resources>

@@ -5,9 +5,19 @@
       background is the app surface (not the AppCompat default white) so the cold-start window and any
       brief pre-Compose frame match the theme instead of flashing bright in dark mode (issue #84).
     -->
-    <style name="Theme.AniSync" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="Base.Theme.AniSync" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/splash_background</item>
+        <!--
+          The bar icon appearance has to live in the theme, not only in code. core-splashscreen
+          reads windowLightStatusBar and windowLightNavigationBar off the activity theme and writes
+          them over the window with setSystemBarsAppearance() every time the splash hands over, so a
+          theme that declared neither cleared both bits and left the icons white on a light
+          background (issue #127). windowLightNavigationBar is API 27, so it is added in values-v27.
+        -->
+        <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
     </style>
+
+    <style name="Theme.AniSync" parent="Base.Theme.AniSync" />
 
     <!--
       Cold-start splash theme (androidx core-splashscreen). The launcher activity boots into this; it

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Light system bars: dark icons drawn for a light background. Read by Theme.AniSync and, through
+      it, by core-splashscreen, which restores the window's bar appearance from the activity theme
+      when the splash hands over. Follows the night qualifier, which AppCompatDelegate keeps in sync
+      with the in-app theme mode.
+    -->
+    <bool name="light_system_bars">true</bool>
+</resources>

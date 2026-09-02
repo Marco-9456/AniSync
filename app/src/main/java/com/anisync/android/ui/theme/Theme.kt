@@ -331,6 +331,31 @@ fun ThemeMode.resolveDarkTheme(): Boolean = when (this) {
     ThemeMode.SYSTEM -> isSystemActuallyDark()
 }
 
+/** Same resolution outside composition, for callers holding a [Configuration] instead. */
+fun ThemeMode.resolveDarkTheme(configuration: Configuration): Boolean = when (this) {
+    ThemeMode.LIGHT -> false
+    ThemeMode.DARK -> true
+    ThemeMode.SYSTEM ->
+        (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+}
+
+/**
+ * The one writer for the system bar icon appearance. Light bars mean dark icons, so this is the
+ * inverse of [darkTheme].
+ *
+ * Anything that can overwrite the window's appearance has to be followed by a call to this, because
+ * the appearance is window state with no owner: the last writer wins and nothing re-asserts it.
+ * core-splashscreen is one such writer (see Theme.AniSync), and so is enableEdgeToEdge(), which
+ * re-runs on every configuration change and styles the bars from the device theme rather than the
+ * app's.
+ */
+fun applySystemBarAppearance(window: android.view.Window, darkTheme: Boolean) {
+    val controller = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+    controller.isAppearanceLightStatusBars = !darkTheme
+    controller.isAppearanceLightNavigationBars = !darkTheme
+}
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppTheme(
@@ -380,22 +405,14 @@ fun AppTheme(
         else -> lightScheme
     }
 
-    // Set status bar icons color based on theme
+    // Bar icons follow the in-app theme, which enableEdgeToEdge() can't know: it reads the device
+    // theme. This runs whenever darkTheme changes, so an in-app theme switch repaints the bars
+    // without a recreate. It does not cover writers that land outside composition — see
+    // applySystemBarAppearance.
     val view = androidx.compose.ui.platform.LocalView.current
     if (!view.isInEditMode) {
         androidx.compose.runtime.SideEffect {
-            val window = (view.context as android.app.Activity).window
-            // Bound to the decor view, not the Compose view. enableEdgeToEdge() installs its own
-            // controller on the decor view, and a controller built over a different view does not
-            // reliably own the same appearance flags, so writes here were being ignored: with the
-            // app in light mode under a dark system theme, both bars kept their light icons and
-            // went invisible (issue #127).
-            val insetsController =
-                androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
-            // Both bars: enableEdgeToEdge() styles them from the system theme once at creation,
-            // which goes stale when the in-app theme differs or changes without a recreate.
-            insetsController.isAppearanceLightStatusBars = !darkTheme
-            insetsController.isAppearanceLightNavigationBars = !darkTheme
+            applySystemBarAppearance((view.context as android.app.Activity).window, darkTheme)
         }
     }
 
