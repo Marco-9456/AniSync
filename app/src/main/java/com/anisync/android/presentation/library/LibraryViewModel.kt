@@ -68,7 +68,7 @@ class LibraryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         LibraryUiState(
             mediaType = appSettings.libraryMediaType.value,
-            tabViewModes = appSettings.libraryTabViewModes.value,
+            isGridView = appSettings.libraryGridView.value,
             sortOption = runCatching { LibrarySort.valueOf(appSettings.librarySortOption.value) }
                 .getOrDefault(LibrarySort.AIRING_SOON),
             isAscending = appSettings.librarySortAscending.value
@@ -132,8 +132,8 @@ class LibraryViewModel @Inject constructor(
             _uiState.update { it.copy(showScoreOnCards = show) }
         }.launchIn(viewModelScope)
 
-        appSettings.libraryTabViewModes.onEach { modes ->
-            _uiState.update { it.copy(tabViewModes = modes) }
+        appSettings.libraryGridView.onEach { isGrid ->
+            _uiState.update { it.copy(isGridView = isGrid) }
         }.launchIn(viewModelScope)
 
         observeLibraryData()
@@ -205,8 +205,7 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.CreateCustomList -> createCustomList(action.listName, action.type)
             is LibraryAction.DeleteCustomList -> deleteCustomList(action.listName)
             is LibraryAction.TogglePrivateVisibility -> appSettings.setShowPrivateEntries(action.show)
-            is LibraryAction.SetTabViewMode ->
-                appSettings.setLibraryTabViewMode(action.tabId, action.isGrid)
+            is LibraryAction.SetGridView -> appSettings.setLibraryGridView(action.isGrid)
 
             is LibraryAction.OnTabSelected -> {
                 // A selection belongs to the list it was started in; leaving that list ends it.

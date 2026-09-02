@@ -92,8 +92,8 @@ data class LibraryUiState(
     val activeSearchCategory: String = LIBRARY_ALL_TAB_ID,
     val showPrivateEntries: Boolean = true,
     val showScoreOnCards: Boolean = true,
-    /** Layout per tab id; a tab absent here follows [defaultGridForTab]. */
-    val tabViewModes: Map<String, Boolean> = emptyMap(),
+    /** Poster grid (true) or single-column rows. One choice for every list, not one per list. */
+    val isGridView: Boolean = true,
     val filters: LibraryFilters = LibraryFilters.None,
     /** Every genre present in the loaded library, sorted, for the filter sheet. */
     val availableGenres: List<String> = emptyList(),
@@ -116,20 +116,7 @@ data class LibraryUiState(
     val errorMessage: String? = null
 ) {
     val isSelectionMode: Boolean get() = selectionTabId != null
-
-    /** True when [tabId] should render the poster grid rather than the queue rows. */
-    fun isGridFor(tabId: String): Boolean = tabViewModes[tabId] ?: defaultGridForTab(tabId)
 }
-
-/**
- * Rows for the two lists you advance episode by episode, a poster grid everywhere else.
- *
- * The library serves two jobs from one screen: a queue you act on, and a shelf you browse. The
- * default splits them without asking, and [LibraryAction.SetTabViewMode] overrides it per list.
- */
-fun defaultGridForTab(tabId: String): Boolean =
-    tabId != "status:${LibraryStatus.CURRENT.name}" &&
-        tabId != "status:${LibraryStatus.REPEATING.name}"
 
 enum class LibrarySort {
     TITLE,
@@ -159,7 +146,7 @@ sealed interface LibraryAction {
     data class CreateCustomList(val listName: String, val type: MediaType) : LibraryAction
     data class DeleteCustomList(val listName: String) : LibraryAction
     data class TogglePrivateVisibility(val show: Boolean) : LibraryAction
-    data class SetTabViewMode(val tabId: String, val isGrid: Boolean) : LibraryAction
+    data class SetGridView(val isGrid: Boolean) : LibraryAction
     data class OnTabSelected(val tabId: String) : LibraryAction
     data object ConsumeInitialTab : LibraryAction
 

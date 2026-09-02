@@ -296,14 +296,14 @@ fun LibraryScreen(
             }
         }
 
-    val isCurrentTabGrid = uiState.isGridFor(currentTabId)
+    val isGridView = uiState.isGridView
 
     val inputField = @Composable {
         LibrarySearchBarInputField(
             searchBarState = searchBarState,
             textFieldState = textFieldState,
             isSearchQueryEmpty = isSearchQueryEmpty,
-            isGridView = isCurrentTabGrid,
+            isGridView = isGridView,
             isNonDefaultSort = sortOption != LibrarySort.AIRING_SOON || !isAscending ||
                 !uiState.filters.isEmpty,
             isAscending = isAscending,
@@ -316,7 +316,7 @@ fun LibraryScreen(
             },
             onClearClick = { textFieldState.edit { replace(0, length, "") } },
             onToggleView = {
-                viewModel.onAction(LibraryAction.SetTabViewMode(currentTabId, !isCurrentTabGrid))
+                viewModel.onAction(LibraryAction.SetGridView(!isGridView))
             },
             onSortAndFilter = { showFilterSheet = true },
             onOverflow = { showOverflow = true },
@@ -465,7 +465,7 @@ fun LibraryScreen(
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             when {
                 uiState.isLoading -> {
-                    if (isCurrentTabGrid) SkeletonGrid(itemCount = 6) else SkeletonList(itemCount = 6)
+                    if (isGridView) SkeletonGrid(itemCount = 6) else SkeletonList(itemCount = 6)
                 }
 
                 uiState.errorMessage != null -> ErrorState(
@@ -506,7 +506,6 @@ fun LibraryScreen(
                             val tab = tabs[pageIndex]
                             val entries = entriesForTab(uiState, tab)
                             val tabId = tab.toId()
-                            val isGrid = uiState.isGridFor(tabId)
                             val tabLabel = tab.getLabel(mediaType)
 
                             // One state per layout. AnimatedContent composes both during the
@@ -525,7 +524,7 @@ fun LibraryScreen(
                                 (tab.status == LibraryStatus.CURRENT || tab.status == LibraryStatus.REPEATING)
 
                             AnimatedContent(
-                                targetState = isGrid,
+                                targetState = isGridView,
                                 transitionSpec = {
                                     (slideInVertically(spatialSpec) { if (targetState) -it / 8 else it / 8 } +
                                         fadeIn(effectsSpec)) togetherWith
@@ -683,11 +682,11 @@ fun LibraryScreen(
     val appSettings = LocalAppSettings.current
     LibraryViewOptionsSheet(
         visible = showViewOptions,
-        isGridView = isCurrentTabGrid,
+        isGridView = isGridView,
         autoColumns = LocalGridColumnsAuto.current,
         columnCount = LocalGridColumnCount.current,
         showScore = uiState.showScoreOnCards,
-        onSetGridView = { viewModel.onAction(LibraryAction.SetTabViewMode(currentTabId, it)) },
+        onSetGridView = { viewModel.onAction(LibraryAction.SetGridView(it)) },
         onSetAutoColumns = { appSettings.setGridColumnsAuto(it) },
         onSetColumnCount = { appSettings.setGridColumnCount(it) },
         onSetShowScore = { appSettings.setShowScoreOnCards(it) },
