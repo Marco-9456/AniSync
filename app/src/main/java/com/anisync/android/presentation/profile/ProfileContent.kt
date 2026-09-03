@@ -109,10 +109,6 @@ fun ProfileContent(
     val context = LocalContext.current
     val pullToRefreshState = rememberPullToRefreshState()
     val statsColumns = dashboardColumns()
-    // Portrait grids (favorite characters/staff, social following/followers) keep their 3-up phone
-    // density and gain columns on wider windows; studio chips are wider so they start 2-up.
-    val portraitColumns = profileGridColumns(baseMinSize = 150.dp)
-    val studioColumns = profileGridColumns(baseMinSize = 240.dp, compactColumns = 2)
 
     // Share-as-image sheets for the Stats and Favourites tabs, hosted at screen scope below.
     var statsShareVisible by remember { mutableStateOf(false) }
@@ -141,12 +137,15 @@ fun ProfileContent(
             onLastReplyClick = onLastReplyClick,
             showAccountSwitcher = showAccountSwitcher,
             onAccountSwitchClick = onAccountSwitchClick,
-            portraitColumns = portraitColumns,
-            studioColumns = studioColumns,
             statsColumns = statsColumns,
             modifier = modifier
         )
     } else {
+    // Portrait grids (favorite characters/staff, social following/followers) keep their 3-up phone
+    // density and gain columns on wider windows; studio chips are wider so they start 2-up.
+    val portraitColumns = profileGridColumns(baseMinSize = 150.dp)
+    val studioColumns = profileGridColumns(baseMinSize = 240.dp, compactColumns = 2)
+
     PullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
         onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },

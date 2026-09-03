@@ -9,6 +9,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -81,6 +82,7 @@ import com.anisync.android.presentation.profile.components.ProfileIdentityDetail
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.PaneDragHandle
+import com.anisync.android.presentation.util.profileGridColumns
 import com.anisync.android.presentation.util.TwoPaneDefaults
 import com.anisync.android.presentation.util.TwoPaneRow
 import com.anisync.android.util.ShareUtils
@@ -282,8 +284,6 @@ fun ProfileWideLayout(
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     showAccountSwitcher: Boolean,
     onAccountSwitchClick: () -> Unit,
-    portraitColumns: Int,
-    studioColumns: Int,
     statsColumns: Int,
     modifier: Modifier = Modifier
 ) {
@@ -354,8 +354,6 @@ fun ProfileWideLayout(
                 onLastReplyClick = onLastReplyClick,
                 showAccountSwitcher = showAccountSwitcher,
                 onAccountSwitchClick = onAccountSwitchClick,
-                portraitColumns = portraitColumns,
-                studioColumns = studioColumns,
                 statsColumns = statsColumns,
                 collapse = collapse,
                 modifier = Modifier.weight(1f)
@@ -484,8 +482,6 @@ private fun ProfileTwoPane(
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     showAccountSwitcher: Boolean,
     onAccountSwitchClick: () -> Unit,
-    portraitColumns: Int,
-    studioColumns: Int,
     statsColumns: Int,
     collapse: BioCollapseState,
     modifier: Modifier = Modifier
@@ -564,8 +560,6 @@ private fun ProfileTwoPane(
                 onCommentClick = onCommentClick,
                 onActivityClick = onActivityClick,
                 onLastReplyClick = onLastReplyClick,
-                portraitColumns = portraitColumns,
-                studioColumns = studioColumns,
                 statsColumns = statsColumns
             )
         }
@@ -777,58 +771,67 @@ private fun ProfileTabPane(
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit,
     onActivityClick: (Int) -> Unit,
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
-    portraitColumns: Int,
-    studioColumns: Int,
     statsColumns: Int,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
-        ProfileTabsButtonGroup(
-            selectedTab = uiState.selectedTab,
-            onTabSelected = { onAction(ProfileAction.SelectTab(it)) },
-            modifier = Modifier.fillMaxWidth()
+    // Column counts come from the pane, not the window: this pane is a fraction of the window wide,
+    // and a window-derived count budgets for space it does not have, squeezing every cell.
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val portraitColumns = profileGridColumns(baseMinSize = 150.dp, availableWidth = maxWidth)
+        val studioColumns = profileGridColumns(
+            baseMinSize = 240.dp,
+            compactColumns = 2,
+            availableWidth = maxWidth
         )
 
-        val pullState = rememberPullToRefreshState()
-        PullToRefreshBox(
-            isRefreshing = uiState.isRefreshing,
-            onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
-            state = pullState,
-            modifier = Modifier.fillMaxSize(),
-            indicator = {
-                CustomPullToRefreshIndicator(
-                    isRefreshing = uiState.isRefreshing,
-                    state = pullState,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 16.dp)
-                )
-            }
-        ) {
-            LazyColumn(
+        Column(modifier = Modifier.fillMaxSize()) {
+            ProfileTabsButtonGroup(
+                selectedTab = uiState.selectedTab,
+                onTabSelected = { onAction(ProfileAction.SelectTab(it)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            val pullState = rememberPullToRefreshState()
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
+                state = pullState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 48.dp + LocalMainNavBarInset.current)
+                indicator = {
+                    CustomPullToRefreshIndicator(
+                        isRefreshing = uiState.isRefreshing,
+                        state = pullState,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 16.dp)
+                    )
+                }
             ) {
-                profileSelectedTabContent(
-                    profile = profile,
-                    uiState = uiState,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    onAction = onAction,
-                    onMediaClick = onMediaClick,
-                    onCharacterClick = onCharacterClick,
-                    onStaffClick = onStaffClick,
-                    onVoiceActorClick = onVoiceActorClick,
-                    onStudioClick = onStudioClick,
-                    onUserClick = onUserClick,
-                    onThreadClick = onThreadClick,
-                    onCommentClick = onCommentClick,
-                    onActivityClick = onActivityClick,
-                    onLastReplyClick = onLastReplyClick,
-                    portraitColumns = portraitColumns,
-                    studioColumns = studioColumns,
-                    statsColumns = statsColumns
-                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 48.dp + LocalMainNavBarInset.current)
+                ) {
+                    profileSelectedTabContent(
+                        profile = profile,
+                        uiState = uiState,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        onAction = onAction,
+                        onMediaClick = onMediaClick,
+                        onCharacterClick = onCharacterClick,
+                        onStaffClick = onStaffClick,
+                        onVoiceActorClick = onVoiceActorClick,
+                        onStudioClick = onStudioClick,
+                        onUserClick = onUserClick,
+                        onThreadClick = onThreadClick,
+                        onCommentClick = onCommentClick,
+                        onActivityClick = onActivityClick,
+                        onLastReplyClick = onLastReplyClick,
+                        portraitColumns = portraitColumns,
+                        studioColumns = studioColumns,
+                        statsColumns = statsColumns
+                    )
+                }
             }
         }
     }

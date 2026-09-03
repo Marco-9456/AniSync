@@ -71,6 +71,10 @@ fun profilePosterColumns(
  * matching the [GridCells.Adaptive] grids elsewhere instead of being stretched a fixed few across.
  * [railWidth] is subtracted because the navigation rail occupies the leading edge on medium+ widths;
  * the result is clamped to `[compactColumns, 8]` so it never drops below the compact density.
+ *
+ * Pass [availableWidth] when the grid is laid out inside something narrower than the window, such as
+ * one pane of a two-pane layout. It is the width the rows actually get, so the rail is already
+ * excluded from it and only [horizontalPadding] comes off.
  */
 @Composable
 fun profileGridColumns(
@@ -79,12 +83,16 @@ fun profileGridColumns(
     horizontalPadding: Dp = 16.dp,
     itemSpacing: Dp = 12.dp,
     railWidth: Dp = 80.dp,
+    availableWidth: Dp? = null,
 ): Int {
     val info = LocalAdaptiveInfo.current
     if (info.isCompact) return compactColumns
-    val density = LocalDensity.current
-    val windowWidth = with(density) { currentWindowSize().width.toDp() }
-    val content = windowWidth - railWidth - horizontalPadding * 2
+    val content = if (availableWidth != null) {
+        availableWidth - horizontalPadding * 2
+    } else {
+        val windowWidth = with(LocalDensity.current) { currentWindowSize().width.toDp() }
+        windowWidth - railWidth - horizontalPadding * 2
+    }
     if (content <= 0.dp) return compactColumns
     val columns = ((content + itemSpacing) / (baseMinSize + itemSpacing)).toInt()
     return columns.coerceIn(compactColumns, 8)
