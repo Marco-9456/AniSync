@@ -53,6 +53,8 @@ data class ProfileUiState(
     val socialComments: List<SocialThreadComment> = emptyList(),
     val isSocialLoading: Boolean = false,
     val socialErrorMessage: String? = null,
+    val followingTotal: Int? = null,
+    val followersTotal: Int? = null,
     val followingHasNextPage: Boolean = false,
     val followersHasNextPage: Boolean = false,
     val threadsHasNextPage: Boolean = false,

@@ -86,7 +86,8 @@ fun LazyListScope.profileSocialTab(
                     selected = selectedTab == tab,
                     onClick = { onTabSelected(tab) },
                     icon = socialTabIcon(tab),
-                    label = stringResource(tab.labelRes)
+                    label = stringResource(tab.labelRes),
+                    count = socialTabCount(uiState, tab)
                 )
             }
         }
@@ -274,6 +275,13 @@ private fun LazyListScope.renderSocialUsers(
             item(key = "social_users_paginating") { PaginatingSpinner() }
         }
     }
+}
+
+/** Only the two user lists carry a total; the forum tabs page without one. */
+private fun socialTabCount(uiState: ProfileUiState, tab: ProfileSocialTab): Int? = when (tab) {
+    ProfileSocialTab.FOLLOWING -> uiState.followingTotal
+    ProfileSocialTab.FOLLOWERS -> uiState.followersTotal
+    ProfileSocialTab.FORUM_THREADS, ProfileSocialTab.FORUM_COMMENTS -> null
 }
 
 private fun socialTabIcon(tab: ProfileSocialTab): ImageVector {

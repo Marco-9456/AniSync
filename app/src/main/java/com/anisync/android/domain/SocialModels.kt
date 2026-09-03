@@ -37,6 +37,9 @@ data class UserSocialData(
 @Immutable
 data class UserSocialPage(
     val data: UserSocialData,
+    // Totals for the whole list rather than the loaded page; null when AniList omits them.
+    val followingTotal: Int?,
+    val followersTotal: Int?,
     val followingHasNextPage: Boolean,
     val followersHasNextPage: Boolean,
     val threadsHasNextPage: Boolean,

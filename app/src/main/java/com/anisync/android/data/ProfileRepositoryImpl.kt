@@ -604,6 +604,8 @@ class ProfileRepositoryImpl @Inject constructor(
                     threads = threads,
                     comments = comments
                 ),
+                followingTotal = data.following?.pageInfo?.total,
+                followersTotal = data.followers?.pageInfo?.total,
                 followingHasNextPage = data.following?.pageInfo?.hasNextPage == true,
                 followersHasNextPage = data.followers?.pageInfo?.hasNextPage == true,
                 threadsHasNextPage = data.threads?.pageInfo?.hasNextPage == true,
