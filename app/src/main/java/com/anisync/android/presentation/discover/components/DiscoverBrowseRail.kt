@@ -79,11 +79,11 @@ fun browseChipsFor(type: MediaType): List<BrowseChip> = if (type == MediaType.AN
 }
 
 /**
- * The row under the search bar: an icon-only Anime/Manga switch, then the browse chips.
+ * The row under the search bar: a labelled Anime/Manga switch, then the browse chips.
  *
- * The old screen spent a whole 40dp row plus its padding on a two-way toggle and left every
- * browse axis buried in the search overlay's filter sheets. This carries both in one 34dp rail,
- * matching the shape the Library screen already uses for its own list rail.
+ * The old screen spent a whole row plus its padding on a two-way toggle and left every browse axis
+ * buried in the search overlay's filter sheets. This carries both in one rail, matching the shape
+ * the Library screen already uses for its own list rail.
  */
 @Composable
 fun DiscoverBrowseRail(

@@ -30,6 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +40,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -50,6 +55,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.library.LibraryTab
 import com.anisync.android.presentation.components.MediaTypeToggle
+import com.anisync.android.presentation.components.MediaTypeToggleHeight
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toListIcon
@@ -58,7 +64,10 @@ import com.anisync.android.ui.theme.ListIndicatorColor
 import com.anisync.android.ui.theme.ListIndicatorKind
 import com.anisync.android.ui.theme.listIndicatorColor
 
-private val RailHeight = 34.dp
+private val RailHeight = MediaTypeToggleHeight
+
+/** Chip inset used until the pinned toggle has been measured. */
+private val PinnedToggleInsetEstimate = 200.dp
 
 /**
  * One pinned row carrying both "which library" and "which list".
@@ -83,6 +92,10 @@ fun LibraryRail(
 ) {
     val background = MaterialTheme.colorScheme.background
     val listState = rememberLazyListState()
+    val density = LocalDensity.current
+    // The pinned toggle is as wide as its translated labels make it, so the chips are inset by what
+    // it measures rather than by a constant that only holds in English.
+    var pinnedInset by remember { mutableStateOf(PinnedToggleInsetEstimate) }
 
     // Swiping the pager changes the list; the rail has to follow, or the chip you just landed on
     // stays off screen and the rail reads as out of sync with the content.
@@ -96,7 +109,7 @@ fun LibraryRail(
         LazyRow(
             state = listState,
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(start = 100.dp, end = 16.dp),
+            contentPadding = PaddingValues(start = pinnedInset, end = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -114,7 +127,12 @@ fun LibraryRail(
         // Pinned type toggle, with a short fade so a chip scrolling under it does not collide.
         // The plate has to be opaque across the whole pinned width, including the leading inset and
         // the seam between the two segments, or chips show through the gaps as they scroll past.
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.onSizeChanged { size ->
+                pinnedInset = with(density) { size.width.toDp() }
+            }
+        ) {
             Row(
                 modifier = Modifier
                     .background(background)

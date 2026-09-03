@@ -1,8 +1,9 @@
 package com.anisync.android.presentation.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +26,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
@@ -32,15 +35,16 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
 
 /** Height of the rails this toggle sits in, on both Library and Discover. */
-val MediaTypeToggleHeight = 34.dp
+val MediaTypeToggleHeight = 40.dp
 
 /**
- * Anime and manga as two icons rather than a full-width labelled group.
+ * Anime and manga as two labelled segments rather than a full-width group.
  *
- * The switch is used a couple of times a session at most, and the icons are the ones the app
- * already pairs with those words everywhere else. The shapes are the connected-group shapes the
- * rest of the app's switchers use: full radius on the selected end, a tight inner corner on the
- * seam.
+ * Both segments carry their icon and its word: the icons alone sat in a 35x34dp target that was
+ * easy to miss and gave nothing to read, and the pair still costs far less width than the
+ * full-width group the screens used to spend a row on. The shapes are the connected-group shapes
+ * the rest of the app's switchers use: full radius on the selected end, a tight inner corner on
+ * the seam.
  *
  * Shared by the Library rail and Discover's browse rail so the two cannot drift apart.
  */
@@ -101,6 +105,11 @@ private fun MediaTypeSegment(
     onClick: () -> Unit
 ) {
     val resolved = if (selected) selectedShape else shape
+    val content = if (selected) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
     Surface(
         color = if (selected) {
             MaterialTheme.colorScheme.primary
@@ -109,7 +118,7 @@ private fun MediaTypeSegment(
         },
         shape = resolved,
         modifier = Modifier
-            .size(width = 35.dp, height = height)
+            .height(height)
             .bouncyClickable(onClick = onClick, role = Role.Tab, clipShape = resolved)
             .clearAndSetSemantics {
                 role = Role.Tab
@@ -117,16 +126,24 @@ private fun MediaTypeSegment(
                 contentDescription = label
             }
     ) {
-        Box(contentAlignment = Alignment.Center) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (selected) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
+                tint = content,
                 modifier = Modifier.size(18.dp)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                color = content,
+                maxLines = 1,
+                softWrap = false
             )
         }
     }
