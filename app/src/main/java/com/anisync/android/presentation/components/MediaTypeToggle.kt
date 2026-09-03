@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
@@ -37,14 +38,17 @@ import com.anisync.android.type.MediaType
 /** Height of the rails this toggle sits in, on both Library and Discover. */
 val MediaTypeToggleHeight = 40.dp
 
+/** Width of a segment on compact widths, where it carries its icon alone. */
+private val IconOnlySegmentWidth = 44.dp
+
 /**
- * Anime and manga as two labelled segments rather than a full-width group.
+ * Anime and manga as two segments rather than a full-width group.
  *
- * Both segments carry their icon and its word: the icons alone sat in a 35x34dp target that was
- * easy to miss and gave nothing to read, and the pair still costs far less width than the
- * full-width group the screens used to spend a row on. The shapes are the connected-group shapes
- * the rest of the app's switchers use: full radius on the selected end, a tight inner corner on
- * the seam.
+ * Wider windows have the room to spell the two words out, so they do; a phone rail does not, and
+ * keeps the icons alone beside the list chips that share its row. Both cases sit in the same 40dp
+ * target, up from the 35x34dp square that was easy to miss. The shapes are the connected-group
+ * shapes the rest of the app's switchers use: full radius on the selected end, a tight inner
+ * corner on the seam.
  *
  * Shared by the Library rail and Discover's browse rail so the two cannot drift apart.
  */
@@ -56,10 +60,12 @@ fun MediaTypeToggle(
     height: Dp = MediaTypeToggleHeight
 ) {
     val haptic = rememberHapticFeedback()
+    val showLabels = !LocalAdaptiveInfo.current.isCompact
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         MediaTypeSegment(
             icon = Icons.Default.Tv,
             label = stringResource(R.string.media_type_anime),
+            showLabel = showLabels,
             selected = selected == MediaType.ANIME,
             shape = RoundedCornerShape(
                 topStart = 17.dp,
@@ -77,6 +83,7 @@ fun MediaTypeToggle(
         MediaTypeSegment(
             icon = Icons.AutoMirrored.Filled.MenuBook,
             label = stringResource(R.string.media_type_manga),
+            showLabel = showLabels,
             selected = selected == MediaType.MANGA,
             shape = RoundedCornerShape(
                 topEnd = 17.dp,
@@ -98,6 +105,7 @@ fun MediaTypeToggle(
 private fun MediaTypeSegment(
     icon: ImageVector,
     label: String,
+    showLabel: Boolean,
     selected: Boolean,
     shape: Shape,
     selectedShape: Shape,
@@ -118,7 +126,13 @@ private fun MediaTypeSegment(
         },
         shape = resolved,
         modifier = Modifier
-            .height(height)
+            .then(
+                if (showLabel) {
+                    Modifier.height(height)
+                } else {
+                    Modifier.size(width = IconOnlySegmentWidth, height = height)
+                }
+            )
             .bouncyClickable(onClick = onClick, role = Role.Tab, clipShape = resolved)
             .clearAndSetSemantics {
                 role = Role.Tab
@@ -127,9 +141,13 @@ private fun MediaTypeSegment(
             }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp),
+            modifier = if (showLabel) Modifier.padding(horizontal = 14.dp) else Modifier,
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = if (showLabel) {
+                Arrangement.spacedBy(6.dp)
+            } else {
+                Arrangement.Center
+            }
         ) {
             Icon(
                 imageVector = icon,
@@ -137,14 +155,16 @@ private fun MediaTypeSegment(
                 tint = content,
                 modifier = Modifier.size(18.dp)
             )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                color = content,
-                maxLines = 1,
-                softWrap = false
-            )
+            if (showLabel) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                    color = content,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
         }
     }
 }
