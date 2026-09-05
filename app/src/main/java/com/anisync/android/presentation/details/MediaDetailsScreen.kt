@@ -1655,9 +1655,10 @@ fun PageHeaderSection(
         remember(details.score) { details.score?.let { String.format("%.1f", it / 10f) } }
 
     // Resolve the best image to show in the banner
-    // Priority: Trailer Thumbnail -> Banner -> Cover
+    // Priority: Banner -> Trailer Thumbnail -> Cover. The artwork is drawn for the series and is
+    // far larger than a 480x360 YouTube thumbnail, so it only steps aside when there is none.
     val bannerModel = remember(details) {
-        details.trailer?.thumbnail ?: details.bannerUrl ?: details.coverUrl
+        details.bannerUrl ?: details.trailer?.thumbnail ?: details.coverUrl
     }
 
     // Calculate if we need a custom crop ratio
