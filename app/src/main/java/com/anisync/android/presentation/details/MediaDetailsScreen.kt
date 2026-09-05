@@ -63,6 +63,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -277,7 +278,7 @@ fun MediaDetailsScreen(
     // status-bar icons must stay white over the dark scrim regardless of theme — like the Play
     // Store. Once the app bar fades in (scrolled) or on an error page, revert to the theme default.
     // A title with neither artwork nor a trailer draws no banner at all, so there is nothing for
-    // the scrim to sit over.
+    // the scrim to sit over and nothing for the chrome to sit on.
     val bannerVisible = when (val state = uiState) {
         is DetailsUiState.Success -> state.details.headerBanner != null
         is DetailsUiState.Error -> false
@@ -355,6 +356,22 @@ fun MediaDetailsScreen(
                         (state as? DetailsUiState.Success)?.details?.getTitle(titleLanguage) ?: ""
                     }
 
+                    // Over the banner the chrome sits on artwork of any brightness, so every
+                    // button carries a scrim of its own. Off the banner there is nothing to sit
+                    // on and the icons take the theme colour.
+                    val overBanner = !isScrolled && bannerVisible
+                    val chromeTint = animateColorAsState(
+                        if (overBanner) Color.White else MaterialTheme.colorScheme.onSurface,
+                        label = "chromeIconTint"
+                    ).value
+                    val chromeColors = IconButtonDefaults.iconButtonColors(
+                        containerColor = animateColorAsState(
+                            if (overBanner) Color.Black.copy(alpha = 0.36f) else Color.Transparent,
+                            label = "chromeScrim"
+                        ).value,
+                        contentColor = chromeTint
+                    )
+
                     with(sharedTransitionScope) {
                         TopAppBar(
                             modifier = Modifier
@@ -382,14 +399,11 @@ fun MediaDetailsScreen(
                             },
                             navigationIcon = {
                                 if (!LocalPaneIsRoot.current) {
-                                    IconButton(onClick = onBackClick) {
+                                    IconButton(onClick = onBackClick, colors = chromeColors) {
                                         Icon(
                                             imageVector = navigationIcon,
                                             contentDescription = stringResource(R.string.back),
-                                            tint = animateColorAsState(
-                                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                                label = "navIconTint"
-                                            ).value
+                                            tint = chromeTint
                                         )
                                     }
                                 }
@@ -399,11 +413,10 @@ fun MediaDetailsScreen(
                                 // loudest controls on the page — a filled 56dp button and a
                                 // full-width pill — above a page whose job is tracking.
                                 (state as? DetailsUiState.Success)?.details?.let { details ->
-                                    val chromeTint = animateColorAsState(
-                                        if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                        label = "chromeIconTint"
-                                    ).value
-                                    IconButton(onClick = viewModel::toggleFavourite) {
+                                    IconButton(
+                                        onClick = viewModel::toggleFavourite,
+                                        colors = chromeColors
+                                    ) {
                                         Icon(
                                             imageVector = if (details.isFavourite) Icons.Filled.Favorite
                                             else Icons.Outlined.FavoriteBorder,
@@ -412,7 +425,10 @@ fun MediaDetailsScreen(
                                             else chromeTint
                                         )
                                     }
-                                    IconButton(onClick = { showShareImageSheet = true }) {
+                                    IconButton(
+                                        onClick = { showShareImageSheet = true },
+                                        colors = chromeColors
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Filled.Share,
                                             contentDescription = stringResource(R.string.action_share),
@@ -424,14 +440,11 @@ fun MediaDetailsScreen(
                                 // At a two-pane detail root the close (✕) sits on the trailing edge
                                 // (easy right-thumb reach) instead of a leading back arrow.
                                 if (LocalPaneIsRoot.current) {
-                                    IconButton(onClick = onBackClick) {
+                                    IconButton(onClick = onBackClick, colors = chromeColors) {
                                         Icon(
                                             imageVector = Icons.Filled.Close,
                                             contentDescription = stringResource(R.string.pane_close),
-                                            tint = animateColorAsState(
-                                                if (isScrolled) MaterialTheme.colorScheme.onSurface else Color.White,
-                                                label = "closeIconTint"
-                                            ).value
+                                            tint = chromeTint
                                         )
                                     }
                                 }
