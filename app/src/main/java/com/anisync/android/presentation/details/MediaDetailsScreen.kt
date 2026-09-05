@@ -276,7 +276,13 @@ fun MediaDetailsScreen(
     // While the banner is showing behind a transparent app bar (Loading/Success, unscrolled), the
     // status-bar icons must stay white over the dark scrim regardless of theme — like the Play
     // Store. Once the app bar fades in (scrolled) or on an error page, revert to the theme default.
-    val bannerVisible = uiState !is DetailsUiState.Error
+    // A title with neither artwork nor a trailer draws no banner at all, so there is nothing for
+    // the scrim to sit over.
+    val bannerVisible = when (val state = uiState) {
+        is DetailsUiState.Success -> state.details.headerBanner != null
+        is DetailsUiState.Error -> false
+        DetailsUiState.Loading -> true
+    }
     // Status-bar icon appearance follows the app theme (set globally): the banner no longer draws
     // under the status bar — a root status-bar scrim sits above it — so no per-screen override.
 
@@ -1620,6 +1626,14 @@ fun DetailsPageContent(
     }
 }
 
+/**
+ * What the header banner draws, or null when the title has neither artwork nor a trailer. Artwork
+ * wins: it is made for the series, and at roughly 1900x400 it carries far more detail than the
+ * 480x360 YouTube thumbnail that stands in for it.
+ */
+private val MediaDetails.headerBanner: String?
+    get() = bannerUrl ?: trailer?.thumbnail
+
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PageHeaderSection(
@@ -1654,32 +1668,31 @@ fun PageHeaderSection(
     val formattedScore =
         remember(details.score) { details.score?.let { String.format("%.1f", it / 10f) } }
 
-    // Resolve the best image to show in the banner
-    // Priority: Banner -> Trailer Thumbnail -> Cover. The artwork is drawn for the series and is
-    // far larger than a 480x360 YouTube thumbnail, so it only steps aside when there is none.
-    val bannerModel = remember(details) {
-        details.bannerUrl ?: details.trailer?.thumbnail ?: details.coverUrl
-    }
+    val bannerModel = remember(details) { details.headerBanner }
 
     // Calculate if we need a custom crop ratio
     // Standard YouTube thumbnails (hqdefault) usually have black letterbox bars for 16:9 content.
     val needsZoom = remember(details, bannerModel) {
-        bannerModel == details.trailer?.thumbnail
+        bannerModel != null && bannerModel == details.trailer?.thumbnail
     }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(330.dp)
+            // Nothing to show means no banner rather than the cover stretched across the top as a
+            // stand-in, so the header shrinks to the cover and the title.
+            .height(if (bannerModel != null) 330.dp else 250.dp)
     ) {
         // 1. Banner Image Layer
-        BannerImage(
-            model = bannerModel,
-            needsZoom = needsZoom,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(220.dp)
-        )
+        if (bannerModel != null) {
+            BannerImage(
+                model = bannerModel,
+                needsZoom = needsZoom,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+            )
+        }
 
         // 2. Trailer affordance. A labelled chip rather than the unlabelled circle that used to
         // float mid-banner, where it read as "play the show" instead of "play the trailer".
@@ -1699,7 +1712,9 @@ fun PageHeaderSection(
         }
 
         // 3. Gradient Overlays (Visual integration)
-        BannerGradients(themeBackground = themeBackground)
+        if (bannerModel != null) {
+            BannerGradients(themeBackground = themeBackground)
+        }
 
         // 4. Content Row (Cover + Title + Metadata)
         ContentRow(
