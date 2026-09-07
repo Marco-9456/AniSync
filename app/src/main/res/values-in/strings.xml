@@ -868,7 +868,6 @@
     <string name="widget_time_short_days">%1$dd</string>
     <string name="widget_time_short_hours">%1$dh</string>
     <string name="widget_time_short_minutes">%1$dm</string>
-    <string name="widget_up_next_empty_title"></string>
     <string name="widget_up_next_empty_body">Tidak ada dari daftar kamu yang segera tayang</string>
     <string name="widget_airing_at">Ditayangkan di %1$s</string>
     <string name="widget_airing_today_empty_all">Tidak ada yang tayang hari ini</string>
