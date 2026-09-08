@@ -7,8 +7,8 @@
     <string name="feed_filter_all">Tudo</string>
     <string name="feed_filter_list">Lista</string>
     <string name="feed_scope_following">Seguindo</string>
-    <string name="feed_empty_global">Sem atividade — Deslize para baixo para atualizar.</string>
-    <string name="feed_empty_following">Siga outras pessoas para ver suas atividades aqui.</string>
+    <string name="feed_empty_global">Nada foi postado nessa janela. Deslize para baixo para atualizar.</string>
+    <string name="feed_empty_following">Status e lista de atualizações de pessoas que você segue estarão aqui.</string>
     <string name="feed_compose_title">Escreva um Status</string>
     <string name="feed_compose_placeholder">Compartilhe o que você está pensando…</string>
     <string name="feed_compose_submit">Postar</string>
@@ -1847,4 +1847,28 @@
         <item quantity="many">%1$d filtros estão escondendo todos os títulos nesta lista.</item>
         <item quantity="other">%1$d filtros estão escondendo todos os títulos nesta lista.</item>
     </plurals>
+    <string name="feed_empty_global_title">Ainda sem atividade</string>
+    <string name="feed_empty_following_title">Ainda seguindo ninguém</string>
+    <string name="feed_empty_following_action">Ver o feed global</string>
+    <string name="feed_empty_offline_title">Nada carregado</string>
+    <string name="feed_empty_offline_desc">O feed precisa de internet. Verifique sua conexão e puxe para atualizar.</string>
+    <string name="feed_group_summary">%1$s · %2$s</string>
+    <plurals name="feed_group_updates">
+        <item quantity="one">%d atualização da lista</item>
+        <item quantity="many">%d atualizações da lista</item>
+        <item quantity="other">%d atualizações da lista</item>
+    </plurals>
+    <string name="feed_day_today">Hoje</string>
+    <string name="feed_day_yesterday">Ontem</string>
+    <string name="feed_new_posts">%d novos</string>
+    <string name="feed_empty_filtered_title">Nenhum resultado em %1$s</string>
+    <string name="feed_empty_filtered_body">O filtro %1$s está escondendo todas as atualizações nesse feed.</string>
+    <string name="feed_empty_clear_filters">Limpar filtros</string>
+    <string name="feed_menu_group_updates">Agrupar atualizações da lista</string>
+    <string name="feed_menu_group_updates_description">Por pessoa, por hora</string>
+    <string name="feed_menu_merge_window">Janela de união</string>
+    <string name="feed_menu_merge_window_description">Como o AniList unifica suas atualizações</string>
+    <string name="cd_feed_options">Opções do feed</string>
+    <string name="activity_last_reply">%1$s respondeu %2$s</string>
+    <string name="activity_open_on_anilist">Abrir no AniList</string>
 </resources>
