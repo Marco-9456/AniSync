@@ -185,7 +185,7 @@
     <string name="notification_upcoming_desc">Adiantar notificação antes do episódio exibir</string>
     <string name="notification_streaming_delay">Atraso na disponibilidade do streaming</string>
     <string name="notification_streaming_delay_desc">Esperar esta quantidade de minutos depois que o episódio for exibido para te notificar. Útil se o seu site de streaming postar os episódios depois da hora de lançamento oficial. As notificações disparam após uma verificação com intervalo de aproximadamente 15 minutos, então o atraso atual pode ser alguns minutos mais longo do que o valor escolhido.</string>
-    <string name="notification_streaming_delay_value">%1$d min</string>
+    <string name="notification_streaming_delay_value">%1$dmin</string>
     <string name="notification_streaming_delay_off">Desligado</string>
     <string name="notification_thread_comment_reply">Respostas a comentários</string>
     <string name="notification_thread_comment_reply_desc">Quando alguém responde ao seu comentário</string>
