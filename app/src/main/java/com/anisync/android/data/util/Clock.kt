@@ -1,4 +1,4 @@
-package com.anisync.android.data.fetcher
+package com.anisync.android.data.util
 
 import android.os.SystemClock
 
