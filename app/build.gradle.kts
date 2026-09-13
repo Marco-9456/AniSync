@@ -210,6 +210,13 @@ android {
         buildConfig = true
         resValues = true
     }
+    testOptions {
+        unitTests {
+            // The network layer logs through android.util.Log, which is a stub on the JVM and
+            // throws unless the stubs are told to return defaults instead.
+            isReturnDefaultValues = true
+        }
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -296,6 +303,8 @@ dependencies {
     implementation(libs.capturable)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.apollo.mockserver)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
