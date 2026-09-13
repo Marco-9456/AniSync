@@ -13,16 +13,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: 'zulu'
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: 8.13
 
@@ -63,36 +63,36 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Upload arm64-v8a Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.APK_ARM64_FILE }}
           path: app/build/outputs/apk/stable/release/${{ env.APK_ARM64_FILE }}
           if-no-files-found: error
+          archive: false
 
       - name: Upload armeabi-v7a Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.APK_ARMEABI_FILE }}
           path: app/build/outputs/apk/stable/release/${{ env.APK_ARMEABI_FILE }}
           if-no-files-found: error
+          archive: false
 
       - name: Upload universal Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.APK_UNIVERSAL_FILE }}
           path: app/build/outputs/apk/stable/release/${{ env.APK_UNIVERSAL_FILE }}
           if-no-files-found: error
+          archive: false
 
       - name: Upload x86_64 Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.APK_X86_64_FILE }}
           path: app/build/outputs/apk/stable/release/${{ env.APK_X86_64_FILE }}
           if-no-files-found: error
+          archive: false
 
       - name: Upload x86 Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.APK_X86_FILE }}
           path: app/build/outputs/apk/stable/release/${{ env.APK_X86_FILE }}
           if-no-files-found: error
+          archive: false
