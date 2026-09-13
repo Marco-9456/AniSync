@@ -2,7 +2,11 @@ package com.anisync.android.di
 
 import android.content.Context
 import com.anisync.android.cache.Cache.cache
+import com.anisync.android.data.network.AniListErrorInterceptor
+import com.anisync.android.data.network.AniListHttpInterceptor
+import com.anisync.android.data.network.AniListIdentity
 import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.interceptor.ApolloInterceptor
 import com.apollographql.cache.normalized.memory.MemoryCacheFactory
 import com.apollographql.cache.normalized.sql.SqlNormalizedCacheFactory
 import com.apollographql.cache.normalized.storeReceivedDate
@@ -44,7 +48,8 @@ object ApolloModule {
     @Singleton
     fun provideApolloClient(
         @ApplicationContext context: Context,
-        authorizationInterceptor: AuthorizationInterceptor
+        httpInterceptor: AniListHttpInterceptor,
+        errorInterceptor: AniListErrorInterceptor
     ): ApolloClient {
         discardLegacyCache(context)
 
@@ -53,8 +58,11 @@ object ApolloModule {
             .chain(SqlNormalizedCacheFactory(context = context, name = CACHE_DATABASE_NAME))
 
         return ApolloClient.Builder()
-            .serverUrl("https://graphql.anilist.co")
-            .addHttpInterceptor(authorizationInterceptor)
+            .serverUrl(AniListIdentity.ENDPOINT)
+            .addHttpInterceptor(httpInterceptor)
+            // BeforeNetwork puts this below the normalized cache, so it only sees requests that
+            // really go out and it sees their errors before anything downstream rewrites them.
+            .addInterceptor(errorInterceptor, ApolloInterceptor.InsertionPoint.BeforeNetwork)
             .cache(cacheFactory, defaultMaxAge = DEFAULT_MAX_AGE)
             // Stamps each field with when it arrived, which is what lets
             // [com.anisync.android.worker.CacheMaintenanceWorker] tell stale from fresh. Without it

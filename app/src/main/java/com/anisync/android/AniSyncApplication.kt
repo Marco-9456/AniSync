@@ -45,6 +45,14 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
     @Inject
     lateinit var updateManager: com.anisync.android.data.update.UpdateManager
 
+    /**
+     * Injected only so it exists before the first API call. It publishes itself as the resolver
+     * that turns an ApiError into localised text for `safeApiCall`, which is a free function with
+     * nowhere to inject a Context.
+     */
+    @Inject
+    lateinit var apiErrorMessages: com.anisync.android.data.network.ApiErrorMessages
+
     private val applicationScope = CoroutineScope(
         SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
             Log.e("AniSyncApp", "Unhandled coroutine exception", throwable)
