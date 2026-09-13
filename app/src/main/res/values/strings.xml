@@ -2034,6 +2034,17 @@
     <string name="alert_rate_limit_notice">Slowing down to stay within AniList\'s rate limit…</string>
     <string name="alert_retrying_in">Retrying in %1$ds</string>
 
+    <!-- AniList API errors -->
+    <string name="api_error_rate_limited">Too many requests. Please wait %1$d seconds.</string>
+    <string name="api_error_deferred">Waiting for the request budget to recover.</string>
+    <string name="api_error_session_expired">Your session has expired. Please log in again.</string>
+    <string name="api_error_token_rejected">This account needs to be signed in again.</string>
+    <string name="api_error_permission_denied">You don\'t have permission to do that.</string>
+    <string name="api_error_server">Server error (%1$d). Please try again later.</string>
+    <string name="api_error_offline">No internet connection. Check your network and try again.</string>
+    <string name="api_error_timeout">The request took too long. Please try again.</string>
+    <string name="api_error_unknown">An unexpected error occurred.</string>
+
     <!-- AniList link card -->
     <string name="link_card_view_activity">View activity</string>
 
