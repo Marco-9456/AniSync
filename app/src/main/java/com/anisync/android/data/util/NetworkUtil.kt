@@ -1,129 +1,112 @@
 package com.anisync.android.data.util
 
+import com.anisync.android.data.network.ApiErrorMessages
+import com.anisync.android.data.network.findApiError
 import com.anisync.android.domain.Result
 import com.apollographql.apollo.api.ApolloResponse
 import com.apollographql.apollo.api.Operation
 import com.apollographql.apollo.exception.ApolloException
 import com.apollographql.apollo.exception.ApolloHttpException
 import com.apollographql.apollo.exception.ApolloNetworkException
+import kotlinx.coroutines.CancellationException
 
 /**
- * Executes an Apollo GraphQL call with comprehensive error handling.
+ * Runs an AniList call and folds whatever goes wrong into [Result.Error].
  *
- * This is the **single entry point** for all API calls in the app.
- * It handles every error type the AniList API can return:
+ * The single entry point for the data layer. Classification happens up in
+ * [com.anisync.android.data.network.AniListErrorInterceptor], so by the time a failure reaches here
+ * it is usually already an [ApiError] and this only has to unwrap and describe it. The `when`
+ * branches below are the safety net for anything that bypassed the interceptor.
  *
- * 1. **[ApiError.RateLimited]** (from interceptor) → "Rate limited, wait Xs"
- * 2. **[ApiError.Unauthorized]** (from interceptor) → "Session expired"
- * 3. **[ApiError.ServerError]** (from interceptor) → "Server error (5xx)"
- * 4. **[ApiError.NetworkError]** → "No internet connection"
- * 5. **[ApiError.GraphQLError]** → Errors in the GraphQL response body (even on HTTP 200)
- * 6. **[ApiError.Unknown]** → Catch-all for unexpected errors
+ * Two details that are easy to get wrong and were wrong before:
  *
- * **Important:** This function ALWAYS checks `response.hasErrors()`, which closes
- * the gap where queries previously ignored GraphQL-level errors.
+ * **Cancellation is rethrown.** A blanket `catch (e: Exception)` swallows `CancellationException`,
+ * which turns a screen the user navigated away from into a spurious error and breaks structured
+ * concurrency for everything above it.
  *
- * @param apiCall Lambda that executes the Apollo query/mutation and returns the mapped domain object.
- *               The lambda receives the raw ApolloResponse so it can check data nullability.
+ * **The cause chain is unwrapped.** `ApolloException` is sealed, so [ApiError] cannot be one and
+ * Apollo always hands ours back wrapped in an `ApolloNetworkException`. Reading only the top of the
+ * chain reports a rate limit as "no internet connection" and sends the reader after the wrong
+ * problem.
  */
 suspend fun <T> safeApiCall(
-    apiCall: suspend () -> T
+    apiCall: suspend () -> T,
 ): Result<T> {
     return try {
         Result.Success(apiCall())
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
-        // The interceptor throws ApiError, but Apollo hands some of them back wrapped, and a
-        // rate limit that arrives as "no internet connection" sends the reader after the wrong
-        // problem. Unwrap before mapping.
-        val apiError = generateSequence(e as Throwable) { it.cause }
-            .filterIsInstance<ApiError>()
-            .firstOrNull()
-        apiError?.toResult() ?: e.toResult()
+        e.findApiError()?.toResult() ?: e.toResult()
     }
 }
 
-private fun ApiError.toResult(): Result.Error = when (this) {
-    is ApiError.RateLimited ->
-        Result.Error("Too many requests. Please wait $retryAfterSeconds seconds.", 429, retryAfterSeconds, this)
-    is ApiError.Unauthorized ->
-        Result.Error("Your session has expired. Please log in again.", 401, null, this)
-    is ApiError.Forbidden ->
-        Result.Error(message ?: "You don't have permission to do that.", 401, null, this)
-    is ApiError.ServerError ->
-        Result.Error("Server error ($statusCode). Please try again later.", statusCode, null, this)
-    is ApiError.NetworkError ->
-        Result.Error("No internet connection. Check your network and try again.", null, null, this)
-    is ApiError.GraphQLError ->
-        Result.Error(errors.firstOrNull() ?: "An API error occurred.", statusCode, null, this)
-    else -> Result.Error(message ?: "An unexpected error occurred.", null, null, this)
+private fun ApiError.toResult(): Result.Error = Result.Error(
+    message = ApiErrorMessages.describe(this),
+    code = statusCode(),
+    countdownSeconds = countdownSeconds(),
+    exception = this,
+)
+
+/**
+ * The HTTP status a consumer would recognise.
+ *
+ * A handful of screens branch on this: 429 drives the countdown toast and the refresh gate, 404
+ * pops the activity detail screen. Everything else only shows the message.
+ */
+private fun ApiError.statusCode(): Int? = when (this) {
+    is ApiError.RateLimited -> 429
+    is ApiError.Deferred -> 429
+    is ApiError.SessionExpired -> 401
+    is ApiError.TokenRejected -> 401
+    is ApiError.PermissionDenied -> 401
+    is ApiError.ApiDisabled -> 403
+    is ApiError.ServerError -> statusCode
+    is ApiError.Validation -> 400
+    is ApiError.GraphQLError -> statusCode
+    is ApiError.Offline, is ApiError.Timeout, is ApiError.Unknown -> null
+}
+
+private fun ApiError.countdownSeconds(): Long? = when (this) {
+    is ApiError.RateLimited -> retryAfterSeconds
+    is ApiError.Deferred -> retryAfterSeconds
+    else -> null
 }
 
 private fun Exception.toResult(): Result.Error = when (this) {
-    // HTTP errors the interceptor did not classify, as a safety net.
-    is ApolloHttpException -> {
-        val text = when (statusCode) {
-            429 -> "Too many requests. Please try again later."
-            401 -> "Session expired. Please log in again."
-            403 -> "Access denied."
-            in 500..599 -> "Server error. Please try again later."
-            else -> "HTTP error $statusCode: $message"
-        }
-        Result.Error(text, statusCode, null, this)
-    }
-    is ApolloNetworkException ->
-        Result.Error("No internet connection. Check your network and try again.", null, null, this)
-    is ApolloException -> Result.Error("Network error: $message", null, null, this)
-    else -> Result.Error(message ?: "An unexpected error occurred.", null, null, this)
-}
+    is ApolloHttpException -> Result.Error(
+        ApiErrorMessages.describe(ApiError.ServerError(statusCode)),
+        statusCode,
+        null,
+        this,
+    )
 
-/**
- * Executes an Apollo GraphQL query/mutation and checks for GraphQL-level errors.
- *
- * Use this when you need to inspect the raw [ApolloResponse] before extracting data.
- * It ensures `response.hasErrors()` is always checked — even for queries.
- *
- * Example:
- * ```kotlin
- * return safeApiCallWithResponse("load media") { 
- *     apolloClient.query(GetMediaQuery(id)).execute()
- * } { response ->
- *     response.data?.Media?.toDomain() ?: throw Exception("Media not found")
- * }
- * ```
- *
- * @param action Human-readable action name for error messages (e.g. "load media")
- * @param execute Lambda that executes the Apollo call
- * @param transform Lambda that maps the response data to the domain type
- */
-suspend fun <D : Operation.Data, T> safeApiCallWithResponse(
-    action: String,
-    execute: suspend () -> ApolloResponse<D>,
-    transform: (ApolloResponse<D>) -> T
-): Result<T> {
-    return safeApiCall {
-        val response = execute()
+    is ApolloNetworkException -> Result.Error(
+        ApiErrorMessages.describe(ApiError.Offline(this)),
+        null,
+        null,
+        this,
+    )
 
-        // Always check for GraphQL errors — even on HTTP 200.
-        // This is critical: AniList can return { "data": null, "errors": [...] } on 200.
-        if (response.hasErrors()) {
-            val messages = response.errors?.map { it.message } ?: listOf("Unknown error")
-            // Check if it's a rate limit error embedded in the GraphQL response
-            val statusCode = response.errors?.firstOrNull()?.let { error ->
-                // Apollo exposes extensions/customAttributes but the status is in the error JSON
-                // For AniList, 429 errors come with both HTTP 429 AND GraphQL error
-                (error.extensions?.get("status") as? Number)?.toInt()
-            }
-            throw ApiError.GraphQLError(messages, statusCode)
-        }
+    is ApolloException -> Result.Error(
+        ApiErrorMessages.describe(ApiError.Unknown(message ?: "")),
+        null,
+        null,
+        this,
+    )
 
-        transform(response)
-    }
+    else -> Result.Error(
+        message ?: ApiErrorMessages.describe(ApiError.Unknown("")),
+        null,
+        null,
+        this,
+    )
 }
 
 /**
  * The response's payload, or the reason there isn't one.
  *
- * Apollo 4 does not throw on a transport failure: `execute()` returns a response carrying the
+ * Apollo does not throw on a transport failure: `execute()` returns a response carrying the
  * exception with a null `data`. Code that read `response.data?...?: emptyList()` therefore turned
  * every failed request into an empty success, which is why a section that could not load was
  * indistinguishable from a section with nothing in it.
@@ -132,7 +115,7 @@ fun <D : Operation.Data> ApolloResponse<D>.dataOrThrow(): D {
     exception?.let { throw it }
     if (hasErrors()) {
         val messages = errors?.map { it.message } ?: listOf("Unknown error")
-        val statusCode = (errors?.firstOrNull()?.extensions?.get("status") as? Number)?.toInt()
+        val statusCode = (errors?.firstOrNull()?.nonStandardFields?.get("status") as? Number)?.toInt()
         throw ApiError.GraphQLError(messages, statusCode)
     }
     return data ?: throw ApiError.Unknown("The server returned no data.")
