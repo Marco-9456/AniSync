@@ -47,8 +47,17 @@ class RateLimitWindow(private val clock: Clock) {
     /** Requests we believe are still available right now. */
     fun headroom(): Int = (remaining - issuedSinceObserved).coerceAtLeast(0)
 
-    /** Milliseconds left on a 429 timeout, or 0 when not blocked. */
-    fun blockedForMs(): Long = (blockedUntilMs - clock.nowMs()).coerceAtLeast(0)
+    /**
+     * Milliseconds left on a 429 timeout, or 0 when not blocked.
+     *
+     * The unset check is not decoration. Subtracting a clock reading from [Long.MIN_VALUE]
+     * underflows and wraps to a huge positive number, which reads as "blocked for 292 million
+     * years" the moment the clock leaves zero.
+     */
+    fun blockedForMs(): Long {
+        if (blockedUntilMs == Long.MIN_VALUE) return 0
+        return (blockedUntilMs - clock.nowMs()).coerceAtLeast(0)
+    }
 
     /**
      * Milliseconds until the window is expected to roll over and the budget refills.
@@ -100,10 +109,12 @@ class RateLimitWindow(private val clock: Clock) {
         val wait = (retryAfterSeconds ?: DEFAULT_RETRY_AFTER_SECONDS)
             .coerceIn(1L, MAX_RETRY_AFTER_SECONDS)
         blockedUntilMs = now + wait * 1000L
-        remaining = 0
         observedAtMs = now
         issuedSinceObserved = 0
-        // The next window cannot start before the timeout ends.
+        // The timeout is the window. Nothing may be sent until it ends, and when it does the budget
+        // is fresh, so the count is restored rather than zeroed. Leaving it at zero would deadlock:
+        // no request could go out, so no response could ever arrive to say the window had reset.
+        remaining = limit
         windowStartedAtMs = blockedUntilMs
     }
 
@@ -117,7 +128,8 @@ class RateLimitWindow(private val clock: Clock) {
         if (remainingMs <= 0) return
         val now = clock.nowMs()
         blockedUntilMs = now + remainingMs.coerceAtMost(MAX_RETRY_AFTER_SECONDS * 1000L)
-        remaining = 0
+        remaining = limit
+        issuedSinceObserved = 0
         windowStartedAtMs = blockedUntilMs
     }
 

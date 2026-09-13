@@ -1,5 +1,7 @@
 package com.anisync.android.di
 
+import com.anisync.android.data.network.RateLimitGate
+import com.anisync.android.data.network.RateLimitMonitor
 import com.anisync.android.data.network.RateLimitPersistence
 import com.anisync.android.data.network.RetryPolicy
 import com.anisync.android.data.network.SharedPreferencesRateLimitPersistence
@@ -31,5 +33,13 @@ abstract class NetworkModule {
         @Provides
         @Singleton
         fun provideRetryPolicy(): RetryPolicy = RetryPolicy()
+
+        @Provides
+        @Singleton
+        fun provideRateLimitGate(
+            clock: Clock,
+            monitor: RateLimitMonitor,
+            persistence: RateLimitPersistence,
+        ): RateLimitGate = RateLimitGate(clock, monitor, persistence)
     }
 }

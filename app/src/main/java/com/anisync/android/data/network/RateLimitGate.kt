@@ -8,8 +8,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -64,9 +62,11 @@ data class RateLimitConfig(
  *
  * This replaces a token bucket that started full, never read the server's counter, and let each
  * caller sleep through a 429 independently before all of them retried at the same instant.
+ *
+ * Built by [com.anisync.android.di.NetworkModule] rather than by constructor injection, so the
+ * tunables keep their Kotlin defaults instead of needing a binding each.
  */
-@Singleton
-class RateLimitGate @Inject constructor(
+class RateLimitGate(
     private val clock: Clock,
     private val monitor: RateLimitMonitor,
     private val persistence: RateLimitPersistence,
