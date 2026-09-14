@@ -560,7 +560,7 @@
     <string name="reply_delete_confirm_title">Deletar resposta?</string>
     <string name="reply_delete_confirm_body">Sua resposta será permanentemente removida e não poderá ser recuperada.</string>
     <string name="thread_delete_confirm_title">Deletar tópico?</string>
-    <string name="thread_delete_confirm_body">Esse tópico e todos os seus comentários serão permanentemente removidos e não poderão ser recuperados.</string>
+    <string name="thread_delete_confirm_body">Este tópico e todos os seus comentários serão permanentemente removidos e não poderão ser recuperados.</string>
     <string name="activity_edit_status_title">Editar status</string>
     <string name="activity_edit_reply_title">Editar resposta</string>
     <string name="activity_edit_save">Salvar</string>
@@ -1196,7 +1196,7 @@
     <string name="widget_episode_short">Ep %1$d</string>
     <string name="widget_episode_long">Episódio %1$d</string>
     <string name="widget_episode_badge">EPISÓDIO %1$d</string>
-    <string name="widget_error_title">Não é possível exibir isto agora</string>
+    <string name="widget_error_title">Não é possível exibir isso agora</string>
     <string name="widget_error_action">Toque para tentar novamente</string>
     <string name="widget_time_airing_now">Exibindo agora</string>
     <string name="widget_time_in_days">Em %1$dd %2$dh</string>
@@ -1356,7 +1356,7 @@
     <string name="onboarding_signin_title">Entrar no AniList</string>
     <string name="onboarding_signin_body">O navegador abre no AniList, você aprova o AniSync, e o Android trás de volta para o app o token de acesso.</string>
     <string name="onboarding_signin_point_password">Sua senha fica com o AniList</string>
-    <string name="onboarding_signin_point_token">O token é mantido apenas nesse dispositivo</string>
+    <string name="onboarding_signin_point_token">O token é mantido apenas neste dispositivo</string>
     <string name="onboarding_signin_point_revoke">Revogue o acesso a qualquer momento com o AniList</string>
     <string name="onboarding_signin_open">Abrir AniList</string>
     <string name="onboarding_signin_dismiss">Agora não</string>
@@ -1442,7 +1442,7 @@
     <string name="done">Feito</string>
     <string name="search_tags_hint">Procurar tags</string>
     <string name="forum_filter_subscribed">Inscrito</string>
-    <string name="forum_start_discussion">Comece uma discussão sobre isto</string>
+    <string name="forum_start_discussion">Comece uma discussão sobre isso</string>
     <string name="cd_subscribe">Inscrever</string>
     <string name="cd_unsubscribe">Desinscrever</string>
     <string name="cd_unsave">Não salvar</string>
@@ -1862,7 +1862,7 @@
     <string name="feed_day_yesterday">Ontem</string>
     <string name="feed_new_posts">%d novos</string>
     <string name="feed_empty_filtered_title">Nenhum resultado em %1$s</string>
-    <string name="feed_empty_filtered_body">O filtro %1$s está escondendo todas as atualizações nesse feed.</string>
+    <string name="feed_empty_filtered_body">O filtro %1$s está escondendo todas as atualizações neste feed.</string>
     <string name="feed_empty_clear_filters">Limpar filtros</string>
     <string name="feed_menu_group_updates">Agrupar atualizações da lista</string>
     <string name="feed_menu_group_updates_description">Por pessoa, por hora</string>
@@ -1871,4 +1871,15 @@
     <string name="cd_feed_options">Opções do feed</string>
     <string name="activity_last_reply">%1$s respondeu %2$s</string>
     <string name="activity_open_on_anilist">Abrir no AniList</string>
+    <string name="setting_media_artwork_theming">Cores da arte da capa</string>
+    <string name="setting_media_artwork_theming_desc">Pintar a página de um anime ou mangá com as cores de sua arte de capa. Títulos com nenhuma cor de arte da capa manterão seu tema.</string>
+    <string name="cd_media_banner">Imagem de topo da mídia</string>
+    <string name="priority">Prioridade</string>
+    <string name="priority_low">Baixa</string>
+    <string name="priority_medium">Média</string>
+    <string name="priority_high">Alta</string>
+    <string name="library_set_priority">Definir prioridade</string>
+    <string name="library_priority_count_to">Definir %1$d para %2$s</string>
+    <string name="sort_priority">Prioridade</string>
+    <string name="a11y_priority">Prioridade %1$s</string>
 </resources>
