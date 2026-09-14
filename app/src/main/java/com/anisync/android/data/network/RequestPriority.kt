@@ -2,6 +2,11 @@ package com.anisync.android.data.network
 
 import com.apollographql.apollo.api.ExecutionContext
 import com.apollographql.apollo.api.MutableExecutionOptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
 
 /**
  * How much of the AniList request budget a call is entitled to.
@@ -44,9 +49,9 @@ class RequestPriorityContext(val priority: RequestPriority) : ExecutionContext.E
 fun <T> MutableExecutionOptions<T>.priority(priority: RequestPriority): T =
     addExecutionContext(RequestPriorityContext(priority))
 
-/** The priority a request was tagged with, or [RequestPriority.Interactive] if it was not. */
-val ExecutionContext.requestPriority: RequestPriority
-    get() = this[RequestPriorityContext]?.priority ?: RequestPriority.Interactive
+/** The priority a request was tagged with, if it was tagged at the call site. */
+val ExecutionContext.explicitPriority: RequestPriorityContext?
+    get() = this[RequestPriorityContext]
 
 /**
  * Marks a client that talks to AniList as an account other than the active one.
@@ -64,3 +69,35 @@ object TokenScopedContext : ExecutionContext.Element {
 /** True when the request was issued by a client bound to a specific, non-active account token. */
 val ExecutionContext.isTokenScoped: Boolean
     get() = this[TokenScopedContext.Key] != null
+
+/**
+ * Ambient priority for everything a coroutine does, including calls made several layers down.
+ *
+ * Repositories build their own Apollo calls, so tagging a worker's requests through
+ * [MutableExecutionOptions.priority] would mean threading a networking concern through about thirty
+ * repository signatures. `flowOn` preserves context elements from the collector, so an element set
+ * here reaches the interceptor instead.
+ *
+ * The per-call [RequestPriorityContext] still wins where both are present.
+ */
+class AmbientRequestPriority(val priority: RequestPriority) :
+    AbstractCoroutineContextElement(Key) {
+
+    companion object Key : CoroutineContext.Key<AmbientRequestPriority>
+}
+
+/** Runs [block] with every AniList request it makes tagged [priority]. */
+suspend fun <T> withRequestPriority(
+    priority: RequestPriority,
+    block: suspend CoroutineScope.() -> T,
+): T = withContext(AmbientRequestPriority(priority), block)
+
+/**
+ * The priority in force for the calling coroutine.
+ *
+ * @param explicit the priority the call itself was tagged with, if any
+ */
+suspend fun resolveRequestPriority(explicit: RequestPriorityContext?): RequestPriority =
+    explicit?.priority
+        ?: currentCoroutineContext()[AmbientRequestPriority]?.priority
+        ?: RequestPriority.Interactive

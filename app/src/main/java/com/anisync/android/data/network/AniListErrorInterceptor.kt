@@ -56,10 +56,10 @@ class AniListErrorInterceptor @Inject constructor(
         if (operation !is Query && operation !is Mutation) return chain.proceed(request)
 
         val isMutation = operation is Mutation
-        val priority = request.executionContext.requestPriority
         val tokenScoped = request.executionContext.isTokenScoped
 
         return flow {
+            val priority = resolveRequestPriority(request.executionContext.explicitPriority)
             var attempt = 0
             while (true) {
                 attempt++
