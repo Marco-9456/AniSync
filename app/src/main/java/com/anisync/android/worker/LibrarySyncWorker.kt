@@ -1,5 +1,7 @@
 package com.anisync.android.worker
 
+import com.anisync.android.data.network.RequestPriority
+import com.anisync.android.data.network.withRequestPriority
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
@@ -36,7 +38,12 @@ class LibrarySyncWorker @AssistedInject constructor(
     private val libraryRepository: LibraryRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
-    override suspend fun doWork(): Result {
+        override suspend fun doWork(): Result =
+        // Every request this run makes yields to whatever the user is doing. When the
+        // budget is short the gate refuses instead of waiting, and WorkManager reruns us.
+        withRequestPriority(RequestPriority.Background) { syncLibrary() }
+
+    private suspend fun syncLibrary(): Result {
         val type = inputData.getString(KEY_TYPE)
             ?.let { runCatching { MediaType.valueOf(it) }.getOrNull() }
             ?: return Result.failure()

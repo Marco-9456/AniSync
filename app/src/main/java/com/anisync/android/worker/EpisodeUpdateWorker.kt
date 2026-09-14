@@ -1,5 +1,7 @@
 package com.anisync.android.worker
 
+import com.anisync.android.data.network.RequestPriority
+import com.anisync.android.data.network.withRequestPriority
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
@@ -17,7 +19,12 @@ class EpisodeUpdateWorker @AssistedInject constructor(
     private val libraryRepository: com.anisync.android.domain.LibraryRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
-    override suspend fun doWork(): Result {
+        override suspend fun doWork(): Result =
+        // Every request this run makes yields to whatever the user is doing. When the
+        // budget is short the gate refuses instead of waiting, and WorkManager reruns us.
+        withRequestPriority(RequestPriority.Background) { applyUpdate() }
+
+    private suspend fun applyUpdate(): Result {
         val mediaId = inputData.getInt("mediaId", -1)
         val amount = inputData.getInt("amount", 1) // Default to +1
         if (mediaId == -1) return Result.failure()

@@ -1,5 +1,7 @@
 package com.anisync.android.worker
 
+import com.anisync.android.data.network.RequestPriority
+import com.anisync.android.data.network.withRequestPriority
 import android.content.Context
 import android.util.Log
 import androidx.hilt.work.HiltWorker
@@ -27,7 +29,12 @@ class TrendingWorker @AssistedInject constructor(
     private val trendingDao: TrendingDao
 ) : CoroutineWorker(appContext, workerParams) {
 
-    override suspend fun doWork(): Result {
+        override suspend fun doWork(): Result =
+        // Every request this run makes yields to whatever the user is doing. When the
+        // budget is short the gate refuses instead of waiting, and WorkManager reruns us.
+        withRequestPriority(RequestPriority.Background) { syncTrending() }
+
+    private suspend fun syncTrending(): Result {
         return try {
             val calendar = Calendar.getInstance()
             val year = calendar.get(Calendar.YEAR)
@@ -80,8 +87,11 @@ class TrendingWorker @AssistedInject constructor(
         } catch (e: ApiError.RateLimited) {
             Log.w("TrendingWorker", "Rate limited, will retry. Wait: ${e.retryAfterSeconds}s")
             Result.retry()
-        } catch (e: ApiError.Unauthorized) {
-            Log.w("TrendingWorker", "Unauthorized — skipping")
+        } catch (e: ApiError.Deferred) {
+            Log.i("TrendingWorker", "Deferred for ${e.retryAfterSeconds}s, will retry")
+            Result.retry()
+        } catch (e: ApiError.SessionExpired) {
+            Log.w("TrendingWorker", "Session expired, skipping")
             Result.failure()
         } catch (e: ApiError.ServerError) {
             Log.e("TrendingWorker", "Server error ${e.statusCode}, will retry")
