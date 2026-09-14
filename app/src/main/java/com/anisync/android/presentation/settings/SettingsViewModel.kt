@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -63,8 +64,17 @@ class SettingsViewModel @Inject constructor(
     private val cacheInventory: CacheInventory,
     getProfileUseCase: GetProfileUseCase,
     private val toastManager: ToastManager,
+    private val rateLimitGate: com.anisync.android.data.network.RateLimitGate,
+    rateLimitMonitor: com.anisync.android.data.network.RateLimitMonitor,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
+
+    /** Live request budget readout for the developer screen. */
+    val rateLimitStats = rateLimitMonitor.stats
+
+    /** The pinned budget, or null when the gate is using AniList's real one. */
+    private val _simulatedRateLimit = MutableStateFlow<Int?>(null)
+    val simulatedRateLimit: StateFlow<Int?> = _simulatedRateLimit.asStateFlow()
 
     private val _cacheSize = MutableStateFlow("0 B")
     private val _isCacheCleared = MutableStateFlow(false)
@@ -340,6 +350,11 @@ class SettingsViewModel @Inject constructor(
                 val countdown = if (action.code == 429) 60L else null
                 toastManager.showToast(action.code, "This is a test message for error code ${action.code}.", countdown)
             }
+            is SettingsAction.SetSimulatedRateLimit -> {
+                rateLimitGate.simulatedLimit = action.limit
+                _simulatedRateLimit.value = action.limit
+            }
+
             SettingsAction.FetchLatestRelease -> fetchLatestRelease()
 
             is SettingsAction.SetFontAxis -> appSettings.updateTypographyCategory(action.category) {

@@ -2045,6 +2045,20 @@
     <string name="api_error_timeout">The request took too long. Please try again.</string>
     <string name="api_error_unknown">An unexpected error occurred.</string>
 
+    <!-- Developer tools: request budget -->
+    <string name="debug_rate_limit_section">Request Budget</string>
+    <string name="debug_rate_limit_remaining">Remaining</string>
+    <string name="debug_rate_limit_in_flight">In flight</string>
+    <string name="debug_rate_limit_window">Window resets in</string>
+    <string name="debug_rate_limit_blocked">Blocked for</string>
+    <string name="debug_rate_limit_admitted">Admitted</string>
+    <string name="debug_rate_limit_paced">Paced</string>
+    <string name="debug_rate_limit_deferred">Deferred</string>
+    <string name="debug_rate_limit_retried">Retried</string>
+    <string name="debug_rate_limit_429s">Rate limited</string>
+    <string name="debug_rate_limit_pin">Pin the limit to force the gate to refuse</string>
+    <string name="debug_rate_limit_pin_off">Real</string>
+
     <!-- AniList link card -->
     <string name="link_card_view_activity">View activity</string>
 

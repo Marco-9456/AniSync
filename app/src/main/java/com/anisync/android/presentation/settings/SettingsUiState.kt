@@ -77,6 +77,9 @@ sealed interface SettingsAction {
 
     data class ShowTestToast(val code: Int) : SettingsAction
 
+    /** Pins the request budget the gate believes it has, or null to use the real one. */
+    data class SetSimulatedRateLimit(val limit: Int?) : SettingsAction
+
     data object FetchLatestRelease : SettingsAction
 
     // Font playground (developer screen) — live per-category variable-font axis controls.
