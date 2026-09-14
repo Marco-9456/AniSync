@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.details
 
+import com.anisync.android.data.network.RequestPriority
+import com.anisync.android.data.network.withRequestPriority
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -190,13 +192,18 @@ class MediaDetailsViewModel @Inject constructor(
      * section just stays hidden. Reuses the rate-limit-safe [ForumRepository.searchThreads].
      */
     private fun loadDiscussionsPreview(allowCached: Boolean = true) {
+        // Speculative: the section hides itself on failure, so it must not spend budget the
+        // details screen itself is about to need.
         viewModelScope.launch {
-            when (val result = forumRepository.searchThreads(
-                mediaCategoryId = mediaId,
-                sort = com.anisync.android.domain.ThreadSortOption.RECENTLY_REPLIED,
-                page = 1,
-                allowCached = allowCached
-            )) {
+            val result = withRequestPriority(RequestPriority.Prefetch) {
+                forumRepository.searchThreads(
+                    mediaCategoryId = mediaId,
+                    sort = com.anisync.android.domain.ThreadSortOption.RECENTLY_REPLIED,
+                    page = 1,
+                    allowCached = allowCached
+                )
+            }
+            when (result) {
                 is Result.Success -> {
                     _discussions.value = result.data.items.take(DISCUSSIONS_PREVIEW_LIMIT)
                     _hasMoreDiscussions.value =
@@ -204,7 +211,7 @@ class MediaDetailsViewModel @Inject constructor(
                 }
 
                 is Result.Error -> {
-                    // Silent failure — section just stays empty.
+                    // Silent failure, the section just stays empty.
                 }
             }
         }
@@ -212,19 +219,23 @@ class MediaDetailsViewModel @Inject constructor(
 
     private fun loadFollowingPreview(allowCached: Boolean = true) {
         viewModelScope.launch {
-            when (val result = detailsRepository.getMediaFollowing(
-                mediaId = mediaId,
-                page = 1,
-                perPage = FOLLOWING_PREVIEW_LIMIT,
-                allowCached = allowCached
-            )) {
+            val result = withRequestPriority(RequestPriority.Prefetch) {
+                detailsRepository.getMediaFollowing(
+                    mediaId = mediaId,
+                    page = 1,
+                    perPage = FOLLOWING_PREVIEW_LIMIT,
+                    allowCached = allowCached
+                )
+            }
+            when (result) {
                 is Result.Success -> {
                     val (entries, hasNext) = result.data
                     _following.value = entries
                     _hasMoreFollowing.value = hasNext
                 }
+
                 is Result.Error -> {
-                    // Silent failure — section just stays empty
+                    // Silent failure, the section just stays empty.
                 }
             }
         }
