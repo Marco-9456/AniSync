@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import com.anisync.android.data.util.InflightTracker
 import com.anisync.android.GetFullUserProfileQuery
 import com.anisync.android.GetUserActivitiesQuery
 import com.anisync.android.GetUserFavoritesQuery
@@ -35,11 +36,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import com.anisync.android.data.mapper.toDomain as activityFieldsToDomain
 
@@ -51,21 +49,16 @@ class ProfileRepositoryImpl @Inject constructor(
 ) : ProfileRepository {
 
     /**
-     * In-flight request dedup keyed by (operation + params hash). A second
-     * concurrent caller suspends on the mutex until the first completes;
-     * the second's Apollo query (still `CacheFirst` when policy allows)
-     * then hits the now-warm normalized cache instead of hitting network.
+     * Shares one in-flight request between concurrent callers asking for the same thing.
+     *
+     * This used to be a per-key mutex, which serialised callers and then ran the block again for
+     * each of them: the second caller waited for the first and still issued its own request.
+     * [InflightTracker] hands them the first caller's result instead.
      */
-    private val inflightMutexes = ConcurrentHashMap<String, Mutex>()
+    private val inflight = InflightTracker()
 
-    private suspend fun <T> dedupe(key: String, block: suspend () -> T): T {
-        val mtx = inflightMutexes.computeIfAbsent(key) { Mutex() }
-        return try {
-            mtx.withLock { block() }
-        } finally {
-            if (!mtx.isLocked) inflightMutexes.remove(key, mtx)
-        }
-    }
+    private suspend fun <T> dedupe(key: String, block: suspend () -> T): T =
+        inflight.deduplicate(key, block)
 
     private fun CachePolicy.toFetchPolicy(): FetchPolicy = when (this) {
         CachePolicy.CacheFirst -> FetchPolicy.CacheFirst

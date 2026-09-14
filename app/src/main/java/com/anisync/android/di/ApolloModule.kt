@@ -5,6 +5,7 @@ import com.anisync.android.cache.Cache.cache
 import com.anisync.android.data.network.AniListErrorInterceptor
 import com.anisync.android.data.network.AniListHttpInterceptor
 import com.anisync.android.data.network.AniListIdentity
+import com.anisync.android.data.network.RequestCoalescer
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.interceptor.ApolloInterceptor
 import com.apollographql.cache.normalized.memory.MemoryCacheFactory
@@ -60,8 +61,11 @@ object ApolloModule {
         return ApolloClient.Builder()
             .serverUrl(AniListIdentity.ENDPOINT)
             .addHttpInterceptor(httpInterceptor)
-            // BeforeNetwork puts this below the normalized cache, so it only sees requests that
-            // really go out and it sees their errors before anything downstream rewrites them.
+            // BeforeNetwork puts both below the normalized cache, so they only see requests that
+            // really go out and they see the errors before anything downstream rewrites them.
+            // The coalescer is added first so it wraps the classifier: joined callers share one
+            // request, one classification and one retry.
+            .addInterceptor(RequestCoalescer(), ApolloInterceptor.InsertionPoint.BeforeNetwork)
             .addInterceptor(errorInterceptor, ApolloInterceptor.InsertionPoint.BeforeNetwork)
             .cache(cacheFactory, defaultMaxAge = DEFAULT_MAX_AGE)
             // Stamps each field with when it arrived, which is what lets

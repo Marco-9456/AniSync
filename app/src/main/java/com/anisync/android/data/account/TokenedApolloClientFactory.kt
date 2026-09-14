@@ -4,6 +4,7 @@ import com.anisync.android.cache.Cache.cache
 import com.anisync.android.data.network.AniListErrorInterceptor
 import com.anisync.android.data.network.AniListHttpInterceptor
 import com.anisync.android.data.network.AniListIdentity
+import com.anisync.android.data.network.RequestCoalescer
 import com.anisync.android.data.network.TokenScopedContext
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.interceptor.ApolloInterceptor
@@ -36,6 +37,9 @@ class TokenedApolloClientFactory @Inject constructor(
         ApolloClient.Builder()
             .serverUrl(AniListIdentity.ENDPOINT)
             .addHttpInterceptor(httpInterceptor)
+            // One coalescer per client: a shared one would key two accounts' identical queries the
+            // same and hand one account the other's viewer.
+            .addInterceptor(RequestCoalescer(), ApolloInterceptor.InsertionPoint.BeforeNetwork)
             .addInterceptor(errorInterceptor, ApolloInterceptor.InsertionPoint.BeforeNetwork)
             .addHttpHeader(AniListIdentity.HEADER_AUTHORIZATION, "Bearer $token")
             .addExecutionContext(TokenScopedContext)
