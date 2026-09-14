@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.NotificationBadgeStore
+import com.anisync.android.data.network.RateLimitMonitor
 import com.anisync.android.presentation.components.alert.ToastManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +22,8 @@ class MainScreenViewModel @Inject constructor(
     private val notificationBadgeStore: NotificationBadgeStore,
     private val appSettings: AppSettings,
     val toastManager: ToastManager,
+    /** Drives the rate limit notice and the pull-to-refresh gates. */
+    val rateLimitMonitor: RateLimitMonitor,
     searchLauncher: com.anisync.android.domain.DiscoverSearchLauncher
 ) : ViewModel() {
 
