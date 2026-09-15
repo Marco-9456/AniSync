@@ -22,9 +22,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 
 /**
- * Provides the singleton [ToastManager] to the composition so any screen can
- * read [ToastManager.isRateLimited] (e.g. to gate pull-to-refresh) or fire
- * a toast without threading it through every ViewModel.
+ * Provides the singleton [ToastManager] to the composition so any screen can fire a toast without
+ * threading it through every ViewModel.
  */
 val LocalToastManager = compositionLocalOf<ToastManager> {
     error("LocalToastManager not provided. Wrap your hierarchy in ProvideToastManager.")
@@ -107,22 +106,19 @@ private fun ToastPopup(
                 exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
             ) {
                 currentToast?.let { toast ->
+                    // A swipe and a countdown ending are not the same answer. The swipe says the
+                    // user has read it, so a keyed toast stays down. A countdown running out says
+                    // only that this one is spent, and the cause may well raise another.
                     TopAlertToast(
                         toast = toast,
-                        onDismiss = { toastManager.clearToast() }
+                        onDismiss = { toastManager.dismissToast() },
+                        onCountdownFinished = { toastManager.clearToast() }
                     )
 
+                    // A toast with a countdown is taken off screen by the countdown itself.
                     if (toast.countdownSeconds == null) {
                         LaunchedEffect(toast.id) {
-                            delay(4000)
-                            toastManager.clearToast()
-                        }
-                    } else {
-                        // Auto-clear when the countdown hits zero so
-                        // `ToastManager.isRateLimited` flips false and
-                        // pull-to-refresh gates re-enable.
-                        LaunchedEffect(toast.id) {
-                            delay(toast.countdownSeconds * 1000)
+                            delay(AUTO_DISMISS_MS)
                             toastManager.clearToast()
                         }
                     }
@@ -131,3 +127,5 @@ private fun ToastPopup(
         }
     }
 }
+
+private const val AUTO_DISMISS_MS = 4_000L

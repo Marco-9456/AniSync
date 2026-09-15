@@ -49,6 +49,7 @@ import kotlin.math.roundToInt
 fun TopAlertToast(
     toast: ToastMessage,
     onDismiss: () -> Unit,
+    onCountdownFinished: () -> Unit = onDismiss,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -123,7 +124,7 @@ fun TopAlertToast(
                     // Isolated composable prevents the rest of the Toast from recomposing
                     CountdownTimerText(
                         initialSeconds = toast.countdownSeconds,
-                        onTimerFinished = onDismiss
+                        onTimerFinished = onCountdownFinished
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                 }

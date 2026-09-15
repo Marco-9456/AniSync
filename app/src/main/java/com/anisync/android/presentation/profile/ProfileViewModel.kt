@@ -87,8 +87,9 @@ class ProfileViewModel @Inject constructor(
     /**
      * Per-resource cooldown. Independent from the 429 toast gate — that one only
      * activates *after* AniList already returned 429. This gate prevents the
-     * runaway-pull spam path that gets us there in the first place. The 429 toast
-     * still overrides (its `isRateLimited` flag short-circuits the UI gesture).
+     * runaway-pull spam path that gets us there in the first place. A block still
+     * overrides it: `rememberRateLimitedRefresh` drops the gesture while
+     * `RateLimitMonitor.status` is Blocked.
      */
     private class FetchCooldown {
         private var lastAt: Long = 0L

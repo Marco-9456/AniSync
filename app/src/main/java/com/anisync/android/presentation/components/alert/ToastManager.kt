@@ -20,13 +20,12 @@ class ToastManager @Inject constructor(
     val toast: StateFlow<ToastMessage?> = _toast.asStateFlow()
 
     /**
-     * True while a 429 rate-limit countdown toast is on screen. Pull-to-refresh
-     * gates read this so users can't spam refresh while the AniList retry
-     * window is still ticking. Flipped false by [clearToast] (which the
-     * countdown auto-fires when it hits zero).
+     * The last keyed toast the user swiped away.
+     *
+     * One entry is enough: keyed toasts are raised for a cause that is live at the time, and a new
+     * cause carries a new key, so an older dismissal can never suppress it.
      */
-    private val _isRateLimited = MutableStateFlow(false)
-    val isRateLimited: StateFlow<Boolean> = _isRateLimited.asStateFlow()
+    @Volatile private var dismissedKey: String? = null
 
     /** Last time a throttle notice was shown; rate-limits the notice itself. */
     @Volatile private var lastThrottleNoticeAt: Long = 0L
@@ -55,11 +54,23 @@ class ToastManager @Inject constructor(
         _overlayHostActive.value = overlayHostCount > 0
     }
 
-    fun showToast(type: ToastType, title: String? = null, message: String, countdownSeconds: Long? = null) {
-        _toast.value = ToastMessage(type = type, title = title, message = message, countdownSeconds = countdownSeconds)
+    fun showToast(
+        type: ToastType,
+        title: String? = null,
+        message: String,
+        countdownSeconds: Long? = null,
+        key: String? = null,
+    ) {
+        _toast.value = ToastMessage(
+            type = type,
+            title = title,
+            message = message,
+            countdownSeconds = countdownSeconds,
+            key = key,
+        )
     }
 
-    fun showToast(code: Int, message: String, countdownSeconds: Long? = null) {
+    fun showToast(code: Int, message: String, countdownSeconds: Long? = null, key: String? = null) {
         val type = ToastType.fromCode(code)
         val titleRes = when (code) {
             400 -> R.string.toast_title_validation
@@ -70,15 +81,35 @@ class ToastManager @Inject constructor(
             else -> null
         }
         val title = titleRes?.let { AppLocale.wrap(context).getString(it) }
-        if (code == 429 && countdownSeconds != null && countdownSeconds > 0) {
-            _isRateLimited.value = true
-        }
-        showToast(type, title, message, countdownSeconds)
+        showToast(type, title, message, countdownSeconds, key)
     }
 
+    /** Takes the toast off screen. The cause, if there is one, is left to raise it again. */
     fun clearToast() {
         _toast.value = null
-        _isRateLimited.value = false
+    }
+
+    /**
+     * The user swiped the toast away.
+     *
+     * Distinct from [clearToast] because a keyed toast is raised for as long as its cause lasts.
+     * Swiping says the user has read it and wants the screen back, so it stays dismissed until the
+     * cause itself changes, while a countdown simply running out does not.
+     */
+    fun dismissToast() {
+        _toast.value?.key?.let { dismissedKey = it }
+        clearToast()
+    }
+
+    /** True if the user swiped away the toast raised for [key]. */
+    fun wasDismissed(key: String): Boolean = dismissedKey == key
+
+    /**
+     * Clears the toast only if it is a keyed one, which is how a cause that ends early takes its own
+     * notice down. An ordinary toast that landed on top of it in the meantime is left alone.
+     */
+    fun clearKeyedToast() {
+        if (_toast.value?.key != null) clearToast()
     }
 
     /**
@@ -98,16 +129,14 @@ class ToastManager @Inject constructor(
     }
 
     /**
-     * Brief, non-blocking notice that the app is deliberately pacing requests to
-     * stay under AniList's rate limit. Unlike the 429 countdown toast it does NOT
-     * set [isRateLimited], so it never gates pull-to-refresh — it just explains a
-     * momentary slowdown instead of leaving the user on an unexplained spinner
-     * (the "feels broken/slow" complaint). Self-throttled to at most once per
-     * [THROTTLE_NOTICE_INTERVAL_MS], and suppressed while a 429 countdown is up so
-     * it never clobbers the more important rate-limit toast.
+     * Brief, non-blocking notice that the app is deliberately pacing requests to stay under
+     * AniList's rate limit. It explains a momentary slowdown instead of leaving the user on an
+     * unexplained spinner (the "feels broken/slow" complaint). Self-throttled to at most once per
+     * [THROTTLE_NOTICE_INTERVAL_MS], and suppressed while a keyed toast is up so it never clobbers
+     * the rate limit countdown, which is the more important of the two.
      */
     fun showThrottleNotice() {
-        if (_isRateLimited.value) return
+        if (_toast.value?.key != null) return
         val now = SystemClock.elapsedRealtime()
         if (now - lastThrottleNoticeAt < THROTTLE_NOTICE_INTERVAL_MS) return
         lastThrottleNoticeAt = now

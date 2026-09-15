@@ -9,5 +9,13 @@ data class ToastMessage(
     val type: ToastType,
     val title: String?,
     val message: String,
-    val countdownSeconds: Long? = null
+    val countdownSeconds: Long? = null,
+    /**
+     * Identity of the underlying cause, stable across re-raises of the same one.
+     *
+     * A toast raised for something that outlives its own countdown is re-raised until the cause
+     * clears, and a swipe on a keyed toast has to stay dismissed rather than come straight back.
+     * Only [RateLimitNotice] sets this today.
+     */
+    val key: String? = null,
 )
