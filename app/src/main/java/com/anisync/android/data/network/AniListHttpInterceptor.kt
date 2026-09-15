@@ -1,6 +1,5 @@
 package com.anisync.android.data.network
 
-import com.anisync.android.data.AuthRepository
 import com.apollographql.apollo.api.http.HttpHeader
 import com.apollographql.apollo.api.http.HttpRequest
 import com.apollographql.apollo.api.http.HttpResponse
@@ -27,7 +26,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AniListHttpInterceptor @Inject constructor(
-    private val authRepository: AuthRepository,
+    private val session: SessionTokens,
     private val gate: RateLimitGate,
 ) : HttpInterceptor {
 
@@ -57,7 +56,7 @@ class AniListHttpInterceptor @Inject constructor(
             .addHeader(AniListIdentity.HEADER_REFERER, AniListIdentity.REFERER)
 
         if (!request.headers.has(AniListIdentity.HEADER_AUTHORIZATION)) {
-            authRepository.getToken()?.let {
+            session.getToken()?.let {
                 builder.addHeader(AniListIdentity.HEADER_AUTHORIZATION, "Bearer $it")
             }
         }

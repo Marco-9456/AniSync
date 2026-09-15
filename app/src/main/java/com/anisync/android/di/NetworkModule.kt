@@ -1,9 +1,11 @@
 package com.anisync.android.di
 
+import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.network.RateLimitGate
 import com.anisync.android.data.network.RateLimitMonitor
 import com.anisync.android.data.network.RateLimitPersistence
 import com.anisync.android.data.network.RetryPolicy
+import com.anisync.android.data.network.SessionTokens
 import com.anisync.android.data.network.SharedPreferencesRateLimitPersistence
 import com.anisync.android.data.util.Clock
 import dagger.Binds
@@ -17,6 +19,9 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class NetworkModule {
+
+    @Binds
+    abstract fun bindSessionTokens(impl: AuthRepository): SessionTokens
 
     @Binds
     @Singleton
