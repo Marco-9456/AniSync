@@ -2044,6 +2044,11 @@
     <string name="api_error_offline">No internet connection. Check your network and try again.</string>
     <string name="api_error_timeout">The request took too long. Please try again.</string>
     <string name="api_error_unknown">An unexpected error occurred.</string>
+    <string name="toast_title_validation">Validation Error</string>
+    <string name="toast_title_unauthorized">Unauthorized</string>
+    <string name="toast_title_not_found">Not Found</string>
+    <string name="toast_title_rate_limited">Too Many Requests</string>
+    <string name="toast_title_server_error">Internal Server Error</string>
 
     <!-- Developer tools: request budget -->
     <string name="debug_rate_limit_section">Request Budget</string>
@@ -2054,6 +2059,7 @@
     <string name="debug_rate_limit_admitted">Admitted</string>
     <string name="debug_rate_limit_paced">Paced</string>
     <string name="debug_rate_limit_deferred">Deferred</string>
+    <string name="debug_rate_limit_refused">Refused</string>
     <string name="debug_rate_limit_retried">Retried</string>
     <string name="debug_rate_limit_429s">Rate limited</string>
     <string name="debug_rate_limit_pin">Pin the limit to force the gate to refuse</string>

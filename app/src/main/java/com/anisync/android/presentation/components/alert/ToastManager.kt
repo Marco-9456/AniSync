@@ -3,6 +3,7 @@ package com.anisync.android.presentation.components.alert
 import android.content.Context
 import android.os.SystemClock
 import com.anisync.android.R
+import com.anisync.android.data.util.AppLocale
 import com.anisync.android.domain.Result
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,14 +61,15 @@ class ToastManager @Inject constructor(
 
     fun showToast(code: Int, message: String, countdownSeconds: Long? = null) {
         val type = ToastType.fromCode(code)
-        val title = when(code) {
-            400 -> "Validation Error"
-            401 -> "Unauthorized"
-            404 -> "Not Found"
-            429 -> "Too Many Requests"
-            500 -> "Internal Server Error"
+        val titleRes = when (code) {
+            400 -> R.string.toast_title_validation
+            401 -> R.string.toast_title_unauthorized
+            404 -> R.string.toast_title_not_found
+            429 -> R.string.toast_title_rate_limited
+            500 -> R.string.toast_title_server_error
             else -> null
         }
+        val title = titleRes?.let { AppLocale.wrap(context).getString(it) }
         if (code == 429 && countdownSeconds != null && countdownSeconds > 0) {
             _isRateLimited.value = true
         }
@@ -109,7 +111,12 @@ class ToastManager @Inject constructor(
         val now = SystemClock.elapsedRealtime()
         if (now - lastThrottleNoticeAt < THROTTLE_NOTICE_INTERVAL_MS) return
         lastThrottleNoticeAt = now
-        showToast(ToastType.INFO, message = context.getString(R.string.alert_rate_limit_notice))
+        // Read through AppLocale: this runs outside the composition, and the application context
+        // keeps the system locale even after the app's own language has been set.
+        showToast(
+            ToastType.INFO,
+            message = AppLocale.wrap(context).getString(R.string.alert_rate_limit_notice),
+        )
     }
 
     private companion object {
