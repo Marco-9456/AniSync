@@ -2,11 +2,13 @@ package com.anisync.android.presentation.components.alert
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.data.network.RateLimitMonitor
 import com.anisync.android.data.network.RateLimitStatus
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * The rate limit state, made available to the composables that gate on it.
@@ -26,39 +28,29 @@ val LocalRateLimitMonitor = staticCompositionLocalOf<RateLimitMonitor?> { null }
  */
 @Composable
 fun RateLimitNotice(monitor: RateLimitMonitor, toastManager: ToastManager) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    LaunchedEffect(monitor, toastManager) {
-        monitor.status
-            .distinctUntilChanged { old, new -> old.sameNotice(new) }
-            .collect { status ->
-                when (status) {
-                    is RateLimitStatus.Blocked -> toastManager.showToast(
-                        code = 429,
-                        message = context.getString(
-                            R.string.api_error_rate_limited,
-                            status.secondsRemaining,
-                        ),
-                        countdownSeconds = status.secondsRemaining,
-                    )
+    val status by monitor.status.collectAsStateWithLifecycle()
 
-                    is RateLimitStatus.Pacing -> toastManager.showThrottleNotice()
-
-                    RateLimitStatus.Clear -> Unit
-                }
+    when (val current = status) {
+        is RateLimitStatus.Blocked -> {
+            val message = stringResource(
+                R.string.api_error_rate_limited,
+                current.secondsRemaining,
+            )
+            // Keyed on the deadline, so one timeout raises one toast however many requests bounce
+            // off it. The previous interceptor raised one per blocked caller.
+            LaunchedEffect(current.retryAtElapsedMs) {
+                toastManager.showToast(
+                    code = 429,
+                    message = message,
+                    countdownSeconds = current.secondsRemaining,
+                )
             }
+        }
+
+        // Pacing ticks with every request, so the effect is keyed on the state being Pacing at all.
+        // ToastManager throttles the notice itself on top of that.
+        is RateLimitStatus.Pacing -> LaunchedEffect(Unit) { toastManager.showThrottleNotice() }
+
+        RateLimitStatus.Clear -> Unit
     }
-}
-
-/**
- * Whether two states would produce the same notice.
- *
- * [RateLimitStatus.Pacing] changes on every request as the count ticks down, and re-raising the
- * same notice for each of them would leave the user staring at a toast that never settles.
- */
-private fun RateLimitStatus.sameNotice(other: RateLimitStatus): Boolean = when {
-    this is RateLimitStatus.Blocked && other is RateLimitStatus.Blocked ->
-        retryAtElapsedMs == other.retryAtElapsedMs
-
-    this is RateLimitStatus.Pacing && other is RateLimitStatus.Pacing -> true
-    else -> this == other
 }
