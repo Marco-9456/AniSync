@@ -84,6 +84,7 @@ class RateLimitGate(
     private val admitted = AtomicLong(0)
     private val paced = AtomicLong(0)
     private val deferred = AtomicLong(0)
+    private val refused = AtomicLong(0)
     private val retried = AtomicLong(0)
     private val rateLimited = AtomicLong(0)
 
@@ -126,7 +127,11 @@ class RateLimitGate(
                 }
 
                 is Decision.Refuse -> {
-                    if (decision.error is ApiError.Deferred) deferred.incrementAndGet()
+                    if (decision.error is ApiError.Deferred) {
+                        deferred.incrementAndGet()
+                    } else {
+                        refused.incrementAndGet()
+                    }
                     publish()
                     throw decision.error
                 }
@@ -250,15 +255,24 @@ class RateLimitGate(
     private fun publish() {
         val blockedFor = window.blockedForMs()
         val limit = simulatedLimit ?: window.limit
+        val headroom = effectiveHeadroom()
+        // A spent budget stops requests just as completely as a 429 does, so it reports the same
+        // way. Reporting it as mere pacing left the user watching a screen of skeletons with no
+        // toast, no countdown and nothing to retry from.
+        val waitMs = when {
+            blockedFor > 0 -> blockedFor
+            headroom <= 0 -> window.resetsInMs()
+            else -> 0
+        }
         monitor.publishStatus(
             when {
-                blockedFor > 0 -> RateLimitStatus.Blocked(
-                    retryAtElapsedMs = clock.nowMs() + blockedFor,
-                    secondsRemaining = ceilSeconds(blockedFor),
+                waitMs > 0 -> RateLimitStatus.Blocked(
+                    retryAtElapsedMs = clock.nowMs() + waitMs,
+                    secondsRemaining = ceilSeconds(waitMs),
                 )
 
-                effectiveHeadroom() <= reserveFor(RequestPriority.Prefetch, limit) ->
-                    RateLimitStatus.Pacing(effectiveHeadroom(), limit)
+                headroom <= reserveFor(RequestPriority.Prefetch, limit) ->
+                    RateLimitStatus.Pacing(headroom, limit)
 
                 else -> RateLimitStatus.Clear
             },
@@ -273,6 +287,7 @@ class RateLimitGate(
                 admitted = admitted.get(),
                 paced = paced.get(),
                 deferred = deferred.get(),
+                refused = refused.get(),
                 retried = retried.get(),
                 rateLimited = rateLimited.get(),
             ),

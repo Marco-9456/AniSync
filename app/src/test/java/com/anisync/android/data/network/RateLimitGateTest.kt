@@ -230,6 +230,47 @@ class RateLimitGateTest {
         assertEquals(20, (status as RateLimitStatus.Blocked).secondsRemaining)
     }
 
+    /**
+     * A spent budget stops requests as completely as a 429 does. Reporting it as mere pacing left
+     * the user watching a screen of skeletons with no toast, no countdown and nothing to retry from.
+     */
+    @Test
+    fun `an exhausted budget reports as blocked, not as pacing`() = runTest {
+        val monitor = RateLimitMonitor()
+        val gate = RateLimitGate(
+            clock = Clock { testScheduler.currentTime },
+            monitor = monitor,
+            persistence = RateLimitPersistence.None,
+            config = RateLimitConfig(jitterMs = 0),
+            random = Random(0),
+        )
+
+        repeat(30) { gate.acquire(RequestPriority.Interactive); gate.release() }
+
+        val status = monitor.status.value
+        assertTrue("was $status", status is RateLimitStatus.Blocked)
+        assertTrue((status as RateLimitStatus.Blocked).secondsRemaining > 0)
+    }
+
+    @Test
+    fun `refusing the user is counted separately from deferring background work`() = runTest {
+        val monitor = RateLimitMonitor()
+        val gate = RateLimitGate(
+            clock = Clock { testScheduler.currentTime },
+            monitor = monitor,
+            persistence = RateLimitPersistence.None,
+            config = RateLimitConfig(jitterMs = 0),
+            random = Random(0),
+        )
+        gate.onResponse(statusCode = 429, limit = 30, remaining = 0, retryAfterSeconds = 60)
+
+        runCatching { gate.acquire(RequestPriority.Background) }
+        runCatching { gate.acquire(RequestPriority.Interactive) }
+
+        assertEquals(1, monitor.stats.value.deferred)
+        assertEquals(1, monitor.stats.value.refused)
+    }
+
     @Test
     fun `in-flight returns to zero even when a request throws`() = runTest {
         val monitor = RateLimitMonitor()

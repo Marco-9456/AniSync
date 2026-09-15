@@ -333,6 +333,7 @@ fun DeveloperToolsScreen(
                     RateLimitReadout(stats.admitted.toString(), R.string.debug_rate_limit_admitted)
                     RateLimitReadout(stats.paced.toString(), R.string.debug_rate_limit_paced)
                     RateLimitReadout(stats.deferred.toString(), R.string.debug_rate_limit_deferred)
+                    RateLimitReadout(stats.refused.toString(), R.string.debug_rate_limit_refused)
                     RateLimitReadout(stats.retried.toString(), R.string.debug_rate_limit_retried)
                     RateLimitReadout(stats.rateLimited.toString(), R.string.debug_rate_limit_429s)
 

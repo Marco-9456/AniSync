@@ -16,9 +16,13 @@ sealed interface RateLimitStatus {
     data class Pacing(val remaining: Int, val limit: Int) : RateLimitStatus
 
     /**
-     * AniList returned a 429 and nothing may be sent until the timeout ends.
+     * Nothing may be sent until the window turns over.
      *
-     * @param retryAtElapsedMs monotonic instant the timeout ends, comparable to
+     * Covers both ways that happens: AniList returned a 429, or the budget ran out on our side.
+     * They are the same thing to the user, who is looking at a screen that will not load, and both
+     * need the same countdown and the same pull-to-refresh gate.
+     *
+     * @param retryAtElapsedMs monotonic instant the wait ends, comparable to
      *   [android.os.SystemClock.elapsedRealtime]
      * @param secondsRemaining seconds left when this was published, for a countdown to start from
      */
@@ -38,6 +42,7 @@ data class RateLimitStats(
     val admitted: Long = 0,
     val paced: Long = 0,
     val deferred: Long = 0,
+    val refused: Long = 0,
     val retried: Long = 0,
     val rateLimited: Long = 0,
 )
