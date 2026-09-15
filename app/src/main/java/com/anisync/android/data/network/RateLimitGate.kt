@@ -111,6 +111,11 @@ class RateLimitGate(
                     admitted.incrementAndGet()
                     inFlight.incrementAndGet()
                     publish()
+                    Log.d(
+                        TAG,
+                        "AniSyncNet event=admit priority=$priority " +
+                            "remaining=${effectiveHeadroom()} in_flight=${inFlight.get()}",
+                    )
                     return
                 }
 
