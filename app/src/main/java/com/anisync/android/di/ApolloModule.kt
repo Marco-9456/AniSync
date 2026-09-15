@@ -61,6 +61,10 @@ object ApolloModule {
         return ApolloClient.Builder()
             .serverUrl(AniListIdentity.ENDPOINT)
             .addHttpInterceptor(httpInterceptor)
+            // AniList puts the real reason for a failure in the response body, and Apollo throws
+            // that body away unless asked not to. Without this the classifier degrades to reading
+            // the status line, which is exactly what it exists to stop doing.
+            .httpExposeErrorBody(true)
             // BeforeNetwork puts both below the normalized cache, so they only see requests that
             // really go out and they see the errors before anything downstream rewrites them.
             // The coalescer is added first so it wraps the classifier: joined callers share one

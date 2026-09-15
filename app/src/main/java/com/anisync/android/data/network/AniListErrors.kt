@@ -98,11 +98,14 @@ object AniListErrors {
 
             status != null && status in 500..599 -> ApiError.ServerError(status)
 
-            errors.isNotEmpty() -> ApiError.GraphQLError(errors.map { it.message }, status)
-
-            status != null -> ApiError.ServerError(status)
-
-            else -> ApiError.Unknown("The server returned an error.")
+            // Everything left keeps its status so callers can still branch on it, but is not a
+            // server error: labelling a 400 that way made the retry policy repeat a request the
+            // server had already refused on its merits.
+            else -> ApiError.GraphQLError(
+                errors.map { it.message }.ifEmpty { listOfNotNull(message) }
+                    .ifEmpty { listOf("The server returned an error.") },
+                status,
+            )
         }
     }
 

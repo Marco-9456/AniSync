@@ -1,7 +1,6 @@
 package com.anisync.android.data.network
 
 import android.util.Log
-import com.anisync.android.data.AuthRepository
 import com.anisync.android.data.util.ApiError
 import com.apollographql.apollo.api.ApolloRequest
 import com.apollographql.apollo.api.ApolloResponse
@@ -35,13 +34,17 @@ import javax.inject.Singleton
  * Retry lives here rather than in the HTTP layer because only here is it known whether the
  * operation is a mutation, which is what decides whether repeating it is safe.
  *
- * Failures are reported by setting [ApolloResponse.exception] rather than by throwing, which is what
- * Apollo asks interceptors to do. `execute()` rethrows it, so callers and
- * [com.anisync.android.data.util.safeApiCall] see it exactly as they see a transport failure.
+ * A classified failure is **thrown**, not attached to the response.
+ *
+ * `ApolloCall.execute()` does not throw: it returns the response with `exception` set. So the 85
+ * repository sites that read `response.data?.field ?: emptyList()` turned every failed request into
+ * an empty success, and a section that could not load looked exactly like a section with nothing in
+ * it. Throwing sends all of them through [com.anisync.android.data.util.safeApiCall] instead, which
+ * is where the typed error was always meant to land.
  */
 @Singleton
 class AniListErrorInterceptor @Inject constructor(
-    private val authRepository: AuthRepository,
+    private val session: SessionTokens,
     private val gate: RateLimitGate,
     private val retryPolicy: RetryPolicy,
 ) : ApolloInterceptor {
@@ -89,12 +92,7 @@ class AniListErrorInterceptor @Inject constructor(
                 }
 
                 report(error, operation.name())
-                emit(
-                    response.newBuilder()
-                        .exception(ApolloNetworkException(error.message, error))
-                        .build(),
-                )
-                return@flow
+                throw error
             }
         }
     }
@@ -108,6 +106,10 @@ class AniListErrorInterceptor @Inject constructor(
 
         val errors = response.errors
         if (errors.isNullOrEmpty()) return null
+
+        // A response that still carries data is a partial success. Failing it would throw away
+        // fields that did arrive, so those stay with the repository layer as before.
+        if (response.data != null) return null
 
         val parsed = AniListErrors.fromApolloErrors(errors)
         // Only claim an error AniList has labelled. A plain GraphQL error with partial data is left
@@ -155,7 +157,7 @@ class AniListErrorInterceptor @Inject constructor(
     private fun report(error: ApiError, operationName: String) {
         if (error is ApiError.SessionExpired) {
             Log.w(TAG, "AniSyncNet event=session_expired op=$operationName")
-            authRepository.onSessionExpired()
+            session.onSessionExpired()
         }
     }
 
@@ -171,8 +173,15 @@ class AniListErrorInterceptor @Inject constructor(
 internal fun Throwable?.findApiError(): ApiError? =
     generateSequence(this) { it.cause }.filterIsInstance<ApiError>().firstOrNull()
 
-private fun BufferedSource.readCapped(maxBytes: Long): String {
+/**
+ * Reads at most [maxBytes] and closes the source.
+ *
+ * Apollo only hands over an error body when `httpExposeErrorBody` is on, and makes closing it the
+ * caller's problem. The cap is for the pathological case: a real AniList error is a few hundred
+ * bytes, and this is the only body the network layer ever reads.
+ */
+private fun BufferedSource.readCapped(maxBytes: Long): String = use { source ->
     val buffer = Buffer()
-    read(buffer, maxBytes)
-    return buffer.readUtf8()
+    source.read(buffer, maxBytes)
+    buffer.readUtf8()
 }

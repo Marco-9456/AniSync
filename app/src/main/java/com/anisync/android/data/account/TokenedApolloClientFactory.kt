@@ -37,6 +37,7 @@ class TokenedApolloClientFactory @Inject constructor(
         ApolloClient.Builder()
             .serverUrl(AniListIdentity.ENDPOINT)
             .addHttpInterceptor(httpInterceptor)
+            .httpExposeErrorBody(true)
             // One coalescer per client: a shared one would key two accounts' identical queries the
             // same and hand one account the other's viewer.
             .addInterceptor(RequestCoalescer(), ApolloInterceptor.InsertionPoint.BeforeNetwork)
