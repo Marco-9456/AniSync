@@ -16,15 +16,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -113,20 +112,35 @@ private fun ToastStrip(toast: ToastMessage, modifier: Modifier) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(
-                imageVector = toast.type.icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp)
-            )
+            if (toast.type == ToastType.PACING) {
+                // A spinner in place of the icon, rather than a second mark beside the text, which
+                // ran the line past the width of a phone. Plain rather than the app's wavy
+                // indicator: at this size the wave degenerates into a short lopsided arc that reads
+                // as a stray glyph, which is the scaling trap AppCircularProgressIndicator's own
+                // KDoc describes. The wavy one stays where it has room, in content areas.
+                CircularProgressIndicator(
+                    modifier = Modifier.size(SPINNER_SIZE),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Icon(
+                    imageVector = toast.type.icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(SPINNER_SIZE)
+                )
+            }
             Text(
                 text = toast.message,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                // fill = false so the strip hugs a short line, weighted so a long translation wraps
+                // rather than running off the end.
+                modifier = Modifier.weight(1f, fill = false)
             )
-            if (toast.type == ToastType.PACING) {
-                LinearWavyProgressIndicator(modifier = Modifier.width(46.dp))
-            }
         }
     }
 }
@@ -370,5 +384,6 @@ private fun rememberSwipeToDismiss(onDismiss: () -> Unit): Modifier {
 /** Wide enough for three lines of message, narrow enough to stay an overlay on a tablet. */
 private val MAX_WIDTH: Dp = 480.dp
 private val PROGRESS_HEIGHT: Dp = 3.dp
+private val SPINNER_SIZE: Dp = 16.dp
 private const val PUCK_TINT = 0.16f
 private const val BULLET_TINT = 0.7f

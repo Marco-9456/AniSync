@@ -378,6 +378,13 @@ class SettingsViewModel @Inject constructor(
         when (type) {
             ToastType.PACING -> toastManager.showThrottleNotice()
 
+            // The real string, so the preview shows the copy the app would actually raise.
+            ToastType.DEFERRED -> toastManager.showToast(
+                type = type,
+                message = com.anisync.android.data.util.AppLocale.wrap(context)
+                    .getString(R.string.alert_deferred_notice),
+            )
+
             ToastType.RATE_LIMITED -> toastManager.showRateLimit(
                 retryAtElapsedMs = SystemClock.elapsedRealtime() + SAMPLE_BLOCK_MS,
                 totalSeconds = SAMPLE_BLOCK_MS / 1_000,
