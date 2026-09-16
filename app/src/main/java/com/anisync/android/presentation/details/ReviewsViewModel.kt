@@ -94,7 +94,8 @@ class ReviewsViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
-                    // handle error
+                    // Nothing was changed on screen, so without this the tap just does nothing.
+                    toastManager.showResultError(result)
                 }
             }
         }

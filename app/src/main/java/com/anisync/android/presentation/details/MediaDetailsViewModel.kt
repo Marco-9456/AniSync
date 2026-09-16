@@ -211,7 +211,9 @@ class MediaDetailsViewModel @Inject constructor(
                 }
 
                 is Result.Error -> {
-                    // Silent failure, the section just stays empty.
+                    // Deliberately silent. Nobody asked for this preview, it hides itself when
+                    // empty, and an error banner for a section the user did not open would be
+                    // louder than the thing it is reporting.
                 }
             }
         }
@@ -235,7 +237,9 @@ class MediaDetailsViewModel @Inject constructor(
                 }
 
                 is Result.Error -> {
-                    // Silent failure, the section just stays empty.
+                    // Deliberately silent. Nobody asked for this preview, it hides itself when
+                    // empty, and an error banner for a section the user did not open would be
+                    // louder than the thing it is reporting.
                 }
             }
         }
@@ -273,9 +277,7 @@ class MediaDetailsViewModel @Inject constructor(
                 is Result.Success -> {
                     // Cache updated, Flow emits automatically
                 }
-                is Result.Error -> {
-                    // Could emit a one-time event for error (e.g., Snackbar)
-                }
+                is Result.Error -> toastManager.showResultError(result)
             }
             
             _isSaving.value = false
@@ -323,9 +325,8 @@ class MediaDetailsViewModel @Inject constructor(
                     refresh()
                     closeEditSheet()
                 }
-                is Result.Error -> {
-                    // Handle error
-                }
+                // The sheet is left open on a failure, with the edits still in it to try again.
+                is Result.Error -> toastManager.showResultError(result)
             }
             _isSaving.value = false
         }
@@ -343,9 +344,7 @@ class MediaDetailsViewModel @Inject constructor(
                     // Refresh to update the UI
                     refresh()
                 }
-                is Result.Error -> {
-                    // Could handle error
-                }
+                is Result.Error -> toastManager.showResultError(result)
             }
 
             _isSaving.value = false
@@ -357,16 +356,16 @@ class MediaDetailsViewModel @Inject constructor(
     // baseline seeding is needed (a re-submit of the same value is a no-op).
     private val reviewRatingCoalescer =
         com.anisync.android.presentation.util.MutationCoalescer<Int, com.anisync.android.type.ReviewRating>(viewModelScope) { reviewId, rating ->
-            when (detailsRepository.rateReview(reviewId, rating)) {
+            when (val result = detailsRepository.rateReview(reviewId, rating)) {
                 is Result.Success -> { refresh(); true }
-                is Result.Error -> false
+                is Result.Error -> { toastManager.showResultError(result); false }
             }
         }
     private val recommendationRatingCoalescer =
         com.anisync.android.presentation.util.MutationCoalescer<Int, com.anisync.android.type.RecommendationRating>(viewModelScope) { recId, rating ->
-            when (detailsRepository.rateRecommendation(mediaId, recId, rating)) {
+            when (val result = detailsRepository.rateRecommendation(mediaId, recId, rating)) {
                 is Result.Success -> { refresh(); true }
-                is Result.Error -> false
+                is Result.Error -> { toastManager.showResultError(result); false }
             }
         }
 
@@ -388,9 +387,7 @@ class MediaDetailsViewModel @Inject constructor(
                 is Result.Success -> {
                     // Cache updated via refresh, Flow emits automatically
                 }
-                is Result.Error -> {
-                    // Could emit a one-time event for error (e.g., Snackbar)
-                }
+                is Result.Error -> toastManager.showResultError(result)
             }
 
             _isSaving.value = false

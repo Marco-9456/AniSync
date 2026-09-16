@@ -58,7 +58,8 @@ class MediaFollowingViewModel @Inject constructor(
                     if (hasNext) currentPage++
                 }
                 is Result.Error -> {
-                    // Silent — sheet stays as-is
+                    // Deliberately silent. This is the next page of an open sheet, so the entries
+                    // already read stay put and reopening asks again.
                 }
             }
             _isLoading.value = false
