@@ -10,6 +10,7 @@ import com.anisync.android.domain.ThreadEventBus
 import com.anisync.android.domain.ThreadUpdate
 import com.anisync.android.domain.parser.RichTextParser
 import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastAction
 import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -303,7 +304,7 @@ class ThreadDetailViewModel @Inject constructor(
 
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingMoreComments = false) }
-                    showResultError(result)
+                    showResultError(result, toastManager.retryAction { loadMoreComments() })
                 }
             }
         }
@@ -341,7 +342,7 @@ class ThreadDetailViewModel @Inject constructor(
 
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingEarlierComments = false) }
-                    showResultError(result)
+                    showResultError(result, toastManager.retryAction { loadEarlierComments() })
                 }
             }
         }
@@ -602,8 +603,8 @@ class ThreadDetailViewModel @Inject constructor(
         }
     }
 
-    private fun showResultError(result: Result.Error) {
-        toastManager.showResultError(result)
+    private fun showResultError(result: Result.Error, action: ToastAction? = null) {
+        toastManager.showResultError(result, action)
     }
 }
 

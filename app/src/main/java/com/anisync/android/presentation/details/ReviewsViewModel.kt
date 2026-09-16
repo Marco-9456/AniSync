@@ -61,8 +61,8 @@ class ReviewsViewModel @Inject constructor(
                 is Result.Error -> {
                     // The pages already loaded stay on screen. Replacing a read list with an error
                     // state because page four failed loses more than it explains, so the toast
-                    // carries the reason and another scroll retries.
-                    toastManager.showResultError(result)
+                    // carries the reason and offers the page again.
+                    toastManager.showResultError(result, toastManager.retryAction { fetchNextPage() })
                 }
             }
             _isLoading.value = false

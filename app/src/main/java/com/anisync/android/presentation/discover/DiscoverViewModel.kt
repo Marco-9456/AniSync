@@ -256,7 +256,9 @@ class DiscoverViewModel @Inject constructor(
             // Outside the update block, which re-runs under contention. The results already on
             // screen are kept either way, so the toast is the only thing saying the next page
             // failed rather than simply not existing.
-            if (result is Result.Error) toastManager.showResultError(result)
+            if (result is Result.Error) {
+                toastManager.showResultError(result, toastManager.retryAction { loadMoreResults() })
+            }
 
             _uiState.update { st ->
                 // A newer search replaced the results while this page was in flight.

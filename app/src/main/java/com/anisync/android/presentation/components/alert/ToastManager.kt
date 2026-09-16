@@ -135,6 +135,15 @@ class ToastManager @Inject constructor(
     }
 
     /**
+     * A "Retry" button for [showResultError].
+     *
+     * The label lives here so a ViewModel does not have to reach for a Context to say one word, and
+     * so every retry across the app says the same one.
+     */
+    fun retryAction(onClick: () -> Unit): ToastAction =
+        ToastAction(AppLocale.wrap(context).getString(R.string.retry), onClick = onClick)
+
+    /**
      * Raises the rate limit notice against the instant the block ends.
      *
      * Called from [RateLimitNotice], which owns the decision to raise it at all and re-raises it for
