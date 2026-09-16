@@ -280,6 +280,8 @@ class ThreadDetailViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingMoreComments = true) }
+            // The comments already read stay on screen. The toast is what separates a page that
+            // failed from a thread that simply ends here.
             when (val result =
                 forumRepository.getComments(threadId, nextPage, sort = state.commentSort)) {
                 is Result.Success -> {
@@ -301,6 +303,7 @@ class ThreadDetailViewModel @Inject constructor(
 
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingMoreComments = false) }
+                    showResultError(result)
                 }
             }
         }
@@ -338,6 +341,7 @@ class ThreadDetailViewModel @Inject constructor(
 
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingEarlierComments = false) }
+                    showResultError(result)
                 }
             }
         }
@@ -383,6 +387,7 @@ class ThreadDetailViewModel @Inject constructor(
 
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingMoreComments = false) }
+                    showResultError(result)
                 }
             }
         }
@@ -421,6 +426,7 @@ class ThreadDetailViewModel @Inject constructor(
 
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingMoreComments = false) }
+                    showResultError(result)
                 }
             }
         }

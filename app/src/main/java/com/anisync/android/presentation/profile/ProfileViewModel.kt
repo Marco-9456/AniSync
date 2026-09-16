@@ -1069,7 +1069,12 @@ class ProfileViewModel @Inject constructor(
                         hasNextPage = result.data.hasNextPage
                     )
                 }
-                is Result.Error -> activityPaginationState.update { it.copy(isPaginating = false) }
+                is Result.Error -> {
+                    // The activities already appended stay put. Only the toast marks the page that
+                    // did not arrive, so a scroll can ask for it again.
+                    activityPaginationState.update { it.copy(isPaginating = false) }
+                    toastManager.showResultError(result)
+                }
             }
         }
     }

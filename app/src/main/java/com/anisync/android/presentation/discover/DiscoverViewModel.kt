@@ -49,7 +49,8 @@ class DiscoverViewModel @Inject constructor(
     private val detailsRepository: DetailsRepository,
     private val searchRepository: SearchRepository,
     private val appSettings: com.anisync.android.data.AppSettings,
-    private val searchLauncher: com.anisync.android.domain.DiscoverSearchLauncher
+    private val searchLauncher: com.anisync.android.domain.DiscoverSearchLauncher,
+    private val toastManager: com.anisync.android.presentation.components.alert.ToastManager
 ) : ViewModel() {
 
     val titleLanguage = appSettings.titleLanguage
@@ -251,6 +252,11 @@ class DiscoverViewModel @Inject constructor(
                 wantManga = wantManga,
                 wantEntities = wantEntities
             )
+
+            // Outside the update block, which re-runs under contention. The results already on
+            // screen are kept either way, so the toast is the only thing saying the next page
+            // failed rather than simply not existing.
+            if (result is Result.Error) toastManager.showResultError(result)
 
             _uiState.update { st ->
                 // A newer search replaced the results while this page was in flight.
