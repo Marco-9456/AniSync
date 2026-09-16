@@ -115,8 +115,9 @@ private fun ToastPopup(
                         onCountdownFinished = { toastManager.clearToast() }
                     )
 
-                    // A toast with a countdown is taken off screen by the countdown itself.
-                    if (toast.countdownSeconds == null) {
+                    // A countdown takes its own toast off screen, and a persistent kind is
+                    // waiting on the user or on the cause that raised it.
+                    if (toast.countdown == null && !toast.type.persistent) {
                         LaunchedEffect(toast.id) {
                             delay(AUTO_DISMISS_MS)
                             toastManager.clearToast()

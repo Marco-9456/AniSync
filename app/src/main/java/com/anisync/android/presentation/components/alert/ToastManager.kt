@@ -3,6 +3,8 @@ package com.anisync.android.presentation.components.alert
 import android.content.Context
 import android.os.SystemClock
 import com.anisync.android.R
+import com.anisync.android.data.network.findApiError
+import com.anisync.android.data.util.ApiError
 import com.anisync.android.data.util.AppLocale
 import com.anisync.android.domain.Result
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -58,30 +60,22 @@ class ToastManager @Inject constructor(
         type: ToastType,
         title: String? = null,
         message: String,
-        countdownSeconds: Long? = null,
+        details: List<String> = emptyList(),
+        overflow: Int = 0,
+        countdown: ToastCountdown? = null,
+        action: ToastAction? = null,
         key: String? = null,
     ) {
         _toast.value = ToastMessage(
             type = type,
             title = title,
             message = message,
-            countdownSeconds = countdownSeconds,
+            details = details,
+            overflow = overflow,
+            countdown = countdown,
+            action = action,
             key = key,
         )
-    }
-
-    fun showToast(code: Int, message: String, countdownSeconds: Long? = null, key: String? = null) {
-        val type = ToastType.fromCode(code)
-        val titleRes = when (code) {
-            400 -> R.string.toast_title_validation
-            401 -> R.string.toast_title_unauthorized
-            404 -> R.string.toast_title_not_found
-            429 -> R.string.toast_title_rate_limited
-            500 -> R.string.toast_title_server_error
-            else -> null
-        }
-        val title = titleRes?.let { AppLocale.wrap(context).getString(it) }
-        showToast(type, title, message, countdownSeconds, key)
     }
 
     /** Takes the toast off screen. The cause, if there is one, is left to raise it again. */
@@ -113,19 +107,45 @@ class ToastManager @Inject constructor(
     }
 
     /**
-     * Shows a toast for a [Result.Error], preserving both the HTTP status code
-     * (so the correct icon/title render) and any `countdownSeconds`
-     * (so 429 errors display a live timer and gate pull-to-refresh).
+     * Shows a toast for a [Result.Error].
      *
-     * Replaces the duplicated `if (code != null) showToast(code,…) else
-     * showToast(INFO,…)` block that every ViewModel used to repeat.
+     * The typed [ApiError] is already sitting on [Result.Error.exception], put there by
+     * `safeApiCall`, so reading it costs nothing and tells the toast far more than the HTTP status
+     * did: which of AniList's failures this is, every field message a rejected mutation came back
+     * with, and whether there is anything to wait for. The status code is the fallback for a failure
+     * that never reached the classifier.
      */
-    fun showResultError(error: Result.Error) {
-        if (error.code != null) {
-            showToast(error.code, error.message, error.countdownSeconds)
-        } else {
-            showToast(ToastType.INFO, message = error.message)
-        }
+    fun showResultError(error: Result.Error, action: ToastAction? = null) {
+        val api = error.exception?.findApiError()
+        val type = api?.let { ToastType.of(it) } ?: ToastType.fromCode(error.code)
+        val strings = AppLocale.wrap(context)
+
+        val details = (api as? ApiError.Validation)?.messages.orEmpty()
+        showToast(
+            type = type,
+            title = titleFor(type),
+            message = bodyFor(type, error, strings),
+            details = details.take(MAX_FIELD_MESSAGES),
+            overflow = (details.size - MAX_FIELD_MESSAGES).coerceAtLeast(0),
+            countdown = (api as? ApiError.RateLimited)?.let { countdownOf(it.retryAfterSeconds) },
+            action = action,
+        )
+    }
+
+    /**
+     * Raises the rate limit notice against the instant the block ends.
+     *
+     * Called from [RateLimitNotice], which owns the decision to raise it at all and re-raises it for
+     * as long as the block lasts.
+     */
+    fun showRateLimit(retryAtElapsedMs: Long, totalSeconds: Long, key: String) {
+        showToast(
+            type = ToastType.RATE_LIMITED,
+            title = titleFor(ToastType.RATE_LIMITED),
+            message = AppLocale.wrap(context).getString(R.string.alert_rate_limited_body),
+            countdown = ToastCountdown(retryAtElapsedMs, totalSeconds),
+            key = key,
+        )
     }
 
     /**
@@ -143,12 +163,55 @@ class ToastManager @Inject constructor(
         // Read through AppLocale: this runs outside the composition, and the application context
         // keeps the system locale even after the app's own language has been set.
         showToast(
-            ToastType.INFO,
+            ToastType.PACING,
             message = AppLocale.wrap(context).getString(R.string.alert_rate_limit_notice),
         )
     }
 
+    /** The app's own title for a kind, also read by the developer tools preview. */
+    fun titleFor(type: ToastType): String? {
+        val res = when (type) {
+            ToastType.RATE_LIMITED -> R.string.toast_title_rate_limited
+            ToastType.OFFLINE -> R.string.toast_title_offline
+            ToastType.TIMEOUT -> R.string.toast_title_timeout
+            ToastType.SERVER_ERROR -> R.string.toast_title_server_error
+            ToastType.VALIDATION_ERROR -> R.string.toast_title_validation
+            ToastType.PERMISSION_DENIED -> R.string.toast_title_permission_denied
+            ToastType.SESSION_EXPIRED -> R.string.toast_title_unauthorized
+            ToastType.API_DISABLED -> R.string.toast_title_api_disabled
+            ToastType.NOT_FOUND -> R.string.toast_title_not_found
+            ToastType.ERROR -> R.string.toast_title_error
+            // A strip has no room for one, and the two friendly kinds are titled by their caller.
+            ToastType.PACING, ToastType.DEFERRED, ToastType.SUCCESS, ToastType.INFO -> null
+        }
+        return res?.let { AppLocale.wrap(context).getString(it) }
+    }
+
+    /**
+     * The sentence under the title.
+     *
+     * Kinds AniList writes itself (a validation message, a permission reason, the API notice) keep
+     * the server's words. The rest read better as a short line that does not repeat the title, which
+     * `ApiErrorMessages` cannot do because it has to work as a standalone sentence elsewhere.
+     */
+    private fun bodyFor(type: ToastType, error: Result.Error, strings: Context): String =
+        when (type) {
+            ToastType.RATE_LIMITED -> strings.getString(R.string.alert_rate_limited_body)
+            ToastType.DEFERRED -> strings.getString(R.string.alert_deferred_notice)
+            ToastType.OFFLINE -> strings.getString(R.string.alert_offline_body)
+            ToastType.TIMEOUT -> strings.getString(R.string.alert_timeout_body)
+            else -> error.message
+        }
+
+    private fun countdownOf(seconds: Long): ToastCountdown? {
+        if (seconds <= 0L) return null
+        return ToastCountdown(SystemClock.elapsedRealtime() + seconds * 1_000, seconds)
+    }
+
     private companion object {
         const val THROTTLE_NOTICE_INTERVAL_MS = 6_000L
+
+        /** Enough to be useful without turning the toast into a form. The rest are counted. */
+        const val MAX_FIELD_MESSAGES = 3
     }
 }

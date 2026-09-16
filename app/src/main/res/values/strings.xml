@@ -2044,11 +2044,24 @@
     <string name="api_error_offline">No internet connection. Check your network and try again.</string>
     <string name="api_error_timeout">The request took too long. Please try again.</string>
     <string name="api_error_unknown">An unexpected error occurred.</string>
-    <string name="toast_title_validation">Validation Error</string>
-    <string name="toast_title_unauthorized">Unauthorized</string>
-    <string name="toast_title_not_found">Not Found</string>
-    <string name="toast_title_rate_limited">Too Many Requests</string>
-    <string name="toast_title_server_error">Internal Server Error</string>
+    <string name="toast_title_validation">That edit was rejected</string>
+    <string name="toast_title_unauthorized">Signed out</string>
+    <string name="toast_title_not_found">Not found</string>
+    <string name="toast_title_rate_limited">Too many requests</string>
+    <string name="toast_title_server_error">AniList is having trouble</string>
+    <string name="toast_title_offline">No connection</string>
+    <string name="toast_title_timeout">Took too long</string>
+    <string name="toast_title_permission_denied">Not allowed</string>
+    <string name="toast_title_api_disabled">AniList has paused its API</string>
+    <string name="toast_title_error">Something went wrong</string>
+    <string name="alert_rate_limited_body">AniList is holding new requests. This retries on its own.</string>
+    <string name="alert_offline_body">Check your network and try again.</string>
+    <string name="alert_timeout_body">The request reached AniList but did not finish.</string>
+    <string name="alert_deferred_notice">Background sync is waiting for spare requests</string>
+    <plurals name="toast_more_fields">
+        <item quantity="one">%1$d more field</item>
+        <item quantity="other">%1$d more fields</item>
+    </plurals>
 
     <!-- Developer tools: request budget -->
     <string name="debug_rate_limit_section">Request Budget</string>

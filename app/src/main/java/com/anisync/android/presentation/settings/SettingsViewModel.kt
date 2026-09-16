@@ -18,6 +18,8 @@ import com.anisync.android.data.update.UpdateCheckResult
 import com.anisync.android.data.update.UpdateManager
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.UserProfile
+import android.os.SystemClock
+import com.anisync.android.presentation.components.alert.ToastAction
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
 import com.anisync.android.presentation.security.AppLockAuthenticator.isAppLockSupported
@@ -346,10 +348,7 @@ class SettingsViewModel @Inject constructor(
             SettingsAction.SendTestImminentNotification -> notificationDebugService.sendTestImminentNotification()
             SettingsAction.BumpInboxBadge -> notificationDebugService.bumpInboxBadge()
             SettingsAction.ClearAllNotifications -> notificationDebugService.clearAllNotifications()
-            is SettingsAction.ShowTestToast -> {
-                val countdown = if (action.code == 429) 60L else null
-                toastManager.showToast(action.code, "This is a test message for error code ${action.code}.", countdown)
-            }
+            is SettingsAction.ShowTestToast -> showSampleToast(action.type)
             is SettingsAction.SetSimulatedRateLimit -> {
                 rateLimitGate.simulatedLimit = action.limit
                 _simulatedRateLimit.value = action.limit
@@ -367,6 +366,56 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+
+    /**
+     * Previews one toast kind.
+     *
+     * A device is the only place the countdown, the wavy pacing mark and the swipe actually move, so
+     * the samples carry the parts that cannot be seen in a preview: a real deadline, more than one
+     * field message, and an action.
+     */
+    private fun showSampleToast(type: ToastType) {
+        when (type) {
+            ToastType.PACING -> toastManager.showThrottleNotice()
+
+            ToastType.RATE_LIMITED -> toastManager.showRateLimit(
+                retryAtElapsedMs = SystemClock.elapsedRealtime() + SAMPLE_BLOCK_MS,
+                totalSeconds = SAMPLE_BLOCK_MS / 1_000,
+                key = "rate-limit:preview:" + SystemClock.elapsedRealtime(),
+            )
+
+            ToastType.VALIDATION_ERROR -> toastManager.showToast(
+                type = type,
+                title = toastManager.titleFor(type),
+                message = "",
+                details = listOf(
+                    "The score may not be greater than 100.",
+                    "Progress must be a whole number.",
+                ),
+                overflow = 1,
+            )
+
+            ToastType.SESSION_EXPIRED -> toastManager.showToast(
+                type = type,
+                title = toastManager.titleFor(type),
+                message = "AniList no longer accepts this session.",
+                action = ToastAction("Sign in", filled = true) { toastManager.clearToast() },
+            )
+
+            ToastType.OFFLINE, ToastType.TIMEOUT, ToastType.SERVER_ERROR -> toastManager.showToast(
+                type = type,
+                title = toastManager.titleFor(type),
+                message = "Sample body for " + type.name.lowercase().replace('_', ' ') + ".",
+                action = ToastAction("Retry") { toastManager.clearToast() },
+            )
+
+            else -> toastManager.showToast(
+                type = type,
+                title = toastManager.titleFor(type),
+                message = "Sample body for " + type.name.lowercase().replace('_', ' ') + ".",
+            )
+        }
+    }
     private fun checkForUpdate() {
         val allowPrerelease = uiState.value.isPrereleaseAllowed
         viewModelScope.launch {
@@ -477,6 +526,11 @@ class SettingsViewModel @Inject constructor(
             accountManager.logoutActive()
             onComplete()
         }
+    }
+
+    private companion object {
+        /** A whole AniList window, so the sample countdown and bar have somewhere to travel. */
+        const val SAMPLE_BLOCK_MS = 60_000L
     }
 }
 

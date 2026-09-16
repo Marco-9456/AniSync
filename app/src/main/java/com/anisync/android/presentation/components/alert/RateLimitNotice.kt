@@ -5,9 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.anisync.android.R
 import com.anisync.android.data.network.RateLimitMonitor
 import com.anisync.android.data.network.RateLimitStatus
 import kotlinx.coroutines.delay
@@ -37,9 +35,6 @@ val LocalRateLimitMonitor = staticCompositionLocalOf<RateLimitMonitor?> { null }
 @Composable
 fun RateLimitNotice(monitor: RateLimitMonitor, toastManager: ToastManager) {
     val status by monitor.status.collectAsStateWithLifecycle()
-    // Through the composition, so the message follows the language chosen in the app rather than the
-    // one the device is set to.
-    val context = LocalContext.current
 
     when (val current = status) {
         is RateLimitStatus.Blocked -> {
@@ -51,10 +46,9 @@ fun RateLimitNotice(monitor: RateLimitMonitor, toastManager: ToastManager) {
                 while (!toastManager.wasDismissed(key)) {
                     val remaining = current.secondsLeft()
                     if (remaining <= 0L) break
-                    toastManager.showToast(
-                        code = 429,
-                        message = context.getString(R.string.api_error_rate_limited, remaining),
-                        countdownSeconds = remaining,
+                    toastManager.showRateLimit(
+                        retryAtElapsedMs = current.retryAtElapsedMs,
+                        totalSeconds = remaining,
                         key = key,
                     )
                     // Wake just after the toast has counted itself out. Still blocked means raise it

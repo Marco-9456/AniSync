@@ -75,7 +75,7 @@ sealed interface SettingsAction {
     data object BumpInboxBadge : SettingsAction
     data object ClearAllNotifications : SettingsAction
 
-    data class ShowTestToast(val code: Int) : SettingsAction
+    data class ShowTestToast(val type: com.anisync.android.presentation.components.alert.ToastType) : SettingsAction
 
     /** Pins the request budget the gate believes it has, or null to use the real one. */
     data class SetSimulatedRateLimit(val limit: Int?) : SettingsAction

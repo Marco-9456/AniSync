@@ -15,6 +15,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
+import com.anisync.android.presentation.components.alert.ToastType
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -392,23 +393,28 @@ fun DeveloperToolsScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    val toastCodes = listOf(400, 401, 404, 429, 500)
-
+                    // One button per kind rather than per HTTP status: the toast is typed now, and
+                    // several kinds (pacing, deferred, a deferred background request) never had a
+                    // status to be reached by.
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        toastCodes.chunked(2).forEach { rowCodes ->
+                        ToastType.entries.chunked(2).forEach { row ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                rowCodes.forEach { code ->
+                                row.forEach { type ->
                                     FilledTonalButton(
-                                        onClick = { viewModel.onAction(SettingsAction.ShowTestToast(code)) },
+                                        onClick = { viewModel.onAction(SettingsAction.ShowTestToast(type)) },
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text(stringResource(R.string.test_code, code))
+                                        Text(
+                                            text = type.name.lowercase().replace('_', ' '),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            maxLines = 1
+                                        )
                                     }
                                 }
-                                if (rowCodes.size == 1) {
+                                if (row.size == 1) {
                                     Spacer(modifier = Modifier.weight(1f))
                                 }
                             }
