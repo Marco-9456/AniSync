@@ -42,6 +42,13 @@ data class ToastMessage(
     val countdown: ToastCountdown? = null,
     val action: ToastAction? = null,
     /**
+     * The way out of a toast that will not leave on its own.
+     *
+     * A persistent kind waits on the user, and swiping it away is not something a user can be
+     * expected to discover. It only renders beside a filled [action].
+     */
+    val secondaryAction: ToastAction? = null,
+    /**
      * Identity of the underlying cause, stable across re-raises of the same one.
      *
      * A toast raised for something that outlives its own countdown is re-raised until the cause

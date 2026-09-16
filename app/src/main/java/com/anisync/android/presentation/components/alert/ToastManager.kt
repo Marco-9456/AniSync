@@ -64,6 +64,7 @@ class ToastManager @Inject constructor(
         overflow: Int = 0,
         countdown: ToastCountdown? = null,
         action: ToastAction? = null,
+        secondaryAction: ToastAction? = null,
         key: String? = null,
     ) {
         _toast.value = ToastMessage(
@@ -74,6 +75,7 @@ class ToastManager @Inject constructor(
             overflow = overflow,
             countdown = countdown,
             action = action,
+            secondaryAction = secondaryAction,
             key = key,
         )
     }

@@ -203,8 +203,18 @@ private fun ToastAlert(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 14.dp, end = 14.dp, bottom = 12.dp),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    toast.secondaryAction?.let { secondary ->
+                        TextButton(onClick = secondary.onClick) {
+                            Text(
+                                text = secondary.label,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                     Button(
                         onClick = action.onClick,
                         colors = ButtonDefaults.buttonColors(

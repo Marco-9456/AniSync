@@ -400,6 +400,7 @@ class SettingsViewModel @Inject constructor(
                 title = toastManager.titleFor(type),
                 message = "AniList no longer accepts this session.",
                 action = ToastAction("Sign in", filled = true) { toastManager.clearToast() },
+                secondaryAction = ToastAction("Later") { toastManager.dismissToast() },
             )
 
             ToastType.OFFLINE, ToastType.TIMEOUT, ToastType.SERVER_ERROR -> toastManager.showToast(
