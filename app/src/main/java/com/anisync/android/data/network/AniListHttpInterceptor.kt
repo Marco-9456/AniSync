@@ -34,7 +34,7 @@ class AniListHttpInterceptor @Inject constructor(
         request: HttpRequest,
         chain: HttpInterceptorChain,
     ): HttpResponse {
-        val priority = resolveRequestPriority(request.executionContext.explicitPriority)
+        val priority = resolveRequestPriority()
         gate.acquire(priority)
         try {
             val response = chain.proceed(identify(request))

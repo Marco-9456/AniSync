@@ -1,6 +1,5 @@
 package com.anisync.android.data.network
 
-import android.util.Log
 import com.anisync.android.data.util.InflightTracker
 import com.apollographql.apollo.api.ApolloRequest
 import com.apollographql.apollo.api.ApolloResponse
@@ -40,9 +39,16 @@ class RequestCoalescer : ApolloInterceptor {
         if (request.operation !is Query) return chain.proceed(request)
 
         return flow {
+            val priority = resolveRequestPriority()
             @Suppress("UNCHECKED_CAST")
-            val response = inflight.deduplicate(key(request)) {
-                Log.d(TAG, "AniSyncNet event=fetch op=${request.operation.name()}")
+            val response = inflight.deduplicate(
+                key = key(request),
+                // The shared request owns its tier rather than inheriting the first caller's, so
+                // raising it for a joiner cannot follow that caller back into the rest of its work.
+                context = AmbientRequestPriority(priority),
+                onJoin = { leader -> leader[AmbientRequestPriority]?.raiseTo(priority) },
+            ) {
+                NetLog.d(TAG) { "AniSyncNet event=fetch op=${request.operation.name()}" }
                 chain.proceed(request).first()
             } as ApolloResponse<D>
             emit(response)

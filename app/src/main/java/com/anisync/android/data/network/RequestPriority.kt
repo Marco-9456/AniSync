@@ -1,10 +1,10 @@
 package com.anisync.android.data.network
 
 import com.apollographql.apollo.api.ExecutionContext
-import com.apollographql.apollo.api.MutableExecutionOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
@@ -17,6 +17,9 @@ import kotlin.coroutines.CoroutineContext
  *
  * The default when a call carries no priority is [Interactive], so an untagged call site behaves
  * exactly as it did before. Only background and speculative work needs tagging.
+ *
+ * Declared highest first: [RequestPriority.isAtLeast] reads the order, so a new tier has to be
+ * inserted where it belongs rather than appended.
  */
 enum class RequestPriority {
     /** A user is waiting on this. Spends the budget down to the last request. */
@@ -30,28 +33,11 @@ enum class RequestPriority {
      * budget is low the gate refuses immediately with [com.anisync.android.data.util.ApiError.Deferred]
      * so WorkManager can reschedule instead of holding a coroutine open.
      */
-    Background,
+    Background;
+
+    /** True when this tier may spend at least as freely as [other]. */
+    fun isAtLeast(other: RequestPriority): Boolean = ordinal <= other.ordinal
 }
-
-/**
- * Carries [RequestPriority] from the call site down to the HTTP layer.
- *
- * [com.apollographql.apollo.api.http.DefaultHttpRequestComposer] copies the operation's execution
- * context onto the `HttpRequest`, so the interceptor can read this without a smuggled header.
- */
-class RequestPriorityContext(val priority: RequestPriority) : ExecutionContext.Element {
-    override val key: ExecutionContext.Key<RequestPriorityContext> get() = Key
-
-    companion object Key : ExecutionContext.Key<RequestPriorityContext>
-}
-
-/** Tags an Apollo call, or a whole client, with the budget tier it is allowed to spend from. */
-fun <T> MutableExecutionOptions<T>.priority(priority: RequestPriority): T =
-    addExecutionContext(RequestPriorityContext(priority))
-
-/** The priority a request was tagged with, if it was tagged at the call site. */
-val ExecutionContext.explicitPriority: RequestPriorityContext?
-    get() = this[RequestPriorityContext]
 
 /**
  * Marks a client that talks to AniList as an account other than the active one.
@@ -73,15 +59,32 @@ val ExecutionContext.isTokenScoped: Boolean
 /**
  * Ambient priority for everything a coroutine does, including calls made several layers down.
  *
- * Repositories build their own Apollo calls, so tagging a worker's requests through
- * [MutableExecutionOptions.priority] would mean threading a networking concern through about thirty
- * repository signatures. `flowOn` preserves context elements from the collector, so an element set
- * here reaches the interceptor instead.
+ * Repositories build their own Apollo calls, so tagging a worker's requests per call would mean
+ * threading a networking concern through about thirty repository signatures. `flowOn` preserves
+ * context elements from the collector, so an element set here reaches the interceptor instead.
  *
- * The per-call [RequestPriorityContext] still wins where both are present.
+ * The tier is mutable because [RequestCoalescer] hands one request to several callers. The request
+ * goes out under whoever asked first, and a caller who joins it needing it more raises the tier for
+ * the work in flight rather than being held to a background poll's reserve. Only the element the
+ * coalescer creates for a shared request is ever raised, never one a caller brought with it, or a
+ * worker that joined one interactive request would spend the rest of its run at that tier.
  */
-class AmbientRequestPriority(val priority: RequestPriority) :
-    AbstractCoroutineContextElement(Key) {
+class AmbientRequestPriority private constructor(
+    private val tier: AtomicReference<RequestPriority>,
+) : AbstractCoroutineContextElement(Key) {
+
+    constructor(priority: RequestPriority) : this(AtomicReference(priority))
+
+    val priority: RequestPriority get() = tier.get()
+
+    /** Raises the tier to [other] if [other] outranks what is set. Never lowers it. */
+    fun raiseTo(other: RequestPriority) {
+        while (true) {
+            val current = tier.get()
+            if (current.isAtLeast(other)) return
+            if (tier.compareAndSet(current, other)) return
+        }
+    }
 
     companion object Key : CoroutineContext.Key<AmbientRequestPriority>
 }
@@ -92,12 +95,6 @@ suspend fun <T> withRequestPriority(
     block: suspend CoroutineScope.() -> T,
 ): T = withContext(AmbientRequestPriority(priority), block)
 
-/**
- * The priority in force for the calling coroutine.
- *
- * @param explicit the priority the call itself was tagged with, if any
- */
-suspend fun resolveRequestPriority(explicit: RequestPriorityContext?): RequestPriority =
-    explicit?.priority
-        ?: currentCoroutineContext()[AmbientRequestPriority]?.priority
-        ?: RequestPriority.Interactive
+/** The priority in force for the calling coroutine. */
+suspend fun resolveRequestPriority(): RequestPriority =
+    currentCoroutineContext()[AmbientRequestPriority]?.priority ?: RequestPriority.Interactive
