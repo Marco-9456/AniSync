@@ -3,6 +3,10 @@ package com.anisync.android.di
 import android.content.Context
 import com.anisync.android.cache.Cache.cache
 import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.http.HttpRequest
+import com.apollographql.apollo.api.http.HttpResponse
+import com.apollographql.apollo.network.http.HttpInterceptor
+import com.apollographql.apollo.network.http.HttpInterceptorChain
 import com.apollographql.cache.normalized.memory.MemoryCacheFactory
 import com.apollographql.cache.normalized.sql.SqlNormalizedCacheFactory
 import com.apollographql.cache.normalized.storeReceivedDate
@@ -40,12 +44,37 @@ object ApolloModule {
      */
     private val DEFAULT_MAX_AGE = 1.days
 
+    /**
+     * Adds the Referer header to every AniList API request.
+     *
+     * AniList currently requires this header for requests from third-party
+     * clients. Without it, otherwise valid API requests may be rejected with
+     * an HTTP 403 response.
+     *
+     * This behavior is not part of the documented API contract and may change
+     * in the future. Keeping the header handling in a dedicated interceptor
+     * makes it easy to update or remove if AniList changes its requirements.
+     */
+    private val aniListRefererInterceptor = object : HttpInterceptor {
+        override suspend fun intercept(
+            request: HttpRequest,
+            chain: HttpInterceptorChain
+        ): HttpResponse {
+            return chain.proceed(
+                request.newBuilder()
+                    .addHeader("Referer", "https://anilist.co/")
+                    .build()
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideApolloClient(
         @ApplicationContext context: Context,
         authorizationInterceptor: AuthorizationInterceptor
     ): ApolloClient {
+
         discardLegacyCache(context)
 
         // Two-tier cache: Memory (fast) -> SQLite (persistent)
@@ -55,6 +84,7 @@ object ApolloModule {
         return ApolloClient.Builder()
             .serverUrl("https://graphql.anilist.co")
             .addHttpInterceptor(authorizationInterceptor)
+            .addHttpInterceptor(aniListRefererInterceptor)
             .cache(cacheFactory, defaultMaxAge = DEFAULT_MAX_AGE)
             // Stamps each field with when it arrived, which is what lets
             // [com.anisync.android.worker.CacheMaintenanceWorker] tell stale from fresh. Without it
