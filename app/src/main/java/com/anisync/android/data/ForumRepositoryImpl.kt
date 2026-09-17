@@ -110,7 +110,7 @@ class ForumRepositoryImpl @Inject constructor(
     private val threadSearchInflight = InflightTracker()
 
     private suspend fun <T> dedupeThreadSearch(key: String, block: suspend () -> T): T =
-        threadSearchInflight.deduplicate(key, block)
+        threadSearchInflight.deduplicate(key, block = block)
 
     override suspend fun searchThreads(
         search: String?,

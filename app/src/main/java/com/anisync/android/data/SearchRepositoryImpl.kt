@@ -49,7 +49,7 @@ class SearchRepositoryImpl @Inject constructor(
     private val inflight = InflightTracker()
 
     private suspend fun <T> dedupe(key: String, block: suspend () -> T): T =
-        inflight.deduplicate(key, block)
+        inflight.deduplicate(key, block = block)
 
     override suspend fun searchMedia(
         query: String,

@@ -58,7 +58,7 @@ class ProfileRepositoryImpl @Inject constructor(
     private val inflight = InflightTracker()
 
     private suspend fun <T> dedupe(key: String, block: suspend () -> T): T =
-        inflight.deduplicate(key, block)
+        inflight.deduplicate(key, block = block)
 
     private fun CachePolicy.toFetchPolicy(): FetchPolicy = when (this) {
         CachePolicy.CacheFirst -> FetchPolicy.CacheFirst
