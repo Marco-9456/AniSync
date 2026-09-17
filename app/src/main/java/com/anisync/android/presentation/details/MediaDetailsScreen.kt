@@ -39,6 +39,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Badge
@@ -55,6 +56,7 @@ import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -624,7 +626,8 @@ fun MediaDetailsScreen(
 
                             is DetailsUiState.Error -> ErrorStateContent(
                                 message = state.message,
-                                onBackClick = onBackClick
+                                onBackClick = onBackClick,
+                                onRetry = viewModel::retryInitialLoad
                             )
                             }
                         }
@@ -715,7 +718,7 @@ private fun MediaArtworkThemeOverride(
 }
 
 @Composable
-fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
+fun ErrorStateContent(message: String, onBackClick: () -> Unit, onRetry: (() -> Unit)? = null) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -723,7 +726,7 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
             modifier = Modifier.padding(dimensionResource(R.dimen.spacing_large))
         ) {
             Icon(
-                Icons.Default.Delete,
+                Icons.Outlined.ErrorOutline,
                 null,
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(64.dp)
@@ -740,7 +743,16 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(24.dp))
-            OutlinedButton(onClick = onBackClick) { Text(stringResource(R.string.action_go_back)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = onBackClick) {
+                    Text(stringResource(R.string.action_go_back))
+                }
+                // Offered only when there is something to try again. The screen reaches this state
+                // with nothing cached, so going back was the only way out of it.
+                onRetry?.let { retry ->
+                    Button(onClick = retry) { Text(stringResource(R.string.retry)) }
+                }
+            }
         }
     }
 }

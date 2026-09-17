@@ -128,6 +128,14 @@ class MediaDetailsViewModel @Inject constructor(
     ) { categories, enabled -> if (enabled) categories else emptyList() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    /**
+     * Why the first fetch failed, when there was no cached copy to show instead.
+     *
+     * Cleared on every attempt. It only reaches the screen while the Room flow has nothing, so a
+     * stale copy always wins over it.
+     */
+    private val firstLoadError = MutableStateFlow<String?>(null)
+
     // Get the ID directly from the navigation route "details/{mediaId}"
     private val mediaId: Int = checkNotNull(savedStateHandle["mediaId"]) {
         "Media ID is required for MediaDetailsViewModel"
@@ -145,16 +153,21 @@ class MediaDetailsViewModel @Inject constructor(
         getMediaDetailsUseCase(mediaId),
         accountStore.activeAccount.flatMapLatest { account ->
             libraryDao.observeEntry(account?.id ?: -1, mediaId)
-        }
-    ) { details, libraryEntry ->
+        },
+        firstLoadError,
+    ) { details, libraryEntry, failure ->
         when {
-            details == null -> DetailsUiState.Loading // No cached data yet, still loading
             // In the library → the library note is authoritative (blank/null means no note). Only
             // fall back to the media_details copy when the entry isn't cached for this account.
-            libraryEntry != null -> DetailsUiState.Success(
+            details != null && libraryEntry != null -> DetailsUiState.Success(
                 details.copy(listNotes = libraryEntry.notes?.takeIf { it.isNotBlank() })
             )
-            else -> DetailsUiState.Success(details)
+            details != null -> DetailsUiState.Success(details)
+            // Nothing cached and the fetch failed. Without this the screen holds its skeleton for
+            // good, because the Room flow has no row to emit and the fetch is the only thing that
+            // could have produced one.
+            failure != null -> DetailsUiState.Error(failure)
+            else -> DetailsUiState.Loading
         }
     }
         .onStart { emit(DetailsUiState.Loading) }
@@ -182,8 +195,22 @@ class MediaDetailsViewModel @Inject constructor(
      */
     private fun refreshIfStale() {
         viewModelScope.launch {
-            detailsRepository.refreshMediaDetailsIfStale(mediaId)
+            firstLoadError.value = null
+            val result = detailsRepository.refreshMediaDetailsIfStale(mediaId)
+            // Only fatal when there is nothing cached behind it. With a copy already on screen this
+            // is a failed revalidation, which is not worth replacing the screen over.
+            if (result is Result.Error) firstLoadError.value = result.message
         }
+    }
+
+    /**
+     * Runs the fetch again after it failed with nothing cached to fall back on.
+     *
+     * Reachable only from the error state, which is the only situation where the screen has nothing
+     * of its own to show.
+     */
+    fun retryInitialLoad() {
+        refreshIfStale()
     }
 
     /**
