@@ -71,6 +71,30 @@ class RateLimitWindow(private val clock: Clock) {
         return (WINDOW_MS - elapsed).coerceIn(0, WINDOW_MS)
     }
 
+    /**
+     * Rolls the window over once its length has passed with no response to say so.
+     *
+     * [remaining] only moves when a response carries the header, and a response can only arrive if a
+     * request goes out. Once the budget is spent that is circular: the gate holds every request back
+     * waiting for a refill that needs a request to happen, [resetsInMs] decays to zero, and the wait
+     * handed back is zero, so the caller spins instead of ever being admitted. [onRateLimited]
+     * already guards the 429 path for exactly this reason. This is the same guard for a window that
+     * simply ran out.
+     *
+     * The refill is a guess, not an observation, so [observedAtMs] is left alone. The gate spaces
+     * requests out, so what goes through next is a single probe, and its headers put the window
+     * back on the server's own boundary.
+     */
+    fun rolloverIfElapsed() {
+        if (blockedForMs() > 0) return
+        if (windowStartedAtMs == Long.MIN_VALUE) return
+        val now = clock.nowMs()
+        if (now - windowStartedAtMs < WINDOW_MS) return
+        windowStartedAtMs = now
+        remaining = limit
+        issuedSinceObserved = 0
+    }
+
     /** Records that a request has been let through and will consume budget the server hasn't counted yet. */
     fun onIssued() {
         issuedSinceObserved++

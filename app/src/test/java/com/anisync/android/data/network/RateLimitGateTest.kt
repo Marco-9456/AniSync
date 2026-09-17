@@ -7,6 +7,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -269,6 +270,48 @@ class RateLimitGateTest {
 
         assertEquals(1, monitor.stats.value.deferred)
         assertEquals(1, monitor.stats.value.refused)
+    }
+
+    /**
+     * The hang behind "the countdown finished and the screen stayed on its skeleton".
+     *
+     * `remaining` only moves when a response carries the header, and a response can only arrive if a
+     * request goes out. Once the budget is spent that is circular: the gate holds every request back
+     * waiting for a refill that needs a request to happen. `resetsInMs` decays to zero, so the wait
+     * it hands back is zero, and `acquire` spins on `delay(jitter)` forever rather than admitting or
+     * failing. Killing the app was the only way out, because that built a fresh window.
+     *
+     * Jitter is deliberately non-zero here: with it at zero the spin is `delay(0)`, which never
+     * advances virtual time, so a regression would hang this test rather than fail it.
+     */
+    @Test
+    fun `a spent budget recovers when the window elapses instead of spinning`() = runTest {
+        val gate = gate(config = RateLimitConfig(jitterMs = 80))
+        // The server says the budget is gone. No 429, just a window that ran out.
+        gate.onResponse(statusCode = 200, limit = 30, remaining = 0, retryAfterSeconds = null)
+        // Near the end of the window, so the request waits rather than being refused outright.
+        // This is the user's path: the countdown runs out while the screen holds its skeleton.
+        testScheduler.advanceTimeBy(45_000)
+        val start = testScheduler.currentTime
+
+        withTimeout(5 * 60_000) { gate.take() }
+
+        val waited = testScheduler.currentTime - start
+        assertTrue("waited ${waited}ms", waited in 1..20_000)
+    }
+
+    /** The same hang reached through the debug screen's pinned limit, which is how it reproduces. */
+    @Test
+    fun `a spent simulated budget also recovers`() = runTest {
+        val gate = gate(config = RateLimitConfig(jitterMs = 80))
+        gate.simulatedLimit = 1
+        gate.onResponse(statusCode = 200, limit = 30, remaining = 29, retryAfterSeconds = null)
+        testScheduler.advanceTimeBy(45_000)
+        val start = testScheduler.currentTime
+
+        withTimeout(5 * 60_000) { gate.take() }
+
+        assertTrue(testScheduler.currentTime - start <= 20_000)
     }
 
     @Test

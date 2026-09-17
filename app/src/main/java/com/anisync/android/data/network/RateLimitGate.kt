@@ -178,6 +178,10 @@ class RateLimitGate(
     fun blockedForMs(): Long = window.blockedForMs()
 
     private fun evaluate(priority: RequestPriority): Decision {
+        // Before anything else: a window whose length has passed refills itself. Nothing else can,
+        // because the refill rides on a response and the gate is holding the request that would
+        // fetch one.
+        window.rolloverIfElapsed()
         val blockedFor = window.blockedForMs()
         if (blockedFor > 0) return holdOrRefuse(priority, blockedFor, blocked = true)
 
