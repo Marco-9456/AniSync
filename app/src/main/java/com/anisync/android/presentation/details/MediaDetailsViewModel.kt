@@ -23,6 +23,7 @@ import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.util.ShareUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -128,14 +129,6 @@ class MediaDetailsViewModel @Inject constructor(
     ) { categories, enabled -> if (enabled) categories else emptyList() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    /**
-     * Why the first fetch failed, when there was no cached copy to show instead.
-     *
-     * Cleared on every attempt. It only reaches the screen while the Room flow has nothing, so a
-     * stale copy always wins over it.
-     */
-    private val firstLoadError = MutableStateFlow<String?>(null)
-
     // Get the ID directly from the navigation route "details/{mediaId}"
     private val mediaId: Int = checkNotNull(savedStateHandle["mediaId"]) {
         "Media ID is required for MediaDetailsViewModel"
@@ -153,21 +146,16 @@ class MediaDetailsViewModel @Inject constructor(
         getMediaDetailsUseCase(mediaId),
         accountStore.activeAccount.flatMapLatest { account ->
             libraryDao.observeEntry(account?.id ?: -1, mediaId)
-        },
-        firstLoadError,
-    ) { details, libraryEntry, failure ->
+        }
+    ) { details, libraryEntry ->
         when {
+            details == null -> DetailsUiState.Loading // No cached data yet, still loading
             // In the library → the library note is authoritative (blank/null means no note). Only
             // fall back to the media_details copy when the entry isn't cached for this account.
-            details != null && libraryEntry != null -> DetailsUiState.Success(
+            libraryEntry != null -> DetailsUiState.Success(
                 details.copy(listNotes = libraryEntry.notes?.takeIf { it.isNotBlank() })
             )
-            details != null -> DetailsUiState.Success(details)
-            // Nothing cached and the fetch failed. Without this the screen holds its skeleton for
-            // good, because the Room flow has no row to emit and the fetch is the only thing that
-            // could have produced one.
-            failure != null -> DetailsUiState.Error(failure)
-            else -> DetailsUiState.Loading
+            else -> DetailsUiState.Success(details)
         }
     }
         .onStart { emit(DetailsUiState.Loading) }
@@ -195,22 +183,20 @@ class MediaDetailsViewModel @Inject constructor(
      */
     private fun refreshIfStale() {
         viewModelScope.launch {
-            firstLoadError.value = null
-            val result = detailsRepository.refreshMediaDetailsIfStale(mediaId)
-            // Only fatal when there is nothing cached behind it. With a copy already on screen this
-            // is a failed revalidation, which is not worth replacing the screen over.
-            if (result is Result.Error) firstLoadError.value = result.message
+            var attempts = 0
+            while (true) {
+                val result = detailsRepository.refreshMediaDetailsIfStale(mediaId)
+                // Only a rate limit says when it will be worth asking again. Anything else is left
+                // alone, and anything already cached is on screen regardless.
+                val waitSeconds = (result as? Result.Error)?.countdownSeconds
+                if (waitSeconds == null || waitSeconds <= 0) return@launch
+                if (++attempts > MAX_RATE_LIMIT_RETRIES) return@launch
+                // The skeleton is the honest state while AniList is refusing requests. What it must
+                // not do is stay there once the wait is over, which is what happened when this
+                // dropped the failure and nobody ever asked again.
+                delay(waitSeconds * 1_000 + RETRY_GRACE_MS)
+            }
         }
-    }
-
-    /**
-     * Runs the fetch again after it failed with nothing cached to fall back on.
-     *
-     * Reachable only from the error state, which is the only situation where the screen has nothing
-     * of its own to show.
-     */
-    fun retryInitialLoad() {
-        refreshIfStale()
     }
 
     /**
@@ -451,6 +437,12 @@ class MediaDetailsViewModel @Inject constructor(
 
         // AniList caps nested character/staff connections at 25 per page.
         private const val PEOPLE_PAGE_SIZE = 25
+
+        /** Enough to sit out a couple of windows. Past that something else is wrong. */
+        private const val MAX_RATE_LIMIT_RETRIES = 3
+
+        /** Asking on the exact instant the window turns over tends to land just before it. */
+        private const val RETRY_GRACE_MS = 1_000L
     }
 
     fun rateRecommendation(recommendationId: Int, rating: com.anisync.android.type.RecommendationRating) {
