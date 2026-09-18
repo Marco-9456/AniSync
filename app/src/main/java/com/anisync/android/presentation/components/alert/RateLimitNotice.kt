@@ -58,9 +58,9 @@ fun RateLimitNotice(monitor: RateLimitMonitor, toastManager: ToastManager) {
             }
         }
 
-        // Pacing ticks with every request, so the effect is keyed on the state being Pacing at all.
-        // ToastManager throttles the notice itself on top of that.
-        is RateLimitStatus.Pacing -> LaunchedEffect(Unit) { toastManager.showThrottleNotice() }
+        // One notice for the whole stretch of pacing, not one per request. ToastManager throttles
+        // the notice itself on top of that.
+        RateLimitStatus.Pacing -> LaunchedEffect(Unit) { toastManager.showThrottleNotice() }
 
         // The window can roll over sooner than the countdown said, and a notice for a block that is
         // over has nothing to tell the user.

@@ -12,8 +12,14 @@ sealed interface RateLimitStatus {
     /** Requests are going out as fast as they are asked for. */
     data object Clear : RateLimitStatus
 
-    /** The gate is spacing requests out to stay inside the window. Slower, but nothing is failing. */
-    data class Pacing(val remaining: Int, val limit: Int) : RateLimitStatus
+    /**
+     * The gate is spacing requests out to stay inside the window. Slower, but nothing is failing.
+     *
+     * Carries nothing on purpose. It used to hold the headroom left, which changes on every
+     * admission, so the flow re-emitted for each request and every screen holding a refresh gate
+     * recomposed with it. The numbers behind it are in [RateLimitStats] for the debug readout.
+     */
+    data object Pacing : RateLimitStatus
 
     /**
      * Nothing may be sent until the window turns over.
