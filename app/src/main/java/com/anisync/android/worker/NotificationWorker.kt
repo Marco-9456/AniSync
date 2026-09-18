@@ -1,5 +1,7 @@
 package com.anisync.android.worker
 
+import com.anisync.android.data.network.RequestPriority
+import com.anisync.android.data.network.withRequestPriority
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -90,7 +92,12 @@ class NotificationWorker @AssistedInject constructor(
     /** The tray slot a social notification lands in; events sharing a slot collapse to one entry. */
     private data class SocialSlot(val category: String, val id: Int)
 
-    override suspend fun doWork(): androidx.work.ListenableWorker.Result {
+    override suspend fun doWork(): androidx.work.ListenableWorker.Result =
+        // Every request this run makes yields to whatever the user is doing. When the
+        // budget is short the gate refuses instead of waiting, and WorkManager reruns us.
+        withRequestPriority(RequestPriority.Background) { pollAccounts() }
+
+    private suspend fun pollAccounts(): androidx.work.ListenableWorker.Result {
         // Poll every signed-in account that still has a (non-expired) token.
         val accounts = accountStore.accounts.value.filterNot { it.isExpired }
         if (accounts.isEmpty()) {
@@ -169,9 +176,17 @@ class NotificationWorker @AssistedInject constructor(
                 // Back off the whole worker; per-account dedup makes the retry idempotent.
                 Log.w(TAG, "Rate limited on ${ctx.name} (wait ${e.retryAfterSeconds}s) — retrying worker")
                 return androidx.work.ListenableWorker.Result.retry()
-            } catch (e: ApiError.Unauthorized) {
-                // This account's token expired/revoked — flag only it; keep polling the rest.
-                Log.w(TAG, "Unauthorized for ${ctx.name} — marking account expired")
+            } catch (e: ApiError.Deferred) {
+                // The gate is holding the budget for the user. Nothing was sent, so hand the whole
+                // run back to WorkManager instead of waiting it out on a wakelock.
+                Log.i(TAG, "Deferred on ${ctx.name} (wait ${e.retryAfterSeconds}s), rescheduling")
+                return androidx.work.ListenableWorker.Result.retry()
+            } catch (e: ApiError.TokenRejected) {
+                // This account's token expired/revoked. Flag only it, keep polling the rest.
+                Log.w(TAG, "Token rejected for ${ctx.name}, marking account expired")
+                accountStore.markExpired(ctx.id)
+            } catch (e: ApiError.SessionExpired) {
+                Log.w(TAG, "Session expired for ${ctx.name}, marking account expired")
                 accountStore.markExpired(ctx.id)
             } catch (e: Exception) {
                 // One account failing must not abort the others.
@@ -188,7 +203,12 @@ class NotificationWorker @AssistedInject constructor(
      */
     private fun DomainResult.Error.rethrowWorkerSignals() {
         when (val e = exception) {
-            is ApiError.RateLimited, is ApiError.Unauthorized -> throw e
+            is ApiError.RateLimited,
+            is ApiError.Deferred,
+            is ApiError.TokenRejected,
+            is ApiError.SessionExpired,
+            -> throw e
+
             else -> Unit
         }
     }

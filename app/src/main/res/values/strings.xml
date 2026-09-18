@@ -2034,6 +2034,50 @@
     <string name="alert_rate_limit_notice">Slowing down to stay within AniList\'s rate limit…</string>
     <string name="alert_retrying_in">Retrying in %1$ds</string>
 
+    <!-- AniList API errors -->
+    <string name="api_error_rate_limited">Too many requests. Please wait %1$d seconds.</string>
+    <string name="api_error_deferred">Waiting for the request budget to recover.</string>
+    <string name="api_error_session_expired">Your session has expired. Please log in again.</string>
+    <string name="api_error_token_rejected">This account needs to be signed in again.</string>
+    <string name="api_error_permission_denied">You don\'t have permission to do that.</string>
+    <string name="api_error_server">Server error (%1$d). Please try again later.</string>
+    <string name="api_error_offline">No internet connection. Check your network and try again.</string>
+    <string name="api_error_timeout">The request took too long. Please try again.</string>
+    <string name="api_error_unknown">An unexpected error occurred.</string>
+    <string name="toast_title_validation">That edit was rejected</string>
+    <string name="toast_title_unauthorized">Signed out</string>
+    <string name="toast_title_not_found">Not found</string>
+    <string name="toast_title_rate_limited">Too many requests</string>
+    <string name="toast_title_server_error">AniList is having trouble</string>
+    <string name="toast_title_offline">No connection</string>
+    <string name="toast_title_timeout">Took too long</string>
+    <string name="toast_title_permission_denied">Not allowed</string>
+    <string name="toast_title_api_disabled">AniList has paused its API</string>
+    <string name="toast_title_error">Something went wrong</string>
+    <string name="alert_rate_limited_body">AniList is holding new requests. This retries on its own.</string>
+    <string name="alert_offline_body">Check your network and try again.</string>
+    <string name="alert_timeout_body">The request reached AniList but did not finish.</string>
+    <string name="alert_deferred_notice">Background sync is waiting for spare requests</string>
+    <plurals name="toast_more_fields">
+        <item quantity="one">%1$d more field</item>
+        <item quantity="other">%1$d more fields</item>
+    </plurals>
+
+    <!-- Developer tools: request budget -->
+    <string name="debug_rate_limit_section">Request Budget</string>
+    <string name="debug_rate_limit_remaining">Remaining</string>
+    <string name="debug_rate_limit_in_flight">In flight</string>
+    <string name="debug_rate_limit_window">Window resets in</string>
+    <string name="debug_rate_limit_blocked">Blocked for</string>
+    <string name="debug_rate_limit_admitted">Admitted</string>
+    <string name="debug_rate_limit_paced">Paced</string>
+    <string name="debug_rate_limit_deferred">Deferred</string>
+    <string name="debug_rate_limit_refused">Refused</string>
+    <string name="debug_rate_limit_retried">Retried</string>
+    <string name="debug_rate_limit_429s">Rate limited</string>
+    <string name="debug_rate_limit_pin">Pin the limit to force the gate to refuse</string>
+    <string name="debug_rate_limit_pin_off">Real</string>
+
     <!-- AniList link card -->
     <string name="link_card_view_activity">View activity</string>
 

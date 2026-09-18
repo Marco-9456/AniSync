@@ -363,7 +363,6 @@ flowchart TB
     subgraph "One-Time Workers"
         ASW[AiringScheduleWorker]
         TW[TrendingWorker]
-        EUW[EpisodeUpdateWorker]
     end
 
     subgraph "Support Components"
@@ -382,7 +381,6 @@ flowchart TB
     WM --> WRW
     WM --> ASW
     WM --> TW
-    WM --> EUW
 
     APP --> WM
     BOOT --> WM
@@ -400,7 +398,6 @@ flowchart TB
     ASW --> DB
     ASW --> WIDGET
     TW --> DB
-    EUW --> DB
     ATWR --> DB
     NDS --> NOTIF
 ```
@@ -413,7 +410,6 @@ flowchart TB
 | `WidgetRefreshWorker` | 15 min | None | Update countdown timers (UpNext, AiringToday, WeeklyCalendar) |
 | `AiringScheduleWorker` | On-demand | Network | Fetch 7-day airing schedule |
 | `TrendingWorker` | On-demand | Network | Fetch trending anime |
-| `EpisodeUpdateWorker` | On-demand | Network | Sync episode progress |
 | `AddToWatchingReceiver` | On-demand | Network | Handle "Add to Watching" action from notifications |
 | `NotificationDebugService` | Manual | None | Debug tool for testing notification delivery |
 

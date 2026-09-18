@@ -82,22 +82,14 @@ class ProfileViewModel @Inject constructor(
         /** Minimum gap between user-initiated refreshes (pull-to-refresh). */
         private const val GESTURE_REFRESH_COOLDOWN_MS = 5_000L
 
-        /** Extra attempts a failed own-profile load gets before the retry button is offered. */
-        private const val OWN_PROFILE_LOAD_RETRIES = 2
-
-        /**
-         * Backoff between those attempts. Short on purpose: a 429 has already cost the interceptor
-         * its own `Retry-After` wait, so a longer one here only extends the spinner instead of
-         * handing the user a button.
-         */
-        private const val OWN_PROFILE_RETRY_BASE_MS = 3_000L
     }
 
     /**
      * Per-resource cooldown. Independent from the 429 toast gate — that one only
      * activates *after* AniList already returned 429. This gate prevents the
-     * runaway-pull spam path that gets us there in the first place. The 429 toast
-     * still overrides (its `isRateLimited` flag short-circuits the UI gesture).
+     * runaway-pull spam path that gets us there in the first place. A block still
+     * overrides it: `rememberRateLimitedRefresh` drops the gesture while
+     * `RateLimitMonitor.status` is Blocked.
      */
     private class FetchCooldown {
         private var lastAt: Long = 0L
@@ -895,32 +887,25 @@ class ProfileViewModel @Inject constructor(
      * left the screen spinning forever with nothing to retry from. A failure with a profile already
      * on screen stays silent, as before.
      *
-     * The same account change rebuilds every screen at once, so that first load arrives inside a
-     * burst AniList readily rate-limits. Retrying a few times absorbs that without the user having
-     * to do anything.
+     * There is no retry loop here any more. The network layer owns retries now, and a loop at this
+     * level multiplied against it: three attempts here over two requests each, times the transport's
+     * own attempts, spent a whole minute's budget on one failing profile load.
      */
     private suspend fun loadOwnProfile(
         forceNetwork: Boolean
     ): com.anisync.android.domain.ProfileRefreshTimings? {
         ownProfileError.value = null
-        var attempt = 0
-        while (true) {
-            when (val result = profileRepository.refreshProfileTimed("", forceNetwork = forceNetwork)) {
-                is Result.Success -> return result.data
-                is Result.Error -> {
-                    Log.w("AniSyncPerf", "profile.load failed attempt=$attempt code=${result.code} msg=${result.message}")
-                    if (hasCachedOwnProfile) return null
-                    if (attempt == OWN_PROFILE_LOAD_RETRIES) {
-                        ownProfileError.value = if (result.code == 429) {
-                            R.string.profile_rate_limited_error
-                        } else {
-                            R.string.profile_unknown_error
-                        }
-                        return null
-                    }
-                    attempt++
-                    delay(OWN_PROFILE_RETRY_BASE_MS * attempt)
+        return when (val result = profileRepository.refreshProfileTimed("", forceNetwork = forceNetwork)) {
+            is Result.Success -> result.data
+            is Result.Error -> {
+                Log.w("AniSyncPerf", "profile.load failed code=${result.code} msg=${result.message}")
+                // A rate limit is not an error screen. The block ends by itself, RateLimitNotice
+                // carries the countdown, and the skeleton stays until the retry lands, the same way
+                // the details screen waits one out.
+                if (!hasCachedOwnProfile && result.code != 429) {
+                    ownProfileError.value = R.string.profile_unknown_error
                 }
+                null
             }
         }
     }
@@ -1083,7 +1068,12 @@ class ProfileViewModel @Inject constructor(
                         hasNextPage = result.data.hasNextPage
                     )
                 }
-                is Result.Error -> activityPaginationState.update { it.copy(isPaginating = false) }
+                is Result.Error -> {
+                    // The activities already appended stay put. Only the toast marks the page that
+                    // did not arrive, and offers it again.
+                    activityPaginationState.update { it.copy(isPaginating = false) }
+                    toastManager.showResultError(result, toastManager.retryAction { loadMoreActivities() })
+                }
             }
         }
     }

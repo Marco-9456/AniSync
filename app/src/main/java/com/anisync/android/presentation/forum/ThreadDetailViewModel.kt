@@ -10,6 +10,7 @@ import com.anisync.android.domain.ThreadEventBus
 import com.anisync.android.domain.ThreadUpdate
 import com.anisync.android.domain.parser.RichTextParser
 import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastAction
 import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -280,6 +281,8 @@ class ThreadDetailViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingMoreComments = true) }
+            // The comments already read stay on screen. The toast is what separates a page that
+            // failed from a thread that simply ends here.
             when (val result =
                 forumRepository.getComments(threadId, nextPage, sort = state.commentSort)) {
                 is Result.Success -> {
@@ -301,6 +304,7 @@ class ThreadDetailViewModel @Inject constructor(
 
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingMoreComments = false) }
+                    showResultError(result, toastManager.retryAction { loadMoreComments() })
                 }
             }
         }
@@ -338,6 +342,7 @@ class ThreadDetailViewModel @Inject constructor(
 
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingEarlierComments = false) }
+                    showResultError(result, toastManager.retryAction { loadEarlierComments() })
                 }
             }
         }
@@ -383,6 +388,7 @@ class ThreadDetailViewModel @Inject constructor(
 
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingMoreComments = false) }
+                    showResultError(result)
                 }
             }
         }
@@ -421,6 +427,7 @@ class ThreadDetailViewModel @Inject constructor(
 
                 is Result.Error -> {
                     _uiState.update { it.copy(isLoadingMoreComments = false) }
+                    showResultError(result)
                 }
             }
         }
@@ -596,8 +603,8 @@ class ThreadDetailViewModel @Inject constructor(
         }
     }
 
-    private fun showResultError(result: Result.Error) {
-        toastManager.showResultError(result)
+    private fun showResultError(result: Result.Error, action: ToastAction? = null) {
+        toastManager.showResultError(result, action)
     }
 }
 

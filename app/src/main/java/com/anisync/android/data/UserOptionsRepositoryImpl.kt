@@ -151,9 +151,17 @@ class UserOptionsRepositoryImpl @Inject constructor(
             if (pushFields.isEmpty()) return
 
             val patch = state.local.patchForFields(pushFields)
-            val response = apolloClient.mutation(patch.toMutation()).execute()
-            if (response.hasErrors()) return // keep dirty; a later flush retries
-            val updated = response.data?.UpdateUser?.toDomain() ?: return
+            // Through safeApiCall like everything else: classification throws now, and this was the
+            // one call left that let an ApiError out. The gate refusing a background push is
+            // temporary, but it reached the worker as a thrown exception, which WorkManager turns
+            // into a permanent failure rather than a retry.
+            val push = safeApiCall {
+                val response = apolloClient.mutation(patch.toMutation()).execute()
+                if (response.hasErrors()) throw Exception(response.errors?.firstOrNull()?.message)
+                response.data?.UpdateUser?.toDomain() ?: throw Exception("No options came back")
+            }
+            // keep dirty; a later flush retries
+            val updated = (push as? Result.Success)?.data ?: return
 
             commit(
                 accountId,

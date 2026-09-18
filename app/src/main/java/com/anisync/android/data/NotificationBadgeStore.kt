@@ -1,5 +1,7 @@
 package com.anisync.android.data
 
+import com.anisync.android.data.network.RequestPriority
+import com.anisync.android.data.network.withRequestPriority
 import com.anisync.android.GetViewerQuery
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.cache.normalized.FetchPolicy
@@ -49,15 +51,21 @@ class NotificationBadgeStore @Inject constructor(
         recompute()
     }
 
-    /** Network refresh; keeps the previous value on failure (offline, rate-limit). */
-    suspend fun refresh() {
+    /**
+     * Network refresh; keeps the previous value on failure (offline, rate-limit).
+     *
+     * Fires on every resume of the main screen, so it is tagged background: a badge count is never
+     * worth a request the screen the user just opened is about to need.
+     */
+    suspend fun refresh(): Unit = withRequestPriority(RequestPriority.Background) {
         try {
             val response = apolloClient
                 .query(GetViewerQuery())
                 .fetchPolicy(FetchPolicy.NetworkOnly)
                 .doNotStore(true)
                 .execute()
-            val count = response.data?.Viewer?.unreadNotificationCount ?: return
+            val count = response.data?.Viewer?.unreadNotificationCount
+                ?: return@withRequestPriority
             _serverCount.value = count.coerceAtLeast(0)
             recompute()
         } catch (_: Exception) {

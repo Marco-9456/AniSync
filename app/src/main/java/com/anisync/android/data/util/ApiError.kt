@@ -1,78 +1,112 @@
 package com.anisync.android.data.util
 
 /**
- * Typed API error hierarchy for the AniList GraphQL API.
+ * Typed failures for the AniList GraphQL API.
  *
- * Instead of generic "Network error" strings, each error type carries
- * structured data so the UI can show contextual messages and take
- * appropriate recovery actions.
+ * These are thrown from the network interceptors and folded into
+ * [com.anisync.android.domain.Result.Error] by [safeApiCall]. They carry structure rather than a
+ * pre-built sentence, because the same failure reads differently in a toast, on an error screen and
+ * in a worker's retry decision.
  *
- * Reference: https://docs.anilist.co/guide/rate-limiting
- * Reference: https://docs.anilist.co/guide/graphql/errors
+ * Note that [com.apollographql.apollo.exception.ApolloException] is sealed, so none of these can be
+ * one. Apollo therefore wraps whatever an interceptor throws in an `ApolloNetworkException` and
+ * hands it back as `ApolloResponse.exception`. [safeApiCall] unwraps that cause chain.
+ *
+ * References:
+ * - https://docs.anilist.co/guide/rate-limiting
+ * - https://docs.anilist.co/guide/graphql/errors
+ * - https://docs.anilist.co/guide/considerations
  */
 sealed class ApiError(
     message: String,
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : Exception(message, cause) {
 
     /**
-     * HTTP 429 — Too Many Requests.
-     * The AniList API returns `Retry-After` (seconds) and `X-RateLimit-Reset` (unix timestamp).
-     * The interceptor will auto-retry once after waiting; if this propagates to the caller,
-     * the retry also failed.
-     *
-     * @param retryAfterSeconds Seconds to wait before retrying (from `Retry-After` header, default 60)
+     * HTTP 429. AniList answers with a one minute timeout and a `Retry-After` saying how much of it
+     * is left. Reaching a caller means the retry inside the network layer also failed.
      */
     class RateLimited(
-        val retryAfterSeconds: Long
-    ) : ApiError("Rate limited. Please wait ${retryAfterSeconds}s before trying again.")
+        val retryAfterSeconds: Long,
+        val limit: Int = 0,
+    ) : ApiError("Rate limited for ${retryAfterSeconds}s")
 
     /**
-     * HTTP 401 — Bearer token expired or revoked.
-     * The app should clear the stored token and redirect to the login screen.
-     */
-    class Unauthorized : ApiError("Your session has expired. Please log in again.")
-
-    /**
-     * HTTP 401 returned for an action the token is valid for but not allowed to do
-     * (e.g. deleting a moderator's message). AniList conflates auth and permission
-     * errors at the HTTP layer; we suppress session-expired flow for known cases.
-     */
-    class Forbidden(message: String = "You don't have permission to do that.") : ApiError(message)
-
-    /**
-     * HTTP 500, 502, 503 — Server-side failure.
-     * The AniList API is likely experiencing issues.
-     */
-    class ServerError(
-        val statusCode: Int
-    ) : ApiError("Server error ($statusCode). Please try again later.")
-
-    /**
-     * No internet, DNS failure, connection timeout, socket timeout.
-     * The device cannot reach the AniList API.
-     */
-    class NetworkError(
-        cause: Throwable
-    ) : ApiError("No internet connection. Check your network and try again.", cause)
-
-    /**
-     * GraphQL errors returned in the response body (even on HTTP 200).
-     * See: https://docs.anilist.co/guide/graphql/errors
+     * The client's own gate refused a [com.anisync.android.data.network.RequestPriority.Background]
+     * request because the remaining budget belongs to the user.
      *
-     * @param errors List of error messages from the `errors` array
-     * @param statusCode The HTTP status code of the `status` field inside the error object, if present
+     * Nothing went wrong and nothing was sent. Workers turn this into `Result.retry()` rather than
+     * sitting on a coroutine until the window rolls over.
      */
+    class Deferred(
+        val retryAfterSeconds: Long,
+    ) : ApiError("Deferred for ${retryAfterSeconds}s to protect the request budget")
+
+    /** HTTP 401 on the active account. The token is expired or revoked and the session is over. */
+    class SessionExpired : ApiError("Session expired")
+
+    /**
+     * HTTP 401 on a request that carried its own token, which is how
+     * [com.anisync.android.data.account.TokenedApolloClientFactory] polls accounts that are not
+     * active. Only that one account is dead, so the active session must be left alone.
+     */
+    class TokenRejected : ApiError("Account token rejected")
+
+    /**
+     * The token is valid but not allowed to do this. AniList conflates permission with auth and
+     * answers 401 for it, sometimes inside an HTTP 200 body.
+     */
+    class PermissionDenied(
+        val reason: String? = null,
+    ) : ApiError(reason ?: "Permission denied")
+
+    /**
+     * The documented whole-API shutdown: a 403 carrying a GraphQL message pointing at the AniList
+     * Discord. Distinct from [PermissionDenied] because nothing the user does will help.
+     */
+    class ApiDisabled(
+        val notice: String,
+    ) : ApiError(notice)
+
+    /** HTTP 5xx. Retried inside the network layer before it reaches a caller. */
+    class ServerError(
+        val statusCode: Int,
+    ) : ApiError("Server error $statusCode")
+
+    /** The device could not reach AniList at all. */
+    class Offline(
+        cause: Throwable? = null,
+    ) : ApiError("Offline", cause)
+
+    /**
+     * The request reached the network but did not finish in time. Kept apart from [Offline] because
+     * "check your connection" is the wrong advice on a slow but working one.
+     */
+    class Timeout(
+        cause: Throwable? = null,
+    ) : ApiError("Timed out", cause)
+
+    /**
+     * A mutation failed AniList's validation rules. The `validation` object maps each rejected
+     * field to its messages, which are written to be shown to the user.
+     */
+    class Validation(
+        val fields: Map<String, List<String>>,
+    ) : ApiError(fields.values.firstOrNull()?.firstOrNull() ?: "Validation failed") {
+
+        /** Every message across every field, in the order AniList returned them. */
+        val messages: List<String> get() = fields.values.flatten()
+    }
+
+    /** Anything else in the response's `errors` array. */
     class GraphQLError(
         val errors: List<String>,
-        val statusCode: Int? = null
-    ) : ApiError(errors.firstOrNull() ?: "An API error occurred.")
+        val statusCode: Int? = null,
+    ) : ApiError(errors.firstOrNull() ?: "API error")
 
-    /**
-     * Catch-all for unexpected errors not covered by other types.
-     */
+    /** Nothing above matched. */
     class Unknown(
         message: String,
-        cause: Throwable? = null
+        cause: Throwable? = null,
     ) : ApiError(message, cause)
 }

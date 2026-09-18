@@ -1,5 +1,6 @@
 package com.anisync.android.data.fetcher
 
+import com.anisync.android.data.util.FakeClock
 import com.anisync.android.domain.Result
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll

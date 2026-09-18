@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.Result
+import com.anisync.android.presentation.components.alert.ToastManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ReviewsViewModel @Inject constructor(
-    private val detailsRepository: DetailsRepository
+    private val detailsRepository: DetailsRepository,
+    private val toastManager: ToastManager
 ) : ViewModel() {
 
     private val _reviews = MutableStateFlow<List<MediaReview>>(emptyList())
@@ -57,7 +59,10 @@ class ReviewsViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
-                    // Handle error if needed
+                    // The pages already loaded stay on screen. Replacing a read list with an error
+                    // state because page four failed loses more than it explains, so the toast
+                    // carries the reason and offers the page again.
+                    toastManager.showResultError(result, toastManager.retryAction { fetchNextPage() })
                 }
             }
             _isLoading.value = false
@@ -89,7 +94,8 @@ class ReviewsViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
-                    // handle error
+                    // Nothing was changed on screen, so without this the tap just does nothing.
+                    toastManager.showResultError(result)
                 }
             }
         }

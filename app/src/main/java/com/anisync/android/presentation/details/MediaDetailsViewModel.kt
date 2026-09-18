@@ -1,5 +1,7 @@
 package com.anisync.android.presentation.details
 
+import com.anisync.android.data.network.RequestPriority
+import com.anisync.android.data.network.withRequestPriority
 import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -21,6 +23,7 @@ import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.util.ShareUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -180,7 +183,19 @@ class MediaDetailsViewModel @Inject constructor(
      */
     private fun refreshIfStale() {
         viewModelScope.launch {
-            detailsRepository.refreshMediaDetailsIfStale(mediaId)
+            var attempts = 0
+            while (true) {
+                val result = detailsRepository.refreshMediaDetailsIfStale(mediaId)
+                // Only a rate limit says when it will be worth asking again. Anything else is left
+                // alone, and anything already cached is on screen regardless.
+                val waitSeconds = (result as? Result.Error)?.countdownSeconds
+                if (waitSeconds == null || waitSeconds <= 0) return@launch
+                if (++attempts > MAX_RATE_LIMIT_RETRIES) return@launch
+                // The skeleton is the honest state while AniList is refusing requests. What it must
+                // not do is stay there once the wait is over, which is what happened when this
+                // dropped the failure and nobody ever asked again.
+                delay(waitSeconds * 1_000 + RETRY_GRACE_MS)
+            }
         }
     }
 
@@ -190,13 +205,18 @@ class MediaDetailsViewModel @Inject constructor(
      * section just stays hidden. Reuses the rate-limit-safe [ForumRepository.searchThreads].
      */
     private fun loadDiscussionsPreview(allowCached: Boolean = true) {
+        // Speculative: the section hides itself on failure, so it must not spend budget the
+        // details screen itself is about to need.
         viewModelScope.launch {
-            when (val result = forumRepository.searchThreads(
-                mediaCategoryId = mediaId,
-                sort = com.anisync.android.domain.ThreadSortOption.RECENTLY_REPLIED,
-                page = 1,
-                allowCached = allowCached
-            )) {
+            val result = withRequestPriority(RequestPriority.Prefetch) {
+                forumRepository.searchThreads(
+                    mediaCategoryId = mediaId,
+                    sort = com.anisync.android.domain.ThreadSortOption.RECENTLY_REPLIED,
+                    page = 1,
+                    allowCached = allowCached
+                )
+            }
+            when (result) {
                 is Result.Success -> {
                     _discussions.value = result.data.items.take(DISCUSSIONS_PREVIEW_LIMIT)
                     _hasMoreDiscussions.value =
@@ -204,7 +224,9 @@ class MediaDetailsViewModel @Inject constructor(
                 }
 
                 is Result.Error -> {
-                    // Silent failure — section just stays empty.
+                    // Deliberately silent. Nobody asked for this preview, it hides itself when
+                    // empty, and an error banner for a section the user did not open would be
+                    // louder than the thing it is reporting.
                 }
             }
         }
@@ -212,19 +234,25 @@ class MediaDetailsViewModel @Inject constructor(
 
     private fun loadFollowingPreview(allowCached: Boolean = true) {
         viewModelScope.launch {
-            when (val result = detailsRepository.getMediaFollowing(
-                mediaId = mediaId,
-                page = 1,
-                perPage = FOLLOWING_PREVIEW_LIMIT,
-                allowCached = allowCached
-            )) {
+            val result = withRequestPriority(RequestPriority.Prefetch) {
+                detailsRepository.getMediaFollowing(
+                    mediaId = mediaId,
+                    page = 1,
+                    perPage = FOLLOWING_PREVIEW_LIMIT,
+                    allowCached = allowCached
+                )
+            }
+            when (result) {
                 is Result.Success -> {
                     val (entries, hasNext) = result.data
                     _following.value = entries
                     _hasMoreFollowing.value = hasNext
                 }
+
                 is Result.Error -> {
-                    // Silent failure — section just stays empty
+                    // Deliberately silent. Nobody asked for this preview, it hides itself when
+                    // empty, and an error banner for a section the user did not open would be
+                    // louder than the thing it is reporting.
                 }
             }
         }
@@ -262,9 +290,7 @@ class MediaDetailsViewModel @Inject constructor(
                 is Result.Success -> {
                     // Cache updated, Flow emits automatically
                 }
-                is Result.Error -> {
-                    // Could emit a one-time event for error (e.g., Snackbar)
-                }
+                is Result.Error -> toastManager.showResultError(result)
             }
             
             _isSaving.value = false
@@ -312,9 +338,8 @@ class MediaDetailsViewModel @Inject constructor(
                     refresh()
                     closeEditSheet()
                 }
-                is Result.Error -> {
-                    // Handle error
-                }
+                // The sheet is left open on a failure, with the edits still in it to try again.
+                is Result.Error -> toastManager.showResultError(result)
             }
             _isSaving.value = false
         }
@@ -332,9 +357,7 @@ class MediaDetailsViewModel @Inject constructor(
                     // Refresh to update the UI
                     refresh()
                 }
-                is Result.Error -> {
-                    // Could handle error
-                }
+                is Result.Error -> toastManager.showResultError(result)
             }
 
             _isSaving.value = false
@@ -346,16 +369,16 @@ class MediaDetailsViewModel @Inject constructor(
     // baseline seeding is needed (a re-submit of the same value is a no-op).
     private val reviewRatingCoalescer =
         com.anisync.android.presentation.util.MutationCoalescer<Int, com.anisync.android.type.ReviewRating>(viewModelScope) { reviewId, rating ->
-            when (detailsRepository.rateReview(reviewId, rating)) {
+            when (val result = detailsRepository.rateReview(reviewId, rating)) {
                 is Result.Success -> { refresh(); true }
-                is Result.Error -> false
+                is Result.Error -> { toastManager.showResultError(result); false }
             }
         }
     private val recommendationRatingCoalescer =
         com.anisync.android.presentation.util.MutationCoalescer<Int, com.anisync.android.type.RecommendationRating>(viewModelScope) { recId, rating ->
-            when (detailsRepository.rateRecommendation(mediaId, recId, rating)) {
+            when (val result = detailsRepository.rateRecommendation(mediaId, recId, rating)) {
                 is Result.Success -> { refresh(); true }
-                is Result.Error -> false
+                is Result.Error -> { toastManager.showResultError(result); false }
             }
         }
 
@@ -377,9 +400,7 @@ class MediaDetailsViewModel @Inject constructor(
                 is Result.Success -> {
                     // Cache updated via refresh, Flow emits automatically
                 }
-                is Result.Error -> {
-                    // Could emit a one-time event for error (e.g., Snackbar)
-                }
+                is Result.Error -> toastManager.showResultError(result)
             }
 
             _isSaving.value = false
@@ -416,6 +437,12 @@ class MediaDetailsViewModel @Inject constructor(
 
         // AniList caps nested character/staff connections at 25 per page.
         private const val PEOPLE_PAGE_SIZE = 25
+
+        /** Enough to sit out a couple of windows. Past that something else is wrong. */
+        private const val MAX_RATE_LIMIT_RETRIES = 3
+
+        /** Asking on the exact instant the window turns over tends to land just before it. */
+        private const val RETRY_GRACE_MS = 1_000L
     }
 
     fun rateRecommendation(recommendationId: Int, rating: com.anisync.android.type.RecommendationRating) {

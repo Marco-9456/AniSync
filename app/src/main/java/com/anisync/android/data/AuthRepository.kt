@@ -1,6 +1,7 @@
 package com.anisync.android.data
 
 import com.anisync.android.data.account.AccountStore
+import com.anisync.android.data.network.SessionTokens
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -21,7 +22,7 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepository @Inject constructor(
     private val accountStore: AccountStore,
-) {
+) : SessionTokens {
     /** True whenever there is an active account. Drives the Login ↔ Main swap in MainActivity. */
     val isLoggedIn: Flow<Boolean> = accountStore.activeAccount.map { it != null }
 
@@ -33,13 +34,13 @@ class AuthRepository @Inject constructor(
     val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
 
     /** Active account's bearer token, or null when logged out. Read per-request by the interceptor. */
-    fun getToken(): String? = accountStore.activeToken()
+    override fun getToken(): String? = accountStore.activeToken()
 
     /**
      * Called by the interceptor on a 401. Marks **only the active** account expired and clears the
      * active slot (other accounts are kept), then emits the session-expired event.
      */
-    fun onSessionExpired() {
+    override fun onSessionExpired() {
         accountStore.markActiveExpired()
         _sessionExpired.tryEmit(Unit)
     }

@@ -1,5 +1,7 @@
 package com.anisync.android.worker
 
+import com.anisync.android.data.network.RequestPriority
+import com.anisync.android.data.network.withRequestPriority
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
@@ -69,7 +71,12 @@ class AiringScheduleWorker @AssistedInject constructor(
         }
     }
 
-    override suspend fun doWork(): Result {
+    override suspend fun doWork(): Result =
+        // Every request this run makes yields to whatever the user is doing. When the
+        // budget is short the gate refuses instead of waiting, and WorkManager reruns us.
+        withRequestPriority(RequestPriority.Background) { syncSchedule() }
+
+    private suspend fun syncSchedule(): Result {
         return try {
             val calendar = java.util.Calendar.getInstance()
             calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
@@ -166,7 +173,12 @@ class AiringScheduleWorker @AssistedInject constructor(
             Result.success()
         } catch (e: ApiError.RateLimited) {
             Result.retry()
-        } catch (e: ApiError.Unauthorized) {
+        } catch (e: ApiError.Deferred) {
+            // Refused on purpose to leave the budget for the user. WorkManager owns the retry.
+            Result.retry()
+        } catch (e: ApiError.SessionExpired) {
+            Result.failure()
+        } catch (e: ApiError.TokenRejected) {
             Result.failure()
         } catch (e: ApiError.ServerError) {
             Result.retry()

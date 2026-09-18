@@ -86,7 +86,9 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.filterNotNull
 import com.anisync.android.R
 import com.anisync.android.data.NavBarStyle
+import com.anisync.android.presentation.components.alert.LocalRateLimitMonitor
 import com.anisync.android.presentation.components.alert.ProvideToastManager
+import com.anisync.android.presentation.components.alert.RateLimitNotice
 import com.anisync.android.presentation.components.alert.TopToastHost
 import com.anisync.android.presentation.components.navigation.CompactNavBar
 import com.anisync.android.presentation.components.navigation.CompactNavBarItem
@@ -266,8 +268,13 @@ fun MainScreen(
     // scroll), so a too-short window must fall back to the bar rather than clip items off-screen.
     val adaptive = LocalAdaptiveInfo.current
 
+    RateLimitNotice(monitor = viewModel.rateLimitMonitor, toastManager = viewModel.toastManager)
+
     ProvideToastManager(toastManager = viewModel.toastManager) {
-        CompositionLocalProvider(LocalMainNavBarSuppressor provides navBarSuppressor) {
+        CompositionLocalProvider(
+            LocalMainNavBarSuppressor provides navBarSuppressor,
+            LocalRateLimitMonitor provides viewModel.rateLimitMonitor,
+        ) {
             if (adaptive.isCompact || adaptive.isCompactHeight) {
                 CompactNavLayout(
                     navController = navController,

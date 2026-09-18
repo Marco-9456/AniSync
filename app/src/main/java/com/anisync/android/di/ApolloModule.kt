@@ -2,7 +2,12 @@ package com.anisync.android.di
 
 import android.content.Context
 import com.anisync.android.cache.Cache.cache
+import com.anisync.android.data.network.AniListErrorInterceptor
+import com.anisync.android.data.network.AniListHttpInterceptor
+import com.anisync.android.data.network.AniListIdentity
+import com.anisync.android.data.network.RequestCoalescer
 import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.interceptor.ApolloInterceptor
 import com.apollographql.cache.normalized.memory.MemoryCacheFactory
 import com.apollographql.cache.normalized.sql.SqlNormalizedCacheFactory
 import com.apollographql.cache.normalized.storeReceivedDate
@@ -44,7 +49,8 @@ object ApolloModule {
     @Singleton
     fun provideApolloClient(
         @ApplicationContext context: Context,
-        authorizationInterceptor: AuthorizationInterceptor
+        httpInterceptor: AniListHttpInterceptor,
+        errorInterceptor: AniListErrorInterceptor
     ): ApolloClient {
         discardLegacyCache(context)
 
@@ -53,8 +59,18 @@ object ApolloModule {
             .chain(SqlNormalizedCacheFactory(context = context, name = CACHE_DATABASE_NAME))
 
         return ApolloClient.Builder()
-            .serverUrl("https://graphql.anilist.co")
-            .addHttpInterceptor(authorizationInterceptor)
+            .serverUrl(AniListIdentity.ENDPOINT)
+            .addHttpInterceptor(httpInterceptor)
+            // AniList puts the real reason for a failure in the response body, and Apollo throws
+            // that body away unless asked not to. Without this the classifier degrades to reading
+            // the status line, which is exactly what it exists to stop doing.
+            .httpExposeErrorBody(true)
+            // BeforeNetwork puts both below the normalized cache, so they only see requests that
+            // really go out and they see the errors before anything downstream rewrites them.
+            // The coalescer is added first so it wraps the classifier: joined callers share one
+            // request, one classification and one retry.
+            .addInterceptor(RequestCoalescer(), ApolloInterceptor.InsertionPoint.BeforeNetwork)
+            .addInterceptor(errorInterceptor, ApolloInterceptor.InsertionPoint.BeforeNetwork)
             .cache(cacheFactory, defaultMaxAge = DEFAULT_MAX_AGE)
             // Stamps each field with when it arrived, which is what lets
             // [com.anisync.android.worker.CacheMaintenanceWorker] tell stale from fresh. Without it

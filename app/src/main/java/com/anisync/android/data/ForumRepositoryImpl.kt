@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import com.anisync.android.data.util.InflightTracker
 import com.anisync.android.CreateForumCommentMutation
 import com.anisync.android.CreateForumCommentReplyMutation
 import com.anisync.android.CreateForumThreadMutation
@@ -33,8 +34,6 @@ import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
 import com.apollographql.cache.normalized.fetchPolicy
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
@@ -105,22 +104,13 @@ class ForumRepositoryImpl @Inject constructor(
     // =========================================================================
 
     /**
-     * In-flight dedup keyed by the full filter tuple. A re-trigger of the same
-     * search (rotation, refocus, rapid identical input that survives the VM
-     * debounce) suspends on the mutex and reuses the first request's result
-     * instead of issuing a duplicate — extra rate-limit safety on top of the
-     * ViewModel-level debounce/distinct/collectLatest pipeline.
+     * A re-triggered identical thread search joins the request in flight, on top of the ViewModel's
+     * debounce and distinct pipeline.
      */
-    private val threadSearchMutexes = ConcurrentHashMap<String, Mutex>()
+    private val threadSearchInflight = InflightTracker()
 
-    private suspend fun <T> dedupeThreadSearch(key: String, block: suspend () -> T): T {
-        val mtx = threadSearchMutexes.computeIfAbsent(key) { Mutex() }
-        return try {
-            mtx.withLock { block() }
-        } finally {
-            if (!mtx.isLocked) threadSearchMutexes.remove(key, mtx)
-        }
-    }
+    private suspend fun <T> dedupeThreadSearch(key: String, block: suspend () -> T): T =
+        threadSearchInflight.deduplicate(key, block = block)
 
     override suspend fun searchThreads(
         search: String?,

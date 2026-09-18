@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import com.anisync.android.data.util.InflightTracker
 import com.anisync.android.GetSearchTaxonomyQuery
 import com.anisync.android.SearchAllQuery
 import com.anisync.android.SearchEverythingQuery
@@ -22,9 +23,6 @@ import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
 import com.apollographql.cache.normalized.doNotStore
 import com.apollographql.cache.normalized.fetchPolicy
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -47,21 +45,11 @@ class SearchRepositoryImpl @Inject constructor(
     @Volatile private var cachedGenres: List<String>? = null
     @Volatile private var cachedTags: List<MediaTag>? = null
 
-    /**
-     * In-flight dedup keyed by query + filters. A re-trigger of the same search
-     * (rotation, refocus, rapid identical input) suspends on the mutex and then
-     * hits the now-warm normalized cache instead of issuing a second request.
-     */
-    private val inflightMutexes = ConcurrentHashMap<String, Mutex>()
+    /** A re-triggered identical search joins the request in flight instead of issuing a second. */
+    private val inflight = InflightTracker()
 
-    private suspend fun <T> dedupe(key: String, block: suspend () -> T): T {
-        val mtx = inflightMutexes.computeIfAbsent(key) { Mutex() }
-        return try {
-            mtx.withLock { block() }
-        } finally {
-            if (!mtx.isLocked) inflightMutexes.remove(key, mtx)
-        }
-    }
+    private suspend fun <T> dedupe(key: String, block: suspend () -> T): T =
+        inflight.deduplicate(key, block = block)
 
     override suspend fun searchMedia(
         query: String,

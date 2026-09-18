@@ -39,6 +39,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Badge
@@ -723,7 +724,7 @@ fun ErrorStateContent(message: String, onBackClick: () -> Unit) {
             modifier = Modifier.padding(dimensionResource(R.dimen.spacing_large))
         ) {
             Icon(
-                Icons.Default.Delete,
+                Icons.Outlined.ErrorOutline,
                 null,
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(64.dp)

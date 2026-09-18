@@ -1,5 +1,7 @@
 package com.anisync.android.data.fetcher
 
+import com.anisync.android.data.util.Clock
+
 /**
  * Per-resource cooldown gate. Two-tiered floor so user-initiated refresh feels
  * responsive (short floor) while background/auto refreshes are aggressively
