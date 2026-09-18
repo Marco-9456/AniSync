@@ -51,8 +51,11 @@ object AniListErrors {
     private val PERMISSION_GATED_OPERATIONS = setOf(
         "DeleteActivity",
         "DeleteActivityReply",
-        "DeleteThread",
-        "DeleteThreadComment",
+        // The operation names, not the GraphQL fields they select. `operation.name()` returns the
+        // former, so naming the fields here matched nothing and signed the user out on a forum
+        // permission denial. See ForumMutations.graphql.
+        "DeleteForumThread",
+        "DeleteForumComment",
     )
 
     private const val INVALID_TOKEN = "invalid token"

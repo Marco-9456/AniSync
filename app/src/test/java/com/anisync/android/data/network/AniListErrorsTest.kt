@@ -64,16 +64,28 @@ class AniListErrorsTest {
         assertTrue("was $error", error is ApiError.TokenRejected)
     }
 
+    /**
+     * The names here are the ones in `app/src/main/graphql`, which is what `operation.name()`
+     * returns. Asserting against the GraphQL field names instead is how this passed while the
+     * set it guards matched nothing.
+     */
     @Test
     fun `a 401 on a delete is a permission denial, not a dead session`() {
-        val error = classify(
-            httpStatus = 200,
-            body = """{"data":null,"errors":[{"message":"Forbidden","status":401}]}""",
-            operationName = "DeleteThreadComment",
-        )
+        listOf(
+            "DeleteActivity",
+            "DeleteActivityReply",
+            "DeleteForumThread",
+            "DeleteForumComment",
+        ).forEach { operation ->
+            val error = classify(
+                httpStatus = 200,
+                body = """{"data":null,"errors":[{"message":"Forbidden","status":401}]}""",
+                operationName = operation,
+            )
 
-        assertTrue("was $error", error is ApiError.PermissionDenied)
-        assertEquals("Forbidden", (error as ApiError.PermissionDenied).reason)
+            assertTrue("$operation was $error", error is ApiError.PermissionDenied)
+            assertEquals("Forbidden", (error as ApiError.PermissionDenied).reason)
+        }
     }
 
     @Test
