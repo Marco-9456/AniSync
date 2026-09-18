@@ -11,11 +11,19 @@ import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
+import org.junit.Before
 import org.junit.Test
 import kotlin.random.Random
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RateLimitGateTest {
+
+    /** `android.util.Log` is a throwing stub on the JVM. Nothing here is asserting on log output. */
+    @Before
+    fun quietNetworkLogs() {
+        NetLog.enabled = false
+    }
+
 
     /**
      * Ties the gate's clock to the test scheduler so `delay` and `Clock.nowMs` advance together.

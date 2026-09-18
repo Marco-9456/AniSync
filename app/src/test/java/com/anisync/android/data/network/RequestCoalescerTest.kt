@@ -7,6 +7,7 @@ import com.apollographql.apollo.api.ApolloRequest
 import com.apollographql.apollo.api.Optional
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Before
 import org.junit.Test
 
 /**
@@ -14,6 +15,13 @@ import org.junit.Test
  * same request, so a key that ignored variables would hand one screen another anime's data.
  */
 class RequestCoalescerTest {
+
+    /** `android.util.Log` is a throwing stub on the JVM. Nothing here is asserting on log output. */
+    @Before
+    fun quietNetworkLogs() {
+        NetLog.enabled = false
+    }
+
 
     private val coalescer = RequestCoalescer()
 

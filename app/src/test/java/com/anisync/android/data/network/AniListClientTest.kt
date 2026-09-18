@@ -15,6 +15,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import kotlin.random.Random
 
@@ -31,6 +32,13 @@ import kotlin.random.Random
  * null body that reads as an empty success.
  */
 class AniListClientTest {
+
+    /** `android.util.Log` is a throwing stub on the JVM. Nothing here is asserting on log output. */
+    @Before
+    fun quietNetworkLogs() {
+        NetLog.enabled = false
+    }
+
 
     private val mockServer = MockServer()
 
