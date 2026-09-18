@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.HourglassEmpty
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material.icons.outlined.Report
@@ -50,7 +51,7 @@ enum class ToastType(
 
     RATE_LIMITED(ToastDensity.ALERT, Icons.Outlined.Schedule, persistent = true),
     OFFLINE(ToastDensity.ALERT, Icons.Outlined.CloudOff),
-    TIMEOUT(ToastDensity.ALERT, Icons.Outlined.Update),
+    TIMEOUT(ToastDensity.ALERT, Icons.Outlined.HourglassEmpty),
     SERVER_ERROR(ToastDensity.ALERT, Icons.Outlined.Dns),
     VALIDATION_ERROR(ToastDensity.ALERT, Icons.Outlined.EditNote),
     PERMISSION_DENIED(ToastDensity.ALERT, Icons.Outlined.VisibilityOff),
@@ -94,7 +95,11 @@ enum class ToastType(
  *
  * A role in the active scheme, never a literal. The six hardcoded hexes this replaces were picked
  * against one palette and clashed with every other one MaterialKolor can build, which is most of
- * them. Kinds share roles freely because the icon, not the hue, is what tells them apart.
+ * them.
+ *
+ * Kinds share roles freely: what tells a rate limit from being offline is the title and the
+ * sentence under it, both of which a screen reader gets in full, and each kind's icon is a distinct
+ * silhouette at 20dp on top of that.
  */
 @Composable
 fun ToastType.accentColor(): Color = when (this) {

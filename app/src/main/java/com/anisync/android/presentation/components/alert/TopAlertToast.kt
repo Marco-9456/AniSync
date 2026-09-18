@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -248,7 +249,11 @@ private fun ToastAlert(
                     progress = { (remaining.value / total).coerceIn(0f, 1f) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(PROGRESS_HEIGHT),
+                        .height(PROGRESS_HEIGHT)
+                        // Material reads the same lambda inside its own semantics block, so the
+                        // node's range info changes every frame inside the live region. The
+                        // countdown beside it already says what this draws.
+                        .clearAndSetSemantics {},
                     color = accent,
                     trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     gapSize = 0.dp,
@@ -302,7 +307,11 @@ private fun CountdownLabel(remaining: State<Long>, accent: Color) {
     val seconds by remember(remaining) {
         derivedStateOf { ((remaining.value + 999) / 1_000).coerceAtLeast(0L) }
     }
-    val spoken = stringResource(R.string.alert_retrying_in, seconds)
+    // Spoken once, from the wait the toast appeared with, and then left alone. The frame above is a
+    // polite live region, and a description that changed every second made TalkBack read the clock
+    // out on every tick, interrupting whatever the user was on for the length of the block.
+    val announced = remember(remaining) { ((remaining.value + 999) / 1_000).coerceAtLeast(0L) }
+    val spoken = stringResource(R.string.alert_retrying_in, announced)
     // The app ships locales whose digits are not Latin, so the clock is formatted in the one the
     // composition is running under rather than the process default.
     val locale = LocalConfiguration.current.locales[0]
@@ -312,7 +321,7 @@ private fun CountdownLabel(remaining: State<Long>, accent: Color) {
         color = accent,
         modifier = Modifier
             .padding(start = 4.dp, end = 8.dp)
-            .semantics { contentDescription = spoken },
+            .clearAndSetSemantics { contentDescription = spoken },
     )
 }
 
