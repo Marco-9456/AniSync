@@ -173,7 +173,18 @@ class RateLimitGateTest {
     @Test
     fun `the budget recovers once the server reports a new window`() = runTest {
         val gate = gate()
-        repeat(30) { gate.take() }
+        // Spent the way the app spends it, with every response carrying the count. Spending it
+        // blind and then reporting a number cannot happen: the headers are on every response, so
+        // the gate is never more than one round trip away from the server's own figure.
+        repeat(30) { spent ->
+            gate.take()
+            gate.onResponse(
+                statusCode = 200,
+                limit = 30,
+                remaining = 30 - (spent + 1),
+                retryAfterSeconds = null,
+            )
+        }
 
         try {
             gate.take()
@@ -182,6 +193,7 @@ class RateLimitGateTest {
             // Expected.
         }
 
+        // A count that jumps back up is the only signal AniList gives that the window turned over.
         gate.onResponse(statusCode = 200, limit = 30, remaining = 29, retryAfterSeconds = null)
         gate.take()
     }

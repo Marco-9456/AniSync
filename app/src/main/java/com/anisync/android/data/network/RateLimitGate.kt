@@ -35,6 +35,15 @@ data class RateLimitConfig(
 
     /** Spread applied to every wait so waiters do not wake in lockstep. */
     val jitterMs: Long = 80L,
+
+    /**
+     * How long the gate holds requests behind a budget no response has confirmed.
+     *
+     * A rollover refills the window on a guess and one probe's headers correct it. A probe that
+     * never comes back must not hold everything else behind it, so past this the guess is spent
+     * rather than waited on. Longer than any healthy round trip, shorter than a window.
+     */
+    val probeTimeoutMs: Long = 10_000L,
 )
 
 /**
@@ -122,7 +131,6 @@ class RateLimitGate(
             when (val decision = mutex.withLock { evaluate(priority).also { capture() } }) {
                 Decision.Admit -> {
                     admitted.incrementAndGet()
-                    inFlight.incrementAndGet()
                     publish()
                     NetLog.d(TAG) {
                         "AniSyncNet event=admit priority=$priority " +
@@ -204,8 +212,14 @@ class RateLimitGate(
 
         // A budget nobody has confirmed is a guess about where the server's window boundary sits.
         // One request goes out to find out; the rest wait for its headers rather than spend a
-        // window that may not have refilled. The wait is one round trip, not one window.
-        if (!window.budgetConfirmed && inFlight.get() > 0) return Decision.Wait(config.minGapMs)
+        // window that may not have refilled. The wait is one round trip, not one window, and
+        // bounded by probeTimeoutMs so a probe that never returns cannot hold the app behind it.
+        if (!window.budgetConfirmed &&
+            inFlight.get() > 0 &&
+            clock.nowMs() - window.windowStartedAtMs < config.probeTimeoutMs
+        ) {
+            return Decision.Wait(config.minGapMs)
+        }
 
         val limit = simulatedLimit ?: window.limit
         if (effectiveHeadroom(window.limit, window.headroom()) <= reserveFor(priority, limit)) {
@@ -218,6 +232,10 @@ class RateLimitGate(
 
         lastIssuedAtMs = now
         window.onIssued()
+        // Under the lock, in step with onIssued. Incrementing it after the lock was released left a
+        // window where the probe guard above could see nothing in flight and admit a second caller
+        // alongside the probe it was supposed to be waiting for.
+        inFlight.incrementAndGet()
         return Decision.Admit
     }
 

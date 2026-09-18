@@ -142,12 +142,33 @@ class RateLimitWindow(private val clock: Clock) {
 
         // A count that went up is the only signal AniList gives that the window rolled over.
         val hadObservation = observedAtMs != Long.MIN_VALUE
-        if (!hadObservation || remainingHeader > remaining) {
+        val rolledOver = hadObservation && remainingHeader > remaining
+        if (!hadObservation || rolledOver) {
             windowStartedAtMs = now
         }
+
+        // What is left on the wire that this reading does not already account for.
+        //
+        // Zeroing it credited every request still in flight against a response that could not have
+        // included them. With a 120ms gap and a round trip several times that, three or four are
+        // always outstanding, so the headroom read that much too high and a fan-out walked straight
+        // past the budget at the end of a window.
+        issuedSinceObserved = when {
+            // Nothing to compare against, so this reading accounts for the request that carried it
+            // and for nothing else.
+            !hadObservation -> (issuedSinceObserved - 1).coerceAtLeast(0)
+
+            // A new window. What was spent in the old one is not against this budget, and anything
+            // of ours that lands in the new one shows up in the next reading.
+            rolledOver -> 0
+
+            // The server's own number falling by three means three of ours reached it, whichever
+            // three those were.
+            else -> (issuedSinceObserved - (remaining - remainingHeader)).coerceAtLeast(0)
+        }
+
         remaining = remainingHeader.coerceAtMost(limit)
         observedAtMs = now
-        issuedSinceObserved = 0
         budgetConfirmed = true
     }
 
