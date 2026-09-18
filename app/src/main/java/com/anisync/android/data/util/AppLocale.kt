@@ -20,24 +20,30 @@ import androidx.appcompat.app.AppCompatDelegate
  */
 object AppLocale {
 
-    @Volatile
-    private var cachedTags: String? = null
+    /**
+     * The tags and the context they were built for, written as one value.
+     *
+     * Two fields meant two writes. Two threads missing at once for different locales could
+     * interleave them and leave the surviving tags describing the other locale's context, which
+     * then answered every caller in the wrong language until the next miss. `describe()` runs on
+     * every error the repositories raise, so the paths that get here do overlap.
+     */
+    private class Cached(val tags: String, val context: Context)
 
     @Volatile
-    private var cached: Context? = null
+    private var cached: Cached? = null
 
     fun wrap(appContext: Context): Context {
         val tags = AppCompatDelegate.getApplicationLocales().toLanguageTags()
         if (tags.isEmpty()) return appContext
 
-        cached?.let { if (tags == cachedTags) return it }
+        cached?.let { if (tags == it.tags) return it.context }
 
         val config = Configuration(appContext.resources.configuration).apply {
             setLocales(LocaleList.forLanguageTags(tags))
         }
         return appContext.createConfigurationContext(config).also {
-            cached = it
-            cachedTags = tags
+            cached = Cached(tags, it)
         }
     }
 }
