@@ -899,12 +899,11 @@ class ProfileViewModel @Inject constructor(
             is Result.Success -> result.data
             is Result.Error -> {
                 Log.w("AniSyncPerf", "profile.load failed code=${result.code} msg=${result.message}")
-                if (!hasCachedOwnProfile) {
-                    ownProfileError.value = if (result.code == 429) {
-                        R.string.profile_rate_limited_error
-                    } else {
-                        R.string.profile_unknown_error
-                    }
+                // A rate limit is not an error screen. The block ends by itself, RateLimitNotice
+                // carries the countdown, and the skeleton stays until the retry lands, the same way
+                // the details screen waits one out.
+                if (!hasCachedOwnProfile && result.code != 429) {
+                    ownProfileError.value = R.string.profile_unknown_error
                 }
                 null
             }
