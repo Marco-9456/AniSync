@@ -1,6 +1,5 @@
 package com.anisync.android.data.network
 
-import android.util.Log
 import com.anisync.android.data.util.ApiError
 import com.apollographql.apollo.api.ApolloRequest
 import com.apollographql.apollo.api.ApolloResponse
@@ -62,7 +61,7 @@ class AniListErrorInterceptor @Inject constructor(
         val tokenScoped = request.executionContext.isTokenScoped
 
         return flow {
-            val priority = resolveRequestPriority(request.executionContext.explicitPriority)
+            val priority = resolveRequestPriority()
             var attempt = 0
             while (true) {
                 attempt++
@@ -82,11 +81,10 @@ class AniListErrorInterceptor @Inject constructor(
                 )
                 if (decision is RetryDecision.After) {
                     gate.onRetry()
-                    Log.i(
-                        TAG,
+                    NetLog.i(TAG) {
                         "AniSyncNet event=retry op=${operation.name()} attempt=$attempt " +
-                            "in_ms=${decision.delayMs} cause=${error::class.simpleName}",
-                    )
+                            "in_ms=${decision.delayMs} cause=${error::class.simpleName}"
+                    }
                     delay(decision.delayMs)
                     continue
                 }
@@ -107,13 +105,15 @@ class AniListErrorInterceptor @Inject constructor(
         val errors = response.errors
         if (errors.isNullOrEmpty()) return null
 
-        // A response that still carries data is a partial success. Failing it would throw away
-        // fields that did arrive, so those stay with the repository layer as before.
-        if (response.data != null) return null
-
         val parsed = AniListErrors.fromApolloErrors(errors)
-        // Only claim an error AniList has labelled. A plain GraphQL error with partial data is left
-        // for the repository layer to handle as it always has.
+        // Only claim an error AniList has labelled. A plain GraphQL error is a partial success and
+        // stays with the repository layer as before: failing it would throw away fields that did
+        // arrive.
+        //
+        // A labelled one is claimed even when data came with it. AniList answers a permission
+        // denied delete with HTTP 200, a null for the field and `"status":401` beside it, and
+        // because the selection is nullable Apollo still builds a Data. Bailing on `data != null`
+        // first meant that whole shape was never classified.
         if (parsed.none { it.status != null || it.validation.isNotEmpty() }) return null
 
         return AniListErrors.classify(
@@ -156,7 +156,7 @@ class AniListErrorInterceptor @Inject constructor(
 
     private fun report(error: ApiError, operationName: String) {
         if (error is ApiError.SessionExpired) {
-            Log.w(TAG, "AniSyncNet event=session_expired op=$operationName")
+            NetLog.w(TAG) { "AniSyncNet event=session_expired op=$operationName" }
             session.onSessionExpired()
         }
     }
