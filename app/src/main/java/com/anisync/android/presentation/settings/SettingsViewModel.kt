@@ -74,8 +74,14 @@ class SettingsViewModel @Inject constructor(
     /** Live request budget readout for the developer screen. */
     val rateLimitStats = rateLimitMonitor.stats
 
-    /** The pinned budget, or null when the gate is using AniList's real one. */
-    private val _simulatedRateLimit = MutableStateFlow<Int?>(null)
+    /**
+     * The pinned budget, or null when the gate is using AniList's real one.
+     *
+     * Seeded from the gate, which owns it for the life of the process. Starting at null meant
+     * leaving the developer screen and coming back showed the pin as off while the whole app was
+     * still throttled to it.
+     */
+    private val _simulatedRateLimit = MutableStateFlow(rateLimitGate.simulatedLimit)
     val simulatedRateLimit: StateFlow<Int?> = _simulatedRateLimit.asStateFlow()
 
     private val _cacheSize = MutableStateFlow("0 B")
