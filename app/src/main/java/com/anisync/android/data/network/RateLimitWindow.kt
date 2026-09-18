@@ -44,6 +44,16 @@ class RateLimitWindow(private val clock: Clock) {
     var blockedUntilMs: Long = Long.MIN_VALUE
         private set
 
+    /**
+     * False while [remaining] is a guess rather than something a response said.
+     *
+     * A rollover and the end of a 429 timeout both restore the full budget without having been
+     * told. Spending that on a burst is how a wrong guess turns into a wrong guess plus a fresh
+     * timeout, so the gate lets a single request out and waits for its headers first.
+     */
+    var budgetConfirmed: Boolean = true
+        private set
+
     /** Requests we believe are still available right now. */
     fun headroom(): Int = (remaining - issuedSinceObserved).coerceAtLeast(0)
 
@@ -97,9 +107,11 @@ class RateLimitWindow(private val clock: Clock) {
      * already guards the 429 path for exactly this reason. This is the same guard for a window that
      * simply ran out.
      *
-     * The refill is a guess, not an observation, so [observedAtMs] is left alone. The gate spaces
-     * requests out, so what goes through next is a single probe, and its headers put the window
-     * back on the server's own boundary.
+     * The refill is a guess, not an observation, so [observedAtMs] is left alone and
+     * [budgetConfirmed] is cleared. Our boundary is inferred and the server's is not obliged to
+     * agree with it, so the whole budget is only safe to assume once a response has said so: the
+     * gate lets one request out and holds the rest until its headers land. Spacing alone is not
+     * that guarantee, because a queue drains at one request per gap and a round trip is longer.
      */
     fun rolloverIfElapsed() {
         if (blockedForMs() > 0) return
@@ -109,6 +121,7 @@ class RateLimitWindow(private val clock: Clock) {
         windowStartedAtMs = now
         remaining = limit
         issuedSinceObserved = 0
+        budgetConfirmed = false
     }
 
     /** Records that a request has been let through and will consume budget the server hasn't counted yet. */
@@ -135,6 +148,7 @@ class RateLimitWindow(private val clock: Clock) {
         remaining = remainingHeader.coerceAtMost(limit)
         observedAtMs = now
         issuedSinceObserved = 0
+        budgetConfirmed = true
     }
 
     /**
@@ -155,6 +169,7 @@ class RateLimitWindow(private val clock: Clock) {
         // is fresh, so the count is restored rather than zeroed. Leaving it at zero would deadlock:
         // no request could go out, so no response could ever arrive to say the window had reset.
         remaining = limit
+        budgetConfirmed = false
         windowStartedAtMs = blockedUntilMs
     }
 
@@ -170,6 +185,7 @@ class RateLimitWindow(private val clock: Clock) {
         blockedUntilMs = now + remainingMs.coerceAtMost(MAX_RETRY_AFTER_SECONDS * 1000L)
         remaining = limit
         issuedSinceObserved = 0
+        budgetConfirmed = false
         windowStartedAtMs = blockedUntilMs
     }
 

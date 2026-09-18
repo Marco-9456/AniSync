@@ -202,6 +202,11 @@ class RateLimitGate(
         val blockedFor = window.blockedForMs()
         if (blockedFor > 0) return holdOrRefuse(priority, blockedFor, blocked = true)
 
+        // A budget nobody has confirmed is a guess about where the server's window boundary sits.
+        // One request goes out to find out; the rest wait for its headers rather than spend a
+        // window that may not have refilled. The wait is one round trip, not one window.
+        if (!window.budgetConfirmed && inFlight.get() > 0) return Decision.Wait(config.minGapMs)
+
         val limit = simulatedLimit ?: window.limit
         if (effectiveHeadroom(window.limit, window.headroom()) <= reserveFor(priority, limit)) {
             return holdOrRefuse(priority, window.resetsInMs(), blocked = false)
