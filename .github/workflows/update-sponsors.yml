@@ -19,7 +19,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # --- README tier blocks ---
 
@@ -91,7 +91,7 @@ jobs:
 
       # --- Commit ---
 
-      - uses: stefanzweifel/git-auto-commit-action@v5
+      - uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore(sponsors): sync README and in-app sponsor list"
           file_pattern: 'README.md app/src/main/assets/sponsors.json'
