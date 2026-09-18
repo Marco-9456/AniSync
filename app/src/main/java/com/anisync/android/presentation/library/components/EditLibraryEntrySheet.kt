@@ -103,6 +103,8 @@ import com.anisync.android.domain.sliderSteps
 import com.anisync.android.domain.snap
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AppModalBottomSheet
+import com.anisync.android.presentation.components.alert.LocalToastManager
+import com.anisync.android.presentation.components.alert.OverlayToastHost
 import com.anisync.android.presentation.components.iconRes
 import com.anisync.android.presentation.components.toIndicatorKind
 import com.anisync.android.presentation.util.rememberHapticFeedback
@@ -238,6 +240,11 @@ fun EditLibraryEntrySheet(
             }
         }
     ) {
+        // Hosted inside the sheet so a failed save renders above the sheet's scrim. The global host
+        // sits in the app window, behind it, and a save that failed with nothing on screen is worse
+        // than the silence it replaced: the spinner clears and the sheet just sits there.
+        OverlayToastHost(toastManager = LocalToastManager.current)
+
         Column(modifier = Modifier.fillMaxWidth().imePadding()) {
             EditEntryTopBar(
                 saveEnabled = hasChanges,
