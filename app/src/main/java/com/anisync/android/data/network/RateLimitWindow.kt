@@ -15,8 +15,8 @@ import com.anisync.android.data.util.Clock
  * requests issued since it was observed. Without that, a fan-out of parallel calls all read the
  * same pre-flight number and collectively overshoot.
  *
- * Not thread safe on its own. [RateLimitGate] owns an instance and touches it under its mutex,
- * except [onIssued] which is called from the admission path and uses its own counter.
+ * Not thread safe on its own. [RateLimitGate] owns an instance and every read and write of these
+ * fields happens under its mutex. Anything that reports outside the lock goes through [snapshot].
  */
 class RateLimitWindow(private val clock: Clock) {
 
@@ -48,16 +48,36 @@ class RateLimitWindow(private val clock: Clock) {
     fun headroom(): Int = (remaining - issuedSinceObserved).coerceAtLeast(0)
 
     /**
+     * An immutable read of the window.
+     *
+     * [RateLimitGate] mutates this under its mutex but reports outside it, from threads that never
+     * take the lock. Publishing from one of these instead of from the live fields is what stops a
+     * report mixing values from either side of a 429.
+     */
+    fun snapshot(): Snapshot = Snapshot(limit, headroom(), blockedUntilMs, windowStartedAtMs)
+
+    /** @see snapshot */
+    data class Snapshot(
+        val limit: Int,
+        val headroom: Int,
+        val blockedUntilMs: Long,
+        val windowStartedAtMs: Long,
+    ) {
+        /** @see RateLimitWindow.blockedForMs */
+        fun blockedForMs(nowMs: Long): Long = blockedForMsAt(blockedUntilMs, nowMs)
+
+        /** @see RateLimitWindow.resetsInMs */
+        fun resetsInMs(nowMs: Long): Long = resetsInMsAt(windowStartedAtMs, nowMs)
+    }
+
+    /**
      * Milliseconds left on a 429 timeout, or 0 when not blocked.
      *
      * The unset check is not decoration. Subtracting a clock reading from [Long.MIN_VALUE]
      * underflows and wraps to a huge positive number, which reads as "blocked for 292 million
      * years" the moment the clock leaves zero.
      */
-    fun blockedForMs(): Long {
-        if (blockedUntilMs == Long.MIN_VALUE) return 0
-        return (blockedUntilMs - clock.nowMs()).coerceAtLeast(0)
-    }
+    fun blockedForMs(): Long = blockedForMsAt(blockedUntilMs, clock.nowMs())
 
     /**
      * Milliseconds until the window is expected to roll over and the budget refills.
@@ -65,11 +85,7 @@ class RateLimitWindow(private val clock: Clock) {
      * Falls back to a full window when no reset edge has been observed yet, which is the
      * conservative direction: it makes a caller wait longer rather than fire too early.
      */
-    fun resetsInMs(): Long {
-        if (windowStartedAtMs == Long.MIN_VALUE) return WINDOW_MS
-        val elapsed = clock.nowMs() - windowStartedAtMs
-        return (WINDOW_MS - elapsed).coerceIn(0, WINDOW_MS)
-    }
+    fun resetsInMs(): Long = resetsInMsAt(windowStartedAtMs, clock.nowMs())
 
     /**
      * Rolls the window over once its length has passed with no response to say so.
@@ -169,5 +185,24 @@ class RateLimitWindow(private val clock: Clock) {
 
         /** Nothing legitimate asks for longer than this. */
         const val MAX_RETRY_AFTER_SECONDS = 120L
+
+        /**
+         * Shared by the live window and by [Snapshot] so a published reading and the gate's own
+         * cannot drift apart.
+         *
+         * The unset check is not decoration. Subtracting a clock reading from [Long.MIN_VALUE]
+         * underflows and wraps to a huge positive number, which reads as "blocked for 292 million
+         * years" the moment the clock leaves zero.
+         */
+        private fun blockedForMsAt(blockedUntilMs: Long, nowMs: Long): Long {
+            if (blockedUntilMs == Long.MIN_VALUE) return 0
+            return (blockedUntilMs - nowMs).coerceAtLeast(0)
+        }
+
+        /** @see blockedForMsAt */
+        private fun resetsInMsAt(windowStartedAtMs: Long, nowMs: Long): Long {
+            if (windowStartedAtMs == Long.MIN_VALUE) return WINDOW_MS
+            return (WINDOW_MS - (nowMs - windowStartedAtMs)).coerceIn(0, WINDOW_MS)
+        }
     }
 }

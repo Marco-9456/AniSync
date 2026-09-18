@@ -1,6 +1,5 @@
 package com.anisync.android.data.network
 
-import android.util.Log
 import com.anisync.android.data.util.ApiError
 import com.anisync.android.data.util.Clock
 import kotlinx.coroutines.delay
@@ -77,6 +76,19 @@ class RateLimitGate(
     private val mutex = Mutex()
     private val window = RateLimitWindow(clock)
 
+    /**
+     * The last state of [window], as an immutable value.
+     *
+     * [publish] and [blockedForMs] are called from threads that do not hold [mutex] (a response
+     * arriving, a request being released, the retry policy asking). Reading the live window from
+     * there let a report be assembled out of fields from either side of a 429, which surfaced as a
+     * countdown clearing itself off screen while the block was still on. Everything outside the
+     * lock reads this instead, and every path that mutates the window refreshes it before it lets
+     * the lock go.
+     */
+    @Volatile
+    private var published = window.snapshot()
+
     private var lastIssuedAtMs = Long.MIN_VALUE
     private var restored = false
 
@@ -107,16 +119,16 @@ class RateLimitGate(
     suspend fun acquire(priority: RequestPriority) {
         restoreOnce()
         while (true) {
-            when (val decision = mutex.withLock { evaluate(priority) }) {
+            when (val decision = mutex.withLock { evaluate(priority).also { capture() } }) {
                 Decision.Admit -> {
                     admitted.incrementAndGet()
                     inFlight.incrementAndGet()
                     publish()
-                    Log.d(
-                        TAG,
+                    NetLog.d(TAG) {
                         "AniSyncNet event=admit priority=$priority " +
-                            "remaining=${effectiveHeadroom()} in_flight=${inFlight.get()}",
-                    )
+                            "remaining=${published.let { effectiveHeadroom(it.limit, it.headroom) }} " +
+                            "in_flight=${inFlight.get()}"
+                    }
                     return
                 }
 
@@ -158,12 +170,12 @@ class RateLimitGate(
                 rateLimited.incrementAndGet()
                 window.onRateLimited(retryAfterSeconds)
                 persistence.saveBlockedFor(window.blockedForMs())
-                Log.w(
-                    TAG,
+                NetLog.w(TAG) {
                     "AniSyncNet event=rate_limited retry_after_s=${retryAfterSeconds ?: -1} " +
-                        "limit=${window.limit} blocked_ms=${window.blockedForMs()}",
-                )
+                        "limit=${window.limit} blocked_ms=${window.blockedForMs()}"
+                }
             }
+            capture()
         }
         publish()
     }
@@ -175,7 +187,12 @@ class RateLimitGate(
     }
 
     /** Milliseconds still to wait on a 429 timeout, or 0. Read by the retry policy. */
-    fun blockedForMs(): Long = window.blockedForMs()
+    fun blockedForMs(): Long = published.blockedForMs(clock.nowMs())
+
+    /** Call while holding [mutex], after anything that changed the window. */
+    private fun capture() {
+        published = window.snapshot()
+    }
 
     private fun evaluate(priority: RequestPriority): Decision {
         // Before anything else: a window whose length has passed refills itself. Nothing else can,
@@ -186,7 +203,7 @@ class RateLimitGate(
         if (blockedFor > 0) return holdOrRefuse(priority, blockedFor, blocked = true)
 
         val limit = simulatedLimit ?: window.limit
-        if (effectiveHeadroom() <= reserveFor(priority, limit)) {
+        if (effectiveHeadroom(window.limit, window.headroom()) <= reserveFor(priority, limit)) {
             return holdOrRefuse(priority, window.resetsInMs(), blocked = false)
         }
 
@@ -208,7 +225,7 @@ class RateLimitGate(
     private fun holdOrRefuse(priority: RequestPriority, waitMs: Long, blocked: Boolean): Decision {
         val seconds = ceilSeconds(waitMs)
         if (priority != RequestPriority.Interactive) {
-            Log.d(TAG, "AniSyncNet event=deferred priority=$priority wait_s=$seconds blocked=$blocked")
+            NetLog.d(TAG) { "AniSyncNet event=deferred priority=$priority wait_s=$seconds blocked=$blocked" }
             return Decision.Refuse(ApiError.Deferred(seconds))
         }
         if (waitMs > config.maxInteractiveWaitMs) {
@@ -222,9 +239,9 @@ class RateLimitGate(
      * smaller limit. Simulation works off what has already been spent in the window rather than
      * clamping the count, so the budget actually runs out instead of sitting at the pinned number.
      */
-    private fun effectiveHeadroom(): Int {
-        val simulated = simulatedLimit ?: return window.headroom()
-        val spent = window.limit - window.headroom()
+    private fun effectiveHeadroom(limit: Int, headroom: Int): Int {
+        val simulated = simulatedLimit ?: return headroom
+        val spent = limit - headroom
         return (simulated - spent).coerceAtLeast(0)
     }
 
@@ -251,32 +268,34 @@ class RateLimitGate(
             val pending = persistence.readBlockedForMs()
             if (pending > 0) {
                 window.restoreBlockedFor(pending)
-                Log.i(TAG, "AniSyncNet event=restored_block ms=$pending")
+                NetLog.i(TAG) { "AniSyncNet event=restored_block ms=$pending" }
             }
+            capture()
         }
     }
 
     private fun publish() {
-        val blockedFor = window.blockedForMs()
-        val limit = simulatedLimit ?: window.limit
-        val headroom = effectiveHeadroom()
+        val state = published
+        val now = clock.nowMs()
+        val blockedFor = state.blockedForMs(now)
+        val limit = simulatedLimit ?: state.limit
+        val headroom = effectiveHeadroom(state.limit, state.headroom)
         // A spent budget stops requests just as completely as a 429 does, so it reports the same
         // way. Reporting it as mere pacing left the user watching a screen of skeletons with no
         // toast, no countdown and nothing to retry from.
         val waitMs = when {
             blockedFor > 0 -> blockedFor
-            headroom <= 0 -> window.resetsInMs()
+            headroom <= 0 -> state.resetsInMs(now)
             else -> 0
         }
         monitor.publishStatus(
             when {
                 waitMs > 0 -> RateLimitStatus.Blocked(
-                    retryAtElapsedMs = clock.nowMs() + waitMs,
+                    retryAtElapsedMs = now + waitMs,
                     secondsRemaining = ceilSeconds(waitMs),
                 )
 
-                headroom <= reserveFor(RequestPriority.Prefetch, limit) ->
-                    RateLimitStatus.Pacing(headroom, limit)
+                headroom <= reserveFor(RequestPriority.Prefetch, limit) -> RateLimitStatus.Pacing
 
                 else -> RateLimitStatus.Clear
             },
@@ -284,9 +303,9 @@ class RateLimitGate(
         monitor.publishStats(
             RateLimitStats(
                 limit = limit,
-                remaining = effectiveHeadroom(),
+                remaining = headroom,
                 inFlight = inFlight.get(),
-                windowResetsInMs = window.resetsInMs(),
+                windowResetsInMs = state.resetsInMs(now),
                 blockedForMs = blockedFor,
                 admitted = admitted.get(),
                 paced = paced.get(),
