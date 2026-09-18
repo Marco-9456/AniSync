@@ -28,7 +28,7 @@ class UserOptionsFlushWorker @AssistedInject constructor(
     private val repository: UserOptionsRepository,
 ) : CoroutineWorker(appContext, params) {
 
-        override suspend fun doWork(): Result =
+    override suspend fun doWork(): Result =
         // Every request this run makes yields to whatever the user is doing. When the
         // budget is short the gate refuses instead of waiting, and WorkManager reruns us.
         withRequestPriority(RequestPriority.Background) { flushOptions() }

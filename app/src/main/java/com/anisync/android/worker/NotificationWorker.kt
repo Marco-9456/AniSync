@@ -92,7 +92,7 @@ class NotificationWorker @AssistedInject constructor(
     /** The tray slot a social notification lands in; events sharing a slot collapse to one entry. */
     private data class SocialSlot(val category: String, val id: Int)
 
-        override suspend fun doWork(): androidx.work.ListenableWorker.Result =
+    override suspend fun doWork(): androidx.work.ListenableWorker.Result =
         // Every request this run makes yields to whatever the user is doing. When the
         // budget is short the gate refuses instead of waiting, and WorkManager reruns us.
         withRequestPriority(RequestPriority.Background) { pollAccounts() }
