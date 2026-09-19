@@ -23,6 +23,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Bookmark
@@ -79,6 +81,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.CommentNode
 import com.anisync.android.domain.toCommentNode
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
+import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.util.adaptiveReadingWidth
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
@@ -90,6 +93,7 @@ import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.rememberExoPlayerCache
 import com.anisync.android.presentation.forum.components.FoldedAncestorStrip
 import com.anisync.android.presentation.forum.components.PageJumperBottomSheet
+import com.anisync.android.presentation.forum.components.ThreadCommentsBar
 import com.anisync.android.presentation.forum.components.SkeletonLine
 import com.anisync.android.presentation.forum.components.ThreadBodyItem
 import com.anisync.android.presentation.forum.components.ThreadCommentItem
@@ -100,8 +104,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.withContext
 
 // Base indent per depth level
-private const val INDENT_PER_LEVEL_DP = 32
+private const val INDENT_PER_LEVEL_DP = 20
 private const val MIN_CONTENT_WIDTH_DP = 200
+
+/** How many levels of reply are drawn before the drill-down takes over. */
+private const val MAX_VISUAL_DEPTH = 3
 
 internal data class FlatComment(
     val comment: CommentNode,
@@ -147,9 +154,10 @@ fun ThreadDetailScreen(
 
     val playerCache = rememberExoPlayerCache()
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
-    val depthWindowSize = remember(screenWidthDp) {
-        ((screenWidthDp - MIN_CONTENT_WIDTH_DP) / INDENT_PER_LEVEL_DP).coerceIn(3, 12)
-    }
+    // Three levels is the whole ladder. The old formula scaled the window with the screen, so a
+    // tablet allowed twelve levels inside a column capped at 600dp and ended up narrower than a
+    // phone at maximum depth. Past three, "continue this thread" is the only way down.
+    val depthWindowSize = remember { MAX_VISUAL_DEPTH }
 
     var drillDownStack by rememberSaveable(
         saver = listSaver<MutableState<List<Int>>, Int>(
@@ -296,7 +304,11 @@ fun ThreadDetailScreen(
     }
 
     CollapsingTopBarScaffold(
-        title = threadTitle.ifEmpty { stringResource(R.string.forum_thread_appbar) },
+        // The two-pane host has only the id, so it passes an empty title. Falling straight back
+        // to the literal word "Thread" wasted a 200dp hero on a generic noun.
+        title = threadTitle.ifEmpty {
+            uiState.thread?.title ?: stringResource(R.string.forum_thread_appbar)
+        },
         onBackClick = onBackClick,
         navigationIcon = navigationIcon,
         scrollableState = listState,
@@ -476,67 +488,31 @@ fun ThreadDetailScreen(
                                 )
                             }
 
-                            item(key = "comments_header") {
-                                Column(modifier = Modifier.padding(top = 16.dp)) {
-                                    SectionHeader(
-                                        title = stringResource(R.string.forum_comments),
-                                        level = HeaderLevel.Section,
-                                        padding = PaddingValues(
-                                            horizontal = 24.dp,
-                                            vertical = 8.dp
-                                        ) // MD3 padding
-                                    )
-                                    Row(
-                                        modifier = Modifier
-                                            .horizontalScroll(rememberScrollState())
-                                            .padding(horizontal = 20.dp, vertical = 8.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        commentSortOptions.forEach { option ->
-                                            FilterChip(
-                                                selected = uiState.commentSortLabel == option.label,
-                                                onClick = {
-                                                    viewModel.onAction(
-                                                        ThreadDetailAction.ChangeCommentSort(
-                                                            option.sort,
-                                                            option.label
-                                                        )
-                                                    )
-                                                },
-                                                label = {
-                                                    Text(
-                                                        text = option.label,
-                                                        style = MaterialTheme.typography.labelLarge,
-                                                        fontWeight = FontWeight.SemiBold
-                                                    )
-                                                },
-                                                colors = FilterChipDefaults.filterChipColors(
-                                                    selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                                    selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                                ),
-                                                shape = RoundedCornerShape(16.dp),
-                                                border = null
-                                            )
+                            item(key = "comments_bar") {
+                                ThreadCommentsBar(
+                                    totalComments = uiState.totalComments,
+                                    currentPage = uiState.loadedPageRange?.last ?: 1,
+                                    lastPage = uiState.lastPage,
+                                    isOldestFirst = uiState.commentSortLabel ==
+                                            commentSortOptions.first().label,
+                                    onJumpToPage = {
+                                        viewModel.onAction(ThreadDetailAction.ShowPageJumper)
+                                    },
+                                    onSortChange = { oldestFirst ->
+                                        val option = if (oldestFirst) {
+                                            commentSortOptions.first()
+                                        } else {
+                                            commentSortOptions.last()
                                         }
-                                    }
-                                }
-                            }
-
-                            val hasPagePill = uiState.lastPage > 1 || uiState.totalComments > 0
-                            if (hasPagePill) {
-                                item(key = "page_pill") {
-                                    PageProgressPill(
-                                        totalComments = uiState.totalComments,
-                                        currentPage = uiState.loadedPageRange?.last ?: 1,
-                                        lastPage = uiState.lastPage,
-                                        onClick = { viewModel.onAction(ThreadDetailAction.ShowPageJumper) },
-                                        onJumpFirst = { viewModel.onAction(ThreadDetailAction.JumpToFirstPage) },
-                                        onJumpLatest = { viewModel.onAction(ThreadDetailAction.JumpToLatestPage) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    )
-                                }
+                                        viewModel.onAction(
+                                            ThreadDetailAction.ChangeCommentSort(
+                                                option.sort,
+                                                option.label
+                                            )
+                                        )
+                                    },
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
                             }
 
                             if (drillDownStack.isNotEmpty()) {
@@ -604,14 +580,19 @@ fun ThreadDetailScreen(
 
                             if (visibleComments.isEmpty() && !uiState.isLoadingMoreComments) {
                                 item(key = "empty_comments") {
-                                    Box(
+                                    EmptyState(
+                                        icon = Icons.Outlined.ChatBubbleOutline,
+                                        title = stringResource(R.string.forum_empty_comments_title),
+                                        description = stringResource(R.string.forum_empty_comments_desc),
+                                        actionLabel = stringResource(R.string.forum_empty_comments_action),
+                                        actionIcon = Icons.Default.Edit,
+                                        onAction = {
+                                            viewModel.onAction(ThreadDetailAction.OpenReply(null, null))
+                                        },
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 48.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        EmptyStateConfigs.ForumNoComments()
-                                    }
+                                            .padding(vertical = 32.dp)
+                                    )
                                 }
                             } else {
                                 itemsIndexed(

@@ -135,6 +135,7 @@
     <string name="forum_filter_any">Any</string>
     <string name="forum_filter_anyone">Anyone</string>
     <string name="forum_show_threads">Show threads</string>
+    <string name="forum_show_threads_count">Show %1$d threads</string>
 
     <!-- Forum thread actions -->
     <string name="forum_action_subscribe">Subscribe</string>
@@ -185,10 +186,17 @@
 
     <!-- Forum thread screen -->
     <string name="forum_views_count">%1$s views</string>
-    <string name="forum_continue_thread_count">Continue this thread · %1$d replies</string>
-    <string name="forum_collapsed_replies">+%1$d replies</string>
+    <plurals name="forum_continue_thread_count">
+        <item quantity="one">Continue this thread · %1$d reply</item>
+        <item quantity="other">Continue this thread · %1$d replies</item>
+    </plurals>
+    <plurals name="forum_collapsed_replies">
+        <item quantity="one">+%1$d reply</item>
+        <item quantity="other">+%1$d replies</item>
+    </plurals>
     <string name="forum_sort_oldest_short">Oldest</string>
     <string name="forum_sort_newest_short">Newest</string>
+    <string name="forum_comments_count_short">%1$s comments</string>
 
     <!-- Forum composer -->
     <string name="forum_title_min_hint">6 characters minimum</string>
