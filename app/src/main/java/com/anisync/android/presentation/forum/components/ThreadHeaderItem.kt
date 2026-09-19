@@ -68,16 +68,8 @@ fun ThreadHeaderTop(
                 onUserClick = onUserClick
             )
 
-            Spacer(Modifier.height(20.dp))
-
-            Text(
-                text = thread.title,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onSurface,
-                lineHeight = MaterialTheme.typography.headlineMedium.lineHeight * 1.1f
-            )
-
+            // The title is not repeated here. The collapsing bar above is already showing it at
+            // 32sp, and drawing it twice cost roughly 79dp of the first screenful.
             if (thread.categories.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 FlowRow(
@@ -86,15 +78,15 @@ fun ThreadHeaderTop(
                 ) {
                     thread.categories.forEach { cat ->
                         Surface(
-                            shape = RoundedCornerShape(100),
-                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                            contentColor = MaterialTheme.colorScheme.primary
                         ) {
                             Text(
-                                text = cat.name.uppercase(),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                text = cat.name,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
                     }

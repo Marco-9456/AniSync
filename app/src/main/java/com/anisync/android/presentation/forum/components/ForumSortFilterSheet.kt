@@ -81,7 +81,7 @@ fun ForumSortFilterSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 620.dp)
+                .weight(1f, fill = false)
                 .verticalScroll(rememberScrollState())
         ) {
             Row(
@@ -182,7 +182,11 @@ fun ForumSortFilterSheet(
                 )
             }
 
-            Spacer(Modifier.height(24.dp))
+        }
+        // The confirm button stays out of the scroll: a sheet whose only way to apply is below the
+        // fold reads as having no way to apply at all.
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Spacer(Modifier.height(16.dp))
             Button(
                 onClick = onApply,
                 shape = CircleShape,
@@ -196,7 +200,7 @@ fun ForumSortFilterSheet(
                     .height(56.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.forum_show_threads),
+                    text = stringResource(R.string.forum_show_threads_count, resultCount),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold
                 )

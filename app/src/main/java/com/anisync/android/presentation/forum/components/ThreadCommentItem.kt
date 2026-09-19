@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -74,7 +75,7 @@ fun ThreadCommentItem(
     threadAuthorId: Int = 0,
     depth: Int = 0,
     depthOffset: Int = 0,
-    maxVisualDepth: Int = 5,
+    maxVisualDepth: Int = 3,
     onDrillDown: (() -> Unit)? = null,
     onUserClick: (String) -> Unit = {},
     actionSlot: @Composable () -> Unit = {}
@@ -83,12 +84,15 @@ fun ThreadCommentItem(
     val scope = rememberCoroutineScope()
     val basePadding = 16.dp
 
-    val indentSize = 32.dp
-    val avatarRadius = 14.dp
+    val indentSize = 24.dp
+    // 24dp avatar against a 24dp indent step, so a child never sits on its parent rail.
+    val avatarRadius = 12.dp
     val curvePadding = 6.dp
     val headerHorizontalPadding = 4.dp
 
-    val contentIndent = 32.dp
+    // The body sits under the avatar rather than 32dp further in. That second indent was
+    // costing every level twice.
+    val contentIndent = 0.dp
     val windowedDepth = (depth - depthOffset).coerceAtLeast(0)
     val displayDepth = windowedDepth.coerceAtMost(maxVisualDepth)
 
@@ -109,15 +113,9 @@ fun ThreadCommentItem(
     }
 
     val colorScheme = MaterialTheme.colorScheme
-    val lineColors = remember(colorScheme) {
-        listOf(
-            colorScheme.primary,
-            colorScheme.secondary,
-            colorScheme.tertiary,
-            colorScheme.outlineVariant,
-            colorScheme.primaryContainer
-        )
-    }
+    // One colour for every level. The old five-entry rotation repeated from depth 5 onwards, so
+    // the hue stopped identifying which ancestor a comment hung off and was only noise.
+    val lineColors = remember(colorScheme) { listOf(colorScheme.outlineVariant) }
 
     Column(
         modifier = modifier
@@ -199,6 +197,7 @@ fun ThreadCommentItem(
                 .fillMaxWidth()
                 .drawBehind {
                     val cornerRadius = 12.dp.toPx()
+                    // 8dp inner top padding + 6dp header padding + half the 28dp avatar.
                     val avatarCenterY = 26.dp.toPx()
 
                     val basePx = basePadding.toPx()
@@ -211,12 +210,15 @@ fun ThreadCommentItem(
                         basePx + (d * indentPx) + headerHorizontalPaddingPx + avatarRadiusPx
                     }
 
+                    // Overshoot by the list's own item spacing, or every rail reads as a dashed
+                    // line with an 8dp break at each comment boundary.
+                    val bridge = 8.dp.toPx()
                     for (i in 0 until displayDepth) {
                         val x = getAvatarCenterX(i)
                         drawLine(
-                            color = lineColors[(i + depthOffset) % lineColors.size].copy(alpha = 0.25f),
+                            color = lineColors[(i + depthOffset) % lineColors.size].copy(alpha = 0.45f),
                             start = Offset(x, 0f),
-                            end = Offset(x, size.height),
+                            end = Offset(x, size.height + bridge),
                             strokeWidth = strokeStyle.width,
                             cap = StrokeCap.Round
                         )
@@ -262,9 +264,9 @@ fun ThreadCommentItem(
                     if (descendantCount > 0 && !isCollapsed) {
                         val myX = getAvatarCenterX(displayDepth)
                         drawLine(
-                            color = lineColors[(displayDepth + depthOffset) % lineColors.size].copy(alpha = 0.25f),
+                            color = lineColors[(displayDepth + depthOffset) % lineColors.size].copy(alpha = 0.45f),
                             start = Offset(myX, avatarCenterY + avatarRadiusPx + 4.dp.toPx()),
-                            end = Offset(myX, size.height),
+                            end = Offset(myX, size.height + bridge),
                             strokeWidth = strokeStyle.width,
                             cap = StrokeCap.Round
                         )
@@ -342,7 +344,11 @@ fun ThreadCommentItem(
                         )
                         if (descendantCount > 0) {
                             Text(
-                                text = "+$descendantCount",
+                                text = pluralStringResource(
+                                    R.plurals.forum_collapsed_replies,
+                                    descendantCount,
+                                    descendantCount
+                                ),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Black,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -377,13 +383,12 @@ fun ThreadCommentItem(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        // No chip behind either action. Two filled pills under a three-word reply
+                        // was most of what a comment cost to scroll past.
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(100))
-                                .background(MaterialTheme.colorScheme.surfaceContainer)
-                                .padding(end = 12.dp, start = 4.dp, top = 4.dp, bottom = 4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.padding(end = 8.dp)
                         ) {
                             AnimatedFavoriteButton(
                                 isFavorite = comment.isLiked,
@@ -415,13 +420,12 @@ fun ThreadCommentItem(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(100))
-                                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                                    .clip(RoundedCornerShape(10.dp))
                                     .clickable {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         onReplyClick(comment.id, comment.authorName)
                                     }
-                                    .padding(horizontal = 10.dp, vertical = 8.dp)
+                                    .padding(horizontal = 8.dp, vertical = 6.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Reply,
@@ -432,7 +436,7 @@ fun ThreadCommentItem(
                                 Text(
                                     text = stringResource(R.string.forum_reply),
                                     style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1
                                 )
@@ -456,9 +460,13 @@ fun ThreadCommentItem(
                                     .padding(horizontal = 10.dp, vertical = 8.dp)
                             ) {
                                 Text(
-                                    text = "$descendantCount",
+                                    text = pluralStringResource(
+                                        R.plurals.forum_continue_thread_count,
+                                        descendantCount,
+                                        descendantCount
+                                    ),
                                     style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     maxLines = 1
                                 )
