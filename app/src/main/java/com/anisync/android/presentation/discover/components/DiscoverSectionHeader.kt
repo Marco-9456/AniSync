@@ -46,12 +46,18 @@ fun DiscoverSectionHeader(
     title: String,
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
-    onActionClick: (() -> Unit)? = null
+    onActionClick: (() -> Unit)? = null,
+    /**
+     * Inset from the edge of whatever hosts the header. Forum's list already carries 16dp of
+     * content padding, so it passes the remainder and the accent bar lands on the same column as
+     * the one on its pinned section.
+     */
+    horizontalPadding: androidx.compose.ui.unit.Dp = 24.dp
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = horizontalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(

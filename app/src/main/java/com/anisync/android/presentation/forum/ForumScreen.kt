@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -83,6 +84,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
@@ -698,6 +700,7 @@ private fun LazyListScope.overviewSections(
                         viewModel.onAction(ForumAction.OnFeedChange(section.opens))
                     }
                 },
+                horizontalPadding = 12.dp,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
         }
@@ -762,21 +765,24 @@ private fun PinnedHeader(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().height(40.dp).padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(4.dp, 24.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                    .size(5.dp, 24.dp)
+                    .clip(RoundedCornerShape(3.dp))
                     .background(MaterialTheme.colorScheme.primary)
             )
+            Spacer(Modifier.width(12.dp))
             Text(
                 text = stringResource(R.string.forum_pinned),
                 style = MaterialTheme.typography.titleLarge,
+                fontSize = 22.sp,
+                lineHeight = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            Spacer(Modifier.width(8.dp))
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = RoundedCornerShape(10.dp)
