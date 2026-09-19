@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,10 +34,14 @@ private val SeamCorner = 7.dp
  * phone screen: a "Comments" section heading, two borderless filter chips that were invisible when
  * unselected, a comment count, a page indicator and a Jump button. Two of them said the same thing,
  * and the Jump button sat where the reply button covered it.
+ *
+ * [commentsOnPage] counts what is loaded below, replies included. The thread's lifetime total is
+ * already implied by "of 284 pages", and printing it here described a list the user was not
+ * looking at.
  */
 @Composable
 fun ThreadCommentsBar(
-    totalComments: Int,
+    commentsOnPage: Int,
     currentPage: Int,
     lastPage: Int,
     isOldestFirst: Boolean,
@@ -44,60 +49,69 @@ fun ThreadCommentsBar(
     onSortChange: (oldestFirst: Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .padding(horizontal = 24.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
+    Column(modifier = modifier.fillMaxWidth()) {
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+        Row(
             modifier = Modifier
-                .weight(1f)
-                .then(
-                    if (lastPage > 1) {
-                        Modifier
-                            .bouncyClickable(
-                                onClick = onJumpToPage,
-                                role = Role.Button,
-                                clipShape = RoundedCornerShape(10.dp)
-                            )
-                            .padding(vertical = 4.dp)
-                    } else {
-                        Modifier
-                    }
-                )
+                .fillMaxWidth()
+                .height(56.dp)
+                .padding(horizontal = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = stringResource(R.string.forum_comments_count_short, totalComments.formatCount()),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
-            )
-            if (lastPage > 1) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (lastPage > 1) {
+                            Modifier
+                                .bouncyClickable(
+                                    onClick = onJumpToPage,
+                                    role = Role.Button,
+                                    clipShape = RoundedCornerShape(10.dp)
+                                )
+                                .padding(vertical = 4.dp)
+                        } else {
+                            Modifier
+                        }
+                    )
+            ) {
                 Text(
-                    text = stringResource(R.string.forum_page_of, currentPage, lastPage),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = stringResource(
+                        R.string.forum_comments_count_short,
+                        commentsOnPage.formatCount()
+                    ),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1
                 )
+                if (lastPage > 1) {
+                    Text(
+                        text = stringResource(R.string.forum_page_of, currentPage, lastPage),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
             }
-        }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            SortSegment(
-                label = stringResource(R.string.forum_sort_oldest_short),
-                selected = isOldestFirst,
-                leading = true,
-                onClick = { onSortChange(true) }
-            )
-            SortSegment(
-                label = stringResource(R.string.forum_sort_newest_short),
-                selected = !isOldestFirst,
-                leading = false,
-                onClick = { onSortChange(false) }
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                SortSegment(
+                    label = stringResource(R.string.forum_sort_oldest_short),
+                    selected = isOldestFirst,
+                    leading = true,
+                    onClick = { onSortChange(true) }
+                )
+                SortSegment(
+                    label = stringResource(R.string.forum_sort_newest_short),
+                    selected = !isOldestFirst,
+                    leading = false,
+                    onClick = { onSortChange(false) }
+                )
+            }
         }
     }
 }
