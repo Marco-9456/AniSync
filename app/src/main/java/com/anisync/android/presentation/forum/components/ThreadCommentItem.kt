@@ -249,28 +249,16 @@ fun ThreadCommentItem(
                                 color = lineColors[(parentVisualDepth + depthOffset) % lineColors.size].copy(alpha = 0.6f),
                                 style = strokeStyle
                             )
-                        } else {
-                            val myX = getAvatarCenterX(displayDepth)
-                            drawLine(
-                                color = lineColors[(displayDepth + depthOffset) % lineColors.size].copy(alpha = 0.6f),
-                                start = Offset(myX, 0f),
-                                end = Offset(myX, avatarCenterY - avatarRadiusPx - curvePaddingPx),
-                                strokeWidth = strokeStyle.width,
-                                cap = StrokeCap.Round
-                            )
                         }
+                        // Past the clamp, parent and child share an indent and there is no descent
+                        // to draw. The stub that used to sit here hung off the bottom of whatever
+                        // came before it once comments stopped drawing their own lane.
                     }
 
-                    if (descendantCount > 0 && !isCollapsed) {
-                        val myX = getAvatarCenterX(displayDepth)
-                        drawLine(
-                            color = lineColors[(displayDepth + depthOffset) % lineColors.size].copy(alpha = 0.45f),
-                            start = Offset(myX, avatarCenterY + avatarRadiusPx + 4.dp.toPx()),
-                            end = Offset(myX, size.height + bridge),
-                            strokeWidth = strokeStyle.width,
-                            cap = StrokeCap.Round
-                        )
-                    }
+                    // A comment does not draw its own rail. That rail runs at its avatar centre,
+                    // which is 16dp right of where its body starts, so it came down straight
+                    // through the text. Replies draw it instead, from their own top edge, where
+                    // it is an ancestor lane and nothing sits on it.
                 }
                 .padding(
                     start = basePadding + (displayDepth * indentSize),
