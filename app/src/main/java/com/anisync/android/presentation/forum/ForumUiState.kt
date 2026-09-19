@@ -71,6 +71,11 @@ data class ForumUiState(
     /** Pinned threads are collapsed by default — AniList keeps several stickied at all times. */
     val isPinnedExpanded: Boolean = false,
 
+    /** The Overview's sections, in the viewer's order, and the ones switched off. */
+    val overviewOrder: List<OverviewSection> = OverviewSection.entries,
+    val hiddenOverviewSections: Set<OverviewSection> = emptySet(),
+    val isReorderSheetVisible: Boolean = false,
+
     /** Ordering and structured narrowing applied to the hub list. */
     val hubFilters: ForumSearchFilters = ForumSearchFilters(),
 
@@ -141,6 +146,10 @@ data class ForumUiState(
 
     val showsPinnedSection: Boolean get() = pinnedThreads.isNotEmpty()
 
+    /** The sections that actually render, in order. */
+    val visibleOverviewSections: List<OverviewSection>
+        get() = overviewOrder.filterNot { it in hiddenOverviewSections }
+
     fun overviewThreads(section: OverviewSection): ImmutableList<ForumThread> = when (section) {
         OverviewSection.RECENTLY_ACTIVE -> overviewRecent
         OverviewSection.RELEASE_DISCUSSION -> overviewRelease
@@ -172,6 +181,16 @@ sealed interface ForumAction {
     data object ToggleHubSubscribedOnly : ForumAction
     data object ResetHubFilters : ForumAction
     data object ApplyHubFilters : ForumAction
+
+    // --- Overview section order ---
+    data object OpenReorderSections : ForumAction
+    data object DismissReorderSections : ForumAction
+    data class ReorderOverview(val order: List<OverviewSection>) : ForumAction
+    data class SetOverviewSectionHidden(
+        val section: OverviewSection,
+        val visible: Boolean
+    ) : ForumAction
+    data object ResetOverviewOrder : ForumAction
 
     // --- Advanced search ---
     /** Text typed into the search bar; debounced into a thread search. */

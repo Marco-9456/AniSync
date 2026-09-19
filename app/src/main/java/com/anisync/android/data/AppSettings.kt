@@ -387,6 +387,15 @@ class AppSettings @Inject constructor(
      * both. Stored as ids joined on a comma; [com.anisync.android.domain.DiscoverSection] repairs
      * the list against the current build on read.
      */
+    /** The Overview's section order and which of them are switched off. */
+    private val _forumSectionOrder = MutableStateFlow(readCsv(KEY_FORUM_SECTIONS))
+    val forumSectionOrder: StateFlow<List<String>> = _forumSectionOrder.asStateFlow()
+
+    private val _hiddenForumSections = MutableStateFlow(
+        prefs.getStringSet(KEY_FORUM_HIDDEN_SECTIONS, emptySet()) ?: emptySet()
+    )
+    val hiddenForumSections: StateFlow<Set<String>> = _hiddenForumSections.asStateFlow()
+
     private val _discoverAnimeSectionOrder = MutableStateFlow(readCsv(KEY_DISCOVER_ANIME_SECTIONS))
     val discoverAnimeSectionOrder: StateFlow<List<String>> = _discoverAnimeSectionOrder.asStateFlow()
 
@@ -943,6 +952,18 @@ class AppSettings @Inject constructor(
         }
     }
 
+    /** Persist the Overview's section order. */
+    fun setForumSectionOrder(order: List<String>) {
+        _forumSectionOrder.value = order
+        prefs.edit().putString(KEY_FORUM_SECTIONS, order.joinToString(",")).apply()
+    }
+
+    /** Persist which Overview sections are switched off. */
+    fun setHiddenForumSections(hidden: Set<String>) {
+        _hiddenForumSections.value = hidden
+        prefs.edit().putStringSet(KEY_FORUM_HIDDEN_SECTIONS, hidden).apply()
+    }
+
     /** Persist Discover's rail order for one tab. */
     fun setDiscoverSectionOrder(type: MediaType, order: List<String>) {
         val isAnime = type == MediaType.ANIME
@@ -1364,6 +1385,8 @@ companion object {
         private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
         private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
         private const val KEY_FORUM_FEED = "forum_feed"
+        private const val KEY_FORUM_SECTIONS = "forum_sections"
+        private const val KEY_FORUM_HIDDEN_SECTIONS = "forum_hidden_sections"
         private const val KEY_FORUM_CATEGORY_ID = "forum_category_id"
         private const val KEY_LAST_MAIN_TAB = "last_main_tab"
         private const val KEY_START_SCREEN = "start_screen"
