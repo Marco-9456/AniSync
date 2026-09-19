@@ -72,7 +72,9 @@ fun ForumRail(
     selectedCategoryId: Int?,
     onOpenFeedPicker: () -> Unit,
     onCategoryChange: (Int?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Anchored to the feed button, so the menu opens over the control that names the feed. */
+    feedMenu: @Composable () -> Unit = {}
 ) {
     val background = MaterialTheme.colorScheme.background
     val listState = rememberLazyListState()
@@ -124,13 +126,16 @@ fun ForumRail(
                     .padding(start = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FeedButton(
-                    feed = feed,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        onOpenFeedPicker()
-                    }
-                )
+                Box {
+                    FeedButton(
+                        feed = feed,
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onOpenFeedPicker()
+                        }
+                    )
+                    feedMenu()
+                }
             }
             Box(
                 modifier = Modifier

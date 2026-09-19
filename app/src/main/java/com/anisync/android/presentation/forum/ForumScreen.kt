@@ -33,6 +33,8 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Tune
@@ -78,6 +80,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -91,8 +94,11 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ScrollToTopFab
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
-import com.anisync.android.presentation.forum.components.ForumFeedSheet
+import com.anisync.android.presentation.discover.components.DiscoverSectionHeader
+import com.anisync.android.presentation.forum.components.ForumFeedMenu
 import com.anisync.android.presentation.forum.components.ForumFilterId
+import com.anisync.android.presentation.forum.components.ForumOverflowMenu
+import com.anisync.android.presentation.forum.components.ForumReorderSectionsSheet
 import com.anisync.android.presentation.forum.components.ForumMediaFilterHeader
 import com.anisync.android.presentation.forum.components.ForumRail
 import com.anisync.android.presentation.forum.components.ForumSearchFilterChipBar
@@ -123,6 +129,7 @@ fun ForumScreen(
     onCreateThreadClick: () -> Unit,
     onCreateThreadForMedia: (mediaId: Int, title: String, coverUrl: String?) -> Unit,
     onUserClick: (String) -> Unit,
+    onNavigateToSettings: () -> Unit = {},
     // The thread id open in the two-pane detail (or null); its card shows the selection ring.
     selectedThreadId: Int? = null,
     viewModel: ForumViewModel = hiltViewModel()
@@ -146,6 +153,8 @@ fun ForumScreen(
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
     val inputModeManager = LocalInputModeManager.current
     var openedFilter by remember { mutableStateOf<ForumFilterId?>(null) }
+    var overflowExpanded by remember { mutableStateOf(false) }
+    var feedMenuExpanded by remember { mutableStateOf(false) }
 
     // The search bar carries sort and filter, the way Library's does. Read through an updated
     // state so the remembered input field never shows a stale badge.
@@ -199,25 +208,37 @@ fun ForumScreen(
 
     val inputField = remember {
         @Composable {
-            val currentSearchBarValue = searchBarState.currentValue
+            val expanded = searchBarState.currentValue == SearchBarValue.Expanded
             val isSearchEmpty = textFieldState.text.isEmpty()
-            val expanded = currentSearchBarValue == SearchBarValue.Expanded
 
             SearchBarDefaults.InputField(
+                // Without this the collapsed bar is sized by whatever it happens to contain, so
+                // the Forum bar sat narrower than Discover's. Both fill the width instead.
+                modifier = if (expanded) Modifier else Modifier.fillMaxWidth(),
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
                 onSearch = { focusManager.clearFocus() },
-                placeholder = { Text(text = stringResource(R.string.forum_search_placeholder)) },
-                leadingIcon = if (expanded) {
-                    {
+                // One line always: at a raised font scale a wrapping placeholder takes the whole
+                // bar with it and the bar's height starts depending on the wording.
+                placeholder = {
+                    Text(
+                        text = stringResource(R.string.forum_search_placeholder),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                leadingIcon = {
+                    if (expanded) {
                         IconButton(onClick = collapseSearch) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.back)
                             )
                         }
+                    } else {
+                        Icon(Icons.Default.Search, contentDescription = null)
                     }
-                } else null,
+                },
                 trailingIcon = {
                     if (expanded) {
                         if (!isSearchEmpty) {
@@ -231,20 +252,9 @@ fun ForumScreen(
                             }
                         }
                     } else {
-                        // Ordering and narrowing ride in the bar rather than in a strip of their
-                        // own, which is where Library keeps its equivalents.
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = {
-                                viewModel.onAction(
-                                    ForumAction.OpenSheet(ForumSheet.SORT_AND_FILTER)
-                                )
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.SwapVert,
-                                    contentDescription = stringResource(R.string.cd_sort_threads),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            // Ordering and narrowing keep a control of their own; the overflow is
+                            // for the screen's own preferences, as it is on Discover.
                             IconButton(onClick = {
                                 viewModel.onAction(
                                     ForumAction.OpenSheet(ForumSheet.SORT_AND_FILTER)
@@ -258,13 +268,26 @@ fun ForumScreen(
                                     }
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Tune,
-                                        contentDescription = stringResource(
-                                            R.string.cd_filter_threads
-                                        ),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        imageVector = Icons.Default.SwapVert,
+                                        contentDescription = stringResource(R.string.cd_sort_threads)
                                     )
                                 }
+                            }
+                            Box {
+                            IconButton(onClick = { overflowExpanded = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = stringResource(R.string.more)
+                                )
+                            }
+                            ForumOverflowMenu(
+                                expanded = overflowExpanded,
+                                onDismiss = { overflowExpanded = false },
+                                onReorderSections = {
+                                    viewModel.onAction(ForumAction.OpenReorderSections)
+                                },
+                                onOpenSettings = onNavigateToSettings
+                            )
                             }
                         }
                     }
@@ -327,13 +350,18 @@ fun ForumScreen(
                 ForumRail(
                     feed = uiState.feed,
                     selectedCategoryId = uiState.selectedCategoryId,
-                    onOpenFeedPicker = {
-                        viewModel.onAction(ForumAction.OpenSheet(ForumSheet.FEED_PICKER))
+                    onOpenFeedPicker = { feedMenuExpanded = true },
+                    onCategoryChange = { viewModel.onAction(ForumAction.OnCategoryChange(it)) },
+                    feedMenu = {
+                        ForumFeedMenu(
+                            expanded = feedMenuExpanded,
+                            selected = uiState.feed,
+                            onDismiss = { feedMenuExpanded = false },
+                            onSelect = { viewModel.onAction(ForumAction.OnFeedChange(it)) }
+                        )
                     },
-                    onCategoryChange = { viewModel.onAction(ForumAction.OnCategoryChange(it)) }
+                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
                 )
-
-                Spacer(Modifier.height(4.dp))
             }
         }
     ) { innerPadding ->
@@ -459,13 +487,17 @@ fun ForumScreen(
         }
     }
 
-    if (uiState.openSheet == ForumSheet.FEED_PICKER) {
-        ForumFeedSheet(
-            selected = uiState.feed,
-            onSelect = { viewModel.onAction(ForumAction.OnFeedChange(it)) },
-            onDismiss = { viewModel.onAction(ForumAction.DismissSheet) }
-        )
-    }
+    ForumReorderSectionsSheet(
+        visible = uiState.isReorderSheetVisible,
+        sections = uiState.overviewOrder,
+        hiddenSections = uiState.hiddenOverviewSections,
+        onDismiss = { viewModel.onAction(ForumAction.DismissReorderSections) },
+        onReorder = { viewModel.onAction(ForumAction.ReorderOverview(it)) },
+        onVisibilityChanged = { section, visible ->
+            viewModel.onAction(ForumAction.SetOverviewSectionHidden(section, visible))
+        },
+        onReset = { viewModel.onAction(ForumAction.ResetOverviewOrder) }
+    )
 
     if (uiState.openSheet == ForumSheet.SORT_AND_FILTER) {
         ForumSortFilterSheet(
@@ -474,7 +506,11 @@ fun ForumScreen(
             media = uiState.hubFilters.media,
             author = uiState.hubFilters.author,
             subscribedOnly = uiState.hubFilters.subscribedOnly,
-            resultCount = uiState.threads.size,
+            resultCount = if (uiState.feed == ForumFeed.OVERVIEW) {
+                uiState.visibleOverviewSections.sumOf { uiState.overviewThreads(it).size }
+            } else {
+                uiState.threads.size
+            },
             onSortChange = { viewModel.onAction(ForumAction.OnHubSortChange(it)) },
             onCategoryChange = { id ->
                 viewModel.onAction(
@@ -650,16 +686,16 @@ private fun LazyListScope.overviewSections(
     onLastReplyClick: (Int, Int) -> Unit,
     itemModifier: Modifier
 ) {
-    OverviewSection.entries.forEach { section ->
+    uiState.visibleOverviewSections.forEach { section ->
         val threads = uiState.overviewThreads(section)
         if (threads.isEmpty()) return@forEach
 
         item(key = "section_${section.name}") {
-            SectionHeader(
+            Spacer(Modifier.height(12.dp))
+            // Discover's header, so the accent bar, the type and the "See all" action are the
+            // same control on both browse surfaces.
+            DiscoverSectionHeader(
                 title = stringResource(section.titleRes),
-                level = HeaderLevel.Section,
-                padding = PaddingValues(top = 12.dp, bottom = 4.dp),
-                actionLabel = stringResource(R.string.forum_expand),
                 onActionClick = {
                     if (section == OverviewSection.RELEASE_DISCUSSION) {
                         // The section is a category, so expanding it means that category's feed.
@@ -669,7 +705,8 @@ private fun LazyListScope.overviewSections(
                     } else {
                         viewModel.onAction(ForumAction.OnFeedChange(section.opens))
                     }
-                }
+                },
+                modifier = Modifier.padding(bottom = 4.dp)
             )
         }
 

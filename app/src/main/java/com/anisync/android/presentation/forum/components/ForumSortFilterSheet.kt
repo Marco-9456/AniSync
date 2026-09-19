@@ -26,6 +26,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -77,11 +78,17 @@ fun ForumSortFilterSheet(
     onApply: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AppModalBottomSheet(onDismissRequest = onDismiss) {
+    // Expanded straight away: at the partial height the sheet clipped its own confirm button.
+    AppModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f, fill = false)
+                // Capped so the pinned confirm button below can never be pushed off screen.
+                .heightIn(max = 470.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             Row(

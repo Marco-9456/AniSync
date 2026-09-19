@@ -99,11 +99,12 @@
     <string name="forum_feed_new_short">New</string>
     <string name="forum_feed_subscribed_short">Subscribed</string>
     <string name="forum_feed_saved_short">Saved</string>
-    <string name="forum_choose_feed">Choose a feed</string>
+    <string name="forum_reorder_title">Reorder sections</string>
+    <string name="forum_reorder_caption">Drag to reorder the Overview. Switch a section off to hide it.</string>
+    <string name="forum_reorder_reset">Reset</string>
     <string name="forum_section_recently_active">Recently active threads</string>
     <string name="forum_section_release_discussion">Release discussion threads</string>
     <string name="forum_section_newly_created">Newly created threads</string>
-    <string name="forum_expand">Expand</string>
     <string name="cd_sort_threads">Sort threads</string>
     <string name="cd_filter_threads">Filter threads</string>
     <string name="forum_pinned">Pinned</string>

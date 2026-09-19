@@ -26,6 +26,7 @@ import com.anisync.android.presentation.util.LocalPaneIsRoot
 fun ForumListDetail(
     navController: NavHostController,
     onThreadClickFullScreen: (threadId: Int, threadTitle: String) -> Unit,
+    onNavigateToSettings: () -> Unit,
 ) {
     val forum: @Composable (selectedThreadId: Int?, onThreadOpen: (Int, String) -> Unit) -> Unit = { selectedThreadId, onThreadOpen ->
         ForumScreen(
@@ -39,6 +40,7 @@ fun ForumListDetail(
                 navController.navigate(CreateThread(mediaId, title, coverUrl.orEmpty()))
             },
             onUserClick = { navController.navigateSafely(UserProfile(it)) },
+            onNavigateToSettings = onNavigateToSettings,
         )
     }
 

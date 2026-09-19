@@ -520,6 +520,7 @@ fun AniSyncNavHost(
                 ForumListDetail(
                     navController = navController,
                     onThreadClickFullScreen = onThreadClick,
+                    onNavigateToSettings = { navController.navigate(Settings) },
                 )
             }
 

@@ -45,6 +45,12 @@ private const val MIN_SEARCH_QUERY_LENGTH = 2
 /** How many threads each Overview section previews above its expand button. */
 private const val OVERVIEW_SECTION_SIZE = 4
 
+/** How many rate-limit windows a load waits out before giving up and showing the failure. */
+private const val MAX_RATE_LIMIT_RETRIES = 3
+
+/** A second of grace on top of the countdown, so the retry lands after the window, not on it. */
+private const val RETRY_GRACE_MS = 1_000L
+
 @HiltViewModel
 class ForumViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
@@ -57,10 +63,26 @@ class ForumViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         ForumUiState(
             feed = readSavedFeed(),
-            selectedCategoryId = appSettings.forumCategoryId.value
+            selectedCategoryId = appSettings.forumCategoryId.value,
+            overviewOrder = readSavedOverviewOrder(),
+            hiddenOverviewSections = readHiddenOverviewSections()
         )
     )
     val uiState: StateFlow<ForumUiState> = _uiState.asStateFlow()
+
+    /** Persisted section order, falling back to the declared one and dropping anything stale. */
+    private fun readSavedOverviewOrder(): List<OverviewSection> {
+        val saved = appSettings.forumSectionOrder.value
+            .mapNotNull { name -> runCatching { OverviewSection.valueOf(name) }.getOrNull() }
+        // A section added in a later version is absent from a stored order, so it is appended
+        // rather than lost.
+        return saved + OverviewSection.entries.filterNot { it in saved }
+    }
+
+    private fun readHiddenOverviewSections(): Set<OverviewSection> =
+        appSettings.hiddenForumSections.value
+            .mapNotNull { name -> runCatching { OverviewSection.valueOf(name) }.getOrNull() }
+            .toSet()
 
     /** Resolve the persisted feed, falling back to the Overview. */
     private fun readSavedFeed(): ForumFeed =
@@ -76,6 +98,7 @@ class ForumViewModel @Inject constructor(
     private var mediaPickerJob: Job? = null
     private var authorPickerJob: Job? = null
     private var searchPaginationJob: Job? = null
+    private var loadJob: Job? = null
 
     init {
         loadSavedIds()
@@ -144,7 +167,14 @@ class ForumViewModel @Inject constructor(
                 if (_uiState.value.feed == action.feed) return
                 appSettings.setForumFeed(action.feed.name)
                 _uiState.update {
-                    it.copy(feed = action.feed, isRefreshing = true, openSheet = null)
+                    it.copy(
+                        feed = action.feed,
+                        // Recent and New are orderings, so picking one seeds the sort. It is a
+                        // starting point, not a lock: every feed still honours the sort control.
+                        hubFilters = it.hubFilters.copy(sort = action.feed.defaultSort()),
+                        isRefreshing = true,
+                        openSheet = null
+                    )
                 }
                 load(page = 1, replaceExisting = true)
             }
@@ -160,8 +190,12 @@ class ForumViewModel @Inject constructor(
                 it.copy(openSheet = ForumSheet.THREAD_ACTIONS, actionSheetThread = action.thread)
             }
 
-            is ForumAction.OnHubSortChange ->
-                _uiState.update { it.copy(hubFilters = it.hubFilters.copy(sort = action.sort)) }
+            is ForumAction.OnHubSortChange -> {
+                if (_uiState.value.hubFilters.sort == action.sort) return
+                _uiState.update {
+                    it.copy(hubFilters = it.hubFilters.copy(sort = action.sort))
+                }
+            }
 
             is ForumAction.OnHubCategoryChange -> {
                 appSettings.setForumCategoryId(action.category?.id)
@@ -182,8 +216,53 @@ class ForumViewModel @Inject constructor(
                 }
             }
 
+            is ForumAction.OpenReorderSections ->
+                _uiState.update { it.copy(isReorderSheetVisible = true) }
+
+            is ForumAction.DismissReorderSections ->
+                _uiState.update { it.copy(isReorderSheetVisible = false) }
+
+            is ForumAction.ReorderOverview -> {
+                appSettings.setForumSectionOrder(action.order.map { it.name })
+                _uiState.update { it.copy(overviewOrder = action.order) }
+            }
+
+            is ForumAction.SetOverviewSectionHidden -> {
+                val hidden = if (action.visible) {
+                    _uiState.value.hiddenOverviewSections - action.section
+                } else {
+                    _uiState.value.hiddenOverviewSections + action.section
+                }
+                appSettings.setHiddenForumSections(hidden.map { it.name }.toSet())
+                _uiState.update { it.copy(hiddenOverviewSections = hidden) }
+            }
+
+            is ForumAction.ResetOverviewOrder -> {
+                appSettings.setForumSectionOrder(emptyList())
+                appSettings.setHiddenForumSections(emptySet())
+                _uiState.update {
+                    it.copy(
+                        overviewOrder = OverviewSection.entries,
+                        hiddenOverviewSections = emptySet()
+                    )
+                }
+            }
+
             is ForumAction.ApplyHubFilters -> {
-                _uiState.update { it.copy(openSheet = null, isRefreshing = true) }
+                // The Overview's sections each define their own ordering, so a sort has nowhere to
+                // land there. Choosing one drops into Recent with it, the same way a category does,
+                // rather than leaving a control that silently does nothing.
+                val state = _uiState.value
+                val leavesOverview = state.feed == ForumFeed.OVERVIEW &&
+                        state.hubFilters.sort != ThreadSortOption.Default
+                if (leavesOverview) appSettings.setForumFeed(ForumFeed.RECENT.name)
+                _uiState.update {
+                    it.copy(
+                        feed = if (leavesOverview) ForumFeed.RECENT else it.feed,
+                        openSheet = null,
+                        isRefreshing = true
+                    )
+                }
                 load(page = 1, replaceExisting = true)
             }
 
@@ -337,41 +416,75 @@ class ForumViewModel @Inject constructor(
     // HUB BROWSE (scope + category rail)
     // =========================================================================
 
+    /**
+     * A rate limit is the one failure that says when it will be worth asking again, so it holds the
+     * skeleton and retries instead of replacing the screen with an error the viewer can do nothing
+     * about. Everything else surfaces straight away.
+     */
     private fun load(page: Int, replaceExisting: Boolean = false) {
-        viewModelScope.launch {
-            if (page == 1) _uiState.update { it.copy(isLoading = true) }
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            var attempts = 0
+            while (true) {
+                if (page == 1) _uiState.update { it.copy(isLoading = true) }
+                val error = runLoad(page, replaceExisting) ?: return@launch
+
+                val wait = error.countdownSeconds
+                if (wait == null || wait <= 0 || ++attempts > MAX_RATE_LIMIT_RETRIES) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            isPaginating = false,
+                            errorMessage = error.message
+                        )
+                    }
+                    return@launch
+                }
+
+                // Hold the skeleton. The countdown toast already tells the viewer what is going on.
+                _uiState.update {
+                    it.copy(isLoading = true, isRefreshing = false, errorMessage = null)
+                }
+                delay(wait * 1_000L + RETRY_GRACE_MS)
+            }
+        }
+    }
+
+    /** One attempt. Returns the failure to the caller, which decides whether to wait and retry. */
+    private suspend fun runLoad(page: Int, replaceExisting: Boolean): Result.Error? {
+        run {
             val state = _uiState.value
 
             if (state.feed == ForumFeed.OVERVIEW) {
-                loadOverview()
-                return@launch
+                return loadOverview()
             }
 
-            // Saved threads live in Room, so this branch costs no request and works offline.
+            val feedSort = state.hubFilters.sort.forBlankQuery()
+
+            // Saved threads live in Room, so this branch costs no request and works offline. The
+            // ordering has to be applied here: there is no query to hang a sort argument on.
             if (state.feed == ForumFeed.SAVED) {
                 val saved = forumRepository.getSavedThreads()
                 val filtered = state.selectedCategoryId?.let { id ->
                     saved.filter { t -> t.categories.any { c -> c.id == id } }
                 } ?: saved
-                applyThreads(filtered, hasNext = false, page = 1, replace = true)
-                return@launch
-            }
-
-            // The New feed is an ordering, so it owns its sort; the others take the sheet's.
-            val feedSort = if (state.feed == ForumFeed.NEW) {
-                ThreadSortOption.NEWEST
-            } else {
-                state.hubFilters.sort
+                applyThreads(filtered.sortedBy(feedSort), hasNext = false, page = 1, replace = true)
+                return null
             }
 
             val result = when {
-                state.feed == ForumFeed.SUBSCRIBED && state.selectedCategoryId == null ->
+                // GetSubscribedThreads takes no sort argument, so anything but the default has to
+                // go through the search endpoint with subscribed = true.
+                state.feed == ForumFeed.SUBSCRIBED &&
+                        state.selectedCategoryId == null &&
+                        feedSort == ThreadSortOption.Default ->
                     forumRepository.getSubscribedThreads(page)
 
                 state.feed == ForumFeed.SUBSCRIBED -> forumRepository.searchThreads(
                     categoryId = state.selectedCategoryId,
                     subscribed = true,
-                    sort = feedSort.forBlankQuery(),
+                    sort = feedSort,
                     page = page
                 )
 
@@ -380,29 +493,25 @@ class ForumViewModel @Inject constructor(
                     mediaCategoryId = state.hubFilters.media?.mediaId,
                     userId = state.hubFilters.author?.id,
                     subscribed = state.hubFilters.subscribedOnly.takeIf { it },
-                    sort = feedSort.forBlankQuery(),
+                    sort = feedSort,
                     page = page
                 )
 
                 else -> forumRepository.getRecentThreads(page, hubSortParam(feedSort))
             }
 
-            when (result) {
-                is Result.Success -> applyThreads(
-                    items = result.data.items,
-                    hasNext = result.data.hasNextPage,
-                    page = result.data.currentPage,
-                    replace = replaceExisting || page == 1
-                )
-
-                is Result.Error -> _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        isRefreshing = false,
-                        isPaginating = false,
-                        errorMessage = result.message
+            return when (result) {
+                is Result.Success -> {
+                    applyThreads(
+                        items = result.data.items,
+                        hasNext = result.data.hasNextPage,
+                        page = result.data.currentPage,
+                        replace = replaceExisting || page == 1
                     )
+                    null
                 }
+
+                is Result.Error -> result
             }
         }
     }
@@ -438,6 +547,27 @@ class ForumViewModel @Inject constructor(
     private fun hubSortParam(sort: ThreadSortOption): String =
         (listOf(ThreadSort.IS_STICKY) + sort.forBlankQuery().apiValue).joinToString(",") { it.name }
 
+    /** The ordering a feed starts on. Recent and New are orderings; the rest inherit the default. */
+    private fun ForumFeed.defaultSort(): ThreadSortOption = when (this) {
+        ForumFeed.NEW -> ThreadSortOption.NEWEST
+        else -> ThreadSortOption.Default
+    }
+
+    /**
+     * Saved threads are Room rows, so every ordering the sheet offers has to be applied in memory.
+     * Leaving them unsorted would have made the sort control a no-op on one feed out of five.
+     */
+    private fun List<ForumThread>.sortedBy(sort: ThreadSortOption): List<ForumThread> = when (sort) {
+        ThreadSortOption.RECENTLY_REPLIED, ThreadSortOption.RELEVANCE ->
+            sortedByDescending { it.repliedAt ?: it.createdAt }
+
+        ThreadSortOption.NEWEST -> sortedByDescending { it.createdAt }
+        ThreadSortOption.OLDEST -> sortedBy { it.createdAt }
+        ThreadSortOption.MOST_REPLIES -> sortedByDescending { it.replyCount }
+        ThreadSortOption.MOST_VIEWED -> sortedByDescending { it.viewCount }
+        ThreadSortOption.TITLE -> sortedBy { it.title.lowercase() }
+    }
+
     /** SEARCH_MATCH only ranks against a query, so it degrades to the default ordering here. */
     private fun ThreadSortOption.forBlankQuery(): ThreadSortOption =
         if (this == ThreadSortOption.RELEVANCE) ThreadSortOption.Default else this
@@ -447,18 +577,9 @@ class ForumViewModel @Inject constructor(
      * what is being discussed as it airs, and what has just been posted. Each section's expand
      * button switches to the feed it previews, so no section is a dead end.
      */
-    private suspend fun loadOverview() {
+    private suspend fun loadOverview(): Result.Error? {
         when (val recent = forumRepository.getRecentThreads(1, "IS_STICKY,REPLIED_AT_DESC")) {
-            is Result.Error -> {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        isRefreshing = false,
-                        errorMessage = recent.message
-                    )
-                }
-                return
-            }
+            is Result.Error -> return recent
 
             is Result.Success -> {
                 val items = recent.data.items
@@ -502,6 +623,9 @@ class ForumViewModel @Inject constructor(
                 )
             }
         }
+        // The first section already rendered, so a failure in the other two leaves the Overview
+        // short rather than empty, and is not worth a full-screen error.
+        return null
     }
 
     // =========================================================================
