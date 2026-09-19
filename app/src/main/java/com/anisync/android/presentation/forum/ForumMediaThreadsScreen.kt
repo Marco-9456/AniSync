@@ -186,8 +186,6 @@ fun ForumMediaThreadsScreen(
                                 onUserClick = onUserClick,
                                 isSaved = thread.id in uiState.savedThreadIds,
                                 onSaveClick = { viewModel.toggleSave(thread) },
-                                isSubscribed = thread.isSubscribed,
-                                onSubscribeClick = { viewModel.toggleSubscribe(thread) },
                                 onLastReplyClick = onThreadCommentClick,
                                 modifier = Modifier.fillMaxWidth()
                             )

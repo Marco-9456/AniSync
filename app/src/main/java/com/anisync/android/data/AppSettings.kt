@@ -536,10 +536,14 @@ class AppSettings @Inject constructor(
     )
     val discoverMediaType: StateFlow<MediaType> = _discoverMediaType.asStateFlow()
 
-    // Last selected forum feed tab (stored by enum name) and category filter
+    // Last selected forum scope (stored by enum name) and category filter
     // (stored as the AniList category id, or absent when browsing all categories).
-    private val _forumFeed = MutableStateFlow(prefs.getString(KEY_FORUM_FEED, null))
-    val forumFeed: StateFlow<String?> = _forumFeed.asStateFlow()
+    private val _forumScope = MutableStateFlow(prefs.getString(KEY_FORUM_SCOPE, null))
+    val forumScope: StateFlow<String?> = _forumScope.asStateFlow()
+
+    // Which of the two personal collections the "Yours" scope last showed.
+    private val _forumYoursTab = MutableStateFlow(prefs.getString(KEY_FORUM_YOURS_TAB, null))
+    val forumYoursTab: StateFlow<String?> = _forumYoursTab.asStateFlow()
 
     private val _forumCategoryId = MutableStateFlow(
         prefs.getInt(KEY_FORUM_CATEGORY_ID, -1).takeIf { it >= 0 }
@@ -1132,11 +1136,19 @@ class AppSettings @Inject constructor(
     }
 
     /**
-     * Persist the last selected forum feed tab (by [ForumFeed] enum name).
+     * Persist the last selected forum scope (by `ForumScope` enum name).
      */
-    fun setForumFeed(feedName: String) {
-        _forumFeed.value = feedName
-        prefs.edit().putString(KEY_FORUM_FEED, feedName).apply()
+    fun setForumScope(scopeName: String) {
+        _forumScope.value = scopeName
+        prefs.edit().putString(KEY_FORUM_SCOPE, scopeName).apply()
+    }
+
+    /**
+     * Persist which collection the "Yours" scope shows (by `YoursTab` enum name).
+     */
+    fun setForumYoursTab(tabName: String) {
+        _forumYoursTab.value = tabName
+        prefs.edit().putString(KEY_FORUM_YOURS_TAB, tabName).apply()
     }
 
     /**
@@ -1363,7 +1375,8 @@ companion object {
         private const val DEFAULT_LIBRARY_SORT = "AIRING_SOON"
         private const val KEY_LIBRARY_MEDIA_TYPE_MANGA = "library_media_type_manga"
         private const val KEY_DISCOVER_MEDIA_TYPE_MANGA = "discover_media_type_manga"
-        private const val KEY_FORUM_FEED = "forum_feed"
+        private const val KEY_FORUM_SCOPE = "forum_scope"
+        private const val KEY_FORUM_YOURS_TAB = "forum_yours_tab"
         private const val KEY_FORUM_CATEGORY_ID = "forum_category_id"
         private const val KEY_LAST_MAIN_TAB = "last_main_tab"
         private const val KEY_START_SCREEN = "start_screen"

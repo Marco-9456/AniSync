@@ -88,6 +88,117 @@
     <string name="forum_thread_appbar">Thread</string>
     <string name="forum_op_badge">OP</string>
 
+    <!-- Forum scope rail -->
+    <string name="forum_scope_browse">Browse</string>
+    <string name="forum_scope_yours">Yours</string>
+    <string name="forum_tab_subscribed">Subscribed</string>
+    <string name="forum_tab_saved">Saved</string>
+    <string name="forum_pinned">Pinned</string>
+    <string name="forum_saved_offline_note">Saved threads stay readable offline</string>
+
+    <!-- Forum categories -->
+    <string name="forum_category_all">All</string>
+    <string name="forum_category_anime">Anime</string>
+    <string name="forum_category_manga">Manga</string>
+    <string name="forum_category_light_novels">Light Novels</string>
+    <string name="forum_category_visual_novels">Visual Novels</string>
+    <string name="forum_category_release_discussion">Release Discussion</string>
+    <string name="forum_category_general">General</string>
+    <string name="forum_category_news">News</string>
+    <string name="forum_category_music">Music</string>
+    <string name="forum_category_gaming">Gaming</string>
+    <string name="forum_category_site_feedback">Site Feedback</string>
+    <string name="forum_category_bug_reports">Bug Reports</string>
+    <string name="forum_category_announcements">Announcements</string>
+    <string name="forum_category_recommendations">Recommendations</string>
+    <string name="forum_category_forum_games">Forum Games</string>
+    <string name="forum_category_misc">Misc</string>
+    <string name="forum_category_anilist_apps">AniList Apps</string>
+
+    <!-- Forum sort and filter -->
+    <string name="forum_sort_and_filter">Sort &amp; filter</string>
+    <string name="forum_sort_by">Sort by</string>
+    <string name="forum_narrow_by">Narrow by</string>
+    <string name="forum_reset">Reset</string>
+    <string name="forum_filters">Filters</string>
+    <string name="forum_sort_recently_active">Recently active</string>
+    <string name="forum_sort_newest">Newest first</string>
+    <string name="forum_sort_oldest">Oldest first</string>
+    <string name="forum_sort_most_replies">Most replies</string>
+    <string name="forum_sort_most_viewed">Most viewed</string>
+    <string name="forum_sort_title">Title A–Z</string>
+    <string name="forum_sort_best_match">Best match</string>
+    <string name="forum_sort_best_match_note">Best match only ranks once you have typed a search term.</string>
+    <string name="forum_filter_category_value">Category · %1$s</string>
+    <string name="forum_filter_media_value">Media · %1$s</string>
+    <string name="forum_filter_author_value">Author · %1$s</string>
+    <string name="forum_filter_any">Any</string>
+    <string name="forum_filter_anyone">Anyone</string>
+    <string name="forum_show_threads">Show threads</string>
+
+    <!-- Forum thread actions -->
+    <string name="forum_action_subscribe">Subscribe</string>
+    <string name="forum_action_unsubscribe">Unsubscribe</string>
+    <string name="forum_action_subscribe_sub">Notifies you on every new reply</string>
+    <string name="forum_action_save">Save</string>
+    <string name="forum_action_unsave">Remove from saved</string>
+    <string name="forum_action_save_sub">Kept locally, readable offline</string>
+    <string name="forum_action_share">Share</string>
+    <string name="forum_action_copy_link">Copy link</string>
+    <string name="forum_action_open_anilist">Open on AniList</string>
+    <string name="forum_action_open_anilist_sub">Opens the thread on anilist.co</string>
+    <string name="forum_action_edit">Edit thread</string>
+    <string name="forum_action_delete">Delete thread</string>
+    <string name="forum_link_copied">Link copied</string>
+
+    <!-- Forum browse surface -->
+    <string name="forum_browse_by_category">Browse by category</string>
+    <string name="forum_trending_discussions">Trending discussions</string>
+    <string name="forum_replies_count">%1$s replies</string>
+    <string name="forum_closed_for_replies">Closed for replies</string>
+    <string name="forum_no_replies_yet">No replies yet</string>
+    <string name="forum_locked_badge">Locked</string>
+    <string name="cd_collapse">Collapse</string>
+    <string name="a11y_reply_count">%1$d replies</string>
+    <string name="a11y_like_count">%1$d likes</string>
+
+    <!-- Forum empty states -->
+    <string name="forum_empty_category_title">No threads in %1$s yet</string>
+    <string name="forum_empty_category_desc">Start one and it sits at the top of this category.</string>
+    <string name="forum_empty_browse_title">No threads here yet</string>
+    <string name="forum_empty_browse_desc">Start one and it sits at the top of the forum.</string>
+    <string name="forum_empty_start_thread">Start a thread</string>
+    <string name="forum_empty_subscribed_title">Nothing subscribed</string>
+    <string name="forum_empty_subscribed_desc">Subscribe to a thread and every new reply waits for you here.</string>
+    <string name="forum_empty_saved_title">Nothing saved</string>
+    <string name="forum_empty_saved_desc">Bookmark a thread to keep it, and to read it offline.</string>
+    <string name="forum_empty_browse_action">Browse the forum</string>
+    <string name="forum_empty_filtered_title">No threads match</string>
+    <string name="forum_empty_filtered_desc">%1$d filters are hiding every result.</string>
+    <string name="forum_empty_clear_filters">Clear filters</string>
+    <string name="forum_empty_failed_title">Nothing loaded</string>
+    <string name="forum_empty_failed_desc">Check your connection and try again.</string>
+    <string name="forum_empty_retry">Retry</string>
+    <string name="forum_empty_comments_title">No replies yet</string>
+    <string name="forum_empty_comments_desc">Be the first to say something in this thread.</string>
+    <string name="forum_empty_comments_action">Write a reply</string>
+
+    <!-- Forum thread screen -->
+    <string name="forum_views_count">%1$s views</string>
+    <string name="forum_continue_thread_count">Continue this thread · %1$d replies</string>
+    <string name="forum_collapsed_replies">+%1$d replies</string>
+    <string name="forum_sort_oldest_short">Oldest</string>
+    <string name="forum_sort_newest_short">Newest</string>
+
+    <!-- Forum composer -->
+    <string name="forum_title_min_hint">6 characters minimum</string>
+    <string name="forum_categories_required">required · pick 1 to 3</string>
+    <string name="forum_related_media_optional">optional</string>
+    <string name="forum_related_media">Related media</string>
+    <string name="forum_add">Add</string>
+    <string name="forum_write">Write</string>
+    <string name="forum_preview">Preview</string>
+
     <!-- Common -->
     <string name="back">Back</string>
     <string name="search">Search</string>

@@ -9,10 +9,12 @@ import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.domain.ThreadEventBus
+import com.anisync.android.domain.ThreadSortOption
 import com.anisync.android.domain.ThreadUpdate
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
 import com.anisync.android.type.MediaType
+import com.anisync.android.type.ThreadSort
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
@@ -51,17 +53,24 @@ class ForumViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(
         ForumUiState(
-            selectedFeed = readSavedFeed(),
+            scope = readSavedScope(),
+            yoursTab = readSavedYoursTab(),
             selectedCategoryId = appSettings.forumCategoryId.value
         )
     )
     val uiState: StateFlow<ForumUiState> = _uiState.asStateFlow()
 
-    /** Resolve the persisted forum feed name, falling back to Overview. */
-    private fun readSavedFeed(): ForumFeed =
-        appSettings.forumFeed.value
-            ?.let { name -> runCatching { ForumFeed.valueOf(name) }.getOrNull() }
-            ?: ForumFeed.OVERVIEW
+    /** Resolve the persisted scope, falling back to Browse. */
+    private fun readSavedScope(): ForumScope =
+        appSettings.forumScope.value
+            ?.let { name -> runCatching { ForumScope.valueOf(name) }.getOrNull() }
+            ?: ForumScope.BROWSE
+
+    /** Resolve the persisted Yours collection, falling back to Subscribed. */
+    private fun readSavedYoursTab(): YoursTab =
+        appSettings.forumYoursTab.value
+            ?.let { name -> runCatching { YoursTab.valueOf(name) }.getOrNull() }
+            ?: YoursTab.SUBSCRIBED
 
     private val _actions = Channel<ForumAction>(Channel.BUFFERED)
     val actions: Flow<ForumAction> = _actions.receiveAsFlow()
@@ -76,6 +85,7 @@ class ForumViewModel @Inject constructor(
         loadSavedIds()
         observeForumSearch()
         observeThreadEvents()
+        loadTrending()
     }
 
     /**
@@ -135,15 +145,55 @@ class ForumViewModel @Inject constructor(
                 load(page = _uiState.value.currentPage + 1)
             }
 
-            is ForumAction.OnFeedChange -> {
-                if (_uiState.value.selectedFeed == action.feed) return
-                appSettings.setForumFeed(action.feed.name)
+            is ForumAction.OnScopeChange -> {
+                if (_uiState.value.scope == action.scope) return
+                appSettings.setForumScope(action.scope.name)
+                _uiState.update { it.copy(scope = action.scope, isRefreshing = true) }
+                load(page = 1, replaceExisting = true)
+            }
+
+            is ForumAction.OnYoursTabChange -> {
+                if (_uiState.value.yoursTab == action.tab) return
+                appSettings.setForumYoursTab(action.tab.name)
+                _uiState.update { it.copy(yoursTab = action.tab, isRefreshing = true) }
+                load(page = 1, replaceExisting = true)
+            }
+
+            is ForumAction.TogglePinnedExpanded ->
+                _uiState.update { it.copy(isPinnedExpanded = !it.isPinnedExpanded) }
+
+            is ForumAction.OpenSheet -> _uiState.update { it.copy(openSheet = action.sheet) }
+            is ForumAction.DismissSheet ->
+                _uiState.update { it.copy(openSheet = null, actionSheetThread = null) }
+
+            is ForumAction.OpenThreadActions -> _uiState.update {
+                it.copy(openSheet = ForumSheet.THREAD_ACTIONS, actionSheetThread = action.thread)
+            }
+
+            is ForumAction.OnHubSortChange ->
+                _uiState.update { it.copy(hubFilters = it.hubFilters.copy(sort = action.sort)) }
+
+            is ForumAction.OnHubCategoryChange -> {
+                appSettings.setForumCategoryId(action.category?.id)
+                _uiState.update { it.copy(selectedCategoryId = action.category?.id) }
+            }
+
+            is ForumAction.ToggleHubSubscribedOnly -> _uiState.update {
+                it.copy(hubFilters = it.hubFilters.copy(subscribedOnly = !it.hubFilters.subscribedOnly))
+            }
+
+            is ForumAction.ResetHubFilters -> {
+                appSettings.setForumCategoryId(null)
                 _uiState.update {
                     it.copy(
-                        selectedFeed = action.feed,
-                        isRefreshing = true
+                        hubFilters = ForumSearchFilters(),
+                        selectedCategoryId = null
                     )
                 }
+            }
+
+            is ForumAction.ApplyHubFilters -> {
+                _uiState.update { it.copy(openSheet = null, isRefreshing = true) }
                 load(page = 1, replaceExisting = true)
             }
 
@@ -232,8 +282,9 @@ class ForumViewModel @Inject constructor(
                 forumRepository.saveThread(thread)
                 toastManager.showToast(ToastType.SUCCESS, message = "Thread saved")
             }
-            // If we're on the Saved feed, reload
-            if (_uiState.value.selectedFeed == ForumFeed.SAVED) {
+            // The Saved collection is the list being looked at, so it has to re-read Room.
+            val state = _uiState.value
+            if (state.scope == ForumScope.YOURS && state.yoursTab == YoursTab.SAVED) {
                 load(page = 1, replaceExisting = true)
             }
         }
@@ -271,160 +322,111 @@ class ForumViewModel @Inject constructor(
                     )
                 }
                 showResultError(result)
-            } else if (_uiState.value.selectedFeed == ForumFeed.SUBSCRIBED) {
-                // Reload if viewing Subscribed feed
-                load(page = 1, replaceExisting = true)
+            } else {
+                val state = _uiState.value
+                if (state.scope == ForumScope.YOURS && state.yoursTab == YoursTab.SUBSCRIBED) {
+                    load(page = 1, replaceExisting = true)
+                }
             }
         }
     }
 
     // =========================================================================
-    // HUB BROWSE (feed + category tabs)
+    // HUB BROWSE (scope + category rail)
     // =========================================================================
 
     private fun load(page: Int, replaceExisting: Boolean = false) {
         viewModelScope.launch {
             if (page == 1) _uiState.update { it.copy(isLoading = true) }
-
             val state = _uiState.value
-            val feed = state.selectedFeed
-            val categoryId = state.selectedCategoryId
 
-            // SAVED feed is local-only — no API call
-            if (feed == ForumFeed.SAVED) {
-                val savedThreads = forumRepository.getSavedThreads()
-                _uiState.update { current ->
-                    current.copy(
+            // Saved threads live in Room, so this branch costs no request and works offline.
+            if (state.scope == ForumScope.YOURS && state.yoursTab == YoursTab.SAVED) {
+                applyThreads(forumRepository.getSavedThreads(), hasNext = false, page = 1, replace = true)
+                return@launch
+            }
+
+            val result = when {
+                state.scope == ForumScope.YOURS -> forumRepository.getSubscribedThreads(page)
+
+                state.hubNeedsSearch -> forumRepository.searchThreads(
+                    categoryId = state.selectedCategoryId,
+                    mediaCategoryId = state.hubFilters.media?.mediaId,
+                    userId = state.hubFilters.author?.id,
+                    subscribed = state.hubFilters.subscribedOnly.takeIf { it },
+                    sort = state.hubFilters.sort.forBlankQuery(),
+                    page = page
+                )
+
+                else -> forumRepository.getRecentThreads(page, hubSortParam(state.hubFilters.sort))
+            }
+
+            when (result) {
+                is Result.Success -> applyThreads(
+                    items = result.data.items,
+                    hasNext = result.data.hasNextPage,
+                    page = result.data.currentPage,
+                    replace = replaceExisting || page == 1
+                )
+
+                is Result.Error -> _uiState.update {
+                    it.copy(
                         isLoading = false,
                         isRefreshing = false,
                         isPaginating = false,
-                        threads = savedThreads.toPersistentList(),
-                        hasNextPage = false,
-                        currentPage = 1,
-                        errorMessage = null
+                        errorMessage = result.message
                     )
                 }
-                return@launch
             }
+        }
+    }
 
-            // SUBSCRIBED feed uses API with subscribed = true
-            if (feed == ForumFeed.SUBSCRIBED) {
-                when (val result = forumRepository.getSubscribedThreads(page)) {
-                    is Result.Success -> {
-                        val data = result.data
-                        _uiState.update { current ->
-                            val updatedThreads = if (replaceExisting || page == 1) {
-                                data.items.distinctBy { it.id }.toPersistentList()
-                            } else {
-                                (current.threads + data.items)
-                                    .distinctBy { it.id }
-                                    .toPersistentList()
-                            }
-                            current.copy(
-                                isLoading = false,
-                                isRefreshing = false,
-                                isPaginating = false,
-                                threads = updatedThreads,
-                                hasNextPage = data.hasNextPage,
-                                currentPage = data.currentPage,
-                                errorMessage = null
-                            )
-                        }
-                    }
-
-                    is Result.Error -> {
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                isRefreshing = false,
-                                isPaginating = false,
-                                errorMessage = result.message
-                            )
-                        }
-                    }
-                }
-                return@launch
+    private fun applyThreads(
+        items: List<ForumThread>,
+        hasNext: Boolean,
+        page: Int,
+        replace: Boolean
+    ) {
+        _uiState.update { current ->
+            val updated = if (replace) {
+                items.distinctBy { it.id }.toPersistentList()
+            } else {
+                (current.threads + items).distinctBy { it.id }.toPersistentList()
             }
+            current.copy(
+                isLoading = false,
+                isRefreshing = false,
+                isPaginating = false,
+                threads = updated,
+                hasNextPage = hasNext,
+                currentPage = page,
+                errorMessage = null
+            )
+        }
+    }
 
-            // If a hub category tab is active, fetch that category's threads.
-            if (categoryId != null) {
-                when (val result = forumRepository.getThreadsByCategory(categoryId, null, page)) {
-                    is Result.Success -> {
-                        val data = result.data
-                        _uiState.update { current ->
-                            val updatedThreads = if (replaceExisting || page == 1) {
-                                data.items.distinctBy { it.id }.toPersistentList()
-                            } else {
-                                (current.threads + data.items)
-                                    .distinctBy { it.id }
-                                    .toPersistentList()
-                            }
-                            current.copy(
-                                isLoading = false,
-                                isRefreshing = false,
-                                isPaginating = false,
-                                threads = updatedThreads,
-                                hasNextPage = data.hasNextPage,
-                                currentPage = data.currentPage,
-                                errorMessage = null
-                            )
-                        }
-                    }
+    /**
+     * Sticky threads lead every Browse ordering, which is what the old Overview feed was doing.
+     * They are split out of the list in the UI so the section can be collapsed.
+     */
+    private fun hubSortParam(sort: ThreadSortOption): String =
+        (listOf(ThreadSort.IS_STICKY) + sort.forBlankQuery().apiValue).joinToString(",") { it.name }
 
-                    is Result.Error -> {
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                isRefreshing = false,
-                                isPaginating = false,
-                                errorMessage = result.message
-                            )
-                        }
-                    }
-                }
-                return@launch
-            }
+    /** SEARCH_MATCH only ranks against a query, so it degrades to the default ordering here. */
+    private fun ThreadSortOption.forBlankQuery(): ThreadSortOption =
+        if (this == ThreadSortOption.RELEVANCE) ThreadSortOption.Default else this
 
-            // Default: use sort-based feed (Overview/Recent/New)
-            val sortParam = when (feed) {
-                ForumFeed.OVERVIEW -> "IS_STICKY,REPLIED_AT_DESC"
-                ForumFeed.RECENT -> "REPLIED_AT_DESC"
-                ForumFeed.NEW -> "CREATED_AT_DESC"
-                else -> "REPLIED_AT_DESC"
-            }
-
-            when (val result = forumRepository.getRecentThreads(page, sortParam)) {
-                is Result.Success -> {
-                    val data = result.data
-                    _uiState.update { current ->
-                        val updatedThreads = if (replaceExisting || page == 1) {
-                            data.items.toPersistentList()
-                        } else {
-                            (current.threads + data.items)
-                                .distinctBy { it.id }
-                                .toPersistentList()
-                        }
-                        current.copy(
-                            isLoading = false,
-                            isRefreshing = false,
-                            isPaginating = false,
-                            threads = updatedThreads,
-                            hasNextPage = data.hasNextPage,
-                            currentPage = data.currentPage,
-                            errorMessage = null
-                        )
-                    }
-                }
-
-                is Result.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isRefreshing = false,
-                            isPaginating = false,
-                            errorMessage = result.message
-                        )
-                    }
+    /** A small slice of the hot list, shown on the search screen before anything is typed. */
+    private fun loadTrending() {
+        viewModelScope.launch {
+            val result = forumRepository.searchThreads(
+                sort = ThreadSortOption.Default,
+                page = 1,
+                allowCached = true
+            )
+            if (result is Result.Success) {
+                _uiState.update {
+                    it.copy(trendingThreads = result.data.items.take(6).toPersistentList())
                 }
             }
         }
