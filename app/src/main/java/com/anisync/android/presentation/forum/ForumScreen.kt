@@ -1,8 +1,8 @@
 package com.anisync.android.presentation.forum
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -34,9 +34,12 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.AppBarWithSearch
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -59,12 +62,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.focusProperties
@@ -75,7 +78,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -85,18 +87,20 @@ import com.anisync.android.domain.ForumThread
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyState
+import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ScrollToTopFab
+import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
+import com.anisync.android.presentation.forum.components.ForumFeedSheet
+import com.anisync.android.presentation.forum.components.ForumFilterId
+import com.anisync.android.presentation.forum.components.ForumMediaFilterHeader
 import com.anisync.android.presentation.forum.components.ForumRail
 import com.anisync.android.presentation.forum.components.ForumSearchFilterChipBar
-import com.anisync.android.presentation.forum.components.ForumSearchIdle
 import com.anisync.android.presentation.forum.components.ForumSearchFilterSheetHost
 import com.anisync.android.presentation.forum.components.ForumSortFilterSheet
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.ForumThreadCardSkeleton
-import com.anisync.android.presentation.forum.components.ForumToolbar
 import com.anisync.android.presentation.forum.components.ThreadActionsSheet
-import com.anisync.android.presentation.forum.components.sortLabelRes
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.LocalRailFabState
 import com.anisync.android.presentation.util.SetRailFab
@@ -141,11 +145,12 @@ fun ForumScreen(
     val textFieldState = rememberTextFieldState(initialText = uiState.searchFilters.query)
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
     val inputModeManager = LocalInputModeManager.current
-    var openedFilter by remember { mutableStateOf<com.anisync.android.presentation.forum.components.ForumFilterId?>(null) }
+    var openedFilter by remember { mutableStateOf<ForumFilterId?>(null) }
 
-    // Collapse the full-screen search bar (and drop focus) before navigating away from a result.
-    // Leaving the expanded overlay mounted across navigation makes the M3 search bar re-dispatch
-    // the pending click on return, which re-opens the destination in a loop.
+    // The search bar carries sort and filter, the way Library's does. Read through an updated
+    // state so the remembered input field never shows a stale badge.
+    val filterCount = rememberUpdatedState(uiState.hubFilterCount)
+
     val collapseSearch: () -> Unit = remember(searchBarState, coroutineScope, focusManager) {
         {
             focusManager.clearFocus()
@@ -196,19 +201,14 @@ fun ForumScreen(
         @Composable {
             val currentSearchBarValue = searchBarState.currentValue
             val isSearchEmpty = textFieldState.text.isEmpty()
+            val expanded = currentSearchBarValue == SearchBarValue.Expanded
 
             SearchBarDefaults.InputField(
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
                 onSearch = { focusManager.clearFocus() },
-                placeholder = {
-                    Text(
-                        text = stringResource(R.string.forum_search_placeholder),
-                        modifier = if (currentSearchBarValue == SearchBarValue.Collapsed) sharedItemModifier else Modifier,
-                        textAlign = if (currentSearchBarValue == SearchBarValue.Collapsed) TextAlign.Center else TextAlign.Start
-                    )
-                },
-                leadingIcon = if (currentSearchBarValue == SearchBarValue.Expanded) {
+                placeholder = { Text(text = stringResource(R.string.forum_search_placeholder)) },
+                leadingIcon = if (expanded) {
                     {
                         IconButton(onClick = collapseSearch) {
                             Icon(
@@ -219,12 +219,53 @@ fun ForumScreen(
                     }
                 } else null,
                 trailingIcon = {
-                    if (currentSearchBarValue == SearchBarValue.Expanded && !isSearchEmpty) {
-                        IconButton(onClick = { textFieldState.edit { replace(0, length, "") } }) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = stringResource(R.string.clear)
-                            )
+                    if (expanded) {
+                        if (!isSearchEmpty) {
+                            IconButton(onClick = {
+                                textFieldState.edit { replace(0, length, "") }
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = stringResource(R.string.clear)
+                                )
+                            }
+                        }
+                    } else {
+                        // Ordering and narrowing ride in the bar rather than in a strip of their
+                        // own, which is where Library keeps its equivalents.
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = {
+                                viewModel.onAction(
+                                    ForumAction.OpenSheet(ForumSheet.SORT_AND_FILTER)
+                                )
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.SwapVert,
+                                    contentDescription = stringResource(R.string.cd_sort_threads),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            IconButton(onClick = {
+                                viewModel.onAction(
+                                    ForumAction.OpenSheet(ForumSheet.SORT_AND_FILTER)
+                                )
+                            }) {
+                                BadgedBox(
+                                    badge = {
+                                        if (filterCount.value > 0) {
+                                            Badge { Text(filterCount.value.toString()) }
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Tune,
+                                        contentDescription = stringResource(
+                                            R.string.cd_filter_threads
+                                        ),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -237,7 +278,6 @@ fun ForumScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
-            // Offset above the main bottom nav bar using the real insets instead of a fixed dp.
             Box(
                 modifier = Modifier
                     .navigationBarsPadding()
@@ -285,24 +325,12 @@ fun ForumScreen(
                 )
 
                 ForumRail(
-                    scope = uiState.scope,
-                    yoursTab = uiState.yoursTab,
+                    feed = uiState.feed,
                     selectedCategoryId = uiState.selectedCategoryId,
-                    subscribedCount = null,
-                    savedCount = uiState.savedThreadIds.size.takeIf { it > 0 },
-                    onScopeChange = { viewModel.onAction(ForumAction.OnScopeChange(it)) },
-                    onCategoryChange = { viewModel.onAction(ForumAction.OnCategoryChange(it)) },
-                    onYoursTabChange = { viewModel.onAction(ForumAction.OnYoursTabChange(it)) }
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                ForumToolbar(
-                    sortLabel = stringResource(uiState.hubFilters.sort.sortLabelRes()),
-                    filterCount = uiState.hubFilterCount,
-                    onOpenSortAndFilter = {
-                        viewModel.onAction(ForumAction.OpenSheet(ForumSheet.SORT_AND_FILTER))
-                    }
+                    onOpenFeedPicker = {
+                        viewModel.onAction(ForumAction.OpenSheet(ForumSheet.FEED_PICKER))
+                    },
+                    onCategoryChange = { viewModel.onAction(ForumAction.OnCategoryChange(it)) }
                 )
 
                 Spacer(Modifier.height(4.dp))
@@ -326,6 +354,10 @@ fun ForumScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            val isOverviewEmpty = uiState.feed == ForumFeed.OVERVIEW &&
+                    uiState.overviewPinned.isEmpty() && uiState.overviewRecent.isEmpty()
+            val isFeedEmpty = uiState.feed != ForumFeed.OVERVIEW && uiState.threads.isEmpty()
+
             when {
                 uiState.isLoading -> ForumLoadingSkeleton()
 
@@ -334,68 +366,69 @@ fun ForumScreen(
                     title = stringResource(R.string.forum_empty_failed_title),
                     description = stringResource(R.string.forum_empty_failed_desc),
                     actionLabel = stringResource(R.string.forum_empty_retry),
-                    actionIcon = Icons.Default.Tune,
+                    actionIcon = Icons.Default.SwapVert,
                     onAction = { viewModel.onAction(ForumAction.Refresh) },
                     animationKey = uiState.errorMessage
                 )
 
-                uiState.threads.isEmpty() -> ForumEmptyState(
+                isOverviewEmpty || isFeedEmpty -> ForumEmptyState(
                     state = uiState,
                     onCreateClick = onCreateThreadClick,
-                    onBrowseClick = { viewModel.onAction(ForumAction.OnScopeChange(ForumScope.BROWSE)) },
+                    onBrowseClick = {
+                        viewModel.onAction(ForumAction.OnFeedChange(ForumFeed.OVERVIEW))
+                    },
                     onClearFilters = {
                         viewModel.onAction(ForumAction.ResetHubFilters)
                         viewModel.onAction(ForumAction.ApplyHubFilters)
                     }
                 )
 
-                else -> {
-                    val pinned = uiState.pinnedThreads
-                    val rest = uiState.unpinnedThreads
-
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = 16.dp,
-                            end = 16.dp,
-                            top = 4.dp,
-                            bottom = systemBarsPadding.calculateBottomPadding() + 96.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (uiState.showsPinnedSection) {
-                            item(key = "pinned_header") {
-                                PinnedHeader(
-                                    count = pinned.size,
-                                    expanded = uiState.isPinnedExpanded,
-                                    onToggle = { viewModel.onAction(ForumAction.TogglePinnedExpanded) }
+                else -> LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 4.dp,
+                        bottom = systemBarsPadding.calculateBottomPadding() + 96.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (uiState.showsPinnedSection) {
+                        item(key = "pinned_header") {
+                            PinnedHeader(
+                                count = uiState.pinnedThreads.size,
+                                expanded = uiState.isPinnedExpanded,
+                                onToggle = { viewModel.onAction(ForumAction.TogglePinnedExpanded) }
+                            )
+                        }
+                        if (uiState.isPinnedExpanded) {
+                            items(
+                                items = uiState.pinnedThreads,
+                                key = { "pinned_${it.id}" },
+                                contentType = { "ForumThread" }
+                            ) { thread ->
+                                ThreadCard(
+                                    thread, uiState, selectedThreadId, viewModel,
+                                    onThreadClick, onUserClick, onThreadCommentClick,
+                                    sharedItemModifier
                                 )
                             }
-                            if (uiState.isPinnedExpanded) {
-                                items(
-                                    items = pinned,
-                                    key = { "pinned_${it.id}" },
-                                    contentType = { "ForumThread" }
-                                ) { thread ->
-                                    ThreadCard(
-                                        thread = thread,
-                                        uiState = uiState,
-                                        selectedThreadId = selectedThreadId,
-                                        viewModel = viewModel,
-                                        onThreadClick = onThreadClick,
-                                        onUserClick = onUserClick,
-                                        onLastReplyClick = onThreadCommentClick,
-                                        modifier = sharedItemModifier
-                                    )
-                                }
-                            }
                         }
+                    }
 
-                        if (uiState.scope == ForumScope.YOURS && uiState.yoursTab == YoursTab.SAVED) {
-                            item(key = "offline_note") { SavedOfflineNote() }
-                        }
-
+                    if (uiState.feed == ForumFeed.OVERVIEW) {
+                        overviewSections(
+                            uiState = uiState,
+                            selectedThreadId = selectedThreadId,
+                            viewModel = viewModel,
+                            onThreadClick = onThreadClick,
+                            onUserClick = onUserClick,
+                            onLastReplyClick = onThreadCommentClick,
+                            itemModifier = sharedItemModifier
+                        )
+                    } else {
+                        val rest = uiState.unpinnedThreads
                         itemsIndexed(
                             items = rest,
                             key = { _, thread -> "thread_${thread.id}" },
@@ -406,16 +439,9 @@ fun ForumScreen(
                             ) {
                                 LaunchedEffect(index) { viewModel.onAction(ForumAction.LoadMore) }
                             }
-
                             ThreadCard(
-                                thread = thread,
-                                uiState = uiState,
-                                selectedThreadId = selectedThreadId,
-                                viewModel = viewModel,
-                                onThreadClick = onThreadClick,
-                                onUserClick = onUserClick,
-                                onLastReplyClick = onThreadCommentClick,
-                                modifier = sharedItemModifier
+                                thread, uiState, selectedThreadId, viewModel,
+                                onThreadClick, onUserClick, onThreadCommentClick, sharedItemModifier
                             )
                         }
 
@@ -433,7 +459,14 @@ fun ForumScreen(
         }
     }
 
-    // Ordering and narrowing for the hub list.
+    if (uiState.openSheet == ForumSheet.FEED_PICKER) {
+        ForumFeedSheet(
+            selected = uiState.feed,
+            onSelect = { viewModel.onAction(ForumAction.OnFeedChange(it)) },
+            onDismiss = { viewModel.onAction(ForumAction.DismissSheet) }
+        )
+    }
+
     if (uiState.openSheet == ForumSheet.SORT_AND_FILTER) {
         ForumSortFilterSheet(
             sort = uiState.hubFilters.sort,
@@ -455,7 +488,6 @@ fun ForumScreen(
         )
     }
 
-    // Per-thread actions.
     uiState.actionSheetThread?.let { thread ->
         if (uiState.openSheet == ForumSheet.THREAD_ACTIONS) {
             ThreadActionsSheet(
@@ -468,7 +500,7 @@ fun ForumScreen(
         }
     }
 
-    // Fullscreen advanced-search overlay
+    // Fullscreen advanced-search overlay. Its filter bar is the shipped one, untouched.
     val searchFilters = uiState.searchFilters
     val searchActive = searchFilters.query.trim().length >= 2 || searchFilters.hasActiveFilters
     ExpandedFullScreenSearchBar(state = searchBarState, inputField = inputField) {
@@ -480,7 +512,7 @@ fun ForumScreen(
             )
 
             searchFilters.media?.let { media ->
-                com.anisync.android.presentation.forum.components.ForumMediaFilterHeader(
+                ForumMediaFilterHeader(
                     media = media,
                     onCreateThread = {
                         onSearchCreateForMedia(
@@ -506,16 +538,17 @@ fun ForumScreen(
                     animationKey = uiState.searchError
                 )
 
-                // Nothing typed: a browse surface rather than a sentence in a void.
-                !searchActive -> ForumSearchIdle(
-                    trending = uiState.trendingThreads,
-                    onCategoryClick = { id ->
-                        viewModel.onAction(
-                            ForumAction.OnCategoryFilterChange(id?.let { ForumCategory(it, "") })
-                        )
-                    },
-                    onThreadClick = onSearchThreadClick
-                )
+                !searchActive -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.forum_search_prompt),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+                }
 
                 uiState.searchResults.isEmpty() -> EmptyState(
                     icon = Icons.Default.Tune,
@@ -604,6 +637,55 @@ fun ForumScreen(
     )
 }
 
+/**
+ * The Overview's three previews. Each carries an expand button that switches to the feed it is
+ * previewing, so no section is a dead end.
+ */
+private fun LazyListScope.overviewSections(
+    uiState: ForumUiState,
+    selectedThreadId: Int?,
+    viewModel: ForumViewModel,
+    onThreadClick: (Int, String) -> Unit,
+    onUserClick: (String) -> Unit,
+    onLastReplyClick: (Int, Int) -> Unit,
+    itemModifier: Modifier
+) {
+    OverviewSection.entries.forEach { section ->
+        val threads = uiState.overviewThreads(section)
+        if (threads.isEmpty()) return@forEach
+
+        item(key = "section_${section.name}") {
+            SectionHeader(
+                title = stringResource(section.titleRes),
+                level = HeaderLevel.Section,
+                padding = PaddingValues(top = 12.dp, bottom = 4.dp),
+                actionLabel = stringResource(R.string.forum_expand),
+                onActionClick = {
+                    if (section == OverviewSection.RELEASE_DISCUSSION) {
+                        // The section is a category, so expanding it means that category's feed.
+                        viewModel.onAction(
+                            ForumAction.OnCategoryChange(RELEASE_DISCUSSION_CATEGORY_ID)
+                        )
+                    } else {
+                        viewModel.onAction(ForumAction.OnFeedChange(section.opens))
+                    }
+                }
+            )
+        }
+
+        items(
+            items = threads,
+            key = { "${section.name}_${it.id}" },
+            contentType = { "ForumThread" }
+        ) { thread ->
+            ThreadCard(
+                thread, uiState, selectedThreadId, viewModel,
+                onThreadClick, onUserClick, onLastReplyClick, itemModifier
+            )
+        }
+    }
+}
+
 @Composable
 private fun ThreadCard(
     thread: ForumThread,
@@ -690,34 +772,6 @@ private fun PinnedHeader(
     }
 }
 
-/** Saved threads come out of Room, so the collection keeps working with no network. */
-@Composable
-private fun SavedOfflineNote() {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.CloudOff,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp)
-            )
-            Text(
-                text = stringResource(R.string.forum_saved_offline_note),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
 /**
  * Every reason the hub has nothing to show, on the app's shared block. The primary-filled action is
  * reserved for the one the viewer caused and can undo in a tap.
@@ -730,7 +784,7 @@ private fun ForumEmptyState(
     onClearFilters: () -> Unit
 ) {
     when {
-        state.scope == ForumScope.YOURS && state.yoursTab == YoursTab.SAVED -> EmptyState(
+        state.feed == ForumFeed.SAVED -> EmptyState(
             icon = Icons.Default.Bookmark,
             title = stringResource(R.string.forum_empty_saved_title),
             description = stringResource(R.string.forum_empty_saved_desc),
@@ -740,7 +794,7 @@ private fun ForumEmptyState(
             animationKey = "saved"
         )
 
-        state.scope == ForumScope.YOURS -> EmptyState(
+        state.feed == ForumFeed.SUBSCRIBED -> EmptyState(
             icon = Icons.Default.Notifications,
             title = stringResource(R.string.forum_empty_subscribed_title),
             description = stringResource(R.string.forum_empty_subscribed_desc),

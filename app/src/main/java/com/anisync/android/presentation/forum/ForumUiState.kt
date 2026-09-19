@@ -1,6 +1,15 @@
 package com.anisync.android.presentation.forum
 
+import androidx.annotation.StringRes
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.NewReleases
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.anisync.android.R
 import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumSearchFilters
 import com.anisync.android.domain.ForumThread
@@ -14,37 +23,56 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 
 /**
- * Which body of threads the rail is showing. The shipped screen had five "feeds" that mixed two
- * different questions: Overview/Recent/New were orderings of the same public list, while
- * Subscribed/Saved were personal collections. The ordering moved to [ForumUiState.sort] and the
- * collections became the two chips of [YOURS], so the pinned rail toggle answers one question the
- * way Library's does.
+ * Which body of threads the rail is showing. [OVERVIEW] is not a list of its own: it is a summary
+ * of the others, so its sections each carry a button that switches to the feed they preview.
+ *
+ * Every feed is browsable by category and searchable.
  */
-enum class ForumScope { BROWSE, YOURS }
+enum class ForumFeed(
+    @param:StringRes val labelRes: Int,
+    /** Shorter label for the pinned rail button, where the row budget is tight. */
+    @param:StringRes val shortLabelRes: Int,
+    val icon: ImageVector
+) {
+    OVERVIEW(R.string.forum_feed_overview, R.string.forum_feed_overview_short, Icons.AutoMirrored.Filled.ViewList),
+    RECENT(R.string.forum_feed_recent, R.string.forum_feed_recent_short, Icons.Default.Schedule),
+    NEW(R.string.forum_feed_new, R.string.forum_feed_new_short, Icons.Default.NewReleases),
+    SUBSCRIBED(R.string.forum_feed_subscribed, R.string.forum_feed_subscribed_short, Icons.Default.Notifications),
+    SAVED(R.string.forum_feed_saved, R.string.forum_feed_saved_short, Icons.Default.Bookmark)
+}
 
-/** The two collections under [ForumScope.YOURS]. */
-enum class YoursTab { SUBSCRIBED, SAVED }
+/** The three previews the Overview stacks under its pinned section. */
+enum class OverviewSection(@param:StringRes val titleRes: Int, val opens: ForumFeed) {
+    RECENTLY_ACTIVE(R.string.forum_section_recently_active, ForumFeed.RECENT),
+    RELEASE_DISCUSSION(R.string.forum_section_release_discussion, ForumFeed.RECENT),
+    NEWLY_CREATED(R.string.forum_section_newly_created, ForumFeed.NEW)
+}
 
 @Immutable
 data class ForumUiState(
-    // --- Hub (browse) state ---
+    // --- Hub state ---
     val isLoading: Boolean = true,
     val isPaginating: Boolean = false,
     val isRefreshing: Boolean = false,
     val threads: ImmutableList<ForumThread> = persistentListOf(),
     val hasNextPage: Boolean = false,
     val currentPage: Int = 1,
-    val scope: ForumScope = ForumScope.BROWSE,
-    val yoursTab: YoursTab = YoursTab.SUBSCRIBED,
+    val feed: ForumFeed = ForumFeed.OVERVIEW,
     val selectedCategoryId: Int? = null,
     val savedThreadIds: ImmutableSet<Int> = persistentSetOf(),
     val errorMessage: String? = null,
 
-    /** Ordering and the structured narrowing applied to the hub list. */
-    val hubFilters: ForumSearchFilters = ForumSearchFilters(),
+    // --- Overview substate: one short list per section ---
+    val overviewPinned: ImmutableList<ForumThread> = persistentListOf(),
+    val overviewRecent: ImmutableList<ForumThread> = persistentListOf(),
+    val overviewRelease: ImmutableList<ForumThread> = persistentListOf(),
+    val overviewNew: ImmutableList<ForumThread> = persistentListOf(),
 
     /** Pinned threads are collapsed by default — AniList keeps several stickied at all times. */
     val isPinnedExpanded: Boolean = false,
+
+    /** Ordering and structured narrowing applied to the hub list. */
+    val hubFilters: ForumSearchFilters = ForumSearchFilters(),
 
     /** Open sheet over the hub, or null. */
     val openSheet: ForumSheet? = null,
@@ -61,9 +89,6 @@ data class ForumUiState(
     val searchIsPaginating: Boolean = false,
     val searchError: String? = null,
 
-    /** Threads shown on the search screen before anything is typed. */
-    val trendingThreads: ImmutableList<ForumThread> = persistentListOf(),
-
     // --- Media picker substate (the Media filter sheet) ---
     val mediaPickerType: MediaType = MediaType.ANIME,
     val mediaPickerQuery: String = "",
@@ -78,22 +103,6 @@ data class ForumUiState(
     /** Shared error for the picker sheets. */
     val pickerError: String? = null
 ) {
-    /** Sticky threads lead the Browse list; they are split out so they can be collapsed. */
-    val pinnedThreads: List<ForumThread>
-        get() = if (showsPinnedSection) threads.filter { it.isSticky } else emptyList()
-
-    val unpinnedThreads: List<ForumThread>
-        get() = if (showsPinnedSection) threads.filterNot { it.isSticky } else threads
-
-    /**
-     * Pinned threads only lead the unfiltered Browse list. Once a category or a structured filter
-     * narrows the list, a "Pinned" heading would be describing something the viewer did not ask for.
-     */
-    val showsPinnedSection: Boolean
-        get() = scope == ForumScope.BROWSE &&
-                hubFilterCount == 0 &&
-                threads.any { it.isSticky }
-
     /**
      * How many structured filters narrow the hub list. The category lives in
      * [selectedCategoryId] because the rail owns it, so it is counted here rather than through
@@ -113,16 +122,39 @@ data class ForumUiState(
                 hubFilters.media != null ||
                 hubFilters.author != null ||
                 hubFilters.subscribedOnly
+
+    /** Sticky threads lead the flat feeds too, so they are split out there as well. */
+    val pinnedThreads: List<ForumThread>
+        get() = when (feed) {
+            ForumFeed.OVERVIEW -> overviewPinned
+            ForumFeed.RECENT, ForumFeed.NEW -> if (hubFilterCount == 0) {
+                threads.filter { it.isSticky }
+            } else {
+                emptyList()
+            }
+
+            else -> emptyList()
+        }
+
+    val unpinnedThreads: List<ForumThread>
+        get() = if (pinnedThreads.isEmpty()) threads else threads.filterNot { it.isSticky }
+
+    val showsPinnedSection: Boolean get() = pinnedThreads.isNotEmpty()
+
+    fun overviewThreads(section: OverviewSection): ImmutableList<ForumThread> = when (section) {
+        OverviewSection.RECENTLY_ACTIVE -> overviewRecent
+        OverviewSection.RELEASE_DISCUSSION -> overviewRelease
+        OverviewSection.NEWLY_CREATED -> overviewNew
+    }
 }
 
 /** The sheets the hub can put over itself. */
-enum class ForumSheet { SORT_AND_FILTER, THREAD_ACTIONS }
+enum class ForumSheet { SORT_AND_FILTER, THREAD_ACTIONS, FEED_PICKER }
 
 sealed interface ForumAction {
     data object Refresh : ForumAction
     data object LoadMore : ForumAction
-    data class OnScopeChange(val scope: ForumScope) : ForumAction
-    data class OnYoursTabChange(val tab: YoursTab) : ForumAction
+    data class OnFeedChange(val feed: ForumFeed) : ForumAction
     data class OnCategoryChange(val categoryId: Int?) : ForumAction
     data object TogglePinnedExpanded : ForumAction
     data class ToggleSaveThread(val thread: ForumThread) : ForumAction
@@ -131,7 +163,7 @@ sealed interface ForumAction {
     data object OnCreateThreadClick : ForumAction
     data class OnCategoryClick(val category: ForumCategory) : ForumAction
 
-    // --- Hub ordering and narrowing (the Sort & filter sheet) ---
+    // --- Hub ordering and narrowing ---
     data class OpenSheet(val sheet: ForumSheet) : ForumAction
     data object DismissSheet : ForumAction
     data class OpenThreadActions(val thread: ForumThread) : ForumAction
