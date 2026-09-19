@@ -39,6 +39,10 @@ import javax.inject.Inject
 
 private const val CACHE_MAX_ENTRIES = 200
 
+/** AniList serves no entry past this offset, whatever page size you ask for. */
+private const val MAX_PAGINATED_ENTRIES = 5000
+private const val DEFAULT_COMMENT_PER_PAGE = 25
+
 private val THREAD_SORT_BY_NAME: Map<String, ThreadSort> =
     ThreadSort.entries.associateBy { it.name }
 
@@ -209,6 +213,10 @@ class ForumRepositoryImpl @Inject constructor(
      *   comments, which live on the highest apiPage. We map
      *   apiPage = lastApiPage - displayPage + 1 and reverse the items so the
      *   newest comment of the thread appears at the top of displayPage 1.
+     *
+     * That highest apiPage is the one the API will serve, not the one `pageInfo` reports. AniList
+     * paginates 5000 entries and no more, so on a long thread the last pages exist in the count
+     * and cannot be requested, from either direction.
      */
     override suspend fun getComments(
         threadId: Int,
@@ -218,9 +226,13 @@ class ForumRepositoryImpl @Inject constructor(
         return runCatchingApi("load comments") {
             val isDesc = sort?.equals("ID_DESC", ignoreCase = true) == true
 
+            // The walk starts from the deepest page the API will serve, not from the real last
+            // page. A thread with 7081 root comments reports lastPage 284, and asking for page
+            // 284 asks for entry 7100, past the 5000 the API will paginate.
             val apiPage = if (isDesc) {
-                val lastApi = fetchLastApiPage(threadId)
-                (lastApi - page + 1).coerceAtLeast(1)
+                val reachable = fetchLastApiPage(threadId)
+                    .coerceAtMost(maxReadablePage(DEFAULT_COMMENT_PER_PAGE))
+                (reachable - page + 1).coerceAtLeast(1)
             } else page
 
             val response = apolloClient
@@ -240,16 +252,20 @@ class ForumRepositoryImpl @Inject constructor(
             // Keep the cache fresh in case new comments grew the thread.
             lastApiPageCache.putBounded(threadId, apiLastPage)
 
+            // Report only the pages the caller can actually reach. Handing the UI 284 sent both
+            // "Load more" and the page jumper into the same refusal from the ascending side.
+            val reachableLastPage = apiLastPage.coerceAtMost(maxReadablePage(info?.perPage))
+
             val ordered = rootNodes
                 .mapNotNull { mapToForumComment(it) }
                 .let { if (isDesc) it.asReversed() else it }
 
             PaginatedResult(
                 items = ordered,
-                hasNextPage = page < apiLastPage,
+                hasNextPage = page < reachableLastPage,
                 currentPage = page,
-                totalPages = apiLastPage,
-                lastPage = apiLastPage,
+                totalPages = reachableLastPage,
+                lastPage = reachableLastPage,
                 total = info?.total ?: 0,
             )
         }
@@ -276,7 +292,10 @@ class ForumRepositoryImpl @Inject constructor(
                         ?: (runCatchingApi("probe last page") { fetchLastApiPage(threadId) }
                             as? Result.Success)?.data
                         ?: apiPage
-                    (lastApi - apiPage + 1).coerceAtLeast(1)
+                    // Same window getComments walks, or a deep link resolves to a page the
+                    // descending view has no way to open.
+                    val reachable = lastApi.coerceAtMost(maxReadablePage(perPage))
+                    (reachable - apiPage + 1).coerceAtLeast(1)
                 } else apiPage
                 Result.Success(displayPage)
             }
@@ -342,6 +361,15 @@ class ForumRepositoryImpl @Inject constructor(
             throw IllegalStateException("Comment $commentId not found in thread $threadId")
         }
     }
+
+    /**
+     * The deepest page AniList will serve. It refuses any request whose last entry would sit past
+     * [MAX_PAGINATED_ENTRIES], so on a 25-per-page list that is page 200 and everything after it
+     * is unreachable in either direction.
+     */
+    private fun maxReadablePage(perPage: Int?): Int =
+        (MAX_PAGINATED_ENTRIES / (perPage ?: DEFAULT_COMMENT_PER_PAGE).coerceAtLeast(1))
+            .coerceAtLeast(1)
 
     private suspend fun fetchLastApiPage(threadId: Int): Int {
         lastApiPageCache[threadId]?.let { return it }
