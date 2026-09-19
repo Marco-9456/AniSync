@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -108,6 +109,12 @@ fun CollapsingTopBarScaffold(
     bottomBar: @Composable () -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
     enableEnterAnimation: Boolean = false,
+    /**
+     * False when the screen prints its own title in the content. The bar then keeps its pinned
+     * height and draws [title] in the compact style, so a screen can hand the bar its title once
+     * the real one has scrolled underneath without the two ever showing at the same time.
+     */
+    heroTitle: Boolean = true,
     content: @Composable (topContentPadding: Dp) -> Unit,
 ) {
     val density = LocalDensity.current
@@ -115,7 +122,11 @@ fun CollapsingTopBarScaffold(
     // The bar protects the status bar: it reserves the height and fills it with its own colour.
     val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val minTopBarHeight = 64.dp + statusBarHeight
-    val maxTopBarHeight = (if (title.length > 18) 200.dp else 170.dp) + statusBarHeight
+    val maxTopBarHeight = if (heroTitle) {
+        (if (title.length > 18) 200.dp else 170.dp) + statusBarHeight
+    } else {
+        minTopBarHeight
+    }
 
     val minTopBarHeightPx = with(density) { minTopBarHeight.toPx() }
     val maxTopBarHeightPx = with(density) { maxTopBarHeight.toPx() }
@@ -126,8 +137,10 @@ fun CollapsingTopBarScaffold(
     }
     val collapseFraction by remember {
         derivedStateOf {
-            1f - ((topBarHeightPx - minTopBarHeightPx) /
-                (maxTopBarHeightPx - minTopBarHeightPx)).coerceIn(0f, 1f)
+            val range = maxTopBarHeightPx - minTopBarHeightPx
+            // Without a hero there is nothing to collapse, and the ratio would be 0/0.
+            if (range <= 0f) 1f
+            else 1f - ((topBarHeightPx - minTopBarHeightPx) / range).coerceIn(0f, 1f)
         }
     }
 
@@ -386,6 +399,12 @@ fun CollapsibleCommonTopBar(
             val titleBottomPadding =
                 androidx.compose.ui.unit.lerp(16.dp, 24.dp, collapseFraction)
 
+            // A screen that owns its own title hands it over mid-scroll, so the swap fades
+            // rather than popping. Screens whose title is always set never leave 1f.
+            val titleAlpha by animateFloatAsState(
+                targetValue = if (title.isEmpty()) 0f else 1f,
+                label = "TopBarTitleAlpha"
+            )
             val titleText: @Composable (Modifier) -> Unit = { textModifier ->
                 Text(
                     text = title,
@@ -395,7 +414,7 @@ fun CollapsibleCommonTopBar(
                     maxLines = if (collapseFraction > 0.8f) 1 else maxLines,
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = titleFontSize * 1.2f,
-                    modifier = textModifier
+                    modifier = textModifier.graphicsLayer { alpha = titleAlpha }
                 )
             }
             val titleModifier = Modifier
