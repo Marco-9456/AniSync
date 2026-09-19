@@ -41,6 +41,15 @@ enum class ForumFeed(
     SAVED(R.string.forum_feed_saved, R.string.forum_feed_saved_short, Icons.Default.Bookmark)
 }
 
+/**
+ * The ordering a feed starts on. Recent and New are orderings as much as they are lists, so
+ * picking one seeds the sort control rather than leaving it pointing somewhere else. It is a
+ * starting point, not a lock, and it is what the search bar compares against to decide whether
+ * the sort icon reads as active.
+ */
+val ForumFeed.defaultSort: ThreadSortOption
+    get() = if (this == ForumFeed.NEW) ThreadSortOption.NEWEST else ThreadSortOption.Default
+
 /** The three previews the Overview stacks under its pinned section. */
 enum class OverviewSection(@param:StringRes val titleRes: Int, val opens: ForumFeed) {
     RECENTLY_ACTIVE(R.string.forum_section_recently_active, ForumFeed.RECENT),

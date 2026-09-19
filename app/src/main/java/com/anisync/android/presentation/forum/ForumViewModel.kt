@@ -172,7 +172,7 @@ class ForumViewModel @Inject constructor(
                         feed = action.feed,
                         // Recent and New are orderings, so picking one seeds the sort. It is a
                         // starting point, not a lock: every feed still honours the sort control.
-                        hubFilters = it.hubFilters.copy(sort = action.feed.defaultSort()),
+                        hubFilters = it.hubFilters.copy(sort = action.feed.defaultSort),
                         isRefreshing = true,
                         openSheet = null
                     )
@@ -543,12 +543,6 @@ class ForumViewModel @Inject constructor(
      */
     private fun hubSortParam(sort: ThreadSortOption): String =
         (listOf(ThreadSort.IS_STICKY) + sort.forBlankQuery().apiValue).joinToString(",") { it.name }
-
-    /** The ordering a feed starts on. Recent and New are orderings; the rest inherit the default. */
-    private fun ForumFeed.defaultSort(): ThreadSortOption = when (this) {
-        ForumFeed.NEW -> ThreadSortOption.NEWEST
-        else -> ThreadSortOption.Default
-    }
 
     /**
      * Saved threads are Room rows, so every ordering the sheet offers has to be applied in memory.

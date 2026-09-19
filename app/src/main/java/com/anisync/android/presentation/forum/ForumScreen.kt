@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -41,8 +42,6 @@ import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.AppBarWithSearch
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -70,6 +69,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
@@ -88,6 +89,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.presentation.library.components.SortIcon
 import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
@@ -159,9 +161,11 @@ fun ForumScreen(
     var overflowExpanded by remember { mutableStateOf(false) }
     var feedMenuExpanded by remember { mutableStateOf(false) }
 
-    // The search bar carries sort and filter, the way Library's does. Read through an updated
-    // state so the remembered input field never shows a stale badge.
-    val filterCount = rememberUpdatedState(uiState.hubFilterCount)
+    // The search bar carries sort and filter, the way Library's does. The input field is
+    // remembered without keys, so ordering has to reach it through an updated state or the icon
+    // keeps drawing the sort the screen opened on.
+    val hubSort = rememberUpdatedState(uiState.hubFilters.sort)
+    val feedDefaultSort = rememberUpdatedState(uiState.feed.defaultSort)
 
     val collapseSearch: () -> Unit = remember(searchBarState, coroutineScope, focusManager) {
         {
@@ -258,21 +262,43 @@ fun ForumScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             // Ordering and narrowing keep a control of their own; the overflow is
                             // for the screen's own preferences, as it is on Discover.
-                            IconButton(onClick = {
-                                viewModel.onAction(
-                                    ForumAction.OpenSheet(ForumSheet.SORT_AND_FILTER)
-                                )
-                            }) {
-                                BadgedBox(
-                                    badge = {
-                                        if (filterCount.value > 0) {
-                                            Badge { Text(filterCount.value.toString()) }
-                                        }
-                                    }
+                            // Library's treatment exactly: the arrows show the direction, and a
+                            // tertiary disc shows the ordering is no longer the feed's own.
+                            val sort = hubSort.value
+                            val isNonDefaultSort = sort != feedDefaultSort.value
+                            val sortDescription = stringResource(R.string.cd_sort_threads)
+                            IconButton(
+                                onClick = {
+                                    viewModel.onAction(
+                                        ForumAction.OpenSheet(ForumSheet.SORT_AND_FILTER)
+                                    )
+                                },
+                                modifier = Modifier.semantics {
+                                    contentDescription = sortDescription
+                                }
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .then(
+                                            if (isNonDefaultSort) {
+                                                Modifier.background(
+                                                    MaterialTheme.colorScheme.tertiaryContainer,
+                                                    CircleShape
+                                                )
+                                            } else {
+                                                Modifier
+                                            }
+                                        )
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.SwapVert,
-                                        contentDescription = stringResource(R.string.cd_sort_threads)
+                                    SortIcon(
+                                        isAscending = sort.isAscending,
+                                        activeColor = if (isNonDefaultSort) {
+                                            MaterialTheme.colorScheme.onTertiaryContainer
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurface
+                                        }
                                     )
                                 }
                             }
