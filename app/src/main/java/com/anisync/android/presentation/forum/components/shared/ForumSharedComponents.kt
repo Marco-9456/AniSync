@@ -120,7 +120,11 @@ fun Int.formatCount(): String = when {
     else -> toString()
 }
 
-private fun Long.toRelativeTime(res: Resources): String {
+/**
+ * Recent posts read better relatively; anything older than a month gets its date, because
+ * "3 years ago" on a 2014 thread tells you less than "Nov 30, 2014" does.
+ */
+internal fun Long.toRelativeTime(res: Resources): String {
     val diff = System.currentTimeMillis() / 1000 - this
     return if (diff < 2592000) {
         formatRelativeTimeSeconds(res, this)

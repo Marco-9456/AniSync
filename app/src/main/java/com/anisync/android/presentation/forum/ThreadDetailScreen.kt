@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Share
@@ -41,13 +43,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,18 +74,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.CommentNode
+import com.anisync.android.domain.ForumComment
 import com.anisync.android.domain.toCommentNode
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.util.adaptiveReadingWidth
+import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
@@ -183,6 +190,31 @@ fun ThreadDetailScreen(
     }
 
     val anchorCommentId = uiState.anchorCommentId
+
+    // What the bar counts is what is under it: the loaded page, replies included. The lifetime
+    // total belongs to "of N pages", which sits on the line below.
+    val commentsOnPage by remember {
+        derivedStateOf { countCommentTree(uiState.comments) }
+    }
+
+    // Determine FAB expanded state based on scroll direction (MD3E reactive layout)
+    val isFabExpanded by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex == 0 || !listState.canScrollBackward
+        }
+    }
+
+    // The title is content, not a hero, so the bar picks it up the moment the real one goes under
+    // it. Measuring the title beats guessing a threshold: it wraps to three lines often enough.
+    var titleHeightPx by remember { mutableIntStateOf(0) }
+    val headerTopPadPx = with(LocalDensity.current) { 16.dp.roundToPx() }
+    val showBarTitle by remember {
+        derivedStateOf {
+            val header = listState.layoutInfo.visibleItemsInfo
+                .firstOrNull { it.key == "thread_header_top" }
+            header == null || header.offset + headerTopPadPx + titleHeightPx < 0
+        }
+    }
 
     LaunchedEffect(uiState.scrollToBottom) {
         if (uiState.scrollToBottom) {
@@ -300,23 +332,17 @@ fun ThreadDetailScreen(
         if (uiState.threadDeleted) onBackClick()
     }
 
-    // Determine FAB expanded state based on scroll direction (MD3E reactive layout)
-    val isFabExpanded by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex == 0 || !listState.canScrollBackward
-        }
-    }
-
+    // The app's own collapsing bar, run without its hero: the title belongs to the thread body,
+    // and the bar only takes it over once the real one has scrolled underneath.
     CollapsingTopBarScaffold(
-        // The two-pane host has only the id, so it passes an empty title. Falling straight back
-        // to the literal word "Thread" wasted a 200dp hero on a generic noun.
-        title = threadTitle.ifEmpty {
-            uiState.thread?.title ?: stringResource(R.string.forum_thread_appbar)
-        },
+        title = if (showBarTitle) uiState.thread?.title ?: threadTitle else "",
+        heroTitle = false,
         onBackClick = onBackClick,
         navigationIcon = navigationIcon,
         scrollableState = listState,
-        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        // FR2's bar is flat. With no hero to collapse there is no state change to signal, and the
+        // bar's own background already occludes whatever scrolls under it.
+        scrolledContainerColor = MaterialTheme.colorScheme.background,
         enableEnterAnimation = true,
         actions = {
                     val siteUrl = uiState.thread?.siteUrl
@@ -386,7 +412,7 @@ fun ThreadDetailScreen(
                             }
                         }
                     }
-                },
+        },
         floatingActionButton = {
             val thread = uiState.thread
             if (thread != null && !thread.isLocked) {
@@ -469,6 +495,7 @@ fun ThreadDetailScreen(
                                 ThreadHeaderTop(
                                     thread = thread,
                                     onUserClick = onUserClick,
+                                    onTitleHeight = { titleHeightPx = it },
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
@@ -503,7 +530,7 @@ fun ThreadDetailScreen(
 
                             item(key = "comments_bar") {
                                 ThreadCommentsBar(
-                                    totalComments = uiState.totalComments,
+                                    commentsOnPage = commentsOnPage,
                                     currentPage = uiState.loadedPageRange?.last ?: 1,
                                     lastPage = uiState.lastPage,
                                     isOldestFirst = uiState.commentSortLabel ==
@@ -571,21 +598,16 @@ fun ThreadDetailScreen(
                                     ) {
                                         if (uiState.isLoadingEarlierComments) AppCircularProgressIndicator()
                                         else {
-                                            FilledTonalButton(
-                                                onClick = { viewModel.onAction(ThreadDetailAction.LoadEarlierComments) },
-                                                shape = RoundedCornerShape(32.dp),
-                                                contentPadding = PaddingValues(
-                                                    horizontal = 32.dp,
-                                                    vertical = 16.dp
-                                                )
-                                            ) {
-                                                Text(
-                                                    text = stringResource(
-                                                        R.string.forum_load_earlier_count,
-                                                        countAbove
-                                                    ), fontWeight = FontWeight.Bold
-                                                )
-                                            }
+                                            LoadPagePill(
+                                                label = stringResource(
+                                                    R.string.forum_load_earlier_count,
+                                                    countAbove
+                                                ),
+                                                icon = Icons.Default.KeyboardArrowUp,
+                                                onClick = {
+                                                    viewModel.onAction(ThreadDetailAction.LoadEarlierComments)
+                                                }
+                                            )
                                         }
                                     }
                                 }
@@ -711,22 +733,17 @@ fun ThreadDetailScreen(
                                     ) {
                                         if (uiState.isLoadingMoreComments) AppCircularProgressIndicator()
                                         else {
-                                            FilledTonalButton(
-                                                onClick = { viewModel.onAction(ThreadDetailAction.LoadMoreComments) },
-                                                shape = RoundedCornerShape(32.dp),
-                                                contentPadding = PaddingValues(
-                                                    horizontal = 32.dp,
-                                                    vertical = 16.dp
-                                                )
-                                            ) {
-                                                Text(
-                                                    text = stringResource(
-                                                        R.string.forum_load_more_count,
-                                                        approxBatch,
-                                                        remaining
-                                                    ), fontWeight = FontWeight.Bold
-                                                )
-                                            }
+                                            LoadPagePill(
+                                                label = stringResource(
+                                                    R.string.forum_load_more_count,
+                                                    approxBatch,
+                                                    remaining
+                                                ),
+                                                icon = Icons.Default.KeyboardArrowDown,
+                                                onClick = {
+                                                    viewModel.onAction(ThreadDetailAction.LoadMoreComments)
+                                                }
+                                            )
                                         }
                                     }
                                 }
@@ -887,6 +904,52 @@ private fun PageProgressPill(
         }
     }
 }
+
+/**
+ * The way to the next slice of comments. A tonal button read as the screen's main action while
+ * sitting between two comments; a quiet pill reads as part of the list, which is what it is.
+ */
+@Composable
+private fun LoadPagePill(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(22.dp),
+        modifier = Modifier
+            .height(44.dp)
+            .bouncyClickable(
+                onClick = onClick,
+                role = Role.Button,
+                clipShape = RoundedCornerShape(22.dp)
+            )
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(start = 20.dp, end = 22.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/** Every comment on the page, nested replies included. */
+private fun countCommentTree(comments: List<ForumComment>): Int =
+    comments.sumOf { 1 + countCommentTree(it.childComments) }
 
 private fun computeHeaderItemCount(
     hasParsedBody: Boolean,

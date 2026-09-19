@@ -181,6 +181,7 @@
     <string name="forum_locked_badge">Locked</string>
     <string name="cd_collapse">Collapse</string>
     <string name="a11y_reply_count">%1$d replies</string>
+    <string name="a11y_view_count">%1$d views</string>
     <string name="a11y_like_count">%1$d likes</string>
 
     <!-- Forum empty states -->
