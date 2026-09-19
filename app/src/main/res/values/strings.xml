@@ -102,9 +102,9 @@
     <string name="forum_reorder_title">Reorder sections</string>
     <string name="forum_reorder_caption">Drag to reorder the Overview. Switch a section off to hide it.</string>
     <string name="forum_reorder_reset">Reset</string>
-    <string name="forum_section_recently_active">Recently active threads</string>
-    <string name="forum_section_release_discussion">Release discussion threads</string>
-    <string name="forum_section_newly_created">Newly created threads</string>
+    <string name="forum_section_recently_active">Recently active</string>
+    <string name="forum_section_release_discussion">Release discussion</string>
+    <string name="forum_section_newly_created">Newly created</string>
     <string name="cd_sort_threads">Sort threads</string>
     <string name="cd_filter_threads">Filter threads</string>
     <string name="forum_pinned">Pinned</string>

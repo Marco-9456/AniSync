@@ -193,9 +193,20 @@ class ForumViewModel @Inject constructor(
 
             is ForumAction.OnHubSortChange -> {
                 if (_uiState.value.hubFilters.sort == action.sort) return
+                // Library re-sorts behind its open sheet, so the confirm button is only a way out.
+                // Waiting for it here made the sort read as broken until you found the button.
+                val state = _uiState.value
+                val leavesOverview = state.feed == ForumFeed.OVERVIEW &&
+                        action.sort != ThreadSortOption.Default
+                if (leavesOverview) appSettings.setForumFeed(ForumFeed.RECENT.name)
                 _uiState.update {
-                    it.copy(hubFilters = it.hubFilters.copy(sort = action.sort))
+                    it.copy(
+                        hubFilters = it.hubFilters.copy(sort = action.sort),
+                        feed = if (leavesOverview) ForumFeed.RECENT else it.feed,
+                        isRefreshing = true
+                    )
                 }
+                load(page = 1, replaceExisting = true)
             }
 
             is ForumAction.OnHubCategoryChange -> {
@@ -249,23 +260,8 @@ class ForumViewModel @Inject constructor(
                 }
             }
 
-            is ForumAction.ApplyHubFilters -> {
-                // The Overview's sections each define their own ordering, so a sort has nowhere to
-                // land there. Choosing one drops into Recent with it, the same way a category does,
-                // rather than leaving a control that silently does nothing.
-                val state = _uiState.value
-                val leavesOverview = state.feed == ForumFeed.OVERVIEW &&
-                        state.hubFilters.sort != ThreadSortOption.Default
-                if (leavesOverview) appSettings.setForumFeed(ForumFeed.RECENT.name)
-                _uiState.update {
-                    it.copy(
-                        feed = if (leavesOverview) ForumFeed.RECENT else it.feed,
-                        openSheet = null,
-                        isRefreshing = true
-                    )
-                }
-                load(page = 1, replaceExisting = true)
-            }
+            // Everything in the sheet has already taken effect, so this only closes it.
+            is ForumAction.ApplyHubFilters -> _uiState.update { it.copy(openSheet = null) }
 
             is ForumAction.OnCategoryChange -> {
                 if (_uiState.value.selectedCategoryId == action.categoryId) return
