@@ -20,15 +20,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.NotificationsNone
-import androidx.compose.material.icons.outlined.RemoveRedEye
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -44,20 +41,35 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.anisync.android.R
-import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.formatRelativeTimeSeconds
+import com.anisync.android.presentation.forum.components.shared.formatCount
 import com.anisync.android.presentation.util.selectedPaneItem
 
+/**
+ * A thread as four bands, each owning the full width of the card.
+ *
+ * The shipped card put the author above the title, which read as the wrong priority, but the reason
+ * behind it was sound: usernames and category lists are both variable-length, so anything sharing a
+ * line with them gets squashed. The band order is kept and the metrics are tightened instead — a
+ * 28dp avatar rather than 40, no 76dp trailing action strip, and no filled last-reply pill — which
+ * brings a typical card from 218dp down to about 140dp.
+ *
+ * 1. author, optional pinned and locked marks, age; save and overflow pinned at the end
+ * 2. the thread title, the thing being scanned for
+ * 3. the categories, in a [FlowRow] so two or three wrap instead of truncating
+ * 4. who replied last, and the reply and like counts
+ */
 @Composable
 fun ForumThreadCard(
     thread: ForumThread,
@@ -68,8 +80,7 @@ fun ForumThreadCard(
     selected: Boolean = false,
     isSaved: Boolean = false,
     onSaveClick: (() -> Unit)? = null,
-    isSubscribed: Boolean = false,
-    onSubscribeClick: (() -> Unit)? = null,
+    onOverflowClick: (() -> Unit)? = null,
     onUserClick: (String) -> Unit = {},
     onLastReplyClick: (threadId: Int, commentId: Int) -> Unit = { _, _ -> }
 ) {
@@ -77,288 +88,176 @@ fun ForumThreadCard(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .selectedPaneItem(selected, RoundedCornerShape(24.dp)),
-        shape = RoundedCornerShape(24.dp),
+            .selectedPaneItem(selected, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp,
-            pressedElevation = 4.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // 1. HEADER: Author, Post Time, Badges, and Top Actions
-            ThreadHeader(
+        Column(modifier = Modifier.padding(14.dp)) {
+            AuthorBand(
                 thread = thread,
                 isSaved = isSaved,
                 onSaveClick = onSaveClick,
-                isSubscribed = isSubscribed,
-                onSubscribeClick = onSubscribeClick,
+                onOverflowClick = onOverflowClick,
                 onUserClick = onUserClick
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(6.dp))
 
-            // 2. BODY: Title, Tags, and Media Cover
-            ThreadBody(thread = thread)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = thread.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
 
-            // 3. FOOTER: Last Reply info & Engagement Stats
-            ThreadFooter(
-                thread = thread,
-                onLastReplyClick = onLastReplyClick
-            )
+                    if (thread.categories.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        CategoryTags(thread)
+                    }
+                }
+
+                if (thread.mediaCoverUrl != null) {
+                    Spacer(Modifier.width(12.dp))
+                    AsyncImage(
+                        model = thread.mediaCover.url() ?: thread.mediaCoverUrl,
+                        contentDescription = thread.mediaTitle
+                            ?: stringResource(R.string.cd_media_cover),
+                        modifier = Modifier
+                            .width(40.dp)
+                            .aspectRatio(3f / 4f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(8.dp)
+                            ),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            ActivityBand(thread = thread, onLastReplyClick = onLastReplyClick)
         }
     }
 }
 
 @Composable
-private fun ThreadHeader(
+private fun AuthorBand(
     thread: ForumThread,
     isSaved: Boolean,
     onSaveClick: (() -> Unit)?,
-    isSubscribed: Boolean,
-    onSubscribeClick: (() -> Unit)?,
+    onOverflowClick: (() -> Unit)?,
     onUserClick: (String) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().height(28.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Author Avatar
         UserAvatar(
             url = thread.authorAvatarUrl,
-            contentDescription = thread.authorName,
-            size = 40.dp,
-            modifier = Modifier.clickable { onUserClick(thread.authorName) }
+            contentDescription = null,
+            size = 28.dp
         )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // Author Info & Status Badges
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = thread.authorName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .clickable { onUserClick(thread.authorName) }
-                )
-
-                // Contextual status icons (pinned / locked)
-                if (thread.isSticky) {
-                    Icon(
-                        imageVector = Icons.Default.PushPin,
-                        contentDescription = stringResource(R.string.pinned),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                if (thread.isLocked) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = stringResource(R.string.locked),
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-
-            Text(
-                text = formatRelativeTimeSeconds(LocalResources.current, thread.createdAt),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-
-        // Quick Actions
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (onSubscribeClick != null) {
-                ActionIconButton(
-                    icon = if (isSubscribed) Icons.Filled.Notifications else Icons.Outlined.NotificationsNone,
-                    contentDescription = stringResource(
-                        if (isSubscribed) R.string.cd_unsubscribe else R.string.cd_subscribe
-                    ),
-                    isActive = isSubscribed,
-                    activeColor = MaterialTheme.colorScheme.primary,
-                    onClick = onSubscribeClick
-                )
-            }
-            if (onSaveClick != null) {
-                ActionIconButton(
-                    icon = if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                    contentDescription = stringResource(
-                        if (isSaved) R.string.cd_unsave else R.string.save
-                    ),
-                    isActive = isSaved,
-                    activeColor = MaterialTheme.colorScheme.primary,
-                    onClick = onSaveClick
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ThreadBody(thread: ForumThread) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            // Main Title
-            Text(
-                text = thread.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(bottom = 10.dp)
-            )
-
-            // Categories / Tags
-            if (thread.categories.isNotEmpty()) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    thread.categories.forEach { category ->
-                        CategoryChip(name = category.name)
-                    }
-                }
-            }
-        }
-
-        // Optional Media Cover Thumbnail
-        if (thread.mediaCoverUrl != null) {
-            Spacer(Modifier.width(12.dp))
-            AsyncImage(
-                model = thread.mediaCover.url() ?: thread.mediaCoverUrl,
-                contentDescription = thread.mediaTitle ?: stringResource(R.string.cd_media_cover),
-                modifier = Modifier
-                    .width(72.dp)
-                    .aspectRatio(3f / 4f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentScale = ContentScale.Crop
-            )
-        }
-    }
-}
-
-@Composable
-private fun ThreadFooter(
-    thread: ForumThread,
-    onLastReplyClick: (threadId: Int, commentId: Int) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Last Reply Section (Collapses gracefully on small screens)
+        Spacer(Modifier.width(10.dp))
         Row(
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f, fill = false)
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            if (thread.replyUserName != null && thread.repliedAt != null) {
+            Text(
+                text = thread.authorName,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable { onUserClick(thread.authorName) }
+                    .padding(horizontal = 2.dp, vertical = 2.dp)
+            )
+            if (thread.isSticky) {
+                Icon(
+                    imageVector = Icons.Default.PushPin,
+                    contentDescription = stringResource(R.string.pinned),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+            if (thread.isLocked) {
                 Surface(
-                    onClick = {
-                        val commentId = thread.replyCommentId
-                        if (commentId != null) onLastReplyClick(thread.id, commentId)
-                    },
-                    shape = RoundedCornerShape(50),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.errorContainer
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(
-                            start = 6.dp,
-                            end = 12.dp,
-                            top = 6.dp,
-                            bottom = 6.dp
-                        )
-                    ) {
-                        UserAvatar(
-                            url = thread.replyUserAvatarUrl,
-                            contentDescription = thread.replyUserName,
-                            size = 20.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(
-                                R.string.forum_last_by,
-                                thread.replyUserName,
-                                formatRelativeTimeSeconds(LocalResources.current, thread.repliedAt)
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                    Text(
+                        text = stringResource(R.string.forum_locked_badge),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        maxLines = 1,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 1.dp)
+                    )
                 }
             }
+            Text(
+                text = "· " + formatRelativeTimeSeconds(LocalResources.current, thread.createdAt),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                softWrap = false
+            )
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // Engagement Metrics
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            StatItem(
-                icon = Icons.Outlined.ChatBubbleOutline,
-                value = thread.replyCount
+        if (onSaveClick != null) {
+            CardIconButton(
+                icon = if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                contentDescription = stringResource(
+                    if (isSaved) R.string.cd_unsave else R.string.save
+                ),
+                tint = if (isSaved) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                onClick = onSaveClick
             )
-
-            StatItem(
-                icon = if (thread.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                value = thread.likeCount,
-                tint = if (thread.isLiked) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            StatItem(
-                icon = Icons.Outlined.RemoveRedEye,
-                value = thread.viewCount
+        }
+        if (onOverflowClick != null) {
+            CardIconButton(
+                icon = Icons.Default.MoreVert,
+                contentDescription = stringResource(R.string.more_options),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                onClick = onOverflowClick
             )
         }
     }
 }
 
-// Reusable Micro-Components
+/**
+ * A 40dp target around a 20dp glyph. The shipped card used a 36dp box with a 4dp gap, so both
+ * trailing buttons fell under the 48dp minimum and a miss opened the thread instead.
+ */
 @Composable
-private fun ActionIconButton(
+private fun CardIconButton(
     icon: ImageVector,
     contentDescription: String,
-    isActive: Boolean,
-    activeColor: Color,
+    tint: Color,
     onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(40.dp)
             .clip(CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
@@ -366,23 +265,130 @@ private fun ActionIconButton(
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = if (isActive) activeColor else MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = tint,
             modifier = Modifier.size(20.dp)
         )
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CategoryChip(name: String) {
+private fun CategoryTags(thread: ForumThread) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        thread.categories.forEach { category ->
+            Text(
+                text = category.name,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActivityBand(
+    thread: ForumThread,
+    onLastReplyClick: (threadId: Int, commentId: Int) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(20.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f, fill = true)
+        ) {
+            val commentId = thread.replyCommentId
+            when {
+                thread.replyUserName != null && thread.repliedAt != null -> {
+                    // Only offer the tap when there is a comment to land on. The shipped pill lit
+                    // up either way and silently did nothing half the time.
+                    val rowModifier = if (commentId != null) {
+                        Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { onLastReplyClick(thread.id, commentId) }
+                            .padding(horizontal = 2.dp)
+                    } else {
+                        Modifier
+                    }
+                    Row(
+                        modifier = rowModifier,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        UserAvatar(
+                            url = thread.replyUserAvatarUrl,
+                            contentDescription = null,
+                            size = 20.dp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.forum_last_by,
+                                thread.replyUserName,
+                                formatRelativeTimeSeconds(
+                                    LocalResources.current,
+                                    thread.repliedAt
+                                )
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                thread.isLocked -> MutedLine(stringResource(R.string.forum_closed_for_replies))
+                else -> MutedLine(stringResource(R.string.forum_no_replies_yet))
+            }
+        }
+
+        Spacer(Modifier.width(8.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StatItem(
+                icon = Icons.Outlined.ChatBubbleOutline,
+                value = thread.replyCount,
+                contentDescription = stringResource(
+                    R.string.a11y_reply_count,
+                    thread.replyCount
+                )
+            )
+            StatItem(
+                icon = if (thread.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                value = thread.likeCount,
+                contentDescription = stringResource(R.string.a11y_like_count, thread.likeCount),
+                tint = if (thread.isLiked) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun MutedLine(text: String) {
     Text(
-        text = name,
+        text = text,
         style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-            .padding(horizontal = 10.dp, vertical = 4.dp)
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
     )
 }
 
@@ -390,19 +396,23 @@ private fun CategoryChip(name: String) {
 private fun StatItem(
     icon: ImageVector,
     value: Int,
+    contentDescription: String,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.clearAndSetSemantics { this.contentDescription = contentDescription }
+    ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = tint,
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(15.dp)
         )
-        Spacer(Modifier.width(4.dp))
+        Spacer(Modifier.width(5.dp))
         Text(
-            text = formatStatValue(value),
-            style = MaterialTheme.typography.labelMedium,
+            text = value.formatCount(),
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
             color = tint,
             maxLines = 1
@@ -410,79 +420,63 @@ private fun StatItem(
     }
 }
 
-// Enhanced Skeleton Loader
+/**
+ * Placeholder in the shape the real card settles into, so the list does not jump on load.
+ */
 @Composable
 fun ForumThreadCardSkeleton(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Header Skeleton
+        Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                SkeletonBox(width = 40.dp, height = 40.dp, shape = CircleShape)
-                Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    SkeletonBox(width = 100.dp, height = 14.dp)
-                    Spacer(Modifier.height(8.dp))
-                    SkeletonBox(width = 60.dp, height = 10.dp)
-                }
-                SkeletonBox(width = 36.dp, height = 36.dp, shape = CircleShape)
+                SkeletonBox(width = 28.dp, height = 28.dp, shape = CircleShape)
+                Spacer(Modifier.width(10.dp))
+                SkeletonBox(width = 96.dp, height = 14.dp)
+                Spacer(Modifier.weight(1f))
+                SkeletonBox(width = 20.dp, height = 20.dp, shape = CircleShape)
             }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Body Skeleton
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.weight(1f)) {
-                    SkeletonBox(
-                        width = Dp.Infinity,
-                        height = 20.dp,
-                        modifier = Modifier.fillMaxWidth(0.95f)
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    SkeletonBox(
-                        width = Dp.Infinity,
-                        height = 20.dp,
-                        modifier = Modifier.fillMaxWidth(0.6f)
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SkeletonBox(width = 70.dp, height = 24.dp, shape = RoundedCornerShape(8.dp))
-                        SkeletonBox(width = 90.dp, height = 24.dp, shape = RoundedCornerShape(8.dp))
-                    }
-                }
-
-                Spacer(Modifier.width(12.dp))
-                // Thumbnail Skeleton
-                SkeletonBox(width = 72.dp, height = 96.dp, shape = RoundedCornerShape(12.dp))
+            Spacer(Modifier.height(10.dp))
+            SkeletonLineBox(fraction = 0.92f)
+            Spacer(Modifier.height(6.dp))
+            SkeletonLineBox(fraction = 0.55f)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                SkeletonBox(width = 56.dp, height = 22.dp, shape = RoundedCornerShape(8.dp))
+                SkeletonBox(width = 88.dp, height = 22.dp, shape = RoundedCornerShape(8.dp))
             }
-
-            Spacer(Modifier.height(20.dp))
-
-            // Footer Skeleton
+            Spacer(Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Last reply skeleton
-                SkeletonBox(width = 140.dp, height = 32.dp, shape = RoundedCornerShape(50))
-
-                // Stats skeleton
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    SkeletonBox(width = 48.dp, height = 32.dp, shape = RoundedCornerShape(50))
-                    SkeletonBox(width = 48.dp, height = 32.dp, shape = RoundedCornerShape(50))
-                    SkeletonBox(width = 48.dp, height = 32.dp, shape = RoundedCornerShape(50))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SkeletonBox(width = 20.dp, height = 20.dp, shape = CircleShape)
+                    Spacer(Modifier.width(8.dp))
+                    SkeletonBox(width = 104.dp, height = 12.dp)
                 }
+                SkeletonBox(width = 76.dp, height = 12.dp)
             }
         }
     }
+}
+
+/** A full-width skeleton line, sized by fraction rather than by an infinite width. */
+@Composable
+private fun SkeletonLineBox(fraction: Float) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth(fraction)
+            .height(18.dp)
+            .clip(RoundedCornerShape(percent = 50))
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+    )
 }
 
 @Composable
@@ -499,128 +493,4 @@ private fun SkeletonBox(
             .clip(shape)
             .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
     )
-}
-
-
-// Domain Mocks & Helpers
-data class ForumThread(
-    val id: Int,
-    val title: String,
-    val body: String?,
-    val authorId: Int,
-    val authorName: String,
-    val authorAvatarUrl: String?,
-    val createdAt: Long,
-    val updatedAt: Long,
-    val replyUserName: String? = null,
-    val replyUserAvatarUrl: String? = null,
-    val repliedAt: Long? = null,
-    val replyCommentId: Int? = null,
-    val replyCount: Int,
-    val likeCount: Int,
-    val viewCount: Int,
-    val isLiked: Boolean,
-    val isSubscribed: Boolean,
-    val isLocked: Boolean,
-    val isSticky: Boolean = false,
-    val siteUrl: String?,
-    val mediaTitle: String? = null,
-    val mediaCoverUrl: String? = null,
-    val categories: List<ForumCategory> = emptyList()
-)
-
-data class ForumCategory(
-    val id: Int,
-    val name: String
-)
-
-
-
-private fun formatStatValue(value: Int): String {
-    return when {
-        value >= 1_000_000 -> String.format("%.1fM", value / 1_000_000.0)
-        value >= 1_000 -> String.format("%.1fk", value / 1_000.0)
-        else -> value.toString()
-    }
-}
-
-
-// Jetpack Compose Previews
-@Preview(showBackground = true, backgroundColor = 0xFFF3F4F6)
-@Composable
-private fun PreviewForumThreadCard_Normal() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp)) {
-            ForumThreadCard(
-                thread = ForumThread(
-                    id = 1,
-                    title = "What is your favorite Anime of the Season so far? Let's discuss!",
-                    body = null,
-                    authorId = 1,
-                    authorName = "OtakuSenpai",
-                    authorAvatarUrl = null,
-                    createdAt = System.currentTimeMillis() / 1000 - 3600, // 1h ago
-                    updatedAt = 1680000000,
-                    replyCount = 142,
-                    likeCount = 56,
-                    viewCount = 1205,
-                    isLiked = false,
-                    isSubscribed = false,
-                    isLocked = false,
-                    siteUrl = null,
-                    categories = listOf(ForumCategory(1, "Discussion"), ForumCategory(2, "Anime"))
-                ),
-                onClick = {},
-                onSaveClick = {},
-                onSubscribeClick = {}
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFF3F4F6)
-@Composable
-private fun PreviewForumThreadCard_StickyAndMedia() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp)) {
-            ForumThreadCard(
-                thread = ForumThread(
-                    id = 2,
-                    title = "[Megathread] Jujutsu Kaisen Season 2 Episode 18 Discussion",
-                    body = null,
-                    authorId = 0,
-                    authorName = "AutoMod",
-                    authorAvatarUrl = null,
-                    createdAt = System.currentTimeMillis() / 1000 - 86400 * 2, // 2d ago
-                    updatedAt = 1680000000,
-                    isSticky = true,
-                    isLocked = true,
-                    isSubscribed = true,
-                    siteUrl = null,
-                    replyUserName = "GojoFan99",
-                    repliedAt = System.currentTimeMillis() / 1000 - 300, // 5m ago
-                    replyCount = 8900,
-                    likeCount = 3450,
-                    isLiked = true,
-                    viewCount = 150000,
-                    mediaCoverUrl = "https://example.com/mock.jpg",
-                    categories = listOf(ForumCategory(3, "Episode"), ForumCategory(4, "Spoilers"))
-                ),
-                onClick = {},
-                isSaved = true,
-                onSaveClick = {},
-                onSubscribeClick = {}
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFF3F4F6)
-@Composable
-private fun PreviewForumThreadCard_Skeleton() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp)) {
-            ForumThreadCardSkeleton()
-        }
-    }
 }

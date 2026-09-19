@@ -108,7 +108,7 @@ fun AuthorRow(
     }
 }
 
-private fun Int.formatCount(): String = when {
+fun Int.formatCount(): String = when {
     this >= 1_000_000 -> {
         val m = this / 1_000_000.0
         if (m % 1.0 == 0.0) "${m.toInt()}M" else "%.1fM".format(m)
