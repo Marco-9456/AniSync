@@ -104,10 +104,14 @@ private fun SheetChip(
 /** Human-readable label for a thread sort option, used by the chip + sort sheet. */
 internal fun ThreadSortOption.shortLabel(): String = when (this) {
     ThreadSortOption.RECENTLY_REPLIED -> "Recently replied"
+    ThreadSortOption.LEAST_RECENTLY_REPLIED -> "Least recently replied"
     ThreadSortOption.NEWEST -> "Newest"
     ThreadSortOption.OLDEST -> "Oldest"
     ThreadSortOption.MOST_REPLIES -> "Most replies"
+    ThreadSortOption.FEWEST_REPLIES -> "Fewest replies"
     ThreadSortOption.MOST_VIEWED -> "Most viewed"
-    ThreadSortOption.TITLE -> "Title"
+    ThreadSortOption.LEAST_VIEWED -> "Least viewed"
+    ThreadSortOption.TITLE -> "Title A-Z"
+    ThreadSortOption.TITLE_DESC -> "Title Z-A"
     ThreadSortOption.RELEVANCE -> "Relevance"
 }

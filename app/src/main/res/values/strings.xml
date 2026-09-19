@@ -135,6 +135,12 @@
     <string name="forum_narrow_by">Narrow by</string>
     <string name="forum_reset">Reset</string>
     <string name="forum_filters">Filters</string>
+    <string name="forum_sort_field_last_reply">Recently replied</string>
+    <string name="forum_sort_field_created">Created</string>
+    <string name="forum_sort_field_replies">Replies</string>
+    <string name="forum_sort_field_views">Views</string>
+    <string name="forum_sort_field_title">Title</string>
+    <string name="forum_sort_field_relevance">Relevance</string>
     <string name="forum_sort_recently_active">Recently active</string>
     <string name="forum_sort_newest">Newest first</string>
     <string name="forum_sort_oldest">Oldest first</string>

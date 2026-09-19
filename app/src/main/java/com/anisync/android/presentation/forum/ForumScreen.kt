@@ -502,22 +502,12 @@ fun ForumScreen(
     if (uiState.openSheet == ForumSheet.SORT_AND_FILTER) {
         ForumSortFilterSheet(
             sort = uiState.hubFilters.sort,
-            selectedCategoryId = uiState.selectedCategoryId,
-            media = uiState.hubFilters.media,
-            author = uiState.hubFilters.author,
-            subscribedOnly = uiState.hubFilters.subscribedOnly,
             resultCount = if (uiState.feed == ForumFeed.OVERVIEW) {
                 uiState.visibleOverviewSections.sumOf { uiState.overviewThreads(it).size }
             } else {
                 uiState.threads.size
             },
             onSortChange = { viewModel.onAction(ForumAction.OnHubSortChange(it)) },
-            onCategoryChange = { id ->
-                viewModel.onAction(
-                    ForumAction.OnHubCategoryChange(id?.let { ForumCategory(it, "") })
-                )
-            },
-            onToggleSubscribedOnly = { viewModel.onAction(ForumAction.ToggleHubSubscribedOnly) },
             onReset = { viewModel.onAction(ForumAction.ResetHubFilters) },
             onApply = { viewModel.onAction(ForumAction.ApplyHubFilters) },
             onDismiss = { viewModel.onAction(ForumAction.DismissSheet) }

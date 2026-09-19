@@ -9,6 +9,7 @@ import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.domain.ThreadEventBus
+import com.anisync.android.domain.ThreadSortField
 import com.anisync.android.domain.ThreadSortOption
 import com.anisync.android.domain.ThreadUpdate
 import com.anisync.android.presentation.components.alert.ToastManager
@@ -557,15 +558,17 @@ class ForumViewModel @Inject constructor(
      * Saved threads are Room rows, so every ordering the sheet offers has to be applied in memory.
      * Leaving them unsorted would have made the sort control a no-op on one feed out of five.
      */
-    private fun List<ForumThread>.sortedBy(sort: ThreadSortOption): List<ForumThread> = when (sort) {
-        ThreadSortOption.RECENTLY_REPLIED, ThreadSortOption.RELEVANCE ->
-            sortedByDescending { it.repliedAt ?: it.createdAt }
+    private fun List<ForumThread>.sortedBy(sort: ThreadSortOption): List<ForumThread> {
+        val ordered = when (sort.sortField) {
+            ThreadSortField.LAST_REPLY, ThreadSortField.RELEVANCE ->
+                sortedBy { it.repliedAt ?: it.createdAt }
 
-        ThreadSortOption.NEWEST -> sortedByDescending { it.createdAt }
-        ThreadSortOption.OLDEST -> sortedBy { it.createdAt }
-        ThreadSortOption.MOST_REPLIES -> sortedByDescending { it.replyCount }
-        ThreadSortOption.MOST_VIEWED -> sortedByDescending { it.viewCount }
-        ThreadSortOption.TITLE -> sortedBy { it.title.lowercase() }
+            ThreadSortField.CREATED -> sortedBy { it.createdAt }
+            ThreadSortField.REPLIES -> sortedBy { it.replyCount }
+            ThreadSortField.VIEWS -> sortedBy { it.viewCount }
+            ThreadSortField.TITLE -> sortedBy { it.title.lowercase() }
+        }
+        return if (sort.isAscending) ordered else ordered.reversed()
     }
 
     /** SEARCH_MATCH only ranks against a query, so it degrades to the default ordering here. */

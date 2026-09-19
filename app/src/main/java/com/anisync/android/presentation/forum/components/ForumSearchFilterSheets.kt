@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -44,6 +46,7 @@ import com.anisync.android.presentation.components.filtersheet.MediaPickerRow
 import com.anisync.android.presentation.components.filtersheet.PickerResults
 import com.anisync.android.presentation.components.filtersheet.PickerSearchField
 import com.anisync.android.presentation.forum.defaultCategories
+import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.type.MediaType
 
 /**
@@ -78,17 +81,24 @@ fun ForumSearchFilterSheetHost(
     when (opened) {
         null -> Unit
 
-        ForumFilterId.SORT -> FilterSheetScaffold(title = "Sort by", onDismiss = onDismiss) {
-            ThreadSortOption.entries.forEach { option ->
-                FilterOptionRow(
-                    label = option.shortLabel(),
-                    selected = filters.sort == option,
-                    onClick = {
-                        onSortChange(option)
-                        onDismiss()
-                    }
-                )
-            }
+        // Library's sort shape: the direction toggle beside the section label, then a grid of
+        // columns. It replaces a flat list that had one direction per column and no way to flip it.
+        ForumFilterId.SORT -> FilterSheetScaffold(
+            title = stringResource(R.string.forum_sort_by),
+            onDismiss = onDismiss,
+            onReset = {
+                onSortChange(ThreadSortOption.Default)
+                onDismiss()
+            },
+            resetEnabled = filters.sort != ThreadSortOption.Default
+        ) {
+            ForumSortSection(
+                sort = filters.sort,
+                onSortChange = onSortChange,
+                horizontalPadding = 16.dp,
+                showLabel = false
+            )
+            Spacer(Modifier.height(8.dp))
         }
 
         ForumFilterId.CATEGORY -> FilterSheetScaffold(
@@ -100,24 +110,32 @@ fun ForumSearchFilterSheetHost(
             },
             resetEnabled = filters.category != null
         ) {
-            FilterOptionRow(
-                label = "All categories",
-                selected = filters.category == null,
-                onClick = {
-                    onCategoryChange(null)
-                    onDismiss()
-                }
-            )
-            defaultCategories.forEach { category ->
-                FilterOptionRow(
-                    label = category.name,
-                    selected = filters.category?.id == category.id,
-                    onClick = {
-                        onCategoryChange(category)
-                        onDismiss()
+            // A two-column grid rather than seventeen full-width rows, which was most of a
+            // screen of scrolling for a single choice.
+            val entries: List<ForumCategory?> = listOf(null) + defaultCategories
+            entries.chunked(2).forEach { pair ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    pair.forEach { category ->
+                        CategoryPill(
+                            label = category?.name
+                                ?: stringResource(R.string.forum_category_all),
+                            selected = filters.category?.id == category?.id,
+                            onClick = {
+                                onCategoryChange(category)
+                                onDismiss()
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
-                )
+                    if (pair.size == 1) Spacer(Modifier.weight(1f))
+                }
             }
+            Spacer(Modifier.height(8.dp))
         }
 
         ForumFilterId.MEDIA -> FilterSheetScaffold(
@@ -273,6 +291,57 @@ fun ForumMediaFilterHeader(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.forum_start_discussion))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryPill(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
+        shape = RoundedCornerShape(22.dp),
+        modifier = modifier
+            .height(48.dp)
+            .bouncyClickable(
+                onClick = onClick,
+                role = Role.RadioButton,
+                clipShape = RoundedCornerShape(22.dp)
+            )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            if (selected) {
+                Spacer(Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
     }
