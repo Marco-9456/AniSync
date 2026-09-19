@@ -12,16 +12,52 @@ import com.anisync.android.type.ThreadSort
  */
 enum class ThreadSortOption(val apiValue: List<ThreadSort>) {
     RECENTLY_REPLIED(listOf(ThreadSort.REPLIED_AT_DESC)),
+    LEAST_RECENTLY_REPLIED(listOf(ThreadSort.REPLIED_AT)),
     NEWEST(listOf(ThreadSort.CREATED_AT_DESC)),
     OLDEST(listOf(ThreadSort.CREATED_AT)),
     MOST_REPLIES(listOf(ThreadSort.REPLY_COUNT_DESC)),
+    FEWEST_REPLIES(listOf(ThreadSort.REPLY_COUNT)),
     MOST_VIEWED(listOf(ThreadSort.VIEW_COUNT_DESC)),
+    LEAST_VIEWED(listOf(ThreadSort.VIEW_COUNT)),
     TITLE(listOf(ThreadSort.TITLE)),
+    TITLE_DESC(listOf(ThreadSort.TITLE_DESC)),
     RELEVANCE(listOf(ThreadSort.SEARCH_MATCH));
+
+    // Not named `field`: inside a property accessor that identifier is the backing field.
+    /** Which column this orders by, ignoring direction. */
+    val sortField: ThreadSortField
+        get() = ThreadSortField.entries.first { it.descending == this || it.ascending == this }
+
+    /** True when this is the ascending half of its [sortField]. */
+    val isAscending: Boolean get() = sortField.ascending == this
 
     companion object {
         val Default = RECENTLY_REPLIED
     }
+}
+
+/**
+ * The column a thread list is ordered by. Direction is a separate control, the way Library's sort
+ * sheet has it, so each column costs one pill instead of two and every column gets both directions
+ * rather than only the one somebody thought to list.
+ */
+enum class ThreadSortField(
+    val ascending: ThreadSortOption?,
+    val descending: ThreadSortOption
+) {
+    LAST_REPLY(ThreadSortOption.LEAST_RECENTLY_REPLIED, ThreadSortOption.RECENTLY_REPLIED),
+    CREATED(ThreadSortOption.OLDEST, ThreadSortOption.NEWEST),
+    REPLIES(ThreadSortOption.FEWEST_REPLIES, ThreadSortOption.MOST_REPLIES),
+    VIEWS(ThreadSortOption.LEAST_VIEWED, ThreadSortOption.MOST_VIEWED),
+    TITLE(ThreadSortOption.TITLE, ThreadSortOption.TITLE_DESC),
+    /** Match quality has no meaningful ascending half. */
+    RELEVANCE(null, ThreadSortOption.RELEVANCE);
+
+    fun toOption(isAscending: Boolean): ThreadSortOption =
+        if (isAscending) (ascending ?: descending) else descending
+
+    /** Relevance is one-way, so the direction control is inert on it. */
+    val hasDirection: Boolean get() = ascending != null
 }
 
 /**
