@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -109,6 +110,9 @@ private const val MIN_CONTENT_WIDTH_DP = 200
 
 /** How many levels of reply are drawn before the drill-down takes over. */
 private const val MAX_VISUAL_DEPTH = 3
+
+/** Reading column cap inside a two-pane detail, where the window class is not the measure. */
+private val PaneReadingWidth = 640.dp
 
 internal data class FlatComment(
     val comment: CommentNode,
@@ -448,7 +452,16 @@ fun ThreadDetailScreen(
                             state = listState,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .then(if (capContentWidth) Modifier.adaptiveReadingWidth() else Modifier),
+                                .then(
+                                    if (capContentWidth) {
+                                        Modifier.adaptiveReadingWidth()
+                                    } else {
+                                        // In a resizable pane the window's width class is the wrong
+                                        // measure: the EXPANDED cap is 840dp, which is wider than
+                                        // the pane itself, so the body ran the full width.
+                                        Modifier.widthIn(max = PaneReadingWidth)
+                                    }
+                                ),
                             contentPadding = PaddingValues(top = topContentPadding),
                             verticalArrangement = Arrangement.spacedBy(8.dp) // Expressive vertical spacing
                         ) {
