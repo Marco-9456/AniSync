@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Inbox Read Tracking** - Notification settings gain an Inbox group. Read tracking can be switched off, leaving the inbox with no New section and letting the visit clear the count the way the website does, and opening the inbox can be set to mark everything in it read.
+
+### Fixed
+
+- **Notifications Inbox** - Notifications no longer come back as new after leaving the screen or after a newer one arrives. Read state is kept on the device per account instead of being guessed from AniList's unread count on every visit, opening a row reads that row, and the server-side reset behind Mark all read is retried until AniList accepts it. A cached profile read can no longer put a count the user has already cleared back on the badge.
+
 ## [3.2.0] - 2026-09-20
 
 ### Added
