@@ -8,6 +8,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bloodtype
@@ -95,6 +97,7 @@ import com.anisync.android.presentation.details.components.PersonNoteStrip
 import com.anisync.android.presentation.details.components.PersonListFooter
 import com.anisync.android.presentation.details.components.PersonTab
 import com.anisync.android.presentation.details.components.PersonTabs
+import com.anisync.android.presentation.details.components.PersonToggleChip
 import com.anisync.android.presentation.details.components.personGridItems
 import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.share.StaffShareCard
@@ -307,7 +310,9 @@ private fun StaffDetailsContent(
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var characterSortIndex by rememberSaveable { mutableIntStateOf(0) }
     var roleIndex by rememberSaveable { mutableIntStateOf(0) }
+    var charactersOnListOnly by rememberSaveable { mutableStateOf(false) }
     var creditSortIndex by rememberSaveable { mutableIntStateOf(0) }
+    var creditsOnListOnly by rememberSaveable { mutableStateOf(false) }
 
 
     val adaptive = LocalAdaptiveInfo.current
@@ -356,8 +361,22 @@ private fun StaffDetailsContent(
         stringResource(R.string.person_sort_newest)
     )
 
-    val characters = remember(staff.voicedCharacters, characterSortIndex, roleIndex) {
+    val characters = remember(
+        staff.voicedCharacters,
+        characterSortIndex,
+        roleIndex,
+        charactersOnListOnly
+    ) {
         staff.voicedCharacters
+            .let { list ->
+                if (!charactersOnListOnly) return@let list
+                // Narrow the appearances before the role filter reads them, so a role only counts
+                // when it is a role in a title the viewer actually has on their list.
+                list.mapNotNull { character ->
+                    val onList = character.mediaAppearances.filter { it.isOnList }
+                    if (onList.isEmpty()) null else character.copy(mediaAppearances = onList)
+                }
+            }
             .filter { character ->
                 when (roleIndex) {
                     1 -> character.mediaAppearances.any { it.characterRole.equals("MAIN", true) }
@@ -376,13 +395,15 @@ private fun StaffDetailsContent(
             }
     }
 
-    val credits = remember(staff.productionMedia, creditSortIndex) {
-        staff.productionMedia.sortedWith(
-            when (creditSortIndex) {
-                1 -> compareByDescending<StaffProductionMedia> { it.startYear ?: 0 }
-                else -> compareByDescending<StaffProductionMedia> { it.popularity ?: 0 }
-            }
-        )
+    val credits = remember(staff.productionMedia, creditSortIndex, creditsOnListOnly) {
+        staff.productionMedia
+            .filter { !creditsOnListOnly || it.isOnList }
+            .sortedWith(
+                when (creditSortIndex) {
+                    1 -> compareByDescending<StaffProductionMedia> { it.startYear ?: 0 }
+                    else -> compareByDescending<StaffProductionMedia> { it.popularity ?: 0 }
+                }
+            )
     }
 
     val tabs = listOf(
@@ -441,6 +462,7 @@ private fun StaffDetailsContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .then(gutter)
+                            .horizontalScroll(rememberScrollState())
                     ) {
                         PersonDropdownChip(
                             label = characterSortOptions[characterSortIndex],
@@ -455,6 +477,11 @@ private fun StaffDetailsContent(
                             options = roleOptions,
                             selectedIndex = roleIndex,
                             onSelect = { roleIndex = it }
+                        )
+                        PersonToggleChip(
+                            label = stringResource(R.string.filter_on_my_list),
+                            selected = charactersOnListOnly,
+                            onToggle = { charactersOnListOnly = !charactersOnListOnly }
                         )
                     }
                     Spacer(Modifier.height(12.dp))
@@ -502,6 +529,7 @@ private fun StaffDetailsContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .then(gutter)
+                            .horizontalScroll(rememberScrollState())
                     ) {
                         PersonDropdownChip(
                             label = creditSortOptions[creditSortIndex],
@@ -511,6 +539,11 @@ private fun StaffDetailsContent(
                             leadingIcon = Icons.Default.SwapVert,
                             appliedWhenNotDefault = false
                         )
+                        PersonToggleChip(
+                            label = stringResource(R.string.filter_on_my_list),
+                            selected = creditsOnListOnly,
+                            onToggle = { creditsOnListOnly = !creditsOnListOnly }
+                        )
                     }
                     Spacer(Modifier.height(12.dp))
                 }
@@ -518,7 +551,11 @@ private fun StaffDetailsContent(
                 if (credits.isEmpty()) {
                     item(key = "credits_empty") {
                         PersonEmptyState(
-                            text = stringResource(R.string.person_empty_credits),
+                            text = if (creditsOnListOnly) {
+                                stringResource(R.string.person_empty_credits_filtered)
+                            } else {
+                                stringResource(R.string.person_empty_credits)
+                            },
                             modifier = gutter
                         )
                     }

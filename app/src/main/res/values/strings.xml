@@ -1612,6 +1612,7 @@
     <string name="person_empty_voice_actors">No voice actors for these filters.</string>
     <string name="person_empty_characters">No characters match these filters.</string>
     <string name="person_empty_credits">No production credits on AniList.</string>
+    <string name="person_empty_credits_filtered">No production credits match these filters.</string>
     <string name="cd_person_names">Open all names and aliases</string>
     <string name="a11y_person_favourite">Favourite</string>
 
