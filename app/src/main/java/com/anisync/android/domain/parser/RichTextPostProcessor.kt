@@ -22,8 +22,16 @@ internal object RichTextPostProcessor {
             // thumbnails (e.g. 20% "Day N" tiles) shoves the grid out of alignment.
             if (block is RichTextBlock.Image) {
                 val align = block.align
+                val flowGroup = block.flowGroup
                 val run = mutableListOf<RichTextBlock.Image>()
-                while (index < blocks.size && blocks[index] is RichTextBlock.Image && blocks[index].align == align) {
+                // Same alignment is not enough: images only share a row when they shared an HTML
+                // block. A cover alone in its own `<center>` must stay above the row of thumbnails
+                // in the next one, the way the site lays them out.
+                while (index < blocks.size &&
+                    blocks[index].let {
+                        it is RichTextBlock.Image && it.align == align && it.flowGroup == flowGroup
+                    }
+                ) {
                     run.add(blocks[index] as RichTextBlock.Image)
                     index++
                 }

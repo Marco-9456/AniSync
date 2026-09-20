@@ -75,7 +75,13 @@ sealed interface RichTextBlock {
         val linkUrl: String?,
         override val align: RichTextAlignment = RichTextAlignment.Start,
         /** When not [RichTextFloat.None], following content wraps beside this image. */
-        val floatSide: RichTextFloat = RichTextFloat.None
+        val floatSide: RichTextFloat = RichTextFloat.None,
+        /**
+         * Identifies the HTML block this image came from. Images are inline, so several inside one
+         * block flow onto a shared row, but two blocks stack — a cover in its own `<center>` sits
+         * above the row of thumbnails in the next one rather than beside them.
+         */
+        val flowGroup: Int = 0
     ) : RichTextBlock
 
     data class Table(

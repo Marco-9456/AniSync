@@ -44,6 +44,11 @@ internal class RichTextHtmlParser(
     private val nonDigitRegex get() = NON_DIGIT_REGEX
     private val blockTags get() = BLOCK_TAGS
 
+    // Stamped onto every image so the grid pass can tell "several images inside one block" from
+    // "one image per block"; see RichTextBlock.Image.flowGroup. Bumped on both sides of a block
+    // node, so what the block emits can never share an id with what sits around it.
+    private var flowGroup = 0
+
     fun parse(root: Element): HtmlParseResult {
         val rootContext = ParseContext(inlineParser.config)
         walkChildren(root, rootContext)
@@ -140,7 +145,9 @@ internal class RichTextHtmlParser(
 
             if (isBlockNode) {
                 flushInlineCtx()
+                flowGroup++
                 walkNode(node, ctx)
+                flowGroup++
             } else {
                 walkNode(node, inlineCtx)
             }
@@ -530,7 +537,8 @@ internal class RichTextHtmlParser(
                 isPercent = if (hashWidth) false else widthAttr.contains("%"),
                 linkUrl = linkUrl,
                 align = ctx.align,
-                floatSide = parseImageFloat(element.attr("align"), element.attr("style"))
+                floatSide = parseImageFloat(element.attr("align"), element.attr("style")),
+                flowGroup = flowGroup
             )
         )
     }

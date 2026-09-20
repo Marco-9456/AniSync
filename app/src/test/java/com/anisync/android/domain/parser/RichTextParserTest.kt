@@ -903,6 +903,22 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `images in one block share a row and images in two blocks stack`() = runBlocking {
+        val parsed = RichTextParser.parse(
+            "<center><img width='220' src='https://e.com/cover.jpg'></center>" +
+                "<center><img width='22' src='https://e.com/a.jpg'> " +
+                "<img width='22' src='https://e.com/b.jpg'></center>"
+        )
+
+        val cover = parsed.blocks.first()
+        assertTrue(cover is RichTextBlock.Image && cover.url.endsWith("cover.jpg"))
+
+        val row = parsed.blocks[1]
+        assertTrue(row is RichTextBlock.InlineGroup)
+        assertEquals(2, (row as RichTextBlock.InlineGroup).children.size)
+    }
+
+    @Test
     fun `a markdown blank line leaves no empty block behind`() = runBlocking {
         val parsed = RichTextParser.parse("line one\n\nline two")
         val texts = parsed.blocks.filterIsInstance<RichTextBlock.Text>()
