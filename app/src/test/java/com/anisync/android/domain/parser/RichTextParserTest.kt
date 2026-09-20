@@ -902,6 +902,30 @@ class RichTextParserTest {
         assertTrue(code != null && code.code.contains("pip install requests"))
     }
 
+    @Test
+    fun `br followed by a source newline draws a single break`() = runBlocking {
+        val parsed = RichTextParser.parse("<p>Chat,<br />\nwhat should I watch?</p>")
+        val text = parsed.blocks.filterIsInstance<RichTextBlock.Text>().first()
+
+        assertEquals("Chat,\nwhat should I watch?", text.debugInlineText())
+    }
+
+    @Test
+    fun `a double br spacer draws one blank line`() = runBlocking {
+        val parsed = RichTextParser.parse("<p>above<br />\n<br />\nbelow</p>")
+        val text = parsed.blocks.filterIsInstance<RichTextBlock.Text>().first()
+
+        assertEquals("above\n\nbelow", text.debugInlineText())
+    }
+
+    @Test
+    fun `a newline before a br draws a single break`() = runBlocking {
+        val parsed = RichTextParser.parse("<p>above\n<br />below</p>")
+        val text = parsed.blocks.filterIsInstance<RichTextBlock.Text>().first()
+
+        assertEquals("above\nbelow", text.debugInlineText())
+    }
+
     private fun RichTextBlock.Text.debugInlineText(): String = inlines.toDebugPlainText()
 
     private fun RichTextBlock.Text.hasBold(): Boolean =

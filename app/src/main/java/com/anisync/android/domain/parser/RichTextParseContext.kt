@@ -1,5 +1,7 @@
 package com.anisync.android.domain.parser
 
+private const val NEWLINE = '\n'
+
 internal class ParseContext(
     val config: ParserConfig,
     val blocks: MutableList<RichTextBlock> = mutableListOf(),
@@ -15,10 +17,15 @@ internal class ParseContext(
     fun appendText(text: String) {
         if (text.isEmpty()) return
         val last = inlineBuffer.lastOrNull()
+        // AniList's asHtml writes every line break as `<br />` followed by a real newline. That
+        // newline is insignificant HTML whitespace next to a break, so keeping it would draw a
+        // second empty line and turn a `<br /><br />` spacer into three of them.
+        val value = if (last is RichTextInline.LineBreak) text.trimStart(NEWLINE) else text
+        if (value.isEmpty()) return
         if (last is RichTextInline.Text) {
-            inlineBuffer[inlineBuffer.lastIndex] = RichTextInline.Text(last.value + text)
+            inlineBuffer[inlineBuffer.lastIndex] = RichTextInline.Text(last.value + value)
         } else {
-            inlineBuffer.add(RichTextInline.Text(text))
+            inlineBuffer.add(RichTextInline.Text(value))
         }
         hasBufferedInlineContent = true
     }
@@ -28,8 +35,21 @@ internal class ParseContext(
             appendText(inline.value)
             return
         }
+        // Mirror of the rule in appendText, for markup that puts the newline before the break.
+        if (inline is RichTextInline.LineBreak) dropTrailingNewline()
         inlineBuffer.add(inline)
         hasBufferedInlineContent = true
+    }
+
+    private fun dropTrailingNewline() {
+        val last = inlineBuffer.lastOrNull()
+        if (last !is RichTextInline.Text || !last.value.endsWith(NEWLINE)) return
+        val trimmed = last.value.trimEnd(NEWLINE)
+        if (trimmed.isEmpty()) {
+            inlineBuffer.removeAt(inlineBuffer.lastIndex)
+        } else {
+            inlineBuffer[inlineBuffer.lastIndex] = RichTextInline.Text(trimmed)
+        }
     }
 
     fun flushText(kind: RichTextTextKind = RichTextTextKind.Paragraph) {
