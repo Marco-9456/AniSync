@@ -40,14 +40,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.ActivityHistoryDay
@@ -79,6 +82,12 @@ private val WeekWideMinWidth = 660.dp
 
 private val BarHeight = 18.dp
 private val RowHeight = 32.dp
+
+/** Breathing room between a day's name and its date, which used to be slack in a fixed column. */
+private val DayColumnGap = 6.dp
+
+/** Two digits is the widest a day of the month gets; 30 is no narrower than 31 in any face. */
+private val DayNumberSamples = listOf("30")
 /** Matches the seven day rows plus their gaps, so the divider spans the days and nothing else. */
 private val WeekSummaryDividerHeight = (RowHeight + 4.dp) * DAYS_IN_WEEK
 
@@ -150,11 +159,24 @@ internal fun ActivityWeekBreakdown(
 
             Spacer(Modifier.height(12.dp))
 
+            val nameWidth = rememberWidestTextWidth(
+                samples = remember(locale) {
+                    DayOfWeek.entries.map { it.getDisplayName(TextStyle.SHORT, locale) }
+                },
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+            )
+            val numberWidth = rememberWidestTextWidth(
+                samples = DayNumberSamples,
+                style = MaterialTheme.typography.labelMedium
+            )
+
             val days: @Composable ColumnScope.() -> Unit = {
                 week.days.forEach { day ->
                     ActivityDayRow(
                         day = day,
                         weekMax = week.busiestAmount,
+                        nameWidth = nameWidth,
+                        numberWidth = numberWidth,
                         onClick = if (day.amount > 0) ({ openDay = day }) else null
                     )
                     Spacer(Modifier.height(4.dp))
@@ -271,8 +293,33 @@ private fun WeekNavigation(
     }
 }
 
+/**
+ * Width of the widest of [samples] in [style], so a column of short labels lines up without a
+ * hardcoded size. 36.dp fit "Wed" in the shipped font at the default scale and nowhere else: on a
+ * device with a larger font scale or its own system face the label wrapped its last letter onto a
+ * second line. Measuring also keeps the column right in locales whose day names are wider.
+ */
 @Composable
-private fun ActivityDayRow(day: ActivityDay, weekMax: Int, onClick: (() -> Unit)?) {
+private fun rememberWidestTextWidth(
+    samples: List<String>,
+    style: androidx.compose.ui.text.TextStyle
+): Dp {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    return remember(samples, style, density.density, density.fontScale) {
+        val widest = samples.maxOfOrNull { measurer.measure(it, style).size.width } ?: 0
+        with(density) { widest.toDp() }
+    }
+}
+
+@Composable
+private fun ActivityDayRow(
+    day: ActivityDay,
+    weekMax: Int,
+    nameWidth: Dp,
+    numberWidth: Dp,
+    onClick: (() -> Unit)?
+) {
     val counted = day.state == DayDataState.Counted
     val muted = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
     val trackColor = MaterialTheme.colorScheme.onSurface.copy(
@@ -313,18 +360,23 @@ private fun ActivityDayRow(day: ActivityDay, weekMax: Int, onClick: (() -> Unit)
             text = day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            softWrap = false,
             color = when {
                 day.isToday -> MaterialTheme.colorScheme.primary
                 day.state == DayDataState.Future -> muted
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             },
-            modifier = Modifier.width(36.dp)
+            modifier = Modifier.width(nameWidth)
         )
+        Spacer(Modifier.width(DayColumnGap))
         Text(
             text = day.date.dayOfMonth.toString(),
             style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            softWrap = false,
             color = muted,
-            modifier = Modifier.width(24.dp)
+            modifier = Modifier.width(numberWidth)
         )
 
         BoxWithConstraints(
