@@ -79,6 +79,8 @@ fun NotificationsScreen(
     val activityMessageEnabled = uiState.activityMessageEnabled
     val followsEnabled = uiState.followsEnabled
     val streamingDelayMinutes = uiState.streamingDelayMinutes
+    val inboxReadTrackingEnabled = uiState.inboxReadTrackingEnabled
+    val inboxMarkReadOnOpen = uiState.inboxMarkReadOnOpen
 
     var hasSystemPermission by rememberSaveable { mutableStateOf(true) }
 
@@ -165,6 +167,33 @@ fun NotificationsScreen(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Not gated on the master switch above: this group is the in-app inbox, which has
+            // nothing to do with whether the device is allowed to post notifications.
+            SettingsSectionLabel(stringResource(R.string.notification_group_inbox))
+
+            SettingsGroup {
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_inbox_read_tracking),
+                    subtitle = stringResource(R.string.notification_inbox_read_tracking_desc),
+                    checked = inboxReadTrackingEnabled,
+                    onCheckedChange = {
+                        viewModel.onAction(SettingsAction.SetInboxReadTrackingEnabled(it))
+                    }
+                )
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_inbox_mark_read_on_open),
+                    subtitle = stringResource(R.string.notification_inbox_mark_read_on_open_desc),
+                    checked = inboxMarkReadOnOpen,
+                    enabled = inboxReadTrackingEnabled,
+                    onCheckedChange = {
+                        viewModel.onAction(SettingsAction.SetInboxMarkReadOnOpen(it))
+                    }
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             SettingsSectionLabel(stringResource(R.string.notification_group_airing))

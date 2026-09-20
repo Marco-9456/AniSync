@@ -60,6 +60,7 @@ private data class UpdatesAndNavBarState(
 class SettingsViewModel @Inject constructor(
     private val appSettings: AppSettings,
     private val notificationPreferences: NotificationPreferences,
+    private val notificationReadStore: com.anisync.android.data.NotificationReadStore,
     private val notificationScheduler: NotificationScheduler,
     private val notificationDebugService: NotificationDebugService,
     private val accountManager: AccountManager,
@@ -162,9 +163,15 @@ class SettingsViewModel @Inject constructor(
                 notificationPreferences.followsEnabled
             ) { reply, mention, like, message, follows ->
                 listOf<Any>(reply, mention, like, message, follows)
+            },
+            combine(
+                notificationPreferences.inboxReadTrackingEnabled,
+                notificationPreferences.inboxMarkReadOnOpen
+            ) { readTracking, markOnOpen ->
+                listOf<Any>(readTracking, markOnOpen)
             }
-        ) { airing, forum, activity ->
-            airing + forum + activity
+        ) { airing, forum, activity, inbox ->
+            airing + forum + activity + inbox
         },
         combine(
             appSettings.autoUpdateEnabled,
@@ -214,6 +221,8 @@ class SettingsViewModel @Inject constructor(
             activityLikeEnabled = notifications[12] as Boolean,
             activityMessageEnabled = notifications[13] as Boolean,
             followsEnabled = notifications[14] as Boolean,
+            inboxReadTrackingEnabled = notifications[15] as Boolean,
+            inboxMarkReadOnOpen = notifications[16] as Boolean,
             isAutoUpdateEnabled = updatesAndNav.autoUpdate,
             isPrereleaseAllowed = updatesAndNav.allowPrerelease,
             navBarStyle = updatesAndNav.navBarStyle,
@@ -332,6 +341,17 @@ class SettingsViewModel @Inject constructor(
             )
 
             is SettingsAction.SetFollowsEnabled -> notificationPreferences.setFollowsEnabled(
+                action.enabled
+            )
+
+            is SettingsAction.SetInboxReadTrackingEnabled -> {
+                notificationPreferences.setInboxReadTrackingEnabled(action.enabled)
+                // Switching it off drops the record it kept, so switching it back on starts from
+                // AniList's own unread count instead of a watermark left behind weeks ago.
+                if (!action.enabled) notificationReadStore.forget()
+            }
+
+            is SettingsAction.SetInboxMarkReadOnOpen -> notificationPreferences.setInboxMarkReadOnOpen(
                 action.enabled
             )
 

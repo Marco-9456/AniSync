@@ -540,6 +540,11 @@
     <string name="notification_group_forum">Forum</string>
     <string name="notification_group_activity">Activity</string>
     <string name="notification_group_other">Other</string>
+    <string name="notification_group_inbox">Inbox</string>
+    <string name="notification_inbox_read_tracking">Track read notifications</string>
+    <string name="notification_inbox_read_tracking_desc">Keep unread notifications marked until you read them. Off, opening the inbox clears the count the way the website does</string>
+    <string name="notification_inbox_mark_read_on_open">Mark read on open</string>
+    <string name="notification_inbox_mark_read_on_open_desc">Treat opening the inbox as reading everything in it</string>
     <string name="notification_follows">New Followers</string>
     <string name="notification_follows_desc">When someone starts following you</string>
     <string name="notification_channel_watching">Watching List</string>
