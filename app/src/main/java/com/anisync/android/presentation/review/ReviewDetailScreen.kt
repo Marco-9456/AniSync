@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -153,6 +156,11 @@ fun ReviewDetailScreen(
                 val parsedBody = rememberParsedRichText(review.body)
                 val emptyBody = remember { ParsedRichText(emptyList(), emptyList()) }
 
+                // The screen draws edge to edge, so the list has to hold its own bottom inset or
+                // the vote buttons sit under the navigation bar.
+                val bottomInset = WindowInsets.navigationBars.asPaddingValues()
+                    .calculateBottomPadding()
+
                 RichTextHost(
                     parsedData = parsedBody ?: emptyBody,
                     style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
@@ -161,7 +169,10 @@ fun ReviewDetailScreen(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(top = topContentPadding)
+                        contentPadding = PaddingValues(
+                            top = topContentPadding,
+                            bottom = bottomInset
+                        )
                     ) {
                         item(key = "banner") {
                             // Inset hero banner with the score pill floating over it. When launched
