@@ -67,12 +67,14 @@ class CustomMultipartUploader @Inject constructor(
                 // Cap the consumed body so a misconfigured host returning a large
                 // payload (HTML dump, raw image echo, etc.) cannot OOM the parser.
                 val text = response.peekBody(MAX_RESPONSE_BYTES).string()
-                if (!response.isSuccessful) {
-                    error("Custom host upload failed (${response.code}): ${text.take(200)}")
-                }
+                // A JSON host answers with a document rather than a bare URL, so the shared
+                // reader only gets to judge the failures; the success shape is this host's own.
                 val resolved = resolveUrl(text, config.responseJsonPath)
-                    ?: error("Could not extract URL from response: ${text.take(200)}")
-                UploadedMedia(url = resolved, mime = mime, kind = mediaKindFromMime(mime))
+                if (!response.isSuccessful || resolved == null) {
+                    readUploadReply(HOST, response.code, isSuccessful = false, body = text)
+                        .getOrThrow()
+                }
+                UploadedMedia(url = resolved!!, mime = mime, kind = mediaKindFromMime(mime))
             }
         }
     }
@@ -93,6 +95,7 @@ class CustomMultipartUploader @Inject constructor(
     }
 
     companion object {
+        const val HOST = "Custom host"
         private const val MAX_RESPONSE_BYTES = 64L * 1024L
     }
 

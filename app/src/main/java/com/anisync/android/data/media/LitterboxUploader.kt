@@ -42,16 +42,16 @@ class LitterboxUploader @Inject constructor(
                 .post(body)
                 .build()
             client.newCall(request).execute().use { response ->
-                val text = response.peekBody(MAX_RESPONSE_BYTES).string().trim()
-                if (!response.isSuccessful || !text.startsWith("http")) {
-                    error("Litterbox upload failed (${response.code}): ${text.take(200)}")
-                }
-                UploadedMedia(url = text, mime = mime, kind = mediaKindFromMime(mime))
+                val text = response.peekBody(MAX_RESPONSE_BYTES).string()
+                val url = readUploadReply(HOST, response.code, response.isSuccessful, text)
+                    .getOrThrow()
+                UploadedMedia(url = url, mime = mime, kind = mediaKindFromMime(mime))
             }
         }
     }
 
     companion object {
+        const val HOST = "Litterbox"
         private const val ENDPOINT = "https://litterbox.catbox.moe/resources/internals/api.php"
         private const val MAX_RESPONSE_BYTES = 4L * 1024L
     }
