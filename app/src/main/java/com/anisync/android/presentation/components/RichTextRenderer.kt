@@ -376,7 +376,7 @@ private fun RenderSingleBlock(
                 }
 
                 is RichTextBlock.Image -> {
-                    RichImage(block, onImageClick, onLinkClick, scaleToWidth = true)
+                    RichImage(block, onImageClick, onLinkClick)
                 }
 
                 is RichTextBlock.InlineGroup -> {
@@ -738,6 +738,70 @@ private fun RenderSingleBlock(
 private const val MAX_RICH_IMAGE_WIDTH_DP = 3000
 
 /**
+ * AniList's own `.markdown img` rule is `max-width: 100%; max-height: 800px` and nothing else, so a
+ * very tall image is scaled down rather than left to run off the screen. Applied only where the
+ * width is free to shrink with it, which is every case but an explicit percent width.
+ */
+private const val MAX_RICH_IMAGE_HEIGHT_DP = 800
+
+/** Pixel size of a decoded raster source, read off the drawable once Coil has it. */
+private data class RichImageSource(val width: Int, val height: Int) {
+    val aspectRatio: Float? =
+        if (width > 0 && height > 0) width.toFloat() / height.toFloat() else null
+}
+
+/**
+ * Whether this image has to be measured before it can be laid out. Only a width-less one does: a
+ * declared width — absolute or percent — already pins the box, while AniList sizes a width-less
+ * `<img>` from the source itself. Reading the size costs a relayout of the whole body, and a long
+ * review holds over a hundred images, so it is worth asking for only where it changes the answer.
+ */
+private fun RichTextBlock.Image.needsSourceSize(fillWidth: Boolean): Boolean =
+    !fillWidth && width == null
+
+/**
+ * Sizes a raster image the way a browser sizes `<img>` under AniList's stylesheet: the declared
+ * width wins, a width-less image keeps the source's own pixel size read as dp, and both are capped
+ * to the container — plus, where the width is free to shrink with it, to
+ * [MAX_RICH_IMAGE_HEIGHT_DP] of height.
+ *
+ * Coil never upsamples, so a source smaller than the box comes back at its true size; a larger one
+ * comes back at least as wide as the box, which the container cap clamps anyway. Until the source
+ * has loaded there is nothing to measure, so a width-less image fills the row the skeleton already
+ * occupies and settles once the size is known.
+ */
+private fun rasterModifier(
+    img: RichTextBlock.Image,
+    fillWidth: Boolean,
+    source: RichImageSource?
+): Modifier {
+    if (fillWidth) return Modifier.fillMaxWidth()
+
+    if (img.isPercent && img.width != null) {
+        return Modifier.fillMaxWidth((img.width / 100f).coerceIn(0f, 1f))
+    }
+
+    img.width?.let { declared ->
+        // widthIn caps the incoming constraint first, so fillMaxWidth settles on the declared
+        // width, not the row's — a 242 dp thumbnail stays 242 dp inside a FlowRow. Without it the
+        // box stays loose and the layout falls back to the decoded bitmap's pixel size, which is
+        // whatever Coil happened to hand back: two images declared the same width came out at
+        // different sizes and staggered.
+        return Modifier
+            .widthIn(max = declared.coerceIn(1, MAX_RICH_IMAGE_WIDTH_DP).dp)
+            .fillMaxWidth()
+    }
+
+    val aspectRatio = source?.aspectRatio ?: return Modifier.fillMaxWidth()
+    // aspectRatio drives the layout from here, so the width does not need fillMaxWidth to be
+    // definite — and leaving it loose is what lets the height cap shrink the width with it.
+    return Modifier
+        .widthIn(max = source.width.coerceIn(1, MAX_RICH_IMAGE_WIDTH_DP).dp)
+        .heightIn(max = MAX_RICH_IMAGE_HEIGHT_DP.dp)
+        .aspectRatio(aspectRatio)
+}
+
+/**
  * Lays out a floated image with the following content wrapping beside it, then reflowing to full
  * width once it clears the image's bottom — a block-granular approximation of CSS `float` (Compose
  * text can't reflow around a float mid-paragraph, but per-block width switching matches AniList for
@@ -803,25 +867,14 @@ private fun RichImage(
     img: RichTextBlock.Image,
     onClick: (String) -> Unit,
     onLinkClick: (String) -> Unit,
-    fillWidth: Boolean = false,
-    // Standalone block images should display AT their declared width (scaled up if the source is
-    // smaller), matching AniList. Grid/inline images keep it as a cap only, so the FlowRow can wrap
-    // several per row instead of forcing each to full width.
-    scaleToWidth: Boolean = false
+    fillWidth: Boolean = false
 ) {
-    val mod = when {
-        fillWidth -> Modifier.fillMaxWidth()
-        // Clamp malformed widths: a percent fraction must stay in 0f..1f, and an absolute
-        // width must stay within Constraints limits — see MAX_RICH_IMAGE_WIDTH_DP.
-        img.isPercent && img.width != null ->
-            Modifier.fillMaxWidth((img.width / 100f).coerceIn(0f, 1f))
-        img.width != null ->
-            Modifier.widthIn(max = img.width.coerceIn(0, MAX_RICH_IMAGE_WIDTH_DP).dp)
-                .let { if (scaleToWidth) it.fillMaxWidth() else it }
-        // No width hint: fill the available width so the image always has a concrete width to
-        // render into. A vector source with no intrinsic size would otherwise collapse to 0×0.
-        else -> Modifier.fillMaxWidth()
-    }
+    // Pixel size of the decoded source, learned once it loads. AniList sizes a width-less image
+    // from the source itself, so the app cannot do the same until it has one to measure.
+    var source by remember(img.url) { mutableStateOf<RichImageSource?>(null) }
+
+    // Width for the states that have nothing to measure yet — the SVG probe and its skeleton.
+    val mod = rasterModifier(img, fillWidth, source = null)
 
     // Resolve whether this URL is actually an SVG (by content type — badge/widget services serve
     // image/svg+xml from extension-less URLs). SVGs are routed to a WebView because Coil's
@@ -873,6 +926,7 @@ private fun RichImage(
                     null
                 }
             val isSmallUnknown = img.width == null && !fillWidth
+            val needsSourceSize = img.needsSourceSize(fillWidth)
 
             SubcomposeAsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
@@ -883,13 +937,16 @@ private fun RichImage(
                     .decoderFactory(SvgDecoder.Factory())
                     .build(),
                 contentDescription = null,
-                // FillWidth reliably scales the image to the box width regardless of an unbounded
-                // height — needed so a tall standalone image (e.g. a 400x600 gif declared width=500)
-                // displays at full width like AniList instead of collapsing to a thumbnail.
-                contentScale = when {
-                    scaleToWidth -> ContentScale.FillWidth
-                    fillWidth || img.width != null -> ContentScale.Fit
-                    else -> ContentScale.Inside
+                // The box already carries the width the markup asked for, so scale the source to
+                // fill it: a browser upscales an `<img width=220>` whose source is 166 px wide, and
+                // Fit does not — it leaves the source centred in a wider box, which is what made two
+                // thumbnails declared the same width draw at different sizes. Inside only applies
+                // while a width-less image has no measured source yet, so a small one does not flash
+                // across the whole row before settling.
+                contentScale = if (img.width == null && source == null && !fillWidth) {
+                    ContentScale.Inside
+                } else {
+                    ContentScale.FillWidth
                 },
                 loading = {
                     ImageLoadingSkeleton(
@@ -897,7 +954,13 @@ private fun RichImage(
                         aspectRatio = if (isSmallUnknown) null else placeholderAspectRatio
                     )
                 },
-                modifier = mod
+                onSuccess = if (!needsSourceSize) null else { state ->
+                    val drawable = state.result.drawable
+                    if (drawable.intrinsicWidth > 0 && drawable.intrinsicHeight > 0) {
+                        source = RichImageSource(drawable.intrinsicWidth, drawable.intrinsicHeight)
+                    }
+                },
+                modifier = rasterModifier(img, fillWidth, source)
                     .clip(RoundedCornerShape(8.dp))
                     .clickable {
                         if (img.linkUrl != null) onLinkClick(img.linkUrl) else onClick(img.url)
