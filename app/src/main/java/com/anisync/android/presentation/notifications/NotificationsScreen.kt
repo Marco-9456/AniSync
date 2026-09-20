@@ -75,11 +75,8 @@ fun NotificationsScreen(
     val listState = rememberLazyListState()
     val pullState = rememberPullToRefreshState()
 
-    // Unread rows are always the newest run, so the split is a prefix rather than a filter.
-    val newEntries = remember(uiState.entries) { uiState.entries.takeWhile { it.isUnread } }
-    val earlierEntries = remember(uiState.entries, newEntries) {
-        uiState.entries.drop(newEntries.size)
-    }
+    val newEntries = uiState.newEntries
+    val earlierEntries = uiState.earlierEntries
 
     val shouldLoadMore by remember {
         derivedStateOf {
@@ -101,7 +98,8 @@ fun NotificationsScreen(
             onActivityClick = onActivityClick,
             onThreadClick = onThreadClick,
             selectedTarget = selectedTarget,
-            isUnread = entry.isUnread
+            isUnread = entry.isUnread,
+            onOpened = { viewModel.onAction(NotificationsAction.MarkRead(entry.key)) }
         )
     }
 

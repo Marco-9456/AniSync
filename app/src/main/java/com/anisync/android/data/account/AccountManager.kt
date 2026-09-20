@@ -49,6 +49,7 @@ class AccountManager @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val appSettings: AppSettings,
     private val notificationBadgeStore: NotificationBadgeStore,
+    private val notificationReadStore: com.anisync.android.data.NotificationReadStore,
     private val activityRepository: ActivityRepository,
     private val tokenedClientFactory: TokenedApolloClientFactory,
 ) {
@@ -176,6 +177,9 @@ class AccountManager @Inject constructor(
     }
 
     private fun bumpEpoch() {
+        // Runs after the switch, so the badge picks up the account we are moving to rather than
+        // the one whose state was just cleared.
+        notificationReadStore.syncBadge()
         _sessionEpoch.value += 1
     }
 

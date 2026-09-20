@@ -14,19 +14,26 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Holds the authenticated viewer's unread-notification count for the
- * inbox badge. Source of truth is AniList's `Viewer.unreadNotificationCount`,
- * but writers can clear it optimistically when the user marks the inbox read
- * (the server reset rides along on that same action's notifications fetch,
- * via `resetNotificationCount=true`) and debug callers can bump it locally so
- * the UI is testable without waiting for real notifications.
+ * The unread count behind the Profile tab badge.
+ *
+ * AniList's `Viewer.unreadNotificationCount` is the only figure it serves, and it clears all at
+ * once or not at all. Rows read one at a time therefore stay in that figure until the whole inbox
+ * is marked read, so the badge subtracts what [NotificationReadStore] has recorded as read locally.
+ *
+ * Every server figure is stamped with the moment its request left. One that set off before the
+ * user marked the inbox read is describing a state the user has already moved past, and is dropped
+ * rather than allowed to put the badge back.
  */
 @Singleton
 class NotificationBadgeStore @Inject constructor(
     private val apolloClient: ApolloClient
 ) {
-    /** AniList-truth count fetched from `Viewer.unreadNotificationCount`. */
-    private val _serverCount = MutableStateFlow(0)
+    /** AniList's figure, or null until one has been fetched. */
+    private val _serverCount = MutableStateFlow<Int?>(null)
+    val serverUnreadCount: StateFlow<Int?> = _serverCount.asStateFlow()
+
+    /** Rows AniList still counts as unread that this device has already marked read. */
+    private val _localReadCount = MutableStateFlow(0)
 
     /**
      * Local-only count for debug testing. Decoupled from the server
@@ -40,13 +47,21 @@ class NotificationBadgeStore @Inject constructor(
     private val _unreadCount = MutableStateFlow(0)
     val unreadCount: StateFlow<Int> = _unreadCount.asStateFlow()
 
+    /** When the user last marked the inbox read, for judging figures that were already in flight. */
+    @Volatile
+    private var markedReadAt: Long = 0
+
     /**
      * Update from a count already obtained out-of-band (e.g. piggy-backed on
      * a `GetUserProfile` query that included `Viewer.unreadNotificationCount`).
      * Lets us skip the separate `GetViewer` round-trip when the profile
-     * refresh already fetched the value — see Horizon A patch A2.
+     * refresh already fetched the value.
+     *
+     * [requestStartedAt] is when that request left the device. Callers serving a figure from cache
+     * must not call this at all, as a cached figure has no such moment and can be any age.
      */
-    fun setFromServer(count: Int) {
+    fun setFromServer(count: Int, requestStartedAt: Long) {
+        if (requestStartedAt < markedReadAt) return
         _serverCount.value = count.coerceAtLeast(0)
         recompute()
     }
@@ -58,6 +73,7 @@ class NotificationBadgeStore @Inject constructor(
      * worth a request the screen the user just opened is about to need.
      */
     suspend fun refresh(): Unit = withRequestPriority(RequestPriority.Background) {
+        val startedAt = System.currentTimeMillis()
         try {
             val response = apolloClient
                 .query(GetViewerQuery())
@@ -66,27 +82,35 @@ class NotificationBadgeStore @Inject constructor(
                 .execute()
             val count = response.data?.Viewer?.unreadNotificationCount
                 ?: return@withRequestPriority
-            _serverCount.value = count.coerceAtLeast(0)
-            recompute()
+            setFromServer(count, startedAt)
         } catch (_: Exception) {
             // Keep last-known value
         }
     }
 
     /**
-     * Optimistic clear when the user opens the inbox; reconciles with
-     * the server on the next refresh. Also drops any debug bump so a
-     * test cycle (bump → open inbox) returns to the zero state cleanly.
+     * The whole inbox was marked read. Zeroes the badge and discards any figure still in flight,
+     * because AniList's own reset rides on a request that has not answered yet.
      */
-    fun clearOptimistically() {
+    fun markedAllRead() {
+        markedReadAt = System.currentTimeMillis()
         _serverCount.value = 0
+        _localReadCount.value = 0
         _debugCount.value = 0
+        recompute()
+    }
+
+    /** How many of AniList's unread rows this device has already marked read one by one. */
+    fun setLocalReadCount(count: Int) {
+        _localReadCount.value = count.coerceAtLeast(0)
         recompute()
     }
 
     /** Clears all counts when switching accounts so the badge doesn't carry over. */
     fun reset() {
-        _serverCount.value = 0
+        markedReadAt = 0
+        _serverCount.value = null
+        _localReadCount.value = 0
         _debugCount.value = 0
         recompute()
     }
@@ -98,6 +122,7 @@ class NotificationBadgeStore @Inject constructor(
     }
 
     private fun recompute() {
-        _unreadCount.value = (_serverCount.value + _debugCount.value).coerceAtLeast(0)
+        val server = (_serverCount.value ?: 0) - _localReadCount.value
+        _unreadCount.value = server.coerceAtLeast(0) + _debugCount.value
     }
 }

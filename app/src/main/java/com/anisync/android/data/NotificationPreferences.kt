@@ -72,6 +72,19 @@ class NotificationPreferences @Inject constructor(
     private val _followsEnabled = MutableStateFlow(prefs.getBoolean(KEY_FOLLOWS_ENABLED, true))
     val followsEnabled: StateFlow<Boolean> = _followsEnabled.asStateFlow()
 
+    // Inbox - keep a local record of which notifications have been read.
+    // AniList serves one unread count and no per-notification flag, so New/Earlier, the dots and
+    // Mark all read all run off state this device keeps. Off, the inbox carries no read state and
+    // the visit itself clears the count, which is what the website does.
+    private val _inboxReadTrackingEnabled =
+        MutableStateFlow(prefs.getBoolean(KEY_INBOX_READ_TRACKING, true))
+    val inboxReadTrackingEnabled: StateFlow<Boolean> = _inboxReadTrackingEnabled.asStateFlow()
+
+    // Inbox - treat opening the inbox as reading everything in it.
+    private val _inboxMarkReadOnOpen =
+        MutableStateFlow(prefs.getBoolean(KEY_INBOX_MARK_READ_ON_OPEN, false))
+    val inboxMarkReadOnOpen: StateFlow<Boolean> = _inboxMarkReadOnOpen.asStateFlow()
+
     // Streaming availability delay (minutes) for "episode aired" notifications.
     // Lets users on streaming sites that post episodes after the official airing time
     // postpone the notification so it lines up with when the episode is actually watchable.
@@ -145,6 +158,16 @@ class NotificationPreferences @Inject constructor(
         prefs.edit().putBoolean(KEY_FOLLOWS_ENABLED, enabled).apply()
     }
 
+    fun setInboxReadTrackingEnabled(enabled: Boolean) {
+        _inboxReadTrackingEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_INBOX_READ_TRACKING, enabled).apply()
+    }
+
+    fun setInboxMarkReadOnOpen(enabled: Boolean) {
+        _inboxMarkReadOnOpen.value = enabled
+        prefs.edit().putBoolean(KEY_INBOX_MARK_READ_ON_OPEN, enabled).apply()
+    }
+
     fun setStreamingDelayMinutes(minutes: Int) {
         val clamped = minutes.coerceIn(MIN_STREAMING_DELAY_MINUTES, MAX_STREAMING_DELAY_MINUTES)
         _streamingDelayMinutes.value = clamped
@@ -169,6 +192,8 @@ class NotificationPreferences @Inject constructor(
         setActivityMessageEnabled(true)
         setFollowsEnabled(true)
         setStreamingDelayMinutes(0)
+        setInboxReadTrackingEnabled(true)
+        setInboxMarkReadOnOpen(false)
     }
 
     companion object {
@@ -187,6 +212,8 @@ class NotificationPreferences @Inject constructor(
         private const val KEY_ACTIVITY_MESSAGE_ENABLED = "activity_message_enabled"
         private const val KEY_FOLLOWS_ENABLED = "follows_enabled"
         private const val KEY_STREAMING_DELAY_MINUTES = "streaming_delay_minutes"
+        private const val KEY_INBOX_READ_TRACKING = "inbox_read_tracking"
+        private const val KEY_INBOX_MARK_READ_ON_OPEN = "inbox_mark_read_on_open"
         const val MIN_STREAMING_DELAY_MINUTES = 0
         const val MAX_STREAMING_DELAY_MINUTES = 180
     }

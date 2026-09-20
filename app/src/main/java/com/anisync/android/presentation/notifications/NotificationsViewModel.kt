@@ -3,9 +3,12 @@ package com.anisync.android.presentation.notifications
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.NotificationBadgeStore
+import com.anisync.android.data.NotificationPreferences
+import com.anisync.android.data.NotificationReadStore
 import com.anisync.android.domain.GetNotificationsUseCase
 import com.anisync.android.domain.Notification
 import com.anisync.android.domain.NotificationFilter
+import com.anisync.android.domain.NotificationReadState
 import com.anisync.android.domain.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -13,18 +16,36 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+/**
+ * The inbox.
+ *
+ * Read state is not derived here. It belongs to [NotificationReadStore], which persists it per
+ * account, so leaving the screen, killing the process or receiving a new notification cannot turn
+ * an already-read row new again. This ViewModel only reports what the user did (opened a row,
+ * marked the inbox read) and re-flags the list whenever the stored state changes.
+ */
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val getNotifications: GetNotificationsUseCase,
-    private val badgeStore: NotificationBadgeStore
+    private val badgeStore: NotificationBadgeStore,
+    private val readStore: NotificationReadStore,
+    private val notificationPreferences: NotificationPreferences
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(NotificationsUiState())
+    /** Read state of the account active now. An account switch rebuilds this ViewModel. */
+    private val readState: StateFlow<NotificationReadState> = readStore.state()
+
+    private val _uiState = MutableStateFlow(
+        NotificationsUiState(
+            readTrackingEnabled = notificationPreferences.inboxReadTrackingEnabled.value
+        )
+    )
     val uiState: StateFlow<NotificationsUiState> = _uiState.asStateFlow()
 
     private var nextPage = 1
@@ -40,20 +61,39 @@ class NotificationsViewModel @Inject constructor(
     private val snapshots = mutableMapOf<NotificationFilter, FilterSnapshot>()
 
     /**
-     * How many rows were unread when the inbox opened. AniList has no per-notification read flag,
-     * only this count, so the newest [unreadAtOpen] rows are the ones marked new.
-     *
-     * Reading it leaves it alone. Opening the inbox no longer counts as reading anything, so the
-     * same rows stay marked across visits until the user taps Mark all read.
+     * The unfiltered list. Placing the watermark is only ever done from this one: a filtered page
+     * is a subset of the same ids, so a count taken over the whole inbox would land in the wrong
+     * place on it.
      */
-    private val unreadAtOpen = badgeStore.unreadCount.value
+    private var unfiltered: List<Notification> = emptyList()
+    private var unfilteredHasMore = true
 
-    private var unreadIds: Set<Int> = emptySet()
+    private var markedOnOpen = false
 
-    /** Stops a later page or refresh from re-seeding a window the user already dismissed. */
-    private var boundaryCleared = false
+    /** With tracking off, the visit itself reads the inbox, once. */
+    private var clearedOnOpen = false
 
     init {
+        viewModelScope.launch { readState.collect { reflag() } }
+        viewModelScope.launch {
+            notificationPreferences.inboxReadTrackingEnabled.collect { enabled ->
+                _uiState.update { it.copy(readTrackingEnabled = enabled) }
+                // Switched on while the inbox is open: the record was dropped when it went off, so
+                // it needs placing again before the list can say what is new.
+                if (enabled) badgeStore.serverUnreadCount.value?.let { count -> anchor(count) }
+                reflag()
+            }
+        }
+        // An account this device has no record of needs AniList's unread count to place its first
+        // watermark, and a cold open can reach the inbox before anything has fetched one.
+        viewModelScope.launch {
+            badgeStore.serverUnreadCount.filterNotNull().collect { anchor(it) }
+        }
+        if (badgeStore.serverUnreadCount.value == null) {
+            viewModelScope.launch { badgeStore.refresh() }
+        }
+        readStore.syncBadge()
+        readStore.retryPendingReset()
         load(reset = true, isInitial = true)
     }
 
@@ -68,31 +108,49 @@ class NotificationsViewModel @Inject constructor(
             }
             NotificationsAction.Retry -> load(reset = true, isInitial = true)
             NotificationsAction.MarkAllRead -> markAllRead()
+            is NotificationsAction.MarkRead -> markRead(action.key)
         }
     }
 
     /**
-     * The only thing that marks the inbox read. AniList has no mutation for it: the count resets as
-     * a side effect of a notifications query, so this fires a throwaway first page carrying the
-     * flag. The badge is zeroed locally straight away and the next refresh reconciles.
+     * Everything in the inbox, not only what the current filter shows. The reset query the store
+     * fires returns page one unfiltered, which corrects the watermark if this list was narrow.
      */
     private fun markAllRead() {
-        if (unreadIds.isEmpty()) return
-        unreadIds = emptySet()
-        boundaryCleared = true
-        applyUnread()
-        badgeStore.clearOptimistically()
-        viewModelScope.launch {
-            getNotifications.getPage(page = 1, typeFilter = null, resetUnreadCount = true)
+        if (!_uiState.value.readTrackingEnabled) return
+        val known = (unfiltered + _uiState.value.items).distinctBy { it.id }
+        readStore.markAllRead(known)
+    }
+
+    private fun markRead(key: String) {
+        if (!_uiState.value.readTrackingEnabled) return
+        val entry = _uiState.value.entries.firstOrNull { it.key == key } ?: return
+        if (!entry.isUnread) return
+        readStore.markRead(entry.all)
+    }
+
+    private fun anchor(serverUnreadCount: Int) {
+        if (!_uiState.value.readTrackingEnabled) return
+        if (readState.value.anchored) return
+        if (unfiltered.isEmpty() && unfilteredHasMore) return
+        readStore.anchor(unfiltered, serverUnreadCount, unfilteredHasMore)
+    }
+
+    /** Re-applies read state to the visible list and to every filter held in reserve. */
+    private fun reflag() {
+        _uiState.update { it.withEntries(it.entries) }
+        val state = readState.value.takeIf { _uiState.value.readTrackingEnabled }
+        for ((filter, snapshot) in snapshots.toList()) {
+            snapshots[filter] = snapshot.copy(entries = snapshot.entries.flagUnread(state))
         }
     }
 
-    /** Re-flags the visible list and every cached filter, so switching back shows the same state. */
-    private fun applyUnread() {
-        _uiState.update { it.copy(entries = it.entries.markUnread(unreadIds)) }
-        for ((filter, snapshot) in snapshots.toList()) {
-            snapshots[filter] = snapshot.copy(entries = snapshot.entries.markUnread(unreadIds))
-        }
+    private fun NotificationsUiState.withEntries(
+        entries: List<NotificationEntry>
+    ): NotificationsUiState {
+        val flagged = entries.flagUnread(readState.value.takeIf { readTrackingEnabled })
+        val (new, earlier) = flagged.partition { it.isUnread }
+        return copy(entries = flagged, newEntries = new, earlierEntries = earlier)
     }
 
     private fun selectFilter(filter: NotificationFilter) {
@@ -117,13 +175,12 @@ class NotificationsViewModel @Inject constructor(
                 it.copy(
                     filter = filter,
                     items = cached.items,
-                    entries = cached.entries.markUnread(unreadIds),
                     hasNextPage = cached.hasNextPage,
                     isLoading = false,
                     isRefreshing = false,
                     isPaginating = false,
                     errorMessage = null
-                )
+                ).withEntries(cached.entries)
             }
             // Silent background refresh; UI shows cached data immediately, no spinner.
             load(reset = true, isInitial = false, quiet = true)
@@ -133,19 +190,23 @@ class NotificationsViewModel @Inject constructor(
                 it.copy(
                     filter = filter,
                     items = emptyList(),
-                    entries = emptyList(),
                     hasNextPage = true,
                     isLoading = true,
                     isRefreshing = false,
                     isPaginating = false,
                     errorMessage = null
-                )
+                ).withEntries(emptyList())
             }
             load(reset = true, isInitial = true)
         }
     }
 
-    private fun load(reset: Boolean, isInitial: Boolean, refreshing: Boolean = false, quiet: Boolean = false) {
+    private fun load(
+        reset: Boolean,
+        isInitial: Boolean,
+        refreshing: Boolean = false,
+        quiet: Boolean = false
+    ) {
         loadJob?.cancel()
         if (reset) nextPage = 1
 
@@ -161,16 +222,20 @@ class NotificationsViewModel @Inject constructor(
         }
 
         val filter = _uiState.value.filter
+        // Reading the inbox is not the same as reading the notifications in it, so a page never
+        // resets the unread count. The exception is read tracking being off, where the visit is the
+        // only thing left that can mark anything read.
+        val resetCount = !_uiState.value.readTrackingEnabled &&
+            !clearedOnOpen &&
+            filter == NotificationFilter.ALL
 
         loadJob = viewModelScope.launch {
-            // Never resets the unread count. Reading the inbox is not the same as reading the
-            // notifications in it, and a reset here would leave Mark all read with nothing to do.
             val result = getNotifications.getPage(
                 page = nextPage,
                 typeFilter = filter.types,
-                resetUnreadCount = false
+                resetUnreadCount = resetCount
             )
-            // Late response from a previous filter — drop it.
+            // Late response from a previous filter, drop it.
             if (_uiState.value.filter != filter) return@launch
 
             when (result) {
@@ -184,30 +249,35 @@ class NotificationsViewModel @Inject constructor(
                         if (reset) page.items
                         else (state.items + page.items).distinctBy { it.id }
                     val grouped = withContext(Dispatchers.Default) { groupNotifications(merged) }
-                    // Seeded off the unfiltered list only: a filtered page is a subset of the same
-                    // ids, so widening the window from it would mark rows the inbox never counted.
-                    if (filter == NotificationFilter.ALL && !boundaryCleared) {
-                        unreadIds = unreadWindow(unreadIds, merged, unreadAtOpen)
+
+                    if (filter == NotificationFilter.ALL) {
+                        unfiltered = merged
+                        unfilteredHasMore = page.hasNextPage
+                        badgeStore.serverUnreadCount.value?.let { anchor(it) }
                     }
-                    val flagged = grouped.markUnread(unreadIds)
+                    if (resetCount) {
+                        clearedOnOpen = true
+                        badgeStore.markedAllRead()
+                    }
+
                     _uiState.update {
                         it.copy(
                             items = merged,
-                            entries = flagged,
                             isLoading = false,
                             isRefreshing = false,
                             isPaginating = false,
                             hasNextPage = page.hasNextPage,
                             errorMessage = null
-                        )
+                        ).withEntries(grouped)
                     }
                     snapshots[filter] = FilterSnapshot(
                         items = merged,
-                        entries = flagged,
+                        entries = _uiState.value.entries,
                         nextPage = if (page.hasNextPage) nextPage + 1 else nextPage,
                         hasNextPage = page.hasNextPage
                     )
                     if (page.hasNextPage) nextPage++
+                    markOnOpenIfRequested(filter, merged)
                 }
                 is Result.Error -> {
                     _uiState.update {
@@ -221,5 +291,14 @@ class NotificationsViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /** Opt-in: the visit marks the inbox read, the way the AniList site behaves. */
+    private fun markOnOpenIfRequested(filter: NotificationFilter, items: List<Notification>) {
+        if (markedOnOpen || filter != NotificationFilter.ALL) return
+        if (!_uiState.value.readTrackingEnabled) return
+        if (!notificationPreferences.inboxMarkReadOnOpen.value) return
+        markedOnOpen = true
+        readStore.markAllRead(items)
     }
 }

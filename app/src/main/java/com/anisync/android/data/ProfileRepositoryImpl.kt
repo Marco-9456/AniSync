@@ -115,6 +115,7 @@ class ProfileRepositoryImpl @Inject constructor(
             val policy = if (forceNetwork) FetchPolicy.NetworkOnly else FetchPolicy.CacheFirst
 
             val profileQueryStart = SystemClock.elapsedRealtime()
+            val profileRequestedAt = System.currentTimeMillis()
             Trace.beginSection("AniSync.Profile.Query.FullProfile")
             val response = try {
                 apolloClient.query(
@@ -146,9 +147,14 @@ class ProfileRepositoryImpl @Inject constructor(
             val user = response.data?.User
                 ?: throw Exception("User not found: @${queryName ?: knownUserId}")
 
-            // Refresh the notification badge from the piggy-backed Viewer block.
-            response.data?.Viewer?.unreadNotificationCount?.let {
-                notificationBadgeStore.setFromServer(it)
+            // Refresh the notification badge from the piggy-backed Viewer block, but only when
+            // this read went to the network. A cached Viewer block carries whatever count was true
+            // when it was stored, and feeding that to the badge is what used to resurrect an inbox
+            // the user had just marked read.
+            if (policy == FetchPolicy.NetworkOnly) {
+                response.data?.Viewer?.unreadNotificationCount?.let {
+                    notificationBadgeStore.setFromServer(it, profileRequestedAt)
+                }
             }
 
             // Page-1 favourites preview only — the eager all-pages fan-out is gone.

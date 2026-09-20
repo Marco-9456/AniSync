@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.NotificationBadgeStore
+import com.anisync.android.data.NotificationReadStore
 import com.anisync.android.data.network.RateLimitMonitor
 import com.anisync.android.domain.MainTab
 import com.anisync.android.domain.TabReselectBus
@@ -23,6 +24,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainScreenViewModel @Inject constructor(
     private val notificationBadgeStore: NotificationBadgeStore,
+    private val notificationReadStore: NotificationReadStore,
     private val appSettings: AppSettings,
     val toastManager: ToastManager,
     /** Drives the rate limit notice and the pull-to-refresh gates. */
@@ -103,6 +105,9 @@ class MainScreenViewModel @Inject constructor(
 
     init {
         appSettings.noteAppVersion()
+        // Rows already read on this device are subtracted from AniList's count, which only ever
+        // clears all at once. Applied here so the badge is right before the inbox is ever opened.
+        notificationReadStore.syncBadge()
     }
 
     fun onSupportPromptDismissed() {

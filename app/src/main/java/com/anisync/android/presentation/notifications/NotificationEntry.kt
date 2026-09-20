@@ -4,6 +4,7 @@ import com.anisync.android.domain.ActivityLikeNotification
 import com.anisync.android.domain.ActivityReplyLikeNotification
 import com.anisync.android.domain.FollowingNotification
 import com.anisync.android.domain.Notification
+import com.anisync.android.domain.NotificationReadState
 import com.anisync.android.domain.ThreadCommentLikeNotification
 import com.anisync.android.domain.ThreadLikeNotification
 import com.anisync.android.domain.User
@@ -20,17 +21,29 @@ data class NotificationEntry(
     val representative: Notification,
     val all: List<Notification>,
     val actors: List<User>,
-    /** Inside the unread window captured when the inbox opened. See [unreadWindow]. */
+    /** Holds at least one notification the user has not read. See [flagUnread]. */
     val isUnread: Boolean = false
 ) {
     val count: Int get() = all.size
     val isGrouped: Boolean get() = count > 1
 }
 
+/**
+ * Applies [readState] to already grouped rows. A fold of likes or replies is unread while any
+ * member is, since the fold is the only thing the user can open.
+ *
+ * A null state is read tracking turned off, which leaves every row plain.
+ */
+fun List<NotificationEntry>.flagUnread(readState: NotificationReadState?): List<NotificationEntry> =
+    map { entry ->
+        val unread = readState != null && entry.all.any { readState.isUnread(it) }
+        if (unread == entry.isUnread) entry else entry.copy(isUnread = unread)
+    }
+
 fun groupNotifications(items: List<Notification>): List<NotificationEntry> {
     if (items.isEmpty()) return emptyList()
 
-    val sorted = items.sortedByDescending { it.createdAt }
+    val sorted = items.sortedWith(NotificationReadState.NEWEST_FIRST)
     val output = mutableListOf<NotificationEntry>()
     val grouped = mutableMapOf<String, MutableList<Notification>>()
 

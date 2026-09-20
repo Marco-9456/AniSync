@@ -93,11 +93,22 @@ fun NotificationGroupCard(
     // The target open in the two-pane detail (or null). When this card resolves to that target it
     // shows the Material 3 selection ring (two-pane only).
     selectedTarget: NotificationTarget? = null,
-    // Inside the unread window captured when the inbox opened: one step brighter container, and a
-    // dot beside a primary-coloured timestamp.
-    isUnread: Boolean = false
+    // Holds an unread notification: one step brighter container, and a dot beside a
+    // primary-coloured timestamp.
+    isUnread: Boolean = false,
+    // Every way out of this card counts as reading it, including the cover and the avatars.
+    onOpened: () -> Unit = {}
 ) {
     val payload = entry.toPayload(LocalResources.current)
+    // The cover and the avatars take the tap before the card does, so they carry it themselves.
+    val openMedia: (Int) -> Unit = {
+        onOpened()
+        onMediaClick(it)
+    }
+    val openUser: (String) -> Unit = {
+        onOpened()
+        onUserClick(it)
+    }
     // Moderation notes (data change / merge / deletion reasons) can be long; the card expands in
     // place instead of navigating, and the cover thumb keeps the media-details click.
     var expanded by rememberSaveable(entry.key) { mutableStateOf(false) }
@@ -109,6 +120,7 @@ fun NotificationGroupCard(
     val unreadLabel = stringResource(R.string.a11y_notification_unread)
     Card(
         onClick = {
+            onOpened()
             if (payload.expandableNote) {
                 expanded = !expanded
             } else {
@@ -138,7 +150,7 @@ fun NotificationGroupCard(
                 payload = payload,
                 expanded = expanded,
                 isUnread = isUnread,
-                onMediaClick = onMediaClick
+                onMediaClick = openMedia
             )
         } else {
             // Social layout: vertical stack — avatars/icon header, headline, subtitle.
@@ -148,8 +160,8 @@ fun NotificationGroupCard(
                 expanded = expanded,
                 isUnread = isUnread,
                 containerColor = containerColor,
-                onMediaClick = onMediaClick,
-                onUserClick = onUserClick
+                onMediaClick = openMedia,
+                onUserClick = openUser
             )
         }
     }
