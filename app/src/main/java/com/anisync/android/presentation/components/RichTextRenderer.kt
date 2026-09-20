@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +47,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -120,19 +123,10 @@ fun AsyncRichTextRenderer(
     codeBackground: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     spoilerColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
-    // Seed from the parse cache so a body re-entering composition (its card recycled back into view)
-    // renders at full height immediately instead of re-parsing through the estimate→content height
-    // change — which would otherwise replay the card's resize animation on every scroll-back. A cold
-    // body still parses once, then populates the cache for next time.
-    var parsedText by remember(html) { mutableStateOf(RichTextParseCache.get(html)) }
-
-    LaunchedEffect(html) {
-        if (parsedText == null) {
-            val result = RichTextParser.parse(html, ParserConfig())
-            RichTextParseCache.put(html, result)
-            parsedText = result
-        }
-    }
+    // Seeded from the parse cache, so a body re-entering composition (its card recycled back into
+    // view) renders at full height immediately instead of re-parsing through the estimate→content
+    // height change — which would otherwise replay the card's resize animation on every scroll-back.
+    val parsedText = rememberParsedRichText(html)
 
     val estimatedMinHeight = remember(html) {
         val lineEstimate = (html.length / 50).coerceIn(1, 15)
@@ -157,16 +151,60 @@ fun AsyncRichTextRenderer(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * Parses [html] off the main thread and returns the result, or null until it is ready. Shares the
+ * process-wide [RichTextParseCache] with [AsyncRichTextRenderer], so a body already rendered once
+ * comes back on the first frame. Screens that lay their body out themselves — see
+ * [richTextItems] — need the blocks before they can build their list, which is why this is separate
+ * from the renderer that usually owns the parse.
+ */
 @Composable
-fun RichTextRenderer(
+fun rememberParsedRichText(html: String?): ParsedRichText? {
+    var parsed by remember(html) { mutableStateOf(html?.let(RichTextParseCache::get)) }
+    LaunchedEffect(html) {
+        if (html == null || parsed != null) return@LaunchedEffect
+        val result = RichTextParser.parse(html, ParserConfig())
+        RichTextParseCache.put(html, result)
+        parsed = result
+    }
+    return parsed
+}
+
+/**
+ * Everything a block needs in order to draw itself, bundled so the same rendering can be driven
+ * either from a plain [Column] or from a `LazyColumn`'s items. Built by [RichTextHost], which owns
+ * the parts that have to outlive any one block: the AniList link previews, the link router and the
+ * full-screen image viewer.
+ */
+@Stable
+class RichTextRenderScope internal constructor(
+    internal val parsed: ParsedRichText,
+    internal val style: TextStyle,
+    internal val color: Color,
+    internal val linkColor: Color,
+    internal val codeBackground: Color,
+    internal val spoilerColor: Color,
+    internal val previews: Map<LinkPreviewKey, LinkPreview>,
+    internal val onImageClick: (String) -> Unit,
+    internal val onLinkClick: (String) -> Unit,
+    internal val linkListener: LinkInteractionListener
+)
+
+/**
+ * Sets up the shared state a rich text body needs and hands it to [content], which decides how the
+ * blocks are laid out. [RichTextRenderer] draws them all at once; a long body such as a review
+ * instead wraps its whole `LazyColumn` in this and emits [richTextItems], so only the blocks on
+ * screen compose — and only those fetch their images.
+ */
+@Composable
+fun RichTextHost(
     parsedData: ParsedRichText,
-    modifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.bodyMedium,
     color: Color = MaterialTheme.colorScheme.onSurface,
     linkColor: Color = MaterialTheme.colorScheme.primary,
     codeBackground: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
-    spoilerColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
+    spoilerColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    content: @Composable (RichTextRenderScope) -> Unit
 ) {
     var viewerInitialIndex by remember { mutableStateOf<Int?>(null) }
     val linkRouter = rememberAniLinkRouter()
@@ -192,25 +230,29 @@ fun RichTextRenderer(
         }
     }
 
-    SelectionContainer(modifier = modifier) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            RenderBlocks(
-                blocks = parsedData.blocks,
-                style = style,
-                color = color,
-                linkColor = linkColor,
-                codeBackground = codeBackground,
-                spoilerColor = spoilerColor,
-                previews = previews,
-                onImageClick = { url ->
-                    val idx = parsedData.imageUrls.indexOf(url)
-                    if (idx >= 0) viewerInitialIndex = idx
-                },
-                onLinkClick = { linkRouter.navigate(it) },
-                linkListener = linkListener
-            )
-        }
+    // Remembered so a lazy list's item lambdas keep a stable capture and are not all invalidated on
+    // every recomposition of the screen around them.
+    val scope = remember(
+        parsedData, style, color, linkColor, codeBackground, spoilerColor, linkListener
+    ) {
+        RichTextRenderScope(
+            parsed = parsedData,
+            style = style,
+            color = color,
+            linkColor = linkColor,
+            codeBackground = codeBackground,
+            spoilerColor = spoilerColor,
+            previews = previews,
+            onImageClick = { url ->
+                val idx = parsedData.imageUrls.indexOf(url)
+                if (idx >= 0) viewerInitialIndex = idx
+            },
+            onLinkClick = { linkRouter.navigate(it) },
+            linkListener = linkListener
+        )
     }
+
+    content(scope)
 
     viewerInitialIndex?.let { index ->
         ImageViewerDialog(
@@ -218,6 +260,85 @@ fun RichTextRenderer(
             initialIndex = index,
             onDismiss = { viewerInitialIndex = null }
         )
+    }
+}
+
+/**
+ * Emits one lazy item per top-level block. [itemModifier] is applied to each, which is where a
+ * screen puts the horizontal padding its other content already has.
+ *
+ * Selection is per block rather than across the whole body: a `SelectionContainer` spanning the
+ * list would have to hold every block composed, which is the cost this exists to avoid.
+ */
+fun LazyListScope.richTextItems(
+    scope: RichTextRenderScope,
+    itemModifier: Modifier = Modifier
+) {
+    val blocks = scope.parsed.blocks
+    // A float image wraps everything that follows it, so those blocks are one layout and cannot be
+    // split across items. Bodies built around a float are short by nature.
+    val hasFloat = blocks.indexOfFirst {
+        it is RichTextBlock.Image && it.floatSide != RichTextFloat.None
+    } in 0 until blocks.lastIndex
+
+    if (hasFloat) {
+        item(key = "richtext-float") {
+            SelectionContainer(modifier = itemModifier) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    RenderBlocks(
+                        blocks, scope.style, scope.color, scope.linkColor, scope.codeBackground,
+                        scope.spoilerColor, scope.previews, scope.onImageClick, scope.onLinkClick,
+                        scope.linkListener
+                    )
+                }
+            }
+        }
+        return
+    }
+
+    items(count = blocks.size, key = { "richtext-$it" }) { index ->
+        SelectionContainer(
+            modifier = itemModifier.padding(top = if (index == 0) 0.dp else 8.dp)
+        ) {
+            Column {
+                RenderSingleBlock(
+                    blocks[index], scope.style, scope.color, scope.linkColor, scope.codeBackground,
+                    scope.spoilerColor, scope.previews, scope.onImageClick, scope.onLinkClick,
+                    scope.linkListener
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun RichTextRenderer(
+    parsedData: ParsedRichText,
+    modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.bodyMedium,
+    color: Color = MaterialTheme.colorScheme.onSurface,
+    linkColor: Color = MaterialTheme.colorScheme.primary,
+    codeBackground: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    spoilerColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
+    RichTextHost(parsedData, style, color, linkColor, codeBackground, spoilerColor) { scope ->
+        SelectionContainer(modifier = modifier) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                RenderBlocks(
+                    blocks = scope.parsed.blocks,
+                    style = scope.style,
+                    color = scope.color,
+                    linkColor = scope.linkColor,
+                    codeBackground = scope.codeBackground,
+                    spoilerColor = scope.spoilerColor,
+                    previews = scope.previews,
+                    onImageClick = scope.onImageClick,
+                    onLinkClick = scope.onLinkClick,
+                    linkListener = scope.linkListener
+                )
+            }
+        }
     }
 }
 
