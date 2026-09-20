@@ -5,8 +5,13 @@ internal object RichTextPostProcessor {
     // grid thumbnail, so it gets its own row instead of being packed into an image grid.
     private const val FULL_WIDTH_IMAGE_THRESHOLD = 400
 
-    fun groupInlineBlocks(blocks: List<RichTextBlock>): List<RichTextBlock> {
+    fun groupInlineBlocks(rawBlocks: List<RichTextBlock>): List<RichTextBlock> {
         val result = mutableListOf<RichTextBlock>()
+        // The inline parser marks a markdown blank line with a zero-width paragraph so the grouping
+        // pass keeps the two sides apart. Grouping is already done by the time this runs, and the
+        // marker would otherwise draw an empty line on top of the gap the blocks already have —
+        // three times the paragraph spacing AniList itself shows.
+        val blocks = rawBlocks.filterNot { it.isBlankLineMarker() }
         var index = 0
 
         while (index < blocks.size) {
@@ -83,6 +88,12 @@ internal object RichTextPostProcessor {
 
         return result
     }
+
+    private fun RichTextBlock.isBlankLineMarker(): Boolean =
+        this is RichTextBlock.Text &&
+            kind == RichTextTextKind.Paragraph &&
+            inlines.size == 1 &&
+            (inlines.first() as? RichTextInline.Text)?.value == "​"
 
     /**
      * Whether an image should occupy a full row rather than join a thumbnail grid: a percent width

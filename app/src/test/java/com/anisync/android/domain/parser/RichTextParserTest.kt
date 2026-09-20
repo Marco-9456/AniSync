@@ -903,6 +903,14 @@ class RichTextParserTest {
     }
 
     @Test
+    fun `a markdown blank line leaves no empty block behind`() = runBlocking {
+        val parsed = RichTextParser.parse("line one\n\nline two")
+        val texts = parsed.blocks.filterIsInstance<RichTextBlock.Text>()
+
+        assertEquals(listOf("line one", "line two"), texts.map { it.debugInlineText() })
+    }
+
+    @Test
     fun `br followed by a source newline draws a single break`() = runBlocking {
         val parsed = RichTextParser.parse("<p>Chat,<br />\nwhat should I watch?</p>")
         val text = parsed.blocks.filterIsInstance<RichTextBlock.Text>().first()
