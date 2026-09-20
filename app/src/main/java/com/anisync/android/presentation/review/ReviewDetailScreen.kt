@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,10 +15,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Share
@@ -48,12 +49,15 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.anisync.android.R
-import com.anisync.android.presentation.components.AsyncRichTextRenderer
+import com.anisync.android.domain.parser.ParsedRichText
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.ReviewAuthorBar
 import com.anisync.android.presentation.components.ReviewScorePill
 import com.anisync.android.presentation.components.ReviewVoteActions
+import com.anisync.android.presentation.components.RichTextHost
+import com.anisync.android.presentation.components.rememberParsedRichText
+import com.anisync.android.presentation.components.richTextItems
 import com.anisync.android.presentation.components.TranslateIconButton
 import com.anisync.android.presentation.share.ReviewShareCard
 import com.anisync.android.presentation.share.ShareImageSheet
@@ -80,12 +84,12 @@ fun ReviewDetailScreen(
 
     LaunchedEffect(reviewId) { viewModel.load(reviewId) }
 
-    val scrollState = rememberScrollState()
+    val listState = rememberLazyListState()
 
     CollapsingTopBarScaffold(
         title = stringResource(R.string.label_review),
         onBackClick = onBackClick,
-        scrollableState = scrollState,
+        scrollableState = listState,
         scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
         actions = {
             TranslateIconButton(
@@ -142,142 +146,161 @@ fun ReviewDetailScreen(
                     }
                 }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState)
-                        .padding(top = topContentPadding)
-                ) {
-                    // Inset hero banner with the score pill floating over it. When launched
-                    // from a review card (Discover / Recent Reviews), the card's banner
-                    // morphs into this box via shared bounds keyed on the source screen.
-                    val bannerUrl = review.mediaBannerUrl ?: review.mediaCoverUrl
-                    val bannerShape = RoundedCornerShape(24.dp)
-                    val bannerSharedModifier =
-                        if (sharedTransitionScope != null && animatedVisibilityScope != null) {
-                            val spatialSpec = AppMotion.rememberSpatialSpec()
-                            with(sharedTransitionScope) {
-                                Modifier.sharedBounds(
-                                    sharedContentState = rememberSharedContentState(
-                                        key = TransitionKeys.reviewBanner(sourceScreen, reviewId)
-                                    ),
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                    boundsTransform = { _, _ -> spatialSpec },
-                                    clipInOverlayDuringTransition = OverlayClip(bannerShape)
-                                )
-                            }
-                        } else {
-                            Modifier
-                        }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
-                            .height(200.dp)
-                            .then(bannerSharedModifier)
-                            .clip(bannerShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                // A review body can run to well over a hundred images. Rendered in one scrolling
+                // Column every one of them composed and started a request the moment the screen
+                // opened, which is what made a long review crawl. The body is emitted as lazy items
+                // instead, so only what is on screen composes — and only that fetches.
+                val parsedBody = rememberParsedRichText(review.body)
+                val emptyBody = remember { ParsedRichText(emptyList(), emptyList()) }
+
+                RichTextHost(
+                    parsedData = parsedBody ?: emptyBody,
+                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+                ) { richText ->
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(top = topContentPadding)
                     ) {
-                        if (bannerUrl != null) {
-                            AsyncImage(
-                                model = bannerUrl,
-                                contentDescription = review.mediaTitle,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .background(
-                                    Brush.verticalGradient(
-                                        0.5f to Color.Transparent,
-                                        1f to Color.Black.copy(alpha = 0.45f)
-                                    )
-                                )
-                        )
-                        ReviewScorePill(
-                            score = review.score,
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(16.dp)
-                        )
-                    }
-
-                    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                        Spacer(Modifier.height(8.dp))
-
-                        // Clickable media title → media details (chevron only when navigable).
-                        if (review.mediaTitle != null) {
-                            val navigable = mediaId != null
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .then(
-                                        if (navigable) Modifier.clickable { onMediaClick(mediaId!!) }
-                                        else Modifier
-                                    )
-                                    .padding(vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = review.mediaTitle,
-                                    style = MaterialTheme.typography.headlineSmall.emphasis(),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 3,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                if (navigable) {
-                                    Spacer(Modifier.size(12.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .size(32.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.primaryContainer),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.size(20.dp)
+                        item(key = "banner") {
+                            // Inset hero banner with the score pill floating over it. When launched
+                            // from a review card (Discover / Recent Reviews), the card's banner
+                            // morphs into this box via shared bounds keyed on the source screen.
+                            val bannerUrl = review.mediaBannerUrl ?: review.mediaCoverUrl
+                            val bannerShape = RoundedCornerShape(24.dp)
+                            val bannerSharedModifier =
+                                if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                                    val spatialSpec = AppMotion.rememberSpatialSpec()
+                                    with(sharedTransitionScope) {
+                                        Modifier.sharedBounds(
+                                            sharedContentState = rememberSharedContentState(
+                                                key = TransitionKeys.reviewBanner(sourceScreen, reviewId)
+                                            ),
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                            boundsTransform = { _, _ -> spatialSpec },
+                                            clipInOverlayDuringTransition = OverlayClip(bannerShape)
                                         )
                                     }
+                                } else {
+                                    Modifier
                                 }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                                    .height(200.dp)
+                                    .then(bannerSharedModifier)
+                                    .clip(bannerShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                if (bannerUrl != null) {
+                                    AsyncImage(
+                                        model = bannerUrl,
+                                        contentDescription = review.mediaTitle,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .background(
+                                            Brush.verticalGradient(
+                                                0.5f to Color.Transparent,
+                                                1f to Color.Black.copy(alpha = 0.45f)
+                                            )
+                                        )
+                                )
+                                ReviewScorePill(
+                                    score = review.score,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomStart)
+                                        .padding(16.dp)
+                                )
                             }
-                            Spacer(Modifier.height(16.dp))
                         }
 
-                        ReviewAuthorBar(review = review, onUserClick = onUserClick)
+                        item(key = "header") {
+                            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                                Spacer(Modifier.height(8.dp))
 
-                        Spacer(Modifier.height(24.dp))
+                                // Clickable media title → media details (chevron only when navigable).
+                                if (review.mediaTitle != null) {
+                                    val navigable = mediaId != null
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .then(
+                                                if (navigable) Modifier.clickable { onMediaClick(mediaId!!) }
+                                                else Modifier
+                                            )
+                                            .padding(vertical = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = review.mediaTitle,
+                                            style = MaterialTheme.typography.headlineSmall.emphasis(),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 3,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        if (navigable) {
+                                            Spacer(Modifier.size(12.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(32.dp)
+                                                    .clip(CircleShape)
+                                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(Modifier.height(16.dp))
+                                }
 
-                        Text(
-                            text = review.summary,
-                            style = MaterialTheme.typography.titleMedium.emphasis(),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                                ReviewAuthorBar(review = review, onUserClick = onUserClick)
 
-                        Spacer(Modifier.height(16.dp))
+                                Spacer(Modifier.height(24.dp))
 
-                        if (review.body != null) {
-                            AsyncRichTextRenderer(
-                                html = review.body,
-                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-                            )
+                                Text(
+                                    text = review.summary,
+                                    style = MaterialTheme.typography.titleMedium.emphasis(),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+
+                                Spacer(Modifier.height(16.dp))
+                            }
                         }
 
-                        Spacer(Modifier.height(28.dp))
-
-                        ReviewVoteActions(
-                            userRating = review.userRating,
-                            onRate = { viewModel.rateReview(review.id, it) }
+                        richTextItems(
+                            scope = richText,
+                            itemModifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
                         )
 
-                        Spacer(Modifier.height(24.dp))
+                        item(key = "actions") {
+                            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                                Spacer(Modifier.height(28.dp))
+
+                                ReviewVoteActions(
+                                    userRating = review.userRating,
+                                    onRate = { viewModel.rateReview(review.id, it) }
+                                )
+
+                                Spacer(Modifier.height(24.dp))
+                            }
+                        }
                     }
                 }
             }
