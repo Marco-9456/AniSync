@@ -60,6 +60,7 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val scrollToTopRequest by viewModel.scrollToTopRequest.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val activeAccountId by viewModel.activeAccountId.collectAsStateWithLifecycle()
@@ -119,6 +120,7 @@ fun ProfileScreen(
                     ProfileContent(
                         profile = profile,
                         uiState = uiState,
+                        scrollToTopRequest = scrollToTopRequest,
                         isOwnProfile = isOwnProfile,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope,

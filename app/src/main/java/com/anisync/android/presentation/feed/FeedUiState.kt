@@ -29,6 +29,8 @@ data class FeedUiState(
     val activityMergeMinutes: Int? = null,
     /** Activities a background refresh pulled in above what the reader has already seen. */
     val newActivityCount: Int = 0,
+    /** Bumped when the Feed tab is reselected, asking the list to scroll back to the top. */
+    val scrollToTopRequest: Long = 0L,
     val errorMessage: String? = null,
     /** HTTP-ish code behind [errorMessage]; 429 gets its own wording rather than the offline one. */
     val errorCode: Int? = null,

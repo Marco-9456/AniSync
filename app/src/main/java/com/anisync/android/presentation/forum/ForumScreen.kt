@@ -121,6 +121,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
+import com.anisync.android.presentation.components.ScrollToTopOnRequest
+import com.anisync.android.presentation.components.ExpandSearchOnRequest
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -144,6 +146,8 @@ fun ForumScreen(
     val pullToRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
     val showScrollToTop by remember { derivedStateOf { listState.firstVisibleItemIndex > 3 } }
+
+    ScrollToTopOnRequest(uiState.scrollToTopRequest, listState)
 
     // On rail layouts the create-thread action lives in the rail header (Material 3); on compact it
     // stays a floating action button below. SetRailFab is a no-op when there is no rail.
@@ -208,6 +212,8 @@ fun ForumScreen(
             .debounce(300.milliseconds)
             .collect { viewModel.onAction(ForumAction.OnSearchQueryChange(it)) }
     }
+
+    ExpandSearchOnRequest(uiState.searchOverlayRequest, searchBarState)
 
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) { collapseSearch() }
 

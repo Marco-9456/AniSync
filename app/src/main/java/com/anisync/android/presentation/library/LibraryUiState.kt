@@ -64,6 +64,10 @@ data class LibraryUiState(
     val isAscending: Boolean = true,
     val isRefreshing: Boolean = false,
     val searchQuery: String = "",
+    /** Bumped when the Library tab is reselected, asking the open list to scroll to the top. */
+    val scrollToTopRequest: Long = 0L,
+    /** Bumped when the tab is double-tapped, asking the search bar to expand. */
+    val searchOverlayRequest: Long = 0L,
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     val userScoreFormat: ScoreFormat = ScoreFormat.POINT_100,
     /** Every visible entry across all status lists, sorted — feeds the synthetic "All" tab. */

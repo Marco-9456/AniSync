@@ -69,6 +69,10 @@ data class ForumUiState(
     val feed: ForumFeed = ForumFeed.OVERVIEW,
     val selectedCategoryId: Int? = null,
     val savedThreadIds: ImmutableSet<Int> = persistentSetOf(),
+    /** Bumped when the Forum tab is reselected, asking the list to scroll back to the top. */
+    val scrollToTopRequest: Long = 0L,
+    /** Bumped when the tab is double-tapped, asking the search bar to expand. */
+    val searchOverlayRequest: Long = 0L,
     val errorMessage: String? = null,
 
     // --- Overview substate: one short list per section ---

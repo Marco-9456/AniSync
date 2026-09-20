@@ -41,6 +41,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import javax.inject.Inject
+import com.anisync.android.domain.MainTab
+import com.anisync.android.domain.observeTab
 
 @HiltViewModel
 class DiscoverViewModel @Inject constructor(
@@ -50,7 +52,8 @@ class DiscoverViewModel @Inject constructor(
     private val searchRepository: SearchRepository,
     private val appSettings: com.anisync.android.data.AppSettings,
     private val searchLauncher: com.anisync.android.domain.DiscoverSearchLauncher,
-    private val toastManager: com.anisync.android.presentation.components.alert.ToastManager
+    private val toastManager: com.anisync.android.presentation.components.alert.ToastManager,
+    private val tabReselectBus: com.anisync.android.domain.TabReselectBus
 ) : ViewModel() {
 
     val titleLanguage = appSettings.titleLanguage
@@ -78,6 +81,17 @@ class DiscoverViewModel @Inject constructor(
         observeAdultContent()
         observeViewMode()
         observeSearchLaunchRequests()
+        observeTabReselect()
+    }
+
+    /** The bottom bar's reselect gestures: scroll back to the top, or open the search overlay. */
+    private fun observeTabReselect() {
+        tabReselectBus.observeTab(
+            tab = MainTab.DISCOVER,
+            scope = viewModelScope,
+            onScrollToTop = { _uiState.update { s -> s.copy(scrollToTopRequest = s.scrollToTopRequest + 1) } },
+            onSearch = { _uiState.update { s -> s.copy(searchOverlayRequest = s.searchOverlayRequest + 1) } }
+        )
     }
 
     /**

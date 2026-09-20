@@ -47,6 +47,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
+import com.anisync.android.domain.MainTab
+import com.anisync.android.domain.TabReselectBus
+import com.anisync.android.domain.observeTab
+import kotlinx.coroutines.flow.asStateFlow
 
 private val LIBRARY_STATUS_DISPLAY_ORDER = arrayOf(
     LibraryStatus.CURRENT,
@@ -70,6 +74,7 @@ class ProfileViewModel @Inject constructor(
     private val notificationBadgeStore: NotificationBadgeStore,
     private val toastManager: ToastManager,
     @ApplicationContext private val context: Context,
+    tabReselectBus: TabReselectBus,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -357,6 +362,23 @@ class ProfileViewModel @Inject constructor(
                     }
                 }
             }
+    }
+
+    private val _scrollToTopRequest = MutableStateFlow(0L)
+
+    /**
+     * Bumped when the Profile tab is reselected, asking the page to scroll back to the top.
+     * Kept beside [uiState] rather than inside it: that state is assembled by a wide combine
+     * whose arguments are read back by index, and a fourteenth flow buys nothing here.
+     */
+    val scrollToTopRequest: StateFlow<Long> = _scrollToTopRequest.asStateFlow()
+
+    init {
+        tabReselectBus.observeTab(
+            tab = MainTab.PROFILE,
+            scope = viewModelScope,
+            onScrollToTop = { _scrollToTopRequest.update { current -> current + 1 } }
+        )
     }
 
     val uiState: StateFlow<ProfileUiState> = combine(

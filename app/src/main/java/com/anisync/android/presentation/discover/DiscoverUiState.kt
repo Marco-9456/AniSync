@@ -138,7 +138,9 @@ data class DiscoverUiState(
      * search overlay with preset filters (see DiscoverSearchLauncher). The screen
      * reacts to changes by clearing the query field and expanding the search bar.
      */
-    val searchOverlayRequest: Long = 0L
+    val searchOverlayRequest: Long = 0L,
+    /** Bumped when the Discover tab is reselected, asking the list to scroll back to the top. */
+    val scrollToTopRequest: Long = 0L
 ) {
     /**
      * Nothing is left to draw and it is not because requests are still out. Distinguishing this

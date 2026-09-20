@@ -36,6 +36,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.anisync.android.domain.MainTab
+import com.anisync.android.domain.TabReselectBus
+import com.anisync.android.domain.observeTab
 
 /** Debounce before a thread search / picker query fires — matches Discover. */
 private const val SEARCH_DEBOUNCE_MS = 350L
@@ -58,7 +61,8 @@ class ForumViewModel @Inject constructor(
     private val searchRepository: SearchRepository,
     private val threadEventBus: ThreadEventBus,
     private val appSettings: AppSettings,
-    private val toastManager: ToastManager
+    private val toastManager: ToastManager,
+    tabReselectBus: TabReselectBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -70,6 +74,15 @@ class ForumViewModel @Inject constructor(
         )
     )
     val uiState: StateFlow<ForumUiState> = _uiState.asStateFlow()
+
+    init {
+        tabReselectBus.observeTab(
+            tab = MainTab.FORUM,
+            scope = viewModelScope,
+            onScrollToTop = { _uiState.update { it.copy(scrollToTopRequest = it.scrollToTopRequest + 1) } },
+            onSearch = { _uiState.update { it.copy(searchOverlayRequest = it.searchOverlayRequest + 1) } }
+        )
+    }
 
     /** Persisted section order, falling back to the declared one and dropping anything stale. */
     private fun readSavedOverviewOrder(): List<OverviewSection> {

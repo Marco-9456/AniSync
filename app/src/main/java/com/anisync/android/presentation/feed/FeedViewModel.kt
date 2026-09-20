@@ -11,7 +11,10 @@ import com.anisync.android.domain.ActivityUpdate
 import com.anisync.android.domain.FeedFilter
 import com.anisync.android.domain.FeedRepository
 import com.anisync.android.domain.FeedScope
+import com.anisync.android.domain.MainTab
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.TabReselectBus
+import com.anisync.android.domain.observeTab
 import com.anisync.android.domain.UserOptionsRepository
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
@@ -40,7 +43,8 @@ class FeedViewModel @Inject constructor(
     private val accountManager: AccountManager,
     private val appSettings: AppSettings,
     private val userOptionsRepository: UserOptionsRepository,
-    private val toastManager: ToastManager
+    private val toastManager: ToastManager,
+    tabReselectBus: TabReselectBus
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -53,6 +57,14 @@ class FeedViewModel @Inject constructor(
         )
     )
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
+
+    init {
+        tabReselectBus.observeTab(
+            tab = MainTab.FEED,
+            scope = viewModelScope,
+            onScrollToTop = { _uiState.update { it.copy(scrollToTopRequest = it.scrollToTopRequest + 1) } }
+        )
+    }
 
     private val _actions = Channel<FeedAction>(Channel.BUFFERED)
     val actions: Flow<FeedAction> = _actions.receiveAsFlow()

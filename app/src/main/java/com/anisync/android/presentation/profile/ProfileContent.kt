@@ -84,6 +84,8 @@ import com.anisync.android.presentation.share.ShareCardTemplate
 import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.ShareUtils
+import androidx.compose.foundation.lazy.rememberLazyListState
+import com.anisync.android.presentation.components.ScrollToTopOnRequest
 
 @OptIn(
     ExperimentalFoundationApi::class,
@@ -95,6 +97,8 @@ import com.anisync.android.util.ShareUtils
 fun ProfileContent(
     profile: UserProfile,
     uiState: ProfileUiState,
+    /** See ProfileViewModel.scrollToTopRequest: the tab was reselected. */
+    scrollToTopRequest: Long = 0L,
     isOwnProfile: Boolean,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
@@ -182,7 +186,11 @@ fun ProfileContent(
             )
         }
     ) {
+    val listState = rememberLazyListState()
+    ScrollToTopOnRequest(scrollToTopRequest, listState)
+
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 48.dp + LocalMainNavBarInset.current)
     ) {

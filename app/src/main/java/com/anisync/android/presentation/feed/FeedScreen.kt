@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.Edit
+import com.anisync.android.presentation.components.ScrollToTopOnRequest
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -87,6 +88,8 @@ fun FeedScreen(
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
     val coroutineScope = rememberCoroutineScope()
     val atTop by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
+
+    ScrollToTopOnRequest(uiState.scrollToTopRequest, listState)
     val feedItems = remember(uiState.items, uiState.groupListUpdates) {
         buildFeedItems(uiState.items, uiState.groupListUpdates)
     }

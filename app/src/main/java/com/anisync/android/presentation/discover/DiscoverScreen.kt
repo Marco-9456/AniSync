@@ -115,6 +115,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.anisync.android.presentation.components.ScrollToTopOnRequest
 
 private const val TAG = "DiscoverScreen"
 
@@ -177,6 +178,8 @@ fun DiscoverScreen(
     val mainListState =
         rememberSaveable(currentMediaType, saver = LazyListState.Saver) { LazyListState() }
 
+
+    ScrollToTopOnRequest(uiState.scrollToTopRequest, mainListState)
 
     var shouldKeepTopBarOverlayForReturn by rememberSaveable { mutableStateOf(false) }
     var hasObservedDiscoverReEnter by rememberSaveable { mutableStateOf(false) }

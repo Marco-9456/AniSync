@@ -33,6 +33,9 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.anisync.android.domain.MainTab
+import com.anisync.android.domain.TabReselectBus
+import com.anisync.android.domain.observeTab
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -40,7 +43,8 @@ class LibraryViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val profileRepository: ProfileRepository,
     private val appSettings: AppSettings,
-    private val toastManager: ToastManager
+    private val toastManager: ToastManager,
+    tabReselectBus: TabReselectBus
 ) : ViewModel() {
 
     companion object {
@@ -75,6 +79,15 @@ class LibraryViewModel @Inject constructor(
         )
     )
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
+
+    init {
+        tabReselectBus.observeTab(
+            tab = MainTab.LIBRARY,
+            scope = viewModelScope,
+            onScrollToTop = { _uiState.update { it.copy(scrollToTopRequest = it.scrollToTopRequest + 1) } },
+            onSearch = { _uiState.update { it.copy(searchOverlayRequest = it.searchOverlayRequest + 1) } }
+        )
+    }
 
     private val _actions = MutableSharedFlow<LibraryAction>()
     val actions: SharedFlow<LibraryAction> = _actions.asSharedFlow()

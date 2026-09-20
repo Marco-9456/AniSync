@@ -131,6 +131,8 @@ import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
+import com.anisync.android.presentation.components.ScrollToTopOnRequest
+import com.anisync.android.presentation.components.ExpandSearchOnRequest
 
 sealed class LibraryTab {
     /** Browse-all tab showing every status list merged (#91). Lives in the tab order like the rest. */
@@ -265,6 +267,8 @@ fun LibraryScreen(
             viewModel.onAction(LibraryAction.OnSearchOpened(currentTabId))
         }
     }
+
+    ExpandSearchOnRequest(uiState.searchOverlayRequest, searchBarState)
 
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
         focusManager.clearFocus()
@@ -522,6 +526,16 @@ fun LibraryScreen(
                                 tabLabel, sortOption, isAscending, uiState.filters,
                                 saver = LazyGridState.Saver
                             ) { LazyGridState() }
+
+                            // Reselecting the tab scrolls the list the user is actually looking at.
+                            // The pager keeps neighbouring pages composed, so the off-screen ones
+                            // stay put rather than all jumping to the top behind the current page.
+                            if (pageIndex == pagerState.currentPage) {
+                                ScrollToTopOnRequest(
+                                    uiState.scrollToTopRequest,
+                                    if (isGridView) gridState else rowState
+                                )
+                            }
 
                             val hasQuickProgress = tab is LibraryTab.Standard &&
                                 (tab.status == LibraryStatus.CURRENT || tab.status == LibraryStatus.REPEATING)
