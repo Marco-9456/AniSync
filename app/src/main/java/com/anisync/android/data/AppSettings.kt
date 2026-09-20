@@ -6,6 +6,7 @@ import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.anisync.android.BuildConfig
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings.Companion.MAX_GRID_COLUMNS
 import com.anisync.android.data.AppSettings.Companion.MIN_GRID_COLUMNS
@@ -743,6 +744,41 @@ class AppSettings @Inject constructor(
         _onboardingReplay.value = true
     }
 
+    // ==========================================================================
+    // SUPPORT CARD — the tip nudge shown once after an update
+    // ==========================================================================
+
+    private val _supportPromptVisible = MutableStateFlow(false)
+    val supportPromptVisible: StateFlow<Boolean> = _supportPromptVisible.asStateFlow()
+
+    /**
+     * Raises the card when this launch is the first on a newer build. A fresh install records the
+     * running version and stays quiet: onboarding already asks enough of a first run.
+     */
+    fun noteAppVersion() {
+        val seen = prefs.getInt(KEY_LAST_SEEN_VERSION_CODE, 0)
+        if (seen == 0) {
+            prefs.edit().putInt(KEY_LAST_SEEN_VERSION_CODE, BuildConfig.VERSION_CODE).apply()
+            return
+        }
+        if (seen < BuildConfig.VERSION_CODE) _supportPromptVisible.value = true
+    }
+
+    /**
+     * Puts the card away and marks this build seen, so the next update raises it again. The version
+     * is written here rather than when the card goes up: a process death before the user answered
+     * should show it again, not spend the one chance this update gets.
+     */
+    fun dismissSupportPrompt() {
+        _supportPromptVisible.value = false
+        prefs.edit().putInt(KEY_LAST_SEEN_VERSION_CODE, BuildConfig.VERSION_CODE).apply()
+    }
+
+    /** Raises the card over the running app without an update behind it (Developer Tools). */
+    fun showSupportPrompt() {
+        _supportPromptVisible.value = true
+    }
+
     /**
      * Set the app theme mode. Main thread only: it re-syncs AppCompat's night mode (seeded at
      * process start in AniSyncApplication) — without this, SYSTEM keeps reading a stale uiMode
@@ -1338,6 +1374,7 @@ companion object {
         private const val KEY_DEV_TOOLS_UNLOCKED = "dev_tools_unlocked"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
         private const val KEY_ONBOARDING_STARTED = "onboarding_started"
+        private const val KEY_LAST_SEEN_VERSION_CODE = "last_seen_version_code"
 
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"

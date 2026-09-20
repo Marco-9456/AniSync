@@ -95,6 +95,20 @@ class MainScreenViewModel @Inject constructor(
         viewModelScope.launch { notificationBadgeStore.refresh() }
     }
 
+    /**
+     * The tip card the app floats on the first launch after an update. Checked here rather than in
+     * the Application: this is the point where there is a window to float it over.
+     */
+    val supportPromptVisible: StateFlow<Boolean> = appSettings.supportPromptVisible
+
+    init {
+        appSettings.noteAppVersion()
+    }
+
+    fun onSupportPromptDismissed() {
+        appSettings.dismissSupportPrompt()
+    }
+
     private companion object {
         /** Follows the platform (and the user's accessibility timing), rather than a fixed 300. */
         val DOUBLE_TAP_WINDOW_MS = ViewConfiguration.getDoubleTapTimeout().toLong()

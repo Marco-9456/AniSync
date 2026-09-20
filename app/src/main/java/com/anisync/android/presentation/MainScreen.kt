@@ -73,6 +73,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -86,6 +87,7 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.filterNotNull
 import com.anisync.android.R
 import com.anisync.android.data.NavBarStyle
+import com.anisync.android.presentation.components.SupportPromptCard
 import com.anisync.android.presentation.components.alert.LocalRateLimitMonitor
 import com.anisync.android.presentation.components.alert.ProvideToastManager
 import com.anisync.android.presentation.components.alert.RateLimitNotice
@@ -104,6 +106,7 @@ import com.anisync.android.domain.MainTab
 import com.anisync.android.presentation.navigation.Library
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
+import com.anisync.android.presentation.navigation.SettingsSponsors
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.LocalMainNavBarSuppressor
@@ -281,6 +284,21 @@ fun MainScreen(
 
     RateLimitNotice(monitor = viewModel.rateLimitMonitor, toastManager = viewModel.toastManager)
 
+    // The tip card after an update. Hosted here rather than on a screen so it floats over whichever
+    // tab the launch opened on, and so both layouts can place it above their own navigation.
+    val supportPromptVisible by viewModel.supportPromptVisible.collectAsStateWithLifecycle()
+    val supportPrompt: @Composable (Dp) -> Unit = { bottomInset ->
+        SupportPromptCard(
+            visible = supportPromptVisible,
+            onDonate = {
+                viewModel.onSupportPromptDismissed()
+                navController.navigateSafely(SettingsSponsors)
+            },
+            onDismiss = viewModel::onSupportPromptDismissed,
+            bottomInset = bottomInset
+        )
+    }
+
     ProvideToastManager(toastManager = viewModel.toastManager) {
         CompositionLocalProvider(
             LocalMainNavBarSuppressor provides navBarSuppressor,
@@ -297,6 +315,7 @@ fun MainScreen(
                     onTabSelected = viewModel::onMainTabSelected,
                     onTabReselected = viewModel::onTabReselected,
                     onTabSearch = viewModel::onTabSearchRequested,
+                    supportPrompt = supportPrompt,
                     toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
                 )
             } else {
@@ -307,6 +326,7 @@ fun MainScreen(
                     onTabSelected = viewModel::onMainTabSelected,
                     onTabReselected = viewModel::onTabReselected,
                     onTabSearch = viewModel::onTabSearchRequested,
+                    supportPrompt = supportPrompt,
                     toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
                 )
             }
@@ -349,6 +369,7 @@ private fun CompactNavLayout(
     onTabSelected: (String) -> Unit,
     onTabReselected: (MainTab) -> Unit,
     onTabSearch: (MainTab) -> Unit,
+    supportPrompt: @Composable (Dp) -> Unit,
     toastHost: @Composable () -> Unit
 ) {
     Scaffold(
@@ -415,6 +436,11 @@ private fun CompactNavLayout(
                 }
             }
 
+            // Above the bar, by the same measured reserve scrollable content uses.
+            Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                supportPrompt(barInset)
+            }
+
             toastHost()
         }
     }
@@ -434,6 +460,7 @@ private fun RailNavLayout(
     onTabSelected: (String) -> Unit,
     onTabReselected: (MainTab) -> Unit,
     onTabSearch: (MainTab) -> Unit,
+    supportPrompt: @Composable (Dp) -> Unit,
     toastHost: @Composable () -> Unit
 ) {
     // Bridges a tab's contextual primary action into the rail header (Material 3 hosts the FAB in the
@@ -461,6 +488,13 @@ private fun RailNavLayout(
                             navController = navController,
                             startDestination = startDestination,
                             modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    // Inside the content pane, so the card never lands over the rail. There is no
+                    // bottom bar here, only the system inset to clear.
+                    Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                        supportPrompt(
+                            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                         )
                     }
                 }

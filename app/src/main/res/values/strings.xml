@@ -1653,6 +1653,12 @@
     <string name="sponsors_load_error">Couldn\'t load sponsors. Pull to retry.</string>
     <string name="sponsors_open_external">Open on GitHub</string>
     <string name="a11y_sponsor_avatar">Avatar of %1$s</string>
+
+    <!-- Support card, floated once after an update -->
+    <string name="support_card_title">Enjoying AniSync %1$s?</string>
+    <string name="support_card_body">AniSync is free, ad-free and open source, built in my spare time. If this update earns its place, a coffee keeps the next one coming.</string>
+    <string name="support_card_dismiss">Not now</string>
+    <string name="cd_support_card_close">Dismiss</string>
     <string name="lead_developer">Lead Developer</string>
     <string name="sponsor">Sponsor</string>
     <string name="link_repository">Repository</string>
@@ -1961,6 +1967,9 @@
     <string name="dev_tools_onboarding_section">Onboarding</string>
     <string name="dev_tools_replay_onboarding">Replay onboarding</string>
     <string name="dev_tools_replay_onboarding_subtitle">Reopens the first-run flow over the running app. Leaving it returns you to the Library tab.</string>
+    <string name="dev_tools_support_section">Support card</string>
+    <string name="dev_tools_show_support_card">Show support card</string>
+    <string name="dev_tools_show_support_card_subtitle">Floats the tip card the app shows once after an update, without waiting for one.</string>
 
     <!-- Media details: tags -->
     <string name="tags_expand">Expand</string>

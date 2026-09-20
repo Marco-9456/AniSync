@@ -124,6 +124,39 @@ fun DeveloperToolsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Support card — the same card an update raises, without an update behind it. It is hosted
+        // above the navigation, so it floats over this screen as soon as the button is pressed.
+        SettingsGroup {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        stringResource(R.string.dev_tools_support_section),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.dev_tools_show_support_card_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    FilledTonalButton(
+                        onClick = { appSettings.showSupportPrompt() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.dev_tools_show_support_card))
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Build Information
         SettingsGroup {
             Surface(
