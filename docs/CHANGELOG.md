@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tab Gestures** - Tap the current tab to scroll to the top, tap twice to open search, with a settings switch for the double tap.
 - **Open On** - Choose which screen a cold launch opens.
 - **Notifications Inbox** - Unread rows are marked, and there is a mark-all-read action.
+- **Support Card** - The first launch after an update floats a card with a one-tap route to the Donate screen. Answering it either way marks the build seen, so it asks once per update and never on a fresh install.
 - **Indonesian** - Indonesian joins the in-app language picker.
 
 ### Changed

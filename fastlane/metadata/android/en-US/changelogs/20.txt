@@ -7,6 +7,7 @@ Added:
 - Redesigned Library, Discover, Forum, Feed, media details, and character/staff/studio pages.
 - A week breakdown in profile activity history, with a day sheet.
 - Colours from artwork, tap-to-scroll and double-tap-to-search tab gestures, and a choice of which screen a cold launch opens.
+- A support card after an update, with a one-tap route to the Donate screen.
 - Indonesian in the language picker.
 
 Changed:
