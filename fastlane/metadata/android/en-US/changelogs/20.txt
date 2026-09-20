@@ -1,0 +1,26 @@
+Added:
+- Onboarding: a first-run flow for sign-in, permissions, personalisation and a widget nudge, with two-pane steps on wide windows.
+- Openings and endings from AnimeThemes on media pages, with episode ranges, spoiler tags and a full screen behind the section arrow.
+- List indicators on every cover: Discover, search, related and recommended media, and character, staff and studio credits.
+- Watch priority: set it from the edit sheet, see it on cards, sort, group and bulk-apply by it.
+- Manga volume tracking and advanced per-category scoring in a rebuilt edit entry sheet.
+- Redesigned Library, Discover, Forum, Feed, media details, and character/staff/studio pages.
+- A week breakdown in profile activity history, with a day sheet.
+- Colours from artwork, tap-to-scroll and double-tap-to-search tab gestures, and a choice of which screen a cold launch opens.
+- Indonesian in the language picker.
+
+Changed:
+- All five widgets rebuilt on RemoteViews: scrolling lists, a restored Weekly Calendar, header filters, and they follow the app's theme.
+- Network layer rewritten around a request budget: errors typed from the response, background work yields to you, and identical requests join into one.
+- Rate limits wait themselves out with a countdown instead of an error screen.
+- Apollo cache records are keyed by id, expire per type and are collected daily, so it stops growing without bound.
+- The app draws edge to edge, banners run under the status bar, and posters share one corner radius.
+- Notifications, toasts and timestamps are localised; German and Arabic are complete.
+
+Fixed:
+- A failed request no longer reads as an empty feed or a blank Discover.
+- Own-profile loads retry and report the real failure instead of spinning.
+- Paged grids keep their identity and order; the sort sheet reaches every option.
+- Rich text line breaks, image sizing and image rows.
+- Stat numbers and labels fit their width so translations are not cut.
+- Detail panes lay out for the pane, not the window.

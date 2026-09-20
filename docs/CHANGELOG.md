@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-09-20
+
+### Added
+
+- **Onboarding** - A first-run flow that walks through welcome, sign-in, permission set-up (notifications, battery exemption, hibernation, widget pin), personalisation, and a closing step. Wide windows split every step into two panes, an interrupted run resumes where it stopped, and the whole flow can be replayed from developer tools.
+- **Openings & Endings** - Media pages list a title's openings and endings from AnimeThemes, with episode ranges scaled against what has aired, spoiler tags, artwork badges, and a full screen behind the section arrow. On wide windows a theme opens beside the list. Playback starts unmuted and letterboxed against black, and an AnimeThemes rate limit counts down instead of failing.
+- **List Indicators** - Every cover surface marks whether a title is already on one of your lists: Discover rows and hero carousel, search grid and list, related and recommended media, and character, staff and studio credits. The mark is fused into the card corner and uses the list glyphs from the design file.
+- **Watch Priority** - AniList's watch priority is carried through the data layer, set from the edit sheet, marked on library cards, and used to sort, group and bulk-apply across the Library. (#131)
+- **Volumes & Advanced Scoring** - Manga entries track volumes read, and the edit entry sheet is rebuilt around a pinned save bar that matches the viewer's scoring system, including per-category advanced scores, and offers to finish an entry at its last episode.
+- **Library Redesign** - A queue-first layout with bulk entry mutations, sort and filter folded back into the search bar, one shared layout and empty state across every list, genres and media format carried through, and open-ended runs measured against what has actually aired.
+- **Discover Redesign** - The screen is a reorderable section list, with a per-tab section order, a spotlight that stays a banner on wide layouts, a timeline that opens on today, and an empty state on every rail.
+- **Forum Redesign** - A scope rail in place of the five-way feed switcher, a feed picker sheet, a reorder-sections sheet, sorting by column and direction in the Library's sheet shape, a four-band thread card, a flattened comment tree behind one furniture bar, and a thread title that hands over to the app bar as it scrolls.
+- **Feed Redesign** - Scope, filter and media type on one rail, a timeline grouped by day and by catch-up run, runs of one person's list updates collapsed, and new activity offered instead of reshuffling what you are reading.
+- **Media Details Redesign** - The page is rebuilt around a tracking card that carries the entry note, a ranked tag cloud behind a single spoiler shutter, an even facts grid, icons back on the section tabs, and a list menu drawn to the expressive spec.
+- **Character, Staff & Studio Pages** - Rebuilt on a shared person shell with banners, spoiler aliases and list totals, rows of one height, lists that grow and page in place instead of leaving for a grid, and a wide layout built on the profile's supporting pane.
+- **Profile Week Breakdown** - Activity history gains a week view, and a day opens a sheet that tells its activity kinds apart and routes each row to the media or the post.
+- **Colours From Artwork** - An optional toggle themes the media page from its cover art.
+- **Tab Gestures** - Tap the current tab to scroll to the top, tap twice to open search, with a settings switch for the double tap.
+- **Open On** - Choose which screen a cold launch opens.
+- **Notifications Inbox** - Unread rows are marked, and there is a mark-all-read action.
+- **Indonesian** - Indonesian joins the in-app language picker.
+
+### Changed
+
+- **Widgets** - All five widgets are rebuilt on RemoteViews: scrolling lists, the Weekly Calendar design restored with larger cards, the remaining four rebuilt on one shared card language, filter toggles moved into the header, and they now follow the app's theme instead of the device's.
+- **Network Layer** - Rewritten around a request budget gate: errors typed from the response body rather than the status line, a priority a coroutine sets for everything it calls, background work that yields the budget to the user, identical in-flight queries joined into one, and a spent budget reported as a block with a countdown. Toasts are typed by error kind, redesigned, and their Retry actually retries.
+- **Rate Limits** - A rate limit is waited out rather than shown as a failure: details, profile and library keep their skeleton and resolve themselves, and the notice stays up for the whole block.
+- **Apollo Cache** - Moved to the standalone normalized cache library, with records keyed by id, per-type expiry and daily garbage collection, so the cache stops growing without bound. Cached reads now serve the details preview and reference sections.
+- **Storage** - Settings measures and clears every cache the app owns, the image disk cache ceiling is halved, images and the player release memory under pressure, downloaded updates stay in the cache directory, and caches stay out of the 25 MB backup quota.
+- **Edge to Edge** - The app draws edge to edge from the root, details and profile banners run under the status bar, and the details banner opens in the image viewer.
+- **Posters** - One corner radius on every poster outside the library, and a poster card that puts its title below the cover in the Discover rows and the search grid.
+- **Localisation** - The last hardcoded screens, the notification tray, its toasts, link cards and relative timestamps all moved into resources and read the locale observably, so messages arrive in the app's language rather than the device's. German and Arabic are complete.
+- **App Icon** - The peak mark now sits on an ink ground.
+- **Background Work** - The airing schedule refreshes six hourly instead of hourly, and the unused episode update worker is gone.
+
+### Fixed
+
+- **Empty & Failed States** - A failed request no longer reads as an empty Following feed or blanks the whole Discover screen, a refresh that returns nothing keeps the cached library, a failed page says so instead of ending the list quietly, and a failed library save is reported above the edit sheet.
+- **Profile** - The own-profile load retries and names the transport failure instead of spinning forever or claiming the user is missing, the activity map scales to the width it is given, and a day's activity list matches the day AniList counted.
+- **Sign-out** - Only a real token failure signs you out on a forum delete.
+- **Details** - Paged grids are keyed by identity and stay in the order the API returned them, a short synopsis keeps its own height, the sort sheet scrolls to every option, and the tab count drops when AniList only reports its 500 cap.
+- **Rich Text** - A newline after a `<br>` no longer draws a second line, images size the way the stylesheet does, and images from two HTML blocks stay on separate rows. A long review body renders as lazy items.
+- **Statistics** - Hero stat numbers and labels fit the width they are given so translations are not cut, and the day column measures instead of pinning to 36dp. (#132)
+- **Large Screens** - A detail pane lays its screen out for the pane rather than the window, profile grids size from the pane, the bulk action bar stops stretching, and fullscreen video fits the screen it is given.
+- **Media Uploads** - An upload failure names what went wrong instead of blaming the file.
+- **Crash** - Dropped the deprecated `onBackPressed` override.
+
 ## [3.1.0] - 2026-07-09
 
 ### Added
