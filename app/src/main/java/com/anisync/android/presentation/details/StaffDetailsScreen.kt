@@ -487,7 +487,7 @@ private fun StaffDetailsContent(
                     Spacer(Modifier.height(12.dp))
                 }
 
-                if (characters.isEmpty()) {
+                if (characters.isEmpty() && !staff.hasNextPage) {
                     item(key = "characters_empty") {
                         PersonEmptyState(
                             text = stringResource(R.string.person_empty_characters),
@@ -515,7 +515,9 @@ private fun StaffDetailsContent(
                     }
                     if (staff.hasNextPage) {
                         item(key = "characters_footer") {
-                            LaunchedEffect(characters.size) { onLoadMoreCharacters() }
+                            // Key on the loaded count, not the filtered one: a page where nothing
+                            // is on the list leaves the filtered size alone and paging would stall.
+                            LaunchedEffect(staff.voicedCharacters.size) { onLoadMoreCharacters() }
                             PersonListFooter(modifier = gutter)
                         }
                     }
@@ -548,7 +550,7 @@ private fun StaffDetailsContent(
                     Spacer(Modifier.height(12.dp))
                 }
 
-                if (credits.isEmpty()) {
+                if (credits.isEmpty() && !staff.productionMediaHasNextPage) {
                     item(key = "credits_empty") {
                         PersonEmptyState(
                             text = if (creditsOnListOnly) {
@@ -578,7 +580,7 @@ private fun StaffDetailsContent(
                     }
                     if (staff.productionMediaHasNextPage) {
                         item(key = "credits_footer") {
-                            LaunchedEffect(credits.size) { onLoadMoreCredits() }
+                            LaunchedEffect(staff.productionMedia.size) { onLoadMoreCredits() }
                             PersonListFooter(modifier = gutter)
                         }
                     }
