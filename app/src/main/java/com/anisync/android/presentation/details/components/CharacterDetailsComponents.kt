@@ -40,23 +40,28 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -540,6 +545,41 @@ fun StatItem(label: String, value: String, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Collapsed body that clips to [collapsedHeight] only while the content is taller than that. A
+ * fixed height instead padded a two-line synopsis out to the full box and still offered a "Read
+ * more" that had nothing left to show, so [onOverflowChange] reports whether there is any.
+ *
+ * The body parses asynchronously, so its height arrives a frame or two late; measuring here rather
+ * than once up front means the toggle appears exactly when the parsed content turns out to be long.
+ */
+@Composable
+private fun ClampedBody(
+    expanded: Boolean,
+    collapsedHeight: Dp,
+    onOverflowChange: (Boolean) -> Unit,
+    content: @Composable () -> Unit
+) {
+    val maxHeightPx = with(LocalDensity.current) { collapsedHeight.toPx() }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clipToBounds()
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                onOverflowChange(placeable.height > maxHeightPx)
+                val height = if (!expanded && placeable.height > maxHeightPx) {
+                    maxHeightPx.toInt()
+                } else {
+                    placeable.height
+                }
+                layout(placeable.width, height) { placeable.place(0, 0) }
+            }
+    ) {
+        content()
+    }
+}
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ExpandableBiography(html: String) {
@@ -576,11 +616,11 @@ fun ExpandableBiography(html: String) {
             }
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
 
-            Box(
-                modifier = if (!expanded) Modifier
-                    .height(100.dp)
-                    .clip(RoundedCornerShape(0.dp))
-                else Modifier
+            var overflows by remember { mutableStateOf(false) }
+            ClampedBody(
+                expanded = expanded,
+                collapsedHeight = 100.dp,
+                onOverflowChange = { overflows = it }
             ) {
                 com.anisync.android.presentation.components.AsyncRichTextRenderer(
                     html = html,
@@ -588,12 +628,14 @@ fun ExpandableBiography(html: String) {
                 )
             }
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))
+            if (overflows || expanded) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))
 
-            ReadMoreToggle(
-                expanded = expanded,
-                onToggle = { expanded = !expanded }
-            )
+                ReadMoreToggle(
+                    expanded = expanded,
+                    onToggle = { expanded = !expanded }
+                )
+            }
         }
     }
 }
@@ -635,14 +677,14 @@ fun ExpandableSynopsis(text: String) {
             Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
 
             // Rich renderer so inline AniList links in anime/manga (and character)
-            // descriptions are clickable. Collapse via a clipped height box, mirroring the
+            // descriptions are clickable. Collapse via a clamped height box, mirroring the
             // biography composable above — the renderer already wraps its content in a
             // SelectionContainer, so wrapping again here would nest (and crash) one.
-            Box(
-                modifier = if (!expanded) Modifier
-                    .height(110.dp)
-                    .clip(RoundedCornerShape(0.dp))
-                else Modifier
+            var overflows by remember { mutableStateOf(false) }
+            ClampedBody(
+                expanded = expanded,
+                collapsedHeight = 110.dp,
+                onOverflowChange = { overflows = it }
             ) {
                 com.anisync.android.presentation.components.AsyncRichTextRenderer(
                     html = text,
@@ -651,12 +693,14 @@ fun ExpandableSynopsis(text: String) {
                 )
             }
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))
+            if (overflows || expanded) {
+                Spacer(Modifier.height(dimensionResource(R.dimen.spacing_normal)))
 
-            ReadMoreToggle(
-                expanded = expanded,
-                onToggle = { expanded = !expanded }
-            )
+                ReadMoreToggle(
+                    expanded = expanded,
+                    onToggle = { expanded = !expanded }
+                )
+            }
         }
     }
 }
