@@ -1658,7 +1658,6 @@
     <string name="support_card_title">Enjoying AniSync %1$s?</string>
     <string name="support_card_body">AniSync is free, ad-free and open source, built in my spare time. If this update earns its place, a coffee keeps the next one coming.</string>
     <string name="support_card_dismiss">Not now</string>
-    <string name="cd_support_card_close">Dismiss</string>
     <string name="lead_developer">Lead Developer</string>
     <string name="sponsor">Sponsor</string>
     <string name="link_repository">Repository</string>
