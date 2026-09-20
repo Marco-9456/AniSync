@@ -25,8 +25,7 @@ import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.SegmentedTabGroup
-import com.anisync.android.presentation.components.WatchingCardConfig
-import com.anisync.android.presentation.library.components.LibraryListCard
+import com.anisync.android.presentation.library.components.LibraryQueueRow
 import com.anisync.android.presentation.onboarding.PersonaliseState
 import com.anisync.android.presentation.settings.components.ColorSchemeSelector
 import com.anisync.android.type.MediaType
@@ -38,8 +37,9 @@ private val StepMaxWidth = 980.dp
 
 /**
  * Step 2 of 2: the four choices worth making before the first screen loads. Each writes straight
- * through to the same preference Look and Feel edits, and the card underneath is a live library
- * card — the real component, not a mock-up — so the accent is shown doing its actual job.
+ * through to the same preference Look and Feel edits, and the row underneath is a live library
+ * row — the real component the Library renders, not a mock-up — so the accent is shown doing its
+ * actual job.
  *
  * On a wide window the preview moves alongside the choices instead of below them, so changing an
  * accent shows its effect without scrolling.
@@ -126,14 +126,12 @@ fun PersonaliseStep(
 
                     if (previewEntry != null) {
                         Spacer(modifier = Modifier.height(26.dp))
-                        LibraryListCard(
+                        LibraryQueueRow(
                             entry = previewEntry,
                             mediaType = MediaType.ANIME,
                             titleLanguage = personalise.titleLanguage,
                             onClick = {},
-                            config = WatchingCardConfig,
                             onIncrement = {},
-                            onDecrement = {},
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -179,14 +177,12 @@ fun PersonaliseStep(
             Spacer(modifier = Modifier.height(24.dp))
 
             if (previewEntry != null) {
-                LibraryListCard(
+                LibraryQueueRow(
                     entry = previewEntry,
                     mediaType = MediaType.ANIME,
                     titleLanguage = personalise.titleLanguage,
                     onClick = {},
-                    config = WatchingCardConfig,
                     onIncrement = {},
-                    onDecrement = {},
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = OnboardingMargin)
