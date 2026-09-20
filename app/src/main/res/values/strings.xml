@@ -2314,4 +2314,7 @@
         <item quantity="one">%1$d filter is hiding every title in this list.</item>
         <item quantity="other">%1$d filters are hiding every title in this list.</item>
     </plurals>
+    <string name="a11y_nav_search_tab">Search %1$s</string>
+    <string name="settings_nav_double_tap_search">Double-tap to search</string>
+    <string name="settings_nav_double_tap_search_desc">Tap the current tab to scroll to the top, tap it twice to open its search</string>
 </resources>

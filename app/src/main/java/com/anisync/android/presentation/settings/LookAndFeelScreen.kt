@@ -81,6 +81,7 @@ import com.anisync.android.data.StreamingService
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.ui.theme.resolveDarkTheme
+import androidx.compose.material.icons.filled.Search
 
 private val StreamingServices = StreamingService.entries
 private val CoverQualities = CoverQuality.entries
@@ -104,6 +105,7 @@ fun LookAndFeelScreen(
     val coverQuality = uiState.coverQuality
     val navBarStyle = uiState.navBarStyle
     val navBarShowLabels = uiState.navBarShowLabels
+    val navBarDoubleTapSearch = uiState.navBarDoubleTapSearch
     val navBarCornerRadius = uiState.navBarCornerRadius
     val avatarShape = uiState.avatarShape
     val avatarBackgroundEnabled = uiState.avatarBackgroundEnabled
@@ -159,11 +161,15 @@ fun LookAndFeelScreen(
             currentStyle = navBarStyle,
             showLabels = navBarShowLabels,
             cornerRadius = navBarCornerRadius,
+            doubleTapSearch = navBarDoubleTapSearch,
             onStyleSelected = {
                 viewModel.onAction(SettingsAction.SetNavBarStyle(it))
             },
             onShowLabelsChange = {
                 viewModel.onAction(SettingsAction.SetNavBarShowLabels(it))
+            },
+            onDoubleTapSearchChange = {
+                viewModel.onAction(SettingsAction.SetNavBarDoubleTapSearch(it))
             },
             onCornerRadiusChange = {
                 viewModel.onAction(SettingsAction.SetNavBarCornerRadius(it))
@@ -577,8 +583,10 @@ fun NavBarStyleSelectionSheet(
     currentStyle: NavBarStyle,
     showLabels: Boolean,
     cornerRadius: Float,
+    doubleTapSearch: Boolean,
     onStyleSelected: (NavBarStyle) -> Unit,
     onShowLabelsChange: (Boolean) -> Unit,
+    onDoubleTapSearchChange: (Boolean) -> Unit,
     onCornerRadiusChange: (Float) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -742,6 +750,44 @@ fun NavBarStyleSelectionSheet(
                         Switch(
                             checked = showLabels,
                             onCheckedChange = onShowLabelsChange,
+                            colors = appSwitchColors()
+                        )
+                    }
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onDoubleTapSearchChange(!doubleTapSearch) }
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.settings_nav_double_tap_search),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_nav_double_tap_search_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Switch(
+                            checked = doubleTapSearch,
+                            onCheckedChange = onDoubleTapSearchChange,
                             colors = appSwitchColors()
                         )
                     }

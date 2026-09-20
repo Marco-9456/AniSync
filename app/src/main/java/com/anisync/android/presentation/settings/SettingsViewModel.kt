@@ -52,7 +52,8 @@ private data class UpdatesAndNavBarState(
     val allowPrerelease: Boolean,
     val navBarStyle: NavBarStyle,
     val navBarShowLabels: Boolean,
-    val navBarCornerRadius: Float
+    val navBarCornerRadius: Float,
+    val navBarDoubleTapSearch: Boolean
 )
 
 @HiltViewModel
@@ -170,9 +171,15 @@ class SettingsViewModel @Inject constructor(
             appSettings.allowPrerelease,
             appSettings.navBarStyle,
             appSettings.navBarShowLabels,
-            appSettings.navBarCornerRadius
-        ) { autoUpdate, prerelease, navStyle, navLabels, navRadius ->
-            UpdatesAndNavBarState(autoUpdate, prerelease, navStyle, navLabels, navRadius)
+            // Paired so the block stays inside combine's five-argument overload.
+            combine(
+                appSettings.navBarCornerRadius,
+                appSettings.navBarDoubleTapSearch
+            ) { radius, doubleTap -> radius to doubleTap }
+        ) { autoUpdate, prerelease, navStyle, navLabels, (navRadius, doubleTapSearch) ->
+            UpdatesAndNavBarState(
+                autoUpdate, prerelease, navStyle, navLabels, navRadius, doubleTapSearch
+            )
         },
         combine(
             _cacheSize,
@@ -212,6 +219,7 @@ class SettingsViewModel @Inject constructor(
             navBarStyle = updatesAndNav.navBarStyle,
             navBarShowLabels = updatesAndNav.navBarShowLabels,
             navBarCornerRadius = updatesAndNav.navBarCornerRadius,
+            navBarDoubleTapSearch = updatesAndNav.navBarDoubleTapSearch,
             cacheSize = cacheSize as String,
             isCacheCleared = isCleared as Boolean,
             isCacheLoading = isLoading as Boolean,
@@ -256,6 +264,8 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetNavBarStyle -> appSettings.setNavBarStyle(action.style)
             is SettingsAction.SetStartScreen -> appSettings.setStartScreen(action.screen)
             is SettingsAction.SetNavBarShowLabels -> appSettings.setNavBarShowLabels(action.show)
+            is SettingsAction.SetNavBarDoubleTapSearch ->
+                appSettings.setNavBarDoubleTapSearch(action.enabled)
             is SettingsAction.SetNavBarCornerRadius -> appSettings.setNavBarCornerRadius(action.radius)
             is SettingsAction.SetAvatarShape -> appSettings.setAvatarShape(action.shape)
             is SettingsAction.SetAvatarBackgroundEnabled -> appSettings.setAvatarBackgroundEnabled(action.enabled)

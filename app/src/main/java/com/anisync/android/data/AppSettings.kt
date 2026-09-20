@@ -230,6 +230,12 @@ class AppSettings @Inject constructor(
     )
     val navBarCornerRadius: StateFlow<Float> = _navBarCornerRadius.asStateFlow()
 
+    // Whether tapping the current tab twice opens that tab's search. The first tap always scrolls
+    // to the top; this only governs the second one, so turning it off costs nothing else.
+    private val _navBarDoubleTapSearch =
+        MutableStateFlow(prefs.getBoolean(KEY_NAV_BAR_DOUBLE_TAP_SEARCH, true))
+    val navBarDoubleTapSearch: StateFlow<Boolean> = _navBarDoubleTapSearch.asStateFlow()
+
     private fun readNavBarStyle(): NavBarStyle {
         val name = runCatching { prefs.getString(KEY_NAV_BAR_STYLE, null) }.getOrNull()
         return runCatching { NavBarStyle.valueOf(name ?: NavBarStyle.ANCHORED.name) }
@@ -808,6 +814,11 @@ class AppSettings @Inject constructor(
         _navBarCornerRadius.value = coerced
         prefs.edit().putFloat(KEY_NAV_BAR_CORNER_RADIUS, coerced).apply()
     }
+
+    fun setNavBarDoubleTapSearch(enabled: Boolean) {
+        _navBarDoubleTapSearch.value = enabled
+        prefs.edit().putBoolean(KEY_NAV_BAR_DOUBLE_TAP_SEARCH, enabled).apply()
+    }
     
     /**
      * Enable or disable notifications.
@@ -1299,6 +1310,7 @@ companion object {
         private const val KEY_NAV_BAR_STYLE = "nav_bar_style"
         private const val KEY_NAV_BAR_LABELS = "nav_bar_show_labels"
         private const val KEY_NAV_BAR_CORNER_RADIUS = "nav_bar_corner_radius"
+        private const val KEY_NAV_BAR_DOUBLE_TAP_SEARCH = "nav_bar_double_tap_search"
 
         const val MIN_NAV_BAR_CORNER_RADIUS = 0f
         const val MAX_NAV_BAR_CORNER_RADIUS = 36f

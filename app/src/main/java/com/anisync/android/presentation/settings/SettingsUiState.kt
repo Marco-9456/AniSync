@@ -25,6 +25,7 @@ sealed interface SettingsAction {
     data class SetNavBarStyle(val style: NavBarStyle) : SettingsAction
     data class SetStartScreen(val screen: StartScreen) : SettingsAction
     data class SetNavBarShowLabels(val show: Boolean) : SettingsAction
+    data class SetNavBarDoubleTapSearch(val enabled: Boolean) : SettingsAction
     data class SetNavBarCornerRadius(val radius: Float) : SettingsAction
     data class SetAvatarShape(val shape: AvatarShape) : SettingsAction
     data class SetAvatarBackgroundEnabled(val enabled: Boolean) : SettingsAction
@@ -124,6 +125,7 @@ data class SettingsUiState(
     val appLockEnabled: Boolean = false,
     val navBarStyle: NavBarStyle = NavBarStyle.ANCHORED,
     val navBarShowLabels: Boolean = true,
+    val navBarDoubleTapSearch: Boolean = true,
     val navBarCornerRadius: Float = 28f,
     val avatarShape: AvatarShape = AvatarShape.CLOVER_8_LEAF,
     val avatarBackgroundEnabled: Boolean = true,
