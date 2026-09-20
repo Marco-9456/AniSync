@@ -18,6 +18,9 @@ class MediaUploaderFactory @Inject constructor(
     private val litterbox: Provider<LitterboxUploader>,
     private val custom: Provider<CustomMultipartUploader>
 ) {
+    /** The host an upload will go to, for naming it in a failure the user reads. */
+    fun currentHost(): MediaHost = settings.mediaHost.value
+
     fun current(): MediaUploader {
         return when (settings.mediaHost.value) {
             MediaHost.CATBOX -> catbox.get().apply {

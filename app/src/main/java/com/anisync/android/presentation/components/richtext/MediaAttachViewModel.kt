@@ -20,6 +20,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.anisync.android.data.media.CatboxUploader
+import com.anisync.android.data.media.CustomMultipartUploader
+import com.anisync.android.data.media.LitterboxUploader
+import com.anisync.android.data.media.MediaUploadException
+import com.anisync.android.data.media.UploadFailure
+import com.anisync.android.domain.media.MediaHost
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 /**
  * Owns the upload lifecycle for a single composer instance. Multiple composers
@@ -116,7 +125,7 @@ class MediaAttachViewModel @Inject constructor(
                 .onFailure { err ->
                     _state.value = MediaAttachState.Failed(
                         displayName = picked.displayName,
-                        message = mapErrorMessage(err.message),
+                        message = mapErrorMessage(err),
                         retry = picked
                     )
                 }
@@ -143,15 +152,38 @@ class MediaAttachViewModel @Inject constructor(
         upload(onMarkdownReady)
     }
 
-    private fun mapErrorMessage(raw: String?): String {
-        val msg = raw ?: return "Upload failed"
-        // Catbox bot/abuse filter — surfaces as HTTP 412 with body "Invalid uploader".
-        // Even with an identifying UA, certain content (often tenor-sourced GIFs) stays
-        // blocked by hash. Tell the user what to do instead of echoing the raw message.
-        if (msg.contains("412") || msg.contains("Invalid uploader", ignoreCase = true)) {
-            return context.getString(R.string.media_attach_error_catbox_rejected)
+    /**
+     * Says what actually went wrong. Every failure used to read "Catbox rejected this file",
+     * because the only test was whether the message mentioned 412 — which it also does for a
+     * stale user hash and for a request that arrived empty. Those are fixed in two different
+     * places, and neither is the file.
+     */
+    private fun mapErrorMessage(error: Throwable): String {
+        val failure = error as? MediaUploadException
+            ?: return when (error) {
+                is UnknownHostException, is ConnectException, is SocketTimeoutException ->
+                    context.getString(R.string.media_attach_error_offline, currentHostName())
+                else -> error.message ?: context.getString(R.string.media_attach_error_generic)
+            }
+
+        return when (failure.reason) {
+            is UploadFailure.HostDown ->
+                context.getString(R.string.media_attach_error_host_down, failure.host)
+            UploadFailure.BadUserHash ->
+                context.getString(R.string.media_attach_error_bad_userhash)
+            UploadFailure.NoFileReceived ->
+                context.getString(R.string.media_attach_error_no_file, failure.host)
+            UploadFailure.FileRejected ->
+                context.getString(R.string.media_attach_error_catbox_rejected)
+            is UploadFailure.Unexpected -> failure.message
+                ?: context.getString(R.string.media_attach_error_generic)
         }
-        return msg
+    }
+
+    private fun currentHostName(): String = when (uploaderFactory.currentHost()) {
+        MediaHost.CATBOX -> CatboxUploader.HOST
+        MediaHost.LITTERBOX -> LitterboxUploader.HOST
+        MediaHost.CUSTOM -> CustomMultipartUploader.HOST
     }
 
     private fun mediaKindFromMime(mime: String): MediaKind = when {

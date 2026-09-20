@@ -1517,6 +1517,11 @@
     <string name="media_attach_insert">Insert</string>
     <string name="media_attach_error_invalid_url">Enter a valid http(s) URL</string>
     <string name="media_attach_error_catbox_rejected">Catbox rejected this file. Try a different file, or switch to Litterbox in Settings → Media upload.</string>
+    <string name="media_attach_error_host_down">%1$s is not responding right now. Try again in a while, or pick another host in Settings → Media upload.</string>
+    <string name="media_attach_error_bad_userhash">Catbox did not accept your user hash. Clear it in Settings → Media upload to upload anonymously.</string>
+    <string name="media_attach_error_no_file">The file never reached %1$s. Pick it again, or try a different one.</string>
+    <string name="media_attach_error_offline">No connection to %1$s. Check your network and try again.</string>
+    <string name="media_attach_error_generic">Upload failed</string>
     <string name="media_attach_size_output">Inserts: %s</string>
 
     <!-- Search / Discover -->
