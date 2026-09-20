@@ -97,6 +97,10 @@ import com.anisync.android.presentation.navigation.Discover
 import com.anisync.android.presentation.navigation.navigateSafely
 import com.anisync.android.presentation.navigation.Feed
 import com.anisync.android.presentation.navigation.Forum
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import com.anisync.android.domain.MainTab
 import com.anisync.android.presentation.navigation.Library
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
@@ -114,6 +118,8 @@ private data class BottomNavItem<T : Any>(
     val titleResId: Int,
     val route: T,
     val routeClass: KClass<T>,
+    /** How the reselect gestures address this destination. */
+    val tab: MainTab,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
     /**
@@ -134,6 +140,7 @@ private fun rememberMainNavItems(): List<BottomNavItem<*>> = remember {
             R.string.nav_library,
             Library,
             Library::class,
+            MainTab.LIBRARY,
             Icons.Filled.VideoLibrary,
             Icons.Outlined.VideoLibrary,
             persistKey = "library"
@@ -142,6 +149,7 @@ private fun rememberMainNavItems(): List<BottomNavItem<*>> = remember {
             R.string.nav_discover,
             Discover,
             Discover::class,
+            MainTab.DISCOVER,
             Icons.Filled.Explore,
             Icons.Outlined.Explore,
             persistKey = "discover"
@@ -150,6 +158,7 @@ private fun rememberMainNavItems(): List<BottomNavItem<*>> = remember {
             R.string.nav_feed,
             Feed,
             Feed::class,
+            MainTab.FEED,
             Icons.Filled.DynamicFeed,
             Icons.Outlined.DynamicFeed,
             persistKey = "feed"
@@ -158,6 +167,7 @@ private fun rememberMainNavItems(): List<BottomNavItem<*>> = remember {
             R.string.nav_forum,
             Forum,
             Forum::class,
+            MainTab.FORUM,
             Icons.Filled.Forum,
             Icons.Outlined.Forum,
             persistKey = "forum"
@@ -166,6 +176,7 @@ private fun rememberMainNavItems(): List<BottomNavItem<*>> = remember {
             R.string.nav_profile,
             Profile,
             Profile::class,
+            MainTab.PROFILE,
             Icons.Filled.Person,
             Icons.Outlined.Person
         )
@@ -284,6 +295,8 @@ fun MainScreen(
                     navBarShowLabels = navBarShowLabels,
                     navBarCornerRadius = navBarCornerRadius,
                     onTabSelected = viewModel::onMainTabSelected,
+                    onTabReselected = viewModel::onTabReselected,
+                    onTabSearch = viewModel::onTabSearchRequested,
                     toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
                 )
             } else {
@@ -292,6 +305,8 @@ fun MainScreen(
                     startDestination = startDestination,
                     unreadNotificationCount = unreadNotificationCount,
                     onTabSelected = viewModel::onMainTabSelected,
+                    onTabReselected = viewModel::onTabReselected,
+                    onTabSearch = viewModel::onTabSearchRequested,
                     toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
                 )
             }
@@ -332,6 +347,8 @@ private fun CompactNavLayout(
     navBarShowLabels: Boolean,
     navBarCornerRadius: Float,
     onTabSelected: (String) -> Unit,
+    onTabReselected: (MainTab) -> Unit,
+    onTabSearch: (MainTab) -> Unit,
     toastHost: @Composable () -> Unit
 ) {
     Scaffold(
@@ -344,7 +361,9 @@ private fun CompactNavLayout(
                     style = NavBarStyle.ANCHORED,
                     showLabels = navBarShowLabels,
                     cornerRadius = navBarCornerRadius,
-                    onTabSelected = onTabSelected
+                    onTabSelected = onTabSelected,
+                    onTabReselected = onTabReselected,
+                    onTabSearch = onTabSearch
                 )
             }
         }
@@ -389,7 +408,9 @@ private fun CompactNavLayout(
                         style = NavBarStyle.FLOATING,
                         showLabels = navBarShowLabels,
                         cornerRadius = navBarCornerRadius,
-                        onTabSelected = onTabSelected
+                        onTabSelected = onTabSelected,
+                        onTabReselected = onTabReselected,
+                        onTabSearch = onTabSearch
                     )
                 }
             }
@@ -411,6 +432,8 @@ private fun RailNavLayout(
     startDestination: Any,
     unreadNotificationCount: Int,
     onTabSelected: (String) -> Unit,
+    onTabReselected: (MainTab) -> Unit,
+    onTabSearch: (MainTab) -> Unit,
     toastHost: @Composable () -> Unit
 ) {
     // Bridges a tab's contextual primary action into the rail header (Material 3 hosts the FAB in the
@@ -428,7 +451,9 @@ private fun RailNavLayout(
                 MainWideNavigationRail(
                     navController = navController,
                     unreadNotificationCount = unreadNotificationCount,
-                    onTabSelected = onTabSelected
+                    onTabSelected = onTabSelected,
+                    onTabReselected = onTabReselected,
+                    onTabSearch = onTabSearch
                 )
                 Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     CompositionLocalProvider(LocalMainNavBarInset provides 0.dp) {
@@ -445,6 +470,28 @@ private fun RailNavLayout(
     }
 }
 
+/**
+ * Gives a navigation item an explicit "search this tab" accessibility action.
+ *
+ * The gesture itself is unreachable under a screen reader, where a double tap already means
+ * activate, so the shortcut needs a real action rather than only a hidden gesture. Tabs without a
+ * search get no action.
+ */
+@Composable
+private fun tabSearchActionModifier(
+    tab: MainTab,
+    tabTitle: String,
+    onTabSearch: (MainTab) -> Unit
+): Modifier {
+    if (!tab.hasSearch) return Modifier
+    val label = stringResource(R.string.a11y_nav_search_tab, tabTitle)
+    return remember(tab, label, onTabSearch) {
+        Modifier.semantics {
+            customActions = listOf(CustomAccessibilityAction(label) { onTabSearch(tab); true })
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MainBottomBar(
@@ -453,7 +500,9 @@ private fun MainBottomBar(
     style: NavBarStyle,
     showLabels: Boolean,
     cornerRadius: Float,
-    onTabSelected: (String) -> Unit
+    onTabSelected: (String) -> Unit,
+    onTabReselected: (MainTab) -> Unit,
+    onTabSearch: (MainTab) -> Unit
 ) {
     val navItems = rememberMainNavItems()
 
@@ -513,10 +562,13 @@ private fun MainBottomBar(
                 CompactNavBarItem(
                     selected = isSelected,
                     onClick = {
-                        if (!isSelected) {
+                        if (isSelected) {
+                            onTabReselected(item.tab)
+                        } else {
                             navController.navigateToMainTab(item.route, item.persistKey, onTabSelected)
                         }
                     },
+                    modifier = tabSearchActionModifier(item.tab, itemTitle, onTabSearch),
                     icon = {
                         Icon(
                             imageVector = iconVector,
@@ -592,7 +644,9 @@ private fun RailHeaderFab(fab: RailFab, expanded: Boolean, modifier: Modifier = 
 private fun MainWideNavigationRail(
     navController: NavHostController,
     unreadNotificationCount: Int,
-    onTabSelected: (String) -> Unit
+    onTabSelected: (String) -> Unit,
+    onTabReselected: (MainTab) -> Unit,
+    onTabSearch: (MainTab) -> Unit
 ) {
     val navItems = rememberMainNavItems()
     val navBackStackEntryState = navController.currentBackStackEntryAsState()
@@ -674,10 +728,13 @@ private fun MainWideNavigationRail(
                     railExpanded = expanded,
                     selected = isSelected,
                     onClick = {
-                        if (!isSelected) {
+                        if (isSelected) {
+                            onTabReselected(item.tab)
+                        } else {
                             navController.navigateToMainTab(item.route, item.persistKey, onTabSelected)
                         }
                     },
+                    modifier = tabSearchActionModifier(item.tab, itemTitle, onTabSearch),
                     icon = {
                         if (showBadge) {
                             ProfileNavBarIconWithBadge(

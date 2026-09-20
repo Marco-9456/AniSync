@@ -1,11 +1,14 @@
 package com.anisync.android.presentation
 
+import android.view.ViewConfiguration
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.NotificationBadgeStore
 import com.anisync.android.data.network.RateLimitMonitor
+import com.anisync.android.domain.MainTab
+import com.anisync.android.domain.TabReselectBus
 import com.anisync.android.presentation.components.alert.ToastManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +27,7 @@ class MainScreenViewModel @Inject constructor(
     val toastManager: ToastManager,
     /** Drives the rate limit notice and the pull-to-refresh gates. */
     val rateLimitMonitor: RateLimitMonitor,
+    private val tabReselectBus: TabReselectBus,
     searchLauncher: com.anisync.android.domain.DiscoverSearchLauncher
 ) : ViewModel() {
 
@@ -41,6 +45,39 @@ class MainScreenViewModel @Inject constructor(
     val navBarShowLabels: StateFlow<Boolean> = appSettings.navBarShowLabels
     val navBarCornerRadius: StateFlow<Float> = appSettings.navBarCornerRadius
 
+    /** When the tab you are already on was last tapped, for telling a second tap from a first. */
+    private var lastReselect: Pair<MainTab, Long>? = null
+
+    /**
+     * Tapping the tab you are already on. The first tap always asks that tab to scroll back to the
+     * top and the second, inside the platform's double-tap window, asks it to open its search.
+     *
+     * The first tap acts immediately rather than waiting to see whether a second follows: holding
+     * it back would put the double-tap timeout in front of a gesture people make constantly, and
+     * scrolling to the top is a fine prelude to searching anyway.
+     */
+    fun onTabReselected(tab: MainTab) {
+        val now = System.currentTimeMillis()
+        val previous = lastReselect
+        val isSecondTap = previous != null &&
+            previous.first == tab &&
+            now - previous.second <= DOUBLE_TAP_WINDOW_MS
+
+        if (isSecondTap && tab.hasSearch && appSettings.navBarDoubleTapSearch.value) {
+            lastReselect = null
+            tabReselectBus.requestSearch(tab)
+            return
+        }
+
+        lastReselect = tab to now
+        tabReselectBus.requestScrollToTop(tab)
+    }
+
+    /** Opens [tab]'s search without the gesture, for the navigation item's accessibility action. */
+    fun onTabSearchRequested(tab: MainTab) {
+        if (tab.hasSearch) tabReselectBus.requestSearch(tab)
+    }
+
     /**
      * The tab a cold launch opens on, captured once at startup. A pinned Open-on choice wins;
      * otherwise this is the tab the user last visited, which is null on a first ever launch and
@@ -56,5 +93,10 @@ class MainScreenViewModel @Inject constructor(
 
     fun refreshNotificationBadge() {
         viewModelScope.launch { notificationBadgeStore.refresh() }
+    }
+
+    private companion object {
+        /** Follows the platform (and the user's accessibility timing), rather than a fixed 300. */
+        val DOUBLE_TAP_WINDOW_MS = ViewConfiguration.getDoubleTapTimeout().toLong()
     }
 }
