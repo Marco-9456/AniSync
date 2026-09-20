@@ -87,7 +87,12 @@ fun SupportPromptCard(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = stringResource(R.string.support_card_title, BuildConfig.VERSION_NAME),
+                            // Without the flavor suffix: a preview or debug build asks about
+                            // "3.2.0", not "3.2.0-preview".
+                            text = stringResource(
+                                R.string.support_card_title,
+                                BuildConfig.VERSION_NAME.substringBefore('-')
+                            ),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
