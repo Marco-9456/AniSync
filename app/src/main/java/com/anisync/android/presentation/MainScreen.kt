@@ -2,6 +2,7 @@ package com.anisync.android.presentation
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
@@ -626,6 +628,9 @@ private fun MainBottomBar(
     }
 }
 
+/** Height of the rail header's action slot, reserved whether or not a tab fills it. */
+private val RailFabSlotHeight = 56.dp
+
 /**
  * The contextual primary action in a rail's header (Material 3). Like the destination items, it
  * follows the rail's expansion: an icon-only FAB when collapsed, animating to an **extended FAB** with
@@ -675,7 +680,13 @@ private fun MainWideNavigationRail(
     val navItems = rememberMainNavItems()
     val navBackStackEntryState = navController.currentBackStackEntryAsState()
     val navBarSuppressor = LocalMainNavBarSuppressor.current
-    val railFab = LocalRailFabState.current?.fab
+    val openTab = navItems.firstOrNull {
+        navBackStackEntryState.value?.destination?.hasRoute(it.routeClass) == true
+    }?.tab
+    // The open tab's action, not simply the last one published. A screen keeps its FAB until it
+    // leaves composition at the end of the tab transition, so reading the slot alone left the
+    // outgoing tab's action sitting in the header well after the new tab had taken over.
+    val railFab = LocalRailFabState.current?.fab?.takeIf { it.tab == openTab }
 
     val isRailVisible by remember(navBarSuppressor) {
         derivedStateOf {
@@ -733,8 +744,17 @@ private fun MainWideNavigationRail(
                             contentDescription = if (expanded) collapseLabel else expandLabel
                         )
                     }
-                    if (railFab != null) {
-                        RailHeaderFab(railFab, expanded, Modifier.padding(start = 20.dp))
+                    // The slot keeps its height whether or not the open tab publishes an action.
+                    // A screen publishes and disposes its FAB around the tab transition rather
+                    // than on the tap, so a collapsing slot slid every destination up or down a
+                    // FAB height a moment after a tab switch, under a finger that was on its way
+                    // down for the second tap of the double-tap shortcut.
+                    Box(modifier = Modifier.height(RailFabSlotHeight)) {
+                        Crossfade(targetState = railFab, label = "RailHeaderFab") { fab ->
+                            if (fab != null) {
+                                RailHeaderFab(fab, expanded, Modifier.padding(start = 20.dp))
+                            }
+                        }
                     }
                 }
             }

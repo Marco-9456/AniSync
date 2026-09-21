@@ -113,6 +113,7 @@ import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.ForumThreadCardSkeleton
 import com.anisync.android.presentation.forum.components.ThreadActionsSheet
 import com.anisync.android.presentation.util.LocalMainNavBarInset
+import com.anisync.android.domain.MainTab
 import com.anisync.android.presentation.util.LocalRailFabState
 import com.anisync.android.presentation.util.SetRailFab
 import com.anisync.android.presentation.util.bouncyClickable
@@ -152,7 +153,12 @@ fun ForumScreen(
     // On rail layouts the create-thread action lives in the rail header (Material 3); on compact it
     // stays a floating action button below. SetRailFab is a no-op when there is no rail.
     val hasRail = LocalRailFabState.current != null
-    SetRailFab(Icons.Default.Add, stringResource(R.string.forum_create_thread), onCreateThreadClick)
+    SetRailFab(
+        MainTab.FORUM,
+        Icons.Default.Add,
+        stringResource(R.string.forum_create_thread),
+        onCreateThreadClick
+    )
 
     val focusManager = LocalFocusManager.current
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()

@@ -62,6 +62,7 @@ import com.anisync.android.presentation.feed.components.GroupedListActivityCard
 import com.anisync.android.presentation.profile.components.ActivityCard
 import com.anisync.android.presentation.settings.activityMergeLabel
 import com.anisync.android.presentation.util.LocalMainNavBarInset
+import com.anisync.android.domain.MainTab
 import com.anisync.android.presentation.util.LocalRailFabState
 import com.anisync.android.presentation.util.SetRailFab
 import kotlinx.coroutines.launch
@@ -97,7 +98,12 @@ fun FeedScreen(
     // On rail layouts the compose action lives in the rail header (Material 3); on compact it stays a
     // floating action button below. SetRailFab is a no-op when there is no rail.
     val hasRail = LocalRailFabState.current != null
-    SetRailFab(Icons.Default.Edit, stringResource(R.string.cd_write_status), onComposeStatus)
+    SetRailFab(
+        MainTab.FEED,
+        Icons.Default.Edit,
+        stringResource(R.string.cd_write_status),
+        onComposeStatus
+    )
 
     LaunchedEffect(Unit) {
         viewModel.onScreenVisible()

@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.anisync.android.domain.MainTab
 
 /**
  * A contextual primary action a top-level tab publishes to the navigation rail's header.
@@ -18,6 +19,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
  * own floating action button instead (see [LocalRailFabState] being null there).
  */
 data class RailFab(
+    /** The tab the action belongs to. The rail shows the FAB only while that tab is open. */
+    val tab: MainTab,
     val icon: ImageVector,
     val contentDescription: String,
     val onClick: () -> Unit,
@@ -44,11 +47,16 @@ val LocalRailFabState = compositionLocalOf<RailFabState?> { null }
  * without the [DisposableEffect] churning every recomposition.
  */
 @Composable
-fun SetRailFab(icon: ImageVector, contentDescription: String, onClick: () -> Unit) {
+fun SetRailFab(
+    tab: MainTab,
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
     val holder = LocalRailFabState.current ?: return
     val currentOnClick by rememberUpdatedState(onClick)
-    DisposableEffect(holder, icon, contentDescription) {
-        val fab = RailFab(icon, contentDescription) { currentOnClick() }
+    DisposableEffect(holder, tab, icon, contentDescription) {
+        val fab = RailFab(tab, icon, contentDescription) { currentOnClick() }
         holder.fab = fab
         // Clear only if we still own the slot. When switching tabs, the incoming screen's effect can
         // publish its FAB before the outgoing screen's onDispose runs; an unconditional null would
