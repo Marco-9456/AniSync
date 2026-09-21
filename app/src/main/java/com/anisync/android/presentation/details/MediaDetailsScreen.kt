@@ -619,7 +619,8 @@ fun MediaDetailsScreen(
                                     onRateRecommendation = viewModel::rateRecommendation,
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope,
-                                    titleLanguage = titleLanguage
+                                    titleLanguage = titleLanguage,
+                                    topBarHeight = paddingValues.calculateTopPadding()
                                 )
                             }
 
@@ -940,7 +941,9 @@ fun DetailsPageContent(
     onRateRecommendation: (Int, com.anisync.android.type.RecommendationRating) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    titleLanguage: TitleLanguage
+    titleLanguage: TitleLanguage,
+    /** Height of the page's top app bar, which is where the sticky tab strip docks. */
+    topBarHeight: Dp
 ) {
     val displayCharacters = remember(details.characters, titleLanguage) {
         details.characters.distinctBy { it.id }.take(10).map { character ->
@@ -1062,8 +1065,12 @@ fun DetailsPageContent(
     // app bar, so the two never read as duplicates. Both positions come from real measurements, not
     // a scroll-offset lookup, so a resize can't make them drift.
     val density = LocalDensity.current
-    // The app bar draws under the status bar, so the dock line is its full height, inset included.
-    val dockPx = with(density) { (statusBarInset() + 64.dp).roundToPx() }.toFloat()
+    // The dock line is the app bar's measured height, which the Scaffold hands down. It cannot be
+    // rebuilt from the status bar inset, because the bar only draws under the status bar when the
+    // page fills the window: in a two-pane detail pane the pane already starts below it, and adding
+    // the inset again parked the pinned strip a status bar below the app bar with content showing
+    // through the gap (issue #145).
+    val dockPx = with(density) { topBarHeight.roundToPx() }.toFloat()
     var contentTopWindow by remember { mutableFloatStateOf(0f) }
     var inlineTabsTopWindow by remember { mutableFloatStateOf(Float.MAX_VALUE) }
     val tabsDocked by remember {
