@@ -41,6 +41,20 @@ data class NotificationReadState(
         notification.createdAt > readThroughCreatedAt ||
             (notification.createdAt == readThroughCreatedAt && notification.id > readThroughId)
 
+    /**
+     * Whether reading has caught up with everything AniList still counts as unread.
+     *
+     * That is the one moment the app can report reading back: `resetNotificationCount` clears the
+     * whole count or nothing, so a row read on its own has to wait for the last of them. Both
+     * halves have to agree, because either can be behind on its own. [serverUnreadCount] is
+     * refreshed on resume rather than continuously, and a notification that arrived after the last
+     * page load is only in that figure, not in [inbox].
+     */
+    fun coversUnread(inbox: List<Notification>, serverUnreadCount: Int): Boolean =
+        serverUnreadCount > 0 &&
+            readIds.size >= serverUnreadCount &&
+            inbox.none { isUnread(it) }
+
     /** Marks single rows read without moving the watermark, so nothing older is swept up. */
     fun markRead(items: List<Notification>): NotificationReadState {
         val added = items.filter { isUnread(it) }

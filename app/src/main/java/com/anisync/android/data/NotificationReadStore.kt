@@ -25,11 +25,12 @@ import javax.inject.Singleton
  * SharedPreferences rather than Room: it has to outlive the cache clear, the account switch and the
  * destructive-migration wipe that Room is still configured for.
  *
- * The store also owns the server side of Mark all read. AniList resets an account's unread count
+ * The store also owns the server side of that record. AniList resets an account's unread count
  * only as a side effect of a notifications query carrying `resetNotificationCount`, so that query
  * is fired here, from a scope that outlives the inbox screen, and is retried on the next visit when
  * it fails. Its response doubles as the authority on the newest notification in the account, which
- * is what lets Mark all read work from a filtered tab.
+ * is what lets Mark all read work from a filtered tab. It goes out for Mark all read and, since the
+ * count is the whole of what AniList keeps, once the last unread row has been read one at a time.
  */
 @Singleton
 class NotificationReadStore @Inject constructor(
@@ -61,8 +62,36 @@ class NotificationReadStore @Inject constructor(
         update { it.anchoredTo(items, serverUnreadCount, hasMoreItems) }
     }
 
-    fun markRead(items: List<Notification>) {
-        update { it.markRead(items) }
+    /**
+     * Marks the rows of one opened notification read. [inbox] is everything the screen has loaded,
+     * which is what decides whether that was the last unread row.
+     */
+    fun markRead(items: List<Notification>, inbox: List<Notification>) {
+        val accountId = activeAccountId()
+        update(accountId) { it.markRead(items) }
+        pushResetWhenNothingIsUnread(accountId, inbox)
+    }
+
+    /**
+     * Reports the inbox as read to AniList once the device has read everything AniList still counts
+     * as unread.
+     *
+     * A single row cannot be reported on its own: `resetNotificationCount` is the only lever
+     * AniList offers and it clears the whole count. So the rows are held here until the last of
+     * them is read, and only then does the all-or-nothing reset go out. Without it a user who
+     * reads their notifications one at a time, having opted out of Mark read on open, clears the
+     * inbox here and still sees every one of them unread on the website.
+     *
+     * Both the loaded rows and the server's figure have to agree that nothing is left, which is
+     * what [NotificationReadState.coversUnread] decides.
+     */
+    private fun pushResetWhenNothingIsUnread(accountId: Int, inbox: List<Notification>) {
+        val serverUnread = badgeStore.serverUnreadCount.value ?: return
+        if (!flowFor(accountId).value.coversUnread(inbox, serverUnread)) return
+        // A reset already in flight covers this one; a failed one is retried on the next visit.
+        if (isResetPending(accountId)) return
+        setResetPending(accountId, true)
+        scope.launch { pushReset(accountId) }
     }
 
     /**

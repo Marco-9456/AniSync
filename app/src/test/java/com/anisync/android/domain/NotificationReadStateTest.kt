@@ -149,4 +149,46 @@ class NotificationReadStateTest {
 
         assertTrue(state.anchored)
     }
+
+    @Test
+    fun `reading the last unread row catches up with the server count`() {
+        val anchored = NotificationReadState().anchoredTo(inbox, unreadCount = 2, hasMoreItems = true)
+        val unread = inbox.filter { anchored.isUnread(it) }
+
+        val partly = anchored.markRead(unread.take(1))
+        assertFalse(partly.coversUnread(inbox, serverUnreadCount = 2))
+
+        val all = partly.markRead(unread)
+        assertTrue(all.coversUnread(inbox, serverUnreadCount = 2))
+    }
+
+    @Test
+    fun `a row the server counts but the device has not loaded holds the reset back`() {
+        val state = NotificationReadState()
+            .anchoredTo(inbox, unreadCount = 2, hasMoreItems = true)
+            .let { it.markRead(inbox.filter(it::isUnread)) }
+
+        // AniList counts three unread; the third arrived after the last page load.
+        assertFalse(state.coversUnread(inbox, serverUnreadCount = 3))
+    }
+
+    @Test
+    fun `a row the device shows unread holds the reset back past a stale count`() {
+        val arrived = notification(80)
+        val loaded = listOf(arrived) + inbox
+        val state = NotificationReadState()
+            .anchoredTo(inbox, unreadCount = 2, hasMoreItems = true)
+            .let { it.markRead(inbox.filter(it::isUnread)) }
+
+        // The count has not caught up with the row that arrived, so it still reads 2.
+        assertTrue(state.isUnread(arrived))
+        assertFalse(state.coversUnread(loaded, serverUnreadCount = 2))
+    }
+
+    @Test
+    fun `an inbox the server calls read needs no reset`() {
+        val state = NotificationReadState().anchoredTo(inbox, unreadCount = 0, hasMoreItems = false)
+
+        assertFalse(state.coversUnread(inbox, serverUnreadCount = 0))
+    }
 }

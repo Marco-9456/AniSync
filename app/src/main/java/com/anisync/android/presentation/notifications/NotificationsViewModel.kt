@@ -118,16 +118,21 @@ class NotificationsViewModel @Inject constructor(
      */
     private fun markAllRead() {
         if (!_uiState.value.readTrackingEnabled) return
-        val known = (unfiltered + _uiState.value.items).distinctBy { it.id }
-        readStore.markAllRead(known)
+        readStore.markAllRead(known())
     }
 
     private fun markRead(key: String) {
         if (!_uiState.value.readTrackingEnabled) return
         val entry = _uiState.value.entries.firstOrNull { it.key == key } ?: return
         if (!entry.isUnread) return
-        readStore.markRead(entry.all)
+        // The whole inbox goes with it: reading the last unread row is what lets the store report
+        // the inbox read to AniList, and only this list can say whether it was the last one.
+        readStore.markRead(entry.all, known())
     }
+
+    /** Everything loaded, across filters. Unread rows are the newest, so they are all in here. */
+    private fun known(): List<Notification> =
+        (unfiltered + _uiState.value.items).distinctBy { it.id }
 
     private fun anchor(serverUnreadCount: Int) {
         if (!_uiState.value.readTrackingEnabled) return
