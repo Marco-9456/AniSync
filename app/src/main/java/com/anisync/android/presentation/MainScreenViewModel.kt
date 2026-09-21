@@ -47,32 +47,38 @@ class MainScreenViewModel @Inject constructor(
     val navBarShowLabels: StateFlow<Boolean> = appSettings.navBarShowLabels
     val navBarCornerRadius: StateFlow<Float> = appSettings.navBarCornerRadius
 
-    /** When the tab you are already on was last tapped, for telling a second tap from a first. */
-    private var lastReselect: Pair<MainTab, Long>? = null
+    /** When a navigation item was last tapped, for telling a second tap from a first. */
+    private var lastTap: Pair<MainTab, Long>? = null
 
     /**
-     * Tapping the tab you are already on. The first tap always asks that tab to scroll back to the
-     * top and the second, inside the platform's double-tap window, asks it to open its search.
+     * A tap on a navigation item, whether or not [tab] was already the open one.
      *
-     * The first tap acts immediately rather than waiting to see whether a second follows: holding
-     * it back would put the double-tap timeout in front of a gesture people make constantly, and
-     * scrolling to the top is a fine prelude to searching anyway.
+     * Two taps inside the platform's double-tap window open that tab's search, and the count runs
+     * across the switch: the gesture means the same thing from the tab you are on and from any
+     * other, which is what the shortcut was asked for. A tab with nothing to search answers the
+     * second tap the way it answers the first.
+     *
+     * A single tap on the tab you are already on scrolls it back to the top, immediately rather
+     * than waiting to see whether a second follows: holding it back would put the double-tap
+     * timeout in front of a gesture people make constantly, and scrolling to the top is a fine
+     * prelude to searching anyway. A tap that switches tabs scrolls nothing, since that tab's
+     * position is restored with it and throwing it away is not what the tap asked for.
      */
-    fun onTabReselected(tab: MainTab) {
+    fun onTabTapped(tab: MainTab, alreadySelected: Boolean) {
         val now = System.currentTimeMillis()
-        val previous = lastReselect
+        val previous = lastTap
         val isSecondTap = previous != null &&
             previous.first == tab &&
             now - previous.second <= DOUBLE_TAP_WINDOW_MS
 
         if (isSecondTap && tab.hasSearch && appSettings.navBarDoubleTapSearch.value) {
-            lastReselect = null
+            lastTap = null
             tabReselectBus.requestSearch(tab)
             return
         }
 
-        lastReselect = tab to now
-        tabReselectBus.requestScrollToTop(tab)
+        lastTap = tab to now
+        if (alreadySelected) tabReselectBus.requestScrollToTop(tab)
     }
 
     /** Opens [tab]'s search without the gesture, for the navigation item's accessibility action. */

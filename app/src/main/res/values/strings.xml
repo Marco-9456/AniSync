@@ -2335,5 +2335,5 @@
     </plurals>
     <string name="a11y_nav_search_tab">Search %1$s</string>
     <string name="settings_nav_double_tap_search">Double-tap to search</string>
-    <string name="settings_nav_double_tap_search_desc">Tap the current tab to scroll to the top, tap it twice to open its search</string>
+    <string name="settings_nav_double_tap_search_desc">Tap a tab twice to open its search. Tapping the tab you are on scrolls it back to the top</string>
 </resources>

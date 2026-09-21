@@ -311,7 +311,7 @@ fun MainScreen(
                     navBarShowLabels = navBarShowLabels,
                     navBarCornerRadius = navBarCornerRadius,
                     onTabSelected = viewModel::onMainTabSelected,
-                    onTabReselected = viewModel::onTabReselected,
+                    onTabTapped = viewModel::onTabTapped,
                     onTabSearch = viewModel::onTabSearchRequested,
                     supportPrompt = supportPrompt,
                     toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
@@ -322,7 +322,7 @@ fun MainScreen(
                     startDestination = startDestination,
                     unreadNotificationCount = unreadNotificationCount,
                     onTabSelected = viewModel::onMainTabSelected,
-                    onTabReselected = viewModel::onTabReselected,
+                    onTabTapped = viewModel::onTabTapped,
                     onTabSearch = viewModel::onTabSearchRequested,
                     supportPrompt = supportPrompt,
                     toastHost = { TopToastHost(toastManager = viewModel.toastManager) }
@@ -365,7 +365,7 @@ private fun CompactNavLayout(
     navBarShowLabels: Boolean,
     navBarCornerRadius: Float,
     onTabSelected: (String) -> Unit,
-    onTabReselected: (MainTab) -> Unit,
+    onTabTapped: (MainTab, Boolean) -> Unit,
     onTabSearch: (MainTab) -> Unit,
     supportPrompt: @Composable () -> Unit,
     toastHost: @Composable () -> Unit
@@ -381,7 +381,7 @@ private fun CompactNavLayout(
                     showLabels = navBarShowLabels,
                     cornerRadius = navBarCornerRadius,
                     onTabSelected = onTabSelected,
-                    onTabReselected = onTabReselected,
+                    onTabTapped = onTabTapped,
                     onTabSearch = onTabSearch
                 )
             }
@@ -428,7 +428,7 @@ private fun CompactNavLayout(
                         showLabels = navBarShowLabels,
                         cornerRadius = navBarCornerRadius,
                         onTabSelected = onTabSelected,
-                        onTabReselected = onTabReselected,
+                        onTabTapped = onTabTapped,
                         onTabSearch = onTabSearch
                     )
                 }
@@ -453,7 +453,7 @@ private fun RailNavLayout(
     startDestination: Any,
     unreadNotificationCount: Int,
     onTabSelected: (String) -> Unit,
-    onTabReselected: (MainTab) -> Unit,
+    onTabTapped: (MainTab, Boolean) -> Unit,
     onTabSearch: (MainTab) -> Unit,
     supportPrompt: @Composable () -> Unit,
     toastHost: @Composable () -> Unit
@@ -474,7 +474,7 @@ private fun RailNavLayout(
                     navController = navController,
                     unreadNotificationCount = unreadNotificationCount,
                     onTabSelected = onTabSelected,
-                    onTabReselected = onTabReselected,
+                    onTabTapped = onTabTapped,
                     onTabSearch = onTabSearch
                 )
                 Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -524,7 +524,7 @@ private fun MainBottomBar(
     showLabels: Boolean,
     cornerRadius: Float,
     onTabSelected: (String) -> Unit,
-    onTabReselected: (MainTab) -> Unit,
+    onTabTapped: (MainTab, Boolean) -> Unit,
     onTabSearch: (MainTab) -> Unit
 ) {
     val navItems = rememberMainNavItems()
@@ -585,11 +585,12 @@ private fun MainBottomBar(
                 CompactNavBarItem(
                     selected = isSelected,
                     onClick = {
-                        if (isSelected) {
-                            onTabReselected(item.tab)
-                        } else {
+                        // Every tap reaches the handler, since both taps of the double-tap
+                        // shortcut count whether or not they land on the open tab.
+                        if (!isSelected) {
                             navController.navigateToMainTab(item.route, item.persistKey, onTabSelected)
                         }
+                        onTabTapped(item.tab, isSelected)
                     },
                     modifier = tabSearchActionModifier(item.tab, itemTitle, onTabSearch),
                     icon = {
@@ -668,7 +669,7 @@ private fun MainWideNavigationRail(
     navController: NavHostController,
     unreadNotificationCount: Int,
     onTabSelected: (String) -> Unit,
-    onTabReselected: (MainTab) -> Unit,
+    onTabTapped: (MainTab, Boolean) -> Unit,
     onTabSearch: (MainTab) -> Unit
 ) {
     val navItems = rememberMainNavItems()
@@ -751,11 +752,12 @@ private fun MainWideNavigationRail(
                     railExpanded = expanded,
                     selected = isSelected,
                     onClick = {
-                        if (isSelected) {
-                            onTabReselected(item.tab)
-                        } else {
+                        // Every tap reaches the handler, since both taps of the double-tap
+                        // shortcut count whether or not they land on the open tab.
+                        if (!isSelected) {
                             navController.navigateToMainTab(item.route, item.persistKey, onTabSelected)
                         }
+                        onTabTapped(item.tab, isSelected)
                     },
                     modifier = tabSearchActionModifier(item.tab, itemTitle, onTabSearch),
                     icon = {

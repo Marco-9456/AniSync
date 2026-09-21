@@ -20,7 +20,7 @@ enum class MainTab {
     /**
      * Whether this tab owns a search bar for the second tap to open. Feed has nothing to search
      * (AniList exposes no activity text search) and people search lives in Discover, so those two
-     * answer the first tap only.
+     * answer a second tap the way they answer the first.
      */
     val hasSearch: Boolean get() = this == LIBRARY || this == DISCOVER || this == FORUM
 }
@@ -31,8 +31,9 @@ data class TabRequest(val tab: MainTab? = null, val id: Long = 0L) {
 }
 
 /**
- * Cross-screen bridge for the navigation bar's reselect gestures: tapping the tab you are already
- * on asks it to scroll back to the top, and tapping it twice asks it to open its search.
+ * Cross-screen bridge for the navigation bar's tap gestures: tapping the tab you are already on
+ * asks it to scroll back to the top, and two quick taps on a tab ask it to open its search, from
+ * the tab you are on and from any other alike.
  *
  * The bar lives in MainScreen while the scroll position and the search bar live inside each tab's
  * own screen, so neither side can reach the other directly. Requests are monotonic counters rather
