@@ -1185,4 +1185,8 @@
     <string name="share_template_ranked">Clasificación</string>
     <string name="share_recap_eyebrow">Resumen histórico</string>
     <string name="share_person_staff">Personal</string>
+    <string name="feed_empty_global_title">Sin actividad todavia</string>
+    <string name="feed_empty_following_title">Todavía nadie te sigue</string>
+    <string name="feed_empty_following_action">Ve el feed global</string>
+    <string name="feed_menu_group_updates_description">Por persona, por hora</string>
 </resources>
