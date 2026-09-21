@@ -13,9 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Inbox Read Tracking** - Notification settings gain an Inbox group. Read tracking can be switched off, leaving the inbox with no New section and letting the visit clear the count the way the website does, and opening the inbox can be set to mark everything in it read.
 
+### Changed
+
+- **Tab Gestures** - Two quick taps on a navigation item open that tab's search from any tab, not only from the one you are already on. A single tap on the tab you are on still scrolls it back to the top, and a tap that switches tabs still restores where you left off.
+
 ### Fixed
 
 - **Notifications Inbox** - Notifications no longer come back as new after leaving the screen or after a newer one arrives. Read state is kept on the device per account instead of being guessed from AniList's unread count on every visit, opening a row reads that row, and the server-side reset behind Mark all read is retried until AniList accepts it. A cached profile read can no longer put a count the user has already cleared back on the badge.
+- **Notifications On The Website** - Reading the last unread row one at a time now clears the count on AniList too. The site counts notifications rather than marking them, so the app reports the inbox read once nothing is left unread on the device, instead of leaving everything unread on the website unless Mark read on open was switched on.
+- **Media Details** - The section tabs dock flush under the app bar on tablets and other two-pane layouts, instead of floating a status bar's height below it with content showing through the gap. (#145)
+- **Navigation Rail** - The rail's action slot keeps its height on tabs that publish no action, so the destinations no longer slide up or down a moment after a tab switch, and the action itself changes with the tab rather than a transition later.
 
 ## [3.2.0] - 2026-09-20
 
