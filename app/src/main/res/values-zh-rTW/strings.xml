@@ -10,8 +10,8 @@
     <string name="feed_scope_following">我的關注</string>
     <string name="feed_scope_global">全球</string>
     <string name="feed_filter_list">列表</string>
-    <string name="feed_empty_global">無活動-下拉以刷新！</string>
-    <string name="feed_empty_following">新增關注以在這查看他們的活動^_^</string>
+    <string name="feed_empty_global">暫無帖子，下拉以刷新！</string>
+    <string name="feed_empty_following">你關注的人狀態與更新會在此顯示</string>
     <string name="feed_compose_title">編輯動態</string>
     <string name="feed_compose_placeholder">在這裡寫下你的奇思妙想~</string>
     <string name="feed_compose_submit">發佈</string>
@@ -19,4 +19,33 @@
     <string name="forum_recent_discussions">近期討論</string>
     <string name="forum_reply">回覆</string>
     <string name="forum_write_reply">撰寫回覆</string>
+    <string name="feed_empty_global_title">暫無活動</string>
+    <string name="feed_empty_following_title">暫無關注</string>
+    <string name="feed_empty_following_action">查看全域推送</string>
+    <string name="feed_empty_offline_title">暫無加載</string>
+    <string name="feed_empty_offline_desc">推送需要網路，檢查你的連線後再下滑刷新！</string>
+    <plurals name="feed_group_updates">
+        <item quantity="other">%d 條目錄更新</item>
+    </plurals>
+    <string name="feed_day_today">今日</string>
+    <string name="feed_day_yesterday">昨日</string>
+    <string name="feed_new_posts">%d 條更新</string>
+    <string name="feed_empty_filtered_title">對 %1$s 無匹配結果</string>
+    <string name="feed_empty_filtered_body">%1$s 屏蔽了所有推送更新！</string>
+    <string name="feed_empty_clear_filters">清除過濾器</string>
+    <string name="feed_menu_group_updates">群組化清單更新</string>
+    <string name="feed_menu_merge_window">合併視窗</string>
+    <string name="feed_menu_merge_window_description">AniList要如何合併你的更新呢？</string>
+    <string name="cd_feed_options">推送選項</string>
+    <string name="forum_reply_hint">分享些你的奇思妙想…</string>
+    <string name="forum_post_reply">回覆帖子</string>
+    <string name="forum_comments">評論</string>
+    <string name="forum_load_more_comments">加載更多評論</string>
+    <string name="forum_comments_count">%1$d 條評論</string>
+    <string name="forum_page_of">第 %1$d / %2$d 頁</string>
+    <string name="forum_jump_to_page">跳到頁面</string>
+    <string name="forum_first_page">第一</string>
+    <string name="forum_latest_page">最後</string>
+    <string name="forum_current_page_label">當前</string>
+    <string name="forum_jump">跳</string>
 </resources>
