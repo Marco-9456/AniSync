@@ -1,0 +1,13 @@
+Added:
+- Inbox read tracking settings: turn read tracking off to let a visit clear the count the way the website does, or have opening the inbox mark everything in it read.
+- An On My List filter on a person's voiced characters and production credits, alongside the sort and role filters.
+
+Changed:
+- Two quick taps on any navigation item open that tab's search, not only the tab you are already on.
+
+Fixed:
+- Notifications no longer come back as new after leaving the inbox or after a newer one arrives, and read state is kept per account on the device.
+- Reading the last unread row one at a time now clears the count on AniList too.
+- Media details section tabs dock flush under the app bar on tablets and other two-pane layouts.
+- The navigation rail's destinations stop sliding after a tab switch.
+- Staff pages keep paging while the On My List filter hides a whole page.

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.1] - 2026-09-22
+
 ### Added
 
 - **Inbox Read Tracking** - Notification settings gain an Inbox group. Read tracking can be switched off, leaving the inbox with no New section and letting the visit clear the count the way the website does, and opening the inbox can be set to mark everything in it read.
