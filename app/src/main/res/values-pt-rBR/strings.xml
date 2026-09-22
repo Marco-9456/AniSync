@@ -2068,5 +2068,5 @@
     <string name="debug_rate_limit_pin_off">Real</string>
     <string name="a11y_nav_search_tab">Pesquisar %1$s</string>
     <string name="settings_nav_double_tap_search">Tocar duas vezes para pesquisar</string>
-    <string name="settings_nav_double_tap_search_desc">Toque na aba atual para rolar para o topo, toque duas vezes para abrir sua pesquisa</string>
+    <string name="settings_nav_double_tap_search_desc">Toque duas vezes na aba para abrir sua pesquisa. Tocando na aba você irá rolar a página até o topo</string>
 </resources>
