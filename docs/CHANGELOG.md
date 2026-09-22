@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Inbox Read Tracking** - Notification settings gain an Inbox group. Read tracking can be switched off, leaving the inbox with no New section and letting the visit clear the count the way the website does, and opening the inbox can be set to mark everything in it read.
+- **Staff Filters** - A person's voiced characters and production credits can be narrowed to the titles already on your list, alongside the sort and role filters that were already there. A role only counts when it is a role in a title you have on your list.
 
 ### Changed
 
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Notifications On The Website** - Reading the last unread row one at a time now clears the count on AniList too. The site counts notifications rather than marking them, so the app reports the inbox read once nothing is left unread on the device, instead of leaving everything unread on the website unless Mark read on open was switched on.
 - **Media Details** - The section tabs dock flush under the app bar on tablets and other two-pane layouts, instead of floating a status bar's height below it with content showing through the gap. (#145)
 - **Navigation Rail** - The rail's action slot keeps its height on tabs that publish no action, so the destinations no longer slide up or down a moment after a tab switch, and the action itself changes with the tab rather than a transition later.
+- **Staff Pages** - Characters and credits keep paging while the On My List filter hides a whole page, and a tab that is still loading its next page no longer reads as empty in the meantime.
 
 ## [3.2.0] - 2026-09-20
 
