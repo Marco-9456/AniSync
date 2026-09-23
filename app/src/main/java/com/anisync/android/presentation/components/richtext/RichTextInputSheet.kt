@@ -45,6 +45,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -88,9 +89,11 @@ fun RichTextInputSheet(
     isSubmitEnabled: (body: String) -> Boolean = { it.trim().length in minLength..maxLength },
     bottomBarLeading: (@Composable RowScope.() -> Unit)? = null
 ) {
-    val bodyState = remember(prefillBody) { TextFieldState(prefillBody.orEmpty()) }
+    val bodyState = rememberSaveable(prefillBody, saver = TextFieldState.Saver) {
+        TextFieldState(prefillBody.orEmpty())
+    }
     val maxLengthTransform = remember(maxLength) { MaxLengthInputTransformation(maxLength) }
-    var isPreviewMode by remember { mutableStateOf(false) }
+    var isPreviewMode by rememberSaveable { mutableStateOf(false) }
     val canSubmit = isSubmitEnabled(bodyState.text.toString()) && !isSubmitting
     val focusRequester = remember { FocusRequester() }
     val haptic = LocalHapticFeedback.current

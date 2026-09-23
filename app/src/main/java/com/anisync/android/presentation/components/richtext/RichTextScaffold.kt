@@ -108,12 +108,12 @@ fun RichTextScaffold(
     insertController: RichTextInsertController? = null,
     headerSlot: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
-    val bodyState = remember { TextFieldState(initialBody) }
-    val initialBodySnapshot = remember { initialBody }
+    val bodyState = rememberSaveable(saver = TextFieldState.Saver) { TextFieldState(initialBody) }
+    val initialBodySnapshot = rememberSaveable { initialBody }
     // On expanded widths the editor and a live preview sit side by side, so the write/preview toggle
     // is unnecessary; on compact the toggle flips a single pane between writing and preview.
     val sideBySide = LocalAdaptiveInfo.current.supportsTwoPane
-    var isPreviewMode by remember { mutableStateOf(false) }
+    var isPreviewMode by rememberSaveable { mutableStateOf(false) }
     // Expanded only: whether the live-preview pane is shown beside the editor. Toggled from the app
     // bar's preview button or the pane's close button. Defaults on; resets each launch.
     var showPreview by rememberSaveable { mutableStateOf(true) }
