@@ -1342,7 +1342,7 @@
     <string name="label_review">Ulasan</string>
     <string name="label_pinned">DISEMATKAN</string>
     <string name="label_locked">TERKUNCI</string>
-    <string name="episodes_behind">tertinggal %d</string>
+    <string name="episodes_behind">Tertinggal %d</string>
     <string name="cd_toggle_subscription">Ganti status mengikuti</string>
     <string name="cd_toggle_save">Ganti status simpan</string>
     <string name="cd_expand">Perluas</string>
@@ -1691,7 +1691,7 @@
     <string name="library_filter_genre">Genre</string>
     <string name="library_filter_more">+ %1$d lagi</string>
     <string name="library_episode_short">EP %1$d</string>
-    <string name="library_episodes_behind_short">tertinggal %1$d</string>
+    <string name="library_episodes_behind_short">Tertinggal %1$d</string>
     <string name="library_progress_out">%1$d / %2$d sudah tayang</string>
     <string name="library_lists_title">Daftarmu</string>
     <string name="library_lists_caption">Seret untuk mengurutkan ulang. Sembunyikan daftar untuk menghapusnya dari bilah navigasi.</string>
@@ -2002,5 +2002,5 @@
     <string name="dev_tools_show_support_card_subtitle">Memunculkan kartu tip yang biasanya tampil sekali setelah pembaruan, tanpa perlu menunggu pembaruan.</string>
     <string name="a11y_nav_search_tab">Cari %1$s</string>
     <string name="settings_nav_double_tap_search">Ketuk dua kali untuk mencari</string>
-    <string name="settings_nav_double_tap_search_desc">Ketuk tab yang sedang aktif untuk menggulir ke atas, ketuk dua kali untuk membuka pencariannya</string>
+    <string name="settings_nav_double_tap_search_desc">Ketuk tab dua kali untuk membuka pencariannya. Ketuk tab yang sedang aktif untuk kembali ke atas</string>
 </resources>
