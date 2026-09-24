@@ -63,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.WindowModalSheetScope
 import kotlinx.coroutines.flow.first
 
@@ -104,8 +105,10 @@ fun RichTextInputSheet(
     val hasDraft = bodyState.text.isNotBlank() && bodyState.text.toString() != prefillBody.orEmpty()
     val hasDraftState = androidx.compose.runtime.rememberUpdatedState(hasDraft)
 
+    // Always open fully. The composer is only taller than half the screen in landscape, where the
+    // half-expanded stop would leave the toolbar and the submit button below the edge.
     val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = fullScreen,
+        skipPartiallyExpanded = true,
         confirmValueChange = { targetValue ->
             if (targetValue == SheetValue.Hidden && hasDraftState.value) {
                 showDiscardDialog = true
@@ -169,7 +172,11 @@ fun RichTextInputSheet(
     AppModalBottomSheet(
         onDismissRequest = dismissWithCheck,
         sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() },
+        // In phone landscape the keyboard leaves under 200dp, and the handle's 48dp is better spent
+        // on the text. The sheet still drags by its body and closes from Cancel or the scrim.
+        dragHandle = if (LocalAdaptiveInfo.current.isCompactHeight) null else {
+            { BottomSheetDefaults.DragHandle() }
+        },
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
@@ -231,35 +238,58 @@ fun RichTextInputSheet(
                             color = MaterialTheme.colorScheme.surfaceContainerHigh,
                             modifier = textFieldModifier
                         ) {
-                            Column {
-                                BasicTextField(
-                                    state = bodyState,
-                                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                                    lineLimits = TextFieldLineLimits.MultiLine(minLines, maxLines),
-                                    inputTransformation = maxLengthTransform,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .then(if (fullScreen) Modifier.weight(1f) else Modifier)
-                                        .padding(start = 16.dp, top = 16.dp, end = 16.dp),
-                                    decorator = { innerTextField ->
-                                        if (bodyState.text.isEmpty()) {
-                                            Text(
-                                                text = placeholder,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                style = MaterialTheme.typography.bodyLarge
-                                            )
+                            // Phone landscape has no height to spare for a counter row, so the counter
+                            // sits in the corner there, as in the full editor.
+                            val counterInCorner = LocalAdaptiveInfo.current.isCompactHeight
+                            Box {
+                                Column {
+                                    BasicTextField(
+                                        state = bodyState,
+                                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                        lineLimits = TextFieldLineLimits.MultiLine(minLines, maxLines),
+                                        inputTransformation = maxLengthTransform,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            // Weighted so the counter is measured first and keeps its row
+                                            // when the keyboard leaves little height.
+                                            .weight(1f, fill = fullScreen)
+                                            .padding(
+                                                start = 16.dp,
+                                                top = 16.dp,
+                                                end = 16.dp,
+                                                bottom = if (counterInCorner) 16.dp else 0.dp
+                                            ),
+                                        decorator = { innerTextField ->
+                                            if (bodyState.text.isEmpty()) {
+                                                Text(
+                                                    text = placeholder,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    style = MaterialTheme.typography.bodyLarge
+                                                )
+                                            }
+                                            innerTextField()
                                         }
-                                        innerTextField()
+                                    )
+                                    if (!counterInCorner) {
+                                        RichTextCharCounter(
+                                            length = bodyState.text.length,
+                                            maxLength = maxLength,
+                                            modifier = Modifier
+                                                .align(Alignment.End)
+                                                .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 12.dp)
+                                        )
                                     }
-                                )
-                                RichTextCharCounter(
-                                    length = bodyState.text.length,
-                                    maxLength = maxLength,
-                                    modifier = Modifier
-                                        .align(Alignment.End)
-                                        .padding(12.dp)
-                                )
+                                }
+                                if (counterInCorner) {
+                                    RichTextCharCounter(
+                                        length = bodyState.text.length,
+                                        maxLength = maxLength,
+                                        modifier = Modifier
+                                            .align(Alignment.BottomEnd)
+                                            .padding(12.dp)
+                                    )
+                                }
                             }
                         }
                     }
