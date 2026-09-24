@@ -585,7 +585,7 @@
     <string name="settings_acknowledgments_desc">感謝貢獻者們與使用的庫</string>
     <string name="settings_anilist_api">由 AniList 提供支持</string>
     <string name="settings_anilist_api_desc">資料來自 AniList GraphQL API</string>
-    <string name="settings_made_with_love">由動畫粉絲與愛創造</string>
+    <string name="settings_made_with_love">用愛創建，獻給動畫粉絲</string>
     <string name="settings_search_placeholder">搜尋設定</string>
     <string name="search_settings">搜尋設定</string>
     <string name="clear_search">清理搜尋框</string>
