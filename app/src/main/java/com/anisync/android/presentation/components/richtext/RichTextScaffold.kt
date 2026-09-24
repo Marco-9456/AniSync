@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -113,6 +114,9 @@ fun RichTextScaffold(
     // On expanded widths the editor and a live preview sit side by side, so the write/preview toggle
     // is unnecessary; on compact the toggle flips a single pane between writing and preview.
     val sideBySide = LocalAdaptiveInfo.current.supportsTwoPane
+    // Phone landscape: the keyboard takes about half the height, so a toolbar docked above it would
+    // leave the field a few dp tall. The toolbar moves into the app bar row, which has width to spare.
+    val toolbarInAppBar = !sideBySide && LocalAdaptiveInfo.current.isCompactHeight
     var isPreviewMode by rememberSaveable { mutableStateOf(false) }
     // Expanded only: whether the live-preview pane is shown beside the editor. Toggled from the app
     // bar's preview button or the pane's close button. Defaults on; resets each launch.
@@ -303,7 +307,12 @@ fun RichTextScaffold(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
-                .padding(16.dp)
+                // Without the bottom toolbar nothing else keeps the card above the keyboard.
+                .then(
+                    if (toolbarInAppBar) Modifier.consumeWindowInsets(contentPadding).imePadding()
+                    else Modifier
+                )
+                .padding(horizontal = 16.dp, vertical = if (toolbarInAppBar) 8.dp else 16.dp)
         ) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
@@ -338,6 +347,13 @@ fun RichTextScaffold(
                             }
                         },
                         actions = {
+                            if (toolbarInAppBar && !isPreviewMode) {
+                                EditorFormatToolbar(
+                                    textFieldState = bodyState,
+                                    onAttachClick = if (enableMediaAttach) ({ showAttachSheet = true }) else null,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                            }
                             if (sideBySide) {
                                 // Expanded: a preview toggle (filled when the pane is shown), like a
                                 // document editor's panel toggle. The write/preview text toggle is
@@ -429,9 +445,9 @@ fun RichTextScaffold(
                 // Compact only: the expressive floating format toolbar, docked above the IME (and the
                 // nav bar) within thumb reach. On wide screens the toolbar instead sits below the app
                 // bar (see topBar). Hidden while previewing (no formatting to do there).
-                if (!sideBySide && !isPreviewMode) {
-                    val imeUpload = (attachState as? MediaAttachState.Uploading)
-                        ?.takeIf { it.source == MediaAttachState.Source.Ime }
+                val imeUpload = (attachState as? MediaAttachState.Uploading)
+                    ?.takeIf { it.source == MediaAttachState.Source.Ime }
+                if (!sideBySide && !isPreviewMode && (!toolbarInAppBar || imeUpload != null)) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -448,11 +464,13 @@ fun RichTextScaffold(
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                         }
-                        EditorFormatToolbar(
-                            textFieldState = bodyState,
-                            onAttachClick = if (enableMediaAttach) ({ showAttachSheet = true }) else null,
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
-                        )
+                        if (!toolbarInAppBar) {
+                            EditorFormatToolbar(
+                                textFieldState = bodyState,
+                                onAttachClick = if (enableMediaAttach) ({ showAttachSheet = true }) else null,
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            )
+                        }
                     }
                 }
             }
