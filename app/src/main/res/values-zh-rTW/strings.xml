@@ -70,7 +70,7 @@
     <string name="forum_reorder_reset">重置</string>
     <string name="forum_section_recently_active">近期動態</string>
     <string name="forum_section_newly_created">最新創建</string>
-    <string name="forum_pinned">釘選</string>
+    <string name="forum_pinned">想看</string>
     <string name="forum_category_all">全部</string>
     <string name="forum_category_anime">動畫</string>
     <string name="forum_category_manga">漫畫</string>
@@ -133,8 +133,8 @@
     <plurals name="forum_collapsed_replies">
         <item quantity="other">+%1$d 則回覆</item>
     </plurals>
-    <string name="forum_sort_oldest_short">按最舊</string>
-    <string name="forum_sort_newest_short">按最新</string>
+    <string name="forum_sort_oldest_short">最早</string>
+    <string name="forum_sort_newest_short">最新</string>
     <string name="forum_title_min_hint">至少要6個字符</string>
     <string name="forum_related_media_optional">可選</string>
     <string name="forum_add">新增</string>
@@ -620,7 +620,7 @@
     <string name="section_developer">開發者選項</string>
     <string name="debug_notifications">通知除錯</string>
     <string name="debug_test_watching">測試 正在觀看</string>
-    <string name="debug_test_planning">測試 釘選</string>
+    <string name="debug_test_planning">測試 想看</string>
     <string name="debug_test_advance">測試 提前（12小時）</string>
     <string name="settings_storage">儲存</string>
     <string name="settings_storage_subtitle">快取：%1$s</string>
@@ -723,4 +723,11 @@
     <string name="cd_change_list_status">更變清單狀態</string>
     <string name="media_stats_rankings">排名</string>
     <string name="media_stats_activity_per_day">近期每日活動</string>
+    <string name="person_favourites_label">最愛</string>
+    <string name="share_favourites_card">分享我的最愛</string>
+    <string name="share_media_favourites">我的最愛</string>
+    <string name="share_fav_eyebrow">我的最愛</string>
+    <string name="library_empty_favorites_title">暫無我的最愛</string>
+    <string name="search_favourites_count">%d 為我的最愛</string>
+    <string name="person_sort_favourites">最多人最愛</string>
 </resources>
