@@ -156,7 +156,6 @@
     <string name="forum_empty_comments_title">پاسخی داده نشده</string>
     <string name="forum_empty_comments_desc">اولین کسی باش که در گفتگو چیزی مینویسد.</string>
     <string name="forum_empty_comments_action">پاسخت رو بنویس</string>
-    <string name="forum_views_count"></string>
     <string name="forum_sort_oldest_short">قدیمی‌ترین</string>
     <string name="forum_sort_newest_short">جدیدترین</string>
     <string name="forum_title_min_hint">حداقل شیش کاراکتر</string>
