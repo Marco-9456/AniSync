@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
@@ -18,6 +19,7 @@ enum class AvatarShape {
     /** No shape applied — the avatar image renders in its natural rectangle. */
     NONE;
 
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     @Composable
     fun toComposeShape(): Shape = when (this) {
         CLOVER_8_LEAF -> MaterialShapes.Clover8Leaf.toShape()

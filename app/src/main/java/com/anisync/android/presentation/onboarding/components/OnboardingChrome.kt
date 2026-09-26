@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -291,6 +292,7 @@ fun OnboardingPrimaryButton(
  * The scalloped plate the flow puts behind every icon. Same construction the Settings rows use: a
  * tinted shape at low opacity with the glyph at full strength over it.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun IconBlob(
     icon: ImageVector,

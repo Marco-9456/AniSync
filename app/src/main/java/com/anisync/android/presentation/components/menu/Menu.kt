@@ -5,18 +5,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorPosition
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -54,7 +56,10 @@ fun Menu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
         modifier = modifier,
-        offset = offset
+        popupPositionProvider = MenuDefaults.rememberDropdownMenuPopupPositionProvider(
+            MenuAnchorPosition.Below,
+            offset
+        )
     ) {
         MenuGroups(groups)
     }
@@ -174,12 +179,12 @@ private fun MenuItemRow(entry: MenuEntry.Item, index: Int, count: Int) {
         MenuDefaults.selectableItemColors(
             textColor = errorColor,
             leadingIconColor = errorColor,
-            trailingIconColor = errorColor
+            trailingContentColor = errorColor
         )
     } else {
         MenuDefaults.selectableItemColors()
     }
-    DropdownMenuItem(
+    SelectableDropdownMenuItem(
         selected = entry.selected,
         onClick = entry.onClick,
         text = { Text(entry.text) },
@@ -187,7 +192,7 @@ private fun MenuItemRow(entry: MenuEntry.Item, index: Int, count: Int) {
         leadingIcon = entry.leadingIcon?.let { icon ->
             { Icon(imageVector = icon, contentDescription = null) }
         },
-        trailingIcon = entry.trailingLabel?.let { trailing ->
+        trailingContent = entry.trailingLabel?.let { trailing ->
             {
                 Text(
                     text = trailing,

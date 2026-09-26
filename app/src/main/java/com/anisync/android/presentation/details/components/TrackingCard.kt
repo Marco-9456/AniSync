@@ -36,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SelectableDropdownMenuItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -392,7 +393,7 @@ private fun ListStatusMenu(
             QUICK_STATUSES.forEachIndexed { index, option ->
                 val isSelected = option == selected
                 val listColors = listIndicatorColor(option.toIndicatorKind())
-                DropdownMenuItem(
+                SelectableDropdownMenuItem(
                     selected = isSelected,
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.Confirm)
@@ -408,7 +409,7 @@ private fun ListStatusMenu(
                             modifier = Modifier.size(MenuDefaults.LeadingIconSize)
                         )
                     },
-                    trailingIcon = if (isSelected) {
+                    trailingContent = if (isSelected) {
                         {
                             Icon(
                                 imageVector = Icons.Default.Check,
@@ -421,7 +422,7 @@ private fun ListStatusMenu(
                         selectedContainerColor = listColors.container,
                         selectedTextColor = listColors.content,
                         selectedLeadingIconColor = listColors.content,
-                        selectedTrailingIconColor = listColors.content
+                        selectedTrailingContentColor = listColors.content
                     )
                 )
             }

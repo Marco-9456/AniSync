@@ -31,6 +31,7 @@ import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.ViewWeek
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
@@ -173,6 +174,7 @@ fun ActivityHistorySection(
 }
 
 /** The 48-hour-lag note. Both breakdowns carry it, because both render the same lagging data. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ActivityUpdateInfo(tint: Color) {
     val tooltipState = rememberTooltipState()

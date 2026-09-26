@@ -53,6 +53,7 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -703,8 +704,10 @@ internal fun VideoControlsOverlay(
                         color = Color.White
                     )
 
+                    val seekState = remember { SliderState(fraction) }
+                    seekState.value = fraction
                     Slider(
-                        value = fraction,
+                        state = seekState,
                         onValueChange = { poke(); onSeek(it) },
                         onValueChangeFinished = onSeekFinished,
                         thumb = {
