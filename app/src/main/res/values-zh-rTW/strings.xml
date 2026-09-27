@@ -70,7 +70,7 @@
     <string name="forum_reorder_reset">重置</string>
     <string name="forum_section_recently_active">近期動態</string>
     <string name="forum_section_newly_created">最新創建</string>
-    <string name="forum_pinned">想看</string>
+    <string name="forum_pinned">置頂</string>
     <string name="forum_category_all">全部</string>
     <string name="forum_category_anime">動畫</string>
     <string name="forum_category_manga">漫畫</string>
@@ -869,7 +869,7 @@
     <string name="edit_profile_title">編輯主頁</string>
     <string name="dialog_enable_notifications_title">啟用通知</string>
     <string name="dialog_enable_notifications_message">請確保已在系統設定啟用通知</string>
-    <string name="subsection_streaming">正在觀看</string>
+    <string name="subsection_streaming">在以下平台觀看</string>
     <string name="subsection_reading">正在讀</string>
     <string name="themes_empty">AnimeTheme 暫無收錄</string>
     <string name="themes_video">影片</string>
@@ -906,7 +906,7 @@
     <string name="edit_entry_remove">從你的清單移除</string>
     <string name="edit_entry_finish_title_anime">這是最後一集</string>
     <string name="edit_entry_finish_title_manga">這是最後一章</string>
-    <string name="edit_entry_finish_body">將此移入「已完成」並將本天設為結束日</string>
+    <string name="edit_entry_finish_body">將此移入「已完成」並將今天設為結束日</string>
     <string name="edit_entry_finish_apply">標注為已完成</string>
     <string name="edit_entry_discard_title">是否拋棄你的更改？</string>
     <string name="settings_media_upload">上傳媒體</string>
@@ -1099,7 +1099,7 @@
     <string name="notification_activity_mention">在%1$s上提及你</string>
     <string name="notification_activity_like">你的%1$s被讚</string>
     <string name="notification_group_airing">放送</string>
-    <string name="notification_streaming_delay_desc">在新集發布時等待數分後再通知你，這在當你的串流來源網站比起官方放送來得晚時十分有用。通知將在每隔約15分鐘的檢查觸發，所以實際延後時間會比你所選的時間多些…</string>
+    <string name="notification_streaming_delay_desc">在新集發布時等待數分後再通知你，這在當你的串流來源網站比起官方放送來得晚時十分有用。通知將在每隔約15分鐘的檢查觸發，所以實際延後時間會比你所設的時間多些…</string>
     <string name="notification_upcoming_desc">在新集放送前額外通知</string>
     <string name="notification_upcoming">即將放送</string>
     <string name="notification_watching_desc">在觀看中的動畫有新集時通知你</string>
@@ -1108,4 +1108,27 @@
     <string name="notification_inbox_mark_read_on_open_desc">將打開收件箱視為你讀完了裡面全部消息</string>
     <string name="notification_inbox_read_tracking_desc">保持未讀通知標記直到你讀了它們。關閉後打開收件箱時將清除計數，就如在網站上一樣</string>
     <string name="notification_inbox_read_tracking">追縱已讀通知</string>
+    <string name="notification_streaming_delay">串流放送延遲</string>
+    <string name="library_episode_count">%1$d 集</string>
+    <string name="calendar_title">放送日程表</string>
+    <string name="calendar_open">放送日程表</string>
+    <string name="calendar_previous_week">上週</string>
+    <string name="calendar_next_week">下週</string>
+    <string name="calendar_jump_to_today">跳回本週</string>
+    <string name="calendar_today">今天</string>
+    <string name="calendar_previous_month">上月</string>
+    <string name="calendar_next_month">下月</string>
+    <string name="calendar_jump_to_this_month">本月</string>
+    <plurals name="calendar_airing_count">
+        <item quantity="other">%1$d 正在放送</item>
+    </plurals>
+    <string name="calendar_episode_number">第 %1$d 集</string>
+    <string name="calendar_aired">已放送</string>
+    <string name="calendar_airs_in">還有 %1$s</string>
+    <string name="calendar_chip_watching">正在觀看</string>
+    <string name="calendar_chip_planning">計畫</string>
+    <string name="calendar_empty_title">暫無放送</string>
+    <string name="calendar_empty_desc">此日暫無放送</string>
+    <string name="calendar_empty_following_desc">此日暫無在你清單上的動畫放送</string>
+    <string name="calendar_following_only">只查看在你清單上的</string>
 </resources>
