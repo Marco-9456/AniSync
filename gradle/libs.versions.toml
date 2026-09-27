@@ -1,7 +1,7 @@
 [versions]
 agp = "9.4.1"
 kotlin = "2.4.21"
-kotlinxCollectionsImmutable = "0.4.0"
+kotlinxCollectionsImmutable = "0.5.2"
 ksp = "2.3.12"
 coreKtx = "1.19.1"
 coreRemoteViews = "1.1.0"
@@ -30,15 +30,15 @@ serialization = "1.11.0"
 leakcanary = "2.14"
 materialkolor = "4.1.1"
 media3 = "1.11.1"
-jsoup = "1.22.2"
+jsoup = "1.23.2"
 runtime = "1.12.1"
 appcompat = "1.8.0"
 reorderable = "3.1.0"
-okhttp = "4.12.0"
+okhttp = "5.5.0"
 biometric = "1.2.0-alpha05"
 capturable = "3.0.1"
 coroutinesTest = "1.11.0"
-apolloMockServer = "0.1.1"
+apolloMockServer = "0.3.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
