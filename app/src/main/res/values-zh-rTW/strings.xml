@@ -911,7 +911,6 @@
     <string name="edit_entry_discard_title">是否拋棄你的更改？</string>
     <string name="settings_media_upload">上傳媒體</string>
     <string name="settings_media_upload_desc">圖片、GIF動圖、外鏈影片的託管處</string>
-    <string name="media_upload_intro"></string>
     <string name="widget_wp_behind">還有 %1$d 集</string>
     <string name="a11y_state_episodes_behind">還有 %1$d 集</string>
     <string name="episodes_behind">還有 %d 集</string>
@@ -944,7 +943,6 @@
     <string name="share_stats_top_genres">頭號風格</string>
     <string name="share_recap_top_studio">看過最多的工作室</string>
     <string name="share_recap_top_staff">讀過最多的作者</string>
-    <string name="forum_empty_browse_desc"></string>
     <string name="filter_format">形式</string>
     <string name="format_tv">電視動畫</string>
     <string name="format_tv_short">電視短片</string>
