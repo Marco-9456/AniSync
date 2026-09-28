@@ -230,7 +230,7 @@ android {
     // tests have never actually guarded anything. They matter here more than in most projects,
     // because DatabaseModule still builds with fallbackToDestructiveMigration, so a missing
     // migration wipes user data instead of crashing.
-    sourceSets.getByName("androidTest").assets.srcDirs("$projectDir/schemas")
+    sourceSets.getByName("androidTest").assets.directories.add("$projectDir/schemas")
 }
 
 kotlin {
