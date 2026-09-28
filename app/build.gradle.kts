@@ -316,13 +316,12 @@ apollo {
         }
         generateKotlinModels.set(true)
         // Generates the type policies, max ages and the cache() builder extension the normalized
-        // cache reads. Apollo Kotlin v4 takes the argument inside the plugin block.
+        // cache reads.
         plugin(
             "com.apollographql.cache:normalized-cache-apollo-compiler-plugin:" +
                 libs.versions.apolloCache.get()
-        ) {
-            argument("com.apollographql.cache.packageName", packageName.get())
-        }
+        )
+        pluginArgument("com.apollographql.cache.packageName", packageName.get())
         mapScalar("Json", "kotlin.Any", "com.apollographql.apollo.api.AnyAdapter")
         mapScalar("CountryCode", "kotlin.String", "com.apollographql.apollo.api.StringAdapter")
         mapScalar("FuzzyDateInt", "kotlin.Int", "com.apollographql.apollo.api.IntAdapter")
