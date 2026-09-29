@@ -5,8 +5,6 @@ import android.content.ContextWrapper
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators
 import androidx.biometric.BiometricPrompt
-import androidx.biometric.auth.AuthPromptCallback
-import androidx.biometric.auth.startClass2BiometricOrCredentialAuthentication
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 
@@ -36,26 +34,26 @@ object AppLockAuthenticator {
         onSuccess: () -> Unit,
         onError: (CharSequence) -> Unit,
     ) {
-        startClass2BiometricOrCredentialAuthentication(
-            title = title,
-            subtitle = subtitle,
-            // The prompt itself already stands between the user and the app; a second confirmation tap
-            // after a passive face/fingerprint match just adds friction, so skip it.
-            confirmationRequired = false,
-            executor = ContextCompat.getMainExecutor(this),
-            callback = object : AuthPromptCallback() {
-                override fun onAuthenticationSucceeded(
-                    activity: FragmentActivity?,
-                    result: BiometricPrompt.AuthenticationResult,
-                ) = onSuccess()
+        val prompt = BiometricPrompt(
+            this,
+            ContextCompat.getMainExecutor(this),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) =
+                    onSuccess()
 
-                override fun onAuthenticationError(
-                    activity: FragmentActivity?,
-                    errorCode: Int,
-                    errString: CharSequence,
-                ) = onError(errString)
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) =
+                    onError(errString)
             },
         )
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(title)
+            .setSubtitle(subtitle)
+            .setAllowedAuthenticators(authenticators)
+            // The prompt itself already stands between the user and the app; a second confirmation tap
+            // after a passive face/fingerprint match just adds friction, so skip it.
+            .setConfirmationRequired(false)
+            .build()
+        prompt.authenticate(promptInfo)
     }
 }
 
