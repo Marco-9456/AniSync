@@ -11,13 +11,14 @@ import android.net.Uri
 import android.text.format.DateFormat
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import coil.ImageLoader
-import coil.request.ImageRequest
-import coil.request.SuccessResult
+import coil3.ImageLoader
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
+import coil3.toBitmap
 import com.anisync.android.R
 import com.anisync.android.data.account.AccountStore
 import com.anisync.android.data.local.dao.LibraryDao
@@ -959,7 +960,7 @@ class NotificationWorker @AssistedInject constructor(
 
         val result = imageLoader.execute(request)
         return if (result is SuccessResult) {
-            result.drawable.toBitmap()
+            result.image.toBitmap()
         } else {
             null
         }

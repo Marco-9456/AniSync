@@ -30,7 +30,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil.request.ImageRequest
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.request.crossfade
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.ScoreFormat

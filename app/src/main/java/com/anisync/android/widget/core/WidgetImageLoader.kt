@@ -3,11 +3,13 @@ package com.anisync.android.widget.core
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Size
-import androidx.core.graphics.drawable.toBitmap
-import coil.imageLoader
-import coil.request.CachePolicy
-import coil.request.ImageRequest
-import coil.transform.RoundedCornersTransformation
+import coil3.imageLoader
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.request.transformations
+import coil3.toBitmap
+import coil3.transform.RoundedCornersTransformation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -60,7 +62,7 @@ object WidgetImageLoader {
                     }
                     .build()
 
-                loader(context).execute(request).drawable?.toBitmap()
+                loader(context).execute(request).image?.toBitmap()
             } catch (_: Exception) {
                 null
             }

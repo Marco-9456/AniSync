@@ -9,10 +9,11 @@ import android.net.Uri
 import android.text.format.DateFormat
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.graphics.drawable.toBitmap
-import coil.ImageLoader
-import coil.request.ImageRequest
-import coil.request.SuccessResult
+import coil3.ImageLoader
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
+import coil3.toBitmap
 import com.anisync.android.R
 import com.anisync.android.data.NotificationBadgeStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -267,7 +268,7 @@ class NotificationDebugService @Inject constructor(
 
         val result = imageLoader.execute(request)
         return if (result is SuccessResult) {
-            result.drawable.toBitmap()
+            result.image.toBitmap()
         } else {
             null
         }

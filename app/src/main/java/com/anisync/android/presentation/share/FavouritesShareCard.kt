@@ -24,7 +24,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.url
 import com.anisync.android.ui.theme.LocalExpressiveTypography

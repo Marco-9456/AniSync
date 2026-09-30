@@ -1,8 +1,8 @@
 package com.anisync.android.data
 
 import android.content.Context
-import coil.ImageLoader
-import coil.annotation.ExperimentalCoilApi
+import coil3.ImageLoader
+import coil3.annotation.ExperimentalCoilApi
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.cache.normalized.apolloStore
 import dagger.hilt.android.qualifiers.ApplicationContext

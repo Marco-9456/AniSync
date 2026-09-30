@@ -3,12 +3,17 @@ package com.anisync.android.di
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
-import coil.ImageLoader
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
-import coil.decode.SvgDecoder
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
+import coil3.ImageLoader
+import coil3.disk.DiskCache
+import coil3.disk.directory
+import coil3.gif.AnimatedImageDecoder
+import coil3.gif.GifDecoder
+import coil3.memory.MemoryCache
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.allowHardware
+import coil3.request.bitmapConfig
+import coil3.request.crossfade
+import coil3.svg.SvgDecoder
 import com.anisync.android.data.media.MediaHttp
 import dagger.Module
 import dagger.Provides
@@ -45,10 +50,10 @@ object ImageLoaderModule {
             // Browser User-Agent + flaky-network timeouts/retry. CDNs that bot-filter the
             // default OkHttp UA (catbox, imgur, …) are the main reason embedded images
             // "sometimes don't load". See [MediaHttp].
-            .okHttpClient(MediaHttp.imageClient)
             .components {
+                add(OkHttpNetworkFetcherFactory(callFactory = { MediaHttp.imageClient }))
                 if (Build.VERSION.SDK_INT >= 28) {
-                    add(ImageDecoderDecoder.Factory())
+                    add(AnimatedImageDecoder.Factory())
                 } else {
                     add(GifDecoder.Factory())
                 }
@@ -74,15 +79,14 @@ object ImageLoaderModule {
             }
             // Memory cache using percentage of available heap
             .memoryCache {
-                MemoryCache.Builder(context)
-                    .maxSizePercent(MEMORY_CACHE_PERCENT)
+                MemoryCache.Builder()
+                    .maxSizePercent(context, MEMORY_CACHE_PERCENT)
                     .build()
             }
-            // Ignore server cache headers: AniList cover/banner URLs are content-addressed
+            // Server cache headers are ignored: AniList cover/banner URLs are content-addressed
             // and effectively immutable, but the CDN sends short/again-validate headers that
-            // make Coil re-fetch on every view. Trusting our own disk cache instead means
-            // covers load instantly on revisit and survive offline.
-            .respectCacheHeaders(false)
+            // would re-fetch on every view. Coil 3's default CacheStrategy already serves the
+            // disk copy whenever one exists, so covers load instantly on revisit and offline.
             .build()
     }
 }

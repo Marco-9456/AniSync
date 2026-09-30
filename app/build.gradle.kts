@@ -278,6 +278,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)
     implementation(libs.coil.svg)
+    implementation(libs.coil.network.okhttp)
     implementation(libs.materialkolor)
     implementation(libs.jsoup)
     implementation(libs.media3.exoplayer)

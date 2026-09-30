@@ -14,8 +14,9 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import coil.ImageLoader
-import coil.ImageLoaderFactory
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +29,8 @@ import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
 
 @HiltAndroidApp
-class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFactory {
+class AniSyncApplication : Application(), Configuration.Provider,
+    SingletonImageLoader.Factory {
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
@@ -64,7 +66,7 @@ class AniSyncApplication : Application(), Configuration.Provider, ImageLoaderFac
             .setWorkerFactory(workerFactory)
             .build()
 
-    override fun newImageLoader(): ImageLoader = imageLoader
+    override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoader
 
     override fun onCreate() {
         super.onCreate()

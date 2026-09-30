@@ -79,10 +79,11 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.compose.SubcomposeAsyncImage
-import coil.decode.SvgDecoder
-import coil.request.ImageRequest
+import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
+import coil3.request.crossfade
+import coil3.svg.SvgDecoder
+import coil3.request.ImageRequest
 import com.anisync.android.domain.LinkPreview
 import com.anisync.android.domain.parser.LinkPreviewKey
 import com.anisync.android.domain.parser.ParsedRichText
@@ -1076,9 +1077,9 @@ private fun RichImage(
                     )
                 },
                 onSuccess = if (!needsSourceSize) null else { state ->
-                    val drawable = state.result.drawable
-                    if (drawable.intrinsicWidth > 0 && drawable.intrinsicHeight > 0) {
-                        source = RichImageSource(drawable.intrinsicWidth, drawable.intrinsicHeight)
+                    val image = state.result.image
+                    if (image.width > 0 && image.height > 0) {
+                        source = RichImageSource(image.width, image.height)
                     }
                 },
                 modifier = rasterModifier(img, fillWidth, source)

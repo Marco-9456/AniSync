@@ -2,8 +2,8 @@ package com.anisync.android.di
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import coil.ImageLoader
-import coil.annotation.ExperimentalCoilApi
+import coil3.ImageLoader
+import coil3.annotation.ExperimentalCoilApi
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

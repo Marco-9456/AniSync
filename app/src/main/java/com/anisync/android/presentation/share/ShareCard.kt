@@ -65,7 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.util.ShareUtils
 import dev.shreyaspatil.capturable.controller.rememberCaptureController
