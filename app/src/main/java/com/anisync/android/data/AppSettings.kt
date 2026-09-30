@@ -16,6 +16,7 @@ import com.anisync.android.domain.FeedScope
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.media.MediaHost
 import com.anisync.android.type.MediaType
+import com.anisync.android.ui.theme.AppPaletteStyles
 import com.anisync.android.ui.theme.FontAxisOverrides
 import com.anisync.android.ui.theme.TypeCategory
 import com.anisync.android.ui.theme.TypographyOverrides
@@ -321,7 +322,7 @@ class AppSettings @Inject constructor(
     
     // Palette style for color generation
     private val _paletteStyle = MutableStateFlow(
-        PaletteStyle.entries.getOrElse(prefs.getInt(KEY_PALETTE_STYLE, 0)) { PaletteStyle.TonalSpot }
+        AppPaletteStyles.getOrElse(prefs.getInt(KEY_PALETTE_STYLE, 0)) { PaletteStyle.TonalSpot }
     )
     val paletteStyle: StateFlow<PaletteStyle> = _paletteStyle.asStateFlow()
 
@@ -946,7 +947,7 @@ class AppSettings @Inject constructor(
      */
     fun setPaletteStyle(style: PaletteStyle) {
         _paletteStyle.value = style
-        prefs.edit().putInt(KEY_PALETTE_STYLE, style.ordinal).apply()
+        prefs.edit().putInt(KEY_PALETTE_STYLE, AppPaletteStyles.indexOf(style)).apply()
     }
 
     /**

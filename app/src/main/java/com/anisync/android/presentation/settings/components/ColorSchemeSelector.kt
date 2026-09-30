@@ -41,7 +41,8 @@ import com.anisync.android.R
 import com.anisync.android.ui.theme.PresetPalettes
 import com.anisync.android.ui.theme.ThemePalette
 import com.materialkolor.PaletteStyle
-import com.materialkolor.dynamicColorScheme
+import com.materialkolor.dynamiccolor.ColorSpec
+import com.materialkolor.material3.dynamicColorScheme
 
 /**
  * Horizontal scrollable color scheme selector.
@@ -214,7 +215,8 @@ private fun resolvePaletteColors(
                 seedColor = palette.seedColor,
                 isDark = isDarkMode,
                 isAmoled = false,
-                style = paletteStyle
+                style = paletteStyle,
+                specVersion = ColorSpec.SpecVersion.SPEC_2021
             )
             PaletteColors(
                 topLeft = colorScheme.primaryContainer,

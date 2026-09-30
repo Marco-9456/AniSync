@@ -5,7 +5,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.materialkolor.PaletteStyle
-import com.materialkolor.rememberDynamicColorScheme
+import com.materialkolor.dynamiccolor.ColorSpec
+import com.materialkolor.material3.rememberDynamicColorScheme
 
 /**
  * The lowest saturation a cover color may have and still be worth a palette.
@@ -55,7 +56,8 @@ fun mediaArtworkColorScheme(
         seedColor = seed,
         isDark = darkTheme,
         isAmoled = false,
-        style = paletteStyle
+        style = paletteStyle,
+        specVersion = ColorSpec.SpecVersion.SPEC_2021
     )
     return if (amoled && darkTheme) base.toAmoled() else base
 }

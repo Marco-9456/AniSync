@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.components.menu.MenuField
+import com.anisync.android.ui.theme.AppPaletteStyles
 import com.anisync.android.ui.theme.toDescription
 import com.anisync.android.ui.theme.toDisplayName
 import com.materialkolor.PaletteStyle
@@ -36,7 +37,7 @@ fun PaletteStyleSelector(
     enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val styles = remember { PaletteStyle.entries }
+    val styles = remember { AppPaletteStyles }
 
     MenuField(
         expanded = expanded,

@@ -24,8 +24,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.anisync.android.data.ThemeMode
 import com.materialkolor.PaletteStyle
-import com.materialkolor.dynamicColorScheme
-import com.materialkolor.rememberDynamicColorScheme
+import com.materialkolor.dynamiccolor.ColorSpec
+import com.materialkolor.material3.dynamicColorScheme
+import com.materialkolor.material3.rememberDynamicColorScheme
 
 private val lightScheme = lightColorScheme(
     primary = primaryLight,
@@ -390,7 +391,8 @@ fun AppTheme(
                 seedColor = seedColor,
                 isDark = darkTheme,
                 isAmoled = false,
-                style = paletteStyle
+                style = paletteStyle,
+                specVersion = ColorSpec.SpecVersion.SPEC_2021
             )
             if (useAmoled) base.toAmoled() else base
         }
@@ -472,13 +474,15 @@ fun shareCardColorScheme(dark: Boolean, amoled: Boolean = false, seed: Color? = 
             seedColor = seed,
             isDark = dark,
             isAmoled = false,
-            style = PaletteStyle.TonalSpot
+            style = PaletteStyle.TonalSpot,
+            specVersion = ColorSpec.SpecVersion.SPEC_2021
         )
         spec.seedColor != null -> rememberDynamicColorScheme(
             seedColor = spec.seedColor,
             isDark = dark,
             isAmoled = false,
-            style = spec.paletteStyle
+            style = spec.paletteStyle,
+            specVersion = ColorSpec.SpecVersion.SPEC_2021
         )
         spec.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
@@ -516,7 +520,8 @@ fun widgetColorScheme(
             seedColor = seedColor,
             isDark = dark,
             isAmoled = false,
-            style = paletteStyle
+            style = paletteStyle,
+            specVersion = ColorSpec.SpecVersion.SPEC_2021
         )
 
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->

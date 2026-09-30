@@ -7,7 +7,8 @@ import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.materialkolor.PaletteStyle
-import com.materialkolor.rememberDynamicColorScheme
+import com.materialkolor.dynamiccolor.ColorSpec
+import com.materialkolor.material3.rememberDynamicColorScheme
 
 /**
  * A lightweight theme wrapper for rendering preview content with a specific color scheme.
@@ -36,7 +37,8 @@ fun PreviewTheme(
         seedColor = seedColor,
         isDark = isDark,
         isAmoled = false,
-        style = style
+        style = style,
+        specVersion = ColorSpec.SpecVersion.SPEC_2021
     )
     // Match AppTheme: apply our own cohesive AMOLED transform rather than MaterialKolor's isAmoled.
     val colorScheme = if (isDark && amoled) base.toAmoled() else base
