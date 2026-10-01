@@ -1490,7 +1490,7 @@
     <string name="debug_bump_inbox_badge">觸發收件匣角標</string>
     <string name="debug_test_imminent">測試「鄰近2小時的事件觸發」</string>
     <string name="library_selected_count">已選 %1$d 項</string>
-    <string name="library_selection_scope">在%2$s · %1$s上</string>
+    <string name="library_selection_scope">%2$s · %1$s</string>
     <string name="season_winter">冬季</string>
     <string name="season_spring">春季</string>
     <string name="season_fall">秋季</string>
@@ -1594,7 +1594,7 @@
     <string name="widget_calendar_title">週表</string>
     <string name="widget_episode_short">第 %1$d 集</string>
     <string name="widget_episode_long">第 %1$d 集</string>
-    <string name="widget_up_next_empty_title">全跟上啦(⁠≧⁠▽⁠≦⁠)</string>
+    <string name="widget_up_next_empty_title">全跟上啦~</string>
     <string name="widget_watch_progress_title">現正進行</string>
     <string name="widget_episode_badge">第 %1$d 集</string>
     <string name="widget_up_next_title">待看</string>
@@ -1613,4 +1613,7 @@
     <string name="widget_wp_empty_body_manga">此處顯示你正在閱讀的系列，鄰近完結的至上排序</string>
     <string name="widget_config_add_widget">添加小組件</string>
     <string name="widget_config_items_visible">小組件上可見的物件</string>
+    <string name="person_tab_appearances">出演</string>
+    <string name="person_empty_appearances">暫無出演處符合條件…</string>
+    <string name="person_credits_note_plain">僅參與配音將不會歸類於參與項目，而是被歸類於角色上</string>
 </resources>
