@@ -95,6 +95,9 @@
                 <data
                     android:scheme="anisync"
                     android:host="discover" />
+                <data
+                    android:scheme="anisync"
+                    android:host="calendar" />
             </intent-filter>
             <!-- AniList URL deep links for sharing -->
             <intent-filter>
@@ -121,6 +124,10 @@
                     android:scheme="https"
                     android:host="anilist.co"
                     android:pathPrefix="/staff/" />
+                <data
+                    android:scheme="https"
+                    android:host="anilist.co"
+                    android:pathPrefix="/studio/" />
                 <data
                     android:scheme="https"
                     android:host="anilist.co"
