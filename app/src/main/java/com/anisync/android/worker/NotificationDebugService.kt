@@ -14,6 +14,7 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
+import com.anisync.android.MainActivity
 import com.anisync.android.R
 import com.anisync.android.data.NotificationBadgeStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -67,7 +68,7 @@ class NotificationDebugService @Inject constructor(
             val episode = (1..24).random()
             val content = "Episode $episode has aired"
 
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://notifications"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://notifications"), context, MainActivity::class.java)
             val pendingIntent = PendingIntent.getActivity(
                 context,
                 notificationId,
@@ -104,7 +105,7 @@ class NotificationDebugService @Inject constructor(
             val title = SAMPLE_TITLE
             val content = "Episode 1 is now available"
 
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://details/$SAMPLE_MEDIA_ID"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://details/$SAMPLE_MEDIA_ID"), context, MainActivity::class.java)
             val pendingIntent = PendingIntent.getActivity(
                 context,
                 notificationId,
@@ -171,7 +172,7 @@ class NotificationDebugService @Inject constructor(
             val formattedTime = timeFormat.format(airingDate)
             val content = "Episode 1 airs tomorrow at $formattedTime"
 
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://details/$SAMPLE_MEDIA_ID"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://details/$SAMPLE_MEDIA_ID"), context, MainActivity::class.java)
             val pendingIntent = PendingIntent.getActivity(
                 context,
                 notificationId,
@@ -214,7 +215,7 @@ class NotificationDebugService @Inject constructor(
                 else -> "Episode 1 airs in about $hoursUntil hours"
             }
 
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://details/$SAMPLE_MEDIA_ID"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("anisync://details/$SAMPLE_MEDIA_ID"), context, MainActivity::class.java)
             val pendingIntent = PendingIntent.getActivity(
                 context,
                 notificationId,

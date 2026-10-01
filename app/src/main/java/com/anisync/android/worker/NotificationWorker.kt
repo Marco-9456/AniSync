@@ -19,6 +19,7 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
+import com.anisync.android.MainActivity
 import com.anisync.android.R
 import com.anisync.android.data.account.AccountStore
 import com.anisync.android.data.local.dao.LibraryDao
@@ -928,7 +929,8 @@ class NotificationWorker @AssistedInject constructor(
     /** Deep link tagged with the account so a tap can switch to it first (see MainActivity). */
     private fun deepLinkIntent(uri: String, ctx: AcctCtx, requestCode: Int): PendingIntent {
         val withAccount = if (uri.contains('?')) "$uri&account=${ctx.id}" else "$uri?account=${ctx.id}"
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(withAccount))
+        // Explicit, so a second installed build (debug, preview) cannot turn the tap into a chooser.
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(withAccount), applicationContext, MainActivity::class.java)
         return PendingIntent.getActivity(
             applicationContext,
             requestCode,
