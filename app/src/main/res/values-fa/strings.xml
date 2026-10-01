@@ -56,7 +56,7 @@
     <string name="forum_thread_title">عنوان</string>
     <string name="forum_thread_title_hint">میخوایی راجب چه چیز بحث کنی؟</string>
     <string name="forum_thread_body_hint">پست خود را بنویس…</string>
-    <string name="forum_empty_threads">هیچ رشته‌گفتگویی یافت نشد</string>
+    <string name="forum_empty_threads">هیچ رشته‌گفتگویی یافت نشد.</string>
     <string name="forum_thread_locked">این تاپیک قفل شده.</string>
     <string name="forum_view_on_anilist">مشاهده در آنی‌لیست</string>
     <string name="forum_new_threads">جدیدترین موضوعات</string>
@@ -586,4 +586,57 @@
     <string name="section_developer">توسعه‌دهنده</string>
     <string name="debug_notifications">اشکال‌زدایی اعلان‌ها</string>
     <string name="debug_test_watching">تماشای تست</string>
+    <string name="feed_empty_filtered_title">هیچ موردی در %1$s یافت نشد</string>
+    <plurals name="feed_group_updates">
+        <item quantity="one">%d بروزرسانی فهرست</item>
+        <item quantity="other">%d بروزرسانی‌های فهرست</item>
+    </plurals>
+    <string name="forum_filter_author_value">نویسنده · %1$s</string>
+    <string name="forum_filter_category_value">دسته‌بندی · %1$s</string>
+    <string name="forum_filter_media_value">رسانه · %1$s</string>
+    <string name="forum_views_count">%1$s بازدیدها</string>
+    <plurals name="forum_continue_thread_count">
+        <item quantity="one">این گفتگو را ادامه دهید · %1$d پاسخ</item>
+        <item quantity="other">این گفتگو را ادامه دهید · %1$d پاسخ‌ها</item>
+    </plurals>
+    <plurals name="forum_collapsed_replies">
+        <item quantity="one">+%1$d پاسخ</item>
+        <item quantity="other">+%1$d پاسخ‌ها</item>
+    </plurals>
+    <string name="forum_comments_count_short">%1$s نظرات</string>
+    <string name="found_helpful">مفید واقع شد</string>
+    <string name="sponsors_refresh">بازخوانی</string>
+    <string name="sponsors_updated_at">بروزرسانی شد %1$s</string>
+    <string name="sponsor_tier_backer">حامی</string>
+    <string name="sponsors_empty_tier_cta">هنوز کسی اینجا نیست — اولین نفری باشید که مشارکت می‌کند</string>
+    <string name="sponsors_load_error">بارگیری حامیان مالی امکان‌پذیر نبود. برای تلاش مجدد، صفحه را به پایین بکشید.</string>
+    <string name="sponsors_open_external">بازکردن در گیت‌هاب</string>
+    <string name="a11y_sponsor_avatar">آواتار از %1$s</string>
+    <string name="support_card_body">AniSync پروژه‌ای رایگان، بدون تبلیغات و متن‌باز است که در اوقات فراغتم آن را ساخته‌ام. اگر این به‌روزرسانی رضایت شما را جلب کرد، با یک قهوه می‌توانید به انتشار نسخه بعدی کمک کنید.</string>
+    <string name="support_card_dismiss">الان نه</string>
+    <string name="lead_developer">توسعه دهنده ارشد</string>
+    <string name="sponsor">حامی مالی</string>
+    <string name="link_developer">توسعه دهنده</string>
+    <string name="test_code">آزمایش %s</string>
+    <string name="by_author">توسط %s</string>
+    <string name="empty_list_title">لیست %s شما خالی است</string>
+    <string name="empty_list_anime_action">با افزودن انیمه‌ها از زبانه اکتشاف، آن‌ها را آغاز کنید</string>
+    <string name="empty_list_anime_button">مرور انیمه‌ها</string>
+    <string name="empty_list_manga_action">با افزودن عنوان‌ها از زبانه اکتشاف، پیگیری مانگاها را آغاز کنید</string>
+    <string name="empty_list_manga_button">مرور مانگا</string>
+    <string name="empty_search_results_title">هیچ نتیجه ای برای %s یافت نشد</string>
+    <string name="empty_search_results_action">جستجو یا فیلترهای خود را تغییر دهید</string>
+    <string name="empty_search_results_button">پاک‌سازی جستجو</string>
+    <string name="empty_search_alt_action">کلمات کلیدی مختلفی را امتحان کنید</string>
+    <string name="empty_favorites_title">هنوز علاقه‌مندی وجود ندارد</string>
+    <string name="empty_favorites_action">انیمه یا مانگا را از صفحه جزئیاتشان به فهرست علاقه‌مندی‌های خود اضافه کنید</string>
+    <string name="empty_favorites_button">موارد جدید را کشف کنید</string>
+    <string name="empty_connection_title">مشکل در اتصال</string>
+    <string name="empty_connection_action">اتصال اینترنت رو بررسی کن</string>
+    <string name="empty_generic_title">مشکلی پیش اومده</string>
+    <string name="empty_sign_in_title">وارد با آنی‌لیست</string>
+    <string name="empty_sign_in_action">حساب آنی‌لیست خود را متصل کنید تا کتابخانه‌تان در دستگاه‌های مختلف همگام‌سازی شود</string>
+    <string name="empty_sign_in_button">وارد شدن</string>
+    <string name="empty_airing_today_title">امروز هیچ قسمتی پخش نمی‌شود</string>
+    <string name="empty_airing_today_action">بعداً دوباره سر بزنید یا نمایش‌های بیشتری به فهرست خود اضافه کنید</string>
 </resources>
