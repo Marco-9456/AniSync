@@ -57,7 +57,7 @@ fun mediaArtworkColorScheme(
         isDark = darkTheme,
         isAmoled = false,
         style = paletteStyle,
-        specVersion = ColorSpec.SpecVersion.SPEC_2021
+        specVersion = ColorSpec.SpecVersion.SPEC_2026
     )
     return if (amoled && darkTheme) base.toAmoled() else base
 }

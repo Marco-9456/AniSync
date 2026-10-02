@@ -216,7 +216,7 @@ private fun resolvePaletteColors(
                 isDark = isDarkMode,
                 isAmoled = false,
                 style = paletteStyle,
-                specVersion = ColorSpec.SpecVersion.SPEC_2021
+                specVersion = ColorSpec.SpecVersion.SPEC_2026
             )
             PaletteColors(
                 topLeft = colorScheme.primaryContainer,

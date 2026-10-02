@@ -392,7 +392,7 @@ fun AppTheme(
                 isDark = darkTheme,
                 isAmoled = false,
                 style = paletteStyle,
-                specVersion = ColorSpec.SpecVersion.SPEC_2021
+                specVersion = ColorSpec.SpecVersion.SPEC_2026
             )
             if (useAmoled) base.toAmoled() else base
         }
@@ -475,14 +475,14 @@ fun shareCardColorScheme(dark: Boolean, amoled: Boolean = false, seed: Color? = 
             isDark = dark,
             isAmoled = false,
             style = PaletteStyle.TonalSpot,
-            specVersion = ColorSpec.SpecVersion.SPEC_2021
+            specVersion = ColorSpec.SpecVersion.SPEC_2026
         )
         spec.seedColor != null -> rememberDynamicColorScheme(
             seedColor = spec.seedColor,
             isDark = dark,
             isAmoled = false,
             style = spec.paletteStyle,
-            specVersion = ColorSpec.SpecVersion.SPEC_2021
+            specVersion = ColorSpec.SpecVersion.SPEC_2026
         )
         spec.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
@@ -521,7 +521,7 @@ fun widgetColorScheme(
             isDark = dark,
             isAmoled = false,
             style = paletteStyle,
-            specVersion = ColorSpec.SpecVersion.SPEC_2021
+            specVersion = ColorSpec.SpecVersion.SPEC_2026
         )
 
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->

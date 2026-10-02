@@ -38,7 +38,7 @@ fun PreviewTheme(
         isDark = isDark,
         isAmoled = false,
         style = style,
-        specVersion = ColorSpec.SpecVersion.SPEC_2021
+        specVersion = ColorSpec.SpecVersion.SPEC_2026
     )
     // Match AppTheme: apply our own cohesive AMOLED transform rather than MaterialKolor's isAmoled.
     val colorScheme = if (isDark && amoled) base.toAmoled() else base
