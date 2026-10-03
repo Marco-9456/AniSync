@@ -5,6 +5,7 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -446,9 +448,20 @@ fun PersonNamesRow(
     }
 }
 
-/** One label/value line in the names sheet, with its own copy action. */
+/** The card that groups the primary names (or titles) at the top of a names sheet. */
 @Composable
-private fun PersonNameRow(
+internal fun CopyableNamesCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(shape = CardShape, color = MaterialTheme.colorScheme.surfaceContainer) {
+        Column(modifier = Modifier.padding(vertical = 8.dp), content = content)
+    }
+}
+
+/**
+ * One label/value line in a names sheet. Copying is the sheet's whole purpose, so a tap copies as
+ * well as the long-press every name answers to elsewhere.
+ */
+@Composable
+internal fun CopyableNameRow(
     label: String,
     value: String,
     onCopy: (String) -> Unit
@@ -456,7 +469,11 @@ private fun PersonNameRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCopy(value) }
+            .combinedClickable(
+                onClick = { onCopy(value) },
+                onLongClick = { onCopy(value) },
+                onLongClickLabel = stringResource(R.string.a11y_action_copy)
+            )
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -523,27 +540,25 @@ fun PersonNamesSheetContent(
         Spacer(Modifier.height(16.dp))
         PersonSectionLabel(stringResource(R.string.person_names_primary))
         Spacer(Modifier.height(8.dp))
-        Surface(shape = CardShape, color = MaterialTheme.colorScheme.surfaceContainer) {
-            Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                PersonNameRow(
-                    label = stringResource(R.string.person_names_preferred),
-                    value = preferredName,
+        CopyableNamesCard {
+            CopyableNameRow(
+                label = stringResource(R.string.person_names_preferred),
+                value = preferredName,
+                onCopy = onCopy
+            )
+            if (fullName != preferredName) {
+                CopyableNameRow(
+                    label = stringResource(R.string.person_names_romaji),
+                    value = fullName,
                     onCopy = onCopy
                 )
-                if (fullName != preferredName) {
-                    PersonNameRow(
-                        label = stringResource(R.string.person_names_romaji),
-                        value = fullName,
-                        onCopy = onCopy
-                    )
-                }
-                nativeName?.let {
-                    PersonNameRow(
-                        label = stringResource(R.string.person_names_native),
-                        value = it,
-                        onCopy = onCopy
-                    )
-                }
+            }
+            nativeName?.let {
+                CopyableNameRow(
+                    label = stringResource(R.string.person_names_native),
+                    value = it,
+                    onCopy = onCopy
+                )
             }
         }
 
@@ -553,7 +568,7 @@ fun PersonNamesSheetContent(
                 stringResource(R.string.person_names_alternative) + " · ${alternativeNames.size}"
             )
             Spacer(Modifier.height(8.dp))
-            PersonNameChips(names = alternativeNames, onCopy = onCopy)
+            CopyableNameChips(names = alternativeNames, onCopy = onCopy)
         }
 
         if (spoilerNames.isNotEmpty()) {
@@ -563,7 +578,7 @@ fun PersonNamesSheetContent(
                     stringResource(R.string.person_names_spoilers) + " · ${spoilerNames.size}"
                 )
                 Spacer(Modifier.height(8.dp))
-                PersonNameChips(names = spoilerNames, onCopy = onCopy)
+                CopyableNameChips(names = spoilerNames, onCopy = onCopy)
             } else {
                 Surface(
                     shape = ThumbShape,
@@ -624,9 +639,11 @@ fun PersonNamesSheetContent(
     }
 }
 
+/** Alternative names as chips. Tap or long-press copies one, the same as [CopyableNameRow]. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PersonNameChips(names: List<String>, onCopy: (String) -> Unit) {
+internal fun CopyableNameChips(names: List<String>, onCopy: (String) -> Unit) {
+    val copyLabel = stringResource(R.string.a11y_action_copy)
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -634,14 +651,19 @@ private fun PersonNameChips(names: List<String>, onCopy: (String) -> Unit) {
         names.forEach { alias ->
             Surface(
                 shape = ThumbShape,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                onClick = { onCopy(alias) }
+                color = MaterialTheme.colorScheme.surfaceContainerHigh
             ) {
                 Text(
                     text = alias,
                     style = MaterialTheme.typography.labelLarge.emphasis(),
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                    modifier = Modifier
+                        .combinedClickable(
+                            onClick = { onCopy(alias) },
+                            onLongClick = { onCopy(alias) },
+                            onLongClickLabel = copyLabel
+                        )
+                        .padding(horizontal = 12.dp, vertical = 7.dp)
                 )
             }
         }

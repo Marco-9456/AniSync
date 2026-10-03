@@ -70,6 +70,7 @@ import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.formatCountdownAdaptive
 import com.anisync.android.presentation.util.mediaRankingLabel
+import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.delay
 
@@ -724,6 +725,11 @@ private fun InfoExpandSheet(
     onStudioClick: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val copyToClipboard = rememberCopyToClipboard()
+    val titleClipLabel = stringResource(R.string.clip_label_title)
+    val copiedTitleMessage = stringResource(R.string.copied_title)
+    val copyTitle: (String) -> Unit = { copyToClipboard(titleClipLabel, it, copiedTitleMessage) }
+
     AppModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
@@ -746,49 +752,25 @@ private fun InfoExpandSheet(
 
             when (kind) {
                 InfoSheetKind.TITLES -> {
-                    SheetLabelValueRow(stringResource(R.string.details_label_romaji), details.titleRomaji)
-                    SheetLabelValueRow(stringResource(R.string.details_label_english), details.titleEnglish)
-                    SheetLabelValueRow(stringResource(R.string.details_label_native), details.titleNative)
+                    val titles = listOf(
+                        R.string.details_label_romaji to details.titleRomaji,
+                        R.string.details_label_english to details.titleEnglish,
+                        R.string.details_label_native to details.titleNative
+                    ).mapNotNull { (label, title) -> title?.takeIf { it.isNotBlank() }?.let { label to it } }
+                    CopyableNamesCard {
+                        titles.forEach { (label, title) ->
+                            CopyableNameRow(stringResource(label), title, copyTitle)
+                        }
+                    }
                 }
                 InfoSheetKind.SYNONYMS -> {
-                    details.synonyms.forEachIndexed { index, synonym ->
-                        if (index > 0) Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = synonym,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    CopyableNameChips(names = details.synonyms, onCopy = copyTitle)
                 }
                 InfoSheetKind.PRODUCERS -> {
                     ProducerChips(details.producers, onStudioClick)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun SheetLabelValueRow(label: String, value: String?) {
-    if (value.isNullOrBlank()) return
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(96.dp)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
     }
 }
 
