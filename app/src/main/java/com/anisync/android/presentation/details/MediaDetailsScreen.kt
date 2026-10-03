@@ -16,7 +16,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -162,8 +161,8 @@ import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.formatAsTitle
-import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
@@ -394,7 +393,12 @@ fun MediaDetailsScreen(
                                             text = appBarTitle,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
-                                            style = MaterialTheme.typography.titleLarge
+                                            style = MaterialTheme.typography.titleLarge,
+                                            modifier = Modifier.copyOnLongPress(
+                                                appBarTitle,
+                                                stringResource(R.string.clip_label_title),
+                                                stringResource(R.string.copied_title)
+                                            )
                                         )
                                     }
                                 },
@@ -1956,8 +1960,6 @@ private fun ContentRow(
             .memoryCacheKey(cacheKey.toString())
             .build()
     }
-    val copyToClipboard = rememberCopyToClipboard()
-    val copyLongClickLabel = stringResource(R.string.a11y_action_copy)
     val titleClipLabel = stringResource(R.string.clip_label_title)
     val copiedTitleMessage = stringResource(R.string.copied_title)
 
@@ -2022,15 +2024,7 @@ private fun ContentRow(
                             boundsTransform = { _, _ -> spatialSpec },
                             resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                         )
-                        .combinedClickable(
-                            onClick = {},
-                            onLongClick = {
-                                displayTitle?.let {
-                                    copyToClipboard(titleClipLabel, it, copiedTitleMessage)
-                                }
-                            },
-                            onLongClickLabel = copyLongClickLabel
-                        )
+                        .copyOnLongPress(displayTitle.orEmpty(), titleClipLabel, copiedTitleMessage)
                 )
             }
 
@@ -2046,7 +2040,8 @@ private fun ContentRow(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.copyOnLongPress(nativeTitle, titleClipLabel, copiedTitleMessage)
                 )
             }
 

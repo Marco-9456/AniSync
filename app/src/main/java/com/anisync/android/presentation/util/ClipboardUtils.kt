@@ -5,9 +5,11 @@ import android.content.ClipDescription
 import android.os.Build
 import android.os.PersistableBundle
 import android.widget.Toast
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
@@ -68,4 +70,23 @@ fun rememberCopyToClipboard(): CopyToClipboard {
             }
         }
     }
+}
+
+/**
+ * Long-press copies [text] whole. Every name and title in the app answers to this gesture, so one
+ * that copies and one beside it that selects or does nothing never sit side by side.
+ */
+@Composable
+fun Modifier.copyOnLongPress(
+    text: String,
+    clipLabel: String,
+    copiedMessage: String,
+    onClick: () -> Unit = {}
+): Modifier {
+    val copyToClipboard = rememberCopyToClipboard()
+    return combinedClickable(
+        onClick = onClick,
+        onLongClick = { copyToClipboard(clipLabel, text, copiedMessage) },
+        onLongClickLabel = stringResource(R.string.a11y_action_copy)
+    )
 }
