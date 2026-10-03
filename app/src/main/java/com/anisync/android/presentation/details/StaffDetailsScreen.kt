@@ -104,6 +104,7 @@ import com.anisync.android.presentation.share.StaffShareCard
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.getName
@@ -179,7 +180,12 @@ fun StaffDetailsScreen(
                             text = title,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.titleLarge
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.copyOnLongPress(
+                                title,
+                                stringResource(R.string.clip_label_staff_name),
+                                stringResource(R.string.copied_name)
+                            )
                         )
                     }
                 },
@@ -419,6 +425,7 @@ private fun StaffDetailsContent(
             backdropUrl = backdrop?.first,
             name = staff.getName(titleLanguage),
             nativeName = staff.nativeName,
+            nameClipLabel = stringResource(R.string.clip_label_staff_name),
             metaLine = staffMetaLine(staff),
             favourites = staff.favourites,
             contentDescription = staff.getName(titleLanguage),
@@ -613,6 +620,7 @@ private fun StaffDetailsContent(
             onPortraitClick = { showImageViewer = true },
             name = staff.getName(titleLanguage),
             nativeName = staff.nativeName,
+            nameClipLabel = stringResource(R.string.clip_label_staff_name),
             metaLine = staffMetaLine(staff),
             favourites = staff.favourites,
             identityKey = staff.id,

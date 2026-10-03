@@ -105,6 +105,7 @@ import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.getName
@@ -186,7 +187,12 @@ fun CharacterDetailsScreen(
                             text = title,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.titleLarge
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.copyOnLongPress(
+                                title,
+                                stringResource(R.string.clip_label_character_name),
+                                stringResource(R.string.copied_name)
+                            )
                         )
                     }
                 },
@@ -412,6 +418,7 @@ private fun CharacterDetailsContent(
             backdropUrl = backdropUrl,
             name = character.getName(titleLanguage),
             nativeName = character.nativeName,
+            nameClipLabel = stringResource(R.string.clip_label_character_name),
             metaLine = characterMetaLine(character, appearanceTotal),
             favourites = character.favourites,
             contentDescription = character.getName(titleLanguage),
@@ -591,6 +598,7 @@ private fun CharacterDetailsContent(
             onPortraitClick = { showImageViewer = true },
             name = character.getName(titleLanguage),
             nativeName = character.nativeName,
+            nameClipLabel = stringResource(R.string.clip_label_character_name),
             metaLine = characterMetaLine(character, appearanceTotal),
             favourites = character.favourites,
             identityKey = character.id,

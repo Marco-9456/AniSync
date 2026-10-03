@@ -93,6 +93,7 @@ import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
@@ -167,7 +168,12 @@ fun StudioDetailsScreen(
                             text = title,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.titleLarge
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.copyOnLongPress(
+                                title,
+                                stringResource(R.string.clip_label_studio_name),
+                                stringResource(R.string.copied_name)
+                            )
                         )
                     }
                 },
@@ -359,6 +365,7 @@ private fun StudioDetailsContent(
             backdropUrl = backdrop?.first,
             name = studio.name,
             nativeName = null,
+            nameClipLabel = stringResource(R.string.clip_label_studio_name),
             metaLine = metaLine,
             favourites = studio.favourites,
             contentDescription = stringResource(R.string.cd_studio_mark, studio.name),
@@ -497,6 +504,7 @@ private fun StudioDetailsContent(
             portraitContent = { StudioCoverMark(covers = markCovers) },
             name = studio.name,
             nativeName = null,
+            nameClipLabel = stringResource(R.string.clip_label_studio_name),
             metaLine = metaLine,
             favourites = studio.favourites,
             identityKey = studio.id,

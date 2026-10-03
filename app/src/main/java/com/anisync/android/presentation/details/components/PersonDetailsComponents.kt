@@ -93,6 +93,7 @@ import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.ui.theme.emphasis
 import java.text.NumberFormat
@@ -142,6 +143,7 @@ fun PersonHero(
     backdropUrl: String?,
     name: String,
     nativeName: String?,
+    nameClipLabel: String,
     metaLine: String?,
     favourites: Int?,
     contentDescription: String,
@@ -154,6 +156,7 @@ fun PersonHero(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
+    val copiedNameMessage = stringResource(R.string.copied_name)
     // The banner carries the status-bar height so the portrait stays put below it.
     val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val bannerHeight = topInset + 220.dp
@@ -272,19 +275,19 @@ fun PersonHero(
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.copyOnLongPress(name, nameClipLabel, copiedNameMessage)
             )
             if (nativeName != null) {
                 Spacer(Modifier.height(4.dp))
-                SelectionContainer {
-                    Text(
-                        text = nativeName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Text(
+                    text = nativeName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.copyOnLongPress(nativeName, nameClipLabel, copiedNameMessage)
+                )
             }
             if (!metaLine.isNullOrBlank()) {
                 Spacer(Modifier.height(6.dp))

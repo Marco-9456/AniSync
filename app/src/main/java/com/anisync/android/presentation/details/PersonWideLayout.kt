@@ -89,6 +89,7 @@ import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.PaneDragHandle
 import com.anisync.android.presentation.util.TwoPaneDefaults
 import com.anisync.android.presentation.util.TwoPaneRow
+import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.ui.theme.emphasis
 import java.text.NumberFormat
 import kotlin.math.abs
@@ -261,6 +262,7 @@ fun PersonWideLayout(
     portraitContent: (@Composable () -> Unit)? = null,
     name: String,
     nativeName: String?,
+    nameClipLabel: String,
     metaLine: String?,
     favourites: Int?,
     identityKey: Any,
@@ -300,6 +302,7 @@ fun PersonWideLayout(
                 collapse = collapse,
                 name = name,
                 nativeName = nativeName,
+                nameClipLabel = nameClipLabel,
                 metaLine = metaLine,
                 favourites = favourites,
                 aliasLine = aliasLine,
@@ -404,7 +407,14 @@ fun PersonWideLayout(
                 .onSizeChanged { collapse.bannerNameHeightPx = it.height }
                 .then(if (nameOnBanner) Modifier else Modifier.clearAndSetSemantics {})
         ) {
-            BannerOverlayName(name = name)
+            BannerOverlayName(
+                name = name,
+                modifier = Modifier.copyOnLongPress(
+                    name,
+                    nameClipLabel,
+                    stringResource(R.string.copied_name)
+                )
+            )
         }
     }
 }
@@ -540,6 +550,7 @@ private fun PersonTwoPane(
     collapse: PersonCollapseState,
     name: String,
     nativeName: String?,
+    nameClipLabel: String,
     metaLine: String?,
     favourites: Int?,
     aliasLine: (@Composable () -> Unit)?,
@@ -600,6 +611,7 @@ private fun PersonTwoPane(
                 collapse = collapse,
                 name = name,
                 nativeName = nativeName,
+                nameClipLabel = nameClipLabel,
                 metaLine = metaLine,
                 favourites = favourites,
                 aliasLine = aliasLine,
@@ -631,6 +643,7 @@ private fun PersonIdentityPane(
     collapse: PersonCollapseState,
     name: String,
     nativeName: String?,
+    nameClipLabel: String,
     metaLine: String?,
     favourites: Int?,
     aliasLine: (@Composable () -> Unit)?,
@@ -638,6 +651,7 @@ private fun PersonIdentityPane(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    val copiedNameMessage = stringResource(R.string.copied_name)
     val detailsHidden by remember(collapse) {
         derivedStateOf { collapse.identityFraction >= IdentityFadeOutPoint }
     }
@@ -676,6 +690,7 @@ private fun PersonIdentityPane(
                     .fillMaxWidth()
                     .padding(horizontal = IdentityPanePadding, vertical = 4.dp)
                     .onSizeChanged { collapse.nameHeightPx = it.height }
+                    .copyOnLongPress(name, nameClipLabel, copiedNameMessage)
             )
         }
 
@@ -701,7 +716,8 @@ private fun PersonIdentityPane(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.copyOnLongPress(nativeName, nameClipLabel, copiedNameMessage)
                     )
                 }
                 if (!metaLine.isNullOrBlank()) {
