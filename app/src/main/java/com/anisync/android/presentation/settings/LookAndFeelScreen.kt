@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.RoundedCorner
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -267,6 +268,13 @@ fun LookAndFeelScreen(
                 title = stringResource(R.string.setting_haptic_feedback),
                 checked = hapticEnabled,
                 onCheckedChange = { viewModel.onAction(SettingsAction.SetHapticEnabled(it)) }
+            )
+            SwitchSettingsItem(
+                icon = Icons.Default.Star,
+                title = stringResource(R.string.setting_score_on_complete),
+                subtitle = stringResource(R.string.setting_score_on_complete_desc),
+                checked = uiState.scoreOnComplete,
+                onCheckedChange = { viewModel.onAction(SettingsAction.SetScoreOnComplete(it)) }
             )
             // "Show adult content" now lives under Settings ▸ AniList Account, where it follows the
             // AniList account option by default and can be overridden per device.

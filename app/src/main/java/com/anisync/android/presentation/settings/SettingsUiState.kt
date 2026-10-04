@@ -21,6 +21,7 @@ sealed interface SettingsAction {
     data class SetTitleLanguage(val language: TitleLanguage) : SettingsAction
     data class SetCoverQuality(val quality: CoverQuality) : SettingsAction
     data class SetHapticEnabled(val enabled: Boolean) : SettingsAction
+    data class SetScoreOnComplete(val enabled: Boolean) : SettingsAction
     data class SetAppLockEnabled(val enabled: Boolean) : SettingsAction
     data class SetNavBarStyle(val style: NavBarStyle) : SettingsAction
     data class SetStartScreen(val screen: StartScreen) : SettingsAction
@@ -124,6 +125,7 @@ data class SettingsUiState(
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     val coverQuality: CoverQuality = CoverQuality.LARGE,
     val hapticEnabled: Boolean = true,
+    val scoreOnComplete: Boolean = true,
     val appLockEnabled: Boolean = false,
     val navBarStyle: NavBarStyle = NavBarStyle.ANCHORED,
     val navBarShowLabels: Boolean = true,

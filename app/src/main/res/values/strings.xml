@@ -481,6 +481,8 @@
     <string name="dark_mode_override">Override system setting</string>
     <string name="setting_haptic_feedback">Haptic Feedback</string>
     <string name="setting_haptic_description">Vibrate on touch interactions</string>
+    <string name="setting_score_on_complete">Ask for a score when finishing</string>
+    <string name="setting_score_on_complete_desc">When a title on your list moves to Completed. Adding a new title as Completed never asks.</string>
     <string name="settings_navigation">Navigation</string>
     <string name="setting_nav_bar_style">Bottom bar style</string>
     <string name="setting_nav_bar_style_anchored">Anchored</string>

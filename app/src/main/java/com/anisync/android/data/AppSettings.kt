@@ -213,6 +213,11 @@ class AppSettings @Inject constructor(
     private val _hapticEnabled = MutableStateFlow(prefs.getBoolean(KEY_HAPTIC_ENABLED, true))
     val hapticEnabled: StateFlow<Boolean> = _hapticEnabled.asStateFlow()
 
+    // Offer the score sheet when a quick action finishes a title that has no score yet. Default on,
+    // since asking at the moment the title ends is the point of it.
+    private val _scoreOnComplete = MutableStateFlow(prefs.getBoolean(KEY_SCORE_ON_COMPLETE, true))
+    val scoreOnComplete: StateFlow<Boolean> = _scoreOnComplete.asStateFlow()
+
     // App lock: require the device screen lock (biometric or PIN/pattern/password) to open the app.
     // Device-local privacy toggle; default off.
     private val _appLockEnabled = MutableStateFlow(prefs.getBoolean(KEY_APP_LOCK_ENABLED, false))
@@ -830,6 +835,11 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_HAPTIC_ENABLED, enabled).apply()
     }
 
+    fun setScoreOnComplete(enabled: Boolean) {
+        _scoreOnComplete.value = enabled
+        prefs.edit().putBoolean(KEY_SCORE_ON_COMPLETE, enabled).apply()
+    }
+
     /** Enable or disable the app lock (device screen-lock gate). */
     fun setAppLockEnabled(enabled: Boolean) {
         _appLockEnabled.value = enabled
@@ -1343,6 +1353,7 @@ companion object {
         private const val KEY_AMOLED_ENABLED = "amoled_enabled"
         private const val KEY_AVATAR_SHAPE = "avatar_shape"
         private const val KEY_HAPTIC_ENABLED = "haptic_enabled"
+        private const val KEY_SCORE_ON_COMPLETE = "score_on_complete"
         private const val KEY_APP_LOCK_ENABLED = "app_lock_enabled"
         private const val KEY_NAV_BAR_STYLE = "nav_bar_style"
         private const val KEY_NAV_BAR_LABELS = "nav_bar_show_labels"
