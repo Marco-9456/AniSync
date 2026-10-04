@@ -320,6 +320,9 @@ class LibraryRepositoryImpl @Inject constructor(
         return Result.Success(Unit)
     }
 
+    override suspend fun getEntry(mediaId: Int): LibraryEntry? =
+        libraryDao.getEntry(currentOwnerId(), mediaId)?.toDomain()
+
     override suspend fun updateEntry(entry: LibraryEntry): Result<Unit> {
         val owner = currentOwnerId()
         // Get original entry to detect status changes

@@ -36,6 +36,9 @@ interface LibraryRepository {
      */
     suspend fun updateProgressLocal(mediaId: Int, progress: Int): Result<Unit>
 
+    /** The active account's cached entry for [mediaId], or null when it is not on a list. */
+    suspend fun getEntry(mediaId: Int): LibraryEntry?
+
     /**
      * Update an entire entry (score, status, notes, etc).
      */
