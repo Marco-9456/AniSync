@@ -20,6 +20,9 @@ import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.domain.shouldAskForScore
+import com.anisync.android.domain.withCompletionScore
+import com.anisync.android.type.MediaType
 import com.anisync.android.util.ShareUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -67,6 +70,10 @@ class MediaDetailsViewModel @Inject constructor(
 
     private val _draftEntry = MutableStateFlow<LibraryEntry?>(null)
     val draftEntry: StateFlow<LibraryEntry?> = _draftEntry.asStateFlow()
+
+    /** An entry a quick action just finished with no score on it, waiting on the score sheet. */
+    private val _scorePromptEntry = MutableStateFlow<LibraryEntry?>(null)
+    val scorePromptEntry: StateFlow<LibraryEntry?> = _scorePromptEntry.asStateFlow()
 
     private val _following = MutableStateFlow<List<MediaFollowingEntry>>(emptyList())
     val following: StateFlow<List<MediaFollowingEntry>> = _following.asStateFlow()
@@ -285,16 +292,71 @@ class MediaDetailsViewModel @Inject constructor(
     fun saveMediaListEntry(status: LibraryStatus, progress: Int) {
         viewModelScope.launch {
             _isSaving.value = true
-            
+            val statusBefore = currentListStatus()
+
             when (val result = detailsRepository.updateMediaListEntry(mediaId, status, progress)) {
-                is Result.Success -> {
-                    // Cache updated, Flow emits automatically
-                }
+                is Result.Success -> askForScoreIfFinished(statusBefore)
                 is Result.Error -> toastManager.showResultError(result)
             }
             
             _isSaving.value = false
         }
+    }
+
+    /**
+     * The tracker's +/-. Goes through the same [LibraryRepository.updateProgress] as the library
+     * card's, so reaching the last episode completes the entry and dates it the same way from both.
+     */
+    fun updateProgress(progress: Int) {
+        viewModelScope.launch {
+            val statusBefore = currentListStatus()
+            if (libraryRepository.getEntry(mediaId) == null) {
+                // Not in the local library yet (that list was never fetched), so there is no row
+                // for the library path to update. Same rule as that path: the last one completes it.
+                val details = (uiState.value as? DetailsUiState.Success)?.details
+                val total = if (details?.type == MediaType.MANGA) details.chapters else details?.episodes
+                val finished = total != null && total > 0 && progress >= total
+                saveMediaListEntry(
+                    if (finished) LibraryStatus.COMPLETED else statusBefore ?: LibraryStatus.CURRENT,
+                    progress
+                )
+                return@launch
+            }
+            _isSaving.value = true
+            when (val result = libraryRepository.updateProgress(mediaId, progress)) {
+                is Result.Success -> {
+                    detailsRepository.refreshMediaDetails(mediaId)
+                    askForScoreIfFinished(statusBefore)
+                }
+                is Result.Error -> toastManager.showResultError(result)
+            }
+            _isSaving.value = false
+        }
+    }
+
+    private fun currentListStatus(): LibraryStatus? =
+        (uiState.value as? DetailsUiState.Success)?.details?.listStatus
+
+    private suspend fun askForScoreIfFinished(statusBefore: LibraryStatus?) {
+        if (!appSettings.scoreOnComplete.value || _scorePromptEntry.value != null) return
+        val after = libraryRepository.getEntry(mediaId)
+        if (shouldAskForScore(statusBefore, after)) _scorePromptEntry.value = after
+    }
+
+    fun saveCompletionScore(score: Double, advancedScores: Map<String, Double>, notes: String) {
+        val prompted = _scorePromptEntry.value ?: return
+        _scorePromptEntry.value = null
+        viewModelScope.launch {
+            val current = libraryRepository.getEntry(mediaId) ?: prompted
+            when (val result = libraryRepository.updateEntry(current.withCompletionScore(score, advancedScores, notes))) {
+                is Result.Success -> refresh()
+                is Result.Error -> toastManager.showResultError(result)
+            }
+        }
+    }
+
+    fun dismissCompletionScore() {
+        _scorePromptEntry.value = null
     }
 
     fun openEditSheet() {

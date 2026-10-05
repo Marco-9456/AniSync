@@ -157,6 +157,7 @@ import com.anisync.android.presentation.details.components.RelationItem
 import com.anisync.android.presentation.details.components.ReviewsListSheet
 import com.anisync.android.presentation.details.components.StaffItem
 import com.anisync.android.presentation.details.components.mediaStatsTabContent
+import com.anisync.android.presentation.library.components.ScoreOnCompleteSheet
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalPaneIsRoot
@@ -210,6 +211,7 @@ fun MediaDetailsScreen(
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
     val showEditSheet by viewModel.showEditSheet.collectAsStateWithLifecycle()
     val draftEntry by viewModel.draftEntry.collectAsStateWithLifecycle()
+    val scorePromptEntry by viewModel.scorePromptEntry.collectAsStateWithLifecycle()
     val userScoreFormat by viewModel.userScoreFormat.collectAsStateWithLifecycle()
     val animeCustomLists by viewModel.animeCustomLists.collectAsStateWithLifecycle()
     val animeAdvancedScoring by viewModel.animeAdvancedScoring.collectAsStateWithLifecycle()
@@ -614,10 +616,7 @@ fun MediaDetailsScreen(
                                         )
                                     },
                                     onProgressChange = { progress ->
-                                        viewModel.saveMediaListEntry(
-                                            state.details.listStatus ?: LibraryStatus.CURRENT,
-                                            progress.coerceAtLeast(0)
-                                        )
+                                        viewModel.updateProgress(progress.coerceAtLeast(0))
                                     },
                                     onEditEntry = viewModel::openEditSheet,
                                     onRemoveEntry = viewModel::deleteMediaListEntry,
@@ -677,6 +676,21 @@ fun MediaDetailsScreen(
                         }
                     )
                 }
+            }
+
+            scorePromptEntry?.let { entry ->
+                ScoreOnCompleteSheet(
+                    entry = entry,
+                    titleLanguage = titleLanguage,
+                    scoreFormat = userScoreFormat,
+                    advancedScoringCategories = if (entry.type == com.anisync.android.type.MediaType.MANGA) {
+                        mangaAdvancedScoring
+                    } else {
+                        animeAdvancedScoring
+                    },
+                    onDismiss = viewModel::dismissCompletionScore,
+                    onSave = viewModel::saveCompletionScore
+                )
             }
 
             if (showShareImageSheet) {
