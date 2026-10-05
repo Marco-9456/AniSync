@@ -248,6 +248,7 @@ fun EditLibraryEntrySheet(
 
         Column(modifier = Modifier.fillMaxWidth().imePadding()) {
             EditEntryTopBar(
+                title = stringResource(R.string.edit_entry),
                 saveEnabled = hasChanges,
                 onClose = { if (hasChanges) showDiscardDialog = true else onDismiss() },
                 onSave = {
@@ -453,10 +454,103 @@ fun EditLibraryEntrySheet(
     }
 }
 
+/**
+ * Asked once an entry has just been finished through a quick action (the last + or the Completed
+ * status) and still has no score. It is the score half of [EditLibraryEntrySheet], built from the
+ * same parts, so a score set here reads and behaves exactly like one set in the full sheet.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ScoreOnCompleteSheet(
+    entry: LibraryEntry,
+    titleLanguage: TitleLanguage,
+    scoreFormat: ScoreFormat,
+    advancedScoringCategories: List<String>,
+    onDismiss: () -> Unit,
+    onSave: (score: Double, advancedScores: Map<String, Double>, notes: String) -> Unit
+) {
+    var score by rememberSaveable(entry.mediaId) { mutableDoubleStateOf(0.0) }
+    var notes by rememberSaveable(entry.mediaId) { mutableStateOf(entry.notes.orEmpty()) }
+    var advancedScores by remember(entry.mediaId) { mutableStateOf(emptyMap<String, Double>()) }
+    var typingScore by remember { mutableStateOf(false) }
+    val haptics = rememberHapticFeedback()
+    val isAnime = entry.type != MediaType.MANGA
+
+    AppModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        contentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        OverlayToastHost(toastManager = LocalToastManager.current)
+
+        Column(modifier = Modifier.fillMaxWidth().imePadding()) {
+            EditEntryTopBar(
+                title = stringResource(
+                    if (isAnime) R.string.score_prompt_title_anime else R.string.score_prompt_title_manga
+                ),
+                saveEnabled = score > 0 || notes != entry.notes.orEmpty(),
+                onClose = onDismiss,
+                onSave = {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    onSave(score, advancedScores, notes)
+                }
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 24.dp, end = 24.dp, bottom = 20.dp)
+                    .navigationBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MediaRow(entry = entry, titleLanguage = titleLanguage)
+
+                ScoreCard(
+                    score = score,
+                    scoreFormat = scoreFormat,
+                    categories = advancedScoringCategories,
+                    advancedScores = advancedScores,
+                    onScoreChange = { score = it },
+                    onClear = {
+                        score = 0.0
+                        advancedScores = emptyMap()
+                    },
+                    onCategoryChange = { name, value ->
+                        val next = advancedScores.toMutableMap()
+                        if (value <= 0.0) next.remove(name) else next[name] = value
+                        advancedScores = next
+                        // AniList treats the overall score as the average of the rated categories.
+                        val rated = next.values.filter { it > 0.0 }
+                        if (rated.isNotEmpty()) score = scoreFormat.snap(rated.average())
+                    },
+                    onTypeRequest = { typingScore = true }
+                )
+
+                NotesField(notes = notes, onNotesChange = { notes = it })
+            }
+        }
+    }
+
+    if (typingScore) {
+        NumberPromptDialog(
+            prompt = NumberPrompt.Score(score, scoreFormat),
+            onDismiss = { typingScore = false },
+            onConfirm = { value ->
+                score = value.coerceIn(0.0, scoreFormat.max)
+                typingScore = false
+            }
+        )
+    }
+}
+
 // ================== TOP BAR ==================
 
 @Composable
 private fun EditEntryTopBar(
+    title: String,
     saveEnabled: Boolean,
     onClose: () -> Unit,
     onSave: () -> Unit
@@ -477,7 +571,7 @@ private fun EditEntryTopBar(
         }
 
         Text(
-            text = stringResource(R.string.edit_entry),
+            text = title,
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)

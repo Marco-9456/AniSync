@@ -1053,6 +1053,8 @@
     <string name="edit_entry_finish_body">Move it to Completed and set today as the finish date.</string>
     <string name="edit_entry_finish_apply">Mark completed</string>
     <string name="edit_entry_finish_dismiss">Not now</string>
+    <string name="score_prompt_title_anime">Finished watching. How was it?</string>
+    <string name="score_prompt_title_manga">Finished reading. How was it?</string>
     <string name="edit_entry_discard_title">Discard your changes?</string>
     <string name="edit_entry_discard_body">This entry has edits you have not saved yet.</string>
     <string name="edit_entry_discard_confirm">Discard</string>
