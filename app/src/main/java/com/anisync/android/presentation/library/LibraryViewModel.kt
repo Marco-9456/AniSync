@@ -8,6 +8,8 @@ import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.shouldAskForScore
+import com.anisync.android.domain.withCompletionScore
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
 import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
@@ -208,6 +210,9 @@ class LibraryViewModel @Inject constructor(
             is LibraryAction.IncrementProgress -> updateProgress(action.mediaId, 1)
             is LibraryAction.DecrementProgress -> updateProgress(action.mediaId, -1)
             is LibraryAction.UpdateEntry -> updateEntry(action.entry)
+            is LibraryAction.SaveCompletionScore ->
+                saveCompletionScore(action.score, action.advancedScores, action.notes)
+            is LibraryAction.DismissCompletionScore -> _uiState.update { it.copy(scorePromptEntry = null) }
             is LibraryAction.DeleteEntry -> deleteEntry(action.entryId, action.mediaId)
             is LibraryAction.ToggleListVisibility -> toggleListVisibility(
                 action.listName,
@@ -658,14 +663,19 @@ class LibraryViewModel @Inject constructor(
     // optimistically across every list the entry appears in; a +1 then −1 nets to a
     // no-op. On failure the optimistic value rolls back to the last known-good one.
     private val progressBaseline = java.util.concurrent.ConcurrentHashMap<Int, Int>()
+    // The status before the first tap of a burst, so the settled save can tell whether the burst is
+    // what finished the entry.
+    private val statusBaseline = java.util.concurrent.ConcurrentHashMap<Int, LibraryStatus>()
     private val progressCoalescer =
         com.anisync.android.presentation.util.MutationCoalescer<Int, Int>(viewModelScope, debounceMs = 600L) { mediaId, progress ->
             when (val result = libraryRepository.updateProgress(mediaId, progress)) {
                 is Result.Success -> {
                     progressBaseline[mediaId] = progress
+                    askForScoreIfFinished(mediaId, statusBaseline.remove(mediaId))
                     true
                 }
                 is Result.Error -> {
+                    statusBaseline.remove(mediaId)
                     progressBaseline[mediaId]?.let { patchEntryProgress(mediaId, it) }
                     showResultError(result)
                     false
@@ -677,6 +687,7 @@ class LibraryViewModel @Inject constructor(
         val entry = _uiState.value.entries.find { it.mediaId == mediaId } ?: return
         progressCoalescer.seed(mediaId, entry.progress)
         progressBaseline.putIfAbsent(mediaId, entry.progress)
+        statusBaseline.putIfAbsent(mediaId, entry.status)
         val newProgress = (entry.progress + delta).coerceAtLeast(0)
         patchEntryProgress(mediaId, newProgress)
         progressCoalescer.submit(mediaId, newProgress)
@@ -693,6 +704,23 @@ class LibraryViewModel @Inject constructor(
                 customListEntries = st.customListEntries.mapValues { it.value.patched() },
                 favoriteEntries = st.favoriteEntries.patched()
             )
+        }
+    }
+
+    private suspend fun askForScoreIfFinished(mediaId: Int, statusBefore: LibraryStatus?) {
+        if (!appSettings.scoreOnComplete.value) return
+        val after = libraryRepository.getEntry(mediaId)
+        if (shouldAskForScore(statusBefore, after)) {
+            _uiState.update { it.copy(scorePromptEntry = after) }
+        }
+    }
+
+    private fun saveCompletionScore(score: Double, advancedScores: Map<String, Double>, notes: String) {
+        val prompted = _uiState.value.scorePromptEntry ?: return
+        _uiState.update { it.copy(scorePromptEntry = null) }
+        viewModelScope.launch {
+            val current = libraryRepository.getEntry(prompted.mediaId) ?: prompted
+            updateEntry(current.withCompletionScore(score, advancedScores, notes))
         }
     }
 

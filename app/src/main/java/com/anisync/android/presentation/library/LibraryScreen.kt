@@ -102,6 +102,7 @@ import com.anisync.android.presentation.library.components.BulkProgressDialog
 import com.anisync.android.presentation.library.components.BulkScoreSheet
 import com.anisync.android.presentation.library.components.BulkStatusSheet
 import com.anisync.android.presentation.library.components.EditLibraryEntrySheet
+import com.anisync.android.presentation.library.components.ScoreOnCompleteSheet
 import com.anisync.android.presentation.library.components.LibraryEmptyState
 import com.anisync.android.presentation.library.components.LibraryBulkActionBar
 import com.anisync.android.presentation.library.components.LibraryBulkMoreMenu
@@ -760,6 +761,19 @@ fun LibraryScreen(
             onDelete = {
                 viewModel.onAction(LibraryAction.DeleteEntry(entry.id, entry.mediaId))
                 editingEntry = null
+            }
+        )
+    }
+
+    uiState.scorePromptEntry?.let { entry ->
+        ScoreOnCompleteSheet(
+            entry = entry,
+            titleLanguage = titleLanguage,
+            scoreFormat = uiState.userScoreFormat,
+            advancedScoringCategories = uiState.advancedScoringCategories,
+            onDismiss = { viewModel.onAction(LibraryAction.DismissCompletionScore) },
+            onSave = { score, advancedScores, notes ->
+                viewModel.onAction(LibraryAction.SaveCompletionScore(score, advancedScores, notes))
             }
         )
     }

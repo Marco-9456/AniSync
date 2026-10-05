@@ -97,6 +97,8 @@ data class LibraryUiState(
     val activeSearchCategory: String = LIBRARY_ALL_TAB_ID,
     val showPrivateEntries: Boolean = true,
     val showScoreOnCards: Boolean = true,
+    /** An entry a + just finished with no score on it, waiting on the score sheet. */
+    val scorePromptEntry: LibraryEntry? = null,
     /** Poster grid (true) or single-column rows. One choice for every list, not one per list. */
     val isGridView: Boolean = true,
     val filters: LibraryFilters = LibraryFilters.None,
@@ -146,6 +148,12 @@ sealed interface LibraryAction {
     data class IncrementProgress(val mediaId: Int) : LibraryAction
     data class DecrementProgress(val mediaId: Int) : LibraryAction
     data class UpdateEntry(val entry: LibraryEntry) : LibraryAction
+    data class SaveCompletionScore(
+        val score: Double,
+        val advancedScores: Map<String, Double>,
+        val notes: String
+    ) : LibraryAction
+    data object DismissCompletionScore : LibraryAction
     data class DeleteEntry(val entryId: Int, val mediaId: Int) : LibraryAction
     data class ToggleListVisibility(val listName: String, val hidden: Boolean) : LibraryAction
     data class ReorderTabs(val tabOrder: List<String>) : LibraryAction
