@@ -444,7 +444,7 @@
     <string name="sort_title">標題</string>
     <string name="ascending">升序</string>
     <string name="descending">降序</string>
-    <string name="section_synopsis">概覽</string>
+    <string name="section_synopsis">簡介</string>
     <string name="stat_chapters">章節</string>
     <string name="stat_popularity">人氣</string>
     <string name="stat_favorites">最愛</string>
@@ -913,7 +913,7 @@
     <string name="settings_media_upload_desc">圖片、GIF動圖、外鏈影片的託管處</string>
     <string name="widget_wp_behind">還有 %1$d 集</string>
     <string name="a11y_state_episodes_behind">還有 %1$d 集</string>
-    <string name="episodes_behind">還有 %d 集</string>
+    <string name="episodes_behind">落後 %d 集</string>
     <string name="library_episodes_behind_short">還有 %1$d 集</string>
     <string name="avatar_shape_show_frame_desc">在你的頭像上加入邊框與背景</string>
     <string name="settings_notifications_desc">新集通知、論壇動態</string>
@@ -1327,7 +1327,7 @@
     <string name="share_template_grid">網格</string>
     <string name="share_template_ranked">排名</string>
     <string name="statistics_length_distribution">集數長度</string>
-    <string name="statistics_country_distribution">國家</string>
+    <string name="statistics_country_distribution">國家/地區</string>
     <string name="statistics_chapter_length_distribution">章節長度</string>
     <string name="statistics_manga">漫畫</string>
     <string name="statistics_no_manga_stats">暫無漫畫分析可用</string>
@@ -1562,7 +1562,7 @@
     <string name="review_delete">刪除心得</string>
     <string name="review_delete_confirm_title">確認刪除心得？</string>
     <string name="review_delete_confirm_body">這將永久刪除你的心得，本操作不可撤銷</string>
-    <string name="review_body_error">心得字數必須至少至少要 %1$d，不要為了加字數而加字數~</string>
+    <string name="review_body_error">心得字數必須至少要 %1$d，不要為了加字數而加字數~</string>
     <string name="review_summary_error">總結的字數必須落在 %1$d ~ %2$d 上</string>
     <string name="review_guidelines_notice">請確保在公布前閱讀心得規則</string>
     <string name="review_publish">發布</string>
