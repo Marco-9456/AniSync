@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The peak shaded down into deep blue, for a light ground. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="90"
+    android:viewportHeight="90">
+  <group android:scaleX="0.7"
+      android:scaleY="0.7"
+      android:translateX="13.5"
+      android:translateY="13.5">
+    <path android:pathData="M45,15C60.0315,15.0001 69.7556,44.7215 74.1972,62.3275C75.8556,68.9012 70.7796,75 64,75C57.2444,75 53.96,55 45,55C36.04,55 34.7467,75 26,75C19.2203,75 14.1444,68.9012 15.8027,62.3275C20.2443,44.7215 29.9684,14.9999 45,15Z">
+      <aapt:attr name="android:fillColor">
+        <gradient
+            android:startX="45"
+            android:startY="15"
+            android:endX="45"
+            android:endY="75"
+            android:type="linear">
+          <item android:offset="0" android:color="#FFFFFFFF"/>
+          <item android:offset="1" android:color="#FF003399"/>
+        </gradient>
+      </aapt:attr>
+    </path>
+  </group>
+</vector>
