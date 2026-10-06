@@ -7,6 +7,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.R
+import com.anisync.android.data.AppIconManager
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.CacheInventory
@@ -66,6 +67,7 @@ class SettingsViewModel @Inject constructor(
     private val accountManager: AccountManager,
     private val updateManager: UpdateManager,
     private val cacheInventory: CacheInventory,
+    private val appIconManager: AppIconManager,
     getProfileUseCase: GetProfileUseCase,
     private val toastManager: ToastManager,
     private val rateLimitGate: com.anisync.android.data.network.RateLimitGate,
@@ -75,6 +77,8 @@ class SettingsViewModel @Inject constructor(
 
     /** Live request budget readout for the developer screen. */
     val rateLimitStats = rateLimitMonitor.stats
+
+    val appIcon = appIconManager.current
 
     /**
      * The pinned budget, or null when the gate is using AniList's real one.
@@ -274,6 +278,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetAppLockEnabled -> setAppLockEnabled(action.enabled)
             is SettingsAction.SetNavBarStyle -> appSettings.setNavBarStyle(action.style)
             is SettingsAction.SetStartScreen -> appSettings.setStartScreen(action.screen)
+            is SettingsAction.SetAppIcon -> appIconManager.setIcon(action.icon)
             is SettingsAction.SetNavBarShowLabels -> appSettings.setNavBarShowLabels(action.show)
             is SettingsAction.SetNavBarDoubleTapSearch ->
                 appSettings.setNavBarDoubleTapSearch(action.enabled)

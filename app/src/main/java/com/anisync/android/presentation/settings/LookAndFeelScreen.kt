@@ -2,6 +2,7 @@ package com.anisync.android.presentation.settings
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,9 +22,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.HighQuality
@@ -64,7 +67,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -74,6 +79,7 @@ import com.anisync.android.presentation.settings.components.SettingsPickerSheet
 import com.anisync.android.presentation.util.LocalAppSettings
 import coil3.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.data.AppIcon
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.NavBarStyle
@@ -119,6 +125,8 @@ fun LookAndFeelScreen(
     // are already at their arity ceiling, and this is a single value with a single writer.
     val startScreen by LocalAppSettings.current.startScreen.collectAsStateWithLifecycle()
     var showAvatarShapeDialog by rememberSaveable { mutableStateOf(false) }
+    var showAppIconSheet by rememberSaveable { mutableStateOf(false) }
+    val appIcon by viewModel.appIcon.collectAsStateWithLifecycle()
 
     val isDarkMode = themeMode.resolveDarkTheme()
 
@@ -140,6 +148,17 @@ fun LookAndFeelScreen(
                 viewModel.onAction(SettingsAction.SetCoverQuality(it))
             },
             onDismiss = { showCoverQualitySheet = false }
+        )
+    }
+
+    if (showAppIconSheet) {
+        AppIconSelectionSheet(
+            currentIcon = appIcon,
+            onIconSelected = {
+                viewModel.onAction(SettingsAction.SetAppIcon(it))
+                showAppIconSheet = false
+            },
+            onDismiss = { showAppIconSheet = false }
         )
     }
 
@@ -253,6 +272,12 @@ fun LookAndFeelScreen(
                 title = stringResource(R.string.setting_avatar_shape),
                 currentValue = avatarShapeLabel(avatarShape),
                 onClick = { showAvatarShapeDialog = true }
+            )
+            SelectionSettingsItem(
+                icon = Icons.Default.Apps,
+                title = stringResource(R.string.setting_app_icon),
+                currentValue = stringResource(appIcon.label),
+                onClick = { showAppIconSheet = true }
             )
         }
 
@@ -397,6 +422,118 @@ fun StreamingServiceSelectionSheet(
         }
     }
 }
+
+/** The launcher icons, each previewed the way a circular launcher mask would crop it. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppIconSelectionSheet(
+    currentIcon: AppIcon,
+    onIconSelected: (AppIcon) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    AppModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.setting_app_icon),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+
+            Text(
+                text = stringResource(R.string.setting_app_icon_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 100.dp),
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(AppIcon.entries) { icon ->
+                    val isSelected = currentIcon == icon
+
+                    val backgroundColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        label = "card_bg"
+                    )
+                    val borderColor by animateColorAsState(
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        label = "card_border"
+                    )
+
+                    Card(
+                        modifier = Modifier
+                            .height(110.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable { onIconSelected(icon) },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+                        border = BorderStroke(2.dp, borderColor)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            AppIconPreview(icon = icon, modifier = Modifier.size(48.dp))
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Text(
+                                text = stringResource(icon.label),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * An adaptive icon drawn from its two layers. The layers are 108dp with the visible area in the
+ * middle 72dp, so they are scaled up by that ratio before the circle crops them, as a launcher does.
+ */
+@Composable
+private fun AppIconPreview(icon: AppIcon, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.clip(CircleShape)) {
+        listOf(icon.background, icon.foreground).forEach { layer ->
+            Image(
+                painter = painterResource(layer),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = ADAPTIVE_ICON_SCALE
+                        scaleY = ADAPTIVE_ICON_SCALE
+                    }
+            )
+        }
+    }
+}
+
+private const val ADAPTIVE_ICON_SCALE = 108f / 72f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

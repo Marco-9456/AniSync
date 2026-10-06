@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.settings
 
 import androidx.compose.ui.graphics.Color
+import com.anisync.android.data.AppIcon
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AvatarShape
 import com.anisync.android.data.CoverQuality
@@ -25,6 +26,7 @@ sealed interface SettingsAction {
     data class SetAppLockEnabled(val enabled: Boolean) : SettingsAction
     data class SetNavBarStyle(val style: NavBarStyle) : SettingsAction
     data class SetStartScreen(val screen: StartScreen) : SettingsAction
+    data class SetAppIcon(val icon: AppIcon) : SettingsAction
     data class SetNavBarShowLabels(val show: Boolean) : SettingsAction
     data class SetNavBarDoubleTapSearch(val enabled: Boolean) : SettingsAction
     data class SetNavBarCornerRadius(val radius: Float) : SettingsAction

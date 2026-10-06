@@ -483,6 +483,8 @@
     <string name="setting_haptic_description">Vibrate on touch interactions</string>
     <string name="setting_score_on_complete">Ask for a score when finishing</string>
     <string name="setting_score_on_complete_desc">When a title on your list moves to Completed. Adding a new title as Completed never asks.</string>
+    <string name="setting_app_icon">App icon</string>
+    <string name="setting_app_icon_desc">The new icon appears once you leave the app. A shortcut pinned to the home screen may need adding again.</string>
     <string name="app_icon_ink">Ink</string>
     <string name="app_icon_white">White</string>
     <string name="app_icon_blue">Blue</string>
