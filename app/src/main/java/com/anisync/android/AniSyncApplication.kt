@@ -45,6 +45,9 @@ class AniSyncApplication : Application(), Configuration.Provider,
     lateinit var appLockManager: com.anisync.android.data.security.AppLockManager
 
     @Inject
+    lateinit var appIconManager: com.anisync.android.data.AppIconManager
+
+    @Inject
     lateinit var updateManager: com.anisync.android.data.update.UpdateManager
 
     /**
@@ -84,6 +87,9 @@ class AniSyncApplication : Application(), Configuration.Provider,
         // App lock: observe app-level background/foreground so the lock re-arms when AniSync is sent
         // to the background. Registered here (main thread, once) rather than per-activity.
         appLockManager.bindTo(androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle)
+
+        // A new launcher icon is applied once the app is backgrounded, never while it is on screen.
+        appIconManager.bindTo(androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle)
 
         val mainThreadTime = measureTimeMillis {
             com.anisync.android.worker.NotificationChannels.createChannels(this)
