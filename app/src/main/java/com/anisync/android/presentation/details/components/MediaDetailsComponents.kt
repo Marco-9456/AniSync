@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ContextualFlowRow
-import androidx.compose.foundation.layout.ContextualFlowRowOverflow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -105,6 +103,7 @@ import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.ExternalLinkType
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.Tag
+import com.anisync.android.presentation.components.CountedFlowRow
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.util.bouncyCombinedClickable
@@ -319,7 +318,6 @@ private fun FamilyHeader(family: String, count: Int) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TagCloud(
     tags: List<Tag>,
@@ -330,25 +328,14 @@ private fun TagCloud(
     maxLines: Int = Int.MAX_VALUE,
     onOverflowClick: (() -> Unit)? = null
 ) {
-    // ContextualFlowRow, not FlowRow: the "+N more" chip needs shownItemCount during
-    // composition, and FlowRow only settles that count in the draw phase. Compose marks
-    // both this and FlowRow's overflow as no longer maintained, so if either is removed
-    // the count has to be measured by hand rather than swapped for the plain FlowRow.
-    ContextualFlowRow(
+    CountedFlowRow(
         itemCount = tags.size,
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalSpacing = 8.dp,
+        verticalSpacing = 8.dp,
         maxLines = maxLines,
-        overflow = if (onOverflowClick != null) {
-            ContextualFlowRowOverflow.expandIndicator {
-                MoreTagsChip(
-                    count = totalItemCount - shownItemCount,
-                    onClick = onOverflowClick
-                )
-            }
-        } else {
-            ContextualFlowRowOverflow.Clip
+        overflowIndicator = onOverflowClick?.let { onClick ->
+            { hidden -> MoreTagsChip(count = hidden, onClick = onClick) }
         }
     ) { index ->
         TagChip(
