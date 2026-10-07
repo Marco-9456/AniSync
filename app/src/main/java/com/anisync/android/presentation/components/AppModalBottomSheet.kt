@@ -115,7 +115,7 @@ fun AppModalBottomSheet(
     contentColor: Color = contentColorFor(containerColor),
     scrimColor: Color = BottomSheetDefaults.ScrimColor,
     dragHandle: @Composable (() -> Unit)? = { BottomSheetDefaults.DragHandle() },
-    contentWindowInsets: @Composable () -> WindowInsets = { BottomSheetDefaults.windowInsets },
+    contentWindowInsets: @Composable () -> WindowInsets = { BottomSheetDefaults.modalWindowInsets },
     confirmDismiss: () -> Boolean = { true },
     content: @Composable ColumnScope.() -> Unit,
 ) {
