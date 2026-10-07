@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.SheetValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Delete
@@ -57,7 +58,7 @@ import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -819,7 +820,10 @@ fun ThreadDetailScreen(
     }
 
     if (uiState.isPageJumperVisible) {
-        val jumperState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val jumperState = rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+        )
         PageJumperBottomSheet(
             currentPage = uiState.loadedPageRange?.last ?: 1,
             lastPage = uiState.lastPage,

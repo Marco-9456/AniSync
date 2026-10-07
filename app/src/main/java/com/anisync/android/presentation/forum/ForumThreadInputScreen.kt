@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.forum
 
+import androidx.compose.material3.SheetValue
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.url
@@ -38,7 +39,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -315,7 +316,10 @@ private fun CategoriesAndMediaSheet(
 ) {
     AppModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        sheetState = rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+        )
     ) {
         // Hosted inside the sheet so limit toasts render above the sheet's scrim
         // (the global host sits in the app window, behind it).
