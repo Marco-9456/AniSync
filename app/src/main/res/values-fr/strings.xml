@@ -554,4 +554,10 @@
     <string name="onboarding_welcome_body">Suivez les anime et les manga, et ne ratez jamais la sortie d\'un épisode.</string>
     <string name="onboarding_sync_row_airing">Programmation de diffusion</string>
     <string name="library_filter_airing_status">Statut de diffusion</string>
+    <string name="settings_app_language">Langue de l\'application</string>
+    <string name="settings_app_language_system_desc">Utiliser la langue de votre appareil</string>
+    <string name="forum_empty_failed_title">Rien de chargé</string>
+    <string name="forum_empty_failed_desc">Vérifiez votre connexion et réessayez.</string>
+    <string name="forum_empty_comments_action">Écrire une réponse</string>
+    <string name="forum_views_count">%1$s vues</string>
 </resources>
