@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AppModalBottomSheet
+import com.anisync.android.presentation.components.rememberControlledSliderState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,10 +82,12 @@ fun PageJumperBottomSheet(
             Spacer(Modifier.height(24.dp))
 
             Slider(
-                value = sliderPage,
+                state = rememberControlledSliderState(
+                    value = sliderPage,
+                    valueRange = 1f..safeLast.toFloat(),
+                    steps = (safeLast - 2).coerceAtLeast(0)
+                ),
                 onValueChange = { sliderPage = it },
-                valueRange = 1f..safeLast.toFloat(),
-                steps = (safeLast - 2).coerceAtLeast(0),
                 enabled = safeLast > 1,
                 colors = SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.primary,

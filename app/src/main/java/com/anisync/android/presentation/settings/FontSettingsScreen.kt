@@ -40,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
+import com.anisync.android.presentation.components.rememberControlledSliderState
 import com.anisync.android.ui.theme.FontAxes
 import com.anisync.android.ui.theme.TypeCategory
 import com.anisync.android.ui.theme.TypographyAxisConfig
@@ -248,9 +249,11 @@ private fun FontAxisSlider(
             }
         }
         Slider(
-            value = value,
+            state = rememberControlledSliderState(
+                value = value,
+                valueRange = valueRange
+            ),
             onValueChange = onValueChange,
-            valueRange = valueRange,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary,

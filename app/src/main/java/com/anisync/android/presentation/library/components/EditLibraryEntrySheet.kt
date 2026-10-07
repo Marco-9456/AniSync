@@ -107,6 +107,7 @@ import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.alert.LocalToastManager
 import com.anisync.android.presentation.components.alert.OverlayToastHost
 import com.anisync.android.presentation.components.iconRes
+import com.anisync.android.presentation.components.rememberControlledSliderState
 import com.anisync.android.presentation.components.toIndicatorKind
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toIconRes
@@ -1203,10 +1204,12 @@ private fun ScoreCard(
                 ScoreFormat.POINT_5 -> StarRow(score = score.toInt(), onScoreChange = { onScoreChange(it.toDouble()) })
                 ScoreFormat.POINT_3 -> SmileyRow(score = score.toInt(), onScoreChange = { onScoreChange(it.toDouble()) })
                 else -> Slider(
-                    value = score.toFloat().coerceIn(0f, scoreFormat.max.toFloat()),
+                    state = rememberControlledSliderState(
+                        value = score.toFloat().coerceIn(0f, scoreFormat.max.toFloat()),
+                        valueRange = 0f..scoreFormat.max.toFloat(),
+                        steps = scoreFormat.sliderSteps
+                    ),
                     onValueChange = { onScoreChange(scoreFormat.snap(it.toDouble())) },
-                    valueRange = 0f..scoreFormat.max.toFloat(),
-                    steps = scoreFormat.sliderSteps,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -1270,10 +1273,12 @@ private fun CategoryScores(
                         )
                     }
                     Slider(
-                        value = value.toFloat().coerceIn(0f, scoreFormat.max.toFloat()),
+                        state = rememberControlledSliderState(
+                            value = value.toFloat().coerceIn(0f, scoreFormat.max.toFloat()),
+                            valueRange = 0f..scoreFormat.max.toFloat(),
+                            steps = scoreFormat.sliderSteps
+                        ),
                         onValueChange = { onCategoryChange(category, scoreFormat.snap(it.toDouble())) },
-                        valueRange = 0f..scoreFormat.max.toFloat(),
-                        steps = scoreFormat.sliderSteps,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

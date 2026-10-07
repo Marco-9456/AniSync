@@ -76,6 +76,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anisync.android.presentation.components.rememberControlledSliderState
 import com.anisync.android.presentation.settings.components.SettingsPickerSheet
 import com.anisync.android.presentation.util.LocalAppSettings
 import coil3.compose.AsyncImage
@@ -720,10 +721,12 @@ private fun NavBarCornerRadiusSlider(
             )
         }
         Slider(
-            value = value,
+            state = rememberControlledSliderState(
+                value = value,
+                valueRange = AppSettings.MIN_NAV_BAR_CORNER_RADIUS..AppSettings.MAX_NAV_BAR_CORNER_RADIUS
+            ),
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
-            valueRange = AppSettings.MIN_NAV_BAR_CORNER_RADIUS..AppSettings.MAX_NAV_BAR_CORNER_RADIUS,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary

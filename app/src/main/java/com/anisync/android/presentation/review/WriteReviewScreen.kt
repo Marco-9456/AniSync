@@ -45,6 +45,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.ContentLimits
+import com.anisync.android.presentation.components.rememberControlledSliderState
 import com.anisync.android.presentation.components.richtext.RichTextScaffold
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.roundToInt
@@ -230,9 +231,11 @@ private fun ReviewMetaHeader(
             )
         }
         Slider(
-            value = score.toFloat(),
+            state = rememberControlledSliderState(
+                value = score.toFloat(),
+                valueRange = 0f..100f
+            ),
             onValueChange = { onScoreChange(it.roundToInt()) },
-            valueRange = 0f..100f,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
         if (scoreError != null) {

@@ -48,6 +48,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.presentation.components.rememberControlledSliderState
 import com.anisync.android.util.NotificationPermissionHelper
 
 /**
@@ -378,9 +379,11 @@ private fun StreamingDelayItem(
             modifier = Modifier.padding(top = 4.dp)
         )
         Slider(
-            value = minutes.toFloat(),
+            state = rememberControlledSliderState(
+                value = minutes.toFloat(),
+                valueRange = 0f..180f
+            ),
             onValueChange = { onValueChange(it.toInt()) },
-            valueRange = 0f..180f,
             enabled = enabled,
             modifier = Modifier.padding(top = 8.dp)
         )

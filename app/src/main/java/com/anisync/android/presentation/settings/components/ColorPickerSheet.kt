@@ -47,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AppModalBottomSheet
+import com.anisync.android.presentation.components.rememberControlledSliderState
 import com.anisync.android.presentation.util.bouncyClickable
 import kotlin.math.abs
 
@@ -210,9 +211,11 @@ fun ColorPickerSheet(
                 contentAlignment = Alignment.Center
             ) {
                 Slider(
-                    value = hue,
+                    state = rememberControlledSliderState(
+                        value = hue,
+                        valueRange = 0f..360f
+                    ),
                     onValueChange = { hue = it },
-                    valueRange = 0f..360f,
                     colors = SliderDefaults.colors(
                         thumbColor = selectedColor,
                         activeTrackColor = Color.Transparent,

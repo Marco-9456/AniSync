@@ -61,6 +61,7 @@ import com.anisync.android.domain.formatScore
 import com.anisync.android.presentation.components.filtersheet.FilterOptionRow
 import com.anisync.android.presentation.components.filtersheet.FilterSheetScaffold
 import com.anisync.android.presentation.components.menu.Menu
+import com.anisync.android.presentation.components.rememberControlledSliderState
 import com.anisync.android.presentation.library.BulkKind
 import com.anisync.android.presentation.library.BulkOperation
 import com.anisync.android.presentation.util.bouncyClickable
@@ -549,10 +550,12 @@ fun BulkScoreSheet(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
             Slider(
-                value = value,
+                state = rememberControlledSliderState(
+                    value = value,
+                    valueRange = 0f..max,
+                    steps = steps
+                ),
                 onValueChange = { value = it },
-                valueRange = 0f..max,
-                steps = steps
             )
             Text(
                 text = stringResource(R.string.library_bulk_one_request, count),

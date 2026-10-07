@@ -27,6 +27,7 @@ import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.SegmentedTabGroup
+import com.anisync.android.presentation.components.rememberControlledSliderState
 import kotlin.math.roundToInt
 
 /**
@@ -125,10 +126,12 @@ fun LibraryViewOptionsSheet(
                 )
             }
             Slider(
-                value = columnCount.toFloat(),
+                state = rememberControlledSliderState(
+                    value = columnCount.toFloat(),
+                    valueRange = AppSettings.MIN_GRID_COLUMNS.toFloat()..AppSettings.MAX_GRID_COLUMNS.toFloat(),
+                    steps = AppSettings.MAX_GRID_COLUMNS - AppSettings.MIN_GRID_COLUMNS - 1
+                ),
                 onValueChange = { onSetColumnCount(it.roundToInt()) },
-                valueRange = AppSettings.MIN_GRID_COLUMNS.toFloat()..AppSettings.MAX_GRID_COLUMNS.toFloat(),
-                steps = AppSettings.MAX_GRID_COLUMNS - AppSettings.MIN_GRID_COLUMNS - 1,
                 enabled = sliderEnabled
             )
 
