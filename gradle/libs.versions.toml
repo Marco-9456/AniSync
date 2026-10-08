@@ -100,6 +100,7 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
+androidx-biometric-compose = { group = "androidx.biometric", name = "biometric-compose", version.ref = "biometric" }
 capturable = { group = "dev.shreyaspatil", name = "capturable", version.ref = "capturable" }
 
 [plugins]

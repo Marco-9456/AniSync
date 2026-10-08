@@ -1,6 +1,9 @@
 package com.anisync.android.presentation.security
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
+import androidx.biometric.AuthenticationResult
+import androidx.biometric.compose.rememberAuthenticationLauncher
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,7 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.data.security.AppLockManager
-import com.anisync.android.presentation.security.AppLockAuthenticator.authenticateForAppLock
+import com.anisync.android.presentation.security.AppLockAuthenticator.appLockRequest
 import com.anisync.android.presentation.security.AppLockAuthenticator.isAppLockSupported
 
 /**
@@ -55,7 +57,7 @@ fun AppLockGate(
     if (!enabled || !locked) return
 
     val context = LocalContext.current
-    val activity = remember(context) { context.findFragmentActivity() }
+    val activity = LocalActivity.current
     val promptTitle = stringResource(R.string.app_lock_title)
     val promptSubtitle = stringResource(R.string.app_lock_subtitle)
 
@@ -63,23 +65,24 @@ fun AppLockGate(
     // background instead, the way a real lock screen behaves.
     BackHandler { activity?.moveTaskToBack(true) }
 
+    val launcher = rememberAuthenticationLauncher { result ->
+        when (result) {
+            is AuthenticationResult.Success -> appLockManager.unlock()
+            else -> appLockManager.onUnlockDismissed()
+        }
+    }
+
     fun prompt() {
-        // Fail open: if we can't resolve the host activity, or the device lock was removed while we
-        // were away, never trap the user behind a lock they can't clear.
-        val host = activity
-        if (host == null || !context.isAppLockSupported()) {
+        // Fail open: if the device lock was removed while we were away, never trap the user behind
+        // a lock they can't clear.
+        if (!context.isAppLockSupported()) {
             appLockManager.unlock()
             return
         }
         // No re-entrancy guard: the system dialog owns focus while it's up, so this only ever fires
         // when nothing is showing (auto-launch on appear, or a tap on the Unlock button).
         appLockManager.onUnlockStarted()
-        host.authenticateForAppLock(
-            title = promptTitle,
-            subtitle = promptSubtitle,
-            onSuccess = { appLockManager.unlock() },
-            onError = { appLockManager.onUnlockDismissed() },
-        )
+        launcher.launch(appLockRequest(promptTitle, promptSubtitle))
     }
 
     // Auto-prompt once when the gate first appears (i.e. each time the app locks).
