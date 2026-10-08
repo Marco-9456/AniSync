@@ -282,7 +282,7 @@ dependencies {
     implementation(libs.materialkolor)
     implementation(libs.jsoup)
     implementation(libs.media3.exoplayer)
-    implementation(libs.media3.ui)
+    implementation(libs.media3.ui.compose)
     implementation(libs.media3.datasource.okhttp)
     implementation(libs.security.crypto)
     implementation(libs.androidx.work.runtime.ktx)

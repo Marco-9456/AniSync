@@ -2,7 +2,6 @@ package com.anisync.android.presentation.components
 
 import android.content.Context
 import android.content.Intent
-import android.view.LayoutInflater
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
@@ -71,6 +70,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -79,7 +79,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -90,8 +89,8 @@ import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
+import androidx.media3.ui.compose.ContentFrame
+import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import com.anisync.android.R
 import com.anisync.android.presentation.util.shimmerEffect
 import kotlinx.coroutines.delay
@@ -119,12 +118,12 @@ private val WIDE_CONTROLS_MIN_WIDTH = 600.dp
 
 /**
  * An inline video player for the short, looping, user-embedded clips that appear in rich text
- * (activity posts, forum replies, bios). Built on Media3 [ExoPlayer] + [PlayerView] with a fully
+ * (activity posts, forum replies, bios). Built on Media3 [ExoPlayer] + [ContentFrame] with a fully
  * custom Material 3 overlay.
  *
  * UX:
  * - **Adaptive framing** — the frame's aspect ratio is clamped to a sane range and the video is
- *   letterboxed (RESIZE_MODE_FIT) inside themed bars, so odd-shaped, tiny, or huge clips all sit
+ *   letterboxed ([ContentScale.Fit]) inside themed bars, so odd-shaped, tiny, or huge clips all sit
  *   tidily in the feed instead of distorting or dominating the screen.
  * - **Auto-hiding controls** — controls appear on tap and fade [CONTROLS_HIDE_DELAY_MS] after the
  *   last interaction while playing; they stay put while paused. A single tap toggles them; the
@@ -395,8 +394,9 @@ private const val HTTP_GONE = 410
 
 /**
  * The native video surface. [active] hands the shared [exoPlayer] to exactly one surface at a time
- * (inline vs. fullscreen activity), so the two never fight over it. RESIZE_MODE_FIT letterboxes the
- * real video inside whatever frame it's given.
+ * (inline vs. fullscreen activity), so the two never fight over it. [ContentScale.Fit] letterboxes
+ * the real video inside whatever frame it's given. A TextureView rather than a SurfaceView, so the
+ * video respects Compose clipping and z-order in animated and bottom-sheet containers.
  */
 @OptIn(UnstableApi::class)
 @Composable
@@ -405,19 +405,13 @@ internal fun PlayerSurface(
     active: Boolean,
     modifier: Modifier = Modifier
 ) {
-    AndroidView(
-        factory = { ctx ->
-            (LayoutInflater.from(ctx).inflate(R.layout.view_texture_player, null, false) as PlayerView).apply {
-                useController = false
-                setEnableComposeSurfaceSyncWorkaround(true)
-                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-            }
-        },
-        update = { view ->
-            view.player = if (active) exoPlayer else null
-            if (active && exoPlayer.playbackState == Player.STATE_IDLE) exoPlayer.prepare()
-        },
-        onRelease = { it.player = null },
+    LaunchedEffect(exoPlayer, active) {
+        if (active && exoPlayer.playbackState == Player.STATE_IDLE) exoPlayer.prepare()
+    }
+    ContentFrame(
+        player = if (active) exoPlayer else null,
+        surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
+        contentScale = ContentScale.Fit,
         modifier = modifier
     )
 }
