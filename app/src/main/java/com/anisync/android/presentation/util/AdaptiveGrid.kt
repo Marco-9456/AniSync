@@ -1,10 +1,10 @@
 package com.anisync.android.presentation.util
 
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.data.AppSettings
@@ -90,7 +90,7 @@ fun profileGridColumns(
     val content = if (availableWidth != null) {
         availableWidth - horizontalPadding * 2
     } else {
-        val windowWidth = with(LocalDensity.current) { currentWindowSize().width.toDp() }
+        val windowWidth = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
         windowWidth - railWidth - horizontalPadding * 2
     }
     if (content <= 0.dp) return compactColumns

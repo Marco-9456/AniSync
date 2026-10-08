@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -16,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -108,7 +108,7 @@ fun rememberAdaptiveInfo(): AdaptiveInfo {
     // Raw window width in dp — robust across androidx.window versions (no dependency on the newer
     // WindowSizeClass.isWidthAtLeastBreakpoint API), and lets us add the custom LARGE bound.
     val density = LocalDensity.current
-    val windowSize = currentWindowSize()
+    val windowSize = LocalWindowInfo.current.containerSize
     val widthDp = with(density) { windowSize.width.toDp() }
     val heightDp = with(density) { windowSize.height.toDp() }
     val widthClass = widthClassFor(widthDp)
