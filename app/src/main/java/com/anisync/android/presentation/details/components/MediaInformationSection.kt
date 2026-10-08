@@ -23,13 +23,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Factory
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HourglassBottom
-import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.rounded.Star
@@ -693,7 +693,7 @@ private fun buildExpandableInfoItems(
     if (details.synonyms.isNotEmpty()) {
         items.add(
             InfoItem(
-                icon = Icons.Default.Label,
+                icon = Icons.AutoMirrored.Filled.Label,
                 label = stringResource(R.string.details_label_synonyms),
                 value = details.synonyms.size.toString(),
                 iconTint = MaterialTheme.colorScheme.secondary,

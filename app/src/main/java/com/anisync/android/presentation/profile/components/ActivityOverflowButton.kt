@@ -3,10 +3,10 @@ package com.anisync.android.presentation.profile.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -69,7 +69,7 @@ internal fun ActivityOverflowButton(
             )
             item(
                 text = stringResource(R.string.activity_open_on_anilist),
-                leadingIcon = Icons.Default.OpenInNew,
+                leadingIcon = Icons.AutoMirrored.Filled.OpenInNew,
                 onClick = {
                     expanded = false
                     openUrl(context, "https://anilist.co/activity/${activity.id}")
