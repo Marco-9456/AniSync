@@ -31,7 +31,11 @@ class AccountDeepLinkViewModel @Inject constructor(
         viewModelScope.launch {
             accountManager.switch(accountId)
             val newEpoch = accountManager.sessionEpoch.first { it != epochBefore }
-            _pending.value = PendingDeepLink(Intent(Intent.ACTION_VIEW, uri), newEpoch)
+            // Without these flags NavController pops the whole graph and leaves the target alone on
+            // the stack, so back would leave the app instead of returning to the start tab.
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            _pending.value = PendingDeepLink(intent, newEpoch)
         }
     }
 
