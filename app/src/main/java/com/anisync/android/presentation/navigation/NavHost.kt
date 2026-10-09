@@ -1,9 +1,11 @@
 package com.anisync.android.presentation.navigation
 
+import androidx.activity.BackEventCompat
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -17,6 +19,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -92,6 +96,16 @@ private val tabOrder = mapOf(
     Forum::class.qualifiedName to 3,
     Profile::class.qualifiedName to 4
 )
+
+/** Destinations whose pops use the tab X-axis motion rather than a detail pop. */
+private fun NavDestination.popsLikeTab(): Boolean =
+    hasRoute<Login>() || hasRoute<Library>() || hasRoute<Discover>() || hasRoute<Feed>() ||
+        hasRoute<Forum>() || hasRoute<Profile>()
+
+/** Details that pop with a fade so the shared cover morph carries the motion. */
+private fun NavDestination.popsWithMorph(): Boolean =
+    hasRoute<MediaDetails>() || hasRoute<ReviewDetail>() || hasRoute<CharacterDetails>() ||
+        hasRoute<StaffDetails>()
 
 /**
  * Determines slide direction for tab transitions based on relative position.
@@ -211,6 +225,26 @@ fun AniSyncNavHost(
         )
     }
 
+    // ---- Predictive back on a detail -----------------------------------------
+    // The gesture scrubs this transition, so the page shrinks and drifts away from the edge the
+    // swipe started on. It stays opaque for most of the drag and only fades once the pop commits.
+
+    fun predictivePopExit(swipeEdge: Int): ExitTransition {
+        val direction = if (swipeEdge == BackEventCompat.EDGE_RIGHT) -1 else 1
+        return scaleOut(
+            animationSpec = scaleSpec,
+            targetScale = 0.9f
+        ) + slideOutHorizontally(
+            animationSpec = spatialSpec,
+            targetOffsetX = { it * direction / 8 }
+        ) + fadeOut(
+            animationSpec = keyframes {
+                durationMillis = 350
+                1f at 250
+            }
+        )
+    }
+
     SharedTransitionLayout(modifier = modifier) {
         // Provide centralized link routing callbacks so any screen can navigate
         // in-app when a recognizable AniList URL is clicked (forum posts, etc.)
@@ -250,7 +284,26 @@ fun AniSyncNavHost(
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            modifier = Modifier
+            modifier = Modifier,
+            // A back gesture never reads a destination's own pop transitions, only these. Each
+            // mirrors what that destination does on a plain pop, except that a detail follows the
+            // edge the swipe started from.
+            predictivePopEnterTransition = {
+                val target = targetState.destination
+                when {
+                    target.popsLikeTab() -> sharedAxisXEnter(forward = false)
+                    target.popsWithMorph() -> fadeIn(animationSpec = effectsSpec)
+                    else -> sharedAxisZPopEnter()
+                }
+            },
+            predictivePopExitTransition = { swipeEdge ->
+                val initial = initialState.destination
+                when {
+                    initial.popsLikeTab() -> sharedAxisXExit(forward = false)
+                    initial.popsWithMorph() -> fadeOut(animationSpec = effectsSpec)
+                    else -> predictivePopExit(swipeEdge)
+                }
+            }
         ) {
             // =================================================================
             // LOGIN SCREEN
