@@ -19,6 +19,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
@@ -78,14 +79,11 @@ import com.anisync.android.worker.LibrarySyncWorker
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.system.measureTimeMillis
@@ -126,16 +124,17 @@ class MainActivity : AppCompatActivity() {
     private val _newIntents = MutableSharedFlow<Intent>(extraBufferCapacity = 4)
     val newIntents: SharedFlow<Intent> = _newIntents.asSharedFlow()
 
+    private val accountDeepLinks: AccountDeepLinkViewModel by viewModels()
+
     /**
      * Cross-account notification deep link, delivered after the switch settles and tagged with the
      * **session epoch** of the rebuilt MainScreen that should handle it. Retained (StateFlow) so it
      * survives the switch's subtree rebuild; the epoch tag ensures the pre-switch MainScreen (older
      * epoch) doesn't consume it first.
      */
-    private val _pendingDeepLink = MutableStateFlow<PendingDeepLink?>(null)
-    val pendingDeepLink: StateFlow<PendingDeepLink?> = _pendingDeepLink.asStateFlow()
+    val pendingDeepLink: StateFlow<PendingDeepLink?> get() = accountDeepLinks.pending
 
-    fun consumePendingDeepLink() { _pendingDeepLink.value = null }
+    fun consumePendingDeepLink() = accountDeepLinks.consume()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install the androidx splash screen before super.onCreate so the branded launch window
@@ -462,12 +461,7 @@ class MainActivity : AppCompatActivity() {
         // Cross-account: don't auto-handle in the wrong account; switch, then replay once the
         // subtree has rebuilt — tagged with the new epoch so only the post-switch MainScreen handles it.
         intent.data = null
-        val epochBefore = accountManager.sessionEpoch.value
-        lifecycleScope.launch {
-            accountManager.switch(target!!)
-            val newEpoch = accountManager.sessionEpoch.first { it != epochBefore }
-            _pendingDeepLink.value = PendingDeepLink(Intent(Intent.ACTION_VIEW, cleanedUri), newEpoch)
-        }
+        accountDeepLinks.switchThenOpen(target!!, cleanedUri)
         return true
     }
 
