@@ -64,9 +64,19 @@ class AniSyncApplication : Application(), Configuration.Provider,
         } + Dispatchers.Default
     )
 
+    private val workMetrics by lazy {
+        if (BuildConfig.DEBUG) com.anisync.android.worker.WorkMetricsLog.start(this, applicationScope) else null
+    }
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
+            .apply {
+                workMetrics?.let {
+                    setScheduleEventListener(it)
+                    setExecutionEventListener(it)
+                }
+            }
             .build()
 
     override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoader
