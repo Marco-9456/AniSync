@@ -1442,8 +1442,8 @@
     <string name="media_upload_custom_json_path">回應 JSON 路徑 （可選）</string>
     <string name="media_upload_custom_json_path_hint">如 data.url — 如果回覆為網址則留空</string>
     <string name="enable_app_links_title">啟用連結跳轉</string>
-    <string name="samsung_app_links_instructions">如果要讓 AniList 連結能直接跳轉到 AniSync，請於 Android 系統設定啟用可用的網路連結跳轉\n\n1.點擊「打開設定」\n2.尋找並點擊在清單上的「AniSync」\n3.點擊「新增連結」\n4.選擇「anilist.co」並儲存變更</string>
-    <string name="default_app_links_instructions">如果要讓 AniList 連結能直接跳轉到 AniSync，請於 Android 系統設定啟用可用的網路連結跳轉\n\n1.點擊「打開設定」\n2.點擊「新增連結」\n3.選擇「anilist.co」並儲存變更</string>
+    <string name="samsung_app_links_instructions">如果要讓 AniList 連結能直接跳轉到 AniSync，請於 Android 系統設定啟用可用的網路連結跳轉：\n\n1.點擊「打開設定」\n2.尋找並點擊在清單上的「AniSync」\n3.點擊「新增連結」\n4.選擇「anilist.co」並儲存變更</string>
+    <string name="default_app_links_instructions">如果要讓 AniList 連結能直接跳轉到 AniSync，請於 Android 系統設定啟用可用的網路連結跳轉：\n\n1.點擊「打開設定」\n2.點擊「新增連結」\n3.選擇「anilist.co」並儲存變更</string>
     <string name="open_settings">打開設定</string>
     <string name="settings_nav_double_tap_search_desc">雙擊頁籤即可直接搜尋，如果在該頁籤上則單擊後可回到頂部</string>
     <string name="richtext_preview_show">展示預覽</string>
