@@ -86,6 +86,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import com.anisync.android.R
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.presentation.components.SupportPromptCard
@@ -219,6 +220,8 @@ fun MainScreen(
         val activity = context as? com.anisync.android.MainActivity ?: return@LaunchedEffect
         activity.pendingDeepLink.filterNotNull().collect { pending ->
             if (pending.epoch == builtAtEpoch) {
+                // On a cold start the link is already waiting before NavHost has set its graph.
+                navController.currentBackStackEntryFlow.first()
                 navController.handleDeepLink(pending.intent)
                 activity.consumePendingDeepLink()
             }
