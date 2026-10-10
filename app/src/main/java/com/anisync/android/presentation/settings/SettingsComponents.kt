@@ -1,5 +1,12 @@
 package com.anisync.android.presentation.settings
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -380,4 +387,61 @@ fun SettingsDivider(
     endPadding: Dp = 20.dp
 ) {
     // Left intentionally empty to retain original gap spacing
+}
+
+/**
+ * A row-shaped block inside a [SettingsGroup] that holds a set of [SettingsChoiceTile]s instead of a
+ * single setting, so visual pickers sit in the same grouped list as the rows around them.
+ */
+@Composable
+fun SettingsBlock(
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(12.dp),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+    ) {
+        Column(
+            modifier = Modifier.padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            content = content
+        )
+    }
+}
+
+/**
+ * One option of a visual picker. Selected reads as a tonal container with a 2dp primary outline,
+ * the treatment the old picker sheets used for their cards. [content] draws in [LocalContentColor].
+ */
+@Composable
+fun SettingsChoiceTile(
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(20.dp),
+    content: @Composable () -> Unit
+) {
+    val container by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+        label = "ChoiceTileContainer"
+    )
+    val border by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+        label = "ChoiceTileBorder"
+    )
+    Surface(
+        selected = selected,
+        onClick = onClick,
+        shape = shape,
+        color = container,
+        contentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+        border = BorderStroke(2.dp, border),
+        modifier = modifier.semantics { role = Role.RadioButton }
+    ) {
+        content()
+    }
 }

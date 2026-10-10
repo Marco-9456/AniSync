@@ -92,7 +92,6 @@ import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.ui.theme.resolveDarkTheme
 import androidx.compose.material.icons.filled.Search
 
-private val CoverQualities = CoverQuality.entries
 private val NavBarStyles = NavBarStyle.entries
 private val AvatarShapes = com.anisync.android.data.AvatarShape.entries
 
@@ -105,30 +104,18 @@ fun LookAndFeelScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val themeMode = uiState.themeMode
-    val coverQuality = uiState.coverQuality
     val navBarStyle = uiState.navBarStyle
     val navBarShowLabels = uiState.navBarShowLabels
     val navBarCornerRadius = uiState.navBarCornerRadius
     val avatarShape = uiState.avatarShape
     val avatarBackgroundEnabled = uiState.avatarBackgroundEnabled
 
-    var showCoverQualitySheet by rememberSaveable { mutableStateOf(false) }
     var showNavBarStyleSheet by rememberSaveable { mutableStateOf(false) }
     var showAvatarShapeDialog by rememberSaveable { mutableStateOf(false) }
     var showAppIconSheet by rememberSaveable { mutableStateOf(false) }
     val appIcon by viewModel.appIcon.collectAsStateWithLifecycle()
 
     val isDarkMode = themeMode.resolveDarkTheme()
-
-    if (showCoverQualitySheet) {
-        CoverQualitySelectionSheet(
-            currentQuality = coverQuality,
-            onQualitySelected = {
-                viewModel.onAction(SettingsAction.SetCoverQuality(it))
-            },
-            onDismiss = { showCoverQualitySheet = false }
-        )
-    }
 
     if (showAppIconSheet) {
         AppIconSelectionSheet(
@@ -199,14 +186,6 @@ fun LookAndFeelScreen(
                 onClick = onNavigateToTheme
             )
         }
-
-        SettingsGroup {
-            SelectionSettingsItem(
-                icon = Icons.Default.HighQuality,
-                title = stringResource(R.string.settings_cover_quality),
-                currentValue = coverQualityLabel(coverQuality),
-                onClick = { showCoverQualitySheet = true }
-            )        }
 
         SettingsGroup {
             SelectionSettingsItem(
@@ -347,127 +326,9 @@ private fun AppIconPreview(icon: AppIcon, modifier: Modifier = Modifier) {
 
 private const val ADAPTIVE_ICON_SCALE = 108f / 72f
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CoverQualitySelectionSheet(
-    currentQuality: CoverQuality,
-    onQualitySelected: (CoverQuality) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val sheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
-    )
-
-    AppModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.settings_cover_quality),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-            )
-
-            Text(
-                text = stringResource(R.string.settings_cover_quality_desc),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Central Fixed-Size Preview Image
-            val imageUrl = when (currentQuality) {
-                CoverQuality.MEDIUM -> "https://s4.anilist.co/file/anilistcdn/media/anime/cover/small/bx105333-GybuoSoOZfpH.jpg"
-                CoverQuality.LARGE -> "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx105333-GybuoSoOZfpH.jpg"
-                CoverQuality.EXTRA_LARGE -> "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx105333-GybuoSoOZfpH.jpg"
-            }
-
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = stringResource(R.string.cd_cover_quality_preview),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .height(280.dp)
-                        .width(190.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Quality Options List
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                CoverQualities.forEach { quality ->
-                    val isSelected = currentQuality == quality
-                    val backgroundColor by animateColorAsState(
-                        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-                        label = "card_bg"
-                    )
-                    val borderColor by animateColorAsState(
-                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        label = "card_border"
-                    )
-
-                    Card(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(64.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { onQualitySelected(quality) },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-                        border = BorderStroke(2.dp, borderColor)
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = coverQualityLabel(quality),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 // -----------------------------------------------------------------------------------------
 // Helper Components
 // -----------------------------------------------------------------------------------------
-
-@Composable
-private fun coverQualityLabel(quality: CoverQuality): String = stringResource(
-    when (quality) {
-        CoverQuality.MEDIUM -> R.string.cover_quality_medium
-        CoverQuality.LARGE -> R.string.cover_quality_large
-        CoverQuality.EXTRA_LARGE -> R.string.cover_quality_extra_large
-    }
-)
 
 @Composable
 private fun navBarStyleLabel(style: NavBarStyle): String = stringResource(

@@ -1,6 +1,15 @@
 package com.anisync.android.presentation.settings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.HighQuality
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.RadioButton
+import com.anisync.android.data.CoverQuality
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -95,5 +104,74 @@ fun StorageScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        SettingsSectionLabel(stringResource(R.string.settings_section_covers))
+        SettingsGroup {
+            SettingsBlock(modifier = Modifier.selectableGroup()) {
+                Row(modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 8.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.HighQuality,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = stringResource(R.string.settings_cover_quality),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_cover_quality_desc),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                CoverQuality.entries.forEach { quality ->
+                    CoverQualityOption(
+                        quality = quality,
+                        selected = quality == uiState.coverQuality,
+                        onClick = { viewModel.onAction(SettingsAction.SetCoverQuality(quality)) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CoverQualityOption(
+    quality: CoverQuality,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val (label, description) = when (quality) {
+        CoverQuality.EXTRA_LARGE -> R.string.cover_quality_extra_large to R.string.cover_quality_extra_large_desc
+        CoverQuality.LARGE -> R.string.cover_quality_large to R.string.cover_quality_large_desc
+        CoverQuality.MEDIUM -> R.string.cover_quality_medium to R.string.cover_quality_medium_desc
+    }
+    SettingsChoiceTile(
+        selected = selected,
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(label), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = stringResource(description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = LocalContentColor.current.copy(alpha = 0.8f)
+                )
+            }
+            RadioButton(selected = selected, onClick = null)
+        }
     }
 }

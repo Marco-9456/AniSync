@@ -2354,4 +2354,5 @@
     <string name="settings_section_watching">Watching</string>
     <string name="setting_streaming_service_sheet_desc">Episode alerts and the Up Next widget link to this service when a title is on it. Otherwise they use the first streaming link the title lists.</string>
     <string name="streaming_service_none_desc">First streaming link</string>
+    <string name="settings_section_covers">Covers</string>
 </resources>
