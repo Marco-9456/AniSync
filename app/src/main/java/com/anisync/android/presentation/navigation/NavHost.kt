@@ -79,7 +79,6 @@ import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
 import com.anisync.android.presentation.settings.SettingsListDetail
 import com.anisync.android.presentation.settings.SponsorsScreen
 import com.anisync.android.presentation.settings.StorageScreen
-import com.anisync.android.presentation.settings.ThemeScreen
 import com.anisync.android.presentation.settings.UpdatesScreen
 import com.anisync.android.presentation.util.AniLinkCallbacks
 import com.anisync.android.presentation.util.LocalAniLinkCallbacks
@@ -1265,19 +1264,6 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 LookAndFeelScreen(
-                    onBackClick = { navController.popBackStack() },
-                    onNavigateToTheme = { navController.navigate(SettingsTheme) }
-                )
-            }
-
-            // Theme picker (light/dark/system + AMOLED)
-            composable<SettingsTheme>(
-                enterTransition = { sharedAxisZEnter() },
-                exitTransition = { sharedAxisZExit() },
-                popEnterTransition = { sharedAxisZPopEnter() },
-                popExitTransition = { sharedAxisZPopExit() }
-            ) {
-                ThemeScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }

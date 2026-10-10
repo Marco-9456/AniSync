@@ -7,15 +7,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
@@ -33,23 +38,81 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
-import com.anisync.android.ui.theme.PresetPalettes
 import com.anisync.android.ui.theme.ThemePalette
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.material3.dynamicColorScheme
 
 /**
- * Horizontal scrollable color scheme selector.
+ * The color palettes as a wrapping grid of the four-segment swatches, followed by a Custom tile.
  *
- * Displays available color palettes as circular icons with 4 color segments,
- * allowing users to select their preferred theme color scheme.
+ * Each row holds as many 64dp tiles as fit with at least 8dp between them, and the leftover width is
+ * shared out as the gap so every full row lines up with both edges.
  */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ColorSchemeGrid(
+    palettes: List<ThemePalette>,
+    selectedPaletteId: String,
+    isDarkMode: Boolean,
+    paletteStyle: PaletteStyle,
+    customSeedColor: Color?,
+    onPaletteSelected: (ThemePalette) -> Unit,
+    onCustomClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    val systemScheme = remember(isDarkMode, context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (isDarkMode) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        } else {
+            null
+        }
+    }
+    val custom = remember(customSeedColor) {
+        customSeedColor?.let { ThemePalette(CUSTOM_PALETTE_ID, "Custom", it) }
+    }
+    val customColors = remember(custom, isDarkMode, paletteStyle, systemScheme) {
+        custom?.let { resolvePaletteColors(it, isDarkMode, paletteStyle, systemScheme) }
+    }
+
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val perRow = ((maxWidth + MinSwatchGap) / (SwatchSize + MinSwatchGap)).toInt().coerceAtLeast(1)
+        val gap = if (perRow > 1) (maxWidth - SwatchSize * perRow) / (perRow - 1) else 0.dp
+        FlowRow(
+            maxItemsInEachRow = perRow,
+            horizontalArrangement = Arrangement.spacedBy(gap),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            palettes.forEach { palette ->
+                val colors = remember(palette, isDarkMode, paletteStyle, systemScheme) {
+                    resolvePaletteColors(palette, isDarkMode, paletteStyle, systemScheme)
+                }
+                ColorSchemeItem(
+                    label = palette.name,
+                    colors = colors,
+                    isSelected = palette.id == selectedPaletteId,
+                    onClick = { onPaletteSelected(palette) }
+                )
+            }
+            ColorSchemeItem(
+                label = stringResource(R.string.color_custom),
+                colors = customColors,
+                isSelected = selectedPaletteId == CUSTOM_PALETTE_ID,
+                onClick = onCustomClick
+            )
+        }
+    }
+}
+
+/** The same swatches in one horizontally scrolling row, for onboarding where height is scarce. */
 @Composable
 fun ColorSchemeSelector(
     palettes: List<ThemePalette>,
@@ -74,48 +137,46 @@ fun ColorSchemeSelector(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        items(
-            items = palettes,
-            key = { it.id }
-        ) { palette ->
+        items(items = palettes, key = { it.id }) { palette ->
+            val colors = remember(palette, isDarkMode, paletteStyle, systemScheme) {
+                resolvePaletteColors(palette, isDarkMode, paletteStyle, systemScheme)
+            }
             ColorSchemeItem(
-                palette = palette,
+                label = palette.name,
+                colors = colors,
                 isSelected = palette.id == selectedPaletteId,
-                isDarkMode = isDarkMode,
-                paletteStyle = paletteStyle,
-                systemScheme = systemScheme,
                 onClick = { onPaletteSelected(palette) }
             )
         }
     }
 }
 
+/** Id the custom seed color is stored under as the selected palette. */
+const val CUSTOM_PALETTE_ID = "custom"
+
+private val SwatchSize = 64.dp
+private val MinSwatchGap = 8.dp
+
 /**
- * Individual color scheme item with a 4-segment circle and label.
+ * A 64dp rounded-square tile holding the four-segment circle and its label. With no [colors] it is
+ * the empty Custom tile, a dashed ring around a plus.
  */
 @Composable
 private fun ColorSchemeItem(
-    palette: ThemePalette,
+    label: String,
+    colors: PaletteColors?,
     isSelected: Boolean,
-    isDarkMode: Boolean,
-    paletteStyle: PaletteStyle,
-    systemScheme: ColorScheme?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val paletteColors = remember(palette, isDarkMode, paletteStyle, systemScheme) {
-        resolvePaletteColors(palette, isDarkMode, paletteStyle, systemScheme)
-    }
-
     Column(
-        modifier = modifier,
+        modifier = modifier.width(SwatchSize),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Circular palette indicator
         Surface(
             modifier = Modifier
-                .size(64.dp)
+                .size(SwatchSize)
                 .then(
                     if (isSelected) {
                         Modifier.border(
@@ -134,13 +195,34 @@ private fun ColorSchemeItem(
                 modifier = Modifier.padding(8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // 4-segment circle
-                FourSegmentCircle(
-                    colors = paletteColors,
-                    modifier = Modifier.size(48.dp)
-                )
+                if (colors != null) {
+                    FourSegmentCircle(colors = colors, modifier = Modifier.size(48.dp))
+                } else {
+                    val outline = MaterialTheme.colorScheme.outline
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .drawBehind {
+                                drawCircle(
+                                    color = outline,
+                                    style = Stroke(
+                                        width = 1.5.dp.toPx(),
+                                        pathEffect = PathEffect.dashPathEffect(
+                                            floatArrayOf(4.dp.toPx(), 4.dp.toPx())
+                                        )
+                                    )
+                                )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
 
-                // Checkmark overlay for selected item
                 if (isSelected) {
                     Box(
                         modifier = Modifier
@@ -160,10 +242,10 @@ private fun ColorSchemeItem(
             }
         }
 
-        // Palette name label
         Text(
-            text = palette.name,
+            text = label,
             style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
             color = if (isSelected) {
                 MaterialTheme.colorScheme.primary
             } else {
@@ -300,38 +382,4 @@ private fun FourSegmentCircle(
                 )
             }
     )
-}
-
-// =============================================================================
-// PREVIEWS
-// =============================================================================
-
-@Preview(showBackground = true, backgroundColor = 0xFF1C1B1F)
-@Composable
-private fun ColorSchemeSelectorDarkPreview() {
-    MaterialTheme(colorScheme = androidx.compose.material3.darkColorScheme()) {
-        ColorSchemeSelector(
-            palettes = PresetPalettes.all.take(5),
-            selectedPaletteId = "dynamic",
-            isDarkMode = true,
-            paletteStyle = PaletteStyle.TonalSpot,
-            onPaletteSelected = {},
-            modifier = Modifier.padding(vertical = 16.dp)
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun ColorSchemeSelectorLightPreview() {
-    MaterialTheme {
-        ColorSchemeSelector(
-            palettes = PresetPalettes.all.take(5),
-            selectedPaletteId = "pink",
-            isDarkMode = false,
-            paletteStyle = PaletteStyle.TonalSpot,
-            onPaletteSelected = {},
-            modifier = Modifier.padding(vertical = 16.dp)
-        )
-    }
 }

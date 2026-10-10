@@ -496,7 +496,7 @@
     <string name="setting_nav_bar_style_floating">Floating pill</string>
     <string name="setting_nav_bar_style_floating_desc">Detached pill with margins from the edges</string>
     <string name="setting_nav_bar_show_labels">Show labels</string>
-    <string name="setting_nav_bar_show_labels_desc">Show destination titles beside each icon</string>
+    <string name="setting_nav_bar_show_labels_desc">Text under each tab icon</string>
     <string name="nav_bar_style_dialog_title">Bottom bar style</string>
     <string name="setting_nav_bar_corner_radius">Corner radius</string>
     <string name="setting_avatar_shape">Avatar Shape</string>
@@ -575,7 +575,7 @@
 
     <!-- Settings Screens -->
     <string name="navigate_back">Go back</string>
-    <string name="settings_look_and_feel">Look and Feel</string>
+    <string name="settings_look_and_feel">Look and feel</string>
     <string name="settings_look_and_feel_desc">Theme, colors, bottom bar, avatars, app icon</string>
 
     <!-- App lock (biometric / device credential) -->
@@ -627,7 +627,7 @@
     <string name="about_improve_translations">Improve translations</string>
     <string name="about_improve_translations_desc">Help translate %s</string>
     <string name="settings_title_language">Title Language</string>
-    <string name="settings_app_language">App Language</string>
+    <string name="settings_app_language">App language</string>
     <string name="settings_app_language_system_desc">Uses your device language setting</string>
     <string name="settings_cover_quality">Cover image quality</string>
     <string name="settings_cover_quality_desc">Applies to every cover shown in the app. Higher quality looks sharper but uses more data and storage.</string>
@@ -2355,4 +2355,20 @@
     <string name="setting_streaming_service_sheet_desc">Episode alerts and the Up Next widget link to this service when a title is on it. Otherwise they use the first streaming link the title lists.</string>
     <string name="streaming_service_none_desc">First streaming link</string>
     <string name="settings_section_covers">Covers</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="setting_pure_black">Pure black in dark mode</string>
+    <string name="setting_pure_black_desc">Black backgrounds when dark is on. Saves power on OLED screens.</string>
+    <string name="settings_section_color">Color</string>
+    <string name="setting_color_style">Color style</string>
+    <string name="setting_color_style_dynamic_desc">Your wallpaper sets the colors</string>
+    <string name="setting_color_style_sheet_desc">How your color spreads across the app. Each preview uses the color you picked.</string>
+    <string name="setting_respect_profile_colors_short_desc">Take on a user’s chosen color on their profile</string>
+    <string name="setting_media_artwork_theming_short_desc">Tint a title’s page with its cover art</string>
+    <string name="settings_section_bottom_bar">Bottom bar</string>
+    <string name="setting_nav_bar_style_floating_short">Floating</string>
+    <string name="settings_section_avatars">Avatars</string>
+    <string name="avatar_shape_short_clover">8-leaf</string>
+    <string name="avatar_shape_short_clover_4_leaf">4-leaf</string>
+    <string name="avatar_shape_short_ghostish">Ghost</string>
+    <string name="color_custom">Custom</string>
 </resources>

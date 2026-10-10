@@ -329,12 +329,6 @@ object SettingsGeneral
 object SettingsLookAndFeel
 
 /**
- * Theme picker subscreen — light/dark/system mode + AMOLED pure-black toggle.
- */
-@Serializable
-object SettingsTheme
-
-/**
  * App language picker subscreen.
  */
 @Serializable

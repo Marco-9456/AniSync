@@ -40,7 +40,6 @@ import com.anisync.android.presentation.navigation.SettingsNotifications
 import com.anisync.android.presentation.navigation.SettingsOpenSourceLicenses
 import com.anisync.android.presentation.navigation.SettingsSponsors
 import com.anisync.android.presentation.navigation.SettingsStorage
-import com.anisync.android.presentation.navigation.SettingsTheme
 import com.anisync.android.presentation.navigation.SettingsUpdates
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
@@ -54,7 +53,7 @@ import com.anisync.android.presentation.util.LocalPaneIsRoot
  *
  * Settings is the textbook Material 3 list-detail / supporting-pane surface. A category has no detail
  * of its own beyond its existing subscreen, so the detail pane is a self-contained [NavHost] keyed by
- * a [SettingsCategory]; drilling deeper within a category (Look & Feel → Theme/Language, About →
+ * a [SettingsCategory]; drilling deeper within a category (General → Language, About →
  * licenses/acknowledgements/links, Developer Tools → font playground) stays in-pane, while logging out
  * escalates to the app [navController].
  *
@@ -190,10 +189,8 @@ private fun SettingsDetailPane(
         composable<SettingsLookAndFeel> {
             LookAndFeelScreen(
                 onBackClick = popOrClose,
-                onNavigateToTheme = { paneNav.navigate(SettingsTheme) },
             )
         }
-        composable<SettingsTheme> { ThemeScreen(onBackClick = popOrClose) }
         composable<SettingsLanguage> { LanguageScreen(onBackClick = popOrClose) }
         composable<SettingsAniList> {
             AniListSettingsScreen(
