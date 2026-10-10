@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tune
@@ -159,6 +160,13 @@ fun SettingsScreen(
         )
 
         val allCategories = listOfNotNull(
+            CategoryData(
+                key = "general",
+                title = stringResource(R.string.settings_general),
+                subtitle = stringResource(R.string.settings_general_desc),
+                icon = Icons.Outlined.Settings,
+                onClick = { onCategorySelected(SettingsCategory.General) }
+            ),
             CategoryData(
                 key = "lookandfeel",
                 title = stringResource(R.string.settings_look_and_feel),
@@ -368,6 +376,7 @@ fun ExpressiveCategoryItem(
  *  show the selected state in the two-pane list-detail layout. (App Links has no category — never
  *  selected.) */
 private fun SettingsCategory.cardKey(): String = when (this) {
+    SettingsCategory.General -> "general"
     SettingsCategory.LookAndFeel -> "lookandfeel"
     SettingsCategory.AniList -> "anilist"
     SettingsCategory.Notifications -> "notifications"
@@ -382,6 +391,7 @@ private fun SettingsCategory.cardKey(): String = when (this) {
 private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> {
     return if (isDark) {
         when (key) {
+            "general" -> Color(0xFF5F4100) to Color(0xFFFFDDB3)
             "lookandfeel" -> Color(0xFF7D5260) to Color(0xFFFFD8E4)
             "anilist" -> Color(0xFF2E4B5F) to Color(0xFFB8E6FF)
             "notifications" -> Color(0xFF3E4C63) to Color(0xFFD7E3FF)
@@ -396,6 +406,7 @@ private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> 
         }
     } else {
         when (key) {
+            "general" -> Color(0xFFFFDDB3) to Color(0xFF2A1800)
             "lookandfeel" -> Color(0xFFFFD8E4) to Color(0xFF631835)
             "anilist" -> Color(0xFFB8E6FF) to Color(0xFF0E3346)
             "notifications" -> Color(0xFFD7E3FF) to Color(0xFF253347)

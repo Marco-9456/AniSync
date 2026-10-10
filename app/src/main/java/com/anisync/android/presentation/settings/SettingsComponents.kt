@@ -137,6 +137,7 @@ fun SettingsItem(
     subtitle: String? = null,
     icon: ImageVector? = null,
     enabled: Boolean = true,
+    leadingContent: (@Composable () -> Unit)? = null,
     trailingContent: @Composable () -> Unit = {}
 ) {
     Surface(
@@ -150,7 +151,9 @@ fun SettingsItem(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(16.dp).fillMaxWidth()
         ) {
-            if (icon != null) {
+            if (leadingContent != null) {
+                Box(modifier = Modifier.padding(end = 16.dp)) { leadingContent() }
+            } else if (icon != null) {
                 Box(
                     modifier = Modifier.padding(end = 16.dp).size(24.dp),
                     contentAlignment = Alignment.Center
@@ -312,7 +315,8 @@ fun RadioSettingsItem(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     icon: ImageVector? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    leadingContent: (@Composable () -> Unit)? = null
 ) {
     SettingsItem(
         title = title,
@@ -321,6 +325,7 @@ fun RadioSettingsItem(
         enabled = enabled,
         onClick = onClick,
         modifier = modifier,
+        leadingContent = leadingContent,
         trailingContent = {
             RadioButton(
                 selected = selected,

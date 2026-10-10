@@ -92,7 +92,6 @@ import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.ui.theme.resolveDarkTheme
 import androidx.compose.material.icons.filled.Search
 
-private val StreamingServices = StreamingService.entries
 private val CoverQualities = CoverQuality.entries
 private val NavBarStyles = NavBarStyle.entries
 private val AvatarShapes = com.anisync.android.data.AvatarShape.entries
@@ -101,47 +100,25 @@ private val AvatarShapes = com.anisync.android.data.AvatarShape.entries
 fun LookAndFeelScreen(
     onBackClick: () -> Unit,
     onNavigateToTheme: () -> Unit,
-    onNavigateToLanguage: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val themeMode = uiState.themeMode
-    val preferredStreamingService = uiState.preferredStreamingService
-    val hapticEnabled = uiState.hapticEnabled
-    val appLockEnabled = uiState.appLockEnabled
-    val appLocale = uiState.appLocale
     val coverQuality = uiState.coverQuality
     val navBarStyle = uiState.navBarStyle
     val navBarShowLabels = uiState.navBarShowLabels
-    val navBarDoubleTapSearch = uiState.navBarDoubleTapSearch
     val navBarCornerRadius = uiState.navBarCornerRadius
     val avatarShape = uiState.avatarShape
     val avatarBackgroundEnabled = uiState.avatarBackgroundEnabled
 
-    var showStreamingServiceSheet by rememberSaveable { mutableStateOf(false) }
     var showCoverQualitySheet by rememberSaveable { mutableStateOf(false) }
     var showNavBarStyleSheet by rememberSaveable { mutableStateOf(false) }
-    var showStartScreenSheet by rememberSaveable { mutableStateOf(false) }
-    // Read straight off AppSettings: the ViewModel's uiState is assembled from combines that
-    // are already at their arity ceiling, and this is a single value with a single writer.
-    val startScreen by LocalAppSettings.current.startScreen.collectAsStateWithLifecycle()
     var showAvatarShapeDialog by rememberSaveable { mutableStateOf(false) }
     var showAppIconSheet by rememberSaveable { mutableStateOf(false) }
     val appIcon by viewModel.appIcon.collectAsStateWithLifecycle()
 
     val isDarkMode = themeMode.resolveDarkTheme()
-
-    if (showStreamingServiceSheet) {
-        StreamingServiceSelectionSheet(
-            currentService = preferredStreamingService,
-            onServiceSelected = {
-                viewModel.onAction(SettingsAction.SetPreferredStreamingService(it))
-                showStreamingServiceSheet = false
-            },
-            onDismiss = { showStreamingServiceSheet = false }
-        )
-    }
 
     if (showCoverQualitySheet) {
         CoverQualitySelectionSheet(
@@ -164,34 +141,16 @@ fun LookAndFeelScreen(
         )
     }
 
-    if (showStartScreenSheet) {
-        SettingsPickerSheet(
-            title = stringResource(R.string.setting_start_screen),
-            items = StartScreen.entries,
-            selected = startScreen,
-            itemLabel = { startScreenLabel(it) },
-            onSelect = {
-                viewModel.onAction(SettingsAction.SetStartScreen(it))
-                showStartScreenSheet = false
-            },
-            onDismiss = { showStartScreenSheet = false }
-        )
-    }
-
     if (showNavBarStyleSheet) {
         NavBarStyleSelectionSheet(
             currentStyle = navBarStyle,
             showLabels = navBarShowLabels,
             cornerRadius = navBarCornerRadius,
-            doubleTapSearch = navBarDoubleTapSearch,
             onStyleSelected = {
                 viewModel.onAction(SettingsAction.SetNavBarStyle(it))
             },
             onShowLabelsChange = {
                 viewModel.onAction(SettingsAction.SetNavBarShowLabels(it))
-            },
-            onDoubleTapSearchChange = {
-                viewModel.onAction(SettingsAction.SetNavBarDoubleTapSearch(it))
             },
             onCornerRadiusChange = {
                 viewModel.onAction(SettingsAction.SetNavBarCornerRadius(it))
@@ -243,13 +202,6 @@ fun LookAndFeelScreen(
 
         SettingsGroup {
             SelectionSettingsItem(
-                icon = Icons.Default.Translate,
-                title = stringResource(R.string.settings_app_language),
-                currentValue = appLocale.displayName,
-                onClick = onNavigateToLanguage,
-                showArrow = true
-            )
-            SelectionSettingsItem(
                 icon = Icons.Default.HighQuality,
                 title = stringResource(R.string.settings_cover_quality),
                 currentValue = coverQualityLabel(coverQuality),
@@ -262,12 +214,6 @@ fun LookAndFeelScreen(
                 title = stringResource(R.string.setting_nav_bar_style),
                 currentValue = navBarStyleLabel(navBarStyle),
                 onClick = { showNavBarStyleSheet = true }
-            )
-            SelectionSettingsItem(
-                icon = Icons.Outlined.Home,
-                title = stringResource(R.string.setting_start_screen),
-                currentValue = startScreenLabel(startScreen),
-                onClick = { showStartScreenSheet = true }
             )
             SelectionSettingsItem(
                 icon = Icons.Default.Face,
@@ -283,148 +229,6 @@ fun LookAndFeelScreen(
             )
         }
 
-        SettingsGroup {
-            SelectionSettingsItem(
-                icon = Icons.Default.PlayCircle,
-                title = stringResource(R.string.setting_streaming_service),
-                currentValue = preferredStreamingService.displayName,
-                onClick = { showStreamingServiceSheet = true }
-            )
-            SwitchSettingsItem(
-                icon = Icons.Default.Vibration,
-                title = stringResource(R.string.setting_haptic_feedback),
-                checked = hapticEnabled,
-                onCheckedChange = { viewModel.onAction(SettingsAction.SetHapticEnabled(it)) }
-            )
-            SwitchSettingsItem(
-                icon = Icons.Default.Star,
-                title = stringResource(R.string.setting_score_on_complete),
-                subtitle = stringResource(R.string.setting_score_on_complete_desc),
-                checked = uiState.scoreOnComplete,
-                onCheckedChange = { viewModel.onAction(SettingsAction.SetScoreOnComplete(it)) }
-            )
-            // "Show adult content" now lives under Settings ▸ AniList Account, where it follows the
-            // AniList account option by default and can be overridden per device.
-        }
-
-        SettingsGroup {
-            // Privacy: gate the app behind the device's own screen lock (biometric or PIN/pattern/
-            // password). The toggle is refused in the ViewModel when no screen lock is set up.
-            SwitchSettingsItem(
-                icon = Icons.Default.Lock,
-                title = stringResource(R.string.settings_app_lock),
-                subtitle = stringResource(R.string.settings_app_lock_desc),
-                checked = appLockEnabled,
-                onCheckedChange = { viewModel.onAction(SettingsAction.SetAppLockEnabled(it)) }
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun StreamingServiceSelectionSheet(
-    currentService: StreamingService,
-    onServiceSelected: (StreamingService) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val sheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
-    )
-    val brandColors = rememberBrandColors()
-
-    AppModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.setting_streaming_service),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-            )
-
-            Text(
-                text = stringResource(R.string.setting_streaming_service_desc),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 100.dp),
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(StreamingServices) { service ->
-                    val isSelected = currentService == service
-                    val brandColor = brandColors[service]
-
-                    val backgroundColor by animateColorAsState(
-                        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-                        label = "card_bg"
-                    )
-                    val borderColor by animateColorAsState(
-                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        label = "card_border"
-                    )
-
-                    Card(
-                        modifier = Modifier
-                            .height(110.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .clickable { onServiceSelected(service) },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-                        border = BorderStroke(2.dp, borderColor)
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxSize().padding(8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            if (service.iconUrl != null) {
-                                AsyncImage(
-                                    model = service.iconUrl,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(36.dp),
-                                    contentScale = ContentScale.Fit,
-                                    colorFilter = brandColor?.let { ColorFilter.tint(it) },
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Default.PlayCircle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(36.dp),
-                                    tint = brandColor ?: if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-
-                            Spacer(Modifier.height(12.dp))
-
-                            Text(
-                                text = service.displayName,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -652,19 +456,6 @@ fun CoverQualitySelectionSheet(
     }
 }
 
-@Composable
-private fun rememberBrandColors(): Map<StreamingService, Color?> {
-    return remember {
-        StreamingServices.associateWith { service ->
-            try {
-                Color(android.graphics.Color.parseColor(service.brandColor))
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
-}
-
 // -----------------------------------------------------------------------------------------
 // Helper Components
 // -----------------------------------------------------------------------------------------
@@ -741,10 +532,8 @@ fun NavBarStyleSelectionSheet(
     currentStyle: NavBarStyle,
     showLabels: Boolean,
     cornerRadius: Float,
-    doubleTapSearch: Boolean,
     onStyleSelected: (NavBarStyle) -> Unit,
     onShowLabelsChange: (Boolean) -> Unit,
-    onDoubleTapSearchChange: (Boolean) -> Unit,
     onCornerRadiusChange: (Float) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -919,39 +708,6 @@ fun NavBarStyleSelectionSheet(
                         modifier = Modifier.padding(horizontal = 20.dp),
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onDoubleTapSearchChange(!doubleTapSearch) }
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.settings_nav_double_tap_search),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = stringResource(R.string.settings_nav_double_tap_search_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Spacer(Modifier.width(16.dp))
-                        Switch(
-                            checked = doubleTapSearch,
-                            onCheckedChange = onDoubleTapSearchChange,
-                            colors = appSwitchColors()
-                        )
-                    }
 
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 20.dp),
@@ -1144,15 +900,3 @@ fun AvatarShapeSelectionSheet(
         }
     }
 }
-
-/** Human label for an [StartScreen] option, shared by the row subtitle and the picker. */
-@Composable
-private fun startScreenLabel(screen: StartScreen): String = stringResource(
-    when (screen) {
-        StartScreen.LAST_VISITED -> R.string.start_screen_last_visited
-        StartScreen.LIBRARY -> R.string.nav_library
-        StartScreen.DISCOVER -> R.string.nav_discover
-        StartScreen.FEED -> R.string.nav_feed
-        StartScreen.FORUM -> R.string.nav_forum
-    }
-)

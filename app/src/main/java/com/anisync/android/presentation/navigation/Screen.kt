@@ -317,7 +317,13 @@ object Notifications
 object Settings
 
 /**
- * Look and Feel settings (theme, colors, title language, streaming service, haptic).
+ * General settings: start screen, app lock, tab gestures, haptics, language, streaming service.
+ */
+@Serializable
+object SettingsGeneral
+
+/**
+ * Look and Feel settings: theme, colors, bottom bar, avatars, app icon.
  */
 @Serializable
 object SettingsLookAndFeel

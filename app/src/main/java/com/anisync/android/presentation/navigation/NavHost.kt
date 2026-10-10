@@ -69,6 +69,7 @@ import com.anisync.android.presentation.settings.AcknowledgmentsScreen
 import com.anisync.android.presentation.settings.AniListSettingsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
 import com.anisync.android.presentation.settings.FontSettingsScreen
+import com.anisync.android.presentation.settings.GeneralScreen
 import com.anisync.android.presentation.settings.LanguageScreen
 import com.anisync.android.presentation.settings.LinksScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
@@ -1243,6 +1244,19 @@ fun AniSyncNavHost(
                 )
             }
 
+            // General settings
+            composable<SettingsGeneral>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                GeneralScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onNavigateToLanguage = { navController.navigate(SettingsLanguage) }
+                )
+            }
+
             // Look and Feel Settings
             composable<SettingsLookAndFeel>(
                 enterTransition = { sharedAxisZEnter() },
@@ -1252,8 +1266,7 @@ fun AniSyncNavHost(
             ) {
                 LookAndFeelScreen(
                     onBackClick = { navController.popBackStack() },
-                    onNavigateToTheme = { navController.navigate(SettingsTheme) },
-                    onNavigateToLanguage = { navController.navigate(SettingsLanguage) }
+                    onNavigateToTheme = { navController.navigate(SettingsTheme) }
                 )
             }
 

@@ -31,6 +31,7 @@ import com.anisync.android.presentation.navigation.SettingsAcknowledgments
 import com.anisync.android.presentation.navigation.SettingsAniList
 import com.anisync.android.presentation.navigation.SettingsDeveloperTools
 import com.anisync.android.presentation.navigation.SettingsFontPlayground
+import com.anisync.android.presentation.navigation.SettingsGeneral
 import com.anisync.android.presentation.navigation.SettingsLanguage
 import com.anisync.android.presentation.navigation.SettingsLinks
 import com.anisync.android.presentation.navigation.SettingsLookAndFeel
@@ -100,6 +101,7 @@ fun SettingsListDetail(
 
 /** A Settings category that opens its own subscreen in the detail pane (App Links stays a dialog). */
 enum class SettingsCategory {
+    General,
     LookAndFeel,
     AniList,
     Notifications,
@@ -112,6 +114,7 @@ enum class SettingsCategory {
 }
 
 private fun SettingsCategory.toPaneRoute(): Any = when (this) {
+    SettingsCategory.General -> SettingsGeneral
     SettingsCategory.LookAndFeel -> SettingsLookAndFeel
     SettingsCategory.AniList -> SettingsAniList
     SettingsCategory.Notifications -> SettingsNotifications
@@ -178,11 +181,16 @@ private fun SettingsDetailPane(
             slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.End) + fadeOut()
         },
     ) {
+        composable<SettingsGeneral> {
+            GeneralScreen(
+                onBackClick = popOrClose,
+                onNavigateToLanguage = { paneNav.navigate(SettingsLanguage) },
+            )
+        }
         composable<SettingsLookAndFeel> {
             LookAndFeelScreen(
                 onBackClick = popOrClose,
                 onNavigateToTheme = { paneNav.navigate(SettingsTheme) },
-                onNavigateToLanguage = { paneNav.navigate(SettingsLanguage) },
             )
         }
         composable<SettingsTheme> { ThemeScreen(onBackClick = popOrClose) }
