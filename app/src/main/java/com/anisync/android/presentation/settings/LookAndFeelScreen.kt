@@ -142,6 +142,8 @@ fun LookAndFeelScreen(
     if (showColorPicker) {
         ColorPickerSheet(
             currentColor = customSeedColor,
+            isDarkMode = isDarkMode,
+            paletteStyle = uiState.paletteStyle,
             onColorSelected = { color ->
                 viewModel.onAction(SettingsAction.SetCustomSeedColor(color))
                 viewModel.onAction(SettingsAction.SetSelectedPalette(CUSTOM_PALETTE_ID))

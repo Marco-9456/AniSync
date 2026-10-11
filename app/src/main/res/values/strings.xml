@@ -470,10 +470,10 @@
     <!-- Theme Palette Selection -->
     <string name="color_and_style">Color &amp; Style</string>
     <string name="palette_style">Palette Style</string>
-    <string name="custom_color">Custom Color</string>
-    <string name="custom_color_description">Pick a seed color to generate your unique theme palette.</string>
+    <string name="custom_color">Custom color</string>
+    <string name="custom_color_description">Pick any color and AniSync builds the whole theme from it.</string>
     <string name="quick_pick">Quick Pick</string>
-    <string name="hue_slider">Fine Tune</string>
+    <string name="hue_slider">Hue</string>
     <string name="preview">Preview</string>
     <string name="color_scheme">Color Scheme</string>
     <string name="apply">Apply</string>
@@ -2371,4 +2371,15 @@
     <string name="avatar_shape_short_clover_4_leaf">4-leaf</string>
     <string name="avatar_shape_short_ghostish">Ghost</string>
     <string name="color_custom">Custom</string>
+    <string name="hex_code">Hex code</string>
+    <string name="paste">Paste</string>
+    <string name="color_role_primary">Primary</string>
+    <string name="color_role_container">Container</string>
+    <string name="color_role_tertiary">Tertiary</string>
+    <string name="color_role_surface">Surface</string>
+    <string name="language_system_default">System default</string>
+    <string name="language_system_default_desc">Follows your phone. %1$s right now.</string>
+    <string name="language_all">All languages</string>
+    <string name="language_help_translate">Help translate AniSync</string>
+    <string name="language_help_translate_desc">Missing your language, or spotted a mistake? Translations come from volunteers on Weblate.</string>
 </resources>
