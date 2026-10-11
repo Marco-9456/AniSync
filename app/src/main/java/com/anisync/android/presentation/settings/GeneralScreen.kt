@@ -42,6 +42,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.data.AppLocale
 import com.anisync.android.data.StartScreen
 import com.anisync.android.data.StreamingService
 import com.anisync.android.presentation.components.AppModalBottomSheet
@@ -137,7 +138,11 @@ fun GeneralScreen(
             SelectionSettingsItem(
                 icon = Icons.Default.Translate,
                 title = stringResource(R.string.settings_app_language),
-                currentValue = uiState.appLocale.displayName,
+                currentValue = if (uiState.appLocale == AppLocale.SYSTEM) {
+                    stringResource(R.string.language_system_default)
+                } else {
+                    uiState.appLocale.displayName
+                },
                 onClick = onNavigateToLanguage,
                 showArrow = true
             )

@@ -479,7 +479,7 @@
     <string name="apply">Apply</string>
     <string name="dark_mode">Dark Mode</string>
     <string name="dark_mode_override">Override system setting</string>
-    <string name="setting_haptic_feedback">Haptic Feedback</string>
+    <string name="setting_haptic_feedback">Haptic feedback</string>
     <string name="setting_haptic_description">Vibrate on touch interactions</string>
     <string name="setting_score_on_complete">Ask for a score when finishing</string>
     <string name="setting_score_on_complete_desc">When a title on your list moves to Completed. Adding a new title as Completed never asks.</string>
@@ -521,7 +521,7 @@
     <string name="avatar_shape_ghostish_desc">A playful, ghost-like shape</string>
     <string name="avatar_shape_none">None</string>
     <string name="avatar_shape_none_desc">Show the avatar image in its natural shape</string>
-    <string name="setting_streaming_service">Streaming Service</string>
+    <string name="setting_streaming_service">Streaming service</string>
     <string name="setting_streaming_service_desc">Choose your preferred streaming platform for the Up Next widget icon</string>
     <string name="control_notifications">Notifications</string>
     <string name="notification_watching">Watching List</string>
