@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -31,7 +32,6 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
-import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.util.WindowModalSheetScope
@@ -374,6 +375,7 @@ private fun BottomBarRow(
     bottomBarLeading: (@Composable RowScope.() -> Unit)?,
     onAttachClick: (() -> Unit)? = null
 ) {
+
     if (bottomBarLeading != null) {
         Row(
             modifier = Modifier
@@ -411,11 +413,12 @@ private fun BottomBarRow(
             )
         }
     } else {
-        Row(
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 12.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             RichTextFormatBar(
                 textFieldState = textFieldState,
@@ -424,18 +427,22 @@ private fun BottomBarRow(
                 modifier = Modifier.weight(1f),
                 onAttachClick = onAttachClick
             )
-            RichTextCharCounter(
-                length = textFieldState.text.length,
-                maxLength = maxLength,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(horizontal = 12.dp)
-            )
-            SubmitButton(
-                label = submitLabel,
-                isSubmitting = isSubmitting,
-                enabled = canSubmit,
-                onClick = onSubmit
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RichTextCharCounter(
+                    length = textFieldState.text.length,
+                    maxLength = maxLength,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+                SubmitButton(
+                    label = submitLabel,
+                    isSubmitting = isSubmitting,
+                    enabled = canSubmit,
+                    onClick = onSubmit
+                )
+            }
         }
     }
 }
