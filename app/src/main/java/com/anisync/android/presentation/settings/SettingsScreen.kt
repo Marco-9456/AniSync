@@ -63,7 +63,7 @@ import com.anisync.android.ui.theme.decorativeAvatarShape
 import com.anisync.android.ui.theme.resolveDarkTheme
 
 /** AniSync's Weblate project — community translation. Opened from the Settings top bar. */
-private const val WEBLATE_URL = "https://hosted.weblate.org/engage/anisync/"
+internal const val WEBLATE_URL = "https://hosted.weblate.org/engage/anisync/"
 
 private data class CategoryData(
     val key: String,

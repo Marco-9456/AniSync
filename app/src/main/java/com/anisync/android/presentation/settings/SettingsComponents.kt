@@ -145,10 +145,11 @@ fun SettingsItem(
     icon: ImageVector? = null,
     enabled: Boolean = true,
     leadingContent: (@Composable () -> Unit)? = null,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     trailingContent: @Composable () -> Unit = {}
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = containerColor,
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
@@ -323,7 +324,8 @@ fun RadioSettingsItem(
     subtitle: String? = null,
     icon: ImageVector? = null,
     enabled: Boolean = true,
-    leadingContent: (@Composable () -> Unit)? = null
+    leadingContent: (@Composable () -> Unit)? = null,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer
 ) {
     SettingsItem(
         title = title,
@@ -333,6 +335,7 @@ fun RadioSettingsItem(
         onClick = onClick,
         modifier = modifier,
         leadingContent = leadingContent,
+        containerColor = containerColor,
         trailingContent = {
             RadioButton(
                 selected = selected,
