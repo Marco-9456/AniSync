@@ -1957,7 +1957,7 @@
     <string name="onboarding_perm_action_open">Open</string>
 
     <string name="onboarding_personalise_headline">Make it yours</string>
-    <string name="onboarding_personalise_body">Four small choices. Every one of them lives in Look and Feel afterwards.</string>
+    <string name="onboarding_personalise_body">Four small choices. You can change every one of them in Settings later.</string>
     <string name="onboarding_personalise_accent">ACCENT</string>
     <string name="onboarding_personalise_theme">THEME</string>
     <string name="onboarding_personalise_titles">TITLES</string>

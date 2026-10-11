@@ -145,12 +145,12 @@ fun PaletteStyle.toDisplayName(): String = when (this) {
 fun PaletteStyle.toDescription(): String = when (this) {
     PaletteStyle.TonalSpot -> "Calm, balanced colors"
     PaletteStyle.Neutral -> "Subtle, grayscale-leaning"
-    PaletteStyle.Vibrant -> "Bold, maximum colorfulness"
+    PaletteStyle.Vibrant -> "Bold, most colorful"
     PaletteStyle.Expressive -> "Playful, diverse hues"
     PaletteStyle.Rainbow -> "Varied hue spectrum"
     PaletteStyle.FruitSalad -> "Colorful, lively mix"
     PaletteStyle.Monochrome -> "Pure black, white, gray"
     PaletteStyle.Fidelity -> "Preserves source color"
     PaletteStyle.Content -> "Analogous color harmony"
-    is PaletteStyle.Cmf -> "One hue, deeper tinted surfaces"
+    is PaletteStyle.Cmf -> "One hue, tinted surfaces"
 }
