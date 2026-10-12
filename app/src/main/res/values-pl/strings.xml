@@ -996,8 +996,6 @@
     <string name="cd_theme_spoiler">Ten motyw może zaspoilerować serial</string>
     <string name="themes_failed_title">Nie załadowano motywów</string>
     <string name="themes_appears_in">Pojawia się w</string>
-    <string name="themes_variant_creditless"></string>
-    <string name="themes_variant_with_credits"></string>
     <string name="themes_variant_lyrics">Słowa</string>
     <string name="themes_open_source">Otwórz w AnimeThemes</string>
     <string name="themes_actions_label">Gdzie indziej</string>
