@@ -43,14 +43,16 @@ fun LookAndFeelPreview(modifier: Modifier = Modifier) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var mediaType by remember { mutableStateOf(MediaType.ANIME) }
 
-    // The rail paints its pinned toggle on the page background and the rows sit on
-    // surfaceContainerLow. Both are re-pointed so they read against this card the way they read
-    // against the Library page.
+    // The Library sits on the page background. This card sits two surface steps higher, so every
+    // surface role inside moves up by the same steps and each layer keeps the contrast it has
+    // against the real page, in light and dark alike.
     val scheme = MaterialTheme.colorScheme
     val cardScheme = remember(scheme) {
         scheme.copy(
             background = scheme.surfaceContainer,
-            surfaceContainerLow = scheme.surfaceContainerLowest
+            surfaceContainerLow = scheme.surfaceContainerHigh,
+            surfaceContainer = scheme.surfaceContainerHighest,
+            surfaceContainerHigh = scheme.surfaceContainerHighest
         )
     }
 
