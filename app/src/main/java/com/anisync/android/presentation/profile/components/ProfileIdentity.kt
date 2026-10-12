@@ -33,6 +33,8 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -58,6 +60,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.components.bannerScrimBrush
 import com.anisync.android.presentation.components.bannerScrimHeight
 import com.anisync.android.domain.UserProfile
@@ -160,11 +163,14 @@ fun ProfileBannerSurface(
                 contentColor = Color.White
             )
         ) {
-            Icon(
-                imageVector = topActionIcon,
-                contentDescription = if (isOwnProfile) stringResource(R.string.settings) else stringResource(R.string.action_share),
-                modifier = Modifier.size(24.dp)
-            )
+            val showDot = isOwnProfile && rememberActiveWhatsNew().isNotEmpty()
+            BadgedBox(badge = { if (showDot) Badge() }) {
+                Icon(
+                    imageVector = topActionIcon,
+                    contentDescription = if (isOwnProfile) stringResource(R.string.settings) else stringResource(R.string.action_share),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }

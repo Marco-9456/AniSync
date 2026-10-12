@@ -26,6 +26,7 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,6 +44,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.data.AppLocale
+import com.anisync.android.data.WhatsNewItem
+import com.anisync.android.presentation.components.LocalWhatsNew
+import com.anisync.android.presentation.components.rememberActiveWhatsNew
+import com.anisync.android.presentation.settings.components.InfoNotice
 import com.anisync.android.data.StartScreen
 import com.anisync.android.data.StreamingService
 import com.anisync.android.presentation.components.AppModalBottomSheet
@@ -93,11 +98,21 @@ fun GeneralScreen(
         )
     }
 
+    val whatsNewStore = LocalWhatsNew.current
+    val whatsNew = rememberActiveWhatsNew()
+    LaunchedEffect(Unit) { whatsNewStore.markSeen(WhatsNewItem.SETTINGS_GENERAL) }
+
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_general),
         onBackClick = onBackClick,
         modifier = modifier
     ) {
+        if (WhatsNewItem.GENERAL_MOVED_NOTICE in whatsNew) {
+            InfoNotice(
+                text = stringResource(R.string.whats_new_general_notice),
+                onDismiss = { whatsNewStore.markSeen(WhatsNewItem.GENERAL_MOVED_NOTICE) }
+            )
+        }
         SettingsSectionLabel(stringResource(R.string.settings_section_opening))
         SettingsGroup {
             SelectionSettingsItem(

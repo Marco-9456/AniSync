@@ -70,6 +70,8 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AvatarShape
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.ThemeMode
+import com.anisync.android.data.WhatsNewItem
+import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.rememberControlledSliderState
 import com.anisync.android.presentation.settings.components.CUSTOM_PALETTE_ID
@@ -105,6 +107,8 @@ fun LookAndFeelScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val appIcon by viewModel.appIcon.collectAsStateWithLifecycle()
     val isDarkMode = uiState.themeMode.resolveDarkTheme()
+    val whatsNewStore = LocalWhatsNew.current
+    LaunchedEffect(Unit) { whatsNewStore.markSeen(WhatsNewItem.SETTINGS_LOOK_AND_FEEL) }
 
     val supportsDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val palettes = remember(supportsDynamicColor) {

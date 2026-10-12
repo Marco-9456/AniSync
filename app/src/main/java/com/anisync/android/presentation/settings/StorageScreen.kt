@@ -10,6 +10,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.RadioButton
 import com.anisync.android.data.CoverQuality
+import com.anisync.android.data.WhatsNewItem
+import com.anisync.android.presentation.components.LocalWhatsNew
+import com.anisync.android.presentation.components.WhatsNewPill
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +25,8 @@ import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +48,12 @@ fun StorageScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val whatsNewStore = LocalWhatsNew.current
+    // Read once on entry so the pill stays up for the visit that clears it.
+    val showCoverQualityMoved = remember {
+        WhatsNewItem.STORAGE_COVER_QUALITY in whatsNewStore.active.value
+    }
+    LaunchedEffect(Unit) { whatsNewStore.markSeen(WhatsNewItem.STORAGE_COVER_QUALITY) }
     val cacheSize = uiState.cacheSize
     val isCacheCleared = uiState.isCacheCleared
     val isCacheLoading = uiState.isCacheLoading
@@ -118,11 +129,18 @@ fun StorageScreen(
                         modifier = Modifier.padding(end = 16.dp)
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = stringResource(R.string.settings_cover_quality),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.settings_cover_quality),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            if (showCoverQualityMoved) WhatsNewPill(WhatsNewItem.Kind.MOVED)
+                        }
                         Text(
                             text = stringResource(R.string.settings_cover_quality_desc),
                             style = MaterialTheme.typography.bodyMedium,

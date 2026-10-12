@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -56,6 +57,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
+import com.anisync.android.data.WhatsNewItem
+import com.anisync.android.presentation.components.WhatsNewDot
+import com.anisync.android.presentation.components.WhatsNewPill
+import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.util.launchUrl
 import com.anisync.android.presentation.components.AppLinksPromptDialog
 import com.anisync.android.presentation.util.LocalAppSettings
@@ -123,6 +128,7 @@ fun SettingsScreen(
         }
     ) {
         val isDark = uiState.themeMode.resolveDarkTheme()
+        val whatsNew = rememberActiveWhatsNew()
 
         OutlinedTextField(
             value = searchQuery,
@@ -290,7 +296,8 @@ fun SettingsScreen(
                         customColors = getCategoryColors(category.key, isDark),
                         onClick = category.onClick,
                         selected = selectedCategory != null && category.key == selectedCategory.cardKey(),
-                        shape = shape
+                        shape = shape,
+                        badge = categoryBadge(category.key, whatsNew)
                     )
                 }
             }
@@ -306,7 +313,8 @@ fun ExpressiveCategoryItem(
     customColors: Pair<Color, Color>,
     onClick: () -> Unit,
     shape: androidx.compose.ui.graphics.Shape,
-    selected: Boolean = false
+    selected: Boolean = false,
+    badge: (@Composable () -> Unit)? = null
 ) {
     Surface(
         onClick = onClick,
@@ -352,14 +360,21 @@ fun ExpressiveCategoryItem(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = LocalContentColor.current,
-                    maxLines = 1
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = title,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = LocalContentColor.current,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    badge?.invoke()
+                }
                 Text(
                     text = subtitle,
                     overflow = TextOverflow.Ellipsis,
@@ -386,6 +401,25 @@ private fun SettingsCategory.cardKey(): String = when (this) {
     SettingsCategory.Sponsors -> "sponsors"
     SettingsCategory.About -> "about"
     SettingsCategory.DeveloperTools -> "dev_tools"
+}
+
+/**
+ * A category that is itself new wears the pill. One that only holds something new or moved gets the
+ * dot, which clears once everything inside has been seen.
+ */
+private fun categoryBadge(key: String, active: Set<WhatsNewItem>): (@Composable () -> Unit)? {
+    val leaf = when (key) {
+        "general" -> WhatsNewItem.SETTINGS_GENERAL
+        "lookandfeel" -> WhatsNewItem.SETTINGS_LOOK_AND_FEEL
+        else -> null
+    }
+    if (leaf != null && leaf in active) return { WhatsNewPill(leaf.kind) }
+    val inside = when (key) {
+        "general" -> listOf(WhatsNewItem.GENERAL_MOVED_NOTICE)
+        "storage" -> listOf(WhatsNewItem.STORAGE_COVER_QUALITY)
+        else -> emptyList()
+    }
+    return if (inside.any { it in active }) ({ WhatsNewDot() }) else null
 }
 
 private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> {
