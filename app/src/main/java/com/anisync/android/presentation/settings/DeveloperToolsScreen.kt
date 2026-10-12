@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
+import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.util.LocalAppSettings
 
 /**
@@ -86,6 +87,17 @@ fun DeveloperToolsScreen(
                 title = stringResource(R.string.settings_font_playground),
                 subtitle = stringResource(R.string.settings_font_playground_subtitle),
                 onClick = onFontPlaygroundClick
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val whatsNewStore = LocalWhatsNew.current
+        SettingsGroup {
+            SettingsItem(
+                title = stringResource(R.string.dev_tools_reset_whats_new),
+                subtitle = stringResource(R.string.dev_tools_reset_whats_new_subtitle),
+                onClick = { whatsNewStore.reset() }
             )
         }
 
