@@ -104,6 +104,9 @@ class MainActivity : AppCompatActivity() {
     lateinit var appSettings: AppSettings
 
     @Inject
+    lateinit var whatsNewStore: com.anisync.android.data.WhatsNewStore
+
+    @Inject
     lateinit var notificationScheduler: com.anisync.android.worker.NotificationScheduler
 
     @Inject
@@ -293,6 +296,7 @@ class MainActivity : AppCompatActivity() {
                     LocalGridColumnsAuto provides gridColumnsAuto,
                     LocalGridColumnCount provides gridColumnCount,
                     LocalAppSettings provides appSettings,
+                    com.anisync.android.presentation.components.LocalWhatsNew provides whatsNewStore,
                     LocalLinkPreviewProvider provides linkPreviewProvider,
                     com.anisync.android.domain.LocalCoverQuality provides coverQuality,
                     com.anisync.android.presentation.util.LocalLibraryStatuses provides libraryStatuses,

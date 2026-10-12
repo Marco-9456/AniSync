@@ -2382,4 +2382,11 @@
     <string name="language_all">All languages</string>
     <string name="language_help_translate">Help translate AniSync</string>
     <string name="language_help_translate_desc">Missing your language, or spotted a mistake? Translations come from volunteers on Weblate.</string>
+    <string name="whats_new_new">New</string>
+    <string name="whats_new_moved">Moved</string>
+    <string name="a11y_whats_new_inside">Something new inside</string>
+    <string name="whats_new_general_notice">These used to be in Look and feel.</string>
+    <string name="dev_tools_reset_whats_new">Reset what’s new</string>
+    <string name="dev_tools_reset_whats_new_subtitle">Shows every New and Moved badge again, as if the update just landed</string>
+    <string name="dismiss">Dismiss</string>
 </resources>

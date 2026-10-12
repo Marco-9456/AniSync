@@ -780,6 +780,9 @@ class AppSettings @Inject constructor(
         prefs.edit().putInt(KEY_LAST_SEEN_VERSION_CODE, BuildConfig.VERSION_CODE).apply()
     }
 
+    /** The newest build the support prompt has recorded, or 0 if it never ran. */
+    fun lastSeenVersionCode(): Int = prefs.getInt(KEY_LAST_SEEN_VERSION_CODE, 0)
+
     /** Raises the card over the running app without an update behind it (Developer Tools). */
     fun showSupportPrompt() {
         _supportPromptVisible.value = true

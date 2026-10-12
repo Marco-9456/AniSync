@@ -26,6 +26,7 @@ class MainScreenViewModel @Inject constructor(
     private val notificationBadgeStore: NotificationBadgeStore,
     private val notificationReadStore: NotificationReadStore,
     private val appSettings: AppSettings,
+    private val whatsNewStore: com.anisync.android.data.WhatsNewStore,
     val toastManager: ToastManager,
     /** Drives the rate limit notice and the pull-to-refresh gates. */
     val rateLimitMonitor: RateLimitMonitor,
@@ -110,6 +111,7 @@ class MainScreenViewModel @Inject constructor(
     val supportPromptVisible: StateFlow<Boolean> = appSettings.supportPromptVisible
 
     init {
+        whatsNewStore.noteLaunch()
         appSettings.noteAppVersion()
         // Rows already read on this device are subtracted from AniList's count, which only ever
         // clears all at once. Applied here so the badge is right before the inbox is ever opened.
