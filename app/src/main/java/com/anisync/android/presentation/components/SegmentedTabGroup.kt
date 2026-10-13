@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -22,6 +23,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.anisync.android.presentation.util.rememberHapticFeedback
 
 /**
@@ -106,7 +108,14 @@ fun <T> SegmentedTabGroup(
                 Text(
                     text = label(option),
                     style = labelStyle,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    // An equal share can be narrower than the word, so it shrinks rather than wraps.
+                    maxLines = 1,
+                    autoSize = if (fillEqually) {
+                        TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = labelStyle.fontSize)
+                    } else {
+                        null
+                    }
                 )
             }
         }
