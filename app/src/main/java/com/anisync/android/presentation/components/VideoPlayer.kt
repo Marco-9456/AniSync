@@ -139,6 +139,7 @@ private val WIDE_CONTROLS_MIN_WIDTH = 600.dp
  * @param modifier Optional [Modifier] for the root container.
  * @param playerCache [ExoPlayerCache] for retaining player state across recomposition / scrolling.
  * Defaults to [LocalExoPlayerCache]. When `null`, the player is self-managed and released on dispose.
+ * @param artwork Drawn in place of the picture, for a source that has none such as an audio file.
  */
 @kotlin.OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @ExperimentalMaterial3Api
@@ -150,7 +151,8 @@ fun VideoPlayer(
     playerCache: ExoPlayerCache? = LocalExoPlayerCache.current,
     startMuted: Boolean = true,
     loop: Boolean = true,
-    autoPlay: Boolean = false
+    autoPlay: Boolean = false,
+    artwork: (@Composable () -> Unit)? = null
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -303,6 +305,9 @@ fun VideoPlayer(
                 active = !handedOff,
                 modifier = Modifier.fillMaxSize()
             )
+            if (artwork != null) {
+                Box(Modifier.fillMaxSize()) { artwork() }
+            }
         }
 
         PlayerStatusVisuals(
