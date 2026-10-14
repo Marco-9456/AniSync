@@ -9,14 +9,20 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.upstream.Loader
+import androidx.media3.extractor.DefaultExtractorsFactory
+import androidx.media3.extractor.mkv.MatroskaExtractor
 import com.anisync.android.data.media.MediaHttp
 import java.util.Collections
+import java.util.WeakHashMap
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -129,19 +135,61 @@ internal fun buildVideoExoPlayer(
         .setPrioritizeTimeOverSizeThresholds(true)
         .build()
 
-    val dataSourceFactory = OkHttpDataSource.Factory(MediaHttp.videoClient)
-        .setUserAgent(MediaHttp.USER_AGENT)
-
     return ExoPlayer.Builder(context)
         .setLoadControl(loadControl)
-        .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
+        .setMediaSourceFactory(DefaultMediaSourceFactory(videoDataSourceFactory()))
         .build().apply {
             setMediaItem(MediaItem.fromUri(url))
             repeatMode = if (loop) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
             volume = if (muted) 0f else 1f
             playWhenReady = autoPlay
+            addListener(object : Player.Listener {
+                override fun onPlayerError(error: PlaybackException) {
+                    if (error.isMatroskaFormatFailure() && reloadedWithoutCueSeek.add(this@apply)) {
+                        Log.w("VideoPlayer", "Reloading $url without the seek for Cues", error)
+                        reloadWithoutCueSeek(url)
+                    }
+                }
+            })
             prepare()
         }
+}
+
+@OptIn(UnstableApi::class)
+private fun videoDataSourceFactory(): OkHttpDataSource.Factory =
+    OkHttpDataSource.Factory(MediaHttp.videoClient).setUserAgent(MediaHttp.USER_AGENT)
+
+/** Players already moved to the fallback below, so a second failure is shown instead of looped. */
+private val reloadedWithoutCueSeek: MutableSet<ExoPlayer> =
+    Collections.synchronizedSet(Collections.newSetFromMap(WeakHashMap()))
+
+/**
+ * The failure Media3 1.10 and later hit on some WebM files that keep their Cues at the end, such
+ * as the clip in AniList's markdown guide (forum thread 6125). The extractor holds the track
+ * formats back until it has jumped to the Cues and read them, and under the player a sample then
+ * reaches its queue with no format, which fails a null check inside `SampleQueue`. Plain Media3
+ * fails the same way with either HTTP stack, so this is not the data source.
+ */
+@OptIn(UnstableApi::class)
+private fun PlaybackException.isMatroskaFormatFailure(): Boolean =
+    errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED &&
+        cause is Loader.UnexpectedLoaderException &&
+        cause?.cause is NullPointerException
+
+/**
+ * Plays the file again without the jump to the Cues, which makes the extractor send formats as
+ * soon as it reads the tracks. The file then cannot seek, but it plays and still loops from the
+ * start, which is all an embedded clip needs.
+ */
+@OptIn(UnstableApi::class)
+private fun ExoPlayer.reloadWithoutCueSeek(url: String) {
+    val extractors = DefaultExtractorsFactory()
+        .setMatroskaExtractorFlags(MatroskaExtractor.FLAG_DISABLE_SEEK_FOR_CUES)
+    setMediaSource(
+        ProgressiveMediaSource.Factory(videoDataSourceFactory(), extractors)
+            .createMediaSource(MediaItem.fromUri(url))
+    )
+    prepare()
 }
 
 /**
