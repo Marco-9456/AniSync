@@ -1616,4 +1616,5 @@
     <string name="person_tab_appearances">出演</string>
     <string name="person_empty_appearances">暫無出演處符合條件…</string>
     <string name="person_credits_note_plain">僅參與配音將不會歸類於參與作品，而是被歸類於角色上</string>
+    <string name="empty_notifications_action">全都看完啦！</string>
 </resources>
