@@ -3,9 +3,12 @@ package com.anisync.android.data.network
 import com.anisync.android.BuildConfig
 import com.anisync.android.domain.MediaTheme
 import com.anisync.android.domain.MediaThemes
+import com.anisync.android.domain.ThemeAudio
+import com.anisync.android.domain.ThemePerformer
 import com.anisync.android.domain.ThemeType
 import com.anisync.android.domain.ThemeVersion
 import com.anisync.android.domain.ThemeVideo
+import com.anisync.android.domain.VideoOverlap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
@@ -111,10 +114,20 @@ class AnimeThemesApi @Inject constructor() {
                 slug
                 animethemes {
                   id type sequence slug
-                  song { title { romaji } performances { relevance artist { name { main } } } }
+                  group { name }
+                  song {
+                    title { romaji }
+                    performances {
+                      relevance as alias memberAs memberAlias
+                      artist { name { main } }
+                      member { name { main } }
+                    }
+                  }
                   animethemeentries {
                     id version episodes notes spoiler nsfw
-                    videos { nodes { id link resolution nc subbed lyrics source } }
+                    videos {
+                      nodes { id link resolution nc subbed lyrics source overlap audio { link size } }
+                    }
                   }
                 }
               }
@@ -171,9 +184,13 @@ private data class ThemeDto(
     val type: String? = null,
     val sequence: Int? = null,
     val slug: String? = null,
+    val group: ThemeGroupDto? = null,
     val song: SongDto? = null,
     @SerialName("animethemeentries") val entries: List<EntryDto> = emptyList()
 )
+
+@Serializable
+private data class ThemeGroupDto(val name: String? = null)
 
 @Serializable
 private data class SongDto(
@@ -184,11 +201,19 @@ private data class SongDto(
 @Serializable
 private data class SongTitleDto(val romaji: String? = null)
 
-/** A band is credited once per member, so the same artist can appear several times. */
+/**
+ * A band is credited once per member, so the same artist can appear several times. [alias] is the
+ * name the artist is credited under and [as] the character sung as, with member twins of both.
+ */
 @Serializable
 private data class PerformanceDto(
     val relevance: Int? = null,
-    val artist: ArtistDto? = null
+    val `as`: String? = null,
+    val alias: String? = null,
+    val memberAs: String? = null,
+    val memberAlias: String? = null,
+    val artist: ArtistDto? = null,
+    val member: ArtistDto? = null
 )
 
 @Serializable
@@ -219,41 +244,81 @@ private data class VideoDto(
     val nc: Boolean = false,
     val subbed: Boolean = false,
     val lyrics: Boolean = false,
-    val source: String? = null
+    val source: String? = null,
+    val overlap: String? = null,
+    val audio: AudioDto? = null
 )
+
+@Serializable
+private data class AudioDto(val link: String? = null, val size: Long? = null)
 
 private fun ThemeDto.toDomain(): MediaTheme? {
     val themeType = when (type?.uppercase()) {
         "OP" -> ThemeType.OP
         "ED" -> ThemeType.ED
+        "IN" -> ThemeType.IN
         else -> return null
     }
-    val versions = entries.map { it.toDomain() }.filter { it.videos.isNotEmpty() }
+    val all = entries.map { it.toDomain() }
+    val playable = all.filter { it.videos.isNotEmpty() }
+    // Insert songs are catalogued as songs and almost never carry a video, so they are kept for
+    // their credits and episodes. An opening or ending with nothing to play is left out.
+    val versions = when {
+        playable.isNotEmpty() -> playable
+        themeType == ThemeType.IN -> all
+        else -> emptyList()
+    }
     if (versions.isEmpty()) return null
+
+    val performances = song?.performances.orEmpty().sortedBy { it.relevance ?: Int.MAX_VALUE }
 
     return MediaTheme(
         id = id,
         type = themeType,
         sequence = sequence,
-        slug = slug ?: (themeType.name + (sequence ?: 1)),
+        slug = slug ?: (themeType.name + (sequence ?: "")),
         songTitle = song?.title?.romaji?.takeIf { it.isNotBlank() },
-        artists = song?.performances.orEmpty()
-            .sortedBy { it.relevance ?: Int.MAX_VALUE }
-            .mapNotNull { it.artist?.name?.main?.takeIf(String::isNotBlank) }
-            .distinct(),
-        versions = versions
+        artists = performances.mapNotNull { it.creditedArtist() }.distinct(),
+        versions = versions,
+        groupName = group?.name?.takeIf { it.isNotBlank() },
+        performers = performances.mapNotNull { it.toPerformer() }.distinct()
     )
 }
 
-private fun EntryDto.toDomain(): ThemeVersion = ThemeVersion(
-    id = id,
-    version = version ?: 1,
-    rawEpisodes = episodes,
-    notes = notes?.takeIf { it.isNotBlank() },
-    spoiler = spoiler,
-    nsfw = nsfw,
-    videos = videos.nodes.mapNotNull { it.toDomain() }
-)
+private fun PerformanceDto.creditedArtist(): String? =
+    alias?.takeIf { it.isNotBlank() } ?: artist?.name?.main?.takeIf { it.isNotBlank() }
+
+private fun PerformanceDto.toPerformer(): ThemePerformer? {
+    val credited = creditedArtist() ?: return null
+    val memberName = memberAlias?.takeIf { it.isNotBlank() }
+        ?: member?.name?.main?.takeIf { it.isNotBlank() }
+    return if (memberName != null) {
+        ThemePerformer(
+            name = memberName,
+            character = memberAs?.takeIf { it.isNotBlank() },
+            band = credited
+        )
+    } else {
+        ThemePerformer(name = credited, character = `as`?.takeIf { it.isNotBlank() })
+    }
+}
+
+private fun EntryDto.toDomain(): ThemeVersion {
+    // Every video of an entry points at the same audio file, so the first one found stands for all.
+    val audio = videos.nodes.firstNotNullOfOrNull { video ->
+        video.audio?.link?.takeIf { it.isNotBlank() }?.let { ThemeAudio(it, video.audio.size) }
+    }
+    return ThemeVersion(
+        id = id,
+        version = version ?: 1,
+        rawEpisodes = episodes,
+        notes = notes?.takeIf { it.isNotBlank() },
+        spoiler = spoiler,
+        nsfw = nsfw,
+        videos = videos.nodes.mapNotNull { it.toDomain() },
+        audio = audio
+    )
+}
 
 private fun VideoDto.toDomain(): ThemeVideo? {
     val href = link?.takeIf { it.isNotBlank() } ?: return null
@@ -264,6 +329,11 @@ private fun VideoDto.toDomain(): ThemeVideo? {
         creditless = nc,
         subbed = subbed,
         lyrics = lyrics,
-        source = source?.takeIf { it.isNotBlank() }
+        source = source?.takeIf { it.isNotBlank() },
+        overlap = when (overlap?.uppercase()) {
+            "TRANS" -> VideoOverlap.Transition
+            "OVER" -> VideoOverlap.Over
+            else -> VideoOverlap.None
+        }
     )
 }

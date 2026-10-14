@@ -22,7 +22,10 @@ data class MediaTheme(
     val slug: String,
     val songTitle: String?,
     val artists: List<String>,
-    val versions: List<ThemeVersion>
+    val versions: List<ThemeVersion>,
+    /** AnimeThemes' own name for a variant slot, "English Version" or "TV Version". */
+    val groupName: String? = null,
+    val performers: List<ThemePerformer> = emptyList()
 ) {
     /** Every episode this theme plays over, across all of its versions. */
     val episodeSpans: List<EpisodeSpan>
@@ -39,6 +42,10 @@ data class MediaTheme(
     val isAdult: Boolean
         get() = versions.any { it.nsfw }
 
+    /** False for a song AnimeThemes lists without any file, which is most insert songs. */
+    val isPlayable: Boolean
+        get() = versions.any { it.videos.isNotEmpty() }
+
     /** The video shown first: creditless and highest resolution when one exists. */
     val preferredVideo: ThemeVideo?
         get() = versions.firstOrNull()?.preferredVideo
@@ -49,11 +56,33 @@ data class MediaTheme(
      * this would leave two rows both calling themselves Opening 1.
      */
     val qualifier: String?
-        get() {
-            val canonical = type.name + (sequence ?: 1)
-            return slug.removePrefix(canonical).trim('-', ' ').takeIf { it.isNotEmpty() }
-        }
+        get() = slug.removePrefix(type.name)
+            .dropWhile { it.isDigit() }
+            .trim('-', ' ')
+            .takeIf { it.isNotEmpty() }
+
+    /** The variant label worth a pill: the group's readable name, or the bare slug suffix. */
+    val variantLabel: String?
+        get() = groupName ?: qualifier
+
+    /**
+     * True when the credits say more than the artist line already does: a band's members, or a
+     * singer credited as the character they voice.
+     */
+    val hasPerformerDetail: Boolean
+        get() = performers.any { it.character != null || it.band != null }
 }
+
+/**
+ * One credited voice on a song. A band is credited once per member, so [band] names the act and
+ * [name] the member. [character] is the role sung as, for a character song.
+ */
+@Serializable
+data class ThemePerformer(
+    val name: String,
+    val character: String? = null,
+    val band: String? = null
+)
 
 /**
  * A whole lookup: the themes plus the AnimeThemes slug they came from, which is what the
@@ -66,7 +95,7 @@ data class MediaThemes(
 )
 
 @Serializable
-enum class ThemeType { OP, ED }
+enum class ThemeType { OP, ED, IN }
 
 @Serializable
 data class ThemeVersion(
@@ -76,7 +105,9 @@ data class ThemeVersion(
     val notes: String?,
     val spoiler: Boolean,
     val nsfw: Boolean,
-    val videos: List<ThemeVideo>
+    val videos: List<ThemeVideo>,
+    /** The song without the picture, a few megabytes against tens for the video. */
+    val audio: ThemeAudio? = null
 ) {
     val episodeSpans: List<EpisodeSpan>
         get() = parseEpisodeSpans(rawEpisodes)
@@ -84,6 +115,7 @@ data class ThemeVersion(
     val preferredVideo: ThemeVideo?
         get() = videos.minWithOrNull(
             compareByDescending<ThemeVideo> { it.creditless }
+                .thenBy { it.overlap != VideoOverlap.None }
                 .thenByDescending { it.resolution ?: 0 }
                 .thenBy { it.lyrics }
                 .thenBy { it.subbed }
@@ -98,7 +130,21 @@ data class ThemeVideo(
     val creditless: Boolean,
     val subbed: Boolean,
     val lyrics: Boolean,
-    val source: String?
+    val source: String?,
+    val overlap: VideoOverlap = VideoOverlap.None
+)
+
+/**
+ * Whether a video runs into episode footage. A transition cuts into or out of the episode, an
+ * overlap plays over it, so neither is the clean cut of the song.
+ */
+@Serializable
+enum class VideoOverlap { None, Transition, Over }
+
+@Serializable
+data class ThemeAudio(
+    val url: String,
+    val sizeBytes: Long?
 )
 
 /**

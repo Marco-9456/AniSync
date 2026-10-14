@@ -69,10 +69,18 @@ class MediaThemesRepositoryImpl @Inject constructor(
 
     override suspend fun isStale(mediaId: Int): Boolean {
         val cached = dao.get(mediaId) ?: return true
+        if (cached.fetchedAt < FORMAT_SINCE_MS) return true
         return System.currentTimeMillis() - cached.fetchedAt > CACHE_TTL_MS
     }
 
     private companion object {
         val CACHE_TTL_MS = TimeUnit.DAYS.toMillis(7)
+
+        /**
+         * Rows stored before groups, credits, audio and insert songs were read are missing all
+         * four, so they refetch once instead of waiting out the week. Move this forward whenever
+         * the stored shape gains something a cached row cannot have.
+         */
+        const val FORMAT_SINCE_MS = 1_792_188_000_000L // 2026-10-16 22:00 UTC
     }
 }
