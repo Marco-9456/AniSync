@@ -1575,7 +1575,7 @@
     <string name="empty_no_items">暫無項目</string>
     <string name="label_all_languages">所有語言</string>
     <string name="label_character">角色</string>
-    <string name="also_known_as">又被稱為：</string>
+    <string name="also_known_as">又被稱為：%s</string>
     <string name="person_tab_characters">角色</string>
     <string name="person_tab_credits">參與作品</string>
     <string name="edit_entry_keep_editing">繼續編輯</string>
