@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.details.components
 
 import android.content.Intent
+import android.text.format.Formatter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,7 @@ import com.anisync.android.domain.MediaTheme
 import com.anisync.android.domain.ThemeType
 import com.anisync.android.domain.ThemeVersion
 import com.anisync.android.domain.ThemeVideo
+import com.anisync.android.domain.VideoOverlap
 import com.anisync.android.domain.formatEpisodeSpans
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.VideoPlayer
@@ -81,6 +83,7 @@ fun ThemeSheet(
     theme: MediaTheme,
     totalEpisodes: Int?,
     animeSlug: String?,
+    coverUrl: String?,
     onDismiss: () -> Unit,
     sheetState: SheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
@@ -96,6 +99,7 @@ fun ThemeSheet(
             theme = theme,
             totalEpisodes = totalEpisodes,
             animeSlug = animeSlug,
+            coverUrl = coverUrl,
             twoColumn = false,
             modifier = Modifier
                 .fillMaxWidth()
@@ -123,26 +127,35 @@ internal fun ThemeDetail(
     theme: MediaTheme,
     totalEpisodes: Int?,
     animeSlug: String?,
+    coverUrl: String?,
     twoColumn: Boolean,
     modifier: Modifier = Modifier
 ) {
     var selectedVersionIndex by rememberSaveable(theme.id) { mutableIntStateOf(0) }
     var selectedVideoId by rememberSaveable(theme.id) { mutableStateOf<Int?>(null) }
+    var audioOnly by rememberSaveable(theme.id) { mutableStateOf(false) }
 
     val version = theme.versions.getOrNull(selectedVersionIndex) ?: theme.versions.first()
     val video = remember(version, selectedVideoId) {
         version.videos.firstOrNull { it.id == selectedVideoId } ?: version.preferredVideo
     }
+    val audio = version.audio?.takeIf { audioOnly }
     val gap = dimensionResource(R.dimen.spacing_medium)
 
     Column(modifier) {
-        if (video != null) {
+        val playUrl = audio?.url ?: video?.url
+        if (playUrl != null) {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                 VideoPlayer(
-                    url = video.url,
+                    url = playUrl,
                     playerCache = null,
                     startMuted = false,
                     loop = false,
+                    artwork = if (audio != null) {
+                        { ThemeAudioArtwork(coverUrl = coverUrl, type = theme.type) }
+                    } else {
+                        null
+                    },
                     modifier = if (twoColumn) {
                         Modifier.widthIn(max = PANE_PLAYER_MAX_WIDTH).fillMaxWidth()
                     } else {
@@ -163,11 +176,21 @@ internal fun ThemeDetail(
         val onSelectVersion: (Int) -> Unit = {
             selectedVersionIndex = it
             selectedVideoId = null
+            audioOnly = false
         }
+        val onSelectVideo: (Int) -> Unit = {
+            selectedVideoId = it
+            audioOnly = false
+        }
+        val showSources = version.videos.size > 1 || version.audio != null
 
         if (twoColumn) {
             Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                 DetailCard(modifier = Modifier.weight(1f)) {
+                    if (theme.hasPerformerDetail) {
+                        PerformersSection(theme = theme)
+                        Spacer(Modifier.height(gap))
+                    }
                     CoverageSection(
                         theme = theme,
                         totalEpisodes = totalEpisodes,
@@ -176,11 +199,13 @@ internal fun ThemeDetail(
                     )
                 }
                 DetailCard(modifier = Modifier.weight(1f)) {
-                    if (version.videos.size > 1) {
+                    if (showSources) {
                         VideoSection(
-                            videos = version.videos,
-                            selectedVideoId = video?.id,
-                            onSelectVideo = { selectedVideoId = it },
+                            version = version,
+                            selectedVideoId = video?.id.takeIf { !audioOnly },
+                            audioSelected = audioOnly,
+                            onSelectVideo = onSelectVideo,
+                            onSelectAudio = { audioOnly = true },
                             chipColor = cardChipColor
                         )
                         Spacer(Modifier.height(gap))
@@ -197,18 +222,24 @@ internal fun ThemeDetail(
                 }
             }
         } else {
+            if (theme.hasPerformerDetail) {
+                PerformersSection(theme = theme)
+                Spacer(Modifier.height(gap))
+            }
             CoverageSection(
                 theme = theme,
                 totalEpisodes = totalEpisodes,
                 selectedVersionIndex = selectedVersionIndex,
                 onSelectVersion = onSelectVersion
             )
-            if (version.videos.size > 1) {
+            if (showSources) {
                 Spacer(Modifier.height(gap))
                 VideoSection(
-                    videos = version.videos,
-                    selectedVideoId = video?.id,
-                    onSelectVideo = { selectedVideoId = it }
+                    version = version,
+                    selectedVideoId = video?.id.takeIf { !audioOnly },
+                    audioSelected = audioOnly,
+                    onSelectVideo = onSelectVideo,
+                    onSelectAudio = { audioOnly = true }
                 )
             }
             Spacer(Modifier.height(gap))
@@ -303,24 +334,74 @@ private fun CoverageSection(
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun VideoSection(
-    videos: List<ThemeVideo>,
+    version: ThemeVersion,
     selectedVideoId: Int?,
+    audioSelected: Boolean,
     onSelectVideo: (Int) -> Unit,
+    onSelectAudio: () -> Unit,
     chipColor: Color = MaterialTheme.colorScheme.surfaceContainer
 ) {
+    val context = LocalContext.current
     SheetLabel(stringResource(R.string.themes_video))
     Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
     ) {
-        videos.forEach { candidate ->
-            VariantChip(
-                video = candidate,
+        version.videos.forEach { candidate ->
+            SourceChip(
+                label = variantLabel(candidate),
                 isSelected = candidate.id == selectedVideoId,
                 onClick = { onSelectVideo(candidate.id) },
                 containerColor = chipColor
             )
+        }
+        version.audio?.let { audio ->
+            SourceChip(
+                label = listOfNotNull(
+                    stringResource(R.string.themes_variant_audio),
+                    audio.sizeBytes?.let { Formatter.formatShortFileSize(context, it) }
+                ).joinToString(" · "),
+                isSelected = audioSelected,
+                onClick = onSelectAudio,
+                containerColor = chipColor
+            )
+        }
+    }
+}
+
+/**
+ * The credited voices, one per line. Only drawn when it adds to the artist line under the title:
+ * the members behind a band name, or the character a voice actor sings as.
+ */
+@Composable
+private fun PerformersSection(theme: MediaTheme) {
+    SheetLabel(stringResource(R.string.themes_performers))
+    Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        theme.performers.forEach { performer ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = performer.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                performer.character?.let { character ->
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.themes_performer_as, character),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                }
+            }
         }
     }
 }
@@ -391,6 +472,9 @@ private fun ThemeIdentity(theme: MediaTheme) {
                 text = when (theme.type) {
                     ThemeType.OP -> stringResource(R.string.themes_opening_number, theme.sequence ?: 1)
                     ThemeType.ED -> stringResource(R.string.themes_ending_number, theme.sequence ?: 1)
+                    ThemeType.IN -> theme.sequence
+                        ?.let { stringResource(R.string.themes_insert_number, it) }
+                        ?: stringResource(R.string.themes_insert)
                 },
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.ExtraBold,
@@ -398,9 +482,9 @@ private fun ThemeIdentity(theme: MediaTheme) {
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
             )
         }
-        // Only what the slug adds on top of the number, since the pill beside it already
+        // Only what the slot adds on top of the number, since the pill beside it already
         // says "Ending 11". Without this, ED11 and ED11-EN would read identically.
-        theme.qualifier?.let { qualifier ->
+        theme.variantLabel?.let { qualifier ->
             Spacer(Modifier.width(dimensionResource(R.dimen.spacing_small)))
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -532,25 +616,32 @@ private fun VersionCard(
     }
 }
 
+/** "Creditless · 1080p · Transition", enough to tell two files of one version apart. */
 @Composable
-private fun VariantChip(
-    video: ThemeVideo,
+private fun variantLabel(video: ThemeVideo): String = buildList {
+    add(
+        stringResource(
+            if (video.creditless) R.string.themes_variant_creditless
+            else R.string.themes_variant_with_credits
+        )
+    )
+    video.resolution?.let { add("${it}p") }
+    if (video.subbed) add(stringResource(R.string.themes_variant_subbed))
+    if (video.lyrics) add(stringResource(R.string.themes_variant_lyrics))
+    when (video.overlap) {
+        VideoOverlap.Transition -> add(stringResource(R.string.themes_variant_transition))
+        VideoOverlap.Over -> add(stringResource(R.string.themes_variant_over))
+        VideoOverlap.None -> Unit
+    }
+}.joinToString(" · ")
+
+@Composable
+private fun SourceChip(
+    label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainer
 ) {
-    val parts = buildList {
-        add(
-            stringResource(
-                if (video.creditless) R.string.themes_variant_creditless
-                else R.string.themes_variant_with_credits
-            )
-        )
-        video.resolution?.let { add("${it}p") }
-        if (video.subbed) add(stringResource(R.string.themes_variant_subbed))
-        if (video.lyrics) add(stringResource(R.string.themes_variant_lyrics))
-    }
-
     Surface(
         color = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else containerColor,
         shape = RoundedCornerShape(50),
@@ -559,7 +650,7 @@ private fun VariantChip(
             .bouncyClickable(onClick = onClick, clipShape = RoundedCornerShape(50))
     ) {
         Text(
-            text = parts.joinToString(" · "),
+            text = label,
             style = MaterialTheme.typography.labelLarge,
             color = if (isSelected) {
                 MaterialTheme.colorScheme.onSecondaryContainer

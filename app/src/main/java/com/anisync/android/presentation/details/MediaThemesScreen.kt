@@ -60,7 +60,7 @@ import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.bouncyClickable
 
-private enum class ThemeFilter { All, Openings, Endings }
+private enum class ThemeFilter { All, Openings, Endings, Inserts }
 
 /**
  * Every opening and ending for a title, stacked so the bars share one scale.
@@ -97,6 +97,7 @@ fun MediaThemesScreen(
 
     val openings = remember(themesState.themes) { themesState.themes.filter { it.type == ThemeType.OP } }
     val endings = remember(themesState.themes) { themesState.themes.filter { it.type == ThemeType.ED } }
+    val inserts = remember(themesState.themes) { themesState.themes.filter { it.type == ThemeType.IN } }
 
     val list: @Composable (selectedThemeId: Int?, onThemeClick: (Int) -> Unit) -> Unit =
         { selectedThemeId, onThemeClick ->
@@ -107,6 +108,7 @@ fun MediaThemesScreen(
                 animeSlug = themesState.animeSlug,
                 openings = openings,
                 endings = endings,
+                inserts = inserts,
                 isLoading = themesState.isLoading || !themesState.hasLoaded,
                 filter = filter,
                 onFilterChange = { filter = it },
@@ -124,6 +126,7 @@ fun MediaThemesScreen(
                 theme = theme,
                 totalEpisodes = totalEpisodes,
                 animeSlug = themesState.animeSlug,
+                coverUrl = coverUrl,
                 onDismiss = { openTheme = null }
             )
         }
@@ -149,6 +152,7 @@ fun MediaThemesScreen(
                         theme = theme,
                         totalEpisodes = totalEpisodes,
                         animeSlug = themesState.animeSlug,
+                        coverUrl = coverUrl,
                         onClose = onClose
                     )
                 }
@@ -166,6 +170,7 @@ private fun ThemeListPane(
     animeSlug: String?,
     openings: List<MediaTheme>,
     endings: List<MediaTheme>,
+    inserts: List<MediaTheme>,
     isLoading: Boolean,
     filter: ThemeFilter,
     onFilterChange: (ThemeFilter) -> Unit,
@@ -178,6 +183,7 @@ private fun ThemeListPane(
 
     val openingsLabel = stringResource(R.string.themes_group_openings)
     val endingsLabel = stringResource(R.string.themes_group_endings)
+    val insertsLabel = stringResource(R.string.themes_group_inserts)
     val scaleLabel = totalEpisodes?.let { stringResource(R.string.themes_episode_scale, it) }
 
     CollapsingTopBarScaffold(
@@ -185,7 +191,7 @@ private fun ThemeListPane(
         onBackClick = onBackClick,
         scrollableState = listState
     ) { topContentPadding ->
-        if (openings.isEmpty() && endings.isEmpty()) {
+        if (openings.isEmpty() && endings.isEmpty() && inserts.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 if (isLoading) {
                     AppCircularProgressIndicator()
@@ -222,13 +228,16 @@ private fun ThemeListPane(
             item(key = "filter") {
                 ThemeFilterRow(
                     selected = filter,
-                    hasOpenings = openings.isNotEmpty(),
-                    hasEndings = endings.isNotEmpty(),
+                    available = buildList {
+                        if (openings.isNotEmpty()) add(ThemeFilter.Openings)
+                        if (endings.isNotEmpty()) add(ThemeFilter.Endings)
+                        if (inserts.isNotEmpty()) add(ThemeFilter.Inserts)
+                    },
                     onSelect = onFilterChange
                 )
             }
 
-            if (filter != ThemeFilter.Endings && openings.isNotEmpty()) {
+            if (filter.shows(ThemeFilter.Openings) && openings.isNotEmpty()) {
                 themeGroup(
                     label = openingsLabel,
                     scaleLabel = scaleLabel,
@@ -240,11 +249,23 @@ private fun ThemeListPane(
                 )
             }
 
-            if (filter != ThemeFilter.Openings && endings.isNotEmpty()) {
+            if (filter.shows(ThemeFilter.Endings) && endings.isNotEmpty()) {
                 themeGroup(
                     label = endingsLabel,
                     scaleLabel = scaleLabel,
                     themes = endings,
+                    totalEpisodes = totalEpisodes,
+                    coverUrl = coverUrl,
+                    selectedThemeId = selectedThemeId,
+                    onThemeClick = onThemeClick
+                )
+            }
+
+            if (filter.shows(ThemeFilter.Inserts) && inserts.isNotEmpty()) {
+                themeGroup(
+                    label = insertsLabel,
+                    scaleLabel = scaleLabel,
+                    themes = inserts,
                     totalEpisodes = totalEpisodes,
                     coverUrl = coverUrl,
                     selectedThemeId = selectedThemeId,
@@ -326,6 +347,7 @@ private fun ThemeDetailPane(
     theme: MediaTheme,
     totalEpisodes: Int?,
     animeSlug: String?,
+    coverUrl: String?,
     onClose: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -338,6 +360,7 @@ private fun ThemeDetailPane(
             theme = theme,
             totalEpisodes = totalEpisodes,
             animeSlug = animeSlug,
+            coverUrl = coverUrl,
             twoColumn = true,
             modifier = Modifier
                 .fillMaxSize()
@@ -394,14 +417,14 @@ private fun LazyListScope.themeGroup(
 @Composable
 private fun ThemeFilterRow(
     selected: ThemeFilter,
-    hasOpenings: Boolean,
-    hasEndings: Boolean,
+    available: List<ThemeFilter>,
     onSelect: (ThemeFilter) -> Unit
 ) {
-    if (!hasOpenings || !hasEndings) return
+    // One kind on its own has nothing to filter against.
+    if (available.size < 2) return
 
     SegmentedTabGroup(
-        options = ThemeFilter.entries,
+        options = listOf(ThemeFilter.All) + available,
         selected = selected,
         onSelect = onSelect,
         label = {
@@ -409,8 +432,11 @@ private fun ThemeFilterRow(
                 ThemeFilter.All -> stringResource(R.string.themes_filter_all)
                 ThemeFilter.Openings -> stringResource(R.string.themes_group_openings)
                 ThemeFilter.Endings -> stringResource(R.string.themes_group_endings)
+                ThemeFilter.Inserts -> stringResource(R.string.themes_filter_inserts)
             }
         },
         fillEqually = true
     )
 }
+
+private fun ThemeFilter.shows(kind: ThemeFilter): Boolean = this == ThemeFilter.All || this == kind

@@ -178,11 +178,7 @@ private fun ThemeArtwork(
     /** False in the full list, where the row already carries a play button the glyph would sit under. */
     showPlayGlyph: Boolean = true
 ) {
-    val tint = if (type == ThemeType.OP) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.tertiary
-    }
+    val tint = themeTint(type)
 
     Box(
         modifier = modifier
@@ -248,6 +244,45 @@ private fun ThemeArtwork(
     }
 }
 
+@Composable
+private fun themeTint(type: ThemeType): Color = when (type) {
+    ThemeType.OP -> MaterialTheme.colorScheme.primary
+    ThemeType.ED -> MaterialTheme.colorScheme.tertiary
+    ThemeType.IN -> MaterialTheme.colorScheme.secondary
+}
+
+/**
+ * What the player shows while the audio-only file plays: the same dimmed, tinted cover as the
+ * theme's card, so switching from the video keeps the frame and only loses the motion.
+ */
+@Composable
+fun ThemeAudioArtwork(coverUrl: String?, type: ThemeType, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+    ) {
+        if (coverUrl != null) {
+            AsyncImage(
+                model = coverUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(themeTint(type).copy(alpha = 0.34f))
+        )
+    }
+}
+
 /** One theme in the horizontal rail on the media page. */
 @Composable
 fun ThemeTile(
@@ -282,6 +317,7 @@ fun ThemeTile(
             cornerRadius = 14.dp,
             playGlyphSize = 30.dp,
             artWidth = TILE_WIDTH,
+            showPlayGlyph = theme.isPlayable,
             modifier = Modifier
                 .width(TILE_WIDTH)
                 .height(TILE_ART_HEIGHT)
@@ -388,20 +424,22 @@ fun ThemeRow(
                         }
                     }
                 }
-                Spacer(Modifier.width(12.dp))
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
+                if (theme.isPlayable) {
+                    Spacer(Modifier.width(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(10.dp))
@@ -481,13 +519,16 @@ private fun ThemesSectionHeader(
 ) {
     val openings = themes.count { it.type == ThemeType.OP }
     val endings = themes.count { it.type == ThemeType.ED }
+    val inserts = themes.count { it.type == ThemeType.IN }
     val subtitle = when {
         themes.isEmpty() -> null
         else -> listOfNotNull(
             pluralStringResource(R.plurals.themes_openings_count, openings, openings)
                 .takeIf { openings > 0 },
             pluralStringResource(R.plurals.themes_endings_count, endings, endings)
-                .takeIf { endings > 0 }
+                .takeIf { endings > 0 },
+            pluralStringResource(R.plurals.themes_inserts_count, inserts, inserts)
+                .takeIf { inserts > 0 }
         ).joinToString("  ·  ")
     }
 

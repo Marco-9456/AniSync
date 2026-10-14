@@ -1643,6 +1643,7 @@ fun DetailsPageContent(
             theme = theme,
             totalEpisodes = details.coverageEpisodeCount,
             animeSlug = themesState.animeSlug,
+            coverUrl = details.bannerUrl ?: details.coverUrl,
             onDismiss = { openThemeSheet = null }
         )
     }

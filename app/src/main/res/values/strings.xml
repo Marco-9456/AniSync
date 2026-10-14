@@ -970,6 +970,10 @@
         <item quantity="one">%d ending</item>
         <item quantity="other">%d endings</item>
     </plurals>
+    <plurals name="themes_inserts_count">
+        <item quantity="one">%d insert song</item>
+        <item quantity="other">%d insert songs</item>
+    </plurals>
     <plurals name="themes_versions_count">
         <item quantity="one">%d version</item>
         <item quantity="other">%d versions</item>
@@ -977,6 +981,8 @@
     <string name="themes_filter_all">All</string>
     <string name="themes_group_openings">Openings</string>
     <string name="themes_group_endings">Endings</string>
+    <string name="themes_group_inserts">Insert songs</string>
+    <string name="themes_filter_inserts">Inserts</string>
     <plurals name="themes_episodes">
         <item quantity="one">Episode %1$s</item>
         <item quantity="other">Episodes %1$s</item>
@@ -986,6 +992,8 @@
     <string name="themes_episode_scale">Ep 1 – %1$d</string>
     <string name="themes_opening_number">Opening %1$d</string>
     <string name="themes_ending_number">Ending %1$d</string>
+    <string name="themes_insert_number">Insert song %1$d</string>
+    <string name="themes_insert">Insert song</string>
     <string name="themes_spoiler_tag">Spoiler</string>
     <string name="cd_theme_spoiler">This theme may spoil the show</string>
     <string name="themes_failed_title">Themes did not load</string>
@@ -1001,6 +1009,11 @@
     <string name="themes_variant_with_credits">With credits</string>
     <string name="themes_variant_subbed">Subbed</string>
     <string name="themes_variant_lyrics">Lyrics</string>
+    <string name="themes_variant_transition">Transition</string>
+    <string name="themes_variant_over">Over episode</string>
+    <string name="themes_variant_audio">Audio only</string>
+    <string name="themes_performers">Performers</string>
+    <string name="themes_performer_as">as %1$s</string>
     <string name="themes_open_source">Open on AnimeThemes</string>
     <string name="themes_attribution">Theme data and video from AnimeThemes.moe</string>
     <string name="themes_actions_label">Elsewhere</string>
