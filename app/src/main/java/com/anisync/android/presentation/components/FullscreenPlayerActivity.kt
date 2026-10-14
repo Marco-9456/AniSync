@@ -167,6 +167,7 @@ private fun FullscreenVideoContent(
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                if (player.playbackState != Player.STATE_IDLE) return
                 playerState = PlayerState.Error
                 errorMessage = playbackErrorMessage(context, error)
             }

@@ -82,7 +82,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException
 import androidx.media3.common.Player
@@ -200,6 +199,8 @@ fun VideoPlayer(
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                // Already being retried by the player itself, see buildVideoExoPlayer.
+                if (exoPlayer.playbackState != Player.STATE_IDLE) return
                 android.util.Log.e(
                     "VideoPlayer",
                     "Playback error for URL: $url, code: ${error.errorCode}, message: ${error.message}",
@@ -276,7 +277,8 @@ fun VideoPlayer(
     val onRetry: () -> Unit = {
         playerState = PlayerState.Loading
         errorMessage = null
-        exoPlayer.setMediaItem(MediaItem.fromUri(url))
+        // The failed source stays set, so preparing again retries it with whatever extractor
+        // settings the player last chose for this file.
         exoPlayer.prepare()
     }
     val onEnterFullscreen: () -> Unit = {
