@@ -1,14 +1,14 @@
 package com.anisync.android.presentation.components.richtext
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.FormatBold
 import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.FormatStrikethrough
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material3.AppBarRow
@@ -34,6 +35,9 @@ import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -46,10 +50,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.presentation.components.menu.Menu
 
 /**
- * Scrollable row of formatting buttons (bold, italic, strike, code, link, spoiler).
- * Pure content — caller owns insets, surface, layout.
+ * Row of formatting buttons (bold, italic, strike, code, link, spoiler). Buttons that don't fit
+ * the width move into an overflow [Menu]. Pure content — caller owns insets, surface, layout.
  */
 @Composable
 fun RichTextFormatBar(
@@ -60,43 +65,72 @@ fun RichTextFormatBar(
     onAttachClick: (() -> Unit)? = null
 ) {
     val haptic = LocalHapticFeedback.current
-    Row(
-        modifier = modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    val actions = buildList {
         if (onAttachClick != null) {
-            FormatButton(Icons.Outlined.AttachFile, R.string.media_attach, buttonSize, iconSize) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                onAttachClick()
-            }
+            add(FormatAction(Icons.Outlined.AttachFile, stringResource(R.string.media_attach)) { onAttachClick() })
         }
-        FormatButton(Icons.Default.FormatBold, R.string.richtext_format_bold, buttonSize, iconSize) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        add(FormatAction(Icons.Default.FormatBold, stringResource(R.string.richtext_format_bold)) {
             textFieldState.wrapSelection("__", "__")
-        }
-        FormatButton(Icons.Default.FormatItalic, R.string.richtext_format_italic, buttonSize, iconSize) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        })
+        add(FormatAction(Icons.Default.FormatItalic, stringResource(R.string.richtext_format_italic)) {
             textFieldState.wrapSelection("_", "_")
-        }
-        FormatButton(Icons.Default.FormatStrikethrough, R.string.richtext_format_strikethrough, buttonSize, iconSize) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        })
+        add(FormatAction(Icons.Default.FormatStrikethrough, stringResource(R.string.richtext_format_strikethrough)) {
             textFieldState.wrapSelection("~~", "~~")
-        }
-        FormatButton(Icons.Default.Code, R.string.richtext_format_code, buttonSize, iconSize) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        })
+        add(FormatAction(Icons.Default.Code, stringResource(R.string.richtext_format_code)) {
             textFieldState.wrapSelection("`", "`")
-        }
-        FormatButton(Icons.Default.Link, R.string.richtext_format_link, buttonSize, iconSize) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        })
+        add(FormatAction(Icons.Default.Link, stringResource(R.string.richtext_format_link)) {
             textFieldState.toggleLinkSyntax()
-        }
-        FormatButton(Icons.Default.VisibilityOff, R.string.richtext_format_spoiler, buttonSize, iconSize) {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        })
+        add(FormatAction(Icons.Default.VisibilityOff, stringResource(R.string.richtext_format_spoiler)) {
             textFieldState.wrapSelection("~!", "!~")
+        })
+    }
+    val moreLabel = stringResource(R.string.more_options)
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    BoxWithConstraints(modifier = modifier) {
+        // Every button is the same width, so the visible count is plain arithmetic. When the row
+        // overflows, one slot goes to the overflow button.
+        val slot = buttonSize + FormatButtonGap
+        val fitting = (maxWidth / slot).toInt()
+        val visibleCount = if (fitting >= actions.size) actions.size else (fitting - 1).coerceAtLeast(0)
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            actions.take(visibleCount).forEach { action ->
+                FormatButton(action.icon, action.label, buttonSize, iconSize) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    action.onClick()
+                }
+            }
+            if (visibleCount < actions.size) {
+                Box {
+                    FormatButton(Icons.Default.MoreVert, moreLabel, buttonSize, iconSize) {
+                        menuExpanded = true
+                    }
+                    Menu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        actions.drop(visibleCount).forEach { action ->
+                            item(
+                                text = action.label,
+                                leadingIcon = action.icon,
+                                onClick = {
+                                    menuExpanded = false
+                                    action.onClick()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
+
+private class FormatAction(val icon: ImageVector, val label: String, val onClick: () -> Unit)
+
+private val FormatButtonGap = 4.dp
 
 /**
  * Expressive Material 3 [HorizontalFloatingToolbar] carrying the same markdown formatting actions as
@@ -255,21 +289,23 @@ fun ImeUploadStrip(
 @Composable
 private fun FormatButton(
     icon: ImageVector,
-    contentDescriptionRes: Int,
+    contentDescription: String,
     buttonSize: Dp,
     iconSize: Dp,
     onClick: () -> Unit
 ) {
     FilledTonalIconButton(
         onClick = onClick,
-        modifier = Modifier.size(buttonSize),
+        modifier = Modifier
+            .padding(horizontal = FormatButtonGap / 2)
+            .size(buttonSize),
         colors = IconButtonDefaults.filledTonalIconButtonColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = stringResource(contentDescriptionRes),
+            contentDescription = contentDescription,
             modifier = Modifier.size(iconSize)
         )
     }
