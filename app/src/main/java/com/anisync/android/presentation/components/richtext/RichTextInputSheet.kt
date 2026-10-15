@@ -228,26 +228,36 @@ fun RichTextInputSheet(
                             color = MaterialTheme.colorScheme.surfaceContainerHigh,
                             modifier = textFieldModifier
                         ) {
-                            BasicTextField(
-                                state = bodyState,
-                                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                                lineLimits = TextFieldLineLimits.MultiLine(minLines, maxLines),
-                                inputTransformation = maxLengthTransform,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                decorator = { innerTextField ->
-                                    if (bodyState.text.isEmpty()) {
-                                        Text(
-                                            text = placeholder,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
+                            Column {
+                                BasicTextField(
+                                    state = bodyState,
+                                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                    lineLimits = TextFieldLineLimits.MultiLine(minLines, maxLines),
+                                    inputTransformation = maxLengthTransform,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .then(if (fullScreen) Modifier.weight(1f) else Modifier)
+                                        .padding(start = 16.dp, top = 16.dp, end = 16.dp),
+                                    decorator = { innerTextField ->
+                                        if (bodyState.text.isEmpty()) {
+                                            Text(
+                                                text = placeholder,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                        }
+                                        innerTextField()
                                     }
-                                    innerTextField()
-                                }
-                            )
+                                )
+                                RichTextCharCounter(
+                                    length = bodyState.text.length,
+                                    maxLength = maxLength,
+                                    modifier = Modifier
+                                        .align(Alignment.End)
+                                        .padding(12.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -275,7 +285,6 @@ fun RichTextInputSheet(
                         }
                         BottomBarRow(
                             textFieldState = bodyState,
-                            maxLength = maxLength,
                             submitLabel = submitLabel,
                             isSubmitting = isSubmitting,
                             canSubmit = canSubmit,
@@ -366,7 +375,6 @@ private fun ReplyingToChip(label: String) {
 @Composable
 private fun BottomBarRow(
     textFieldState: TextFieldState,
-    maxLength: Int,
     submitLabel: String,
     isSubmitting: Boolean,
     canSubmit: Boolean,
@@ -397,12 +405,6 @@ private fun BottomBarRow(
         ) {
             bottomBarLeading()
             Spacer(modifier = Modifier.weight(1f))
-            RichTextCharCounter(
-                length = textFieldState.text.length,
-                maxLength = maxLength,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(end = 12.dp)
-            )
             SubmitButton(
                 label = submitLabel,
                 isSubmitting = isSubmitting,
@@ -421,14 +423,10 @@ private fun BottomBarRow(
                 textFieldState = textFieldState,
                 buttonSize = 36.dp,
                 iconSize = 18.dp,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 12.dp),
                 onAttachClick = onAttachClick
-            )
-            RichTextCharCounter(
-                length = textFieldState.text.length,
-                maxLength = maxLength,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(horizontal = 12.dp)
             )
             SubmitButton(
                 label = submitLabel,
