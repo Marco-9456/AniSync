@@ -226,6 +226,13 @@ abstract class AniSyncWidgetProvider<S : Any> : AppWidgetProvider() {
                 WidgetCollection.notifyChanged(context, appWidgetId, listViewId)
             }
         } catch (t: IllegalArgumentException) {
+            if (covers.isNotEmpty() && manager.getAppWidgetInfo(appWidgetId) != null) {
+                // Still bound, so the bitmaps went past the platform cap. Below API 37 that update
+                // was dropped quietly, from 37 on it throws. Text without covers beats nothing.
+                Log.w(TAG, "Covers over budget for ${javaClass.simpleName}/$appWidgetId", t)
+                publish(context, manager, appWidgetId, snapshot, emptyMap())
+                return
+            }
             // Removed between the check above and this call. Nothing to draw on, nothing broken,
             // so no error card and no stack trace.
             Log.d(TAG, "Skipped ${javaClass.simpleName}/$appWidgetId, no longer bound")
