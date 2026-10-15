@@ -1286,4 +1286,10 @@
     <string name="forum_locked_badge">Bloqueado</string>
     <string name="cd_collapse">Colapsar</string>
     <string name="a11y_reply_count">%1$d respuestas</string>
+    <plurals name="feed_group_updates">
+        <item quantity="one">%dLista de actualización</item>
+        <item quantity="many">%dLista de actualizaciones</item>
+    </plurals>
+    <string name="a11y_view_count">%1$d vistas</string>
+    <string name="a11y_like_count">%1$d likes</string>
 </resources>
