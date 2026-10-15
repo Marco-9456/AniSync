@@ -108,6 +108,7 @@ fun TrackingCard(
         NotTrackedActions(
             mediaType = details.type,
             onStatusSelect = onStatusSelect,
+            onCustomClick = onEditClick,
             modifier = modifier
         )
         return
@@ -247,6 +248,7 @@ fun TrackingCard(
 private fun NotTrackedActions(
     mediaType: MediaType?,
     onStatusSelect: (LibraryStatus) -> Unit,
+    onCustomClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -278,7 +280,8 @@ private fun NotTrackedActions(
                 onDismiss = { expanded = false },
                 selected = null,
                 mediaType = mediaType,
-                onSelect = onStatusSelect
+                onSelect = onStatusSelect,
+                onCustom = onCustomClick
             )
         }
         OutlinedButton(
@@ -375,6 +378,7 @@ private fun ListStatusMenu(
     selected: LibraryStatus?,
     mediaType: MediaType?,
     onSelect: (LibraryStatus) -> Unit,
+    onCustom: (() -> Unit)? = null,
     onRemove: (() -> Unit)? = null
 ) {
     val haptic = rememberHapticFeedback()
@@ -388,7 +392,7 @@ private fun ListStatusMenu(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
-        val groupCount = if (onRemove != null) 2 else 1
+        val groupCount = 1 + listOfNotNull(onCustom, onRemove).size
         DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = groupCount)) {
             QUICK_STATUSES.forEachIndexed { index, option ->
                 val isSelected = option == selected
@@ -428,11 +432,35 @@ private fun ListStatusMenu(
             }
         }
 
+        // Opens the full edit sheet before the entry exists, so it can be private from the start
+        // instead of announcing itself in the activity feed first.
+        if (onCustom != null) {
+            Spacer(modifier = Modifier.height(MenuDefaults.GroupSpacing))
+            DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 1, count = groupCount)) {
+                DropdownMenuItem(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                        onDismiss()
+                        onCustom()
+                    },
+                    text = { Text(stringResource(R.string.label_custom)) },
+                    shape = MenuDefaults.standaloneItemShape,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+                        )
+                    }
+                )
+            }
+        }
+
         // Its own group rather than a divider: leaving the list is a different kind of act from
         // moving between lists, and the gap says so without a rule across the menu.
         if (onRemove != null) {
             Spacer(modifier = Modifier.height(MenuDefaults.GroupSpacing))
-            DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 1, count = 2)) {
+            DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = groupCount - 1, count = groupCount)) {
                 DropdownMenuItem(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.Confirm)
