@@ -357,7 +357,7 @@
     </plurals>
     <string name="profile_edit">Editar perfil</string>
     <string name="profile_unknown_error">Algo deu errado enquanto carregava o seu perfil.</string>
-    <string name="profile_user_load_error">Nós não conseguimos carregar o perfil deste usuário nesse momento. A conta pode ser privada, indisponível ou temporariamente limitada por excesso de solicitações.</string>
+    <string name="profile_user_load_error">Nós não conseguimos carregar o perfil deste usuário nesse momento. A conta pode estar privada, indisponível ou temporariamente limitada por excesso de solicitações.</string>
     <string name="profile_tab_overview">Visão geral</string>
     <string name="profile_tab_activity">Atividade</string>
     <string name="profile_activity_all">Tudo</string>
