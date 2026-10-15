@@ -45,6 +45,7 @@ class AnimeThemesApi @Inject constructor() {
             .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
+            .encryptedClientHello()
             .build()
     }
 

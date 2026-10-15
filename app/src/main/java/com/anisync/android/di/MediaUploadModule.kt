@@ -2,6 +2,7 @@ package com.anisync.android.di
 
 import android.os.Build
 import com.anisync.android.BuildConfig
+import com.anisync.android.data.network.encryptedClientHello
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -43,6 +44,7 @@ object MediaUploadModule {
             .writeTimeout(5, TimeUnit.MINUTES)
             .readTimeout(2, TimeUnit.MINUTES)
             .callTimeout(10, TimeUnit.MINUTES)
+            .encryptedClientHello()
             // User-driven retry covers transient failures with feedback; auto-retry
             // would silently re-upload a 50 MB video on a transient EOF.
             .retryOnConnectionFailure(false)

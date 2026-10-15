@@ -1,5 +1,6 @@
 package com.anisync.android.data.media
 
+import com.anisync.android.data.network.encryptedClientHello
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -52,6 +53,7 @@ object MediaHttp {
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
+            .encryptedClientHello()
             .build()
     }
 
@@ -66,6 +68,7 @@ object MediaHttp {
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
+            .encryptedClientHello()
             .build()
     }
 }
