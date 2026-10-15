@@ -61,14 +61,12 @@ abstract class RenameApksTask : DefaultTask() {
 
 android {
     namespace = "com.anisync.android"
-    // Glance 1.3.x is built against API 37 and requires AGP 9.2.0+. targetSdk stays on 36 so the
-    // upgrade does not also opt the app into API 37 runtime behaviour changes.
     compileSdk = 37
 
     defaultConfig {
         applicationId = "com.anisync.android"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 21
         versionName = "3.2.1"
 
