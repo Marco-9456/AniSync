@@ -1816,17 +1816,19 @@ private fun DatePickerSheet(
             }
         }
     ) {
-        DatePicker(
-            state = datePickerState,
-            title = {
-                Text(
-                    text = title,
-                    modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp),
-                    style = MaterialTheme.typography.labelLarge
-                )
-            },
-            headline = null
-        )
+        CalendarAfterKeyboard(datePickerState) { pickerState ->
+            DatePicker(
+                state = pickerState,
+                title = {
+                    Text(
+                        text = title,
+                        modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                },
+                headline = null
+            )
+        }
     }
 }
 
