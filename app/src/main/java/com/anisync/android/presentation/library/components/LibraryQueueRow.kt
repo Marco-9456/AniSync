@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -50,6 +51,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -209,25 +211,12 @@ fun LibraryQueueRow(
                     modifier = Modifier.height(40.dp)
                 )
                 Spacer(Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    QueueStateLine(
-                        entry = entry,
-                        total = total,
-                        aired = aired,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = progressLabel(entry.progress, aired, total),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
-                    )
-                }
+                StateLineWithCount(
+                    stateLine = { QueueStateLine(entry = entry, total = total, aired = aired) },
+                    count = progressLabel(entry.progress, aired, total),
+                    compactCount = progressLabel(entry.progress, aired, total, compact = true),
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Spacer(Modifier.height(8.dp))
                 EpisodeProgressBar(
                     progress = entry.progress,
@@ -399,6 +388,53 @@ private fun QueueStateLine(
             overflow = TextOverflow.Ellipsis
         )
     }
+}
+
+/**
+ * The state line with the progress count at the end. The count never ellipsizes, so when both no
+ * longer fit (a long count on a narrow phone or at a large display size) the count drops its "out"
+ * before "4 behind" is cut short.
+ */
+@Composable
+private fun StateLineWithCount(
+    stateLine: @Composable () -> Unit,
+    count: String,
+    compactCount: String,
+    modifier: Modifier = Modifier
+) {
+    Layout(
+        modifier = modifier,
+        content = {
+            Box { stateLine() }
+            ProgressCount(count)
+            ProgressCount(compactCount)
+        }
+    ) { measurables, constraints ->
+        val (line, full, compact) = measurables
+        val gap = 8.dp.roundToPx()
+        val fits = line.maxIntrinsicWidth(constraints.maxHeight) + gap +
+            full.maxIntrinsicWidth(constraints.maxHeight) <= constraints.maxWidth
+        val countPlaceable = (if (fits) full else compact).measure(Constraints())
+        val linePlaceable = line.measure(
+            Constraints(maxWidth = (constraints.maxWidth - gap - countPlaceable.width).coerceAtLeast(0))
+        )
+        val height = maxOf(linePlaceable.height, countPlaceable.height)
+        layout(constraints.maxWidth, height) {
+            linePlaceable.place(0, (height - linePlaceable.height) / 2)
+            countPlaceable.place(constraints.maxWidth - countPlaceable.width, (height - countPlaceable.height) / 2)
+        }
+    }
+}
+
+@Composable
+private fun ProgressCount(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        fontFamily = FontFamily.Monospace,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1
+    )
 }
 
 /**
