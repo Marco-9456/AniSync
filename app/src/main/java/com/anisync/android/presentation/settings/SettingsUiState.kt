@@ -5,6 +5,7 @@ import com.anisync.android.data.AppIcon
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.AvatarShape
 import com.anisync.android.data.CoverQuality
+import com.anisync.android.data.DisplaySize
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.StartScreen
 import com.anisync.android.data.StreamingService
@@ -19,6 +20,7 @@ import com.materialkolor.PaletteStyle
 sealed interface SettingsAction {
     data class SetThemeMode(val mode: ThemeMode) : SettingsAction
     data class SetAmoledEnabled(val enabled: Boolean) : SettingsAction
+    data class SetDisplaySize(val size: DisplaySize) : SettingsAction
     data class SetTitleLanguage(val language: TitleLanguage) : SettingsAction
     data class SetCoverQuality(val quality: CoverQuality) : SettingsAction
     data class SetHapticEnabled(val enabled: Boolean) : SettingsAction
@@ -124,6 +126,7 @@ data class SettingsUiState(
     // Look & Feel
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val amoledEnabled: Boolean = false,
+    val displaySize: DisplaySize = DisplaySize.DEFAULT,
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     val coverQuality: CoverQuality = CoverQuality.LARGE,
     val hapticEnabled: Boolean = true,

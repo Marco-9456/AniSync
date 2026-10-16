@@ -576,7 +576,7 @@
     <!-- Settings Screens -->
     <string name="navigate_back">Go back</string>
     <string name="settings_look_and_feel">Look and feel</string>
-    <string name="settings_look_and_feel_desc">Theme, colors, bottom bar, avatars, app icon</string>
+    <string name="settings_look_and_feel_desc">Theme, display size, colors, bottom bar, avatars, app icon</string>
 
     <!-- App lock (biometric / device credential) -->
     <string name="settings_app_lock">App lock</string>
@@ -2371,6 +2371,14 @@
     <string name="settings_section_appearance">Appearance</string>
     <string name="setting_pure_black">Pure black in dark mode</string>
     <string name="setting_pure_black_desc">Black backgrounds when dark is on. Saves power on OLED screens.</string>
+    <string name="settings_section_display_size">Display size</string>
+    <!-- Sample glyphs drawn at each display size. Use the first letters of your alphabet. -->
+    <string name="display_size_sample">Aa</string>
+    <string name="display_size_small">Small</string>
+    <string name="display_size_default">Default</string>
+    <string name="display_size_large">Large</string>
+    <string name="display_size_larger">Larger</string>
+    <string name="setting_display_size_desc">Scales text, icons and spacing everywhere in AniSync. Your phone’s own display size and font size still apply.</string>
     <string name="settings_section_color">Color</string>
     <string name="setting_color_style">Color style</string>
     <string name="setting_color_style_dynamic_desc">Your wallpaper sets the colors</string>

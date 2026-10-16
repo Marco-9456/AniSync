@@ -252,14 +252,20 @@ class SettingsViewModel @Inject constructor(
         fontPlaygroundFlow,
         appSettings.amoledEnabled,
         appSettings.appLockEnabled,
-        combine(appSettings.mediaArtworkTheming, appSettings.scoreOnComplete, ::Pair),
-    ) { core, fontPlayground, amoled, appLock, (artworkTheming, scoreOnComplete) ->
+        combine(
+            appSettings.mediaArtworkTheming,
+            appSettings.scoreOnComplete,
+            appSettings.displaySize,
+            ::Triple
+        ),
+    ) { core, fontPlayground, amoled, appLock, (artworkTheming, scoreOnComplete, displaySize) ->
         core.copy(
             fontPlayground = fontPlayground,
             amoledEnabled = amoled,
             appLockEnabled = appLock,
             mediaArtworkTheming = artworkTheming,
-            scoreOnComplete = scoreOnComplete
+            scoreOnComplete = scoreOnComplete,
+            displaySize = displaySize
         )
     }.stateIn(
         scope = viewModelScope,
@@ -271,6 +277,7 @@ class SettingsViewModel @Inject constructor(
         when (action) {
             is SettingsAction.SetThemeMode -> appSettings.setThemeMode(action.mode)
             is SettingsAction.SetAmoledEnabled -> appSettings.setAmoledEnabled(action.enabled)
+            is SettingsAction.SetDisplaySize -> appSettings.setDisplaySize(action.size)
             is SettingsAction.SetTitleLanguage -> appSettings.setTitleLanguage(action.language)
             is SettingsAction.SetCoverQuality -> appSettings.setCoverQuality(action.quality)
             is SettingsAction.SetHapticEnabled -> appSettings.setHapticEnabled(action.enabled)

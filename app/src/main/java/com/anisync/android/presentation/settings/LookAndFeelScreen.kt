@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -47,7 +48,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -58,16 +61,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.data.AppIcon
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.AvatarShape
+import com.anisync.android.data.DisplaySize
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.ThemeMode
 import com.anisync.android.data.WhatsNewItem
@@ -87,9 +96,12 @@ import com.anisync.android.ui.theme.toDisplayName
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.material3.dynamicColorScheme
+import kotlin.math.abs
 
 /** Below this width the page is one column. At or above it the preview and mode stay pinned. */
 private val TwoColumnMinWidth = 720.dp
+
+private const val DISPLAY_SIZE_SETTLE_FRAMES = 12
 
 /**
  * Everything about how the app looks, each choice drawn as what it produces. Theme choices apply
@@ -142,6 +154,23 @@ fun LookAndFeelScreen(
 
     var showColorPicker by rememberSaveable { mutableStateOf(false) }
     var showStyleSheet by rememberSaveable { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+
+    // A new display size relayouts the whole page. Where the tiles sat before the tap is kept, so
+    // the page scrolls them back under the finger instead of letting the content above push them.
+    // The top bar re-clamps over the next few frames, so the tiles are re-pinned until it settles.
+    var displaySizeTilesY by remember { mutableFloatStateOf(0f) }
+    var displaySizeAnchorY by remember { mutableStateOf<Float?>(null) }
+    val density = LocalDensity.current
+    LaunchedEffect(density) {
+        val anchor = displaySizeAnchorY ?: return@LaunchedEffect
+        displaySizeAnchorY = null
+        repeat(DISPLAY_SIZE_SETTLE_FRAMES) {
+            withFrameNanos { }
+            val drift = displaySizeTilesY - anchor
+            if (abs(drift) >= 1f) listState.scrollBy(drift)
+        }
+    }
 
     if (showColorPicker) {
         ColorPickerSheet(
@@ -196,6 +225,37 @@ fun LookAndFeelScreen(
     }
 
     val choices: @Composable ColumnScope.() -> Unit = {
+        SettingsSectionLabel(stringResource(R.string.settings_section_display_size))
+        SettingsGroup {
+            SettingsBlock(
+                modifier = Modifier
+                    .selectableGroup()
+                    .onGloballyPositioned { displaySizeTilesY = it.positionInRoot().y }
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DisplaySize.entries.forEach { size ->
+                        DisplaySizeTile(
+                            size = size,
+                            current = uiState.displaySize,
+                            selected = uiState.displaySize == size,
+                            onClick = {
+                                if (size != uiState.displaySize) {
+                                    displaySizeAnchorY = displaySizeTilesY
+                                    viewModel.onAction(SettingsAction.SetDisplaySize(size))
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        Text(
+            text = stringResource(R.string.setting_display_size_desc),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+
         SettingsSectionLabel(stringResource(R.string.settings_section_color))
         SettingsGroup {
             SettingsBlock(contentPadding = PaddingValues(16.dp)) {
@@ -308,7 +368,6 @@ fun LookAndFeelScreen(
         )
     }
 
-    val listState = rememberLazyListState()
     CollapsingTopBarScaffold(
         title = stringResource(R.string.settings_look_and_feel),
         onBackClick = onBackClick,
@@ -395,6 +454,50 @@ private fun RowScope.ThemeModeTile(mode: ThemeMode, selected: Boolean, onClick: 
                 tint = if (selected) LocalContentColor.current else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(text = stringResource(label), style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+/**
+ * "Aa" as it will look at [size]. The page is already drawn at [current], so the sample is sized
+ * relative to it and the selected tile always shows text at today's size.
+ */
+@Composable
+private fun RowScope.DisplaySizeTile(
+    size: DisplaySize,
+    current: DisplaySize,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val label = when (size) {
+        DisplaySize.SMALL -> R.string.display_size_small
+        DisplaySize.DEFAULT -> R.string.display_size_default
+        DisplaySize.LARGE -> R.string.display_size_large
+        DisplaySize.LARGER -> R.string.display_size_larger
+    }
+    SettingsChoiceTile(selected = selected, onClick = onClick, modifier = Modifier.weight(1f)) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(vertical = 12.dp)
+        ) {
+            // Fixed height, so the four tiles stay level while their samples differ in size.
+            Box(modifier = Modifier.height(44.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(R.string.display_size_sample),
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontSize = (24f * size.scale / current.scale).sp
+                    ),
+                    maxLines = 1,
+                    modifier = Modifier.clearAndSetSemantics { }
+                )
+            }
+            Text(
+                text = stringResource(label),
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
