@@ -178,6 +178,13 @@ class AppSettings @Inject constructor(
     private val _amoledEnabled = MutableStateFlow(prefs.getBoolean(KEY_AMOLED_ENABLED, false))
     val amoledEnabled: StateFlow<Boolean> = _amoledEnabled.asStateFlow()
 
+    // Display size, multiplied into the density the whole app composes with. Device-local.
+    private val _displaySize = MutableStateFlow(
+        runCatching { DisplaySize.valueOf(prefs.getString(KEY_DISPLAY_SIZE, null) ?: DisplaySize.DEFAULT.name) }
+            .getOrDefault(DisplaySize.DEFAULT)
+    )
+    val displaySize: StateFlow<DisplaySize> = _displaySize.asStateFlow()
+
     // Avatar shape setting
     private val _avatarShape = MutableStateFlow(readAvatarShape())
     val avatarShape: StateFlow<AvatarShape> = _avatarShape.asStateFlow()
@@ -805,6 +812,11 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_AMOLED_ENABLED, enabled).apply()
     }
 
+    fun setDisplaySize(size: DisplaySize) {
+        _displaySize.value = size
+        prefs.edit().putString(KEY_DISPLAY_SIZE, size.name).apply()
+    }
+
     fun setAvatarShape(shape: AvatarShape) {
         _avatarShape.value = shape
         prefs.edit().putString(KEY_AVATAR_SHAPE, shape.name).apply()
@@ -1355,6 +1367,7 @@ companion object {
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_AMOLED_ENABLED = "amoled_enabled"
         private const val KEY_AVATAR_SHAPE = "avatar_shape"
+        private const val KEY_DISPLAY_SIZE = "display_size"
         private const val KEY_HAPTIC_ENABLED = "haptic_enabled"
         private const val KEY_SCORE_ON_COMPLETE = "score_on_complete"
         private const val KEY_APP_LOCK_ENABLED = "app_lock_enabled"

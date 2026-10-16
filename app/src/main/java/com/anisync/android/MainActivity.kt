@@ -72,6 +72,7 @@ import com.anisync.android.presentation.util.LocalLinkPreviewProvider
 import com.anisync.android.presentation.util.rememberAdaptiveInfo
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.AppTheme
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import com.anisync.android.ui.theme.applySystemBarAppearance
 import com.anisync.android.ui.theme.PresetPalettes
 import com.anisync.android.ui.theme.resolveDarkTheme
@@ -276,6 +277,7 @@ class MainActivity : AppCompatActivity() {
                 val avatarShape by appSettings.avatarShape.collectAsStateWithLifecycle()
                 val avatarBackgroundEnabled by appSettings.avatarBackgroundEnabled.collectAsStateWithLifecycle()
                 val disableAvatarShapeProfile by appSettings.disableAvatarShapeProfile.collectAsStateWithLifecycle()
+                val displaySize by appSettings.displaySize.collectAsStateWithLifecycle()
 
                 val useDarkTheme = themeMode.resolveDarkTheme()
 
@@ -291,133 +293,135 @@ class MainActivity : AppCompatActivity() {
                     selectedPaletteId == "dynamic"
                 }
 
-                CompositionLocalProvider(
-                    LocalAdaptiveInfo provides rememberAdaptiveInfo(),
-                    LocalGridColumnsAuto provides gridColumnsAuto,
-                    LocalGridColumnCount provides gridColumnCount,
-                    LocalAppSettings provides appSettings,
-                    com.anisync.android.presentation.components.LocalWhatsNew provides whatsNewStore,
-                    LocalLinkPreviewProvider provides linkPreviewProvider,
-                    com.anisync.android.domain.LocalCoverQuality provides coverQuality,
-                    com.anisync.android.presentation.util.LocalLibraryStatuses provides libraryStatuses,
-                    com.anisync.android.ui.theme.LocalAvatarShape provides avatarShape.toComposeShape(),
-                    com.anisync.android.ui.theme.LocalAvatarShapeId provides avatarShape,
-                    com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled provides avatarBackgroundEnabled,
-                    com.anisync.android.ui.theme.LocalDisableAvatarShapeProfile provides disableAvatarShapeProfile
-                ) {
-                    AppTheme(
-                        darkTheme = useDarkTheme,
-                        dynamicColor = useDynamicColor,
-                        amoled = amoledEnabled,
-                        seedColor = seedColor,
-                        paletteStyle = paletteStyle,
-                        typographyOverrides = typographyOverrides
+                ProvideDisplaySize(displaySize) {
+                    CompositionLocalProvider(
+                        LocalAdaptiveInfo provides rememberAdaptiveInfo(),
+                        LocalGridColumnsAuto provides gridColumnsAuto,
+                        LocalGridColumnCount provides gridColumnCount,
+                        LocalAppSettings provides appSettings,
+                        com.anisync.android.presentation.components.LocalWhatsNew provides whatsNewStore,
+                        LocalLinkPreviewProvider provides linkPreviewProvider,
+                        com.anisync.android.domain.LocalCoverQuality provides coverQuality,
+                        com.anisync.android.presentation.util.LocalLibraryStatuses provides libraryStatuses,
+                        com.anisync.android.ui.theme.LocalAvatarShape provides avatarShape.toComposeShape(),
+                        com.anisync.android.ui.theme.LocalAvatarShapeId provides avatarShape,
+                        com.anisync.android.ui.theme.LocalAvatarBackgroundEnabled provides avatarBackgroundEnabled,
+                        com.anisync.android.ui.theme.LocalDisableAvatarShapeProfile provides disableAvatarShapeProfile
                     ) {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            color = MaterialTheme.colorScheme.background
+                        AppTheme(
+                            darkTheme = useDarkTheme,
+                            dynamicColor = useDynamicColor,
+                            amoled = amoledEnabled,
+                            seedColor = seedColor,
+                            paletteStyle = paletteStyle,
+                            typographyOverrides = typographyOverrides
                         ) {
-                          // Edge-to-edge: nothing padded or consumed here, so each screen sees the
-                          // real insets and protects the bars with its own chrome.
-                          val onboardingCompleted by appSettings.onboardingCompleted
-                              .collectAsStateWithLifecycle()
-                          val onboardingReplay by appSettings.onboardingReplay
-                              .collectAsStateWithLifecycle()
-                          val onboardingActive = !onboardingCompleted || onboardingReplay
-                          Box(modifier = Modifier.fillMaxSize()) {
-                            // Cold Flow — seed from the account store so a logged-in cold start
-                            // doesn't flash LoginScreen for a frame.
-                            val loggedInSeed = remember { accountManager.activeAccount.value != null }
-                            val isLoggedIn by authRepository.isLoggedIn.collectAsStateWithLifecycle(
-                                initialValue = loggedInSeed
-                            )
+                            Surface(
+                                modifier = Modifier.fillMaxSize(),
+                                color = MaterialTheme.colorScheme.background
+                            ) {
+                              // Edge-to-edge: nothing padded or consumed here, so each screen sees the
+                              // real insets and protects the bars with its own chrome.
+                              val onboardingCompleted by appSettings.onboardingCompleted
+                                  .collectAsStateWithLifecycle()
+                              val onboardingReplay by appSettings.onboardingReplay
+                                  .collectAsStateWithLifecycle()
+                              val onboardingActive = !onboardingCompleted || onboardingReplay
+                              Box(modifier = Modifier.fillMaxSize()) {
+                                // Cold Flow — seed from the account store so a logged-in cold start
+                                // doesn't flash LoginScreen for a frame.
+                                val loggedInSeed = remember { accountManager.activeAccount.value != null }
+                                val isLoggedIn by authRepository.isLoggedIn.collectAsStateWithLifecycle(
+                                    initialValue = loggedInSeed
+                                )
 
-                            // Session expired dialog
-                            var showSessionExpiredDialog by remember { mutableStateOf(false) }
+                                // Session expired dialog
+                                var showSessionExpiredDialog by remember { mutableStateOf(false) }
 
-                            LaunchedEffect(Unit) {
-                                authRepository.sessionExpired.collect {
-                                    showSessionExpiredDialog = true
+                                LaunchedEffect(Unit) {
+                                    authRepository.sessionExpired.collect {
+                                        showSessionExpiredDialog = true
+                                    }
                                 }
-                            }
 
-                            if (showSessionExpiredDialog) {
-                                AlertDialog(
-                                    onDismissRequest = { showSessionExpiredDialog = false },
-                                    icon = {
-                                        Icon(
-                                            imageVector = Icons.Outlined.Lock,
-                                            contentDescription = null
-                                        )
-                                    },
-                                    title = { Text(stringResource(R.string.session_expired_title)) },
-                                    text = {
-                                        Text(stringResource(R.string.session_expired_message))
-                                    },
-                                    confirmButton = {
-                                        TextButton(onClick = { showSessionExpiredDialog = false }) {
-                                            Text(stringResource(R.string.ok))
+                                if (showSessionExpiredDialog) {
+                                    AlertDialog(
+                                        onDismissRequest = { showSessionExpiredDialog = false },
+                                        icon = {
+                                            Icon(
+                                                imageVector = Icons.Outlined.Lock,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        title = { Text(stringResource(R.string.session_expired_title)) },
+                                        text = {
+                                            Text(stringResource(R.string.session_expired_message))
+                                        },
+                                        confirmButton = {
+                                            TextButton(onClick = { showSessionExpiredDialog = false }) {
+                                                Text(stringResource(R.string.ok))
+                                            }
+                                        }
+                                    )
+                                }
+
+                                // Keyed on the account session epoch: switching accounts bumps the
+                                // epoch, which tears down and rebuilds the entire MainScreen subtree
+                                // (fresh NavController + ViewModels) so screens refetch the new account.
+                                val sessionEpoch by accountManager.sessionEpoch.collectAsStateWithLifecycle()
+
+                                // Both libraries have to exist locally for the list indicators to be
+                                // truthful on the browsing screens, and only the anime one is fetched
+                                // by opening the Library tab.
+                                LaunchedEffect(sessionEpoch, isLoggedIn) {
+                                    if (isLoggedIn) {
+                                        listOf(MediaType.ANIME, MediaType.MANGA).forEach { type ->
+                                            LibrarySyncWorker.enqueueIfEmpty(this@MainActivity, type)
                                         }
                                     }
-                                )
-                            }
+                                }
 
-                            // Keyed on the account session epoch: switching accounts bumps the
-                            // epoch, which tears down and rebuilds the entire MainScreen subtree
-                            // (fresh NavController + ViewModels) so screens refetch the new account.
-                            val sessionEpoch by accountManager.sessionEpoch.collectAsStateWithLifecycle()
+                                // Signing out later returns to the plain LoginScreen — onboarding is
+                                // a one-time introduction, not a login gate.
+                                if (onboardingActive) {
+                                    OnboardingScreen()
+                                } else if (isLoggedIn) {
+                                    key(sessionEpoch) {
+                                        MainScreen(builtAtEpoch = sessionEpoch)
+                                    }
+                                } else {
+                                    LoginScreen()
+                                }
 
-                            // Both libraries have to exist locally for the list indicators to be
-                            // truthful on the browsing screens, and only the anime one is fetched
-                            // by opening the Library tab.
-                            LaunchedEffect(sessionEpoch, isLoggedIn) {
+                                AppUpdateHandler(updateManager = updateManager)
+
+                                // App-wide options sync-conflict prompt (surfaces right after launch,
+                                // not only on the AniList Settings screen).
                                 if (isLoggedIn) {
-                                    listOf(MediaType.ANIME, MediaType.MANGA).forEach { type ->
-                                        LibrarySyncWorker.enqueueIfEmpty(this@MainActivity, type)
+                                    com.anisync.android.presentation.settings.UserOptionsConflictHandler(
+                                        repository = userOptionsRepository,
+                                    )
+                                }
+
+                                // Blocking loader while an account add/switch/remove is in flight.
+                                val isAccountBusy by accountManager.isBusy.collectAsStateWithLifecycle()
+                                if (isAccountBusy) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(
+                                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        AppCircularProgressIndicator()
                                     }
                                 }
+
+                                // Drawn above everything so nothing shows while locked.
+                                com.anisync.android.presentation.security.AppLockGate(appLockManager)
+                              }
                             }
-
-                            // Signing out later returns to the plain LoginScreen — onboarding is
-                            // a one-time introduction, not a login gate.
-                            if (onboardingActive) {
-                                OnboardingScreen()
-                            } else if (isLoggedIn) {
-                                key(sessionEpoch) {
-                                    MainScreen(builtAtEpoch = sessionEpoch)
-                                }
-                            } else {
-                                LoginScreen()
-                            }
-
-                            AppUpdateHandler(updateManager = updateManager)
-
-                            // App-wide options sync-conflict prompt (surfaces right after launch,
-                            // not only on the AniList Settings screen).
-                            if (isLoggedIn) {
-                                com.anisync.android.presentation.settings.UserOptionsConflictHandler(
-                                    repository = userOptionsRepository,
-                                )
-                            }
-
-                            // Blocking loader while an account add/switch/remove is in flight.
-                            val isAccountBusy by accountManager.isBusy.collectAsStateWithLifecycle()
-                            if (isAccountBusy) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f)
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    AppCircularProgressIndicator()
-                                }
-                            }
-
-                            // Drawn above everything so nothing shows while locked.
-                            com.anisync.android.presentation.security.AppLockGate(appLockManager)
-                          }
                         }
                     }
                 }
