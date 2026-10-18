@@ -2,7 +2,10 @@ package com.anisync.android.ui.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import com.materialkolor.MaterialKolors
 import com.materialkolor.PaletteStyle
+import com.materialkolor.dynamiccolor.ColorSpec
+import com.materialkolor.ktx.DynamicScheme
 
 /**
  * Represents a color palette option for the app theme.
@@ -122,6 +125,20 @@ object PresetPalettes {
  */
 val AppPaletteStyles: List<PaletteStyle> =
     PaletteStyle.KnownStyles.filterNot { it is PaletteStyle.Cmf } + PaletteStyle.Cmf()
+
+/**
+ * The scheme [seedColor] grows into, with each role resolved only when it is read. A swatch that
+ * shows four roles costs a fraction of a whole ColorScheme, which resolves every one of them.
+ */
+fun paletteRoles(seedColor: Color, isDark: Boolean, style: PaletteStyle): MaterialKolors =
+    MaterialKolors(
+        DynamicScheme(
+            seedColor = seedColor,
+            isDark = isDark,
+            style = style,
+            specVersion = ColorSpec.SpecVersion.SPEC_2026
+        )
+    )
 
 /**
  * Extension to map PaletteStyle enum to user-friendly labels.
