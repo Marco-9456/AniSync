@@ -45,9 +45,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.ui.theme.ThemePalette
+import com.anisync.android.ui.theme.paletteRoles
 import com.materialkolor.PaletteStyle
-import com.materialkolor.dynamiccolor.ColorSpec
-import com.materialkolor.material3.dynamicColorScheme
 
 /**
  * The color palettes as a wrapping grid of the four-segment swatches, followed by a Custom tile.
@@ -293,18 +292,12 @@ private fun resolvePaletteColors(
     } else {
         // Generate from seed using Material Kolor
         return try {
-            val colorScheme = dynamicColorScheme(
-                seedColor = palette.seedColor,
-                isDark = isDarkMode,
-                isAmoled = false,
-                style = paletteStyle,
-                specVersion = ColorSpec.SpecVersion.SPEC_2026
-            )
+            val roles = paletteRoles(palette.seedColor, isDarkMode, paletteStyle)
             PaletteColors(
-                topLeft = colorScheme.primaryContainer,
-                topRight = colorScheme.secondaryContainer,
-                bottomLeft = colorScheme.primary,
-                bottomRight = colorScheme.tertiary
+                topLeft = roles.primaryContainer(),
+                topRight = roles.secondaryContainer(),
+                bottomLeft = roles.primary(),
+                bottomRight = roles.tertiary()
             )
         } catch (e: Exception) {
             // Safety fallback

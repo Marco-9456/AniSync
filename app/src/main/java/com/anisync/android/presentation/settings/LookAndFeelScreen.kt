@@ -90,12 +90,11 @@ import com.anisync.android.presentation.settings.components.LookAndFeelPreview
 import com.anisync.android.presentation.settings.components.PaletteStyleSheet
 import com.anisync.android.presentation.util.adaptiveReadingWidth
 import com.anisync.android.ui.theme.PresetPalettes
+import com.anisync.android.ui.theme.paletteRoles
 import com.anisync.android.ui.theme.resolveDarkTheme
 import com.anisync.android.ui.theme.toDescription
 import com.anisync.android.ui.theme.toDisplayName
 import com.materialkolor.PaletteStyle
-import com.materialkolor.dynamiccolor.ColorSpec
-import com.materialkolor.material3.dynamicColorScheme
 import kotlin.math.abs
 
 /** Below this width the page is one column. At or above it the preview and mode stay pinned. */
@@ -505,18 +504,13 @@ private fun RowScope.DisplaySizeTile(
 /** The four colors of the current style, overlapped, as the trailing hint on the Color style row. */
 @Composable
 private fun StyleSwatches(seedColor: Color, isDarkMode: Boolean, style: PaletteStyle) {
-    val scheme = remember(seedColor, isDarkMode, style) {
-        dynamicColorScheme(
-            seedColor = seedColor,
-            isDark = isDarkMode,
-            isAmoled = false,
-            style = style,
-            specVersion = ColorSpec.SpecVersion.SPEC_2026
-        )
+    val colors = remember(seedColor, isDarkMode, style) {
+        val roles = paletteRoles(seedColor, isDarkMode, style)
+        listOf(roles.primary(), roles.secondary(), roles.tertiary(), roles.primaryContainer())
     }
     val ring = MaterialTheme.colorScheme.surfaceContainer
     Row(horizontalArrangement = Arrangement.spacedBy((-6).dp)) {
-        listOf(scheme.primary, scheme.secondary, scheme.tertiary, scheme.primaryContainer).forEach { color ->
+        colors.forEach { color ->
             Box(
                 modifier = Modifier
                     .size(20.dp)
