@@ -270,7 +270,23 @@ class SettingsViewModel @Inject constructor(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = SettingsUiState()
+        // The combine lands a frame or more after the first composition. Seeded with what Look and
+        // feel draws, so that page does not build every swatch for the defaults and then again.
+        initialValue = SettingsUiState(
+            themeMode = appSettings.themeMode.value,
+            amoledEnabled = appSettings.amoledEnabled.value,
+            displaySize = appSettings.displaySize.value,
+            navBarStyle = appSettings.navBarStyle.value,
+            navBarShowLabels = appSettings.navBarShowLabels.value,
+            navBarCornerRadius = appSettings.navBarCornerRadius.value,
+            avatarShape = appSettings.avatarShape.value,
+            avatarBackgroundEnabled = appSettings.avatarBackgroundEnabled.value,
+            respectUserProfileColors = appSettings.respectUserProfileColors.value,
+            mediaArtworkTheming = appSettings.mediaArtworkTheming.value,
+            selectedPaletteId = appSettings.selectedPaletteId.value,
+            customSeedColor = appSettings.customSeedColor.value,
+            paletteStyle = appSettings.paletteStyle.value
+        )
     )
 
     fun onAction(action: SettingsAction) {
