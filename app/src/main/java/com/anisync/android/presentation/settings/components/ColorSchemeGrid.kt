@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.settings.components
 
 import android.os.Build
+import android.util.LruCache
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -156,6 +157,9 @@ const val CUSTOM_PALETTE_ID = "custom"
 private val SwatchSize = 64.dp
 private val MinSwatchGap = 8.dp
 
+/** Seeded swatch colors by seed, polarity and style, kept because every visit rebuilds the grid. */
+private val seededSwatches = LruCache<Triple<Color, Boolean, PaletteStyle>, PaletteColors>(64)
+
 /**
  * A 64dp rounded-square tile holding the four-segment circle and its label. With no [colors] it is
  * the empty Custom tile, a dashed ring around a plus.
@@ -291,6 +295,8 @@ private fun resolvePaletteColors(
         }
     } else {
         // Generate from seed using Material Kolor
+        val key = Triple(palette.seedColor, isDarkMode, paletteStyle)
+        seededSwatches.get(key)?.let { return it }
         return try {
             val roles = paletteRoles(palette.seedColor, isDarkMode, paletteStyle)
             PaletteColors(
@@ -298,7 +304,7 @@ private fun resolvePaletteColors(
                 topRight = roles.secondaryContainer(),
                 bottomLeft = roles.primary(),
                 bottomRight = roles.tertiary()
-            )
+            ).also { seededSwatches.put(key, it) }
         } catch (e: Exception) {
             // Safety fallback
             PaletteColors(
