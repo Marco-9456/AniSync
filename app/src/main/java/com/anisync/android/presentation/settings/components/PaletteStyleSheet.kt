@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.BottomSheetDefaults
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -29,6 +28,7 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,11 +40,10 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.settings.SettingsChoiceTile
 import com.anisync.android.ui.theme.AppPaletteStyles
+import com.anisync.android.ui.theme.paletteRoles
 import com.anisync.android.ui.theme.toDescription
 import com.anisync.android.ui.theme.toDisplayName
 import com.materialkolor.PaletteStyle
-import com.materialkolor.dynamiccolor.ColorSpec
-import com.materialkolor.material3.dynamicColorScheme
 
 /**
  * Every palette style drawn as a small piece of UI in the colors it would produce from [seedColor],
@@ -114,13 +113,14 @@ private fun PaletteStyleCard(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val scheme = remember(style, seedColor, isDarkMode) {
-        dynamicColorScheme(
-            seedColor = seedColor,
-            isDark = isDarkMode,
-            isAmoled = false,
-            style = style,
-            specVersion = ColorSpec.SpecVersion.SPEC_2026
+    val colors = remember(style, seedColor, isDarkMode) {
+        val roles = paletteRoles(seedColor, isDarkMode, style)
+        MiniUiColors(
+            surfaceContainer = roles.surfaceContainer(),
+            primary = roles.primary(),
+            secondary = roles.secondary(),
+            tertiary = roles.tertiary(),
+            primaryContainer = roles.primaryContainer()
         )
     }
     SettingsChoiceTile(selected = selected, onClick = onClick) {
@@ -128,7 +128,7 @@ private fun PaletteStyleCard(
             modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            MiniUi(scheme)
+            MiniUi(colors)
             Column(modifier = Modifier.padding(horizontal = 4.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -152,24 +152,33 @@ private fun PaletteStyleCard(
     }
 }
 
+@Immutable
+private data class MiniUiColors(
+    val surfaceContainer: Color,
+    val primary: Color,
+    val secondary: Color,
+    val tertiary: Color,
+    val primaryContainer: Color
+)
+
 /** An avatar, two lines of text and a FAB, each in the role it would take in the real app. */
 @Composable
-private fun MiniUi(scheme: ColorScheme) {
+private fun MiniUi(colors: MiniUiColors) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp)
-            .background(scheme.surfaceContainer, RoundedCornerShape(12.dp))
+            .background(colors.surfaceContainer, RoundedCornerShape(12.dp))
             .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(Modifier.size(28.dp).background(scheme.primary, CircleShape))
+        Box(Modifier.size(28.dp).background(colors.primary, CircleShape))
         Spacer(Modifier.width(8.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Box(Modifier.fillMaxWidth(0.85f).height(8.dp).background(scheme.secondary, CircleShape))
-            Box(Modifier.fillMaxWidth(0.5f).height(8.dp).background(scheme.tertiary, CircleShape))
+            Box(Modifier.fillMaxWidth(0.85f).height(8.dp).background(colors.secondary, CircleShape))
+            Box(Modifier.fillMaxWidth(0.5f).height(8.dp).background(colors.tertiary, CircleShape))
         }
         Spacer(Modifier.width(8.dp))
-        Box(Modifier.size(28.dp).background(scheme.primaryContainer, RoundedCornerShape(8.dp)))
+        Box(Modifier.size(28.dp).background(colors.primaryContainer, RoundedCornerShape(8.dp)))
     }
 }
