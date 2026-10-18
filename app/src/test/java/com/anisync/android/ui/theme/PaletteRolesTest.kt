@@ -27,6 +27,7 @@ class PaletteRolesTest {
                     assertEquals(case, scheme.tertiary, roles.tertiary())
                     assertEquals(case, scheme.primaryContainer, roles.primaryContainer())
                     assertEquals(case, scheme.secondaryContainer, roles.secondaryContainer())
+                    assertEquals(case, scheme.surfaceContainer, roles.surfaceContainer())
                 }
             }
         }
