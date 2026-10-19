@@ -45,6 +45,7 @@ import com.anisync.android.R
 import com.anisync.android.data.account.Account
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.login.AniListAuth
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import com.anisync.android.util.AppLinksUtil
 
 /**
@@ -265,35 +266,37 @@ private fun AccountRow(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false }
                     ) {
-                        if (account.isExpired) {
+                        ProvideDisplaySize {
+                            if (account.isExpired) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.account_reauthenticate)) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onReauthenticate()
+                                    }
+                                )
+                            } else {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.account_switch)) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onSwitch()
+                                    }
+                                )
+                            }
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.account_reauthenticate)) },
+                                text = {
+                                    Text(
+                                        stringResource(R.string.account_remove),
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                },
                                 onClick = {
                                     menuExpanded = false
-                                    onReauthenticate()
-                                }
-                            )
-                        } else {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.account_switch)) },
-                                onClick = {
-                                    menuExpanded = false
-                                    onSwitch()
+                                    onRemove()
                                 }
                             )
                         }
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    stringResource(R.string.account_remove),
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onRemove()
-                            }
-                        )
                     }
                 }
             }

@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import com.anisync.android.ui.theme.ProvideDisplaySize
 
 /**
  * Material 3 Expressive dropdown menu. Builds on `DropdownMenuPopup` /
@@ -61,7 +62,7 @@ fun Menu(
             offset
         )
     ) {
-        MenuGroups(groups)
+        ProvideDisplaySize { MenuGroups(groups) }
     }
 }
 
@@ -121,24 +122,26 @@ fun MenuField(
             expanded = expanded,
             onDismissRequest = { onExpandedChange(false) }
         ) {
-            // ExposedDropdownMenu owns its surface, so flatten groups into one
-            // column and use spacers between groups instead of nested Surfaces.
-            val groupCount = groups.size
-            groups.forEachIndexed { gIndex, group ->
-                val itemCount = group.count { it is MenuEntry.Item }
-                var itemIndex = 0
-                group.forEach { entry ->
-                    when (entry) {
-                        is MenuEntry.Item -> {
-                            MenuItemRow(entry, itemIndex, itemCount)
-                            itemIndex++
+            ProvideDisplaySize {
+                // ExposedDropdownMenu owns its surface, so flatten groups into one
+                // column and use spacers between groups instead of nested Surfaces.
+                val groupCount = groups.size
+                groups.forEachIndexed { gIndex, group ->
+                    val itemCount = group.count { it is MenuEntry.Item }
+                    var itemIndex = 0
+                    group.forEach { entry ->
+                        when (entry) {
+                            is MenuEntry.Item -> {
+                                MenuItemRow(entry, itemIndex, itemCount)
+                                itemIndex++
+                            }
+                            MenuEntry.Divider -> HorizontalDivider(
+                                modifier = Modifier.padding(MenuDefaults.HorizontalDividerPadding)
+                            )
                         }
-                        MenuEntry.Divider -> HorizontalDivider(
-                            modifier = Modifier.padding(MenuDefaults.HorizontalDividerPadding)
-                        )
                     }
+                    if (gIndex < groupCount - 1) Spacer(Modifier.height(8.dp))
                 }
-                if (gIndex < groupCount - 1) Spacer(Modifier.height(8.dp))
             }
         }
     }

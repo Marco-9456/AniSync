@@ -75,6 +75,7 @@ import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.SegmentedTabGroup
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -184,8 +185,10 @@ internal fun ActivityUpdateInfo(tint: Color) {
             TooltipAnchorPosition.Above
         ),
         tooltip = {
-            PlainTooltip {
-                Text(stringResource(R.string.statistics_activity_update_info))
+            ProvideDisplaySize {
+                PlainTooltip {
+                    Text(stringResource(R.string.statistics_activity_update_info))
+                }
             }
         },
         state = tooltipState

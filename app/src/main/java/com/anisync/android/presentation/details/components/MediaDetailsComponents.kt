@@ -111,6 +111,7 @@ import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.LocalExpressiveTypography
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -446,8 +447,10 @@ private fun TagChip(
         TooltipBox(
             positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
             tooltip = {
-                PlainTooltip {
-                    Text(text = description)
+                ProvideDisplaySize {
+                    PlainTooltip {
+                        Text(text = description)
+                    }
                 }
             },
             state = rememberTooltipState(),

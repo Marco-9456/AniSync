@@ -71,6 +71,7 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import com.anisync.android.ui.theme.listIndicatorColor
 
 /** The statuses the quick menu offers, in the order the library tabs use. */
@@ -392,95 +393,97 @@ private fun ListStatusMenu(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp
     ) {
-        val groupCount = 1 + listOfNotNull(onCustom, onRemove).size
-        DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = groupCount)) {
-            QUICK_STATUSES.forEachIndexed { index, option ->
-                val isSelected = option == selected
-                val listColors = listIndicatorColor(option.toIndicatorKind())
-                SelectableDropdownMenuItem(
-                    selected = isSelected,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                        onDismiss()
-                        onSelect(option)
-                    },
-                    text = { Text(option.toLabel(mediaType)) },
-                    shapes = MenuDefaults.itemShape(index, QUICK_STATUSES.size),
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(option.toIndicatorKind().iconRes()),
-                            contentDescription = null,
-                            modifier = Modifier.size(MenuDefaults.LeadingIconSize)
-                        )
-                    },
-                    trailingContent = if (isSelected) {
-                        {
+        ProvideDisplaySize {
+            val groupCount = 1 + listOfNotNull(onCustom, onRemove).size
+            DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 0, count = groupCount)) {
+                QUICK_STATUSES.forEachIndexed { index, option ->
+                    val isSelected = option == selected
+                    val listColors = listIndicatorColor(option.toIndicatorKind())
+                    SelectableDropdownMenuItem(
+                        selected = isSelected,
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                            onDismiss()
+                            onSelect(option)
+                        },
+                        text = { Text(option.toLabel(mediaType)) },
+                        shapes = MenuDefaults.itemShape(index, QUICK_STATUSES.size),
+                        leadingIcon = {
                             Icon(
-                                imageVector = Icons.Default.Check,
+                                painter = painterResource(option.toIndicatorKind().iconRes()),
                                 contentDescription = null,
-                                modifier = Modifier.size(MenuDefaults.TrailingIconSize)
+                                modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+                            )
+                        },
+                        trailingContent = if (isSelected) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(MenuDefaults.TrailingIconSize)
+                                )
+                            }
+                        } else null,
+                        colors = MenuDefaults.selectableItemColors(
+                            selectedContainerColor = listColors.container,
+                            selectedTextColor = listColors.content,
+                            selectedLeadingIconColor = listColors.content,
+                            selectedTrailingContentColor = listColors.content
+                        )
+                    )
+                }
+            }
+
+            // Opens the full edit sheet before the entry exists, so it can be private from the start
+            // instead of announcing itself in the activity feed first.
+            if (onCustom != null) {
+                Spacer(modifier = Modifier.height(MenuDefaults.GroupSpacing))
+                DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 1, count = groupCount)) {
+                    DropdownMenuItem(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                            onDismiss()
+                            onCustom()
+                        },
+                        text = { Text(stringResource(R.string.label_custom)) },
+                        shape = MenuDefaults.standaloneItemShape,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(MenuDefaults.LeadingIconSize)
                             )
                         }
-                    } else null,
-                    colors = MenuDefaults.selectableItemColors(
-                        selectedContainerColor = listColors.container,
-                        selectedTextColor = listColors.content,
-                        selectedLeadingIconColor = listColors.content,
-                        selectedTrailingContentColor = listColors.content
                     )
-                )
+                }
             }
-        }
 
-        // Opens the full edit sheet before the entry exists, so it can be private from the start
-        // instead of announcing itself in the activity feed first.
-        if (onCustom != null) {
-            Spacer(modifier = Modifier.height(MenuDefaults.GroupSpacing))
-            DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = 1, count = groupCount)) {
-                DropdownMenuItem(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                        onDismiss()
-                        onCustom()
-                    },
-                    text = { Text(stringResource(R.string.label_custom)) },
-                    shape = MenuDefaults.standaloneItemShape,
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+            // Its own group rather than a divider: leaving the list is a different kind of act from
+            // moving between lists, and the gap says so without a rule across the menu.
+            if (onRemove != null) {
+                Spacer(modifier = Modifier.height(MenuDefaults.GroupSpacing))
+                DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = groupCount - 1, count = groupCount)) {
+                    DropdownMenuItem(
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                            onDismiss()
+                            onRemove()
+                        },
+                        text = { Text(stringResource(R.string.details_remove_from_list)) },
+                        shape = MenuDefaults.standaloneItemShape,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = null,
+                                modifier = Modifier.size(MenuDefaults.LeadingIconSize)
+                            )
+                        },
+                        colors = MenuDefaults.itemColors(
+                            textColor = MaterialTheme.colorScheme.error,
+                            leadingIconColor = MaterialTheme.colorScheme.error
                         )
-                    }
-                )
-            }
-        }
-
-        // Its own group rather than a divider: leaving the list is a different kind of act from
-        // moving between lists, and the gap says so without a rule across the menu.
-        if (onRemove != null) {
-            Spacer(modifier = Modifier.height(MenuDefaults.GroupSpacing))
-            DropdownMenuGroup(shapes = MenuDefaults.groupShape(index = groupCount - 1, count = groupCount)) {
-                DropdownMenuItem(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                        onDismiss()
-                        onRemove()
-                    },
-                    text = { Text(stringResource(R.string.details_remove_from_list)) },
-                    shape = MenuDefaults.standaloneItemShape,
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = null,
-                            modifier = Modifier.size(MenuDefaults.LeadingIconSize)
-                        )
-                    },
-                    colors = MenuDefaults.itemColors(
-                        textColor = MaterialTheme.colorScheme.error,
-                        leadingIconColor = MaterialTheme.colorScheme.error
                     )
-                )
+                }
             }
         }
     }
