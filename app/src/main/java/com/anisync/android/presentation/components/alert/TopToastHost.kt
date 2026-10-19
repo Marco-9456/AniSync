@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.delay
 
 /**
@@ -94,33 +95,35 @@ private fun ToastPopup(
             clippingEnabled = false
         )
     ) {
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .statusBarsPadding(),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            AnimatedVisibility(
-                visible = currentToast != null,
-                enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+        ProvideDisplaySize {
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding(),
+                contentAlignment = Alignment.TopCenter
             ) {
-                currentToast?.let { toast ->
-                    // A swipe and a countdown ending are not the same answer. The swipe says the
-                    // user has read it, so a keyed toast stays down. A countdown running out says
-                    // only that this one is spent, and the cause may well raise another.
-                    TopAlertToast(
-                        toast = toast,
-                        onDismiss = { toastManager.dismissToast() },
-                        onCountdownFinished = { toastManager.clearToast() }
-                    )
+                AnimatedVisibility(
+                    visible = currentToast != null,
+                    enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                    exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+                ) {
+                    currentToast?.let { toast ->
+                        // A swipe and a countdown ending are not the same answer. The swipe says the
+                        // user has read it, so a keyed toast stays down. A countdown running out says
+                        // only that this one is spent, and the cause may well raise another.
+                        TopAlertToast(
+                            toast = toast,
+                            onDismiss = { toastManager.dismissToast() },
+                            onCountdownFinished = { toastManager.clearToast() }
+                        )
 
-                    // A countdown takes its own toast off screen, and a persistent kind is
-                    // waiting on the user or on the cause that raised it.
-                    if (toast.countdown == null && !toast.type.persistent) {
-                        LaunchedEffect(toast.id) {
-                            delay(AUTO_DISMISS_MS)
-                            toastManager.clearToast()
+                        // A countdown takes its own toast off screen, and a persistent kind is
+                        // waiting on the user or on the cause that raised it.
+                        if (toast.countdown == null && !toast.type.persistent) {
+                            LaunchedEffect(toast.id) {
+                                delay(AUTO_DISMISS_MS)
+                                toastManager.clearToast()
+                            }
                         }
                     }
                 }
