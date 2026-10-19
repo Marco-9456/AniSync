@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +50,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.anisync.android.R
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.rememberControlledSliderState
@@ -278,7 +280,12 @@ private fun GeneratedRoles(seed: Color, isDarkMode: Boolean, paletteStyle: Palet
                         text = stringResource(label),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant,
-                        maxLines = 1
+                        // A quarter of the row can be narrower than the word, so it shrinks rather than breaks.
+                        maxLines = 1,
+                        autoSize = TextAutoSize.StepBased(
+                            minFontSize = 8.sp,
+                            maxFontSize = MaterialTheme.typography.labelSmall.fontSize
+                        )
                     )
                 }
             }
