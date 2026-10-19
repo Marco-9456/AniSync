@@ -251,7 +251,7 @@ private fun GeneratedRoles(seed: Color, isDarkMode: Boolean, paletteStyle: Palet
     ) {
         Box(
             modifier = Modifier
-                .size(64.dp)
+                .size(48.dp)
                 .clip(CircleShape)
                 .background(seed)
         )
