@@ -67,6 +67,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import coil3.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import com.anisync.android.util.ShareUtils
 import dev.shreyaspatil.capturable.controller.rememberCaptureController
 import kotlinx.coroutines.launch
@@ -115,70 +116,72 @@ fun ShareImageSheet(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
-        val view = LocalView.current
-        val context = LocalContext.current
-        // Cross-window blur is a device capability (OEMs/power-saving disable it); when it's off,
-        // FLAG_BLUR_BEHIND is silently ignored, so compensate with a much heavier veil + dim.
-        var blurActive by remember { mutableStateOf(false) }
-        DisposableEffect(view) {
-            val window = (view.parent as? DialogWindowProvider)?.window
-            val canBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                context.getSystemService(WindowManager::class.java)?.isCrossWindowBlurEnabled == true
-            blurActive = canBlur
-            if (window != null) {
-                if (canBlur) {
-                    window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
-                    window.attributes = window.attributes.apply { blurBehindRadius = 90 }
-                    window.setDimAmount(0.2f)
-                } else {
-                    window.setDimAmount(0.45f)
+        ProvideDisplaySize {
+            val view = LocalView.current
+            val context = LocalContext.current
+            // Cross-window blur is a device capability (OEMs/power-saving disable it); when it's off,
+            // FLAG_BLUR_BEHIND is silently ignored, so compensate with a much heavier veil + dim.
+            var blurActive by remember { mutableStateOf(false) }
+            DisposableEffect(view) {
+                val window = (view.parent as? DialogWindowProvider)?.window
+                val canBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    context.getSystemService(WindowManager::class.java)?.isCrossWindowBlurEnabled == true
+                blurActive = canBlur
+                if (window != null) {
+                    if (canBlur) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+                        window.attributes = window.attributes.apply { blurBehindRadius = 90 }
+                        window.setDimAmount(0.2f)
+                    } else {
+                        window.setDimAmount(0.45f)
+                    }
                 }
+                onDispose { }
             }
-            onDispose { }
-        }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                // Theme-tinted veil over the blur so text keeps contrast on any wallpaper/screen.
-                .background(
-                    MaterialTheme.colorScheme.surface.copy(alpha = if (blurActive) 0.5f else 0.88f)
-                )
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onDismiss
-                )
-                .systemBarsPadding()
-                .imePadding(),
-            contentAlignment = Alignment.Center
-        ) {
-            // One scrolling flow (card included); width-capped so tablets get a centered column,
-            // not edge-to-edge controls.
-            Column(
+            Box(
                 modifier = Modifier
-                    .widthIn(max = 480.dp)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    // Consume taps so interacting with the controls never falls through to dismiss.
+                    .fillMaxSize()
+                    // Theme-tinted veil over the blur so text keeps contrast on any wallpaper/screen.
+                    .background(
+                        MaterialTheme.colorScheme.surface.copy(alpha = if (blurActive) 0.5f else 0.88f)
+                    )
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = {}
-                    ),
-                horizontalAlignment = Alignment.CenterHorizontally
+                        onClick = onDismiss
+                    )
+                    .systemBarsPadding()
+                    .imePadding(),
+                contentAlignment = Alignment.Center
             ) {
-                ShareCustomizerContent(
-                    onDismiss = onDismiss,
-                    link = link,
-                    seedColor = seedColor,
-                    supportsPrivacy = supportsPrivacy,
-                    templates = templates,
-                    templateLabel = templateLabel,
-                    previewMaxHeight = 420.dp,
-                    card = card,
-                )
+                // One scrolling flow (card included); width-capped so tablets get a centered column,
+                // not edge-to-edge controls.
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 480.dp)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                        // Consume taps so interacting with the controls never falls through to dismiss.
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {}
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    ShareCustomizerContent(
+                        onDismiss = onDismiss,
+                        link = link,
+                        seedColor = seedColor,
+                        supportsPrivacy = supportsPrivacy,
+                        templates = templates,
+                        templateLabel = templateLabel,
+                        previewMaxHeight = 420.dp,
+                        card = card,
+                    )
+                }
             }
         }
     }

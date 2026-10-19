@@ -66,6 +66,7 @@ import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -97,77 +98,79 @@ fun ImageViewerDialog(
             decorFitsSystemWindows = false
         )
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF0F0F0F))
-        ) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = !isZoomed,
-                pageSpacing = 16.dp
-            ) { page ->
-                val isCurrentPage = pagerState.currentPage == page
-
-                ZoomableImage(
-                    imageUrl = imageUrls[page],
-                    isCurrentPage = isCurrentPage,
-                    onTap = onDismiss,
-                    onZoomChanged = { zoomed -> isZoomed = zoomed }
-                )
-            }
-
-            AnimatedVisibility(
-                visible = !isZoomed,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 2 }),
-                modifier = Modifier.align(Alignment.TopCenter)
+        ProvideDisplaySize {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF0F0F0F))
             ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    shape = CircleShape,
-                    color = Color.Black.copy(alpha = 0.6f),
-                    contentColor = Color.White
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    userScrollEnabled = !isZoomed,
+                    pageSpacing = 16.dp
+                ) { page ->
+                    val isCurrentPage = pagerState.currentPage == page
+
+                    ZoomableImage(
+                        imageUrl = imageUrls[page],
+                        isCurrentPage = isCurrentPage,
+                        onTap = onDismiss,
+                        onZoomChanged = { zoomed -> isZoomed = zoomed }
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = !isZoomed,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 2 }),
+                    modifier = Modifier.align(Alignment.TopCenter)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        shape = CircleShape,
+                        color = Color.Black.copy(alpha = 0.6f),
+                        contentColor = Color.White
                     ) {
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back)
-                            )
-                        }
-
-                        Surface(
-                            shape = CircleShape,
-                            color = Color.White.copy(alpha = 0.2f),
-                            modifier = Modifier.padding(horizontal = 16.dp)
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                text = "${pagerState.currentPage + 1} / ${imageUrls.size}",
-                                style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-                        }
+                            IconButton(onClick = onDismiss) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.back)
+                                )
+                            }
 
-                        IconButton(
-                            onClick = { downloadImage(context, imageUrls[pagerState.currentPage]) },
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = stringResource(R.string.cd_download)
-                            )
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.White.copy(alpha = 0.2f),
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            ) {
+                                Text(
+                                    text = "${pagerState.currentPage + 1} / ${imageUrls.size}",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { downloadImage(context, imageUrls[pagerState.currentPage]) },
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = stringResource(R.string.cd_download)
+                                )
+                            }
                         }
                     }
                 }
