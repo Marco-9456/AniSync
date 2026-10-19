@@ -8,7 +8,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserActivity
+import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.presentation.util.shareActivity
@@ -101,7 +101,7 @@ internal fun ActivityOverflowButton(
     }
 
     if (confirmDelete && onDeleteClick != null) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text(stringResource(R.string.activity_delete_confirm_title)) },
             text = { Text(stringResource(R.string.activity_delete_confirm_body)) },

@@ -30,8 +30,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material3.AlertDialog
 import com.anisync.android.R
+import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -345,7 +345,7 @@ class MainActivity : AppCompatActivity() {
                                 }
 
                                 if (showSessionExpiredDialog) {
-                                    AlertDialog(
+                                    AppAlertDialog(
                                         onDismissRequest = { showSessionExpiredDialog = false },
                                         icon = {
                                             Icon(

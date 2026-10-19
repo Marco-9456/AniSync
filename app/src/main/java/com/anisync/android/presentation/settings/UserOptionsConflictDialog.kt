@@ -2,7 +2,6 @@ package com.anisync.android.presentation.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -17,6 +16,7 @@ import com.anisync.android.domain.AniListUserOptions
 import com.anisync.android.domain.ConflictState
 import com.anisync.android.domain.UserOptionField
 import com.anisync.android.domain.UserOptionsRepository
+import com.anisync.android.presentation.components.AppAlertDialog
 
 /**
  * App-wide host for the options sync-conflict prompt. Hosted once at the app root (see MainActivity)
@@ -42,7 +42,7 @@ private fun UserOptionsConflictDialog(
     local: AniListUserOptions?,
     onResolve: (keepLocal: Boolean) -> Unit,
 ) {
-    AlertDialog(
+    AppAlertDialog(
         // No outside-dismiss: the user must pick a direction to clear the conflict.
         onDismissRequest = {},
         title = { Text(stringResource(R.string.options_conflict_title)) },

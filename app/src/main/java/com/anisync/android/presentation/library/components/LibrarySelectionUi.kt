@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.LockOpen
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +57,7 @@ import com.anisync.android.domain.LibraryPriority
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.formatScore
+import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.filtersheet.FilterOptionRow
 import com.anisync.android.presentation.components.filtersheet.FilterSheetScaffold
 import com.anisync.android.presentation.components.menu.Menu
@@ -634,7 +634,7 @@ fun BulkAddToListSheet(
  */
 @Composable
 fun BulkProgressDialog(operation: BulkOperation, onCancel: () -> Unit) {
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = {},
         title = {
             Text(

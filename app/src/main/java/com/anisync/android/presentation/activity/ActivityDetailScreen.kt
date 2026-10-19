@@ -31,7 +31,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.NotificationsNone
-import androidx.compose.material3.AlertDialog
+import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -577,7 +577,7 @@ fun ActivityDetailScreen(
     }
 
     if (showDeleteActivityDialog) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showDeleteActivityDialog = false },
             title = { Text(stringResource(R.string.activity_delete_confirm_title)) },
             text = { Text(stringResource(R.string.activity_delete_confirm_body)) },
@@ -756,7 +756,7 @@ private fun ReplyOverflowMenu(onEdit: () -> Unit, onDelete: () -> Unit) {
     }
 
     if (confirmDelete) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text(stringResource(R.string.reply_delete_confirm_title)) },
             text = { Text(stringResource(R.string.reply_delete_confirm_body)) },

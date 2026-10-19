@@ -31,7 +31,6 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -103,6 +102,7 @@ import com.anisync.android.domain.max
 import com.anisync.android.domain.sliderSteps
 import com.anisync.android.domain.snap
 import com.anisync.android.domain.url
+import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.alert.LocalToastManager
 import com.anisync.android.presentation.components.alert.OverlayToastHost
@@ -1687,7 +1687,7 @@ private fun NumberPromptDialog(
     var text by rememberSaveable { mutableStateOf(initial) }
     val parsed = text.toDoubleOrNull()
 
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -1736,7 +1736,7 @@ private fun NumberPromptDialog(
 
 @Composable
 private fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
@@ -1765,7 +1765,7 @@ private fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Uni
 
 @Composable
 private fun DiscardConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.edit_entry_discard_title)) },
         text = { Text(text = stringResource(R.string.edit_entry_discard_body)) },

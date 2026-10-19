@@ -16,7 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.PersonAddAlt
-import androidx.compose.material3.AlertDialog
+import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -73,7 +73,7 @@ fun AniListSettingsScreen(
     }
 
     if (showLogoutDialog) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showLogoutDialog = false },
             title = { Text(stringResource(R.string.logout_dialog_title)) },
             text = { Text(stringResource(R.string.logout_dialog_message)) },
@@ -99,7 +99,7 @@ fun AniListSettingsScreen(
     }
 
     accountToRemove?.let { target ->
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { accountToRemove = null },
             title = { Text(stringResource(R.string.account_remove_dialog_title)) },
             text = {

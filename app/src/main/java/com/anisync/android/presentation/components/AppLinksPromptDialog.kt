@@ -3,7 +3,6 @@ package com.anisync.android.presentation.components
 import android.os.Build
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Link
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,7 +28,7 @@ fun AppLinksPromptDialog(
         stringResource(R.string.default_app_links_instructions)
     }
 
-    AlertDialog(
+    AppAlertDialog(
         onDismissRequest = onDismissRequest,
         icon = {
             Icon(

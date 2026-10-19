@@ -11,10 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
+import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.alert.ToastType
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,7 +50,7 @@ fun DeveloperToolsScreen(
     var showLockDialog by remember { mutableStateOf(false) }
 
     if (showLockDialog) {
-        AlertDialog(
+        AppAlertDialog(
             onDismissRequest = { showLockDialog = false },
             title = { Text(stringResource(R.string.dev_tools_lock_dialog_title)) },
             text = { Text(stringResource(R.string.dev_tools_lock_dialog_message)) },
