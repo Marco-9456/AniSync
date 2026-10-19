@@ -76,6 +76,8 @@ import androidx.compose.ui.window.PopupProperties
 import com.anisync.android.R
 import com.anisync.android.presentation.util.LocalPaneSheetBounds
 import com.anisync.android.presentation.util.TwoPaneDefaults
+import com.anisync.android.ui.theme.LocalDisplaySize
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -121,18 +123,20 @@ fun AppModalBottomSheet(
 ) {
     val paneBounds = LocalPaneSheetBounds.current
     if (paneBounds?.value == null) {
+        // The sheet is a window of its own at the phone's density. Its slots take the app's display
+        // size back, and the width cap is scaled so the sheet keeps the width it has in app units.
         ModalBottomSheet(
             onDismissRequest = onDismissRequest,
             modifier = modifier,
             sheetState = sheetState,
-            sheetMaxWidth = sheetMaxWidth,
+            sheetMaxWidth = sheetMaxWidth * LocalDisplaySize.current.scale,
             shape = shape,
             containerColor = containerColor,
             contentColor = contentColor,
             scrimColor = scrimColor,
-            dragHandle = dragHandle,
+            dragHandle = dragHandle?.let { handle -> { ProvideDisplaySize(content = handle) } },
             contentWindowInsets = contentWindowInsets,
-            content = content,
+            content = { ProvideDisplaySize { content() } },
         )
     } else {
         PaneAnchoredSheet(
@@ -217,153 +221,156 @@ private fun PaneAnchoredSheet(
         // window (and the pane) already draw edge-to-edge, so position exactly on the pane instead.
         properties = PopupProperties(focusable = true, clippingEnabled = false),
     ) {
-        val paneWidth = with(density) { rect.width.toDp() }
-        val paneHeight = with(density) { rect.height.toDp() }
-        // Read inside the popup composition: resolves against the popup window's own insets. The
-        // popup is sized to the pane, so its IME inset IS the pane overlap.
-        val innerImeBottom = WindowInsets.ime.getBottom(density)
-        val imeOverlap = with(density) { maxOf(outerOverlapPx, innerImeBottom).toDp() }
+        // The popup is a window of its own, so the sheet in it takes the app's display size back.
+        ProvideDisplaySize {
+            val paneWidth = with(density) { rect.width.toDp() }
+            val paneHeight = with(density) { rect.height.toDp() }
+            // Read inside the popup composition: resolves against the popup window's own insets. The
+            // popup is sized to the pane, so its IME inset IS the pane overlap.
+            val innerImeBottom = WindowInsets.ime.getBottom(density)
+            val imeOverlap = with(density) { maxOf(outerOverlapPx, innerImeBottom).toDp() }
 
-        // Compose popups are created with SOFT_INPUT_ADJUST_PAN and this popup is the IME input
-        // target for any text field in the sheet, so without intervention the keyboard just covers
-        // it. Switch the popup window to ADJUST_RESIZE: the window shrinks above the IME and the
-        // bottom-aligned sheet stays visible. (PopupProperties exposes no soft-input knob.)
-        val composeView = LocalView.current
-        SideEffect {
-            val popupWindowView = composeView.parent as? View ?: return@SideEffect
-            val params = popupWindowView.layoutParams as? WindowManager.LayoutParams
-                ?: return@SideEffect
-            val adjustResize = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            if (params.softInputMode and WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST != adjustResize) {
-                // SOFT_INPUT_MASK_ADJUST is a mask, not one of the modes lint expects.
-                // Clearing with it and OR-ing the mode back in swaps only the adjust bits.
-                @SuppressLint("WrongConstant")
-                val mode = (
-                    params.softInputMode and WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST.inv()
-                    ) or adjustResize
-                params.softInputMode = mode
-                (popupWindowView.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
-                    .updateViewLayout(popupWindowView, params)
-            }
-        }
-
-        BoxWithConstraints(
-            modifier = Modifier
-                // size() coerces into the window's constraints: when the IME resizes the popup, the
-                // box shrinks with it and the bottom-aligned sheet stays above the keyboard.
-                .size(paneWidth, paneHeight)
-                // The pane's own rounded corners, so the sheet + scrim never poke past them.
-                .clip(TwoPaneDefaults.PaneShape),
-        ) {
-            // The height actually available after any IME-driven window resize.
-            val availableHeight = maxHeight
-            AnimatedVisibility(visibleState, enter = fadeIn(), exit = fadeOut()) {
-                val closeLabel = stringResource(R.string.pane_close)
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(scrimColor)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClickLabel = closeLabel,
-                        ) { startDismiss() },
-                )
+            // Compose popups are created with SOFT_INPUT_ADJUST_PAN and this popup is the IME input
+            // target for any text field in the sheet, so without intervention the keyboard just covers
+            // it. Switch the popup window to ADJUST_RESIZE: the window shrinks above the IME and the
+            // bottom-aligned sheet stays visible. (PopupProperties exposes no soft-input knob.)
+            val composeView = LocalView.current
+            SideEffect {
+                val popupWindowView = composeView.parent as? View ?: return@SideEffect
+                val params = popupWindowView.layoutParams as? WindowManager.LayoutParams
+                    ?: return@SideEffect
+                val adjustResize = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+                if (params.softInputMode and WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST != adjustResize) {
+                    // SOFT_INPUT_MASK_ADJUST is a mask, not one of the modes lint expects.
+                    // Clearing with it and OR-ing the mode back in swaps only the adjust bits.
+                    @SuppressLint("WrongConstant")
+                    val mode = (
+                        params.softInputMode and WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST.inv()
+                        ) or adjustResize
+                    params.softInputMode = mode
+                    (popupWindowView.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
+                        .updateViewLayout(popupWindowView, params)
+                }
             }
 
-            AnimatedVisibility(
-                visibleState,
-                enter = slideInVertically(initialOffsetY = { it }),
-                exit = slideOutVertically(targetOffsetY = { it }),
-                modifier = Modifier.align(Alignment.BottomCenter),
+            BoxWithConstraints(
+                modifier = Modifier
+                    // size() coerces into the window's constraints: when the IME resizes the popup, the
+                    // box shrinks with it and the bottom-aligned sheet stays above the keyboard.
+                    .size(paneWidth, paneHeight)
+                    // The pane's own rounded corners, so the sheet + scrim never poke past them.
+                    .clip(TwoPaneDefaults.PaneShape),
             ) {
-                var sheetHeightPx by remember { mutableIntStateOf(0) }
-                val dragOffset = remember { Animatable(0f) }
-                val dismissVelocityPx = with(density) { DismissVelocityThreshold.toPx() }
-
-                fun settle(velocity: Float) {
-                    scope.launch {
-                        val wantsDismiss = sheetHeightPx > 0 &&
-                            (velocity > dismissVelocityPx ||
-                                (dragOffset.value > sheetHeightPx / 2f && velocity > -dismissVelocityPx))
-                        if (wantsDismiss && confirmDismiss()) {
-                            dragOffset.animateTo(sheetHeightPx.toFloat(), initialVelocity = velocity)
-                            performDismiss()
-                        } else {
-                            // Vetoed or below the threshold — spring the sheet back into place.
-                            dragOffset.animateTo(0f, initialVelocity = velocity)
-                        }
-                    }
+                // The height actually available after any IME-driven window resize.
+                val availableHeight = maxHeight
+                AnimatedVisibility(visibleState, enter = fadeIn(), exit = fadeOut()) {
+                    val closeLabel = stringResource(R.string.pane_close)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(scrimColor)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClickLabel = closeLabel,
+                            ) { startDismiss() },
+                    )
                 }
 
-                // Standard sheet nested-scroll contract: dragging the content down past its top pulls
-                // the sheet with it; scrolling back up retracts the sheet before the content scrolls.
-                val nestedScrollConnection = remember {
-                    object : NestedScrollConnection {
-                        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                            val delta = available.y
-                            if (source == NestedScrollSource.UserInput && delta < 0 && dragOffset.value > 0f) {
-                                val consumed = delta.coerceAtLeast(-dragOffset.value)
-                                scope.launch { dragOffset.snapTo(dragOffset.value + consumed) }
-                                return Offset(0f, consumed)
-                            }
-                            return Offset.Zero
-                        }
-
-                        override fun onPostScroll(
-                            consumed: Offset,
-                            available: Offset,
-                            source: NestedScrollSource,
-                        ): Offset {
-                            val delta = available.y
-                            if (source == NestedScrollSource.UserInput && delta > 0) {
-                                scope.launch { dragOffset.snapTo(dragOffset.value + delta) }
-                                return Offset(0f, delta)
-                            }
-                            return Offset.Zero
-                        }
-
-                        override suspend fun onPreFling(available: Velocity): Velocity {
-                            if (dragOffset.value > 0f) {
-                                settle(available.y)
-                                return available
-                            }
-                            return Velocity.Zero
-                        }
-                    }
-                }
-
-                Surface(
-                    modifier = modifier
-                        .widthIn(max = sheetMaxWidth)
-                        .fillMaxWidth()
-                        // Cap to the pane minus top clearance only: the IME overlap is handled by the
-                        // bottom padding below, which both lifts the sheet's visible body above the
-                        // keyboard AND shrinks the content area — subtracting it here too would
-                        // double-count and squeeze the content to nothing.
-                        .heightIn(max = (availableHeight - PaneSheetTopClearance).coerceAtLeast(0.dp))
-                        .onSizeChanged { sheetHeightPx = it.height }
-                        .offset { IntOffset(0, dragOffset.value.roundToInt().coerceAtLeast(0)) }
-                        .nestedScroll(nestedScrollConnection)
-                        .draggable(
-                            orientation = Orientation.Vertical,
-                            state = rememberDraggableState { delta ->
-                                scope.launch {
-                                    dragOffset.snapTo((dragOffset.value + delta).coerceAtLeast(0f))
-                                }
-                            },
-                            onDragStopped = { velocity -> settle(velocity) },
-                        )
-                        .padding(bottom = imeOverlap),
-                    shape = shape,
-                    color = containerColor,
-                    contentColor = contentColor,
+                AnimatedVisibility(
+                    visibleState,
+                    enter = slideInVertically(initialOffsetY = { it }),
+                    exit = slideOutVertically(targetOffsetY = { it }),
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        if (dragHandle != null) {
-                            Box(modifier = Modifier.align(Alignment.CenterHorizontally)) { dragHandle() }
+                    var sheetHeightPx by remember { mutableIntStateOf(0) }
+                    val dragOffset = remember { Animatable(0f) }
+                    val dismissVelocityPx = with(density) { DismissVelocityThreshold.toPx() }
+
+                    fun settle(velocity: Float) {
+                        scope.launch {
+                            val wantsDismiss = sheetHeightPx > 0 &&
+                                (velocity > dismissVelocityPx ||
+                                    (dragOffset.value > sheetHeightPx / 2f && velocity > -dismissVelocityPx))
+                            if (wantsDismiss && confirmDismiss()) {
+                                dragOffset.animateTo(sheetHeightPx.toFloat(), initialVelocity = velocity)
+                                performDismiss()
+                            } else {
+                                // Vetoed or below the threshold — spring the sheet back into place.
+                                dragOffset.animateTo(0f, initialVelocity = velocity)
+                            }
                         }
-                        content()
+                    }
+
+                    // Standard sheet nested-scroll contract: dragging the content down past its top pulls
+                    // the sheet with it; scrolling back up retracts the sheet before the content scrolls.
+                    val nestedScrollConnection = remember {
+                        object : NestedScrollConnection {
+                            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                                val delta = available.y
+                                if (source == NestedScrollSource.UserInput && delta < 0 && dragOffset.value > 0f) {
+                                    val consumed = delta.coerceAtLeast(-dragOffset.value)
+                                    scope.launch { dragOffset.snapTo(dragOffset.value + consumed) }
+                                    return Offset(0f, consumed)
+                                }
+                                return Offset.Zero
+                            }
+
+                            override fun onPostScroll(
+                                consumed: Offset,
+                                available: Offset,
+                                source: NestedScrollSource,
+                            ): Offset {
+                                val delta = available.y
+                                if (source == NestedScrollSource.UserInput && delta > 0) {
+                                    scope.launch { dragOffset.snapTo(dragOffset.value + delta) }
+                                    return Offset(0f, delta)
+                                }
+                                return Offset.Zero
+                            }
+
+                            override suspend fun onPreFling(available: Velocity): Velocity {
+                                if (dragOffset.value > 0f) {
+                                    settle(available.y)
+                                    return available
+                                }
+                                return Velocity.Zero
+                            }
+                        }
+                    }
+
+                    Surface(
+                        modifier = modifier
+                            .widthIn(max = sheetMaxWidth)
+                            .fillMaxWidth()
+                            // Cap to the pane minus top clearance only: the IME overlap is handled by the
+                            // bottom padding below, which both lifts the sheet's visible body above the
+                            // keyboard AND shrinks the content area — subtracting it here too would
+                            // double-count and squeeze the content to nothing.
+                            .heightIn(max = (availableHeight - PaneSheetTopClearance).coerceAtLeast(0.dp))
+                            .onSizeChanged { sheetHeightPx = it.height }
+                            .offset { IntOffset(0, dragOffset.value.roundToInt().coerceAtLeast(0)) }
+                            .nestedScroll(nestedScrollConnection)
+                            .draggable(
+                                orientation = Orientation.Vertical,
+                                state = rememberDraggableState { delta ->
+                                    scope.launch {
+                                        dragOffset.snapTo((dragOffset.value + delta).coerceAtLeast(0f))
+                                    }
+                                },
+                                onDragStopped = { velocity -> settle(velocity) },
+                            )
+                            .padding(bottom = imeOverlap),
+                        shape = shape,
+                        color = containerColor,
+                        contentColor = contentColor,
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            if (dragHandle != null) {
+                                Box(modifier = Modifier.align(Alignment.CenterHorizontally)) { dragHandle() }
+                            }
+                            content()
+                        }
                     }
                 }
             }
