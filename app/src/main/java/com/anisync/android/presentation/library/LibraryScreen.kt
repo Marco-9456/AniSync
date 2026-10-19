@@ -129,6 +129,7 @@ import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.posterGridColumns
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -633,13 +634,18 @@ fun LibraryScreen(
     }
 
     if (editingEntry == null) {
-        ExpandedFullScreenSearchBar(state = searchBarState, inputField = inputField) {
-            LibrarySearchOverlay(
-                uiState = uiState,
-                isSearchQueryEmpty = isSearchQueryEmpty,
-                onCategoryChange = { viewModel.onAction(LibraryAction.OnSearchCategoryChange(it)) },
-                onResultClick = onSearchResultClick
-            )
+        ExpandedFullScreenSearchBar(
+            state = searchBarState,
+            inputField = { ProvideDisplaySize(content = inputField) }
+        ) {
+            ProvideDisplaySize {
+                LibrarySearchOverlay(
+                    uiState = uiState,
+                    isSearchQueryEmpty = isSearchQueryEmpty,
+                    onCategoryChange = { viewModel.onAction(LibraryAction.OnSearchCategoryChange(it)) },
+                    onResultClick = onSearchResultClick
+                )
+            }
         }
     }
 

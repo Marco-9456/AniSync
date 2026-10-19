@@ -111,6 +111,7 @@ import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaSeason
 import com.anisync.android.type.MediaType
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -997,47 +998,51 @@ private fun DiscoverSearchOverlay(
     ExpandedFullScreenSearchBar(
         state = searchBarState,
         inputField = {
-            SearchInputField(
-                searchBarState = searchBarState,
-                textFieldState = textFieldState,
-                mediaType = mediaType,
-                coroutineScope = coroutineScope,
-                keyboardController = keyboardController,
-                onSearch = { onSearch(textFieldState.text.toString()) }
-            )
+            ProvideDisplaySize {
+                SearchInputField(
+                    searchBarState = searchBarState,
+                    textFieldState = textFieldState,
+                    mediaType = mediaType,
+                    coroutineScope = coroutineScope,
+                    keyboardController = keyboardController,
+                    onSearch = { onSearch(textFieldState.text.toString()) }
+                )
+            }
         }
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            com.anisync.android.presentation.discover.components.SearchFilterChipBar(
-                filters = searchFilters,
-                onChipTap = { filterId ->
-                    onLoadTaxonomy()
-                    openedFilter = filterId
-                }
-            )
-            SearchResultsContent(
-                navController = navController,
-                isSearching = isSearching,
-                searchAnime = searchAnime,
-                searchManga = searchManga,
-                groupedResults = groupedResults,
-                searchQuery = searchQuery,
-                searchError = searchError,
-                titleLanguage = titleLanguage,
-                viewMode = viewMode,
-                activeCategory = activeCategory,
-                searchPaging = searchPaging,
-                searchFilters = searchFilters,
-                onLoadMore = onLoadMore,
-                onClearFilters = onClearFilters,
-                onViewModeChange = onViewModeChange,
-                onCategoryChange = onCategoryChange,
-                onSearchItemClick = onSearchItemClick,
-                onCharacterClick = onCharacterClick,
-                onStaffClick = onStaffClick,
-                onStudioClick = onStudioClick,
-                onUserClick = onUserClick
-            )
+        ProvideDisplaySize {
+            Column(modifier = Modifier.fillMaxSize()) {
+                com.anisync.android.presentation.discover.components.SearchFilterChipBar(
+                    filters = searchFilters,
+                    onChipTap = { filterId ->
+                        onLoadTaxonomy()
+                        openedFilter = filterId
+                    }
+                )
+                SearchResultsContent(
+                    navController = navController,
+                    isSearching = isSearching,
+                    searchAnime = searchAnime,
+                    searchManga = searchManga,
+                    groupedResults = groupedResults,
+                    searchQuery = searchQuery,
+                    searchError = searchError,
+                    titleLanguage = titleLanguage,
+                    viewMode = viewMode,
+                    activeCategory = activeCategory,
+                    searchPaging = searchPaging,
+                    searchFilters = searchFilters,
+                    onLoadMore = onLoadMore,
+                    onClearFilters = onClearFilters,
+                    onViewModeChange = onViewModeChange,
+                    onCategoryChange = onCategoryChange,
+                    onSearchItemClick = onSearchItemClick,
+                    onCharacterClick = onCharacterClick,
+                    onStaffClick = onStaffClick,
+                    onStudioClick = onStudioClick,
+                    onUserClick = onUserClick
+                )
+            }
         }
     }
 

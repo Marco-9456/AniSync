@@ -117,6 +117,7 @@ import com.anisync.android.domain.MainTab
 import com.anisync.android.presentation.util.LocalRailFabState
 import com.anisync.android.presentation.util.SetRailFab
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -570,110 +571,115 @@ fun ForumScreen(
     // Fullscreen advanced-search overlay. Its filter bar is the shipped one, untouched.
     val searchFilters = uiState.searchFilters
     val searchActive = searchFilters.query.trim().length >= 2 || searchFilters.hasActiveFilters
-    ExpandedFullScreenSearchBar(state = searchBarState, inputField = inputField) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            ForumSearchFilterChipBar(
-                filters = searchFilters,
-                onChipTap = { openedFilter = it },
-                onToggleSubscribed = { viewModel.onAction(ForumAction.ToggleSubscribedOnly) }
-            )
-
-            searchFilters.media?.let { media ->
-                ForumMediaFilterHeader(
-                    media = media,
-                    onCreateThread = {
-                        onSearchCreateForMedia(
-                            media.mediaId,
-                            media.titleUserPreferred,
-                            media.coverUrl
-                        )
-                    },
-                    onClear = { viewModel.onAction(ForumAction.ClearMediaFilter) }
-                )
-            }
-
-            when {
-                uiState.isSearching && uiState.searchResults.isEmpty() -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { AppCircularProgressIndicator() }
-
-                uiState.searchError != null && uiState.searchResults.isEmpty() -> EmptyState(
-                    icon = Icons.Outlined.CloudOff,
-                    title = stringResource(R.string.forum_empty_failed_title),
-                    description = stringResource(R.string.forum_empty_failed_desc),
-                    animationKey = uiState.searchError
+    ExpandedFullScreenSearchBar(
+        state = searchBarState,
+        inputField = { ProvideDisplaySize(content = inputField) }
+    ) {
+        ProvideDisplaySize {
+            Column(modifier = Modifier.fillMaxSize()) {
+                ForumSearchFilterChipBar(
+                    filters = searchFilters,
+                    onChipTap = { openedFilter = it },
+                    onToggleSubscribed = { viewModel.onAction(ForumAction.ToggleSubscribedOnly) }
                 )
 
-                !searchActive -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.forum_search_prompt),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 32.dp)
+                searchFilters.media?.let { media ->
+                    ForumMediaFilterHeader(
+                        media = media,
+                        onCreateThread = {
+                            onSearchCreateForMedia(
+                                media.mediaId,
+                                media.titleUserPreferred,
+                                media.coverUrl
+                            )
+                        },
+                        onClear = { viewModel.onAction(ForumAction.ClearMediaFilter) }
                     )
                 }
 
-                uiState.searchResults.isEmpty() -> EmptyState(
-                    icon = Icons.Default.Tune,
-                    title = stringResource(R.string.forum_empty_filtered_title),
-                    description = stringResource(
-                        R.string.forum_empty_filtered_desc,
-                        searchFilters.activeCount
-                    ),
-                    actionLabel = stringResource(R.string.forum_empty_clear_filters),
-                    actionIcon = Icons.Default.Close,
-                    onAction = { viewModel.onAction(ForumAction.ClearSearchFilters) },
-                    // The viewer caused this and can undo it in one tap.
-                    actionEmphasised = true,
-                    animationKey = searchFilters
-                )
+                when {
+                    uiState.isSearching && uiState.searchResults.isEmpty() -> Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) { AppCircularProgressIndicator() }
 
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(
-                        top = 8.dp,
-                        start = 16.dp,
-                        end = 16.dp,
-                        bottom = systemBarsPadding.calculateBottomPadding() + 16.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    itemsIndexed(
-                        items = uiState.searchResults,
-                        key = { _, thread -> "search_${thread.id}" },
-                        contentType = { _, _ -> "ForumThread" }
-                    ) { index, thread ->
-                        if (index >= uiState.searchResults.size - 4 && uiState.searchHasNextPage &&
-                            !uiState.isSearching && !uiState.searchIsPaginating
-                        ) {
-                            LaunchedEffect(index) { viewModel.onAction(ForumAction.LoadMoreSearch) }
-                        }
+                    uiState.searchError != null && uiState.searchResults.isEmpty() -> EmptyState(
+                        icon = Icons.Outlined.CloudOff,
+                        title = stringResource(R.string.forum_empty_failed_title),
+                        description = stringResource(R.string.forum_empty_failed_desc),
+                        animationKey = uiState.searchError
+                    )
 
-                        ForumThreadCard(
-                            thread = thread,
-                            onClick = { onSearchThreadClick(thread.id, thread.title) },
-                            onUserClick = onSearchUserClick,
-                            isSaved = thread.id in uiState.savedThreadIds,
-                            onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
-                            onOverflowClick = {
-                                viewModel.onAction(ForumAction.OpenThreadActions(thread))
-                            },
-                            onLastReplyClick = onSearchCommentClick,
-                            modifier = sharedItemModifier
+                    !searchActive -> Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.forum_search_prompt),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp)
                         )
                     }
 
-                    if (uiState.searchIsPaginating) {
-                        item(key = "search_paginating_indicator") {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) { AppCircularProgressIndicator() }
+                    uiState.searchResults.isEmpty() -> EmptyState(
+                        icon = Icons.Default.Tune,
+                        title = stringResource(R.string.forum_empty_filtered_title),
+                        description = stringResource(
+                            R.string.forum_empty_filtered_desc,
+                            searchFilters.activeCount
+                        ),
+                        actionLabel = stringResource(R.string.forum_empty_clear_filters),
+                        actionIcon = Icons.Default.Close,
+                        onAction = { viewModel.onAction(ForumAction.ClearSearchFilters) },
+                        // The viewer caused this and can undo it in one tap.
+                        actionEmphasised = true,
+                        animationKey = searchFilters
+                    )
+
+                    else -> LazyColumn(
+                        contentPadding = PaddingValues(
+                            top = 8.dp,
+                            start = 16.dp,
+                            end = 16.dp,
+                            bottom = systemBarsPadding.calculateBottomPadding() + 16.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        itemsIndexed(
+                            items = uiState.searchResults,
+                            key = { _, thread -> "search_${thread.id}" },
+                            contentType = { _, _ -> "ForumThread" }
+                        ) { index, thread ->
+                            if (index >= uiState.searchResults.size - 4 && uiState.searchHasNextPage &&
+                                !uiState.isSearching && !uiState.searchIsPaginating
+                            ) {
+                                LaunchedEffect(index) { viewModel.onAction(ForumAction.LoadMoreSearch) }
+                            }
+
+                            ForumThreadCard(
+                                thread = thread,
+                                onClick = { onSearchThreadClick(thread.id, thread.title) },
+                                onUserClick = onSearchUserClick,
+                                isSaved = thread.id in uiState.savedThreadIds,
+                                onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
+                                onOverflowClick = {
+                                    viewModel.onAction(ForumAction.OpenThreadActions(thread))
+                                },
+                                onLastReplyClick = onSearchCommentClick,
+                                modifier = sharedItemModifier
+                            )
+                        }
+
+                        if (uiState.searchIsPaginating) {
+                            item(key = "search_paginating_indicator") {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) { AppCircularProgressIndicator() }
+                            }
                         }
                     }
                 }
