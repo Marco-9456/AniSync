@@ -133,6 +133,7 @@ import com.anisync.android.presentation.components.alert.rememberRateLimitedRefr
 import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ImageViewerDialog
+import com.anisync.android.presentation.components.MediaArtworkThemeOverride
 import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.UserAvatar
@@ -159,7 +160,6 @@ import com.anisync.android.presentation.details.components.StaffItem
 import com.anisync.android.presentation.details.components.mediaStatsTabContent
 import com.anisync.android.presentation.library.components.ScoreOnCompleteSheet
 import com.anisync.android.presentation.util.AppMotion
-import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.copyOnLongPress
@@ -171,9 +171,6 @@ import com.anisync.android.presentation.share.MediaShareCard
 import com.anisync.android.presentation.share.ShareCardTemplate
 import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.share.parseCoverColor
-import com.anisync.android.ui.theme.mediaArtworkColorScheme
-import com.anisync.android.ui.theme.mediaArtworkSeedColor
-import com.anisync.android.ui.theme.resolveDarkTheme
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.getTitle
 
@@ -708,31 +705,6 @@ fun MediaDetailsScreen(
             }
         }
     }
-}
-
-/**
- * Wraps the media page in a palette seeded from its own cover art, when the "Colors from artwork"
- * appearance preference is on. Titles AniList ships no cover color for, and colors too washed out
- * to read as a hue, fall through to the app theme. The viewer's palette style, light/dark choice
- * and AMOLED setting are all preserved.
- */
-@Composable
-private fun MediaArtworkThemeOverride(
-    coverColor: String?,
-    content: @Composable () -> Unit,
-) {
-    val appSettings = LocalAppSettings.current
-    val enabled by appSettings.mediaArtworkTheming.collectAsStateWithLifecycle()
-    val themeMode by appSettings.themeMode.collectAsStateWithLifecycle()
-    val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
-    val amoledEnabled by appSettings.amoledEnabled.collectAsStateWithLifecycle()
-    val scheme = mediaArtworkColorScheme(
-        seed = if (enabled) mediaArtworkSeedColor(coverColor) else null,
-        darkTheme = themeMode.resolveDarkTheme(),
-        amoled = amoledEnabled,
-        paletteStyle = paletteStyle,
-    )
-    MaterialTheme(colorScheme = scheme, content = content)
 }
 
 @Composable
