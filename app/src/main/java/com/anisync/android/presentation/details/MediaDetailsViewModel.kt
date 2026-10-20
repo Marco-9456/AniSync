@@ -23,6 +23,7 @@ import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.shouldAskForScore
 import com.anisync.android.domain.withCompletionScore
 import com.anisync.android.type.MediaType
+import com.anisync.android.ui.theme.MediaArtworkSchemes
 import com.anisync.android.util.ShareUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -51,6 +53,7 @@ class MediaDetailsViewModel @Inject constructor(
     private val toastManager: com.anisync.android.presentation.components.alert.ToastManager,
     private val forumRepository: ForumRepository,
     private val discoverSearchLauncher: com.anisync.android.domain.DiscoverSearchLauncher,
+    private val artworkSchemes: MediaArtworkSchemes,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -164,6 +167,11 @@ class MediaDetailsViewModel @Inject constructor(
             else -> DetailsUiState.Success(details)
         }
     }
+        // Holds the page back until its artwork palette is built off the main thread, so the first
+        // themed frame doesn't stall on it.
+        .onEach { state ->
+            if (state is DetailsUiState.Success) artworkSchemes.prepare(state.details.coverColor)
+        }
         .catch { e -> emit(DetailsUiState.Error(e.message ?: "Unknown error")) }
         // Coming back after five seconds away restarts the flow. The page it already holds stays up
         // meanwhile, rather than flashing the skeleton until the cache answers again.
