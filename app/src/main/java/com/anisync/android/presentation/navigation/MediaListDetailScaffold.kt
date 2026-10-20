@@ -68,6 +68,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.anisync.android.presentation.components.MediaArtworkThemeOverride
 import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.CharacterMediaGridScreen
 import com.anisync.android.presentation.details.MediaDetailsScreen
@@ -459,14 +460,14 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
             onStaffClick = { paneNav.navigate(StaffDetails(it)) },
             onStudioClick = { paneNav.navigate(StudioDetails(it)) },
-            onRelatedSeeAllClick = { mId, t -> paneNav.navigate(MediaRelationsGrid(mId, t)) },
-            onRecommendationsSeeAllClick = { mId, t ->
-                paneNav.navigate(MediaRecommendationsGrid(mId, t))
+            onRelatedSeeAllClick = { mId, t, color -> paneNav.navigate(MediaRelationsGrid(mId, t, color)) },
+            onRecommendationsSeeAllClick = { mId, t, color ->
+                paneNav.navigate(MediaRecommendationsGrid(mId, t, color))
             },
-            onThemesSeeAllClick = { mId, t, episodes, cover ->
-                paneNav.navigate(MediaThemes(mId, t, episodes, cover))
+            onThemesSeeAllClick = { mId, t, episodes, cover, color ->
+                paneNav.navigate(MediaThemes(mId, t, episodes, cover, color))
             },
-            onWriteReviewClick = { mId, t -> navController.navigate(WriteReview(mId, t)) },
+            onWriteReviewClick = { mId, t, color -> navController.navigate(WriteReview(mId, t, color)) },
             onReviewClick = { rId, color ->
                 navController.navigate(ReviewDetail(rId, sourceScreen = "media_details", coverColor = color))
             },
@@ -476,8 +477,8 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             onViewAllDiscussions = { mId, t, color ->
                 navController.navigate(ForumMediaThreads(mId, t, color))
             },
-            onStartDiscussion = { mId, t, cover ->
-                navController.navigate(CreateThread(mId, t, cover.orEmpty()))
+            onStartDiscussion = { mId, t, cover, color ->
+                navController.navigate(CreateThread(mId, t, cover.orEmpty(), color))
             },
             onUserClick = { navController.navigateSafely(UserProfile(it)) },
             sharedTransitionScope = sharedScope,
@@ -522,39 +523,45 @@ internal fun NavGraphBuilder.mediaPaneGraph(
 
     composable<MediaThemes> { backStackEntry ->
         val route: MediaThemes = backStackEntry.toRoute()
-        MediaThemesScreen(
-            mediaTitle = route.mediaTitle,
-            totalEpisodes = route.totalEpisodes,
-            coverUrl = route.coverUrl,
-            onBackClick = { if (!paneNav.popBackStack()) onClose() },
-            // The pane is already the detail half of a split, so the theme opens in a sheet here
-            // rather than in a second pane inside this one.
-            forceSinglePane = true,
-        )
+        MediaArtworkThemeOverride(route.coverColor) {
+            MediaThemesScreen(
+                mediaTitle = route.mediaTitle,
+                totalEpisodes = route.totalEpisodes,
+                coverUrl = route.coverUrl,
+                onBackClick = { if (!paneNav.popBackStack()) onClose() },
+                // The pane is already the detail half of a split, so the theme opens in a sheet here
+                // rather than in a second pane inside this one.
+                forceSinglePane = true,
+            )
+        }
     }
 
     composable<MediaRelationsGrid> { backStackEntry ->
         val route: MediaRelationsGrid = backStackEntry.toRoute()
-        MediaRelationsGridScreen(
-            mediaId = route.mediaId,
-            mediaTitle = route.mediaTitle,
-            onBackClick = { paneNav.popBackStack() },
-            onRelationClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
-            sharedTransitionScope = sharedScope,
-            animatedVisibilityScope = this,
-        )
+        MediaArtworkThemeOverride(route.coverColor) {
+            MediaRelationsGridScreen(
+                mediaId = route.mediaId,
+                mediaTitle = route.mediaTitle,
+                onBackClick = { paneNav.popBackStack() },
+                onRelationClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
+                sharedTransitionScope = sharedScope,
+                animatedVisibilityScope = this,
+            )
+        }
     }
 
     composable<MediaRecommendationsGrid> { backStackEntry ->
         val route: MediaRecommendationsGrid = backStackEntry.toRoute()
-        MediaRecommendationsGridScreen(
-            mediaId = route.mediaId,
-            mediaTitle = route.mediaTitle,
-            onBackClick = { paneNav.popBackStack() },
-            onRecommendationClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
-            sharedTransitionScope = sharedScope,
-            animatedVisibilityScope = this,
-        )
+        MediaArtworkThemeOverride(route.coverColor) {
+            MediaRecommendationsGridScreen(
+                mediaId = route.mediaId,
+                mediaTitle = route.mediaTitle,
+                onBackClick = { paneNav.popBackStack() },
+                onRecommendationClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
+                sharedTransitionScope = sharedScope,
+                animatedVisibilityScope = this,
+            )
+        }
     }
 
     composable<CharacterMediaGrid> { backStackEntry ->

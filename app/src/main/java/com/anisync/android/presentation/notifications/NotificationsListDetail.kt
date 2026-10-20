@@ -228,14 +228,18 @@ private fun NotificationDetailPane(
                     onCharacterClick = { navController.navigate(CharacterDetails(it)) },
                     onStaffClick = { navController.navigate(StaffDetails(it)) },
                     onStudioClick = { navController.navigate(StudioDetails(it)) },
-                    onRelatedSeeAllClick = { mId, t -> navController.navigate(MediaRelationsGrid(mId, t)) },
-                    onRecommendationsSeeAllClick = { mId, t ->
-                        navController.navigate(MediaRecommendationsGrid(mId, t))
+                    onRelatedSeeAllClick = { mId, t, color ->
+                        navController.navigate(MediaRelationsGrid(mId, t, color))
                     },
-                    onThemesSeeAllClick = { mId, t, episodes, cover ->
-                        navController.navigate(MediaThemes(mId, t, episodes, cover))
+                    onRecommendationsSeeAllClick = { mId, t, color ->
+                        navController.navigate(MediaRecommendationsGrid(mId, t, color))
                     },
-                    onWriteReviewClick = { mId, t -> navController.navigate(WriteReview(mId, t)) },
+                    onThemesSeeAllClick = { mId, t, episodes, cover, color ->
+                        navController.navigate(MediaThemes(mId, t, episodes, cover, color))
+                    },
+                    onWriteReviewClick = { mId, t, color ->
+                        navController.navigate(WriteReview(mId, t, color))
+                    },
                     onReviewClick = { rId, color ->
                         navController.navigate(
                             ReviewDetail(rId, sourceScreen = "media_details", coverColor = color)
@@ -247,8 +251,8 @@ private fun NotificationDetailPane(
                     onViewAllDiscussions = { mId, t, color ->
                         navController.navigate(ForumMediaThreads(mId, t, color))
                     },
-                    onStartDiscussion = { mId, t, cover ->
-                        navController.navigate(CreateThread(mId, t, cover.orEmpty()))
+                    onStartDiscussion = { mId, t, cover, color ->
+                        navController.navigate(CreateThread(mId, t, cover.orEmpty(), color))
                     },
                     onUserClick = navigateUser,
                     sharedTransitionScope = this@SharedTransitionLayout,

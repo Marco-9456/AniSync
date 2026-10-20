@@ -627,17 +627,19 @@ fun AniSyncNavHost(
                     onStudioClick = { studioId ->
                         navController.navigate(StudioDetails(studioId))
                     },
-                    onRelatedSeeAllClick = { mediaId, mediaTitle ->
-                        navController.navigate(MediaRelationsGrid(mediaId, mediaTitle))
+                    onRelatedSeeAllClick = { mediaId, mediaTitle, coverColor ->
+                        navController.navigate(MediaRelationsGrid(mediaId, mediaTitle, coverColor))
                     },
-                    onRecommendationsSeeAllClick = { mediaId, mediaTitle ->
-                        navController.navigate(MediaRecommendationsGrid(mediaId, mediaTitle))
+                    onRecommendationsSeeAllClick = { mediaId, mediaTitle, coverColor ->
+                        navController.navigate(MediaRecommendationsGrid(mediaId, mediaTitle, coverColor))
                     },
-                    onThemesSeeAllClick = { mediaId, mediaTitle, totalEpisodes, coverUrl ->
-                        navController.navigate(MediaThemes(mediaId, mediaTitle, totalEpisodes, coverUrl))
+                    onThemesSeeAllClick = { mediaId, mediaTitle, totalEpisodes, coverUrl, coverColor ->
+                        navController.navigate(
+                            MediaThemes(mediaId, mediaTitle, totalEpisodes, coverUrl, coverColor)
+                        )
                     },
-                    onWriteReviewClick = { mediaId, mediaTitle ->
-                        navController.navigate(WriteReview(mediaId, mediaTitle))
+                    onWriteReviewClick = { mediaId, mediaTitle, coverColor ->
+                        navController.navigate(WriteReview(mediaId, mediaTitle, coverColor))
                     },
                     onReviewClick = { reviewId, coverColor ->
                         navController.navigate(
@@ -652,12 +654,13 @@ fun AniSyncNavHost(
                     onViewAllDiscussions = { mediaId, mediaTitle, coverColor ->
                         navController.navigate(ForumMediaThreads(mediaId, mediaTitle, coverColor))
                     },
-                    onStartDiscussion = { mediaId, title, coverUrl ->
+                    onStartDiscussion = { mediaId, title, coverUrl, coverColor ->
                         navController.navigate(
                             CreateThread(
                                 mediaId = mediaId,
                                 mediaTitle = title,
-                                mediaCoverUrl = coverUrl.orEmpty()
+                                mediaCoverUrl = coverUrl.orEmpty(),
+                                coverColor = coverColor
                             )
                         )
                     },
@@ -677,16 +680,18 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) { backStackEntry ->
                 val grid: MediaRecommendationsGrid = backStackEntry.toRoute()
-                MediaRecommendationsGridScreen(
-                    mediaId = grid.mediaId,
-                    mediaTitle = grid.mediaTitle,
-                    onBackClick = { navController.popBackStack() },
-                    onRecommendationClick = { recId ->
-                        navController.navigate(MediaDetails(recId, "recommendations_grid"))
-                    },
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedVisibilityScope = this
-                )
+                MediaArtworkThemeOverride(grid.coverColor) {
+                    MediaRecommendationsGridScreen(
+                        mediaId = grid.mediaId,
+                        mediaTitle = grid.mediaTitle,
+                        onBackClick = { navController.popBackStack() },
+                        onRecommendationClick = { recId ->
+                            navController.navigate(MediaDetails(recId, "recommendations_grid"))
+                        },
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedVisibilityScope = this
+                    )
+                }
             }
 
             // =================================================================
@@ -697,11 +702,14 @@ fun AniSyncNavHost(
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
-            ) {
-                WriteReviewScreen(
-                    onBackClick = { navController.popBackStack() },
-                    onReviewSaved = { navController.popBackStack() }
-                )
+            ) { backStackEntry ->
+                val route: WriteReview = backStackEntry.toRoute()
+                MediaArtworkThemeOverride(route.coverColor) {
+                    WriteReviewScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onReviewSaved = { navController.popBackStack() }
+                    )
+                }
             }
 
             // =================================================================
@@ -957,16 +965,18 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) { backStackEntry ->
                 val grid: MediaRelationsGrid = backStackEntry.toRoute()
-                MediaRelationsGridScreen(
-                    mediaId = grid.mediaId,
-                    mediaTitle = grid.mediaTitle,
-                    onBackClick = { navController.popBackStack() },
-                    onRelationClick = { relationMediaId ->
-                        navController.navigate(MediaDetails(relationMediaId, "relations_grid"))
-                    },
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedVisibilityScope = this
-                )
+                MediaArtworkThemeOverride(grid.coverColor) {
+                    MediaRelationsGridScreen(
+                        mediaId = grid.mediaId,
+                        mediaTitle = grid.mediaTitle,
+                        onBackClick = { navController.popBackStack() },
+                        onRelationClick = { relationMediaId ->
+                            navController.navigate(MediaDetails(relationMediaId, "relations_grid"))
+                        },
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedVisibilityScope = this
+                    )
+                }
             }
 
             // =================================================================
@@ -979,12 +989,14 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) { backStackEntry ->
                 val route: MediaThemes = backStackEntry.toRoute()
-                MediaThemesScreen(
-                    mediaTitle = route.mediaTitle,
-                    totalEpisodes = route.totalEpisodes,
-                    coverUrl = route.coverUrl,
-                    onBackClick = { navController.popBackStack() }
-                )
+                MediaArtworkThemeOverride(route.coverColor) {
+                    MediaThemesScreen(
+                        mediaTitle = route.mediaTitle,
+                        totalEpisodes = route.totalEpisodes,
+                        coverUrl = route.coverUrl,
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
             }
 
             // =================================================================
@@ -1061,7 +1073,9 @@ fun AniSyncNavHost(
                         targetCommentId = if (route.commentId != 0) route.commentId else null,
                         onBackClick = { navController.popBackStack() },
                         onUserClick = navigateToUserProfile,
-                        onEditThread = { navController.navigate(EditThreadBody(it)) }
+                        onEditThread = {
+                            navController.navigate(EditThreadBody(it, coverColor = route.coverColor))
+                        }
                     )
                 }
             }
@@ -1184,11 +1198,14 @@ fun AniSyncNavHost(
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
-            ) {
-                ForumThreadInputScreen(
-                    onBackClick = { navController.popBackStack() },
-                    onThreadCreated = { navController.popBackStack() }
-                )
+            ) { backStackEntry ->
+                val route: CreateThread = backStackEntry.toRoute()
+                MediaArtworkThemeOverride(route.coverColor) {
+                    ForumThreadInputScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onThreadCreated = { navController.popBackStack() }
+                    )
+                }
             }
 
             // =================================================================
@@ -1199,11 +1216,14 @@ fun AniSyncNavHost(
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
-            ) {
-                EditThreadBodyScreen(
-                    onBackClick = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() }
-                )
+            ) { backStackEntry ->
+                val route: EditThreadBody = backStackEntry.toRoute()
+                MediaArtworkThemeOverride(route.coverColor) {
+                    EditThreadBodyScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onSaved = { navController.popBackStack() }
+                    )
+                }
             }
 
             // =================================================================
@@ -1233,7 +1253,11 @@ fun AniSyncNavHost(
                         onUserClick = navigateToUserProfile,
                         onCreateThread = {
                             navController.navigate(
-                                CreateThread(mediaId = route.mediaId, mediaTitle = route.mediaTitle)
+                                CreateThread(
+                                    mediaId = route.mediaId,
+                                    mediaTitle = route.mediaTitle,
+                                    coverColor = route.coverColor
+                                )
                             )
                         }
                     )

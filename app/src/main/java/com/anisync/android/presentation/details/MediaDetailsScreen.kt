@@ -189,14 +189,20 @@ fun MediaDetailsScreen(
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
-    onRelatedSeeAllClick: (Int, String) -> Unit = { _, _ -> },
-    onRecommendationsSeeAllClick: (Int, String) -> Unit = { _, _ -> },
-    onThemesSeeAllClick: (mediaId: Int, mediaTitle: String, totalEpisodes: Int?, coverUrl: String?) -> Unit = { _, _, _, _ -> },
-    onWriteReviewClick: (Int, String) -> Unit = { _, _ -> },
+    onRelatedSeeAllClick: (mediaId: Int, mediaTitle: String, coverColor: String?) -> Unit,
+    onRecommendationsSeeAllClick: (mediaId: Int, mediaTitle: String, coverColor: String?) -> Unit,
+    onThemesSeeAllClick: (
+        mediaId: Int,
+        mediaTitle: String,
+        totalEpisodes: Int?,
+        coverUrl: String?,
+        coverColor: String?,
+    ) -> Unit,
+    onWriteReviewClick: (mediaId: Int, mediaTitle: String, coverColor: String?) -> Unit,
     onReviewClick: (reviewId: Int, coverColor: String?) -> Unit,
     onDiscussionClick: (threadId: Int, threadTitle: String, coverColor: String?) -> Unit,
     onViewAllDiscussions: (mediaId: Int, mediaTitle: String, coverColor: String?) -> Unit,
-    onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?) -> Unit = { _, _, _ -> },
+    onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?, coverColor: String?) -> Unit,
     onUserClick: (String) -> Unit = {},
     navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     viewModel: MediaDetailsViewModel = hiltViewModel(),
@@ -548,7 +554,8 @@ fun MediaDetailsScreen(
                                         hasObservedDetailsReEnter = false
                                         onRelatedSeeAllClick(
                                             state.details.id,
-                                            state.details.getTitle(titleLanguage)
+                                            state.details.getTitle(titleLanguage),
+                                            state.details.coverColor
                                         )
                                     },
                                     onRecommendationsSeeAllClick = {
@@ -556,7 +563,8 @@ fun MediaDetailsScreen(
                                         hasObservedDetailsReEnter = false
                                         onRecommendationsSeeAllClick(
                                             state.details.id,
-                                            state.details.getTitle(titleLanguage)
+                                            state.details.getTitle(titleLanguage),
+                                            state.details.coverColor
                                         )
                                     },
                                     onThemesSeeAllClick = {
@@ -566,7 +574,8 @@ fun MediaDetailsScreen(
                                             state.details.id,
                                             state.details.getTitle(titleLanguage),
                                             state.details.coverageEpisodeCount,
-                                            state.details.bannerUrl ?: state.details.coverUrl
+                                            state.details.bannerUrl ?: state.details.coverUrl,
+                                            state.details.coverColor
                                         )
                                     },
                                     themesState = themesState,
@@ -574,7 +583,8 @@ fun MediaDetailsScreen(
                                     onWriteReviewClick = {
                                         onWriteReviewClick(
                                             state.details.id,
-                                            state.details.getTitle(titleLanguage)
+                                            state.details.getTitle(titleLanguage),
+                                            state.details.coverColor
                                         )
                                     },
                                     onReviewClick = { reviewId ->
@@ -602,7 +612,8 @@ fun MediaDetailsScreen(
                                         onStartDiscussion(
                                             state.details.id,
                                             state.details.getTitle(titleLanguage),
-                                            state.details.coverUrl
+                                            state.details.coverUrl,
+                                            state.details.coverColor
                                         )
                                     },
                                     onRecommendMedia = viewModel::recommendMedia,
