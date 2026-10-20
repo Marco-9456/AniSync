@@ -11,6 +11,7 @@ import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
 import com.apollographql.cache.normalized.fetchPolicy
 import com.anisync.android.type.ReviewRating
+import com.anisync.android.ui.theme.MediaArtworkSchemes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,13 +24,15 @@ data class ReviewDetailUiState(
     val isLoading: Boolean = true,
     val review: MediaReview? = null,
     val mediaId: Int? = null,
+    val mediaCoverColor: String? = null,
     val errorMessage: String? = null
 )
 
 @HiltViewModel
 class ReviewDetailViewModel @Inject constructor(
     private val apolloClient: ApolloClient,
-    private val detailsRepository: DetailsRepository
+    private val detailsRepository: DetailsRepository,
+    private val artworkSchemes: MediaArtworkSchemes
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReviewDetailUiState())
@@ -76,11 +79,15 @@ class ReviewDetailViewModel @Inject constructor(
                     mediaCoverUrl = data.media?.coverImage?.large,
                     mediaBannerUrl = data.media?.bannerImage
                 )
+                val coverColor = data.media?.coverImage?.color
+                // Ready before the review shows, so its first themed frame doesn't stall on it.
+                artworkSchemes.prepare(coverColor)
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         review = review,
-                        mediaId = data.media?.id
+                        mediaId = data.media?.id,
+                        mediaCoverColor = coverColor
                     )
                 }
             } catch (e: Exception) {

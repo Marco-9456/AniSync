@@ -91,7 +91,7 @@ fun ReviewDetailScreen(
 
     val listState = rememberLazyListState()
 
-    MediaArtworkThemeOverride(coverColor) {
+    MediaArtworkThemeOverride(coverColor ?: uiState.mediaCoverColor) {
         CollapsingTopBarScaffold(
             title = stringResource(R.string.label_review),
             onBackClick = onBackClick,

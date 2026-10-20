@@ -24,6 +24,7 @@ query ReviewDetails($id: Int) {
               medium
               large
               extraLarge
+              color
             }
             bannerImage
         }
