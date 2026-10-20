@@ -239,10 +239,8 @@ fun MediaDetailsScreen(
     var showShareImageSheet by rememberSaveable { mutableStateOf(false) }
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     // Hoisted to the screen (alongside listState) so the selected tab survives a character/staff
-    // round-trip. When the details content flashes through Loading on re-entry (the cached flow
-    // resets after the screen is off-stage a few seconds), the Success subtree is torn down and
-    // rebuilt; state kept inside it would reset to OVERVIEW, dropping the viewer back to the first
-    // tab. Living here — the same level scroll already does — keeps it stable across that rebuild.
+    // round-trip and anything that rebuilds the Success subtree, which would reset state kept inside
+    // it to OVERVIEW.
     var selectedTab by rememberSaveable { mutableStateOf(DetailsTab.OVERVIEW) }
 
     var shouldKeepChromeOverlayForReturn by rememberSaveable { mutableStateOf(false) }

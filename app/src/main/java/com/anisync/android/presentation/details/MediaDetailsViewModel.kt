@@ -35,7 +35,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -165,8 +164,9 @@ class MediaDetailsViewModel @Inject constructor(
             else -> DetailsUiState.Success(details)
         }
     }
-        .onStart { emit(DetailsUiState.Loading) }
         .catch { e -> emit(DetailsUiState.Error(e.message ?: "Unknown error")) }
+        // Coming back after five seconds away restarts the flow. The page it already holds stays up
+        // meanwhile, rather than flashing the skeleton until the cache answers again.
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
