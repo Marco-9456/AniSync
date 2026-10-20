@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-10-20
+
 ### Added
 
 - **Display Size** - Look and feel offers four sizes, Small, Default, Large and Larger, that scale text, icons and spacing everywhere in AniSync on top of the phone's own display and font size. Sheets, dialogs, menus, tooltips, toasts, the image viewer, the share dialogs and the expanded search all follow it. (#148)

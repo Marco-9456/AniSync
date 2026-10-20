@@ -1,0 +1,26 @@
+Added:
+- Display size: scale text, icons and spacing everywhere in AniSync from Look and feel.
+- An app icon picker with Ink, White, Blue and Sync icons.
+- A score sheet when you finish a title with the Library + or its tracker, with a switch to turn it off.
+- Long press copies native and app bar titles, synonyms, and character, staff and studio names.
+- Performers, audio-only versions, variant names and insert songs on openings and endings.
+- Custom colours by hex code, and the CMF colour style.
+- New and Moved badges on settings after an update.
+
+Changed:
+- Settings reorganised into General and a visual Look and feel screen.
+- A title's colours carry into its reviews, discussions and other pages, and a profile's colour into its statuses and threads.
+- Seeded colour schemes follow the 2026 Material colour spec.
+- The rich text editor fits landscape and moves extra format buttons into a menu.
+- Predictive back on detail pages follows the edge the swipe started on.
+- Encrypted Client Hello on Android 17 for hosts that publish it.
+- Targets Android 17.
+
+Fixed:
+- The Custom option is back in the Add to list menu.
+- The date picker no longer flickers on its way back to the calendar.
+- Returning to a title no longer flashes the loading skeleton.
+- Reviews open from the media pane on tablets.
+- Studio links, the calendar link and AniList URLs with deeper tabs open in the app.
+- Widgets draw without covers instead of failing when the covers pass the system limit.
+- WebM clips with their index at the end play again.
