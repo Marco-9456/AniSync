@@ -31,6 +31,7 @@ import com.anisync.android.presentation.activity.ActivityDetailScreen
 import com.anisync.android.presentation.activity.EditActivityScreen
 import com.anisync.android.presentation.calendar.CalendarScreen
 import com.anisync.android.presentation.components.MediaArtworkThemeOverride
+import com.anisync.android.presentation.components.ProfileColorThemeOverride
 import com.anisync.android.presentation.notes.NotesJournalScreen
 import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.CharacterMediaGridScreen
@@ -140,8 +141,14 @@ fun AniSyncNavHost(
         navController.navigate(ActivityDetail(activityId))
     }
 
-    val navigateToActivityReply: (Int, Int) -> Unit = { activityId, replyId ->
-        navController.navigate(ActivityDetail(activityId = activityId, targetReplyId = replyId))
+    val navigateToProfileActivity: (Int, String?) -> Unit = { activityId, profileColor ->
+        navController.navigate(ActivityDetail(activityId, profileColor = profileColor))
+    }
+
+    val navigateToProfileActivityReply: (Int, Int, String?) -> Unit = { activityId, replyId, profileColor ->
+        navController.navigate(
+            ActivityDetail(activityId = activityId, targetReplyId = replyId, profileColor = profileColor)
+        )
     }
 
     // =============================================================================
@@ -479,16 +486,18 @@ fun AniSyncNavHost(
                         navController.navigate(StudioDetails(studioId))
                     },
                     onUserClick = navigateToUserProfile,
-                    onThreadClick = { threadId, threadTitle ->
-                        navController.navigate(ForumThreadDetail(threadId, threadTitle))
-                    },
-                    onCommentClick = { threadId, commentId, threadTitle ->
+                    onThreadClick = { threadId, threadTitle, profileColor ->
                         navController.navigate(
-                            ForumThreadDetail(threadId, threadTitle, commentId)
+                            ForumThreadDetail(threadId, threadTitle, profileColor = profileColor)
                         )
                     },
-                    onActivityClick = navigateToActivity,
-                    onLastReplyClick = navigateToActivityReply,
+                    onCommentClick = { threadId, commentId, threadTitle, profileColor ->
+                        navController.navigate(
+                            ForumThreadDetail(threadId, threadTitle, commentId, profileColor = profileColor)
+                        )
+                    },
+                    onActivityClick = navigateToProfileActivity,
+                    onLastReplyClick = navigateToProfileActivityReply,
                     onLogoutClick = onLogout,
                     onNavigateToSettings = onNavigateToSettings,
                     onNavigateToNotifications = onNavigateToNotifications,
@@ -528,16 +537,18 @@ fun AniSyncNavHost(
                         navController.navigate(StudioDetails(studioId))
                     },
                     onUserClick = navigateToUserProfile,
-                    onThreadClick = { threadId, threadTitle ->
-                        navController.navigate(ForumThreadDetail(threadId, threadTitle))
-                    },
-                    onCommentClick = { threadId, commentId, threadTitle ->
+                    onThreadClick = { threadId, threadTitle, profileColor ->
                         navController.navigate(
-                            ForumThreadDetail(threadId, threadTitle, commentId)
+                            ForumThreadDetail(threadId, threadTitle, profileColor = profileColor)
                         )
                     },
-                    onActivityClick = navigateToActivity,
-                    onLastReplyClick = navigateToActivityReply,
+                    onCommentClick = { threadId, commentId, threadTitle, profileColor ->
+                        navController.navigate(
+                            ForumThreadDetail(threadId, threadTitle, commentId, profileColor = profileColor)
+                        )
+                    },
+                    onActivityClick = navigateToProfileActivity,
+                    onLastReplyClick = navigateToProfileActivityReply,
                     onLogoutClick = { }, // Not used for other users
                     onNavigateToSettings = { }, // Not used for other users
                     isOwnProfile = false,
@@ -1067,16 +1078,20 @@ fun AniSyncNavHost(
             ) { backStackEntry ->
                 val route: ForumThreadDetail = backStackEntry.toRoute()
                 MediaArtworkThemeOverride(route.coverColor) {
-                    ThreadDetailScreen(
-                        threadId = route.threadId,
-                        threadTitle = route.threadTitle,
-                        targetCommentId = if (route.commentId != 0) route.commentId else null,
-                        onBackClick = { navController.popBackStack() },
-                        onUserClick = navigateToUserProfile,
-                        onEditThread = {
-                            navController.navigate(EditThreadBody(it, coverColor = route.coverColor))
-                        }
-                    )
+                    ProfileColorThemeOverride(route.profileColor) {
+                        ThreadDetailScreen(
+                            threadId = route.threadId,
+                            threadTitle = route.threadTitle,
+                            targetCommentId = if (route.commentId != 0) route.commentId else null,
+                            onBackClick = { navController.popBackStack() },
+                            onUserClick = navigateToUserProfile,
+                            onEditThread = {
+                                navController.navigate(
+                                    EditThreadBody(it, route.coverColor, route.profileColor)
+                                )
+                            }
+                        )
+                    }
                 }
             }
 
@@ -1095,13 +1110,17 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) { backStackEntry ->
                 val route: ActivityDetail = backStackEntry.toRoute()
-                ActivityDetailScreen(
-                    activityId = route.activityId,
-                    targetReplyId = if (route.targetReplyId != 0) route.targetReplyId else null,
-                    onBackClick = { navController.popBackStack() },
-                    onUserClick = navigateToUserProfile,
-                    onEditActivity = { navController.navigate(EditActivity(it)) }
-                )
+                ProfileColorThemeOverride(route.profileColor) {
+                    ActivityDetailScreen(
+                        activityId = route.activityId,
+                        targetReplyId = if (route.targetReplyId != 0) route.targetReplyId else null,
+                        onBackClick = { navController.popBackStack() },
+                        onUserClick = navigateToUserProfile,
+                        onEditActivity = {
+                            navController.navigate(EditActivity(it, profileColor = route.profileColor))
+                        }
+                    )
+                }
             }
 
             // =================================================================
@@ -1112,11 +1131,14 @@ fun AniSyncNavHost(
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
-            ) {
-                EditActivityScreen(
-                    onBackClick = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() }
-                )
+            ) { backStackEntry ->
+                val route: EditActivity = backStackEntry.toRoute()
+                ProfileColorThemeOverride(route.profileColor) {
+                    EditActivityScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onSaved = { navController.popBackStack() }
+                    )
+                }
             }
 
             // =================================================================
@@ -1219,10 +1241,12 @@ fun AniSyncNavHost(
             ) { backStackEntry ->
                 val route: EditThreadBody = backStackEntry.toRoute()
                 MediaArtworkThemeOverride(route.coverColor) {
-                    EditThreadBodyScreen(
-                        onBackClick = { navController.popBackStack() },
-                        onSaved = { navController.popBackStack() }
-                    )
+                    ProfileColorThemeOverride(route.profileColor) {
+                        EditThreadBodyScreen(
+                            onBackClick = { navController.popBackStack() },
+                            onSaved = { navController.popBackStack() }
+                        )
+                    }
                 }
             }
 

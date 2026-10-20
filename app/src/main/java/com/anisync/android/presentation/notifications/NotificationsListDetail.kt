@@ -294,13 +294,17 @@ private fun NotificationDetailPane(
                         onVoiceActorClick = { navController.navigate(StaffDetails(it)) },
                         onStudioClick = { navController.navigate(StudioDetails(it)) },
                         onUserClick = navigateUser,
-                        onThreadClick = { tId, tt -> navController.navigate(ForumThreadDetail(tId, tt)) },
-                        onCommentClick = { tId, cId, tt ->
-                            navController.navigate(ForumThreadDetail(tId, tt, cId))
+                        onThreadClick = { tId, tt, color ->
+                            navController.navigate(ForumThreadDetail(tId, tt, profileColor = color))
                         },
-                        onActivityClick = { navController.navigate(ActivityDetail(it)) },
-                        onLastReplyClick = { aId, rId ->
-                            navController.navigate(ActivityDetail(aId, rId))
+                        onCommentClick = { tId, cId, tt, color ->
+                            navController.navigate(ForumThreadDetail(tId, tt, cId, profileColor = color))
+                        },
+                        onActivityClick = { aId, color ->
+                            navController.navigate(ActivityDetail(aId, profileColor = color))
+                        },
+                        onLastReplyClick = { aId, rId, color ->
+                            navController.navigate(ActivityDetail(aId, rId, color))
                         },
                         onLogoutClick = { },
                         isOwnProfile = false,

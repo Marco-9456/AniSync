@@ -44,10 +44,10 @@ fun ProfileScreen(
     onVoiceActorClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
     onUserClick: (String) -> Unit = {},
-    onThreadClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
-    onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit = { _, _, _ -> },
-    onActivityClick: (Int) -> Unit = {},
-    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
+    onThreadClick: (threadId: Int, threadTitle: String, profileColor: String?) -> Unit,
+    onCommentClick: (threadId: Int, commentId: Int, threadTitle: String, profileColor: String?) -> Unit,
+    onActivityClick: (activityId: Int, profileColor: String?) -> Unit,
+    onLastReplyClick: (activityId: Int, replyId: Int, profileColor: String?) -> Unit,
     onLogoutClick: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -80,9 +80,9 @@ fun ProfileScreen(
         lastResumeAtMs.longValue = now
     }
 
-    ProfileColorThemeOverride(
-        profileColor = uiState.profile?.profileColor.takeUnless { isOwnProfile },
-    ) {
+    val profileColor = uiState.profile?.profileColor.takeUnless { isOwnProfile }
+
+    ProfileColorThemeOverride(profileColor = profileColor) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
@@ -130,10 +130,16 @@ fun ProfileScreen(
                         onVoiceActorClick = onVoiceActorClick,
                         onStudioClick = onStudioClick,
                         onUserClick = onUserClick,
-                        onThreadClick = onThreadClick,
-                        onCommentClick = onCommentClick,
-                        onActivityClick = onActivityClick,
-                        onLastReplyClick = onLastReplyClick,
+                        onThreadClick = { threadId, threadTitle ->
+                            onThreadClick(threadId, threadTitle, profileColor)
+                        },
+                        onCommentClick = { threadId, commentId, threadTitle ->
+                            onCommentClick(threadId, commentId, threadTitle, profileColor)
+                        },
+                        onActivityClick = { onActivityClick(it, profileColor) },
+                        onLastReplyClick = { activityId, replyId ->
+                            onLastReplyClick(activityId, replyId, profileColor)
+                        },
                         showAccountSwitcher = isOwnProfile && accounts.size > 1,
                         onAccountSwitchClick = { showAccountSwitcherSheet = true }
                     )

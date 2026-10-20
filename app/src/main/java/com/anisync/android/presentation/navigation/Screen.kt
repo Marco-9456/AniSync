@@ -201,13 +201,15 @@ data class ForumCategoryBrowse(
  * @param threadId The AniList Thread ID
  * @param threadTitle The thread title (for immediate display before data loads)
  * @param coverColor Cover color of the title the thread was opened from, so it keeps that palette
+ * @param profileColor Profile color of the user whose profile opened the thread, for the same reason
  */
 @Serializable
 data class ForumThreadDetail(
     val threadId: Int,
     val threadTitle: String = "",
     val commentId: Int = 0,
-    val coverColor: String? = null
+    val coverColor: String? = null,
+    val profileColor: String? = null
 )
 
 /**
@@ -216,11 +218,13 @@ data class ForumThreadDetail(
  * screens. Title and categories are preserved; only the body is editable here.
  * @param threadId The AniList thread id being edited
  * @param coverColor Cover color of the title the thread was opened from, so it keeps that palette
+ * @param profileColor Profile color of the user whose profile opened the thread
  */
 @Serializable
 data class EditThreadBody(
     val threadId: Int,
-    val coverColor: String? = null
+    val coverColor: String? = null,
+    val profileColor: String? = null
 )
 
 /**
@@ -303,10 +307,15 @@ data class WriteReview(
 // ACTIVITY ROUTES
 // =============================================================================
 
+/**
+ * A single activity and its replies.
+ * @param profileColor Profile color of the user whose profile opened it, so it keeps that palette
+ */
 @Serializable
 data class ActivityDetail(
     val activityId: Int,
-    val targetReplyId: Int = 0
+    val targetReplyId: Int = 0,
+    val profileColor: String? = null
 )
 
 /**
@@ -314,9 +323,13 @@ data class ActivityDetail(
  * destination (not an inline overlay) so authoring is never confined to a list-detail pane on large
  * screens.
  * @param activityId The AniList activity id being edited
+ * @param profileColor Profile color of the user whose profile opened the activity
  */
 @Serializable
-data class EditActivity(val activityId: Int)
+data class EditActivity(
+    val activityId: Int,
+    val profileColor: String? = null
+)
 
 /**
  * New-status composer — posts a new text activity to the viewer's feed. A real full-screen
