@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Display Size** - Look and feel offers four sizes, Small, Default, Large and Larger, that scale text, icons and spacing everywhere in AniSync on top of the phone's own display and font size. Sheets, dialogs, menus, tooltips, toasts, the image viewer, the share dialogs and the expanded search all follow it. (#148)
+- **App Icon** - Look and feel lets you pick the launcher icon from Ink, White, Blue and Sync. The new icon appears once you leave the app. (#151)
+- **Score On Finishing** - Finishing a title with the + on a Library card or with the tracker on its page opens a sheet that asks how it was, with the same scoring and note as the edit sheet. It only asks when the entry has no score yet, never for a title added straight to Completed, and a switch under General turns it off. (#153)
+- **Copy Titles And Names** - A long press copies the native and app bar titles on a media page as well as the main one, the titles and synonyms sheets copy any entry, and character, staff and studio headers copy their names. (#152)
+- **Theme Credits** - Openings and endings list their performers and the characters they sing as, audio-only versions that play over the cover art, variant names such as English Version or TV Version, and insert songs behind their own filter.
+- **Custom Colour** - A custom colour can be entered or pasted as a hex code, with a preview of its primary, container, tertiary and surface roles.
+- **CMF Colour Style** - A new colour style that keeps to one hue with deeper tinted surfaces.
+- **What's New Badges** - After an update, New and Moved badges point at the settings that were added or moved, with a dot on each screen on the way there, until each one has been opened or two weeks have passed.
+
+### Changed
+
+- **Settings** - Behaviour settings moved out of Look and feel into a new General screen: start screen, app lock, tab gestures, haptics, language, streaming service and the score prompt. Look and feel took in the Theme page and became a visual screen with previews for theme, display size, colours, bottom bar, avatars and app icon. Cover quality is picked inline in Storage, and languages are listed by their own names with the system default first.
+- **Title Colours** - With colours from artwork on, a title's palette carries into its reviews, discussions, openings and endings, relation and recommendation grids, and the review and thread editors. A review takes its title's colours wherever it is opened from, links and Recent Reviews included, and statuses and threads opened from someone's profile keep that profile's colour. (#157)
+- **Colour Spec** - Colour schemes built from a seed follow the 2026 Material colour spec. Tonal Spot, Neutral, Vibrant and Expressive change with it, and the other styles look the same.
+- **Rich Text Editor** - Format buttons that do not fit move into an overflow menu, the character counter sits inside the text field, and the composer sheet opens fully and fits landscape, where the toolbar moves into the app bar on phones.
+- **Predictive Back** - A back swipe on a detail page shrinks it away from the edge the swipe started on.
+- **Encrypted Client Hello** - Images, uploads and AnimeThemes resolve through the system DNS, so on Android 17 a host that publishes an Encrypted Client Hello config, AnimeThemes among them, no longer has its name sent in the clear.
+- **Performance** - Colour schemes built from a seed are cached across screens and prepared off the main thread, so title, review and profile pages and Look and feel open without a stall.
+- **Platform** - AniSync targets Android 17 and moves to Compose Material 3 1.5, Coil 3, Apollo Kotlin 5.2 and Media3 1.11.
+
+### Fixed
+
+- **Add To List** - The menu offers Custom again. It opens the full edit sheet before the entry exists, so a title can start out private instead of showing up in the activity feed first. (#154)
+- **Date Picker** - Switching an entry's date back to the calendar no longer flickers. (#156)
+- **Media Details** - Returning to a title no longer flashes its loading skeleton, and reviews open from the media pane on tablets and other two-pane layouts.
+- **Reviews** - The review text keeps a readable width on wide screens.
+- **Links** - AniList studio links and the calendar link open in the app, AniList URLs that point at a deeper tab (a title's characters, a user's anime list) land on the page they belong to, and a link meant for another signed-in account survives the switch with a working back stack.
+- **Notifications** - A tap opens AniSync directly even when a second build, such as a debug or preview build, is installed, instead of showing an app chooser.
+- **Widgets** - A widget whose covers pass the system's bitmap limit draws its rows without covers instead of failing to update.
+- **Video Player** - WebM clips that keep their index at the end, like the one in AniList's markdown guide, play again, and the error card stays hidden while the player retries on its own.
+- **Library Queue** - On narrow phones and at large display sizes the progress count drops its "out" instead of cutting the state line short.
+- **Tabs** - Labels on equal-width tabs shrink to fit instead of wrapping onto a second line.
+- **Rich Text Editor** - A draft survives rotating the device.
+
 ## [3.2.1] - 2026-09-22
 
 ### Added
