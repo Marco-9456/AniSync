@@ -30,6 +30,7 @@ import androidx.navigation.toRoute
 import com.anisync.android.presentation.activity.ActivityDetailScreen
 import com.anisync.android.presentation.activity.EditActivityScreen
 import com.anisync.android.presentation.calendar.CalendarScreen
+import com.anisync.android.presentation.components.MediaArtworkThemeOverride
 import com.anisync.android.presentation.notes.NotesJournalScreen
 import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.CharacterMediaGridScreen
@@ -638,14 +639,18 @@ fun AniSyncNavHost(
                     onWriteReviewClick = { mediaId, mediaTitle ->
                         navController.navigate(WriteReview(mediaId, mediaTitle))
                     },
-                    onReviewClick = { reviewId ->
-                        navController.navigate(ReviewDetail(reviewId, sourceScreen = "media_details"))
+                    onReviewClick = { reviewId, coverColor ->
+                        navController.navigate(
+                            ReviewDetail(reviewId, sourceScreen = "media_details", coverColor = coverColor)
+                        )
                     },
-                    onDiscussionClick = { threadId, threadTitle ->
-                        navController.navigate(ForumThreadDetail(threadId, threadTitle))
+                    onDiscussionClick = { threadId, threadTitle, coverColor ->
+                        navController.navigate(
+                            ForumThreadDetail(threadId, threadTitle, coverColor = coverColor)
+                        )
                     },
-                    onViewAllDiscussions = { mediaId, mediaTitle ->
-                        navController.navigate(ForumMediaThreads(mediaId, mediaTitle))
+                    onViewAllDiscussions = { mediaId, mediaTitle, coverColor ->
+                        navController.navigate(ForumMediaThreads(mediaId, mediaTitle, coverColor))
                     },
                     onStartDiscussion = { mediaId, title, coverUrl ->
                         navController.navigate(
@@ -719,6 +724,7 @@ fun AniSyncNavHost(
                 ReviewDetailScreen(
                     reviewId = route.reviewId,
                     sourceScreen = route.sourceScreen,
+                    coverColor = route.coverColor,
                     onBackClick = { navController.popBackStack() },
                     onUserClick = navigateToUserProfile,
                     onMediaClick = { mediaId ->
@@ -1048,14 +1054,16 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) { backStackEntry ->
                 val route: ForumThreadDetail = backStackEntry.toRoute()
-                ThreadDetailScreen(
-                    threadId = route.threadId,
-                    threadTitle = route.threadTitle,
-                    targetCommentId = if (route.commentId != 0) route.commentId else null,
-                    onBackClick = { navController.popBackStack() },
-                    onUserClick = navigateToUserProfile,
-                    onEditThread = { navController.navigate(EditThreadBody(it)) }
-                )
+                MediaArtworkThemeOverride(route.coverColor) {
+                    ThreadDetailScreen(
+                        threadId = route.threadId,
+                        threadTitle = route.threadTitle,
+                        targetCommentId = if (route.commentId != 0) route.commentId else null,
+                        onBackClick = { navController.popBackStack() },
+                        onUserClick = navigateToUserProfile,
+                        onEditThread = { navController.navigate(EditThreadBody(it)) }
+                    )
+                }
             }
 
             // =================================================================
@@ -1208,22 +1216,28 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) { backStackEntry ->
                 val route: ForumMediaThreads = backStackEntry.toRoute()
-                ForumMediaThreadsScreen(
-                    mediaTitle = route.mediaTitle,
-                    onBackClick = { navController.popBackStack() },
-                    onThreadClick = { threadId, threadTitle ->
-                        navController.navigate(ForumThreadDetail(threadId, threadTitle))
-                    },
-                    onThreadCommentClick = { threadId, commentId ->
-                        navController.navigate(ForumThreadDetail(threadId, "", commentId))
-                    },
-                    onUserClick = navigateToUserProfile,
-                    onCreateThread = {
-                        navController.navigate(
-                            CreateThread(mediaId = route.mediaId, mediaTitle = route.mediaTitle)
-                        )
-                    }
-                )
+                MediaArtworkThemeOverride(route.coverColor) {
+                    ForumMediaThreadsScreen(
+                        mediaTitle = route.mediaTitle,
+                        onBackClick = { navController.popBackStack() },
+                        onThreadClick = { threadId, threadTitle ->
+                            navController.navigate(
+                                ForumThreadDetail(threadId, threadTitle, coverColor = route.coverColor)
+                            )
+                        },
+                        onThreadCommentClick = { threadId, commentId ->
+                            navController.navigate(
+                                ForumThreadDetail(threadId, "", commentId, route.coverColor)
+                            )
+                        },
+                        onUserClick = navigateToUserProfile,
+                        onCreateThread = {
+                            navController.navigate(
+                                CreateThread(mediaId = route.mediaId, mediaTitle = route.mediaTitle)
+                            )
+                        }
+                    )
+                }
             }
 
             // =================================================================

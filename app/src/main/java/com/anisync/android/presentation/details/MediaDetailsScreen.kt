@@ -193,9 +193,9 @@ fun MediaDetailsScreen(
     onRecommendationsSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onThemesSeeAllClick: (mediaId: Int, mediaTitle: String, totalEpisodes: Int?, coverUrl: String?) -> Unit = { _, _, _, _ -> },
     onWriteReviewClick: (Int, String) -> Unit = { _, _ -> },
-    onReviewClick: (Int) -> Unit,
-    onDiscussionClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
-    onViewAllDiscussions: (mediaId: Int, mediaTitle: String) -> Unit = { _, _ -> },
+    onReviewClick: (reviewId: Int, coverColor: String?) -> Unit,
+    onDiscussionClick: (threadId: Int, threadTitle: String, coverColor: String?) -> Unit,
+    onViewAllDiscussions: (mediaId: Int, mediaTitle: String, coverColor: String?) -> Unit,
     onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?) -> Unit = { _, _, _ -> },
     onUserClick: (String) -> Unit = {},
     navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -580,21 +580,22 @@ fun MediaDetailsScreen(
                                     onReviewClick = { reviewId ->
                                         shouldKeepChromeOverlayForReturn = true
                                         hasObservedDetailsReEnter = false
-                                        onReviewClick(reviewId)
+                                        onReviewClick(reviewId, state.details.coverColor)
                                     },
                                     onEditNotes = viewModel::openEditSheet,
                                     discussions = discussions,
                                     onDiscussionClick = { threadId, threadTitle ->
                                         shouldKeepChromeOverlayForReturn = true
                                         hasObservedDetailsReEnter = false
-                                        onDiscussionClick(threadId, threadTitle)
+                                        onDiscussionClick(threadId, threadTitle, state.details.coverColor)
                                     },
                                     onViewAllDiscussions = {
                                         shouldKeepChromeOverlayForReturn = true
                                         hasObservedDetailsReEnter = false
                                         onViewAllDiscussions(
                                             state.details.id,
-                                            state.details.getTitle(titleLanguage)
+                                            state.details.getTitle(titleLanguage),
+                                            state.details.coverColor
                                         )
                                     },
                                     onStartDiscussion = {

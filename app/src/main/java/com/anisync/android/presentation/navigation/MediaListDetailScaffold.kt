@@ -467,9 +467,15 @@ internal fun NavGraphBuilder.mediaPaneGraph(
                 paneNav.navigate(MediaThemes(mId, t, episodes, cover))
             },
             onWriteReviewClick = { mId, t -> navController.navigate(WriteReview(mId, t)) },
-            onReviewClick = { navController.navigate(ReviewDetail(it, sourceScreen = "media_details")) },
-            onDiscussionClick = { tId, tt -> navController.navigate(ForumThreadDetail(tId, tt)) },
-            onViewAllDiscussions = { mId, t -> navController.navigate(ForumMediaThreads(mId, t)) },
+            onReviewClick = { rId, color ->
+                navController.navigate(ReviewDetail(rId, sourceScreen = "media_details", coverColor = color))
+            },
+            onDiscussionClick = { tId, tt, color ->
+                navController.navigate(ForumThreadDetail(tId, tt, coverColor = color))
+            },
+            onViewAllDiscussions = { mId, t, color ->
+                navController.navigate(ForumMediaThreads(mId, t, color))
+            },
             onStartDiscussion = { mId, t, cover ->
                 navController.navigate(CreateThread(mId, t, cover.orEmpty()))
             },

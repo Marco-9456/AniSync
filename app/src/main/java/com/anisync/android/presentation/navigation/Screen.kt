@@ -194,12 +194,14 @@ data class ForumCategoryBrowse(
  * Thread detail screen — shows the full thread body and comments.
  * @param threadId The AniList Thread ID
  * @param threadTitle The thread title (for immediate display before data loads)
+ * @param coverColor Cover color of the title the thread was opened from, so it keeps that palette
  */
 @Serializable
 data class ForumThreadDetail(
     val threadId: Int,
     val threadTitle: String = "",
-    val commentId: Int = 0
+    val commentId: Int = 0,
+    val coverColor: String? = null
 )
 
 /**
@@ -236,11 +238,13 @@ data class CreateThread(
  * Reached from the media detail "Discussions" section ("View all").
  * @param mediaId The AniList media id
  * @param mediaTitle Display title for the app bar
+ * @param coverColor The title's cover color, so the list and the threads it opens keep its palette
  */
 @Serializable
 data class ForumMediaThreads(
     val mediaId: Int,
-    val mediaTitle: String = ""
+    val mediaTitle: String = "",
+    val coverColor: String? = null
 )
 
 // =============================================================================
@@ -252,9 +256,15 @@ data class ForumMediaThreads(
  *
  * @param sourceScreen The screen that initiated navigation ("discover", "recent_reviews", …).
  *                     Used to match shared element keys; deep links keep the default.
+ * @param coverColor Cover color of the reviewed title when its page opened the review, so the
+ *                   first frame already wears its palette.
  */
 @Serializable
-data class ReviewDetail(val reviewId: Int, val sourceScreen: String = "link")
+data class ReviewDetail(
+    val reviewId: Int,
+    val sourceScreen: String = "link",
+    val coverColor: String? = null
+)
 
 /**
  * Recent reviews list — AniList's newest reviews, filterable by media type.
