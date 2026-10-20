@@ -8,7 +8,6 @@
     <string name="nav_feed">Feed</string>
     <string name="nav_forum">Forum</string>
     <string name="nav_profile">Profile</string>
-
     <!-- Feed Screen -->
     <string name="feed_filter_all">All</string>
     <string name="feed_filter_status">Status</string>
@@ -41,7 +40,6 @@
     <string name="feed_compose_title">Write a Status</string>
     <string name="feed_compose_placeholder">Share what\'s on your mind…</string>
     <string name="feed_compose_submit">Post</string>
-
     <!-- Forum Screen -->
     <string name="forum_browse_categories">Browse Categories</string>
     <string name="forum_recent_discussions">Recent Discussions</string>
@@ -87,7 +85,6 @@
     <string name="forum_replying_to">Replying to %1$s</string>
     <string name="forum_thread_appbar">Thread</string>
     <string name="forum_op_badge">OP</string>
-
     <!-- Forum feed rail -->
     <string name="forum_feed_overview">Overview</string>
     <string name="forum_feed_recent">Recent activity</string>
@@ -109,7 +106,6 @@
     <string name="cd_filter_threads">Filter threads</string>
     <string name="forum_pinned">Pinned</string>
     <string name="forum_saved_offline_note">Saved threads stay readable offline</string>
-
     <!-- Forum categories -->
     <string name="forum_category_all">All</string>
     <string name="forum_category_anime">Anime</string>
@@ -128,7 +124,6 @@
     <string name="forum_category_forum_games">Forum Games</string>
     <string name="forum_category_misc">Misc</string>
     <string name="forum_category_anilist_apps">AniList Apps</string>
-
     <!-- Forum sort and filter -->
     <string name="forum_sort_and_filter">Sort &amp; filter</string>
     <string name="forum_sort_by">Sort by</string>
@@ -156,7 +151,6 @@
     <string name="forum_filter_anyone">Anyone</string>
     <string name="forum_show_threads">Show threads</string>
     <string name="forum_show_threads_count">Show %1$d threads</string>
-
     <!-- Forum thread actions -->
     <string name="forum_action_subscribe">Subscribe</string>
     <string name="forum_action_unsubscribe">Unsubscribe</string>
@@ -171,7 +165,6 @@
     <string name="forum_action_edit">Edit thread</string>
     <string name="forum_action_delete">Delete thread</string>
     <string name="forum_link_copied">Link copied</string>
-
     <!-- Forum browse surface -->
     <string name="forum_browse_by_category">Browse by category</string>
     <string name="forum_trending_discussions">Trending discussions</string>
@@ -183,7 +176,6 @@
     <string name="a11y_reply_count">%1$d replies</string>
     <string name="a11y_view_count">%1$d views</string>
     <string name="a11y_like_count">%1$d likes</string>
-
     <!-- Forum empty states -->
     <string name="forum_empty_category_title">No threads in %1$s yet</string>
     <string name="forum_empty_category_desc">Start one and it sits at the top of this category.</string>
@@ -204,7 +196,6 @@
     <string name="forum_empty_comments_title">No replies yet</string>
     <string name="forum_empty_comments_desc">Be the first to say something in this thread.</string>
     <string name="forum_empty_comments_action">Write a reply</string>
-
     <!-- Forum thread screen -->
     <string name="forum_views_count">%1$s views</string>
     <plurals name="forum_continue_thread_count">
@@ -218,7 +209,6 @@
     <string name="forum_sort_oldest_short">Oldest</string>
     <string name="forum_sort_newest_short">Newest</string>
     <string name="forum_comments_count_short">%1$s comments</string>
-
     <!-- Forum composer -->
     <string name="forum_title_min_hint">6 characters minimum</string>
     <string name="forum_categories_required">required · pick 1 to 3</string>
@@ -227,7 +217,6 @@
     <string name="forum_add">Add</string>
     <string name="forum_write">Write</string>
     <string name="forum_preview">Preview</string>
-
     <!-- Common -->
     <string name="back">Back</string>
     <string name="search">Search</string>
@@ -242,14 +231,12 @@
     <string name="error_oops">Oops!</string>
     <string name="feature_coming_soon">Soon</string>
     <string name="not_available">N/A</string>
-
     <!-- Media Types -->
     <string name="media_type_anime">Anime</string>
     <string name="media_type_manga">Manga</string>
     <string name="media_type_tv">TV</string>
     <string name="media_type_media">MEDIA</string>
     <string name="format_tv_series">TV Series</string>
-
     <!-- Status Labels -->
     <string name="status_watching">Watching</string>
     <string name="status_reading">Reading</string>
@@ -261,7 +248,6 @@
     <string name="status_rewatching">Rewatching</string>
     <string name="status_rereading">Rereading</string>
     <string name="list_indicator_custom">Custom list</string>
-
     <!-- Discover Screen -->
     <string name="search_anime_placeholder">Search Anime…</string>
     <string name="search_manga_placeholder">Search Manga…</string>
@@ -271,7 +257,6 @@
     <string name="section_newly_added">Newly Added</string>
     <string name="section_recent_reviews">Recent Reviews</string>
     <string name="section_tba">TBA</string>
-
     <!-- Discover sections. Each name states what its query actually returns: TRENDING_DESC is a
          rolling activity score with no window, POPULARITY_DESC is a list count, ID_DESC is the
          order things were added to AniList, and NOT_YET_RELEASED covers both the entries with a
@@ -283,7 +268,6 @@
     <string name="discover_section_not_yet_released">Not yet released</string>
     <string name="discover_section_newly_added">New to AniList</string>
     <string name="discover_section_reviews">Recent reviews</string>
-
     <string name="discover_spotlight_rank">#1</string>
     <string name="discover_add_to_list">Add to list</string>
     <string name="discover_airing_now">NOW</string>
@@ -291,7 +275,6 @@
     <string name="discover_tba_marker">TBA</string>
     <string name="discover_search_placeholder_anime">Search anime, characters, studios</string>
     <string name="discover_search_placeholder_manga">Search manga, characters, staff</string>
-
     <string name="discover_browse_seasonal">Seasonal</string>
     <string name="discover_browse_schedule">Schedule</string>
     <string name="discover_browse_studios">Studios</string>
@@ -300,14 +283,12 @@
     <string name="discover_browse_manhwa">Manhwa</string>
     <string name="discover_browse_manhua">Manhua</string>
     <string name="discover_browse_light_novels">Light novels</string>
-
     <string name="discover_reorder_title">Reorder sections</string>
     <string name="discover_reorder_reset">Reset</string>
     <string name="discover_reorder_caption">Drag to reorder. Hide a section with the eye. Anime and Manga keep their own order.</string>
     <string name="discover_section_show">Show section</string>
     <string name="discover_section_hide">Hide section</string>
     <string name="discover_refresh">Refresh</string>
-
     <!-- Discover empty states. Each rail owns its request, so a single failure is a section-level
          message and only a total failure takes the screen. -->
     <string name="discover_empty_offline_title">Nothing loaded</string>
@@ -326,7 +307,6 @@
     <string name="reviews_filter_all">All</string>
     <string name="error_failed_to_load">Failed to load content</string>
     <string name="search_no_results">No results found.</string>
-
     <!-- Library Screen -->
     <string name="library_title">Library</string>
     <string name="search_library_placeholder">Search Library…</string>
@@ -355,14 +335,12 @@
     <string name="airing_episode_in">Ep %1$d in %2$s</string>
     <string name="progress_format">%1$d / %2$s</string>
     <string name="progress_unknown">?</string>
-
     <!-- Library Empty States -->
     <string name="empty_watching">You\'re not watching anything right now.</string>
     <string name="empty_reading">You\'re not reading anything right now.</string>
     <string name="empty_planning">Your plan list is empty.</string>
     <string name="empty_completed">No completed entries yet.</string>
     <string name="empty_default">Nothing to show here.</string>
-
     <!-- Details Screen -->
     <string name="section_cast">Cast</string>
     <string name="section_staff">Staff</string>
@@ -437,7 +415,6 @@
     <string name="episodes_suffix">Eps</string>
     <string name="chapters_suffix">Chs</string>
     <string name="minutes_suffix">mins</string>
-
     <!-- Media details: expandable "array" info pills (Titles / Synonyms / Producers) and their sheets -->
     <string name="details_label_titles">Titles</string>
     <string name="details_label_romaji">Romaji</string>
@@ -445,7 +422,6 @@
     <string name="details_label_native">Native</string>
     <string name="details_label_synonyms">Synonyms</string>
     <string name="details_label_producers">Producers</string>
-
     <!-- Profile Screen -->
     <string name="profile_id">ID: %1$d</string>
     <string name="stat_time_watched">Time Watched</string>
@@ -457,7 +433,7 @@
     <string name="section_settings">Settings</string>
     <string name="section_look_and_feel">Look and Feel</string>
     <string name="section_account">Account</string>
-<string name="setting_theme">Theme</string>
+    <string name="setting_theme">Theme</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_system">System</string>
@@ -466,7 +442,6 @@
     <string name="theme_system_desc">Follow the device setting</string>
     <string name="setting_amoled">AMOLED dark theme</string>
     <string name="setting_amoled_desc">Use pure black backgrounds in dark mode to save power on OLED screens</string>
-
     <!-- Theme Palette Selection -->
     <string name="color_and_style">Color &amp; Style</string>
     <string name="palette_style">Palette Style</string>
@@ -572,12 +547,10 @@
     <string name="notification_channel_thread_comment_like">Comment Likes</string>
     <string name="notification_channel_thread_comment_like_desc">When someone likes your comment</string>
     <string name="notification_permission_revoked">Notification permission was revoked. Tap to open settings.</string>
-
     <!-- Settings Screens -->
     <string name="navigate_back">Go back</string>
     <string name="settings_look_and_feel">Look and feel</string>
     <string name="settings_look_and_feel_desc">Theme, display size, colors, bottom bar, avatars, app icon</string>
-
     <!-- App lock (biometric / device credential) -->
     <string name="settings_app_lock">App lock</string>
     <string name="settings_app_lock_desc">Require your fingerprint, face, or screen lock to open AniSync</string>
@@ -585,7 +558,7 @@
     <string name="app_lock_subtitle">Verify it\'s you to continue</string>
     <string name="app_lock_message">AniSync is locked</string>
     <string name="app_lock_unlock">Unlock</string>
-    <string name="app_lock_unavailable">Set up a screen lock (PIN, pattern, password, or biometrics) in your device settings first</string>
+    <string name="app_lock_unavailable">Set up a screen lock (PIN, pattern, password or biometrics) in your device settings first</string>
     <string name="settings_anilist_account">AniList Settings</string>
     <string name="settings_anilist_account_desc">Accounts, adult content, languages, score format</string>
     <string name="settings_notifications">Notifications</string>
@@ -696,12 +669,10 @@
     <string name="no_settings_found">No settings found</string>
     <string name="settings_oss_description">AniSync is built with the following open source libraries:</string>
     <string name="settings_oss_footer">All libraries are used in accordance with their respective licenses.</string>
-
     <!-- Logout Dialog -->
     <string name="logout_dialog_title">Log Out</string>
     <string name="logout_dialog_message">Are you sure you want to log out?</string>
     <string name="logout_dialog_confirm">Log Out</string>
-
     <!-- Settings Accessibility -->
     <string name="a11y_settings_search">Search settings</string>
     <string name="a11y_settings_clear_search">Clear search</string>
@@ -714,10 +685,8 @@
     <string name="a11y_settings_selected">Selected</string>
     <string name="a11y_back_button">Go back</string>
     <string name="a11y_app_icon">App icon</string>
-
     <!-- Theme Mode Dialog -->
     <string name="theme_mode_dialog_title">Theme</string>
-
     <!-- Acknowledgments Screen -->
     <string name="settings_acknowledgments_description">AniSync wouldn\'t be possible without the amazing open source community and the following contributors:</string>
     <string name="acknowledgments_section_data">Data Providers</string>
@@ -729,7 +698,6 @@
     <string name="acknowledgments_users">Our Users</string>
     <string name="acknowledgments_users_desc">Thank you for using AniSync and providing valuable feedback</string>
     <string name="acknowledgments_footer">Made with love for anime fans everywhere.</string>
-
     <!-- Developer Debug (debug builds only) -->
     <string name="section_developer">Developer</string>
     <string name="debug_notifications">Notification Debug</string>
@@ -813,7 +781,6 @@
     </plurals>
     <string name="cd_studio_mark">Covers from %1$s</string>
     <string name="clip_label_external_link">External link (%1$s)</string>
-
     <string name="control_log_out">Log Out</string>
     <string name="content_description_avatar">Avatar</string>
     <string name="profile_level">Level %1$d</string>
@@ -841,7 +808,7 @@
     <string name="a11y_notification_unread">Unread</string>
     <string name="profile_edit">Edit Profile</string>
     <string name="profile_unknown_error">Something went wrong while loading your profile.</string>
-    <string name="profile_user_load_error">We could not load this user profile right now. The account may be private, unavailable, or temporarily rate-limited.</string>
+    <string name="profile_user_load_error">We could not load this user profile right now. The account may be private, unavailable or temporarily rate-limited.</string>
     <string name="profile_rate_limited_error">AniList is limiting requests right now. Wait a moment, then try again.</string>
     <string name="profile_tab_overview">Overview</string>
     <string name="profile_tab_activity">Activity</string>
@@ -920,11 +887,9 @@
     <string name="profile_placeholder_reviews">Reviews content will appear here.</string>
     <string name="profile_placeholder_stats">Detailed stats content will appear here.</string>
     <string name="profile_manga_stats_coming_soon">More manga statistics coming soon</string>
-
     <!-- Edit Profile Dialog -->
     <string name="edit_profile_title">Edit Profile</string>
     <string name="edit_profile_about_label">About</string>
-
     <string name="profile_cast_characters">Characters</string>
     <string name="profile_cast_staff">Staff</string>
     <string name="stat_days_watched">Days Watched</string>
@@ -940,18 +905,14 @@
     <string name="status_dropped_count">Dropped %1$d</string>
     <string name="content_description_profile_avatar">Profile avatar</string>
     <string name="content_description_media_cover">Cover for %1$s</string>
-
-
     <!-- Notification Dialog -->
     <string name="dialog_enable_notifications_title">Enable Notifications</string>
     <string name="dialog_enable_notifications_message">Please enable notifications in system settings.</string>
-
     <!-- External Links -->
     <string name="section_external_links">External &amp; Streaming Links</string>
     <string name="subsection_streaming">Watch On</string>
     <string name="subsection_reading">Read On</string>
     <string name="subsection_external">External Links</string>
-
     <!-- Video playback errors -->
     <string name="player_error_network">No connection. Check your network and try again.</string>
     <string name="player_error_server">The video host is having trouble right now. Try again in a moment.</string>
@@ -959,7 +920,6 @@
     <string name="player_error_missing">This video is no longer on the host.</string>
     <string name="player_error_format">This video format is not supported.</string>
     <string name="player_error_generic">Unable to play this video.</string>
-
     <!-- Openings &amp; Endings (AnimeThemes) -->
     <string name="section_themes">Openings &amp; Endings</string>
     <plurals name="themes_openings_count">
@@ -1022,7 +982,6 @@
     <string name="themes_action_share">Share</string>
     <string name="themes_share_subject">%1$s by %2$s</string>
     <string name="cd_theme_play">Play %1$s</string>
-
     <!-- Edit Library Entry -->
     <string name="edit_entry">Edit Entry</string>
     <string name="no_score">No Score</string>
@@ -1081,7 +1040,6 @@
     <string name="cd_decrease_progress">Decrease</string>
     <string name="cd_increase_progress">Increase</string>
     <string name="cd_clear_date">Clear date</string>
-
     <!-- Login Screen -->
     <string name="login_welcome_to">Welcome to</string>
     <string name="login_tagline_short">Your anime library, synced seamlessly.</string>
@@ -1095,7 +1053,6 @@
     <string name="login_continue_with_anilist">Continue with AniList</string>
     <string name="login_terms">By continuing, you agree to our Terms of Service.</string>
     <string name="cd_login">Login</string>
-
     <!-- Search Filters -->
     <string name="filter">Filter</string>
     <string name="filter_clear_all">Clear All</string>
@@ -1107,20 +1064,17 @@
     <string name="year_picker_hint_empty">Tap a year. Tap a second to make a range.</string>
     <string name="year_picker_hint_single">Tap another year for a range</string>
     <string name="year_picker_hint_range">Tap any year to start over</string>
-
     <!-- Seasons -->
     <string name="season_winter">Winter</string>
     <string name="season_spring">Spring</string>
     <string name="season_summer">Summer</string>
     <string name="season_fall">Fall</string>
-
     <!-- Media Status (for search filter) -->
     <string name="media_status_airing">Airing</string>
     <string name="media_status_finished">Finished</string>
     <string name="media_status_not_yet_released">Not Yet Released</string>
     <string name="media_status_cancelled">Cancelled</string>
     <string name="media_status_hiatus">Hiatus</string>
-
     <!-- Media Formats -->
     <string name="format_tv">TV</string>
     <string name="format_tv_short">TV Short</string>
@@ -1132,7 +1086,6 @@
     <string name="format_novel">Novel</string>
     <string name="format_one_shot">One Shot</string>
     <string name="separator_bullet" translatable="false">•</string>
-
     <!-- Widget Descriptions -->
     <string name="widget_weekly_calendar_description">View your 7-day anime schedule at a glance</string>
     <string name="widget_airing_today_description">Shows anime episodes airing today</string>
@@ -1140,14 +1093,12 @@
     <string name="widget_quick_update_description">Update episode progress quickly</string>
     <string name="widget_trending_description">See what\'s trending in anime</string>
     <string name="widget_watch_progress_description">See how close your series are to finishing</string>
-
     <!-- Widget titles, also the labels shown in the widget picker -->
     <string name="widget_up_next_title">Up Next</string>
     <string name="widget_airing_today_title">Airing Today</string>
     <string name="widget_calendar_title">Weekly Schedule</string>
     <string name="widget_trending_title">Trending Now</string>
     <string name="widget_watch_progress_title">Watch Progress</string>
-
     <!-- Shared widget labels -->
     <string name="widget_filter_all">All</string>
     <string name="widget_filter_mine">My List</string>
@@ -1157,7 +1108,6 @@
     <string name="widget_episode_badge">EPISODE %1$d</string>
     <string name="widget_error_title">Can\'t show this right now</string>
     <string name="widget_error_action">Tap to retry</string>
-
     <!-- Widget countdowns -->
     <string name="widget_time_airing_now">Airing now</string>
     <string name="widget_time_in_days">In %1$dd %2$dh</string>
@@ -1166,29 +1116,24 @@
     <string name="widget_time_short_days">%1$dd</string>
     <string name="widget_time_short_hours">%1$dh</string>
     <string name="widget_time_short_minutes">%1$dm</string>
-
     <!-- Up Next widget -->
     <string name="widget_up_next_empty_title">You\'re all caught up</string>
     <string name="widget_up_next_empty_body">Nothing from your list airing soon</string>
-
     <!-- Airing Today widget -->
     <string name="widget_airing_at">Airing at %1$s</string>
     <string name="widget_airing_today_empty_all">Nothing airing today</string>
     <string name="widget_airing_today_empty_all_hint">Check back tomorrow</string>
     <string name="widget_airing_today_empty_mine">Nothing from your list today</string>
     <string name="widget_airing_today_empty_mine_hint">Switch to All to see everything airing</string>
-
     <!-- Weekly Calendar widget -->
     <string name="widget_calendar_empty_all">No episodes scheduled</string>
     <string name="widget_calendar_empty_mine">Nothing from your list airing</string>
     <string name="widget_calendar_empty_hint">Try selecting another day</string>
-
     <!-- Trending widget -->
     <string name="widget_trending_rank" translatable="false">#%1$d</string>
     <string name="widget_trending_score">%1$d%% score</string>
     <string name="widget_trending_empty_title">No trending data yet</string>
     <string name="widget_trending_empty_body">Open AniSync to load it</string>
-
     <!-- Watch Progress widget -->
     <string name="widget_type_anime">Anime</string>
     <string name="widget_type_manga">Manga</string>
@@ -1208,7 +1153,6 @@
     <string name="widget_wp_empty_title">Nothing in progress</string>
     <string name="widget_wp_empty_body">Series you are watching appear here, closest to finishing first.</string>
     <string name="widget_wp_empty_body_manga">Series you are reading appear here, closest to finishing first.</string>
-
     <!-- Placeholder content for the widget picker previews, never shown in a live widget. -->
     <string name="widget_preview_title_1" translatable="false">Vinland Saga</string>
     <string name="widget_preview_title_2" translatable="false">Frieren</string>
@@ -1229,7 +1173,6 @@
     <string name="widget_preview_progress_2" translatable="false">19 / 24</string>
     <string name="widget_preview_day_letter" translatable="false">M</string>
     <string name="widget_preview_day_number" translatable="false">8</string>
-
     <!-- Widget content descriptions -->
     <string name="a11y_widget_filter_all">Show everything airing</string>
     <string name="a11y_widget_filter_mine">Show only your list</string>
@@ -1245,7 +1188,6 @@
     <string name="a11y_wp_card_manga">%1$s, %2$d of %3$d chapters, %4$d left</string>
     <string name="a11y_wp_card_unknown">%1$s, episode %2$d, total unknown</string>
     <string name="a11y_wp_card_unknown_manga">%1$s, %2$d chapters read, total unknown</string>
-
     <!-- Widget Configuration -->
     <string name="widget_config_title">Configure Widget</string>
     <string name="widget_config_subtitle">Customize how your Up Next widget looks and behaves</string>
@@ -1261,7 +1203,6 @@
     <string name="widget_config_include_planning_desc">Show entries from your Planning list</string>
     <string name="widget_config_add_widget">Add Widget</string>
     <string name="widget_config_items_visible">Items visible on widget</string>
-
     <!-- Statistics Screen -->
     <string name="statistics_title">Statistics</string>
     <string name="statistics_total_anime">Total Anime</string>
@@ -1276,7 +1217,6 @@
     <string name="statistics_by_year">By Release Year</string>
     <string name="statistics_anime_label">anime</string>
     <string name="statistics_view">View Statistics</string>
-
     <string name="statistics_anime">Anime</string>
     <string name="statistics_manga">Manga</string>
     <string name="statistics_total_manga">Total Manga</string>
@@ -1285,7 +1225,6 @@
     <string name="statistics_no_manga_stats">No manga statistics available</string>
     <string name="statistics_entries">%d entries</string>
     <string name="statistics_no_data">No statistics data available</string>
-
     <!-- Activity heatmap -->
     <string name="statistics_activity_history">Activity History</string>
     <string name="statistics_activity_summary">%1$d activities across %2$d days</string>
@@ -1297,7 +1236,6 @@
         <item quantity="one">%d activity</item>
         <item quantity="other">%d activities</item>
     </plurals>
-
     <!-- Activity history: week breakdown -->
     <string name="statistics_activity_period_month">Month</string>
     <string name="statistics_activity_period_week">Week</string>
@@ -1332,7 +1270,6 @@
     <string name="cd_activity_week_next">Next week</string>
     <string name="a11y_activity_day" translatable="false">%1$s: %2$s</string>
     <string name="a11y_activity_day_awaiting">%1$s: not counted yet</string>
-
     <!-- Accessibility: Statistics -->
     <string name="a11y_stat_card">%1$s: %2$s</string>
     <string name="a11y_score_bar">Score %1$d: %2$d entries</string>
@@ -1340,7 +1277,6 @@
     <string name="a11y_studio_stat">%1$s studio: %2$d anime, average score %3$.1f</string>
     <string name="a11y_format_stat">%1$s format: %2$d entries, average score %3$.1f</string>
     <string name="a11y_year_stat">Year %1$d: %2$d entries</string>
-
     <!-- ==================== ACCESSIBILITY ==================== -->
 
     <!-- Accessibility: Actions -->
@@ -1356,7 +1292,6 @@
     <string name="a11y_action_collapse_synopsis">Collapse synopsis</string>
     <string name="a11y_action_select_tab">Select %1$s tab</string>
     <string name="a11y_action_open_search_result">Open %1$s</string>
-
     <!-- Accessibility: Content Descriptions -->
     <string name="a11y_media_poster">Poster for %1$s</string>
     <string name="a11y_in_your_list">In your list: %1$s</string>
@@ -1366,7 +1301,6 @@
     <string name="a11y_banner_image">Banner image for %1$s</string>
     <string name="a11y_rating_score">Rating: %1$.1f out of 10</string>
     <string name="a11y_media_card">%1$s, %2$s, rated %3$.1f</string>
-
     <!-- Accessibility: State Descriptions -->
     <string name="a11y_state_progress">Progress: %1$d of %2$s</string>
     <string name="a11y_state_airing_soon">Next episode airs in %1$s</string>
@@ -1378,7 +1312,6 @@
     <string name="a11y_state_tab_not_selected">%1$s</string>
     <string name="a11y_state_expanded">Expanded</string>
     <string name="a11y_state_collapsed">Collapsed, double tap to expand</string>
-
     <!-- Accessibility: Headings -->
     <string name="a11y_heading_trending">Trending section</string>
     <string name="a11y_heading_popular">Popular section</string>
@@ -1386,18 +1319,15 @@
     <string name="a11y_heading_relations">Related media section</string>
     <string name="a11y_heading_synopsis">Synopsis section</string>
     <string name="a11y_heading_information">Information section</string>
-
     <!-- Accessibility: Live Region Announcements -->
     <string name="a11y_progress_updated">Progress updated to %1$d</string>
     <string name="a11y_error_occurred">Error: %1$s</string>
     <string name="action_play_trailer">Play trailer</string>
-
     <!-- App Links Prompt -->
     <string name="enable_app_links_title">Enable App Links</string>
     <string name="samsung_app_links_instructions">To open AniList links directly in AniSync, please enable supported web links in your Android Settings.\n\n1. Tap \'Open Settings\'\n2. Find and tap \'AniSync\' in the list\n3. Tap \'Add link\'\n4. Select \'anilist.co\' and save.</string>
     <string name="default_app_links_instructions">To open AniList links directly in AniSync, please enable supported web links for this app in your Android Settings.\n\n1. Tap \'Open Settings\'\n2. Tap \'Add link\'\n3. Select \'anilist.co\' and save.</string>
     <string name="open_settings">Open Settings</string>
-
     <!-- Message Composer -->
     <string name="message_composer_title">Message %1$s</string>
     <string name="message_composer_hint">Write a message…</string>
@@ -1405,7 +1335,6 @@
     <string name="message_composer_send">Send</string>
     <string name="message_composer_sent">Message sent</string>
     <string name="message_composer_char_count">%1$d / %2$d</string>
-
     <!-- Notification Channels -->
     <string name="notification_channel_activity_name">Social activity</string>
     <string name="notification_channel_activity_description">Messages, replies, mentions and likes</string>
@@ -1421,7 +1350,6 @@
     <string name="notification_activity_mentions">Activity mentions</string>
     <string name="notification_activity_likes">Activity likes</string>
     <string name="notification_activity_messages">Direct messages</string>
-
     <!-- Activity Detail -->
     <string name="activity_detail_title">Activity</string>
     <string name="activity_detail_reply">Reply</string>
@@ -1467,13 +1395,11 @@
     <string name="forum_media_searching">Searching…</string>
     <string name="forum_media_no_results">No results for "%1$s"</string>
     <string name="forum_remove_media_category">Remove media</string>
-
     <!-- Recommendations (media details) -->
     <string name="cd_add_recommendation">Recommend a similar media</string>
     <string name="recommend_media_title">Recommend similar</string>
     <string name="recommend_media_hint">Search to recommend…</string>
     <string name="recommend_added">Recommendation added</string>
-
     <!-- Reviews (media details) -->
     <string name="cd_write_review">Write a review</string>
     <string name="write_review_title">Write review</string>
@@ -1490,7 +1416,6 @@
     <string name="review_score_error">Score must be between %1$d and %2$d.</string>
     <string name="review_guidelines_notice">Please make sure to read the review guidelines before publishing.</string>
     <string name="review_publish">Publish</string>
-
     <!-- Media upload (settings + composer attach) -->
     <string name="settings_media_upload">Media upload</string>
     <string name="settings_media_upload_desc">Where attached photos, GIFs, and videos are hosted</string>
@@ -1520,7 +1445,6 @@
     <string name="media_upload_custom_json_path">Response JSON path (optional)</string>
     <string name="media_upload_custom_json_path_hint">e.g. data.url — empty if response is the URL</string>
     <string name="media_upload_custom_help">Leave the JSON path empty if the server returns the URL directly in the response body.</string>
-
     <!-- Media attach sheet (composer) -->
     <string name="media_attach">Attach media</string>
     <string name="media_attach_pick_image">Photo or GIF</string>
@@ -1551,7 +1475,6 @@
     <string name="media_attach_error_offline">No connection to %1$s. Check your network and try again.</string>
     <string name="media_attach_error_generic">Upload failed</string>
     <string name="media_attach_size_output">Inserts: %s</string>
-
     <!-- Search / Discover -->
     <string name="search_header_anime_manga">Anime &amp; Manga</string>
     <string name="search_header_characters">Characters</string>
@@ -1563,7 +1486,6 @@
     <string name="empty_no_items">No items found</string>
     <string name="filter_show_results">Show Results</string>
     <string name="all">All</string>
-
     <!-- Details Screens -->
     <string name="featured_media">Featured Media</string>
     <string name="filter_on_my_list">On My List</string>
@@ -1579,7 +1501,6 @@
     <string name="label_all_languages">All Languages</string>
     <string name="label_character">Character</string>
     <string name="also_known_as">Also known as: %s</string>
-
     <!-- Character / staff details -->
     <string name="person_tab_appearances">Appearances</string>
     <string name="person_tab_voice_actors">Voice actors</string>
@@ -1638,7 +1559,6 @@
     <string name="person_empty_credits_filtered">No production credits match these filters.</string>
     <string name="cd_person_names">Open all names and aliases</string>
     <string name="a11y_person_favourite">Favourite</string>
-
     <!-- Library / Lists -->
     <string name="custom_lists">Custom Lists</string>
     <string name="privacy">Privacy</string>
@@ -1650,20 +1570,17 @@
     <string name="manage_tabs">Manage Tabs</string>
     <string name="new_list_name">New List Name</string>
     <string name="create_new_list">Create New List</string>
-
     <!-- Profile / Activity / Forum -->
     <string name="pinned">Pinned</string>
     <string name="replied_to">Replied to: %s</string>
     <string name="thread_locked_desc">This thread is locked and cannot receive new replies.</string>
     <string name="dialog_delete_activity_title">Delete activity?</string>
     <string name="dialog_delete_activity_body">This action cannot be undone.</string>
-
     <!-- Settings / About -->
     <string name="cd_developer_avatar">Developer Avatar</string>
     <string name="sponsor_project">Sponsor the Project</string>
     <string name="support_anisync">Support %s</string>
     <string name="support_description">AniSync is a passion project built entirely in my free time. If you enjoy using the app, consider sponsoring to help keep development alive.</string>
-
     <!-- Donate screen -->
     <string name="settings_sponsors">Donate</string>
     <string name="settings_sponsors_desc">Buy me a coffee to support AniSync</string>
@@ -1682,7 +1599,6 @@
     <string name="sponsors_load_error">Couldn\'t load sponsors. Pull to retry.</string>
     <string name="sponsors_open_external">Open on GitHub</string>
     <string name="a11y_sponsor_avatar">Avatar of %1$s</string>
-
     <!-- Support card, floated once after an update -->
     <string name="support_card_title">Enjoying AniSync %1$s?</string>
     <string name="support_card_body">AniSync is free, ad-free and open source, built in my spare time. If this update earns its place, a coffee keeps the next one coming.</string>
@@ -1693,7 +1609,6 @@
     <string name="link_developer">Developer</string>
     <string name="test_code">Test %s</string>
     <string name="by_author">by %s</string>
-
     <!-- Empty States -->
     <string name="empty_list_title">Your %s list is empty</string>
     <string name="empty_list_anime_action">Start tracking anime by adding shows from the Discover tab</string>
@@ -1729,7 +1644,6 @@
     <string name="empty_comments_action">Be the first to share your thoughts</string>
     <string name="empty_forum_search_title">No threads found for "%s"</string>
     <string name="empty_forum_search_action">Try different keywords</string>
-
     <!-- Snackbar / Toast messages -->
     <string name="test_message_error_code">This is a test message for error code %s.</string>
     <string name="missing_recipient">Missing recipient</string>
@@ -1749,7 +1663,6 @@
     <string name="downloading_high_res_image">Downloading high-resolution image…</string>
     <string name="download_started">Download started</string>
     <string name="download_failed">Download failed</string>
-
     <!-- Content Descriptions -->
     <string name="cd_like">Like</string>
     <string name="cd_dislike">Dislike</string>
@@ -1802,7 +1715,6 @@
     <string name="statistics_taste_focused">Your taste is laser-focused</string>
     <string name="statistics_taste_balanced">Balanced taste</string>
     <string name="statistics_taste_eclectic">Wide, eclectic taste</string>
-
     <!-- Airing calendar -->
     <string name="calendar_title">Airing Calendar</string>
     <string name="calendar_open">Airing calendar</string>
@@ -1826,26 +1738,22 @@
     <string name="calendar_empty_title">Nothing airing</string>
     <string name="calendar_empty_desc">No episodes air on this day.</string>
     <string name="calendar_empty_following_desc">No shows from your list air on this day.</string>
-
     <!-- Two-pane list/detail resize handle -->
     <string name="pane_resize_handle">Resize panes</string>
     <string name="pane_resize_cycle">Cycle the list pane width</string>
     <string name="pane_resize_toggle">Collapse or expand the list pane</string>
     <string name="pane_close">Close</string>
-
     <!-- Two-pane empty/placeholder detail panes (shown on wide screens before a selection) -->
     <string name="pane_placeholder_thread">Select a thread to read it here</string>
     <string name="pane_placeholder_activity">Select a status to view it here</string>
     <string name="pane_placeholder_notification">Select a notification to open it here</string>
     <string name="pane_placeholder_settings">Select a setting to adjust it here</string>
     <string name="pane_placeholder_theme">Select a theme to play it here</string>
-
     <!-- Collapsible wide navigation rail (rail layouts) -->
     <string name="rail_expand">Expand navigation</string>
     <string name="rail_collapse">Collapse navigation</string>
     <string name="rail_expanded">Navigation expanded</string>
     <string name="rail_collapsed">Navigation collapsed</string>
-
     <!-- Share-as-image cards -->
     <string name="share_stats_card">Share stats</string>
     <string name="share_favourites_card">Share favourites</string>
@@ -1914,14 +1822,12 @@
     <string name="share_recap_completed">Completed</string>
     <string name="share_recap_top_studio">Most watched studio</string>
     <string name="share_recap_top_staff">Most read author</string>
-
     <!-- ONBOARDING (first-run flow) -->
     <string name="onboarding_welcome_headline">Your library,\nalways in sync.</string>
     <string name="onboarding_welcome_body">Track anime and manga, and never miss an airing episode.</string>
     <string name="onboarding_welcome_cta">Continue with AniList</string>
     <string name="onboarding_welcome_new_prompt">New to AniList?</string>
     <string name="onboarding_welcome_new_action">Create a free account</string>
-
     <string name="onboarding_signin_title">Sign in on AniList</string>
     <string name="onboarding_signin_domain" translatable="false">anilist.co</string>
     <string name="onboarding_signin_body">The browser opens on AniList, you approve AniSync there, and Android hands the app back an access token.</string>
@@ -1930,7 +1836,6 @@
     <string name="onboarding_signin_point_revoke">Revoke access any time from AniList</string>
     <string name="onboarding_signin_open">Open AniList</string>
     <string name="onboarding_signin_dismiss">Not now</string>
-
     <string name="onboarding_sync_signed_in_as">SIGNED IN AS</string>
     <string name="onboarding_sync_body">Your lists are coming over from AniList.\nThis happens once.</string>
     <string name="onboarding_sync_card_label">BRINGING YOUR ACCOUNT OVER</string>
@@ -1945,13 +1850,11 @@
     <string name="onboarding_sync_widgets_none">None yet</string>
     <string name="onboarding_sync_widgets_placed">%1$d placed</string>
     <string name="onboarding_sync_note">Everything after this refreshes quietly in the background.</string>
-
     <string name="onboarding_continue">Continue</string>
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_step_of">STEP %1$d OF %2$d</string>
     <string name="onboarding_state_on">On</string>
     <string name="onboarding_state_off">Off</string>
-
     <string name="onboarding_permissions_headline">Let it run in the background</string>
     <string name="onboarding_permissions_body">Alerts and airing times depend on work that happens while AniSync is closed.</string>
     <string name="onboarding_permissions_progress">%1$d of %2$d done</string>
@@ -1968,7 +1871,6 @@
     <string name="onboarding_perm_action_allow">Allow</string>
     <string name="onboarding_perm_action_turn_off">Turn off</string>
     <string name="onboarding_perm_action_open">Open</string>
-
     <string name="onboarding_personalise_headline">Make it yours</string>
     <string name="onboarding_personalise_body">Four small choices. You can change every one of them in Settings later.</string>
     <string name="onboarding_personalise_accent">ACCENT</string>
@@ -1979,7 +1881,6 @@
     <string name="start_screen_last_visited">Last visited</string>
     <string name="onboarding_personalise_note">The accent carries through cards, buttons and widgets.</string>
     <string name="onboarding_preview_title" translatable="false">Frieren: Beyond Journey\'s End</string>
-
     <string name="onboarding_done_headline">You\'re all set</string>
     <string name="onboarding_done_body">Your lists are here and the alerts are armed.</string>
     <string name="onboarding_done_pill_alerts_on">Alerts on</string>
@@ -1989,16 +1890,13 @@
     <string name="onboarding_done_widget_title">Add the Up Next widget</string>
     <string name="onboarding_done_widget_body">One tap to the next episode.</string>
     <string name="onboarding_done_cta">Start watching</string>
-
     <string name="cd_anilist_logo" translatable="false">AniList</string>
-
     <string name="dev_tools_onboarding_section">Onboarding</string>
     <string name="dev_tools_replay_onboarding">Replay onboarding</string>
     <string name="dev_tools_replay_onboarding_subtitle">Reopens the first-run flow over the running app. Leaving it returns you to the Library tab.</string>
     <string name="dev_tools_support_section">Support card</string>
     <string name="dev_tools_show_support_card">Show support card</string>
     <string name="dev_tools_show_support_card_subtitle">Floats the tip card the app shows once after an update, without waiting for one.</string>
-
     <!-- Media details: tags -->
     <string name="tags_expand">Expand</string>
     <string name="tags_collapse">Collapse</string>
@@ -2018,19 +1916,16 @@
     <string name="a11y_tag_rank">%1$s, rank %2$d percent</string>
     <string name="cd_tags_show_spoilers">Show spoiler tags</string>
     <string name="cd_tags_hide_spoilers">Hide spoiler tags</string>
-
     <!-- Session expiry dialog -->
     <string name="ok">OK</string>
     <string name="session_expired_title">Session Expired</string>
     <string name="session_expired_message">Your session has expired. Please log in again to continue using AniSync.</string>
-
     <!-- Filter sheets -->
     <string name="reset">Reset</string>
     <string name="done">Done</string>
     <string name="search_tags_hint">Search tags</string>
     <string name="forum_filter_subscribed">Subscribed</string>
     <string name="forum_start_discussion">Start a discussion about this</string>
-
     <!-- Content descriptions -->
     <string name="cd_subscribe">Subscribe</string>
     <string name="cd_unsubscribe">Unsubscribe</string>
@@ -2055,7 +1950,6 @@
     <string name="a11y_editing_entry">Editing %1$s</string>
     <!-- %1$s is the current progress, %2$s the total, or "Unknown" when no total is published -->
     <string name="a11y_progress_of">Progress %1$s of %2$s</string>
-
     <!-- Notifications: who acted. %1$s and %2$s are user names, %2$d a count of further users -->
     <string name="notification_actor_someone">Someone</string>
     <string name="notification_actors_two">%1$s and %2$s</string>
@@ -2063,7 +1957,6 @@
         <item quantity="one">%1$s and %2$d other</item>
         <item quantity="other">%1$s and %2$d others</item>
     </plurals>
-
     <!-- Notifications: forum. %1$s, or %2$s in the counted forms, is the thread title -->
     <string name="notification_thread_reply">Replied to your comment in \"%1$s\"</string>
     <string name="notification_thread_reply_untitled">Replied to your comment</string>
@@ -2091,7 +1984,6 @@
     <string name="notification_liked_thread_untitled">Liked your thread</string>
     <string name="notification_liked_comment">Liked your comment in \"%1$s\"</string>
     <string name="notification_liked_comment_untitled">Liked your comment</string>
-
     <!-- Notifications: activity feed. %1$s is one of the notification_kind_* nouns below -->
     <string name="notification_activity_reply">Replied to your %1$s</string>
     <plurals name="notification_activity_replies">
@@ -2112,7 +2004,6 @@
         <item quantity="other">%1$d new messages</item>
     </plurals>
     <string name="notification_following">Started following you</string>
-
     <!-- Notifications: the kind of post a notification points at, substituted into the lines above -->
     <string name="notification_kind_status">status update</string>
     <string name="notification_kind_anime_list">anime list update</string>
@@ -2125,14 +2016,12 @@
     <string name="notification_kind_manga_list_indefinite">a manga list update</string>
     <string name="notification_kind_message_indefinite">a message</string>
     <string name="notification_kind_post_indefinite">a post</string>
-
     <!-- Notifications: tray summary for stacked social notifications -->
     <string name="notification_social_summary_title">New activity</string>
     <plurals name="notification_social_summary_count">
         <item quantity="one">%1$d notification</item>
         <item quantity="other">%1$d notifications</item>
     </plurals>
-
     <!-- Notifications: airing episodes -->
     <string name="notification_episode_title_fallback">New episode</string>
     <string name="notification_episode_aired">Episode %1$d has aired</string>
@@ -2156,13 +2045,11 @@
     <!-- One line of the stacked airing summary: %1$s is the title, %2$d the episode number -->
     <string name="notification_episode_summary_line">%1$s — Episode %2$d</string>
     <string name="notification_media_title_fallback">Anime</string>
-
     <!-- Toasts fired from the "Add to Watching" notification action -->
     <string name="toast_added_to_watching">Added \"%1$s\" to Watching</string>
     <!-- %1$s is the error reported by AniList -->
     <string name="toast_update_failed_reason">Failed to update: %1$s</string>
     <string name="toast_update_failed">Failed to update list</string>
-
     <!-- Relative timestamps, shown on cards and in the inbox -->
     <string name="time_ago_just_now">just now</string>
     <string name="time_ago_minutes">%1$dm ago</string>
@@ -2171,21 +2058,17 @@
     <string name="time_ago_weeks">%1$dw ago</string>
     <string name="time_ago_months">%1$dmo ago</string>
     <string name="time_ago_years">%1$dy ago</string>
-
     <!-- Last reply line on a thread or activity card: %1$s is the user, %2$s a relative time -->
     <string name="forum_last_by">Last by %1$s • %2$s</string>
-
     <!-- Expandable cards -->
     <string name="show_more">Show more</string>
     <string name="show_less">Show less</string>
-
     <!-- Notifications inbox: who acted, when several people did the same thing -->
     <string name="notifications_actors_list">%1$s, %2$s and %3$s</string>
     <plurals name="notifications_actors_tail">
         <item quantity="one">%1$d other</item>
         <item quantity="other">%1$d others</item>
     </plurals>
-
     <!-- Notifications inbox headlines. %1$s is who acted; %2$s, where present, is one of the
          notification_kind_* nouns -->
     <string name="notifications_item_liked_activity">%1$s liked your %2$s</string>
@@ -2211,11 +2094,9 @@
     <string name="notifications_item_media_merged_target">another entry</string>
     <string name="notifications_item_media_deleted">%1$s was removed from the site</string>
     <string name="notifications_item_unknown">New notification</string>
-
     <!-- Top alert toast -->
     <string name="alert_rate_limit_notice">Slowing down to stay within AniList\'s rate limit…</string>
     <string name="alert_retrying_in">Retrying in %1$ds</string>
-
     <!-- AniList API errors -->
     <string name="api_error_rate_limited">Too many requests. Please wait %1$d seconds.</string>
     <string name="api_error_deferred">Waiting for the request budget to recover.</string>
@@ -2244,7 +2125,6 @@
         <item quantity="one">%1$d more field</item>
         <item quantity="other">%1$d more fields</item>
     </plurals>
-
     <!-- Developer tools: request budget -->
     <string name="debug_rate_limit_section">Request Budget</string>
     <string name="debug_rate_limit_remaining">Remaining</string>
@@ -2259,10 +2139,8 @@
     <string name="debug_rate_limit_429s">Rate limited</string>
     <string name="debug_rate_limit_pin">Pin the limit to force the gate to refuse</string>
     <string name="debug_rate_limit_pin_off">Real</string>
-
     <!-- AniList link card -->
     <string name="link_card_view_activity">View activity</string>
-
     <!-- Library redesign -->
     <string name="select_all">Select all</string>
     <string name="media_status_releasing">Releasing</string>
