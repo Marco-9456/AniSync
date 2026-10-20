@@ -67,6 +67,7 @@ import com.anisync.android.presentation.share.ReviewShareCard
 import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.adaptiveReadingWidth
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.util.ShareUtils
 
@@ -171,7 +172,9 @@ fun ReviewDetailScreen(
                     ) { richText ->
                         LazyColumn(
                             state = listState,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .adaptiveReadingWidth(),
                             contentPadding = PaddingValues(
                                 top = topContentPadding,
                                 bottom = bottomInset
