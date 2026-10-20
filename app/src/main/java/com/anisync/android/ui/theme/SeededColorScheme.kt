@@ -37,8 +37,8 @@ fun seededColorScheme(
     amoled: Boolean,
     paletteStyle: PaletteStyle,
 ): ColorScheme {
+    cachedSeededColorScheme(seed, darkTheme, amoled, paletteStyle)?.let { return it }
     val key = SchemeKey(seed, darkTheme, amoled && darkTheme, paletteStyle)
-    synchronized(cachedSchemes) { cachedSchemes[key] }?.let { return it }
     // isAmoled stays off here for the reason AppTheme leaves it off.
     val base = dynamicColorScheme(
         seedColor = seed,
@@ -50,6 +50,17 @@ fun seededColorScheme(
     val scheme = if (key.amoled) base.toAmoled() else base
     synchronized(cachedSchemes) { cachedSchemes[key] = scheme }
     return scheme
+}
+
+/** The scheme [seededColorScheme] already built for these inputs, or null if it would build one. */
+fun cachedSeededColorScheme(
+    seed: Color,
+    darkTheme: Boolean,
+    amoled: Boolean,
+    paletteStyle: PaletteStyle,
+): ColorScheme? {
+    val key = SchemeKey(seed, darkTheme, amoled && darkTheme, paletteStyle)
+    return synchronized(cachedSchemes) { cachedSchemes[key] }
 }
 
 @Composable

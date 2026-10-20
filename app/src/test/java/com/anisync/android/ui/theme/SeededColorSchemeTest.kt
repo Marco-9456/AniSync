@@ -6,6 +6,7 @@ import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.material3.dynamicColorScheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
 
@@ -35,6 +36,14 @@ class SeededColorSchemeTest {
         val first = seededColorScheme(seed, darkTheme = true, amoled = false, PaletteStyle.Vibrant)
         val second = seededColorScheme(seed, darkTheme = true, amoled = false, PaletteStyle.Vibrant)
         assertSame(first, second)
+    }
+
+    @Test
+    fun `the cache only answers for schemes already built`() {
+        val unseen = Color(0xFF2E7D5B)
+        assertNull(cachedSeededColorScheme(unseen, darkTheme = false, amoled = false, PaletteStyle.Expressive))
+        val built = seededColorScheme(unseen, darkTheme = false, amoled = false, PaletteStyle.Expressive)
+        assertSame(built, cachedSeededColorScheme(unseen, darkTheme = false, amoled = false, PaletteStyle.Expressive))
     }
 
     @Test
