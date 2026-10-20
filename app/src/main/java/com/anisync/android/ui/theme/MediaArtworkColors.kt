@@ -5,8 +5,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.materialkolor.PaletteStyle
-import com.materialkolor.dynamiccolor.ColorSpec
-import com.materialkolor.material3.rememberDynamicColorScheme
 
 /**
  * The lowest saturation a cover color may have and still be worth a palette.
@@ -36,8 +34,8 @@ fun mediaArtworkSeedColor(coverColor: String?): Color? {
 }
 
 /**
- * A MaterialKolor scheme grown from [seed] in the viewer's own polarity and [paletteStyle], with
- * our AMOLED container shift when they run pure black. Only the hue changes.
+ * The artwork scheme for [seed] in the viewer's own polarity, [paletteStyle] and AMOLED choice.
+ * Only the hue changes.
  *
  * A null [seed] hands back the current scheme untouched so a caller can wrap unconditionally. On a
  * page whose artwork color arrives with its data, branching around the content instead would drop
@@ -51,13 +49,5 @@ fun mediaArtworkColorScheme(
     paletteStyle: PaletteStyle,
 ): ColorScheme {
     if (seed == null) return MaterialTheme.colorScheme
-    // isAmoled stays off here for the reason AppTheme leaves it off.
-    val base = rememberDynamicColorScheme(
-        seedColor = seed,
-        isDark = darkTheme,
-        isAmoled = false,
-        style = paletteStyle,
-        specVersion = ColorSpec.SpecVersion.SPEC_2026
-    )
-    return if (amoled && darkTheme) base.toAmoled() else base
+    return rememberSeededColorScheme(seed, darkTheme, amoled, paletteStyle)
 }
