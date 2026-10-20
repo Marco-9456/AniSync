@@ -2,10 +2,14 @@ package com.anisync.android.presentation.components
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.ui.theme.AppThemeSpec
+import com.anisync.android.ui.theme.LocalAppThemeSpec
+import com.anisync.android.ui.theme.aniListProfileSeedColor
 import com.anisync.android.ui.theme.mediaArtworkSeedColor
 import com.anisync.android.ui.theme.rememberSeededColorScheme
 import com.anisync.android.ui.theme.resolveDarkTheme
@@ -24,6 +28,31 @@ fun MediaArtworkThemeOverride(coverColor: String?, content: @Composable () -> Un
         seed = if (enabled) mediaArtworkSeedColor(coverColor) else null,
         content = content,
     )
+}
+
+/**
+ * Wraps a page that belongs to another user in a palette seeded from their AniList profile color,
+ * when the "Use profile colors" appearance preference is on. A null [profileColor], the default
+ * color and the toggle being off all fall through to the app theme, so the viewer's own pages pass
+ * null.
+ */
+@Composable
+fun ProfileColorThemeOverride(profileColor: String?, content: @Composable () -> Unit) {
+    val appSettings = LocalAppSettings.current
+    val respect by appSettings.respectUserProfileColors.collectAsStateWithLifecycle()
+    val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
+    val seed = if (respect) aniListProfileSeedColor(profileColor) else null
+    // Share cards rebuild the page's palette in a forced polarity from this spec.
+    val spec = LocalAppThemeSpec.current
+    CompositionLocalProvider(
+        LocalAppThemeSpec provides if (seed == null) spec else AppThemeSpec(
+            dynamicColor = false,
+            seedColor = seed,
+            paletteStyle = paletteStyle,
+        )
+    ) {
+        SeededThemeOverride(seed = seed, content = content)
+    }
 }
 
 /**

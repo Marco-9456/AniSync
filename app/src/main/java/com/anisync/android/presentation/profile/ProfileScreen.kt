@@ -30,13 +30,10 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.ProfileColorThemeOverride
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.login.AniListAuth
 import com.anisync.android.presentation.profile.components.AccountSwitcherSheet
-import com.anisync.android.presentation.util.LocalAppSettings
-import com.anisync.android.ui.theme.AppTheme
-import com.anisync.android.ui.theme.aniListProfileSeedColor
-import com.anisync.android.ui.theme.resolveDarkTheme
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -84,8 +81,7 @@ fun ProfileScreen(
     }
 
     ProfileColorThemeOverride(
-        isOwnProfile = isOwnProfile,
-        profileColor = uiState.profile?.profileColor,
+        profileColor = uiState.profile?.profileColor.takeUnless { isOwnProfile },
     ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -196,37 +192,4 @@ fun ProfileScreen(
             onDismiss = { showAccountSwitcherSheet = false }
         )
     }
-}
-
-/**
- * Wraps a visited user's profile in a MaterialKolor theme seeded from their AniList profile color,
- * when the "Use profile colors" appearance preference is on. The viewer's own profile, profiles on
- * the default/unset color, and the toggle being off all fall through to the app's normal theme.
- * Only the seed hue changes — the viewer's palette style and light/dark choice are preserved.
- */
-@Composable
-private fun ProfileColorThemeOverride(
-    isOwnProfile: Boolean,
-    profileColor: String?,
-    content: @Composable () -> Unit,
-) {
-    val appSettings = LocalAppSettings.current
-    val respect by appSettings.respectUserProfileColors.collectAsStateWithLifecycle()
-    val seed = if (!isOwnProfile && respect) aniListProfileSeedColor(profileColor) else null
-    if (seed == null) {
-        content()
-        return
-    }
-    val themeMode by appSettings.themeMode.collectAsStateWithLifecycle()
-    val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
-    val amoledEnabled by appSettings.amoledEnabled.collectAsStateWithLifecycle()
-    val darkTheme = themeMode.resolveDarkTheme()
-    AppTheme(
-        darkTheme = darkTheme,
-        dynamicColor = false,
-        amoled = amoledEnabled,
-        seedColor = seed,
-        paletteStyle = paletteStyle,
-        content = content,
-    )
 }
