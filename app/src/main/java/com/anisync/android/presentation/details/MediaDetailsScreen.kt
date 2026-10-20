@@ -193,7 +193,7 @@ fun MediaDetailsScreen(
     onRecommendationsSeeAllClick: (Int, String) -> Unit = { _, _ -> },
     onThemesSeeAllClick: (mediaId: Int, mediaTitle: String, totalEpisodes: Int?, coverUrl: String?) -> Unit = { _, _, _, _ -> },
     onWriteReviewClick: (Int, String) -> Unit = { _, _ -> },
-    onReviewClick: (Int) -> Unit = {},
+    onReviewClick: (Int) -> Unit,
     onDiscussionClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
     onViewAllDiscussions: (mediaId: Int, mediaTitle: String) -> Unit = { _, _ -> },
     onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?) -> Unit = { _, _, _ -> },

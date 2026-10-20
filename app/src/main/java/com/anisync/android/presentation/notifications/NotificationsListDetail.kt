@@ -51,6 +51,7 @@ import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.MediaRecommendationsGrid
 import com.anisync.android.presentation.navigation.MediaRelationsGrid
 import com.anisync.android.presentation.navigation.MediaThemes
+import com.anisync.android.presentation.navigation.ReviewDetail
 import com.anisync.android.presentation.navigation.StaffDetails
 import com.anisync.android.presentation.navigation.StudioDetails
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
@@ -235,6 +236,9 @@ private fun NotificationDetailPane(
                         navController.navigate(MediaThemes(mId, t, episodes, cover))
                     },
                     onWriteReviewClick = { mId, t -> navController.navigate(WriteReview(mId, t)) },
+                    onReviewClick = {
+                        navController.navigate(ReviewDetail(it, sourceScreen = "media_details"))
+                    },
                     onDiscussionClick = { tId, tt -> navController.navigate(ForumThreadDetail(tId, tt)) },
                     onViewAllDiscussions = { mId, t -> navController.navigate(ForumMediaThreads(mId, t)) },
                     onStartDiscussion = { mId, t, cover ->
