@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Custom Colour** - A custom colour can be entered or pasted as a hex code, with a preview of its primary, container, tertiary and surface roles.
 - **CMF Colour Style** - A new colour style that keeps to one hue with deeper tinted surfaces.
 - **What's New Badges** - After an update, New and Moved badges point at the settings that were added or moved, with a dot on each screen on the way there, until each one has been opened or two weeks have passed.
+- **Polish & Traditional Chinese** - Both join the in-app language picker.
 
 ### Changed
 
@@ -40,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Media Details** - Returning to a title no longer flashes its loading skeleton, and reviews open from the media pane on tablets and other two-pane layouts.
 - **Reviews** - The review text keeps a readable width on wide screens.
 - **Links** - AniList studio links and the calendar link open in the app, AniList URLs that point at a deeper tab (a title's characters, a user's anime list) land on the page they belong to, and a link meant for another signed-in account survives the switch with a working back stack.
+- **In-App Updates** - The updater downloads the build made for the phone's processor instead of always the 64-bit ARM one, which 32-bit phones could not install. The installed version picks the file, so a 32-bit phone still needs 3.3.0 installed by hand, and every update after that works in the app.
 - **Notifications** - A tap opens AniSync directly even when a second build, such as a debug or preview build, is installed, instead of showing an app chooser.
 - **Widgets** - A widget whose covers pass the system's bitmap limit draws its rows without covers instead of failing to update.
 - **Video Player** - WebM clips that keep their index at the end, like the one in AniList's markdown guide, play again, and the error card stays hidden while the player retries on its own.

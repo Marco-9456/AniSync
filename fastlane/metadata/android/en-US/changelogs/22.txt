@@ -6,6 +6,7 @@ Added:
 - Performers, audio-only versions, variant names and insert songs on openings and endings.
 - Custom colours by hex code, and the CMF colour style.
 - New and Moved badges on settings after an update.
+- Polish and Traditional Chinese in the language picker.
 
 Changed:
 - Settings reorganised into General and a visual Look and feel screen.
@@ -22,5 +23,6 @@ Fixed:
 - Returning to a title no longer flashes the loading skeleton.
 - Reviews open from the media pane on tablets.
 - Studio links, the calendar link and AniList URLs with deeper tabs open in the app.
+- The in-app updater picks the build for your phone's processor, so 32-bit phones can update in the app after this release.
 - Widgets draw without covers instead of failing when the covers pass the system limit.
 - WebM clips with their index at the end play again.
