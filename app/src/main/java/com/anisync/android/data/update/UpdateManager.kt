@@ -2,6 +2,7 @@ package com.anisync.android.data.update
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.anisync.android.BuildConfig
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -115,17 +117,7 @@ class UpdateManager @Inject constructor(
 
                         if (versionCode > latestVersionCode) {
                             val assets = releaseJson["assets"]?.jsonArray ?: continue
-                            val downloadUrl = assets
-                                .mapNotNull { asset ->
-                                    val obj = asset.jsonObject
-                                    val name =
-                                        obj["name"]?.jsonPrimitive?.content
-                                            ?: return@mapNotNull null
-                                    if (name.endsWith(".apk")) {
-                                        obj["browser_download_url"]?.jsonPrimitive?.content
-                                    } else null
-                                }
-                                .firstOrNull()
+                            val downloadUrl = apkUrlFor(assets)
 
                             if (!downloadUrl.isNullOrEmpty()) {
                                 val authorObj = releaseJson["author"]?.jsonObject
@@ -367,16 +359,7 @@ class UpdateManager @Inject constructor(
                         val tagName =
                             releaseJson["tag_name"]?.jsonPrimitive?.content ?: continue
                         val assets = releaseJson["assets"]?.jsonArray ?: continue
-                        val downloadUrl = assets
-                            .mapNotNull { asset ->
-                                val obj = asset.jsonObject
-                                val name =
-                                    obj["name"]?.jsonPrimitive?.content ?: return@mapNotNull null
-                                if (name.endsWith(".apk")) {
-                                    obj["browser_download_url"]?.jsonPrimitive?.content
-                                } else null
-                            }
-                            .firstOrNull()
+                        val downloadUrl = apkUrlFor(assets)
 
                         if (!downloadUrl.isNullOrEmpty()) {
                             val authorObj = releaseJson["author"]?.jsonObject
@@ -412,6 +395,15 @@ class UpdateManager @Inject constructor(
         }
     }
 
+    private fun apkUrlFor(assets: JsonArray): String? {
+        val apks = assets.mapNotNull { asset ->
+            val obj = asset.jsonObject
+            val name = obj["name"]?.jsonPrimitive?.content ?: return@mapNotNull null
+            val url = obj["browser_download_url"]?.jsonPrimitive?.content ?: return@mapNotNull null
+            if (name.endsWith(".apk")) name to url else null
+        }
+        return pickApk(apks, Build.SUPPORTED_ABIS.asList())
+    }
 
     /**
      * Converts a semver-like version string to a comparable integer code.
@@ -433,3 +425,16 @@ class UpdateManager @Inject constructor(
         return code
     }
 }
+
+/**
+ * The download URL of the APK in [apks] (name to URL) built for the first of [supportedAbis] it
+ * has a split for. Releases list their assets by name, so the first APK is always the arm64 split,
+ * which a 32-bit phone refuses to install. The universal APK is only a fallback: its version code
+ * is a tenth of a split's, so a phone running a split would read it as a downgrade.
+ */
+internal fun pickApk(apks: List<Pair<String, String>>, supportedAbis: List<String>): String? =
+    supportedAbis.firstNotNullOfOrNull { abi ->
+        apks.firstOrNull { (name, _) -> name.endsWith("-$abi-release.apk") }?.second
+    }
+        ?: apks.firstOrNull { (name, _) -> name.endsWith("-universal-release.apk") }?.second
+        ?: apks.firstOrNull()?.second
