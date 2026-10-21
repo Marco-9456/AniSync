@@ -4,20 +4,14 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.anisync.android.domain.SearchFilters
 import com.anisync.android.domain.SearchType
 import com.anisync.android.domain.SortOption
+import com.anisync.android.presentation.components.filtersheet.FilterBarChip
 
 /**
  * Identifies which filter the user opened from the chip bar.
@@ -87,28 +81,6 @@ fun SearchFilterChipBar(
             )
         }
     }
-}
-
-@Composable
-private fun FilterBarChip(
-    label: String,
-    active: Boolean,
-    onClick: () -> Unit
-) {
-    FilterChip(
-        selected = active,
-        onClick = onClick,
-        label = { Text(label) },
-        trailingIcon = {
-            Icon(
-                Icons.Default.ArrowDropDown,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = if (active) MaterialTheme.colorScheme.onSecondaryContainer
-                else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    )
 }
 
 private fun SearchFilters.typeChipLabel(): String =
