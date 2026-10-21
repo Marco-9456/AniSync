@@ -18,9 +18,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 
 enum class TriState { OFF, INCLUDED, EXCLUDED }
 
@@ -64,11 +66,13 @@ fun IncludeExcludeChip(
             border = null
         }
     }
-    val stateLabel = when (state) {
-        TriState.OFF -> "off"
-        TriState.INCLUDED -> "included"
-        TriState.EXCLUDED -> "excluded"
-    }
+    val stateLabel = stringResource(
+        when (state) {
+            TriState.OFF -> R.string.a11y_filter_off
+            TriState.INCLUDED -> R.string.a11y_filter_included
+            TriState.EXCLUDED -> R.string.a11y_filter_excluded
+        }
+    )
     Surface(
         modifier = modifier
             .semantics { stateDescription = stateLabel }

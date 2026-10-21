@@ -14,22 +14,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.ADULT_GENRES
@@ -59,6 +54,8 @@ import com.anisync.android.presentation.components.filtersheet.FilterOptionGroup
 import com.anisync.android.presentation.components.filtersheet.FilterOptionRow
 import com.anisync.android.presentation.components.filtersheet.FilterSheetScaffold
 import com.anisync.android.presentation.components.filtersheet.IncludeExcludeChip
+import com.anisync.android.presentation.components.filtersheet.TagChoice
+import com.anisync.android.presentation.components.filtersheet.TagPickerSheet
 import com.anisync.android.presentation.components.filtersheet.TriState
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
@@ -285,10 +282,9 @@ private fun GenresFilterSheet(
 }
 
 // =============================================================================
-// TAGS — search field + per-category expandable group of FlowRow chips
+// TAGS — the shared picker: search field + per-category expandable groups
 // =============================================================================
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TagsFilterSheet(
     filters: SearchFilters,
@@ -297,111 +293,19 @@ private fun TagsFilterSheet(
     onFiltersChange: (SearchFilters) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var query by rememberSaveable { mutableStateOf("") }
-    var expandedCategory by rememberSaveable { mutableStateOf<String?>(null) }
-    val anyActive = filters.tagsIncluded.isNotEmpty() || filters.tagsExcluded.isNotEmpty()
-    val visibleTags = remember(tags, showAdult, query) {
-        val pool = if (showAdult) tags else tags.filterNot { it.isAdult }
-        if (query.isBlank()) pool
-        else pool.filter { it.name.contains(query, ignoreCase = true) }
+    val choices = remember(tags) {
+        tags.map { TagChoice(name = it.name, category = it.category, isAdult = it.isAdult) }
     }
-    val grouped = remember(visibleTags) {
-        visibleTags.groupBy { it.category ?: "Other" }.toSortedMap()
-    }
-
-    FilterSheetScaffold(
-        title = "Tags · ${filters.tagsIncluded.size}↑ ${filters.tagsExcluded.size}↓",
-        onDismiss = onDismiss,
-        onReset = {
-            onFiltersChange(filters.copy(tagsIncluded = emptySet(), tagsExcluded = emptySet()))
+    TagPickerSheet(
+        tags = choices,
+        included = filters.tagsIncluded,
+        excluded = filters.tagsExcluded,
+        showAdult = showAdult,
+        onSelectionChange = { included, excluded ->
+            onFiltersChange(filters.copy(tagsIncluded = included, tagsExcluded = excluded))
         },
-        resetEnabled = anyActive,
-        scrollableBody = false
-    ) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            placeholder = { Text(stringResource(R.string.search_tags_hint)) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp)
-        )
-
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(vertical = 8.dp)
-        ) {
-            grouped.forEach { (category, categoryTags) ->
-                val includedInCat = categoryTags.count { it.name in filters.tagsIncluded }
-                val excludedInCat = categoryTags.count { it.name in filters.tagsExcluded }
-                val total = categoryTags.size
-                val summary = when {
-                    includedInCat == 0 && excludedInCat == 0 ->
-                        "$total tag${if (total == 1) "" else "s"}"
-                    excludedInCat == 0 -> "$includedInCat included"
-                    includedInCat == 0 -> "$excludedInCat excluded"
-                    else -> "$includedInCat included · $excludedInCat excluded"
-                }
-                item(key = "group-$category") {
-                    FilterOptionGroup(
-                        label = category,
-                        summary = summary,
-                        expanded = expandedCategory == category,
-                        onToggle = {
-                            expandedCategory = if (expandedCategory == category) null else category
-                        }
-                    ) {
-                        FlowRow(
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            categoryTags.forEach { tag ->
-                                val state = when {
-                                    tag.name in filters.tagsIncluded -> TriState.INCLUDED
-                                    tag.name in filters.tagsExcluded -> TriState.EXCLUDED
-                                    else -> TriState.OFF
-                                }
-                                IncludeExcludeChip(
-                                    label = tag.name,
-                                    state = state,
-                                    onStateChange = { newState ->
-                                        val newIn = if (newState == TriState.INCLUDED) filters.tagsIncluded + tag.name
-                                        else filters.tagsIncluded - tag.name
-                                        val newEx = if (newState == TriState.EXCLUDED) filters.tagsExcluded + tag.name
-                                        else filters.tagsExcluded - tag.name
-                                        onFiltersChange(
-                                            filters.copy(tagsIncluded = newIn, tagsExcluded = newEx)
-                                        )
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            if (grouped.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (query.isBlank()) "No tags available"
-                            else "No tags match \"$query\"",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        }
-    }
+        onDismiss = onDismiss
+    )
 }
 
 // =============================================================================

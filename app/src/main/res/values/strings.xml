@@ -1924,6 +1924,20 @@
     <string name="reset">Reset</string>
     <string name="done">Done</string>
     <string name="search_tags_hint">Search tags</string>
+    <string name="tag_picker_title">Tags · %1$d↑ %2$d↓</string>
+    <string name="tag_picker_other">Other</string>
+    <plurals name="tag_picker_count">
+        <item quantity="one">%1$d tag</item>
+        <item quantity="other">%1$d tags</item>
+    </plurals>
+    <string name="tag_picker_included">%1$d included</string>
+    <string name="tag_picker_excluded">%1$d excluded</string>
+    <string name="tag_picker_included_excluded">%1$d included · %2$d excluded</string>
+    <string name="tag_picker_empty">No tags available</string>
+    <string name="tag_picker_no_match">No tags match \"%1$s\"</string>
+    <string name="a11y_filter_off">Off</string>
+    <string name="a11y_filter_included">Included</string>
+    <string name="a11y_filter_excluded">Excluded</string>
     <string name="forum_filter_subscribed">Subscribed</string>
     <string name="forum_start_discussion">Start a discussion about this</string>
     <!-- Content descriptions -->
