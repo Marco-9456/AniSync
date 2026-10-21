@@ -95,6 +95,7 @@ import com.anisync.android.domain.LibraryPriority
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.discover.components.DiscoverNoResultsState
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.library.components.BulkAddToListSheet
 import com.anisync.android.presentation.library.components.BulkPrioritySheet
@@ -106,7 +107,9 @@ import com.anisync.android.presentation.library.components.ScoreOnCompleteSheet
 import com.anisync.android.presentation.library.components.LibraryEmptyState
 import com.anisync.android.presentation.library.components.LibraryBulkActionBar
 import com.anisync.android.presentation.library.components.LibraryBulkMoreMenu
-import com.anisync.android.presentation.library.components.LibraryFilterSheet
+import com.anisync.android.presentation.library.components.LibraryFilterChipBar
+import com.anisync.android.presentation.library.components.LibraryFilterId
+import com.anisync.android.presentation.library.components.LibraryFilterSheetHost
 import com.anisync.android.presentation.library.components.LibraryOverflowMenu
 import com.anisync.android.presentation.library.components.LibraryPosterCard
 import com.anisync.android.presentation.library.components.LibraryQueueRow
@@ -114,6 +117,7 @@ import com.anisync.android.presentation.library.components.LibraryRail
 import com.anisync.android.presentation.library.components.LibrarySearchCategoryBar
 import com.anisync.android.presentation.library.components.LibrarySearchResultCard
 import com.anisync.android.presentation.library.components.LibrarySelectionTopBar
+import com.anisync.android.presentation.library.components.LibrarySortSheet
 import com.anisync.android.presentation.library.components.LibraryViewOptionsSheet
 import com.anisync.android.presentation.library.components.ListManagementSheet
 import com.anisync.android.presentation.library.components.SkeletonGrid
@@ -126,6 +130,7 @@ import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalGridColumnCount
 import com.anisync.android.presentation.util.LocalGridColumnsAuto
 import com.anisync.android.presentation.util.LocalMainNavBarInset
+import com.anisync.android.presentation.util.WindowModalSheetScope
 import com.anisync.android.presentation.util.posterGridColumns
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
@@ -194,7 +199,8 @@ fun LibraryScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    var showFilterSheet by rememberSaveable { mutableStateOf(false) }
+    var showSortSheet by rememberSaveable { mutableStateOf(false) }
+    var openedFilter by remember { mutableStateOf<LibraryFilterId?>(null) }
     var showOverflow by rememberSaveable { mutableStateOf(false) }
     var showViewOptions by rememberSaveable { mutableStateOf(false) }
     var showListManagement by remember { mutableStateOf(false) }
@@ -313,8 +319,7 @@ fun LibraryScreen(
             textFieldState = textFieldState,
             isSearchQueryEmpty = isSearchQueryEmpty,
             isGridView = isGridView,
-            isNonDefaultSort = sortOption != LibrarySort.AIRING_SOON || !isAscending ||
-                !uiState.filters.isEmpty,
+            isNonDefaultSort = sortOption != LibrarySort.AIRING_SOON || !isAscending,
             isAscending = isAscending,
             showListManagement = showListManagement,
             onSearch = { keyboardController?.hide() },
@@ -327,7 +332,7 @@ fun LibraryScreen(
             onToggleView = {
                 viewModel.onAction(LibraryAction.SetGridView(!isGridView))
             },
-            onSortAndFilter = { showFilterSheet = true },
+            onSort = { showSortSheet = true },
             onOverflow = { showOverflow = true },
             overflowMenu = {
                 LibraryOverflowMenu(
@@ -586,7 +591,6 @@ fun LibraryScreen(
                                             coroutineScope.launch { pagerState.animateScrollToPage(index) }
                                         }
                                     },
-                                    onClearFilters = { viewModel.onAction(LibraryAction.ClearFilters) },
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope
                                 )
@@ -642,6 +646,8 @@ fun LibraryScreen(
                 LibrarySearchOverlay(
                     uiState = uiState,
                     isSearchQueryEmpty = isSearchQueryEmpty,
+                    onFilterChipTap = { openedFilter = it },
+                    onClearFilters = { viewModel.onAction(LibraryAction.ClearFilters) },
                     onCategoryChange = { viewModel.onAction(LibraryAction.OnSearchCategoryChange(it)) },
                     onResultClick = onSearchResultClick
                 )
@@ -649,22 +655,35 @@ fun LibraryScreen(
         }
     }
 
-    LibraryFilterSheet(
-        visible = showFilterSheet,
+    // The search overlay is a popup over both panes on expanded widths, so its sheets scope to the
+    // window rather than anchoring to the list pane hidden behind it.
+    WindowModalSheetScope {
+        LibraryFilterSheetHost(
+            openedFilter = openedFilter,
+            sort = sortOption,
+            isAscending = isAscending,
+            filters = uiState.filters,
+            availableGenres = uiState.availableGenres,
+            availableTags = uiState.availableTags,
+            availableFormats = uiState.availableFormats,
+            availableAiringStatuses = uiState.availableAiringStatuses,
+            showAdultContent = uiState.showAdultContent,
+            onSortChange = { sort, ascending ->
+                viewModel.onAction(LibraryAction.OnSortOptionChange(sort, ascending))
+            },
+            onFiltersChange = { viewModel.onAction(LibraryAction.SetFilters(it)) },
+            onDismiss = { openedFilter = null }
+        )
+    }
+
+    LibrarySortSheet(
+        visible = showSortSheet,
         sort = sortOption,
         isAscending = isAscending,
-        filters = uiState.filters,
-        availableGenres = uiState.availableGenres,
-        availableTags = uiState.availableTags,
-        availableFormats = uiState.availableFormats,
-        availableAiringStatuses = uiState.availableAiringStatuses,
-        showAdultContent = uiState.showAdultContent,
-        resultCount = entriesForTab(uiState, currentTab).size,
         onSortChange = { sort, ascending ->
             viewModel.onAction(LibraryAction.OnSortOptionChange(sort, ascending))
         },
-        onFiltersChange = { viewModel.onAction(LibraryAction.SetFilters(it)) },
-        onDismiss = { showFilterSheet = false }
+        onDismiss = { showSortSheet = false }
     )
 
     BulkStatusSheet(
@@ -819,7 +838,6 @@ private fun LibraryTabContent(
     onEdit: (LibraryEntry) -> Unit,
     onBrowseDiscover: () -> Unit,
     onGoToTab: (String) -> Unit,
-    onClearFilters: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
@@ -832,15 +850,8 @@ private fun LibraryTabContent(
                     LibraryEmptyState(
                         tab = tab,
                         mediaType = mediaType,
-                        // Only report filtering when the list would otherwise have something in it.
-                        filterCount = if ((uiState.unfilteredTabCounts[tab.toId()] ?: 0) > 0) {
-                            uiState.filters.activeCount
-                        } else {
-                            0
-                        },
                         onBrowseDiscover = onBrowseDiscover,
-                        onGoToTab = onGoToTab,
-                        onClearFilters = onClearFilters
+                        onGoToTab = onGoToTab
                     )
                 }
             }
@@ -1029,6 +1040,33 @@ private fun LibraryPriority.titleRes(): Int = when (this) {
 private fun LibrarySearchOverlay(
     uiState: LibraryUiState,
     isSearchQueryEmpty: Boolean,
+    onFilterChipTap: (LibraryFilterId) -> Unit,
+    onClearFilters: () -> Unit,
+    onCategoryChange: (String) -> Unit,
+    onResultClick: (Int) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        LibraryFilterChipBar(
+            sort = uiState.sortOption,
+            isAscending = uiState.isAscending,
+            filters = uiState.filters,
+            onChipTap = onFilterChipTap
+        )
+        LibrarySearchResults(
+            uiState = uiState,
+            isSearchQueryEmpty = isSearchQueryEmpty,
+            onClearFilters = onClearFilters,
+            onCategoryChange = onCategoryChange,
+            onResultClick = onResultClick
+        )
+    }
+}
+
+@Composable
+private fun LibrarySearchResults(
+    uiState: LibraryUiState,
+    isSearchQueryEmpty: Boolean,
+    onClearFilters: () -> Unit,
     onCategoryChange: (String) -> Unit,
     onResultClick: (Int) -> Unit
 ) {
@@ -1044,16 +1082,13 @@ private fun LibrarySearchOverlay(
             Text(text = uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
         }
 
-        uiState.searchMatches.isEmpty() && !isSearchQueryEmpty ->
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.search_no_results),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+        uiState.searchMatches.isEmpty() && (!isSearchQueryEmpty || !uiState.filters.isEmpty) ->
+            DiscoverNoResultsState(
+                hasFilters = !uiState.filters.isEmpty,
+                onClearFilters = onClearFilters
+            )
 
-        // Blank query: keep the overlay empty until the user types (Discover parity).
+        // Nothing typed and nothing filtered: keep the overlay empty (Discover parity).
         uiState.searchMatches.isEmpty() -> Box(Modifier.fillMaxSize())
 
         else -> {
@@ -1131,7 +1166,7 @@ private fun LibrarySearchBarInputField(
     onBackClick: () -> Unit,
     onClearClick: () -> Unit,
     onToggleView: () -> Unit,
-    onSortAndFilter: () -> Unit,
+    onSort: () -> Unit,
     onOverflow: () -> Unit,
     overflowMenu: @Composable () -> Unit
 ) {
@@ -1178,7 +1213,7 @@ private fun LibrarySearchBarInputField(
                             contentDescription = stringResource(R.string.toggle_view)
                         )
                     }
-                    IconButton(onClick = onSortAndFilter) {
+                    IconButton(onClick = onSort) {
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier

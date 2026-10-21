@@ -14,7 +14,7 @@ import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
 
 /**
- * The filters the library can apply on top of a list.
+ * The filters library search can apply on top of the query.
  *
  * Every field here is answerable from data already cached on the device, which is the whole
  * constraint: a filter that needed a network round trip would be a different feature.
@@ -118,14 +118,7 @@ data class LibraryUiState(
     val tabOrder: List<String> = emptyList(),
     /** Raw entry count per tab id (incl. [LIBRARY_ALL_TAB_ID]); unaffected by [searchQuery]. */
     val tabCounts: Map<String, Int> = emptyMap(),
-    /**
-     * Per-tab counts before [filters] are applied.
-     *
-     * An empty tab has two possible causes once filtering exists, and only the difference between
-     * these two maps tells them apart.
-     */
-    val unfilteredTabCounts: Map<String, Int> = emptyMap(),
-    /** Flat list of all entries matching [searchQuery] (across every status list). */
+    /** Flat list of all entries matching [searchQuery] and [filters] (across every status list). */
     val searchMatches: List<LibraryEntry> = emptyList(),
     /** Query matches grouped by tab id (status ids, favorites, custom names); non-empty only. */
     val searchMatchesByCategory: Map<String, List<LibraryEntry>> = emptyMap(),
@@ -137,6 +130,7 @@ data class LibraryUiState(
     val scorePromptEntry: LibraryEntry? = null,
     /** Poster grid (true) or single-column rows. One choice for every list, not one per list. */
     val isGridView: Boolean = true,
+    /** Narrows library search only. The lists themselves are never filtered. */
     val filters: LibraryFilters = LibraryFilters.None,
     /** Every genre present in the loaded library, sorted, for the filter sheet. */
     val availableGenres: List<String> = emptyList(),

@@ -2172,10 +2172,10 @@
     <string name="library_filter_format">Format</string>
     <string name="library_filter_genre">Genre</string>
     <string name="library_filter_more">+ %1$d more</string>
-    <string name="library_filter_exclude_hint">Tap twice to exclude</string>
+    <string name="library_filter_exclude_hint">Tap to include, tap again to exclude</string>
     <string name="library_filter_tags">Tags</string>
-    <string name="library_filter_all_tags">All tags</string>
-    <string name="a11y_filter_exclude">Exclude</string>
+    <string name="library_filter_chip_sort">Sort · %1$s</string>
+    <string name="library_filter_chip_count">%1$s · %2$d</string>
     <string name="library_episode_short">EP %1$d</string>
     <string name="library_episodes_behind_short">%1$d behind</string>
     <string name="library_progress_out">%1$d / %2$d out</string>

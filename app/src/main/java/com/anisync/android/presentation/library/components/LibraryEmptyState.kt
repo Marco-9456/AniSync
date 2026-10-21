@@ -7,10 +7,8 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
@@ -40,22 +37,16 @@ import com.anisync.android.ui.theme.listIndicatorColor
  * Every list used to fall through to "Nothing to show here" unless it was Watching, Planning or
  * Completed — a sentence that names nothing and offers nothing. This says which list is empty, in
  * that list's own colour and shape, and gives one way out.
- *
- * The variant that matters most is [filterCount] > 0: with filtering in the library, an empty tab
- * now has two possible causes, and reporting the wrong one sends people looking for titles they
- * never lost.
  */
 @Composable
 fun LibraryEmptyState(
     tab: LibraryTab,
     mediaType: MediaType,
-    filterCount: Int,
     onBrowseDiscover: () -> Unit,
     onGoToTab: (String) -> Unit,
-    onClearFilters: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val spec = emptyStateSpec(tab, mediaType, filterCount, onBrowseDiscover, onGoToTab, onClearFilters)
+    val spec = emptyStateSpec(tab, mediaType, onBrowseDiscover, onGoToTab)
 
     EmptyState(
         icon = spec.icon,
@@ -68,7 +59,7 @@ fun LibraryEmptyState(
         emblemContainer = spec.colors.container,
         emblemContent = spec.colors.content,
         actionEmphasised = spec.actionEmphasised,
-        animationKey = tab to filterCount,
+        animationKey = tab,
         // The nav bar floats over the bottom of the list, so an evenly centred block sits
         // visually low. Reserving its inset puts the state in the middle of what you can see.
         modifier = modifier.padding(bottom = LocalMainNavBarInset.current)
@@ -91,35 +82,11 @@ private data class EmptyStateSpec(
 private fun emptyStateSpec(
     tab: LibraryTab,
     mediaType: MediaType,
-    filterCount: Int,
     onBrowseDiscover: () -> Unit,
-    onGoToTab: (String) -> Unit,
-    onClearFilters: () -> Unit
+    onGoToTab: (String) -> Unit
 ): EmptyStateSpec {
     val isManga = mediaType == MediaType.MANGA
     val browse = stringResource(R.string.library_empty_action_browse)
-
-    // Filters hide titles from every list the same way, so this reason outranks the list itself.
-    if (filterCount > 0) {
-        return EmptyStateSpec(
-            kind = ListIndicatorKind.CUSTOM,
-            colors = ListIndicatorColor(
-                container = MaterialTheme.colorScheme.secondaryContainer,
-                content = MaterialTheme.colorScheme.onSecondaryContainer
-            ),
-            icon = Icons.Default.Tune,
-            title = stringResource(R.string.library_empty_filtered_title, tab.getLabel(mediaType)),
-            description = pluralStringResource(
-                R.plurals.library_empty_filtered_desc,
-                filterCount,
-                filterCount
-            ),
-            actionLabel = stringResource(R.string.library_empty_action_clear_filters),
-            actionIcon = Icons.Default.Close,
-            actionEmphasised = true,
-            onAction = onClearFilters
-        )
-    }
 
     // Resolved up here: a local function cannot be @Composable, and these read string resources.
     val goToWatchingLabel = stringResource(

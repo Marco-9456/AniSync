@@ -113,7 +113,6 @@ class LibraryViewModel @Inject constructor(
         val tabCounts: Map<String, Int>,
         val searchMatches: List<LibraryEntry>,
         val searchMatchesByCategory: Map<String, List<LibraryEntry>>,
-        val unfilteredTabCounts: Map<String, Int>,
         val availableGenres: List<String>,
         val availableTags: List<LibraryTagOption>,
         val availableFormats: List<com.anisync.android.type.MediaFormat>,
@@ -518,9 +517,7 @@ class LibraryViewModel @Inject constructor(
                         if (notPrivate) {
                             for (name in e.customLists) {
                                 customNames.add(name)
-                                if (e.matches()) {
-                                    customEntriesMap.getOrPut(name) { ArrayList() }.add(e)
-                                }
+                                customEntriesMap.getOrPut(name) { ArrayList() }.add(e)
                             }
                         }
                         if (notPrivate && !e.hiddenFromStatusLists) {
@@ -544,10 +541,7 @@ class LibraryViewModel @Inject constructor(
                     val availableAiringStatuses = AIRING_STATUS_ORDER
                         .filter { status -> sortedEntries.any { it.entry.mediaStatus == status } }
 
-                    val unfilteredEntries = visibilityFiltered.map { it.entry }
-                    val allEntries = ArrayList<LibraryEntry>(visibilityFiltered.size).also { out ->
-                        for (s in visibilityFiltered) if (s.entry.matches()) out.add(s.entry)
-                    }
+                    val allEntries = visibilityFiltered.map { it.entry }
                     val grouped = allEntries.groupBy { it.status }
 
                     val customNamesSet = customNames.toSet()
@@ -557,7 +551,6 @@ class LibraryViewModel @Inject constructor(
                     val sortedCustomNames = tabOrder.filter { !it.startsWith("status:") && it in customNamesSet }
 
                     val sortedFavorites = favorites
-                        .filter { it.matches() }
                         .sortedBy { it.getTitle(titleLang).lowercase() }
 
                     // Raw per-tab counts (independent of the query) for the tab badges.
@@ -568,37 +561,29 @@ class LibraryViewModel @Inject constructor(
                         customEntriesMap.forEach { (name, list) -> put(name, list.size) }
                     }
 
-                    val unfilteredTabCounts = buildMap {
-                        put(LIBRARY_ALL_TAB_ID, unfilteredEntries.size)
-                        unfilteredEntries.groupBy { it.status }
-                            .forEach { (status, list) -> put("status:${status.name}", list.size) }
-                        put(LIBRARY_FAVORITES_TAB_ID, favorites.size)
-                        unfilteredEntries
-                            .flatMap { entry -> entry.customLists.map { it to entry } }
-                            .groupBy({ it.first }, { it.second })
-                            .forEach { (name, list) -> put(name, list.size) }
-                    }
-
-                    // Search matches every title variant + notes, grouped by list so the overlay can
-                    // offer Discover-style category chips.
+                    // Search matches every title variant + notes, narrowed by the filters, grouped by
+                    // list so the overlay can offer Discover-style category chips. Filters alone are
+                    // enough to search, the way they are in Discover.
                     val trimmedQuery = query.trim()
                     val searchMatches: List<LibraryEntry>
                     val searchMatchesByCategory: Map<String, List<LibraryEntry>>
-                    if (trimmedQuery.isBlank()) {
+                    if (trimmedQuery.isBlank() && filters.isEmpty) {
                         searchMatches = emptyList()
                         searchMatchesByCategory = emptyMap()
                     } else {
                         val lowerQuery = trimmedQuery.lowercase()
-                        val matches = allEntries.filter { it.matchesQuery(lowerQuery) }
+                        fun LibraryEntry.found() =
+                            (lowerQuery.isEmpty() || matchesQuery(lowerQuery)) && matches()
+                        val matches = allEntries.filter { it.found() }
                         val byCategory = LinkedHashMap<String, List<LibraryEntry>>()
                         matches.groupBy { it.status }.forEach { (status, list) ->
                             byCategory["status:${status.name}"] = list
                         }
-                        sortedFavorites.filter { it.matchesQuery(lowerQuery) }
+                        sortedFavorites.filter { it.found() }
                             .takeIf { it.isNotEmpty() }
                             ?.let { byCategory[LIBRARY_FAVORITES_TAB_ID] = it }
                         customEntriesMap.forEach { (name, list) ->
-                            list.filter { it.matchesQuery(lowerQuery) }
+                            list.filter { it.found() }
                                 .takeIf { it.isNotEmpty() }
                                 ?.let { byCategory[name] = it }
                         }
@@ -620,8 +605,7 @@ class LibraryViewModel @Inject constructor(
                         availableGenres = availableGenres,
                         availableTags = availableTags,
                         availableFormats = availableFormats,
-                        availableAiringStatuses = availableAiringStatuses,
-                        unfilteredTabCounts = unfilteredTabCounts
+                        availableAiringStatuses = availableAiringStatuses
                     )
                 }
                 .flowOn(Dispatchers.Default)
@@ -669,7 +653,6 @@ class LibraryViewModel @Inject constructor(
                             availableTags = computed.availableTags,
                             availableFormats = computed.availableFormats,
                             availableAiringStatuses = computed.availableAiringStatuses,
-                            unfilteredTabCounts = computed.unfilteredTabCounts,
                             initialTabId = resolvedInitialTab ?: it.initialTabId,
                             isLoading = false,
                             errorMessage = null
