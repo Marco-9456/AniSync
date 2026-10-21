@@ -281,7 +281,7 @@
     <string name="a11y_action_see_all_button">查看全部</string>
     <string name="section_look_and_feel">主題與樣式</string>
     <string name="settings_look_and_feel">主題與樣式</string>
-    <string name="settings_look_and_feel_desc">主題、語言、串流服務</string>
+    <string name="settings_look_and_feel_desc">主題、顯示大小、顏色、底欄、頭像、應用圖示</string>
     <string name="minutes_suffix">分</string>
     <string name="details_label_titles">標題</string>
     <string name="details_label_romaji">羅馬拼音</string>
@@ -304,9 +304,9 @@
     <string name="color_and_style">顏色與樣式</string>
     <string name="custom_color">自定義顏色</string>
     <string name="palette_style">調色盤風格</string>
-    <string name="custom_color_description">選擇一個顏色作為種子來生成你獨特的調色盤</string>
+    <string name="custom_color_description">選擇任意顏色，然後 AniSync 將變成它的模樣</string>
     <string name="quick_pick">快捷選項</string>
-    <string name="hue_slider">微調</string>
+    <string name="hue_slider">色相</string>
     <string name="preview">預覽</string>
     <string name="color_scheme">配色方案</string>
     <string name="apply">應用</string>
@@ -524,7 +524,7 @@
     <string name="about_improve_translations">改進翻譯</string>
     <string name="about_improve_translations_desc">幫忙翻譯 %s</string>
     <string name="settings_title_language">標題語言</string>
-    <string name="settings_app_language">App語言</string>
+    <string name="settings_app_language">App 語言</string>
     <string name="settings_app_language_system_desc">使用裝置設定</string>
     <string name="settings_cover_quality">封面圖品質</string>
     <string name="settings_cover_quality_desc">將啟用於此應用的每張封面圖，選擇高品質將看起來更清晰但會佔用更多的流量與儲存~</string>
@@ -1179,7 +1179,7 @@
     <string name="onboarding_perm_action_turn_off">關閉</string>
     <string name="onboarding_perm_action_open">打開</string>
     <string name="onboarding_personalise_headline">讓 AniSync 樣貌如你所想</string>
-    <string name="onboarding_personalise_body">四個小選項，之後皆可在主題與樣式中調整</string>
+    <string name="onboarding_personalise_body">四個小選項，之後皆可在設定中調整</string>
     <string name="onboarding_personalise_accent">調色盤</string>
     <string name="onboarding_personalise_theme">主題</string>
     <string name="onboarding_personalise_titles">標題</string>
@@ -1447,7 +1447,7 @@
     <string name="open_settings">打開設定</string>
     <string name="settings_nav_double_tap_search_desc">雙擊頁籤即可直接搜尋，如果在該頁籤上則單擊後可回到頂部</string>
     <string name="richtext_preview_show">展示預覽</string>
-    <string name="setting_nav_bar_show_labels_desc">在圖示旁顯示標題</string>
+    <string name="setting_nav_bar_show_labels_desc">在標籤圖示下的文字</string>
     <string name="media_upload_host_litterbox">Litterbox</string>
     <string name="media_upload_host_custom_desc">任何能接受 multipart POST 的服務</string>
     <string name="media_attach_paste_url_desc">已託管的圖片或影片</string>
@@ -1617,4 +1617,59 @@
     <string name="person_empty_appearances">暫無出演處符合條件…</string>
     <string name="person_credits_note_plain">僅參與配音將不會歸類於參與作品，而是被歸類於角色上</string>
     <string name="empty_notifications_action">全都看完啦！</string>
+    <string name="settings_general">通用</string>
+    <string name="settings_section_avatars">頭像</string>
+    <string name="avatar_shape_short_clover">八瓣花形</string>
+    <string name="avatar_shape_short_clover_4_leaf">四瓣花形</string>
+    <string name="avatar_shape_short_ghostish">鬼形</string>
+    <string name="settings_section_opening">啟動行為</string>
+    <string name="settings_section_tabs_touch">標籤頁與觸覺</string>
+    <string name="settings_section_language">語言</string>
+    <string name="settings_section_watching">觀看</string>
+    <string name="settings_section_appearance">樣式</string>
+    <string name="settings_section_display_size">顯示大小</string>
+    <string name="settings_section_color">顏色</string>
+    <string name="settings_section_bottom_bar">底欄</string>
+    <string name="settings_section_covers">封面圖</string>
+    <string name="settings_general_desc">啟動頁、語言、應用鎖、串流</string>
+    <string name="whats_new_general_notice">它們從「主題與樣式」搬來這啦~</string>
+    <string name="setting_score_on_complete">看完時詢問分數</string>
+    <string name="setting_score_on_complete_desc"></string>
+    <string name="person_meta_titles">%1$d 條目</string>
+    <plurals name="person_titles_count">
+        <item quantity="other">%1$d 條目</item>
+    </plurals>
+    <string name="library_empty_action_choose">選擇條目</string>
+    <plurals name="library_show_results">
+        <item quantity="other">顯示 %1$d 條目</item>
+    </plurals>
+    <string name="empty_list_title">你的「%s」清單為空</string>
+    <string name="empty_list_manga_action">透過在「探索」中添加條目來追蹤漫畫~</string>
+    <string name="empty_favorites_title">暫無最愛</string>
+    <string name="empty_connection_title">連線問題</string>
+    <string name="empty_generic_title">似乎有些事不對勁…</string>
+    <string name="empty_airing_today_title">今日暫無放送集數</string>
+    <string name="empty_upcoming_title">暫無將到來的放送</string>
+    <string name="empty_notifications_title">無通知</string>
+    <string name="empty_characters_title">暫無角色列出</string>
+    <string name="empty_characters_action">角色資訊在此條目暫不可用</string>
+    <string name="empty_discussions_title">暫無討論</string>
+    <string name="empty_comments_title">暫無評論</string>
+    <string name="notification_thread_reply_untitled">你的評論被回覆了</string>
+    <string name="notification_thread_comment_untitled">你追蹤的帖子被評論了</string>
+    <plurals name="notification_thread_comments_untitled">
+        <item quantity="other">%1$d 條新評論</item>
+    </plurals>
+    <string name="notification_thread_mention_untitled">在評論中你被提及了</string>
+    <string name="notification_liked_thread_untitled">你的帖子被點讚了</string>
+    <string name="notification_liked_comment_untitled">你的評論被點讚了</string>
+    <string name="notification_social_summary_title">新動態</string>
+    <string name="notification_episode_title_fallback">新集數</string>
+    <string name="notifications_item_media_added_fallback">新條目</string>
+    <string name="notifications_item_media_changed_fallback">你清單上的條目</string>
+    <string name="person_voice_actor_titles">%1$s · %2$d 條目</string>
+    <string name="library_empty_custom_title">「%1$s」暫無項目</string>
+    <string name="score_prompt_title_anime">看完了，感覺如何呢？</string>
+    <string name="score_prompt_title_manga">讀完了，感覺如何呢？</string>
+    <string name="setting_media_artwork_theming_short_desc">將條目頁色彩設為其封面顏色</string>
 </resources>
