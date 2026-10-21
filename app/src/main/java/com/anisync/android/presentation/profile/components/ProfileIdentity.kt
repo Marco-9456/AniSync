@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.components.bannerScrimBrush
 import com.anisync.android.presentation.components.bannerScrimHeight
@@ -163,7 +164,8 @@ fun ProfileBannerSurface(
                 contentColor = Color.White
             )
         ) {
-            val showDot = isOwnProfile && rememberActiveWhatsNew().isNotEmpty()
+            val showDot = isOwnProfile &&
+                rememberActiveWhatsNew().any { it.place == WhatsNewItem.Place.SETTINGS }
             BadgedBox(badge = { if (showDot) Badge() }) {
                 Icon(
                     imageVector = topActionIcon,

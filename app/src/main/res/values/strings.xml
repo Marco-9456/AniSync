@@ -2304,6 +2304,7 @@
     <string name="whats_new_moved">Moved</string>
     <string name="a11y_whats_new_inside">Something new inside</string>
     <string name="whats_new_general_notice">These used to be in Look and feel.</string>
+    <string name="whats_new_library_filters">Filters moved here from the sort button. You can now filter by tags and exclude genres.</string>
     <string name="dev_tools_reset_whats_new">Reset what’s new</string>
     <string name="dev_tools_reset_whats_new_subtitle">Shows every New and Moved badge again, as if the update just landed</string>
     <string name="dismiss">Dismiss</string>

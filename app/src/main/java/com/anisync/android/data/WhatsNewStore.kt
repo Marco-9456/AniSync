@@ -15,13 +15,17 @@ import javax.inject.Singleton
  * Something an update added or moved that a returning user could otherwise miss. Add an entry in the
  * same change that ships the feature, with [sinceVersionCode] set to the release it ships in.
  */
-enum class WhatsNewItem(val sinceVersionCode: Int, val kind: Kind) {
+enum class WhatsNewItem(val sinceVersionCode: Int, val kind: Kind, val place: Place = Place.SETTINGS) {
     SETTINGS_GENERAL(22, Kind.NEW),
     SETTINGS_LOOK_AND_FEEL(22, Kind.NEW),
     STORAGE_COVER_QUALITY(22, Kind.MOVED),
-    GENERAL_MOVED_NOTICE(22, Kind.MOVED);
+    GENERAL_MOVED_NOTICE(22, Kind.MOVED),
+    LIBRARY_SEARCH_FILTERS(23, Kind.MOVED, Place.LIBRARY);
 
     enum class Kind { NEW, MOVED }
+
+    /** The surface whose way in wears the dot, so the settings gear only points at settings. */
+    enum class Place { SETTINGS, LIBRARY }
 }
 
 /**

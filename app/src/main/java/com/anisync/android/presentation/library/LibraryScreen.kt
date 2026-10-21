@@ -90,11 +90,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryPriority
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.ErrorState
+import com.anisync.android.presentation.components.LocalWhatsNew
+import com.anisync.android.presentation.components.WhatsNewDot
+import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.discover.components.DiscoverNoResultsState
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.library.components.BulkAddToListSheet
@@ -124,6 +128,7 @@ import com.anisync.android.presentation.library.components.SkeletonGrid
 import com.anisync.android.presentation.library.components.SkeletonList
 import com.anisync.android.presentation.library.components.SortIcon
 import com.anisync.android.presentation.library.components.airedCount
+import com.anisync.android.presentation.settings.components.InfoNotice
 import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
 import com.anisync.android.presentation.util.LIBRARY_FAVORITES_TAB_ID
 import com.anisync.android.presentation.util.LocalAppSettings
@@ -320,6 +325,7 @@ fun LibraryScreen(
             isSearchQueryEmpty = isSearchQueryEmpty,
             isGridView = isGridView,
             isNonDefaultSort = sortOption != LibrarySort.AIRING_SOON || !isAscending,
+            showWhatsNewDot = WhatsNewItem.LIBRARY_SEARCH_FILTERS in rememberActiveWhatsNew(),
             isAscending = isAscending,
             showListManagement = showListManagement,
             onSearch = { keyboardController?.hide() },
@@ -1052,6 +1058,14 @@ private fun LibrarySearchOverlay(
             filters = uiState.filters,
             onChipTap = onFilterChipTap
         )
+        if (WhatsNewItem.LIBRARY_SEARCH_FILTERS in rememberActiveWhatsNew()) {
+            val whatsNewStore = LocalWhatsNew.current
+            InfoNotice(
+                text = stringResource(R.string.whats_new_library_filters),
+                onDismiss = { whatsNewStore.markSeen(WhatsNewItem.LIBRARY_SEARCH_FILTERS) },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+        }
         LibrarySearchResults(
             uiState = uiState,
             isSearchQueryEmpty = isSearchQueryEmpty,
@@ -1160,6 +1174,7 @@ private fun LibrarySearchBarInputField(
     isSearchQueryEmpty: Boolean,
     isGridView: Boolean,
     isNonDefaultSort: Boolean,
+    showWhatsNewDot: Boolean,
     isAscending: Boolean,
     showListManagement: Boolean,
     onSearch: () -> Unit,
@@ -1182,11 +1197,20 @@ private fun LibrarySearchBarInputField(
         textFieldState = textFieldState,
         onSearch = { onSearch() },
         placeholder = {
-            Text(
-                text = stringResource(R.string.search_library_placeholder),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.search_library_placeholder),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (showWhatsNewDot && searchBarState.currentValue == SearchBarValue.Collapsed) {
+                    WhatsNewDot()
+                }
+            }
         },
         leadingIcon = if (searchBarState.currentValue == SearchBarValue.Expanded) {
             {
