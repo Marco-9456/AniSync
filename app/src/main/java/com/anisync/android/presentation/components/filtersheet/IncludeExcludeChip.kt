@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.discover.components
+package com.anisync.android.presentation.components.filtersheet
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
