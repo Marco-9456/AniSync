@@ -25,6 +25,15 @@ interface LibraryRepository {
      */
     suspend fun refreshLibrary(username: String, type: MediaType): Result<Unit>
 
+    /** Every cached title's tags, keyed by media id. [syncLibraryTags] is what fills it. */
+    fun observeLibraryTags(): Flow<Map<Int, List<Tag>>>
+
+    /**
+     * Fetches tags for the titles on the active account's [type] list that have none cached yet or
+     * whose cached tags are over a week old. Most calls find nothing due and send no request.
+     */
+    suspend fun syncLibraryTags(type: MediaType): Result<Unit>
+
     /**
      * Update progress locally (optimistic) and sync to network.
      */

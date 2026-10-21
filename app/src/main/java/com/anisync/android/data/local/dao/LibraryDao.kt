@@ -34,6 +34,9 @@ interface LibraryDao {
     @Query("SELECT * FROM library_entries WHERE ownerId = :ownerId AND mediaType = :type")
     suspend fun getByType(ownerId: Int, type: MediaType): List<LibraryEntryEntity>
 
+    @Query("SELECT mediaId FROM library_entries WHERE ownerId = :ownerId AND mediaType = :type")
+    suspend fun getMediaIdsByType(ownerId: Int, type: MediaType): List<Int>
+
     /**
      * Get "Up Next" entries for an account: Watching status and not completed.
      * Sorted by last updated to show most recently watched first.

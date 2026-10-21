@@ -3,6 +3,8 @@ package com.anisync.android.presentation.library
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
+import com.anisync.android.data.network.RequestPriority
+import com.anisync.android.data.network.withRequestPriority
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
@@ -14,10 +16,12 @@ import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
 import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
 import com.anisync.android.presentation.util.LIBRARY_FAVORITES_TAB_ID
+import com.anisync.android.type.MediaType
 import com.anisync.android.util.getTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -650,11 +654,28 @@ class LibraryViewModel @Inject constructor(
     private fun refresh() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
-            when (val result = libraryRepository.refreshLibrary("", _uiState.value.mediaType)) {
-                is Result.Success -> {} // Automatically updated via Flow
+            val type = _uiState.value.mediaType
+            when (val result = libraryRepository.refreshLibrary("", type)) {
+                is Result.Success -> syncTags(type)
                 is Result.Error -> showResultError(result)
             }
             _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    private var tagSyncJob: Job? = null
+
+    /**
+     * Tags come down on a request of their own rather than with the refresh, which they made two to
+     * three times slower. Nobody waits on them, so they go at background priority and a failure
+     * stays quiet until the next refresh tries again.
+     */
+    private fun syncTags(type: MediaType) {
+        if (tagSyncJob?.isActive == true) return
+        tagSyncJob = viewModelScope.launch {
+            withRequestPriority(RequestPriority.Background) {
+                libraryRepository.syncLibraryTags(type)
+            }
         }
     }
 

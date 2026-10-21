@@ -1,0 +1,35 @@
+# Tags for the library's tag filter, kept off GetUserLibrary on purpose: asking for them on every
+# library refresh made it two to three times slower, and they change far less often than progress.
+
+query GetLibraryTags($userId: Int!, $type: MediaType!) {
+  MediaListCollection(userId: $userId, type: $type) {
+    lists {
+      entries {
+        media {
+          id
+          ...LibraryMediaTags
+        }
+      }
+    }
+  }
+}
+
+query GetMediaTags($ids: [Int]!, $perPage: Int!) {
+  Page(perPage: $perPage) {
+    media(id_in: $ids) {
+      id
+      ...LibraryMediaTags
+    }
+  }
+}
+
+fragment LibraryMediaTags on Media {
+  tags {
+    name
+    category
+    rank
+    isAdult
+    isMediaSpoiler
+    isGeneralSpoiler
+  }
+}

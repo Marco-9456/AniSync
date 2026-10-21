@@ -1,10 +1,14 @@
 package com.anisync.android.data
 
 import android.content.Context
+import com.anisync.android.GetLibraryTagsQuery
+import com.anisync.android.GetMediaTagsQuery
 import com.anisync.android.GetUserLibraryQuery
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.data.account.AccountStore
 import com.anisync.android.data.local.dao.LibraryDao
+import com.anisync.android.data.local.dao.MediaTagsDao
+import com.anisync.android.data.local.entity.MediaTagsEntity
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
 import com.anisync.android.data.mapper.mapFuzzyDateToLong
@@ -13,11 +17,13 @@ import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.mapper.toFuzzyDateInput
 import com.anisync.android.data.mapper.toScoreMap
 import com.anisync.android.data.mapper.todayUtcMillis
+import com.anisync.android.data.util.dataOrThrow
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.Tag
 import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.AniListTextEncoder.encodeForAniList
@@ -27,6 +33,7 @@ import com.apollographql.apollo.api.Optional
 import kotlinx.coroutines.ensureActive
 import kotlin.coroutines.coroutineContext
 import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.doNotStore
 import com.apollographql.cache.normalized.fetchPolicy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -53,6 +60,7 @@ internal fun mapScoreFormat(name: String?): com.anisync.android.domain.ScoreForm
 class LibraryRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val libraryDao: LibraryDao,
+    private val mediaTagsDao: MediaTagsDao,
     private val appSettings: AppSettings,
     private val accountStore: AccountStore,
     @param:ApplicationContext private val context: Context
@@ -250,6 +258,62 @@ class LibraryRepositoryImpl @Inject constructor(
 
             libraryDao.smartMergeByType(owner, type, entries.map { it.toEntity(type).copy(ownerId = owner) })
         }
+    }
+
+    override fun observeLibraryTags(): Flow<Map<Int, List<Tag>>> =
+        mediaTagsDao.observeAll().map { rows -> rows.associate { it.mediaId to it.tags } }
+
+    override suspend fun syncLibraryTags(type: MediaType): Result<Unit> {
+        val owner = currentOwnerId()
+        if (owner == NO_OWNER) return Result.Success(Unit)
+        val now = System.currentTimeMillis()
+        val plan = planTagSync(
+            libraryMediaIds = libraryDao.getMediaIdsByType(owner, type),
+            fetchedAt = mediaTagsDao.getStamps().associate { it.mediaId to it.fetchedAt },
+            now = now
+        )
+        return safeApiCall {
+            val rows = when (plan) {
+                TagSyncPlan.UpToDate -> return@safeApiCall
+                is TagSyncPlan.Titles -> fetchTagsFor(plan.mediaIds, now)
+                TagSyncPlan.WholeList -> fetchTagsForList(owner, type, now)
+            }
+            mediaTagsDao.upsertAll(rows)
+            mediaTagsDao.deleteOrphans()
+        }
+    }
+
+    private suspend fun fetchTagsFor(mediaIds: List<Int>, now: Long): List<MediaTagsEntity> {
+        val media = apolloClient.query(GetMediaTagsQuery(ids = mediaIds, perPage = TAGS_PAGE_SIZE))
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
+            .execute()
+            .dataOrThrow()
+            .Page?.media?.filterNotNull().orEmpty()
+        val tagsById = media.associate { it.id to it.libraryMediaTags.toTags() }
+        // A title the page leaves out is stored with no tags, so it waits out the week like the rest
+        // instead of being asked for again on every refresh.
+        return mediaIds.map { id -> MediaTagsEntity(id, tagsById[id].orEmpty(), now) }
+    }
+
+    private suspend fun fetchTagsForList(owner: Int, type: MediaType, now: Long): List<MediaTagsEntity> {
+        val lists = apolloClient.query(GetLibraryTagsQuery(userId = owner, type = type))
+            .fetchPolicy(FetchPolicy.NetworkOnly)
+            .doNotStore(true)
+            .execute()
+            .dataOrThrow()
+            .MediaListCollection?.lists.orEmpty()
+        // Custom lists repeat their entries, so one title can come back several times.
+        val rows = HashMap<Int, MediaTagsEntity>()
+        for (list in lists.filterNotNull()) {
+            for (entry in list.entries.orEmpty().filterNotNull()) {
+                val media = entry.media ?: continue
+                rows.getOrPut(media.id) {
+                    MediaTagsEntity(media.id, media.libraryMediaTags.toTags(), now)
+                }
+            }
+        }
+        return rows.values.toList()
     }
 
     /**
