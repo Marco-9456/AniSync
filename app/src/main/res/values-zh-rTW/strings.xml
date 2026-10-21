@@ -1634,7 +1634,6 @@
     <string name="settings_general_desc">啟動頁、語言、應用鎖、串流</string>
     <string name="whats_new_general_notice">它們從「主題與樣式」搬來這啦~</string>
     <string name="setting_score_on_complete">看完時詢問分數</string>
-    <string name="setting_score_on_complete_desc"></string>
     <string name="person_meta_titles">%1$d 條目</string>
     <plurals name="person_titles_count">
         <item quantity="other">%1$d 條目</item>
