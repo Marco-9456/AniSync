@@ -35,9 +35,10 @@ data class Tag(
     val name: String,
     val category: String,
     val description: String? = null,
-    val isMediaSpoiler: Boolean,
-    val isGeneralSpoiler: Boolean,
-    val rank: Int?
+    val isMediaSpoiler: Boolean = false,
+    val isGeneralSpoiler: Boolean = false,
+    val rank: Int?,
+    val isAdult: Boolean = false
 )
 
 /**

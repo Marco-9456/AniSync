@@ -80,4 +80,9 @@ object DatabaseModule {
     fun provideMediaThemesDao(database: AppDatabase): com.anisync.android.data.local.dao.MediaThemesDao {
         return database.mediaThemesDao()
     }
+
+    @Provides
+    fun provideMediaTagsDao(database: AppDatabase): com.anisync.android.data.local.dao.MediaTagsDao {
+        return database.mediaTagsDao()
+    }
 }

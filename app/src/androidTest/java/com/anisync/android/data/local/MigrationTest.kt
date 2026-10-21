@@ -188,6 +188,45 @@ class MigrationTest {
         }
     }
 
+    /**
+     * v28 to v29 added the `media_tags` table the library's tag filter reads.
+     *
+     * A new table cannot lose anything by itself, but a missing `@AutoMigration` entry would hand
+     * the upgrade to `fallbackToDestructiveMigration` and take the whole library with it.
+     */
+    @Test
+    fun migrate28To29_addsMediaTagsWithoutLosingEntries() {
+        helper.createDatabase(TEST_DB, 28).apply {
+            execSQL(
+                """
+                INSERT INTO library_entries (
+                    id, mediaId, titleUserPreferred, progress, status, rewatches, lastUpdated
+                ) VALUES (1, 100, 'Test Anime', 5, 'CURRENT', 0, 1700000000)
+                """.trimIndent()
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(TEST_DB, 29, true)
+
+        db.query("SELECT progress, titleUserPreferred FROM library_entries WHERE id = 1").use { cursor ->
+            assertEquals(1, cursor.count)
+            cursor.moveToFirst()
+            assertEquals(5, cursor.getInt(0))
+            assertEquals("Test Anime", cursor.getString(1))
+        }
+
+        db.execSQL(
+            """
+            INSERT INTO media_tags (mediaId, tags, fetchedAt)
+            VALUES (100, '[{"name":"Isekai","category":"Setting-Universe","rank":91}]', 1700000000)
+            """.trimIndent()
+        )
+        db.query("SELECT tags FROM media_tags WHERE mediaId = 100").use { cursor ->
+            assertEquals(1, cursor.count)
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════════
     //                         MIGRATION TEST TEMPLATES
     // ═══════════════════════════════════════════════════════════════════════════

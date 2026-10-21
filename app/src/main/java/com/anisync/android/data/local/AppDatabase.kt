@@ -10,6 +10,7 @@ import com.anisync.android.data.local.dao.UserProfileDao
 import com.anisync.android.data.local.entity.AiringScheduleEntity
 import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.data.local.entity.MediaDetailsEntity
+import com.anisync.android.data.local.entity.MediaTagsEntity
 import com.anisync.android.data.local.entity.MediaThemesEntity
 import com.anisync.android.data.local.entity.SavedForumThreadEntity
 import com.anisync.android.data.local.entity.TrendingEntity
@@ -20,6 +21,12 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v29 (Oct 2026):
+ *   - Added media_tags table for the library's tag filter:
+ *     • mediaId, tags (JSON list), fetchedAt
+ *     Keyed by title rather than by account, since tags describe the title.
+ *     Auto-migration, new table only.
+ *
  * v28 (Sep 2026):
  *   - Added field to library_entries:
  *     • priority - raw AniList MediaList.priority, shown as Low/Medium/High and
@@ -122,9 +129,10 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         AiringScheduleEntity::class,
         TrendingEntity::class,
         SavedForumThreadEntity::class,
-        MediaThemesEntity::class
+        MediaThemesEntity::class,
+        MediaTagsEntity::class
     ],
-    version = 28,
+    version = 29,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
@@ -150,7 +158,8 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         androidx.room.AutoMigration(from = 24, to = 25),
         androidx.room.AutoMigration(from = 25, to = 26),
         androidx.room.AutoMigration(from = 26, to = 27),
-        androidx.room.AutoMigration(from = 27, to = 28)
+        androidx.room.AutoMigration(from = 27, to = 28),
+        androidx.room.AutoMigration(from = 28, to = 29)
     ]
 )
 @TypeConverters(Converters::class)
@@ -162,4 +171,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun trendingDao(): com.anisync.android.data.local.dao.TrendingDao
     abstract fun savedForumThreadDao(): SavedForumThreadDao
     abstract fun mediaThemesDao(): com.anisync.android.data.local.dao.MediaThemesDao
+    abstract fun mediaTagsDao(): com.anisync.android.data.local.dao.MediaTagsDao
 }
