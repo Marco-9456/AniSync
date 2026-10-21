@@ -31,13 +31,21 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 
-/** One tag the picker can offer. */
+/**
+ * One tag the picker can offer.
+ *
+ * A [isSpoiler] tag is listed in a group of its own rather than under its category, and that group
+ * stays shut until it is opened, so the name is never on screen unasked.
+ */
 @Immutable
 data class TagChoice(
     val name: String,
     val category: String?,
-    val isAdult: Boolean = false
+    val isAdult: Boolean = false,
+    val isSpoiler: Boolean = false
 )
+
+private const val SPOILER_GROUP = "spoilers"
 
 /**
  * Search field over [tags], grouped by AniList category with one group open at a time.
@@ -55,7 +63,7 @@ fun TagPickerSheet(
     onDismiss: () -> Unit
 ) {
     var query by rememberSaveable { mutableStateOf("") }
-    var expandedCategory by rememberSaveable { mutableStateOf<String?>(null) }
+    var expandedGroup by rememberSaveable { mutableStateOf<String?>(null) }
     val otherLabel = stringResource(R.string.tag_picker_other)
     val visibleTags = remember(tags, showAdult, query) {
         val pool = if (showAdult) tags else tags.filterNot { it.isAdult }
@@ -63,8 +71,9 @@ fun TagPickerSheet(
         else pool.filter { it.name.contains(query, ignoreCase = true) }
     }
     val grouped = remember(visibleTags, otherLabel) {
-        visibleTags.groupBy { it.category ?: otherLabel }.toSortedMap()
+        visibleTags.filterNot { it.isSpoiler }.groupBy { it.category ?: otherLabel }.toSortedMap()
     }
+    val spoilers = remember(visibleTags) { visibleTags.filter { it.isSpoiler } }
 
     FilterSheetScaffold(
         title = stringResource(R.string.tag_picker_title, included.size, excluded.size),
@@ -90,22 +99,41 @@ fun TagPickerSheet(
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             grouped.forEach { (category, categoryTags) ->
-                item(key = "group-$category") {
+                val key = "group-$category"
+                item(key = key) {
                     TagGroup(
                         label = category,
                         summary = groupSummary(categoryTags, included, excluded),
                         tags = categoryTags,
                         included = included,
                         excluded = excluded,
-                        expanded = expandedCategory == category,
-                        onToggle = {
-                            expandedCategory = if (expandedCategory == category) null else category
-                        },
+                        expanded = expandedGroup == key,
+                        onToggle = { expandedGroup = if (expandedGroup == key) null else key },
                         onSelectionChange = onSelectionChange
                     )
                 }
             }
-            if (grouped.isEmpty()) {
+            if (spoilers.isNotEmpty()) {
+                item(key = SPOILER_GROUP) {
+                    val expanded = expandedGroup == SPOILER_GROUP
+                    val untouched = spoilers.none { it.name in included || it.name in excluded }
+                    TagGroup(
+                        label = stringResource(R.string.tag_picker_spoilers),
+                        summary = if (untouched && !expanded) {
+                            pluralStringResource(R.plurals.tags_spoiler_hidden, spoilers.size, spoilers.size)
+                        } else {
+                            groupSummary(spoilers, included, excluded)
+                        },
+                        tags = spoilers,
+                        included = included,
+                        excluded = excluded,
+                        expanded = expanded,
+                        onToggle = { expandedGroup = if (expanded) null else SPOILER_GROUP },
+                        onSelectionChange = onSelectionChange
+                    )
+                }
+            }
+            if (grouped.isEmpty() && spoilers.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier

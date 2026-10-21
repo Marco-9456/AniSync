@@ -1926,6 +1926,7 @@
     <string name="search_tags_hint">Search tags</string>
     <string name="tag_picker_title">Tags · %1$d↑ %2$d↓</string>
     <string name="tag_picker_other">Other</string>
+    <string name="tag_picker_spoilers">Spoilers</string>
     <plurals name="tag_picker_count">
         <item quantity="one">%1$d tag</item>
         <item quantity="other">%1$d tags</item>
