@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Library Tag Filters** - Library search can filter by tag, with the same picker as Search: a search box, categories, and spoiler tags kept shut until opened. A tag only counts above AniList's rank cut-off of 18, as it does in Search, and adult tags stay hidden unless adult content is on. Tags come down in the background on a request of their own, for new titles and once a week, so the library refresh is as quick as before. (#158)
+
+### Changed
+
+- **Library Filters** - Filters moved from the sort sheet into library search, behind a chip bar like Discover's, and narrow the search results rather than the lists. Genres can be excluded as well as included, every chosen genre and tag has to match, and filters work with an empty search box. Sort keeps its own sheet, opened from the bar or from a Sort chip in search. (#158)
+
 ## [3.3.0] - 2026-10-20
 
 ### Added
