@@ -24,8 +24,7 @@ query SearchMedia(
   $chapters_greater: Int,
   $chapters_lesser: Int,
   $countryOfOrigin: CountryCode,
-  $isAdult: Boolean,
-  $countOnly: Boolean = false
+  $isAdult: Boolean
 ) {
   Page(page: $page, perPage: $perPage) {
     pageInfo {
@@ -58,7 +57,7 @@ query SearchMedia(
       chapters_lesser: $chapters_lesser,
       countryOfOrigin: $countryOfOrigin,
       isAdult: $isAdult
-    ) @skip(if: $countOnly) {
+    ) {
       id
       title {
         userPreferred

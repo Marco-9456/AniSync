@@ -5,6 +5,7 @@ import com.anisync.android.GetSearchTaxonomyQuery
 import com.anisync.android.SearchAllQuery
 import com.anisync.android.SearchEverythingQuery
 import com.anisync.android.SearchMediaQuery
+import com.anisync.android.data.mapper.mapFuzzyDateToLong
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.LibraryEntry
@@ -17,6 +18,7 @@ import com.anisync.android.domain.SearchFilters
 import com.anisync.android.domain.SearchPage
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.domain.SearchResult
+import com.anisync.android.fragment.MediaCardFields
 import com.anisync.android.type.MediaType
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
@@ -56,8 +58,7 @@ class SearchRepositoryImpl @Inject constructor(
         type: MediaType,
         filters: SearchFilters,
         page: Int,
-        perPage: Int,
-        countOnly: Boolean
+        perPage: Int
     ): Result<SearchPage> {
         return safeApiCall {
             val response = apolloClient.query(
@@ -90,8 +91,7 @@ class SearchRepositoryImpl @Inject constructor(
                     chapters_lesser = filters.chapters.lesser(),
                     countryOfOrigin = filters.country?.let { Optional.present(it.code) }
                         ?: Optional.absent(),
-                    isAdult = resolveAdultFilter(filters.adultMode),
-                    countOnly = Optional.present(countOnly)
+                    isAdult = resolveAdultFilter(filters.adultMode)
                 )
             )
                 .fetchPolicy(FetchPolicy.NetworkOnly)
@@ -100,11 +100,7 @@ class SearchRepositoryImpl @Inject constructor(
 
             val pageData = response.data?.Page
             val pageInfo = pageData?.pageInfo
-            val entries = if (countOnly) {
-                emptyList()
-            } else {
-                pageData?.media?.filterNotNull()?.map { it.toLibraryEntry() } ?: emptyList()
-            }
+            val entries = pageData?.media?.filterNotNull()?.map { it.toLibraryEntry() } ?: emptyList()
             SearchPage(
                 entries = entries,
                 total = pageInfo?.total ?: entries.size,
@@ -227,53 +223,11 @@ class SearchRepositoryImpl @Inject constructor(
 
                 val data = response.data
 
-                val animeEntries = data?.anime?.media?.filterNotNull()?.map { node ->
-                    val m = node.mediaCardFields
-                    LibraryEntry(
-                        id = 0,
-                        mediaId = m.id,
-                        titleRomaji = m.title?.romaji,
-                        titleEnglish = m.title?.english,
-                        titleNative = m.title?.native,
-                        titleUserPreferred = m.title?.userPreferred ?: "Unknown",
-                        coverUrl = m.coverImage?.extraLarge,
-                        cover = com.anisync.android.domain.CoverImage.of(
-                            m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge
-                        ),
-                        progress = 0,
-                        totalEpisodes = m.episodes,
-                        totalChapters = m.chapters,
-                        totalVolumes = m.volumes,
-                        type = m.type,
-                        format = m.format,
-                        status = LibraryStatus.UNKNOWN,
-                        mediaStatus = m.status?.name
-                    )
-                }.orEmpty()
+                val animeEntries = data?.anime?.media?.filterNotNull()
+                    ?.map { it.mediaCardFields.toSearchEntry() }.orEmpty()
 
-                val mangaEntries = data?.manga?.media?.filterNotNull()?.map { node ->
-                    val m = node.mediaCardFields
-                    LibraryEntry(
-                        id = 0,
-                        mediaId = m.id,
-                        titleRomaji = m.title?.romaji,
-                        titleEnglish = m.title?.english,
-                        titleNative = m.title?.native,
-                        titleUserPreferred = m.title?.userPreferred ?: "Unknown",
-                        coverUrl = m.coverImage?.extraLarge,
-                        cover = com.anisync.android.domain.CoverImage.of(
-                            m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge
-                        ),
-                        progress = 0,
-                        totalEpisodes = m.episodes,
-                        totalChapters = m.chapters,
-                        totalVolumes = m.volumes,
-                        type = m.type,
-                        format = m.format,
-                        status = LibraryStatus.UNKNOWN,
-                        mediaStatus = m.status?.name
-                    )
-                }.orEmpty()
+                val mangaEntries = data?.manga?.media?.filterNotNull()
+                    ?.map { it.mediaCardFields.toSearchEntry() }.orEmpty()
 
                 val characters = data?.characters?.characters?.filterNotNull()?.map { c ->
                     SearchResult.CharacterResult(
@@ -317,6 +271,8 @@ class SearchRepositoryImpl @Inject constructor(
                     manga = mangaEntries,
                     animeHasNextPage = data?.anime?.pageInfo?.hasNextPage ?: false,
                     mangaHasNextPage = data?.manga?.pageInfo?.hasNextPage ?: false,
+                    animeTotal = data?.anime?.pageInfo?.total ?: animeEntries.size,
+                    mangaTotal = data?.manga?.pageInfo?.total ?: mangaEntries.size,
                     charactersHasNextPage = data?.characters?.pageInfo?.hasNextPage ?: false,
                     staffHasNextPage = data?.staff?.pageInfo?.hasNextPage ?: false,
                     usersHasNextPage = data?.users?.pageInfo?.hasNextPage ?: false,
@@ -362,6 +318,36 @@ class SearchRepositoryImpl @Inject constructor(
             genres to tags
         }
     }
+
+    /**
+     * A search result as the result row and poster read it. The score, start date and next episode
+     * ride the shared card fragment already, so carrying them costs the request nothing.
+     */
+    private fun MediaCardFields.toSearchEntry(): LibraryEntry = LibraryEntry(
+        id = 0,
+        mediaId = id,
+        titleRomaji = title?.romaji,
+        titleEnglish = title?.english,
+        titleNative = title?.native,
+        titleUserPreferred = title?.userPreferred ?: "Unknown",
+        coverUrl = coverImage?.extraLarge,
+        cover = com.anisync.android.domain.CoverImage.of(
+            coverImage?.medium, coverImage?.large, coverImage?.extraLarge
+        ),
+        progress = 0,
+        totalEpisodes = episodes,
+        totalChapters = chapters,
+        totalVolumes = volumes,
+        type = type,
+        format = format,
+        status = LibraryStatus.UNKNOWN,
+        mediaStatus = status?.name,
+        averageScore = averageScore,
+        mediaStartDate = startDate?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
+        nextAiringEpisode = nextAiringEpisode?.episode,
+        timeUntilAiring = nextAiringEpisode?.timeUntilAiring,
+        nextAiringEpisodeTime = nextAiringEpisode?.airingAt?.toLong()
+    )
 
     private fun SearchMediaQuery.Medium.toLibraryEntry(): LibraryEntry = LibraryEntry(
         id = 0,

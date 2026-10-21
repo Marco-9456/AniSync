@@ -5,6 +5,8 @@ import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaSeason
 import com.anisync.android.type.MediaType
 import kotlinx.serialization.Serializable
+import java.time.Instant
+import java.time.ZoneOffset
 
 /**
  * The three levels AniList's `MediaList.priority` is shown as.
@@ -113,6 +115,13 @@ data class LibraryEntry(
     val advancedScores: Map<String, Double> = emptyMap()
 ) {
     val priorityLevel: LibraryPriority get() = LibraryPriority.of(priority)
+
+    /**
+     * The year the title started, read off its start date first because that is what the year
+     * filter matches against, and off [seasonYear] when only the season is known.
+     */
+    val releaseYear: Int?
+        get() = mediaStartDate?.let { Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).year } ?: seasonYear
 
     /**
      * Computes the dynamic time until airing based on the absolute timestamp.

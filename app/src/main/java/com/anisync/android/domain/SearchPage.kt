@@ -27,6 +27,9 @@ data class SearchEverythingResult(
     val manga: List<LibraryEntry> = emptyList(),
     val animeHasNextPage: Boolean = false,
     val mangaHasNextPage: Boolean = false,
+    /** Every match AniList counts for the bucket, not only the page that came back. */
+    val animeTotal: Int = 0,
+    val mangaTotal: Int = 0,
     val charactersHasNextPage: Boolean = false,
     val staffHasNextPage: Boolean = false,
     val usersHasNextPage: Boolean = false,
