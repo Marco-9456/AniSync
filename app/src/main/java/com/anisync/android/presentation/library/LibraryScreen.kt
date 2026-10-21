@@ -655,8 +655,10 @@ fun LibraryScreen(
         isAscending = isAscending,
         filters = uiState.filters,
         availableGenres = uiState.availableGenres,
+        availableTags = uiState.availableTags,
         availableFormats = uiState.availableFormats,
         availableAiringStatuses = uiState.availableAiringStatuses,
+        showAdultContent = uiState.showAdultContent,
         resultCount = entriesForTab(uiState, currentTab).size,
         onSortChange = { sort, ascending ->
             viewModel.onAction(LibraryAction.OnSortOptionChange(sort, ascending))

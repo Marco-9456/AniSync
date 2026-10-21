@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
@@ -30,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,11 +45,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.components.filtersheet.FilterSheetScaffold
+import com.anisync.android.presentation.components.filtersheet.TagChoice
+import com.anisync.android.presentation.components.filtersheet.TagPickerSheet
 import com.anisync.android.presentation.components.filtersheet.TriState
 import com.anisync.android.presentation.components.filtersheet.longPressed
 import com.anisync.android.presentation.components.filtersheet.next
 import com.anisync.android.presentation.library.LibraryFilters
 import com.anisync.android.presentation.library.LibrarySort
+import com.anisync.android.presentation.library.LibraryTagOption
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.toLabel
@@ -71,8 +76,10 @@ fun LibraryFilterSheet(
     isAscending: Boolean,
     filters: LibraryFilters,
     availableGenres: List<String>,
+    availableTags: List<LibraryTagOption>,
     availableFormats: List<MediaFormat>,
     availableAiringStatuses: List<String>,
+    showAdultContent: Boolean,
     resultCount: Int,
     onSortChange: (LibrarySort, Boolean) -> Unit,
     onFiltersChange: (LibraryFilters) -> Unit,
@@ -83,6 +90,11 @@ fun LibraryFilterSheet(
     )
 ) {
     if (!visible) return
+
+    var showTagPicker by rememberSaveable { mutableStateOf(false) }
+    val offeredTags = remember(availableTags, showAdultContent) {
+        if (showAdultContent) availableTags else availableTags.filterNot { it.isAdult }
+    }
 
     FilterSheetScaffold(
         title = stringResource(R.string.library_sort_and_filter),
@@ -190,6 +202,27 @@ fun LibraryFilterSheet(
                 )
             }
 
+            if (offeredTags.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SectionLabel(stringResource(R.string.library_filter_tags))
+                    Spacer(Modifier.weight(1f))
+                    SectionAction(
+                        label = stringResource(R.string.library_filter_all_tags),
+                        onClick = { showTagPicker = true },
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+                val shown = remember(offeredTags, filters.tagsIncluded, filters.tagsExcluded) {
+                    inlineTags(offeredTags, filters)
+                }
+                TriStateChipRow(
+                    values = shown,
+                    stateOf = filters::tagState,
+                    onStateChange = { tag, state -> onFiltersChange(filters.withTag(tag, state)) }
+                )
+            }
+
             Spacer(Modifier.height(20.dp))
             Button(
                 onClick = onDismiss,
@@ -203,10 +236,47 @@ fun LibraryFilterSheet(
             }
         }
     }
+
+    if (showTagPicker) {
+        val choices = remember(availableTags) {
+            availableTags.map {
+                TagChoice(
+                    name = it.name,
+                    category = it.category.ifBlank { null },
+                    isAdult = it.isAdult,
+                    isSpoiler = it.isSpoiler
+                )
+            }
+        }
+        TagPickerSheet(
+            tags = choices,
+            included = filters.tagsIncluded,
+            excluded = filters.tagsExcluded,
+            showAdult = showAdultContent,
+            onSelectionChange = { included, excluded ->
+                onFiltersChange(filters.copy(tagsIncluded = included, tagsExcluded = excluded))
+            },
+            onDismiss = { showTagPicker = false }
+        )
+    }
 }
 
-/** How many genres the row shows before the rest move behind a pill. */
+/** How many genre or tag chips a row shows before the rest move behind a pill. */
 private const val INLINE_CHIPS = 8
+
+/**
+ * The tags the sheet shows without opening the picker: whatever is selected, then the ones most of
+ * the library carries. Spoilers only appear here once someone has picked them.
+ */
+private fun inlineTags(offered: List<LibraryTagOption>, filters: LibraryFilters): List<String> {
+    val selected = (filters.tagsIncluded + filters.tagsExcluded).sorted()
+    val popular = offered
+        .filter { !it.isSpoiler && it.name !in selected }
+        .sortedByDescending { it.titleCount }
+        .take((INLINE_CHIPS - selected.size).coerceAtLeast(0))
+        .map { it.name }
+    return selected + popular
+}
 
 @Composable
 private fun SectionLabel(text: String) {
@@ -352,6 +422,30 @@ private fun <T> FilterChipRow(
             )
         }
         trailing?.invoke()
+    }
+}
+
+/** A section's way out to a fuller picker, styled like the "See all" on a section header. */
+@Composable
+private fun SectionAction(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .bouncyClickable(onClick = onClick, clipShape = CircleShape)
+            .padding(start = 8.dp, end = 2.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
