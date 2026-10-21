@@ -26,6 +26,16 @@ import com.anisync.android.R
 
 enum class TriState { OFF, INCLUDED, EXCLUDED }
 
+/** Where a tap moves a chip: off, included, excluded, then off again. */
+fun TriState.next(): TriState = when (this) {
+    TriState.OFF -> TriState.INCLUDED
+    TriState.INCLUDED -> TriState.EXCLUDED
+    TriState.EXCLUDED -> TriState.OFF
+}
+
+/** Where a long press moves a chip: straight to excluded, or back off when it already is. */
+fun TriState.longPressed(): TriState = if (this == TriState.EXCLUDED) TriState.OFF else TriState.EXCLUDED
+
 /**
  * Tri-state filter chip for genres and tags.
  *
@@ -77,20 +87,8 @@ fun IncludeExcludeChip(
         modifier = modifier
             .semantics { stateDescription = stateLabel }
             .combinedClickable(
-                onClick = {
-                    onStateChange(
-                        when (state) {
-                            TriState.OFF -> TriState.INCLUDED
-                            TriState.INCLUDED -> TriState.EXCLUDED
-                            TriState.EXCLUDED -> TriState.OFF
-                        }
-                    )
-                },
-                onLongClick = {
-                    onStateChange(
-                        if (state == TriState.EXCLUDED) TriState.OFF else TriState.EXCLUDED
-                    )
-                }
+                onClick = { onStateChange(state.next()) },
+                onLongClick = { onStateChange(state.longPressed()) }
             ),
         color = container,
         contentColor = content,
