@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -64,7 +65,9 @@ import com.anisync.android.presentation.components.coverBadges
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.util.formatAndYear
 import com.anisync.android.presentation.util.formatTimeUntilAiring
+import com.anisync.android.presentation.util.lengthFact
 import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.type.MediaType
@@ -73,9 +76,8 @@ import com.anisync.android.ui.theme.ListIndicatorKind
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.ui.theme.listIndicatorColor
 import com.anisync.android.util.getTitle
-import com.anisync.android.presentation.util.toLabel
 
-private const val PosterAspect = 171f / 243f
+internal const val PosterAspect = 171f / 243f
 private val ActionSize = 48.dp
 
 /**
@@ -194,18 +196,7 @@ fun LibraryPosterCard(
             )
 
             Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 12.dp)) {
-                Text(
-                    text = title,
-                    fontSize = 15.sp,
-                    lineHeight = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    // Two lines are reserved so every meta row in a grid row shares a baseline.
-                    modifier = Modifier.height(40.dp)
-                )
+                PosterTitle(title)
                 Spacer(Modifier.height(10.dp))
                 PosterMetaRow(
                     entry = entry,
@@ -388,57 +379,76 @@ private fun PosterMetaRow(
                 maxLines = 1
             )
         } else {
-            entry.format?.let { format ->
-                Text(
-                    text = format.toLabel(),
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
-                Text(
-                    text = "·",
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
             // The score is the cover badge's job. Printing it here as well drew the rating twice
             // on any title long enough to have no progress bar.
-            run {
-                Text(
-                    // A run with no length still reports where you are in it, rather than a bare
-                    // question mark.
-                    text = if (total != null) {
-                        stringResource(
-                            if (mediaType == MediaType.MANGA) {
-                                R.string.library_chapter_count
-                            } else {
-                                R.string.library_episode_count
-                            },
-                            total
-                        )
-                    } else {
-                        stringResource(
-                            R.string.progress_format,
-                            entry.progress,
-                            stringResource(R.string.progress_unknown)
-                        )
-                    },
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1
-                )
-            }
+            val length = entry.lengthFact(mediaType)
+            PosterFacts(
+                facts = entry.formatAndYear(),
+                value = length?.let { { PosterValueText(it) } }
+            )
         }
     }
+}
+
+/** Two lines are always reserved, so every meta row in a grid row shares a baseline. */
+@Composable
+internal fun PosterTitle(title: String, maxLines: Int = 2) {
+    Text(
+        text = title,
+        fontSize = 15.sp,
+        lineHeight = 20.sp,
+        fontWeight = FontWeight.ExtraBold,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurface,
+        minLines = maxLines,
+        maxLines = maxLines,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+/**
+ * The muted facts, then a dot and [value] in bold. The facts give way first when the cell is
+ * narrow, so the value is never the part that gets cut.
+ */
+@Composable
+internal fun RowScope.PosterFacts(facts: String?, value: (@Composable () -> Unit)?) {
+    if (facts != null) {
+        Text(
+            text = facts,
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
+        )
+    }
+    if (facts != null && value != null) {
+        Text(
+            text = "·",
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+    value?.invoke()
+}
+
+@Composable
+internal fun PosterValueText(text: String) {
+    Text(
+        text = text,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
+        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = 1
+    )
 }
 
 @Composable
@@ -603,7 +613,7 @@ private fun ScorePosterBadge(
  * series is still going out.
  */
 @Composable
-private fun PosterStateChip(
+internal fun PosterStateChip(
     entry: LibraryEntry,
     aired: Int?,
     modifier: Modifier = Modifier
