@@ -7,6 +7,8 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryPriority
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.domain.Tag
+import com.anisync.android.presentation.components.filtersheet.TriState
 import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
@@ -14,30 +16,64 @@ import com.anisync.android.type.MediaType
 /**
  * The filters the library can apply on top of a list.
  *
- * Every field here is answerable from data already cached on [LibraryEntry], which is the whole
+ * Every field here is answerable from data already cached on the device, which is the whole
  * constraint: a filter that needed a network round trip would be a different feature.
+ *
+ * Genres and tags match the way AniList search does. Every included one has to be there, no
+ * excluded one may be, and a tag only counts above [MIN_TAG_RANK].
  */
 @Immutable
 data class LibraryFilters(
     val formats: Set<MediaFormat> = emptySet(),
     /** Raw AniList `MediaStatus` names — RELEASING, FINISHED, NOT_YET_RELEASED, … */
     val airingStatuses: Set<String> = emptySet(),
-    val genres: Set<String> = emptySet()
+    val genresIncluded: Set<String> = emptySet(),
+    val genresExcluded: Set<String> = emptySet(),
+    val tagsIncluded: Set<String> = emptySet(),
+    val tagsExcluded: Set<String> = emptySet()
 ) {
-    val activeCount: Int get() = formats.size + airingStatuses.size + genres.size
+    val activeCount: Int
+        get() = formats.size + airingStatuses.size + genresIncluded.size + genresExcluded.size +
+            tagsIncluded.size + tagsExcluded.size
     val isEmpty: Boolean get() = activeCount == 0
 
-    fun matches(entry: LibraryEntry): Boolean {
+    fun matches(entry: LibraryEntry, tags: List<Tag>): Boolean {
         if (formats.isNotEmpty() && entry.format !in formats) return false
         if (airingStatuses.isNotEmpty() && entry.mediaStatus !in airingStatuses) return false
-        if (genres.isNotEmpty() && entry.genres.none { it in genres }) return false
-        return true
+        if (!entry.genres.containsAll(genresIncluded)) return false
+        if (entry.genres.any { it in genresExcluded }) return false
+        if (tagsIncluded.isEmpty() && tagsExcluded.isEmpty()) return true
+        val counted = tags.filter { it.countsForFilters() }.mapTo(HashSet()) { it.name }
+        return counted.containsAll(tagsIncluded) && counted.none { it in tagsExcluded }
     }
+
+    fun genreState(genre: String): TriState = stateOf(genre, genresIncluded, genresExcluded)
+
+    fun withGenre(genre: String, state: TriState): LibraryFilters = copy(
+        genresIncluded = genresIncluded.with(genre, state == TriState.INCLUDED),
+        genresExcluded = genresExcluded.with(genre, state == TriState.EXCLUDED)
+    )
+
+    fun tagState(tag: String): TriState = stateOf(tag, tagsIncluded, tagsExcluded)
+
+    fun withTag(tag: String, state: TriState): LibraryFilters = copy(
+        tagsIncluded = tagsIncluded.with(tag, state == TriState.INCLUDED),
+        tagsExcluded = tagsExcluded.with(tag, state == TriState.EXCLUDED)
+    )
 
     companion object {
         val None = LibraryFilters()
     }
 }
+
+private fun stateOf(value: String, included: Set<String>, excluded: Set<String>): TriState = when (value) {
+    in included -> TriState.INCLUDED
+    in excluded -> TriState.EXCLUDED
+    else -> TriState.OFF
+}
+
+private fun Set<String>.with(value: String, present: Boolean): Set<String> =
+    if (present) this + value else this - value
 
 /** Which of the two batch operations that cost one request per entry is running. */
 enum class BulkKind { ADD_TO_LIST, REMOVE }
@@ -104,6 +140,9 @@ data class LibraryUiState(
     val filters: LibraryFilters = LibraryFilters.None,
     /** Every genre present in the loaded library, sorted, for the filter sheet. */
     val availableGenres: List<String> = emptyList(),
+    /** Every tag that counts on some title in the loaded library, sorted, for the filter sheet. */
+    val availableTags: List<LibraryTagOption> = emptyList(),
+    val showAdultContent: Boolean = false,
     /** Every format present in the loaded library, in declaration order, for the filter sheet. */
     val availableFormats: List<MediaFormat> = emptyList(),
     /** Every AniList media status present in the loaded library, for the filter sheet. */

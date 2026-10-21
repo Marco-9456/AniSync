@@ -10,6 +10,7 @@ import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.Tag
 import com.anisync.android.domain.shouldAskForScore
 import com.anisync.android.domain.withCompletionScore
 import com.anisync.android.presentation.components.alert.ToastManager
@@ -114,8 +115,17 @@ class LibraryViewModel @Inject constructor(
         val searchMatchesByCategory: Map<String, List<LibraryEntry>>,
         val unfilteredTabCounts: Map<String, Int>,
         val availableGenres: List<String>,
+        val availableTags: List<LibraryTagOption>,
         val availableFormats: List<com.anisync.android.type.MediaFormat>,
         val availableAiringStatuses: List<String>
+    )
+
+    private class LibrarySources(
+        val entries: List<LibraryEntry>,
+        val favorites: List<LibraryEntry>,
+        val listOrder: List<String>,
+        val hiddenLists: Set<String>,
+        val tagsByMedia: Map<Int, List<Tag>>
     )
 
     init {
@@ -153,6 +163,22 @@ class LibraryViewModel @Inject constructor(
 
         appSettings.libraryGridView.onEach { isGrid ->
             _uiState.update { it.copy(isGridView = isGrid) }
+        }.launchIn(viewModelScope)
+
+        // Turning adult content off drops any adult tag still selected, the same as Search does, so
+        // a filter the sheet no longer shows cannot keep narrowing the list.
+        appSettings.showAdultContent.onEach { show ->
+            _uiState.update { state ->
+                if (show) return@update state.copy(showAdultContent = true)
+                val adult = state.availableTags.filter { it.isAdult }.mapTo(HashSet()) { it.name }
+                state.copy(
+                    showAdultContent = false,
+                    filters = state.filters.copy(
+                        tagsIncluded = state.filters.tagsIncluded - adult,
+                        tagsExcluded = state.filters.tagsExcluded - adult
+                    )
+                )
+            }
         }.launchIn(viewModelScope)
 
         observeLibraryData()
@@ -393,11 +419,12 @@ class LibraryViewModel @Inject constructor(
                         libraryRepository.observeLibrary("", type),
                         profileRepository.observeProfile(),
                         listOrderFlow,
-                        hiddenListsFlow
-                    ) { libraryEntries, profile, listOrder, hiddenLists ->
+                        hiddenListsFlow,
+                        libraryRepository.observeLibraryTags()
+                    ) { libraryEntries, profile, listOrder, hiddenLists, tagsByMedia ->
                         val favorites =
                             profile?.favoriteAnime?.filter { it.type == type } ?: emptyList()
-                        Triple(libraryEntries, favorites, listOrder to hiddenLists)
+                        LibrarySources(libraryEntries, favorites, listOrder, hiddenLists, tagsByMedia)
                     }
                 }
                 .combine(
@@ -411,14 +438,19 @@ class LibraryViewModel @Inject constructor(
                             state.filters
                         )
                     }.distinctUntilChanged()
-                ) { (entries, favorites, listPrefs), combinedState ->
+                ) { sources, combinedState ->
                     val sort = combinedState[0] as LibrarySort
                     val ascending = combinedState[1] as Boolean
                     val query = combinedState[2] as String
                     val titleLang = combinedState[3] as com.anisync.android.data.TitleLanguage
                     val showPrivate = combinedState[4] as Boolean
                     val filters = combinedState[5] as LibraryFilters
-                    val (listOrder, hiddenLists) = listPrefs
+                    val entries = sources.entries
+                    val favorites = sources.favorites
+                    val listOrder = sources.listOrder
+                    val hiddenLists = sources.hiddenLists
+                    val tagsByMedia = sources.tagsByMedia
+                    fun LibraryEntry.matches() = filters.matches(this, tagsByMedia[mediaId].orEmpty())
 
                     // No early return for an empty library: the sort/group/count logic below all
                     // collapses to empties cleanly, and favorites/custom lists can still be non-empty.
@@ -486,7 +518,7 @@ class LibraryViewModel @Inject constructor(
                         if (notPrivate) {
                             for (name in e.customLists) {
                                 customNames.add(name)
-                                if (filters.matches(e)) {
+                                if (e.matches()) {
                                     customEntriesMap.getOrPut(name) { ArrayList() }.add(e)
                                 }
                             }
@@ -506,6 +538,7 @@ class LibraryViewModel @Inject constructor(
                         .flatMap { it.entry.genres }
                         .distinct()
                         .sorted()
+                    val availableTags = libraryTagOptions(dedupedEntries, tagsByMedia)
                     val availableFormats = com.anisync.android.type.MediaFormat.entries
                         .filter { format -> sortedEntries.any { it.entry.format == format } }
                     val availableAiringStatuses = AIRING_STATUS_ORDER
@@ -513,7 +546,7 @@ class LibraryViewModel @Inject constructor(
 
                     val unfilteredEntries = visibilityFiltered.map { it.entry }
                     val allEntries = ArrayList<LibraryEntry>(visibilityFiltered.size).also { out ->
-                        for (s in visibilityFiltered) if (filters.matches(s.entry)) out.add(s.entry)
+                        for (s in visibilityFiltered) if (s.entry.matches()) out.add(s.entry)
                     }
                     val grouped = allEntries.groupBy { it.status }
 
@@ -524,7 +557,7 @@ class LibraryViewModel @Inject constructor(
                     val sortedCustomNames = tabOrder.filter { !it.startsWith("status:") && it in customNamesSet }
 
                     val sortedFavorites = favorites
-                        .filter { filters.matches(it) }
+                        .filter { it.matches() }
                         .sortedBy { it.getTitle(titleLang).lowercase() }
 
                     // Raw per-tab counts (independent of the query) for the tab badges.
@@ -585,6 +618,7 @@ class LibraryViewModel @Inject constructor(
                         searchMatches = searchMatches,
                         searchMatchesByCategory = searchMatchesByCategory,
                         availableGenres = availableGenres,
+                        availableTags = availableTags,
                         availableFormats = availableFormats,
                         availableAiringStatuses = availableAiringStatuses,
                         unfilteredTabCounts = unfilteredTabCounts
@@ -632,6 +666,7 @@ class LibraryViewModel @Inject constructor(
                             searchMatches = computed.searchMatches,
                             searchMatchesByCategory = computed.searchMatchesByCategory,
                             availableGenres = computed.availableGenres,
+                            availableTags = computed.availableTags,
                             availableFormats = computed.availableFormats,
                             availableAiringStatuses = computed.availableAiringStatuses,
                             unfilteredTabCounts = computed.unfilteredTabCounts,

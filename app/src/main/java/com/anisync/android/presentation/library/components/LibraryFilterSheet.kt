@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -35,14 +36,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.components.filtersheet.FilterSheetScaffold
+import com.anisync.android.presentation.components.filtersheet.TriState
+import com.anisync.android.presentation.components.filtersheet.longPressed
+import com.anisync.android.presentation.components.filtersheet.next
 import com.anisync.android.presentation.library.LibraryFilters
 import com.anisync.android.presentation.library.LibrarySort
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
 
@@ -143,22 +150,35 @@ fun LibraryFilterSheet(
 
             if (availableGenres.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
-                SectionLabel(stringResource(R.string.library_filter_genre))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SectionLabel(stringResource(R.string.library_filter_genre))
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = stringResource(R.string.library_filter_exclude_hint),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
                 var expanded by remember { mutableStateOf(false) }
-                val shown = if (expanded) availableGenres else availableGenres.take(8)
-                FilterChipRow(
+                // Collapsed still shows a selection that sorts past the first eight.
+                val shown = if (expanded) {
+                    availableGenres
+                } else {
+                    availableGenres.filterIndexed { index, genre ->
+                        index < INLINE_CHIPS || filters.genreState(genre) != TriState.OFF
+                    }
+                }
+                TriStateChipRow(
                     values = shown,
-                    label = { it },
-                    selected = filters.genres,
-                    onToggle = { value ->
-                        onFiltersChange(filters.copy(genres = filters.genres.toggle(value)))
-                    },
-                    trailing = if (!expanded && availableGenres.size > 8) {
+                    stateOf = filters::genreState,
+                    onStateChange = { genre, state -> onFiltersChange(filters.withGenre(genre, state)) },
+                    trailing = if (shown.size < availableGenres.size) {
                         {
                             FilterPill(
                                 label = stringResource(
                                     R.string.library_filter_more,
-                                    availableGenres.size - 8
+                                    availableGenres.size - shown.size
                                 ),
                                 selected = false,
                                 onClick = { expanded = true }
@@ -184,6 +204,9 @@ fun LibraryFilterSheet(
         }
     }
 }
+
+/** How many genres the row shows before the rest move behind a pill. */
+private const val INLINE_CHIPS = 8
 
 @Composable
 private fun SectionLabel(text: String) {
@@ -372,6 +395,100 @@ private fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit) {
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun TriStateChipRow(
+    values: List<String>,
+    stateOf: (String) -> TriState,
+    onStateChange: (String, TriState) -> Unit,
+    trailing: (@Composable () -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(bottom = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        values.forEach { value ->
+            TriStatePill(
+                label = value,
+                state = stateOf(value),
+                onStateChange = { onStateChange(value, it) }
+            )
+        }
+        trailing?.invoke()
+    }
+}
+
+/**
+ * [FilterPill] with the third state Search's genre and tag chips have: tap to include, again to
+ * exclude, long press to exclude straight away, with the same container colours.
+ */
+@Composable
+private fun TriStatePill(label: String, state: TriState, onStateChange: (TriState) -> Unit) {
+    val container = when (state) {
+        TriState.OFF -> MaterialTheme.colorScheme.surface
+        TriState.INCLUDED -> MaterialTheme.colorScheme.secondaryContainer
+        TriState.EXCLUDED -> MaterialTheme.colorScheme.errorContainer
+    }
+    val content = when (state) {
+        TriState.OFF -> MaterialTheme.colorScheme.onSurfaceVariant
+        TriState.INCLUDED -> MaterialTheme.colorScheme.onSecondaryContainer
+        TriState.EXCLUDED -> MaterialTheme.colorScheme.onErrorContainer
+    }
+    val stateLabel = stringResource(
+        when (state) {
+            TriState.OFF -> R.string.a11y_filter_off
+            TriState.INCLUDED -> R.string.a11y_filter_included
+            TriState.EXCLUDED -> R.string.a11y_filter_excluded
+        }
+    )
+    val longPressLabel = stringResource(
+        if (state == TriState.EXCLUDED) R.string.clear else R.string.a11y_filter_exclude
+    )
+    Surface(
+        color = container,
+        shape = CircleShape,
+        modifier = Modifier
+            .height(32.dp)
+            .semantics { stateDescription = stateLabel }
+            .bouncyCombinedClickable(
+                onClick = { onStateChange(state.next()) },
+                onLongClick = { onStateChange(state.longPressed()) },
+                onClickLabel = label,
+                onLongClickLabel = longPressLabel,
+                clipShape = CircleShape
+            )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            val icon = when (state) {
+                TriState.OFF -> null
+                TriState.INCLUDED -> Icons.Default.Check
+                TriState.EXCLUDED -> Icons.Default.Remove
+            }
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = content,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = content,
                 maxLines = 1
             )
         }
