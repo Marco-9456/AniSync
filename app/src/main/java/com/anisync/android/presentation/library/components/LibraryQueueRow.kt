@@ -250,7 +250,7 @@ fun LibraryQueueRow(
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun QueueCover(
+internal fun QueueCover(
     entry: LibraryEntry,
     title: String,
     dimmed: Boolean,
@@ -322,7 +322,7 @@ private fun QueueCover(
  * read as broken.
  */
 @Composable
-private fun QueueStateLine(
+internal fun QueueStateLine(
     entry: LibraryEntry,
     total: Int?,
     aired: Int?,
@@ -396,7 +396,7 @@ private fun QueueStateLine(
  * before "4 behind" is cut short.
  */
 @Composable
-private fun StateLineWithCount(
+internal fun StateLineWithCount(
     stateLine: @Composable () -> Unit,
     count: String,
     compactCount: String,
@@ -594,7 +594,7 @@ private fun OpenEndedTail(color: Color) {
  * Long-press opens the edit sheet, which is where a decrement or any other correction belongs.
  */
 @Composable
-private fun IncrementButton(
+internal fun IncrementButton(
     nextEpisode: Int,
     onIncrement: () -> Unit,
     onEdit: (() -> Unit)?
@@ -635,7 +635,7 @@ private fun IncrementButton(
 }
 
 @Composable
-private fun EditButton(onEdit: () -> Unit) {
+internal fun EditButton(onEdit: () -> Unit) {
     val haptic = rememberHapticFeedback()
     val shape = RoundedCornerShape(18.dp)
     Surface(
