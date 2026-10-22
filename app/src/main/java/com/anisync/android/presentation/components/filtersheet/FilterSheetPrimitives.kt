@@ -57,7 +57,8 @@ import com.anisync.android.presentation.components.AppModalBottomSheet
  * inside a lazy list.
  *
  * A [footer] stays below the scroll, so a long body never pushes the way out
- * of the sheet below the fold.
+ * of the sheet below the fold. A sheet with one opens fully for the same reason:
+ * half open, the footer would start below the screen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,8 +69,15 @@ fun FilterSheetScaffold(
     onReset: (() -> Unit)? = null,
     resetEnabled: Boolean = false,
     scrollableBody: Boolean = true,
-    sheetState: SheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden),
     footer: (@Composable () -> Unit)? = null,
+    sheetState: SheetState = if (footer != null) {
+        rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+        )
+    } else {
+        rememberBottomSheetState(initialValue = SheetValue.Hidden)
+    },
     content: @Composable ColumnScope.() -> Unit
 ) {
     AppModalBottomSheet(
