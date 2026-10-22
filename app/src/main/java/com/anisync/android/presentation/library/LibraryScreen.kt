@@ -94,6 +94,7 @@ import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryPriority
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.components.result.ResultGroupHeader
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.LocalWhatsNew
@@ -118,8 +119,6 @@ import com.anisync.android.presentation.library.components.LibraryOverflowMenu
 import com.anisync.android.presentation.library.components.LibraryPosterCard
 import com.anisync.android.presentation.library.components.LibraryQueueRow
 import com.anisync.android.presentation.library.components.LibraryRail
-import com.anisync.android.presentation.library.components.LibrarySearchCategoryBar
-import com.anisync.android.presentation.library.components.LibrarySearchResultCard
 import com.anisync.android.presentation.library.components.LibrarySelectionTopBar
 import com.anisync.android.presentation.library.components.LibrarySortSheet
 import com.anisync.android.presentation.library.components.LibraryViewOptionsSheet
@@ -176,6 +175,19 @@ sealed class LibraryTab {
      * id and no bulk mutation can address them.
      */
     val supportsSelection: Boolean get() = this !is Favorites
+
+    companion object {
+        /** The tab an id from the tab order names, or null for a list that no longer exists. */
+        fun fromId(id: String, customListNames: Collection<String>): LibraryTab? = when {
+            id == LIBRARY_ALL_TAB_ID -> All
+            id == LIBRARY_FAVORITES_TAB_ID -> Favorites
+            id.startsWith("status:") -> {
+                val statusName = id.removePrefix("status:")
+                LibraryStatus.entries.find { it.name == statusName }?.let { Standard(it) }
+            }
+            else -> if (id in customListNames) Custom(id) else null
+        }
+    }
 }
 
 @OptIn(
@@ -217,17 +229,7 @@ fun LibraryScreen(
 
     val tabs = remember(uiState.tabOrder, uiState.hiddenListNames, uiState.customListNames) {
         uiState.tabOrder.mapNotNull { id ->
-            if (id in uiState.hiddenListNames) return@mapNotNull null
-            when {
-                id == LIBRARY_ALL_TAB_ID -> LibraryTab.All
-                id == LIBRARY_FAVORITES_TAB_ID -> LibraryTab.Favorites
-                id.startsWith("status:") -> {
-                    val statusName = id.removePrefix("status:")
-                    LibraryStatus.entries.find { it.name == statusName }?.let { LibraryTab.Standard(it) }
-                }
-
-                else -> if (id in uiState.customListNames) LibraryTab.Custom(id) else null
-            }
+            if (id in uiState.hiddenListNames) null else LibraryTab.fromId(id, uiState.customListNames)
         }
     }
 
@@ -326,7 +328,8 @@ fun LibraryScreen(
             isGridView = isGridView,
             isNonDefaultSort = sortOption != LibrarySort.AIRING_SOON || !isAscending,
             showWhatsNewDot = WhatsNewItem.LIBRARY_SEARCH_FILTERS in rememberActiveWhatsNew(),
-            isAscending = isAscending,
+            // The arrow shows the way the list really runs, as the sort sheet's toggle does.
+            isAscending = sortOption.flipDirection(isAscending),
             showListManagement = showListManagement,
             onSearch = { keyboardController?.hide() },
             onBackClick = {
@@ -643,21 +646,34 @@ fun LibraryScreen(
         }
     }
 
-    if (editingEntry == null) {
-        ExpandedFullScreenSearchBar(
-            state = searchBarState,
-            inputField = { ProvideDisplaySize(content = inputField) }
-        ) {
-            ProvideDisplaySize {
-                LibrarySearchOverlay(
-                    uiState = uiState,
-                    isSearchQueryEmpty = isSearchQueryEmpty,
-                    onFilterChipTap = { openedFilter = it },
-                    onClearFilters = { viewModel.onAction(LibraryAction.ClearFilters) },
-                    onCategoryChange = { viewModel.onAction(LibraryAction.OnSearchCategoryChange(it)) },
-                    onResultClick = onSearchResultClick
-                )
-            }
+    val searchView = remember(
+        uiState.searchMatches,
+        uiState.searchMatchesByCategory,
+        uiState.tabOrder,
+        uiState.hiddenListNames,
+        uiState.customListNames,
+        uiState.activeSearchCategory
+    ) { librarySearchView(uiState) }
+
+    ExpandedFullScreenSearchBar(
+        state = searchBarState,
+        // On background rather than surfaceContainerHigh, so the cards keep their contrast.
+        colors = SearchBarDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
+        inputField = { ProvideDisplaySize(content = inputField) }
+    ) {
+        ProvideDisplaySize {
+            LibrarySearchOverlay(
+                uiState = uiState,
+                view = searchView,
+                isSearchQueryEmpty = isSearchQueryEmpty,
+                onFilterChipTap = { openedFilter = it },
+                onClearFilters = { viewModel.onAction(LibraryAction.ClearFilters) },
+                onCategoryChange = { viewModel.onAction(LibraryAction.OnSearchCategoryChange(it)) },
+                onGridChange = { viewModel.onAction(LibraryAction.SetGridView(it)) },
+                onResultClick = onSearchResultClick,
+                onIncrement = handleIncrement,
+                onEdit = handleEdit
+            )
         }
     }
 
@@ -669,6 +685,8 @@ fun LibraryScreen(
             sort = sortOption,
             isAscending = isAscending,
             filters = uiState.filters,
+            mediaType = mediaType,
+            matchingTitles = searchView.entries.size,
             availableGenres = uiState.availableGenres,
             availableTags = uiState.availableTags,
             availableFormats = uiState.availableFormats,
@@ -774,28 +792,27 @@ fun LibraryScreen(
     )
 
     editingEntry?.let { entry ->
-        LaunchedEffect(Unit) {
-            if (searchBarState.currentValue == SearchBarValue.Expanded) {
-                searchBarState.animateToCollapsed()
-            }
+        val sheet = @Composable {
+            EditLibraryEntrySheet(
+                entry = entry,
+                titleLanguage = titleLanguage,
+                scoreFormat = uiState.userScoreFormat,
+                availableCustomLists = uiState.customListNames,
+                advancedScoringCategories = uiState.advancedScoringCategories,
+                onDismiss = { editingEntry = null },
+                onSave = { updatedEntry ->
+                    viewModel.onAction(LibraryAction.UpdateEntry(updatedEntry))
+                    editingEntry = null
+                },
+                onDelete = {
+                    viewModel.onAction(LibraryAction.DeleteEntry(entry.id, entry.mediaId))
+                    editingEntry = null
+                }
+            )
         }
-
-        EditLibraryEntrySheet(
-            entry = entry,
-            titleLanguage = titleLanguage,
-            scoreFormat = uiState.userScoreFormat,
-            availableCustomLists = uiState.customListNames,
-            advancedScoringCategories = uiState.advancedScoringCategories,
-            onDismiss = { editingEntry = null },
-            onSave = { updatedEntry ->
-                viewModel.onAction(LibraryAction.UpdateEntry(updatedEntry))
-                editingEntry = null
-            },
-            onDelete = {
-                viewModel.onAction(LibraryAction.DeleteEntry(entry.id, entry.mediaId))
-                editingEntry = null
-            }
-        )
+        // From search the sheet opens over the overlay, which covers both panes, so the results
+        // are still there when it closes. From the list it stays on the list's own pane.
+        if (searchBarState.currentValue == SearchBarValue.Expanded) WindowModalSheetScope(sheet) else sheet()
     }
 
     uiState.scorePromptEntry?.let { entry ->
@@ -897,7 +914,7 @@ private fun LibraryTabContent(
                     key = "header_${group.title}",
                     contentType = "header"
                 ) {
-                    QueueGroupHeader(title = group.title, count = group.entries.size)
+                    ResultGroupHeader(title = stringResource(group.title), count = group.entries.size)
                 }
             }
 
@@ -964,27 +981,6 @@ private fun LibraryTabContent(
     }
 }
 
-@Composable
-private fun QueueGroupHeader(title: Int, count: Int) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Text(
-            text = stringResource(title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = count.toString(),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
 /** A run of entries under an optional header. */
 private data class QueueGroup(val title: Int?, val entries: List<LibraryEntry>)
 
@@ -1040,123 +1036,6 @@ private fun LibraryPriority.titleRes(): Int = when (this) {
     LibraryPriority.HIGH -> R.string.priority_high
     LibraryPriority.MEDIUM -> R.string.priority_medium
     LibraryPriority.LOW -> R.string.priority_low
-}
-
-@Composable
-private fun LibrarySearchOverlay(
-    uiState: LibraryUiState,
-    isSearchQueryEmpty: Boolean,
-    onFilterChipTap: (LibraryFilterId) -> Unit,
-    onClearFilters: () -> Unit,
-    onCategoryChange: (String) -> Unit,
-    onResultClick: (Int) -> Unit
-) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        LibraryFilterChipBar(
-            sort = uiState.sortOption,
-            isAscending = uiState.isAscending,
-            filters = uiState.filters,
-            onChipTap = onFilterChipTap
-        )
-        if (WhatsNewItem.LIBRARY_SEARCH_FILTERS in rememberActiveWhatsNew()) {
-            val whatsNewStore = LocalWhatsNew.current
-            InfoNotice(
-                text = stringResource(R.string.whats_new_library_filters),
-                onDismiss = { whatsNewStore.markSeen(WhatsNewItem.LIBRARY_SEARCH_FILTERS) },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-            )
-        }
-        LibrarySearchResults(
-            uiState = uiState,
-            isSearchQueryEmpty = isSearchQueryEmpty,
-            onClearFilters = onClearFilters,
-            onCategoryChange = onCategoryChange,
-            onResultClick = onResultClick
-        )
-    }
-}
-
-@Composable
-private fun LibrarySearchResults(
-    uiState: LibraryUiState,
-    isSearchQueryEmpty: Boolean,
-    onClearFilters: () -> Unit,
-    onCategoryChange: (String) -> Unit,
-    onResultClick: (Int) -> Unit
-) {
-    when {
-        uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                text = stringResource(R.string.loading),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        uiState.errorMessage != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
-        }
-
-        uiState.searchMatches.isEmpty() && (!isSearchQueryEmpty || !uiState.filters.isEmpty) ->
-            DiscoverNoResultsState(
-                hasFilters = !uiState.filters.isEmpty,
-                onClearFilters = onClearFilters
-            )
-
-        // Nothing typed and nothing filtered: keep the overlay empty (Discover parity).
-        uiState.searchMatches.isEmpty() -> Box(Modifier.fillMaxSize())
-
-        else -> {
-            val byCategory = uiState.searchMatchesByCategory
-            val categories = remember(uiState.searchMatches, byCategory, uiState.tabOrder, uiState.hiddenListNames) {
-                buildList {
-                    add(LIBRARY_ALL_TAB_ID to uiState.searchMatches.size)
-                    uiState.tabOrder.forEach { id ->
-                        if (id != LIBRARY_ALL_TAB_ID && id !in uiState.hiddenListNames) {
-                            byCategory[id]?.let { add(id to it.size) }
-                        }
-                    }
-                }
-            }
-            val categoryIds = remember(categories) { categories.mapTo(HashSet()) { it.first } }
-            val effectiveCategory = if (uiState.activeSearchCategory in categoryIds) {
-                uiState.activeSearchCategory
-            } else {
-                LIBRARY_ALL_TAB_ID
-            }
-            val activeList = if (effectiveCategory == LIBRARY_ALL_TAB_ID) {
-                uiState.searchMatches
-            } else {
-                byCategory[effectiveCategory] ?: uiState.searchMatches
-            }
-
-            Column(modifier = Modifier.fillMaxSize()) {
-                LibrarySearchCategoryBar(
-                    activeCategory = effectiveCategory,
-                    categories = categories,
-                    mediaType = uiState.mediaType,
-                    onCategoryChange = onCategoryChange
-                )
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(
-                        items = activeList,
-                        key = { "search_${it.mediaId}" },
-                        contentType = { "SearchResult" }
-                    ) { entry ->
-                        LibrarySearchResultCard(
-                            entry = entry,
-                            mediaType = uiState.mediaType,
-                            onClick = { onResultClick(entry.mediaId) },
-                            titleLanguage = uiState.titleLanguage
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
 /**

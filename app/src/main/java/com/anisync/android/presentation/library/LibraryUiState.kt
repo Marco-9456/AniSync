@@ -158,16 +158,24 @@ data class LibraryUiState(
     val isSelectionMode: Boolean get() = selectionTabId != null
 }
 
-enum class LibrarySort {
-    TITLE,
-    PROGRESS,
-    AIRING_SOON,
-    SCORE,
-    LAST_UPDATED,
-    LAST_ADDED,
-    START_DATE,
-    RELEASE_DATE,
-    PRIORITY
+/**
+ * The library's sort columns. The stored direction flag means "this column's own order", which is
+ * high to low for a score or a date and A to Z for a title, so [naturallyDescending] is what turns
+ * it into the direction the list really runs in.
+ */
+enum class LibrarySort(val naturallyDescending: Boolean) {
+    TITLE(false),
+    PROGRESS(true),
+    AIRING_SOON(false),
+    SCORE(true),
+    LAST_UPDATED(true),
+    LAST_ADDED(true),
+    START_DATE(true),
+    RELEASE_DATE(true),
+    PRIORITY(true);
+
+    /** Real ascending from the stored flag, and the stored flag from real ascending. */
+    fun flipDirection(ascending: Boolean): Boolean = if (naturallyDescending) !ascending else ascending
 }
 
 sealed interface LibraryAction {

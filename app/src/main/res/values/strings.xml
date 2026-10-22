@@ -317,12 +317,12 @@
     <string name="toggle_view">Toggle View</string>
     <string name="sort_title_az">Title</string>
     <string name="sort_progress">Progress</string>
-    <string name="sort_airing_soon">Airing Soon</string>
+    <string name="sort_airing_soon">Airing soon</string>
     <string name="sort_score">Score</string>
-    <string name="sort_last_updated">Updated At</string>
-    <string name="sort_last_added">Added At</string>
-    <string name="sort_start_date">Started At</string>
-    <string name="sort_release_date">Release Date</string>
+    <string name="sort_last_updated">Updated</string>
+    <string name="sort_last_added">Added</string>
+    <string name="sort_start_date">Started</string>
+    <string name="sort_release_date">Release date</string>
     <string name="sort_default">Default</string>
     <string name="sort_popularity">Popularity</string>
     <string name="sort_average_score">Average Score</string>
