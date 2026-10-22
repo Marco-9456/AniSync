@@ -71,6 +71,7 @@ import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.formatCountdownAdaptive
 import com.anisync.android.presentation.util.mediaRankingLabel
 import com.anisync.android.presentation.util.rememberCopyToClipboard
+import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.delay
 
@@ -637,27 +638,9 @@ internal fun rememberLiveCountdownSeconds(airingAt: Long, fallbackSeconds: Int):
 }
 
 @Composable
-private fun getSourceDisplayName(source: String): String {
-    return when (source.uppercase()) {
-        "ORIGINAL" -> stringResource(R.string.source_original)
-        "MANGA" -> stringResource(R.string.source_manga)
-        "LIGHT_NOVEL" -> stringResource(R.string.source_light_novel)
-        "VISUAL_NOVEL" -> stringResource(R.string.source_visual_novel)
-        "VIDEO_GAME" -> stringResource(R.string.source_video_game)
-        "OTHER" -> stringResource(R.string.source_other)
-        "NOVEL" -> stringResource(R.string.source_novel)
-        "DOUJINSHI" -> stringResource(R.string.source_doujinshi)
-        "ANIME" -> stringResource(R.string.source_anime)
-        "WEB_NOVEL" -> stringResource(R.string.source_web_novel)
-        "LIVE_ACTION" -> stringResource(R.string.source_live_action)
-        "GAME" -> stringResource(R.string.source_game)
-        "COMIC" -> stringResource(R.string.source_comic)
-        "MULTIMEDIA_PROJECT" -> stringResource(R.string.source_multimedia_project)
-        "PICTURE_BOOK" -> stringResource(R.string.source_picture_book)
-        else -> source.replace("_", " ").lowercase()
-            .replaceFirstChar { it.uppercase() }
-    }
-}
+private fun getSourceDisplayName(source: String): String =
+    com.anisync.android.type.MediaSource.safeValueOf(source.uppercase()).toLabel()
+        ?: source.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
 
 // --- Expandable "array" pills (Titles / Synonyms / Producers) ---------------------------------
 

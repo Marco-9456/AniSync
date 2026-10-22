@@ -1072,7 +1072,7 @@
     <!-- Media Status (for search filter) -->
     <string name="media_status_airing">Airing</string>
     <string name="media_status_finished">Finished</string>
-    <string name="media_status_not_yet_released">Not Yet Released</string>
+    <string name="media_status_not_yet_released">Not yet released</string>
     <string name="media_status_cancelled">Cancelled</string>
     <string name="media_status_hiatus">Hiatus</string>
     <!-- Media Formats -->
@@ -2178,6 +2178,10 @@
     <string name="filter_chip_value">%1$s · %2$s</string>
     <string name="filter_chip_value_more">%1$s · %2$s +%3$d</string>
     <string name="filter_publishing_status">Publishing status</string>
+    <string name="country_japan">Japan</string>
+    <string name="country_south_korea">South Korea</string>
+    <string name="country_china">China</string>
+    <string name="country_taiwan">Taiwan</string>
     <string name="library_filter_tags">Tags</string>
     <string name="library_filter_chip_sort">Sort · %1$s</string>
     <string name="library_filter_chip_count">%1$s · %2$d</string>

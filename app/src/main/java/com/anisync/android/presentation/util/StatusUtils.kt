@@ -18,7 +18,10 @@ import androidx.compose.ui.res.vectorResource
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryPriority
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.OriginCountry
 import com.anisync.android.type.MediaFormat
+import com.anisync.android.type.MediaSeason
+import com.anisync.android.type.MediaSource
 import com.anisync.android.type.MediaStatus
 import com.anisync.android.type.MediaType
 
@@ -123,13 +126,52 @@ fun LibraryPriority.toIcon(): ImageVector = ImageVector.vectorResource(toIconRes
 @Composable
 fun MediaStatus.toLabel(): String {
     return when (this) {
-        MediaStatus.RELEASING -> stringResource(R.string.media_status_airing)
+        MediaStatus.RELEASING -> stringResource(R.string.media_status_releasing)
         MediaStatus.FINISHED -> stringResource(R.string.media_status_finished)
         MediaStatus.NOT_YET_RELEASED -> stringResource(R.string.media_status_not_yet_released)
         MediaStatus.CANCELLED -> stringResource(R.string.media_status_cancelled)
         MediaStatus.HIATUS -> stringResource(R.string.media_status_hiatus)
         MediaStatus.UNKNOWN__ -> ""
     }
+}
+
+@Composable
+fun MediaSource.toLabel(): String? = when (this) {
+    MediaSource.ORIGINAL -> stringResource(R.string.source_original)
+    MediaSource.MANGA -> stringResource(R.string.source_manga)
+    MediaSource.LIGHT_NOVEL -> stringResource(R.string.source_light_novel)
+    MediaSource.VISUAL_NOVEL -> stringResource(R.string.source_visual_novel)
+    MediaSource.VIDEO_GAME -> stringResource(R.string.source_video_game)
+    MediaSource.OTHER -> stringResource(R.string.source_other)
+    MediaSource.NOVEL -> stringResource(R.string.source_novel)
+    MediaSource.DOUJINSHI -> stringResource(R.string.source_doujinshi)
+    MediaSource.ANIME -> stringResource(R.string.source_anime)
+    MediaSource.WEB_NOVEL -> stringResource(R.string.source_web_novel)
+    MediaSource.LIVE_ACTION -> stringResource(R.string.source_live_action)
+    MediaSource.GAME -> stringResource(R.string.source_game)
+    MediaSource.COMIC -> stringResource(R.string.source_comic)
+    MediaSource.MULTIMEDIA_PROJECT -> stringResource(R.string.source_multimedia_project)
+    MediaSource.PICTURE_BOOK -> stringResource(R.string.source_picture_book)
+    MediaSource.UNKNOWN__ -> null
+}
+
+@Composable
+fun OriginCountry.toLabel(): String = stringResource(
+    when (this) {
+        OriginCountry.JAPAN -> R.string.country_japan
+        OriginCountry.SOUTH_KOREA -> R.string.country_south_korea
+        OriginCountry.CHINA -> R.string.country_china
+        OriginCountry.TAIWAN -> R.string.country_taiwan
+    }
+)
+
+@Composable
+fun MediaSeason.toLabel(): String? = when (this) {
+    MediaSeason.WINTER -> stringResource(R.string.season_winter)
+    MediaSeason.SPRING -> stringResource(R.string.season_spring)
+    MediaSeason.SUMMER -> stringResource(R.string.season_summer)
+    MediaSeason.FALL -> stringResource(R.string.season_fall)
+    MediaSeason.UNKNOWN__ -> null
 }
 
 /**
