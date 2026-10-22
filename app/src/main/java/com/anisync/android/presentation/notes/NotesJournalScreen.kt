@@ -59,7 +59,7 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.EmptyStateWithAction
-import com.anisync.android.presentation.forum.components.SearchField
+import com.anisync.android.presentation.components.SearchField
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.toLabel
@@ -70,7 +70,7 @@ import com.anisync.android.util.getTitle
  * from the Library top bar. Surfaces notes that were previously buried inside the edit sheet (#75).
  *
  * Uses the app's native vocabulary throughout: the flat page-toned chrome of the Calendar screen,
- * the shared [SearchField] pill, and [LibraryListCard]-style cards so it reads as part of the same app.
+ * the shared [SearchField] pill, and library-style cards so it reads as part of the same app.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -2173,7 +2173,11 @@
     <string name="library_filter_format">Format</string>
     <string name="library_filter_genre">Genre</string>
     <string name="library_filter_more">+ %1$d more</string>
-    <string name="library_filter_exclude_hint">Tap to include, tap again to exclude</string>
+    <string name="library_filter_exclude_hint">Tap to include, tap again to exclude. Hold to exclude.</string>
+    <string name="filter_hint_with_counts">%1$s. %2$s</string>
+    <string name="filter_chip_value">%1$s · %2$s</string>
+    <string name="filter_chip_value_more">%1$s · %2$s +%3$d</string>
+    <string name="filter_publishing_status">Publishing status</string>
     <string name="library_filter_tags">Tags</string>
     <string name="library_filter_chip_sort">Sort · %1$s</string>
     <string name="library_filter_chip_count">%1$s · %2$d</string>

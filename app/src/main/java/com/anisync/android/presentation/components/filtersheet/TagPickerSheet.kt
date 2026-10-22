@@ -4,17 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -27,9 +21,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.presentation.components.SearchField
 
 /**
  * One tag the picker can offer.
@@ -50,7 +44,8 @@ private const val SPOILER_GROUP = "spoilers"
 /**
  * Search field over [tags], grouped by AniList category with one group open at a time.
  *
- * Edits apply live through [onSelectionChange], the same way every other filter sheet works.
+ * Edits apply live through [onSelectionChange], the same way every other filter sheet works. How
+ * many are picked leads the hint rather than the title, where arrows read as a sort.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -60,7 +55,8 @@ fun TagPickerSheet(
     excluded: Set<String>,
     showAdult: Boolean,
     onSelectionChange: (included: Set<String>, excluded: Set<String>) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    footer: (@Composable () -> Unit)? = null
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var expandedGroup by rememberSaveable { mutableStateOf<String?>(null) }
@@ -76,28 +72,26 @@ fun TagPickerSheet(
     val spoilers = remember(visibleTags) { visibleTags.filter { it.isSpoiler } }
 
     FilterSheetScaffold(
-        title = stringResource(R.string.tag_picker_title, included.size, excluded.size),
+        title = stringResource(R.string.library_filter_tags),
         onDismiss = onDismiss,
         onReset = { onSelectionChange(emptySet(), emptySet()) },
         resetEnabled = included.isNotEmpty() || excluded.isNotEmpty(),
-        scrollableBody = false
+        scrollableBody = false,
+        footer = footer
     ) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            placeholder = { Text(stringResource(R.string.search_tags_hint)) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp)
+        SearchField(
+            query = query,
+            onQueryChange = { query = it },
+            placeholder = stringResource(R.string.search_tags_hint),
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        IncludeExcludeHint(
+            counts = selectionSummary(included.size, excluded.size),
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 8.dp)
         )
 
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(vertical = 8.dp)
-        ) {
+        LazyColumn(modifier = Modifier.fillMaxWidth()) {
             grouped.forEach { (category, categoryTags) ->
                 val key = "group-$category"
                 item(key = key) {
@@ -176,7 +170,6 @@ private fun TagGroup(
         onToggle = onToggle
     ) {
         FlowRow(
-            modifier = Modifier.padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -202,14 +195,15 @@ private fun TagGroup(
 }
 
 @Composable
-private fun groupSummary(tags: List<TagChoice>, included: Set<String>, excluded: Set<String>): String {
-    val includedCount = tags.count { it.name in included }
-    val excludedCount = tags.count { it.name in excluded }
-    return when {
-        includedCount == 0 && excludedCount == 0 ->
-            pluralStringResource(R.plurals.tag_picker_count, tags.size, tags.size)
-        excludedCount == 0 -> stringResource(R.string.tag_picker_included, includedCount)
-        includedCount == 0 -> stringResource(R.string.tag_picker_excluded, excludedCount)
-        else -> stringResource(R.string.tag_picker_included_excluded, includedCount, excludedCount)
-    }
+private fun groupSummary(tags: List<TagChoice>, included: Set<String>, excluded: Set<String>): String =
+    selectionSummary(tags.count { it.name in included }, tags.count { it.name in excluded })
+        ?: pluralStringResource(R.plurals.tag_picker_count, tags.size, tags.size)
+
+/** "2 included", "1 excluded", or both. Null while nothing is picked. */
+@Composable
+private fun selectionSummary(includedCount: Int, excludedCount: Int): String? = when {
+    includedCount == 0 && excludedCount == 0 -> null
+    excludedCount == 0 -> stringResource(R.string.tag_picker_included, includedCount)
+    includedCount == 0 -> stringResource(R.string.tag_picker_excluded, excludedCount)
+    else -> stringResource(R.string.tag_picker_included_excluded, includedCount, excludedCount)
 }

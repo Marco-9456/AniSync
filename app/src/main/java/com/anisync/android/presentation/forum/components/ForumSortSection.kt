@@ -1,37 +1,23 @@
 package com.anisync.android.presentation.forum.components
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.ThreadSortField
 import com.anisync.android.domain.ThreadSortOption
-import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.components.filtersheet.DirectionToggle
+import com.anisync.android.presentation.components.filtersheet.OptionPillGrid
 
 /** The column label. Direction is the toggle's job, so these name the column and nothing else. */
 @StringRes
@@ -87,151 +73,11 @@ fun ForumSortSection(
 
     Spacer(Modifier.height(10.dp))
 
-    ThreadSortField.entries.toList().chunked(2).forEach { pair ->
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontalPadding, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            pair.forEach { field ->
-                SortPill(
-                    label = stringResource(field.labelRes()),
-                    selected = field == selectedField,
-                    onClick = { onSortChange(field.toOption(ascending)) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            if (pair.size == 1) Spacer(Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-private fun SortPill(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        color = if (selected) {
-            MaterialTheme.colorScheme.secondaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceContainer
-        },
-        shape = RoundedCornerShape(22.dp),
-        modifier = modifier
-            .height(48.dp)
-            .bouncyClickable(
-                onClick = onClick,
-                role = Role.RadioButton,
-                clipShape = RoundedCornerShape(22.dp)
-            )
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-            if (selected) {
-                Spacer(Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DirectionToggle(
-    isAscending: Boolean,
-    enabled: Boolean,
-    onChange: (Boolean) -> Unit
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-        DirectionSegment(
-            label = stringResource(R.string.ascending),
-            selected = isAscending && enabled,
-            enabled = enabled,
-            shape = RoundedCornerShape(
-                topStart = 14.dp,
-                bottomStart = 14.dp,
-                topEnd = 6.dp,
-                bottomEnd = 6.dp
-            ),
-            onClick = { onChange(true) }
-        )
-        DirectionSegment(
-            label = stringResource(R.string.descending),
-            selected = !isAscending || !enabled,
-            enabled = enabled,
-            shape = RoundedCornerShape(
-                topEnd = 14.dp,
-                bottomEnd = 14.dp,
-                topStart = 6.dp,
-                bottomStart = 6.dp
-            ),
-            onClick = { onChange(false) }
-        )
-    }
-}
-
-@Composable
-private fun DirectionSegment(
-    label: String,
-    selected: Boolean,
-    enabled: Boolean,
-    shape: Shape,
-    onClick: () -> Unit
-) {
-    val resolved = if (selected) CircleShape else shape
-    Surface(
-        color = if (selected) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.surfaceContainer
-        },
-        shape = resolved,
-        modifier = Modifier
-            .height(28.dp)
-            .bouncyClickable(
-                onClick = onClick,
-                enabled = enabled,
-                role = Role.RadioButton,
-                clipShape = resolved
-            )
-            .then(if (enabled) Modifier else Modifier.alpha(0.38f))
-    ) {
-        Box(
-            modifier = Modifier.padding(horizontal = 14.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-        }
-    }
+    OptionPillGrid(
+        options = ThreadSortField.entries,
+        label = { stringResource(it.labelRes()) },
+        isSelected = { it == selectedField },
+        onClick = { field -> onSortChange(field.toOption(ascending)) },
+        horizontalPadding = horizontalPadding
+    )
 }

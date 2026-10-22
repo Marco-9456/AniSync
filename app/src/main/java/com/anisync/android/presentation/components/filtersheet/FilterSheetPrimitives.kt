@@ -4,8 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,15 +11,17 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -55,6 +55,9 @@ import com.anisync.android.presentation.components.AppModalBottomSheet
  * Callers that own their own scroll container (LazyColumn, LazyVerticalGrid)
  * must pass `scrollableBody = false` to avoid nesting a vertical scroll
  * inside a lazy list.
+ *
+ * A [footer] stays below the scroll, so a long body never pushes the way out
+ * of the sheet below the fold.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +69,7 @@ fun FilterSheetScaffold(
     resetEnabled: Boolean = false,
     scrollableBody: Boolean = true,
     sheetState: SheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden),
+    footer: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     AppModalBottomSheet(
@@ -98,16 +102,55 @@ fun FilterSheetScaffold(
                 color = MaterialTheme.colorScheme.outlineVariant
             )
             val bodyBase = Modifier
+                .weight(1f, fill = false)
                 .fillMaxWidth()
-                .padding(bottom = 32.dp)
+                .padding(bottom = if (footer != null) 8.dp else 32.dp)
             val bodyModifier = if (scrollableBody) {
                 bodyBase.verticalScroll(rememberScrollState())
             } else {
                 bodyBase
             }
             Column(modifier = bodyModifier, content = content)
+            footer?.invoke()
         }
     }
+}
+
+/**
+ * The way out of a filter sheet: a full-width 56dp primary button that says how many titles the
+ * filters leave, and closes the sheet. Sort sheets do without it, since a sort removes nothing.
+ */
+@Composable
+fun SheetFooterButton(text: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        shape = CircleShape,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp)
+            .height(56.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+/** A small uppercase label over one part of a sheet that holds two, such as Season and Year. */
+@Composable
+fun SheetSectionLabel(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp)
+    )
 }
 
 /**
@@ -174,58 +217,6 @@ fun FilterOptionRow(
 }
 
 /**
- * Low-emphasis row for child controls inside [FilterOptionGroup]. Strips the
- * 28dp pill so children are clearly subordinate to the parent group header.
- * Tap target stays comfortable (12dp vertical padding).
- */
-@Composable
-fun FilterCompactRow(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    leading: (@Composable () -> Unit)? = null,
-    supporting: String? = null
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (leading != null) {
-            leading()
-            Spacer(modifier = Modifier.width(12.dp))
-        } else if (selected) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (selected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
-            )
-            if (supporting != null) {
-                Text(
-                    text = supporting,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-/**
  * Container that collapses to a [FilterOptionRow]-shaped pill and grows
  * downward in place when expanded, revealing its children inside the same
  * surface. Matches the reference prototype where the body appears to "live
@@ -246,10 +237,9 @@ fun FilterOptionGroup(
         targetValue = if (expanded) 90f else 0f,
         label = "FilterOptionGroup.chevron"
     )
-    // Keep the surface color constant across expansion so that filter chips
-    // inside the expanded body (which use `secondaryContainer` for their
-    // selected state) stay distinguishable from the container.
-    val container = MaterialTheme.colorScheme.surface
+    // One step up from the sheet, and constant across expansion. What the body holds steps up
+    // again (surfaceContainerHighest) so pills and the wheel still read against the group.
+    val container = MaterialTheme.colorScheme.surfaceContainer
     val onContainer = MaterialTheme.colorScheme.onSurface
 
     Surface(

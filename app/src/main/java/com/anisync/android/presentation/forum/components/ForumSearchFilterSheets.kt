@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -28,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -43,10 +41,10 @@ import com.anisync.android.presentation.components.filtersheet.AuthorPickerRow
 import com.anisync.android.presentation.components.filtersheet.FilterOptionRow
 import com.anisync.android.presentation.components.filtersheet.FilterSheetScaffold
 import com.anisync.android.presentation.components.filtersheet.MediaPickerRow
+import com.anisync.android.presentation.components.filtersheet.OptionPillGrid
 import com.anisync.android.presentation.components.filtersheet.PickerResults
 import com.anisync.android.presentation.components.filtersheet.PickerSearchField
 import com.anisync.android.presentation.forum.defaultCategories
-import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.type.MediaType
 
 /**
@@ -113,28 +111,15 @@ fun ForumSearchFilterSheetHost(
             // A two-column grid rather than seventeen full-width rows, which was most of a
             // screen of scrolling for a single choice.
             val entries: List<ForumCategory?> = listOf(null) + defaultCategories
-            entries.chunked(2).forEach { pair ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    pair.forEach { category ->
-                        CategoryPill(
-                            label = category?.name
-                                ?: stringResource(R.string.forum_category_all),
-                            selected = filters.category?.id == category?.id,
-                            onClick = {
-                                onCategoryChange(category)
-                                onDismiss()
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    if (pair.size == 1) Spacer(Modifier.weight(1f))
+            OptionPillGrid(
+                options = entries,
+                label = { it?.name ?: stringResource(R.string.forum_category_all) },
+                isSelected = { it?.id == filters.category?.id },
+                onClick = { category ->
+                    onCategoryChange(category)
+                    onDismiss()
                 }
-            }
+            )
             Spacer(Modifier.height(8.dp))
         }
 
@@ -291,57 +276,6 @@ fun ForumMediaFilterHeader(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.forum_start_discussion))
-            }
-        }
-    }
-}
-
-@Composable
-private fun CategoryPill(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        color = if (selected) {
-            MaterialTheme.colorScheme.secondaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceContainer
-        },
-        shape = RoundedCornerShape(22.dp),
-        modifier = modifier
-            .height(48.dp)
-            .bouncyClickable(
-                onClick = onClick,
-                role = Role.RadioButton,
-                clipShape = RoundedCornerShape(22.dp)
-            )
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-            if (selected) {
-                Spacer(Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(18.dp)
-                )
             }
         }
     }

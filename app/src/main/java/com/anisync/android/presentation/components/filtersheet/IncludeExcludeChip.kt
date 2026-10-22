@@ -122,3 +122,18 @@ fun IncludeExcludeChip(
         }
     }
 }
+
+/**
+ * The line over every set of [IncludeExcludeChip]s, saying how the chips cycle. Where something is
+ * already picked, [counts] leads it.
+ */
+@Composable
+fun IncludeExcludeHint(counts: String?, modifier: Modifier = Modifier) {
+    val hint = stringResource(R.string.library_filter_exclude_hint)
+    Text(
+        text = if (counts == null) hint else stringResource(R.string.filter_hint_with_counts, counts, hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+    )
+}

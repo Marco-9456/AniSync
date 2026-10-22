@@ -34,7 +34,7 @@ import com.anisync.android.presentation.components.alert.rememberRateLimitedRefr
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.ForumThreadCardSkeleton
-import com.anisync.android.presentation.forum.components.SearchField
+import com.anisync.android.presentation.components.SearchField
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)

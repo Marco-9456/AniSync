@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.ThreadSortOption
 import com.anisync.android.presentation.components.AppModalBottomSheet
+import com.anisync.android.presentation.components.filtersheet.SheetFooterButton
 import com.anisync.android.presentation.util.bouncyClickable
 
 /**
@@ -99,27 +98,9 @@ fun ForumSortFilterSheet(
         }
 
         // Out of the scroll: a sheet whose only way to apply is below the fold reads as having none.
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = onApply,
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .height(56.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.forum_show_threads_count, resultCount),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            Spacer(Modifier.height(24.dp))
-        }
+        SheetFooterButton(
+            text = stringResource(R.string.forum_show_threads_count, resultCount),
+            onClick = onApply
+        )
     }
 }

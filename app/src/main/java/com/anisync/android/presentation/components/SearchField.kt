@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.forum.components
+package com.anisync.android.presentation.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -20,12 +20,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.anisync.android.R
 
+/**
+ * The app's filled pill search field, with a clear button once something is typed. A field on a
+ * sheet passes surfaceContainer so it sits one step above the sheet rather than two.
+ */
 @Composable
 fun SearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     placeholder: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest
 ) {
     TextField(
         value = query,
@@ -62,8 +67,8 @@ fun SearchField(
         singleLine = true,
         shape = RoundedCornerShape(50),
         colors = TextFieldDefaults.colors(
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            unfocusedContainerColor = containerColor,
+            focusedContainerColor = containerColor,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent
