@@ -1287,7 +1287,7 @@
     <string name="library_empty_planning_title">暫無計畫</string>
     <string name="library_empty_completed_title">暫無完成</string>
     <string name="library_empty_dropped_title">暫無拋棄</string>
-    <string name="library_empty_favorites_desc">點擊標題上的愛心後，它將保留於此</string>
+    <string name="library_empty_favorites_desc">點擊項目中的愛心後，它將保留於此</string>
     <string name="library_empty_all_title">你的倉庫是空的…</string>
     <string name="library_empty_completed_desc">完成項將伴隨你的評分出現在這~</string>
     <string name="library_empty_all_desc">任何你在 AniList 追蹤的，都會出現在這</string>
@@ -1630,7 +1630,7 @@
     <string name="settings_section_display_size">顯示大小</string>
     <string name="settings_section_color">顏色</string>
     <string name="settings_section_bottom_bar">底欄</string>
-    <string name="settings_section_covers">封面圖</string>
+    <string name="settings_section_covers">封面</string>
     <string name="settings_general_desc">啟動頁、語言、應用鎖、串流</string>
     <string name="whats_new_general_notice">它們從「主題與樣式」搬來這啦~</string>
     <string name="setting_score_on_complete">看完時詢問分數</string>
@@ -1725,4 +1725,16 @@
     <string name="app_icon_ink">墨色</string>
     <string name="setting_app_icon">應用圖標</string>
     <string name="setting_app_icon_desc">新圖標將在你回到桌面時呈現，如果是快捷方式則可能需要重新添加</string>
+    <string name="pinned">已置頂</string>
+    <string name="library_chapter_count">%1$d 章</string>
+    <string name="library_filters">篩選</string>
+    <string name="library_on">開啟</string>
+    <string name="library_off">關閉</string>
+    <string name="library_empty_action_clear_filters">清空篩選器</string>
+    <string name="list_deleted">已刪除「%s」清單</string>
+    <string name="list_created">已創建「%s」清單</string>
+    <string name="filter_on_my_list">在我的清單內</string>
+    <string name="library_group_waiting">等待中</string>
+    <string name="library_group_ready">已可觀看</string>
+    <string name="edit_entry_of_total">之 %1$d</string>
 </resources>
