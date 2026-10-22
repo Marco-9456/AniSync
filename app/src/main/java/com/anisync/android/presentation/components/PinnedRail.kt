@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -27,6 +29,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.first
 
 /**
  * A row of chips that scroll under a control pinned at its start.
@@ -94,5 +97,22 @@ fun PinnedRail(
                 .height(height)
                 .background(Brush.horizontalGradient(listOf(Color.Transparent, background)))
         )
+    }
+}
+
+/**
+ * Scrolls the chip at [index] fully into view, by as little as it takes. A chip already in sight
+ * leaves the rail alone, so the chips before it stay under the viewer's eye instead of sliding
+ * behind the pinned control.
+ */
+suspend fun LazyListState.revealChip(index: Int) {
+    // The first pick can arrive before the rail has been laid out.
+    val info = snapshotFlow { layoutInfo }.first { it.visibleItemsInfo.isNotEmpty() }
+    val chip = info.visibleItemsInfo.firstOrNull { it.index == index }
+    val end = info.viewportEndOffset - info.afterContentPadding
+    when {
+        chip == null -> animateScrollToItem(index)
+        chip.offset < 0 -> animateScrollBy(chip.offset.toFloat())
+        chip.offset + chip.size > end -> animateScrollBy((chip.offset + chip.size - end).toFloat())
     }
 }

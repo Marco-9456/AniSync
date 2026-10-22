@@ -42,6 +42,7 @@ import com.anisync.android.domain.SearchResult
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.PinnedRail
 import com.anisync.android.presentation.components.RailChip
+import com.anisync.android.presentation.components.revealChip
 import com.anisync.android.presentation.components.ViewModeToggle
 import com.anisync.android.presentation.components.result.DiscoverResultPoster
 import com.anisync.android.presentation.components.result.DiscoverResultRow
@@ -77,9 +78,9 @@ fun SearchResultsRail(
 ) {
     val listState = rememberLazyListState()
     val selectedIndex = categories.indexOf(activeCategory)
-    // A category picked through See all can sit off screen; the rail follows it there.
+    // A category picked through See all can sit off screen, so the rail follows it there.
     LaunchedEffect(selectedIndex) {
-        if (selectedIndex >= 0) listState.animateScrollToItem(selectedIndex)
+        if (selectedIndex >= 0) listState.revealChip(selectedIndex)
     }
     PinnedRail(
         pinned = { ViewModeToggle(isGrid = isGrid, onGridChange = onGridChange) },

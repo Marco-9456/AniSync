@@ -29,6 +29,7 @@ import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.PinnedRail
 import com.anisync.android.presentation.components.ViewModeToggle
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
+import com.anisync.android.presentation.components.revealChip
 import com.anisync.android.presentation.components.result.LibraryResultRow
 import com.anisync.android.presentation.components.result.ResultGroupHeader
 import com.anisync.android.presentation.discover.components.DiscoverNoResultsState
@@ -169,7 +170,7 @@ private fun LibrarySearchRail(
     val listState = rememberLazyListState()
     val selectedIndex = view.categories.indexOfFirst { it.first == view.active }
     LaunchedEffect(selectedIndex) {
-        if (selectedIndex >= 0) listState.animateScrollToItem(selectedIndex)
+        if (selectedIndex >= 0) listState.revealChip(selectedIndex)
     }
     PinnedRail(
         pinned = { ViewModeToggle(isGrid = uiState.isGridView, onGridChange = onGridChange) },
