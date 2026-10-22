@@ -15,30 +15,21 @@ val ADULT_GENRES = setOf("Hentai")
 /**
  * Origin country for `countryOfOrigin` (ISO 3166-1 alpha-2).
  */
-enum class OriginCountry(val code: String, val displayName: String) {
-    JAPAN("JP", "Japan"),
-    SOUTH_KOREA("KR", "South Korea"),
-    CHINA("CN", "China"),
-    TAIWAN("TW", "Taiwan");
-
-    companion object {
-        fun fromCode(code: String?): OriginCountry? = entries.firstOrNull { it.code == code }
-    }
+enum class OriginCountry(val code: String) {
+    JAPAN("JP"),
+    SOUTH_KOREA("KR"),
+    CHINA("CN"),
+    TAIWAN("TW")
 }
 
 /** Adult-content quick filter shown in the chip bar (alongside the global pref). */
 enum class AdultMode { ANY, HIDE, ONLY }
 
 /**
- * Entity bucket the user wants the search overlay to target.
- *
- * Null means "follow the discover screen's Anime/Manga selector"; an explicit
- * value overrides it. Non-media values (CHARACTERS/STAFF/USERS/STUDIOS) cause
- * media-only filters (genres, year, format, etc.) to be hidden in the chip
- * bar, and the viewmodel skips the heavy `Search.graphql` call in favor of
- * the multi-entity `SearchAll.graphql` projection.
+ * The kinds of result Discover search returns, in the order its rail lists them. The rail picks
+ * which of them is on screen, and a preset from another screen can open straight onto one.
  */
-enum class SearchType { ANIME, MANGA, CHARACTERS, STAFF, USERS, STUDIOS }
+enum class ResultCategory { ALL, ANIME, MANGA, CHARACTERS, STAFF, USERS, STUDIOS }
 
 /** Closed year range; both bounds inclusive. Null bound = open ended. */
 @Immutable
@@ -63,8 +54,7 @@ data class IntComparatorFilter(
 
 @Immutable
 data class SearchFilters(
-    val sort: SortOption = SortOption.POPULARITY_DESC,
-    val searchType: SearchType? = null,
+    val sort: SearchSort = SearchSort(),
     val genresIncluded: Set<String> = emptySet(),
     val genresExcluded: Set<String> = emptySet(),
     val tagsIncluded: Set<String> = emptySet(),
@@ -80,27 +70,9 @@ data class SearchFilters(
     val country: OriginCountry? = null,
     val adultMode: AdultMode = AdultMode.ANY
 ) {
-    /** True when [searchType] forces the overlay onto a non-media entity. */
-    val isNonMediaType: Boolean
-        get() = searchType != null && searchType != SearchType.ANIME && searchType != SearchType.MANGA
+    /** A changed sort counts: ordering everything by score with nothing typed is a search. */
+    val hasActiveFilters: Boolean get() = sort != SearchSort() || hasNarrowingFilters
 
-    val hasActiveFilters: Boolean get() = activeFilterCount > 0
-
-    val activeFilterCount: Int
-        get() = listOf(
-            sort != SortOption.POPULARITY_DESC,
-            searchType != null,
-            genresIncluded.isNotEmpty() || genresExcluded.isNotEmpty(),
-            tagsIncluded.isNotEmpty() || tagsExcluded.isNotEmpty(),
-            yearRange.isActive,
-            season != null,
-            formats.isNotEmpty(),
-            statuses.isNotEmpty(),
-            sources.isNotEmpty(),
-            score.isActive,
-            episodes.isActive,
-            chapters.isActive,
-            country != null,
-            adultMode != AdultMode.ANY
-        ).count { it }
+    /** Anything that takes titles out of the results, which is what the Clear chip clears. */
+    val hasNarrowingFilters: Boolean get() = copy(sort = SearchSort()) != SearchFilters()
 }

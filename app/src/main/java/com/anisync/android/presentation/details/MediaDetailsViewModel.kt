@@ -598,12 +598,23 @@ class MediaDetailsViewModel @Inject constructor(
     }
 
     /**
-     * Ask the Discover tab to open its search overlay with [filters] preset —
-     * ranking cards and genre/tag chips route through this. MainScreen handles
-     * the tab switch; DiscoverViewModel applies and consumes the request.
+     * Ask the Discover tab to open its search overlay with [filters] preset, on the
+     * [type] the title belongs to. Ranking cards and genre/tag chips route through
+     * this. MainScreen handles the tab switch; DiscoverViewModel applies and
+     * consumes the request.
      */
-    fun openDiscoverSearch(filters: com.anisync.android.domain.SearchFilters) {
-        discoverSearchLauncher.launch(filters)
+    fun openDiscoverSearch(
+        filters: com.anisync.android.domain.SearchFilters,
+        type: com.anisync.android.type.MediaType?
+    ) {
+        discoverSearchLauncher.launch(
+            filters,
+            if (type == com.anisync.android.type.MediaType.MANGA) {
+                com.anisync.android.domain.ResultCategory.MANGA
+            } else {
+                com.anisync.android.domain.ResultCategory.ANIME
+            }
+        )
     }
 
     /** Fetch the community stats the first time the Stats tab is opened. */

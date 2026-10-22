@@ -20,12 +20,13 @@ enum class WhatsNewItem(val sinceVersionCode: Int, val kind: Kind, val place: Pl
     SETTINGS_LOOK_AND_FEEL(22, Kind.NEW),
     STORAGE_COVER_QUALITY(22, Kind.MOVED),
     GENERAL_MOVED_NOTICE(22, Kind.MOVED),
-    LIBRARY_SEARCH_FILTERS(23, Kind.MOVED, Place.LIBRARY);
+    LIBRARY_SEARCH_FILTERS(23, Kind.MOVED, Place.LIBRARY),
+    DISCOVER_SEARCH_FILTERS(23, Kind.MOVED, Place.DISCOVER);
 
     enum class Kind { NEW, MOVED }
 
     /** The surface whose way in wears the dot, so the settings gear only points at settings. */
-    enum class Place { SETTINGS, LIBRARY }
+    enum class Place { SETTINGS, LIBRARY, DISCOVER }
 }
 
 /**

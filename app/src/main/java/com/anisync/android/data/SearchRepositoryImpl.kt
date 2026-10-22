@@ -6,6 +6,7 @@ import com.anisync.android.SearchAllQuery
 import com.anisync.android.SearchEverythingQuery
 import com.anisync.android.SearchMediaQuery
 import com.anisync.android.data.mapper.mapFuzzyDateToLong
+import com.anisync.android.data.mapper.toMediaSort
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.LibraryEntry
@@ -19,6 +20,7 @@ import com.anisync.android.domain.SearchPage
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.domain.SearchResult
 import com.anisync.android.fragment.MediaCardFields
+import com.anisync.android.type.MediaSort
 import com.anisync.android.type.MediaType
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
@@ -44,6 +46,9 @@ class SearchRepositoryImpl @Inject constructor(
         resolveAdultIsAdult(mode, appSettings.showAdultContent.value)
             ?.let { Optional.present(it) } ?: Optional.absent()
 
+    private fun SearchFilters.sortFor(type: MediaType, query: String): MediaSort =
+        sort.toMediaSort(type, appSettings.titleLanguage.value, hasQuery = query.isNotBlank())
+
     @Volatile private var cachedGenres: List<String>? = null
     @Volatile private var cachedTags: List<MediaTag>? = null
 
@@ -67,7 +72,7 @@ class SearchRepositoryImpl @Inject constructor(
                     type = Optional.present(type),
                     page = Optional.present(page),
                     perPage = Optional.present(perPage),
-                    sort = Optional.present(listOf(filters.sort.apiValue)),
+                    sort = Optional.present(listOf(filters.sortFor(type, query))),
                     genre_in = filters.genresIncluded.toOptionalList(),
                     genre_not_in = filters.genresExcluded.toOptionalList(),
                     tag_in = filters.tagsIncluded.toOptionalList(),
@@ -191,7 +196,8 @@ class SearchRepositoryImpl @Inject constructor(
                         wantAnime = wantAnime,
                         wantManga = wantManga,
                         wantEntities = wantEntities,
-                        sort = Optional.present(listOf(filters.sort.apiValue)),
+                        animeSort = Optional.present(listOf(filters.sortFor(MediaType.ANIME, query))),
+                        mangaSort = Optional.present(listOf(filters.sortFor(MediaType.MANGA, query))),
                         genre_in = filters.genresIncluded.toOptionalList(),
                         genre_not_in = filters.genresExcluded.toOptionalList(),
                         tag_in = filters.tagsIncluded.toOptionalList(),

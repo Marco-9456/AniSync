@@ -7,146 +7,118 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
+import com.anisync.android.domain.AdultMode
+import com.anisync.android.domain.IntRangeFilter
+import com.anisync.android.domain.ResultCategory
 import com.anisync.android.domain.SearchFilters
-import com.anisync.android.domain.SearchType
-import com.anisync.android.domain.SortOption
+import com.anisync.android.domain.SearchSort
+import com.anisync.android.presentation.components.filtersheet.ClearFiltersChip
 import com.anisync.android.presentation.components.filtersheet.FilterBarChip
+import com.anisync.android.presentation.components.filtersheet.airingStatusTitle
+import com.anisync.android.presentation.components.filtersheet.countChipLabel
+import com.anisync.android.presentation.components.filtersheet.pickChipLabel
+import com.anisync.android.presentation.util.toLabel
+
+/** Which sheet the Discover filter bar has open. */
+enum class FilterId { SORT, GENRES, TAGS, FORMAT, STATUS, YEAR, MORE }
 
 /**
- * Identifies which filter the user opened from the chip bar.
- *
- * `TYPE` overrides the screen-level Anime/Manga selector when set to a
- * non-null value. When [SearchFilters.isNonMediaType] is true, the media-only
- * filters (genres/tags/year/format/more) are hidden from the bar entirely so
- * the user can't open filters that would no-op against a character/staff/
- * user/studio result set.
+ * The filter bar over Discover search: Clear once anything is filtered, then Sort, Genres, Tags,
+ * Format, Airing status, Year and More. A closed list names its pick on the chip, genres and tags
+ * say how many are picked.
  */
-enum class FilterId {
-    TYPE, SORT, GENRES, TAGS, YEAR, FORMAT, MORE,
-    STATUS, SEASON, SOURCE, COUNTRY, SCORE, EPISODES, CHAPTERS, ADULT
-}
-
 @Composable
 fun SearchFilterChipBar(
     filters: SearchFilters,
+    category: ResultCategory,
     onChipTap: (FilterId) -> Unit,
+    onClear: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scroll = rememberScrollState()
     Row(
         modifier = modifier
-            .horizontalScroll(scroll)
+            .horizontalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        if (filters.hasNarrowingFilters) ClearFiltersChip(onClick = onClear)
         FilterBarChip(
-            label = filters.typeChipLabel(),
-            active = filters.searchType != null,
-            onClick = { onChipTap(FilterId.TYPE) }
+            label = stringResource(R.string.library_filter_chip_sort, filters.sort.column.label()),
+            active = filters.sort != SearchSort(),
+            onClick = { onChipTap(FilterId.SORT) }
         )
-        if (!filters.isNonMediaType) {
-            FilterBarChip(
-                label = "Sort · ${filters.sort.shortLabel()}",
-                active = filters.sort != SortOption.POPULARITY_DESC,
-                onClick = { onChipTap(FilterId.SORT) }
-            )
-            val genresActive = filters.genresIncluded.size + filters.genresExcluded.size
-            FilterBarChip(
-                label = if (genresActive == 0) "Genres" else "Genres · $genresActive",
-                active = genresActive > 0,
-                onClick = { onChipTap(FilterId.GENRES) }
-            )
-            val tagsActive = filters.tagsIncluded.size + filters.tagsExcluded.size
-            FilterBarChip(
-                label = if (tagsActive == 0) "Tags" else "Tags · $tagsActive",
-                active = tagsActive > 0,
-                onClick = { onChipTap(FilterId.TAGS) }
-            )
-            FilterBarChip(
-                label = filters.yearChipLabel(),
-                active = filters.yearRange.isActive,
-                onClick = { onChipTap(FilterId.YEAR) }
-            )
-            FilterBarChip(
-                label = filters.formatChipLabel(),
-                active = filters.formats.isNotEmpty(),
-                onClick = { onChipTap(FilterId.FORMAT) }
-            )
-            val moreCount = filters.moreCount()
-            FilterBarChip(
-                label = if (moreCount == 0) "More" else "More · $moreCount",
-                active = moreCount > 0,
-                onClick = { onChipTap(FilterId.MORE) }
-            )
-        }
+        val genres = filters.genresIncluded.size + filters.genresExcluded.size
+        FilterBarChip(
+            label = countChipLabel(stringResource(R.string.filter_genres), genres),
+            active = genres > 0,
+            onClick = { onChipTap(FilterId.GENRES) }
+        )
+        val tags = filters.tagsIncluded.size + filters.tagsExcluded.size
+        FilterBarChip(
+            label = countChipLabel(stringResource(R.string.library_filter_tags), tags),
+            active = tags > 0,
+            onClick = { onChipTap(FilterId.TAGS) }
+        )
+        FilterBarChip(
+            label = pickChipLabel(
+                stringResource(R.string.library_filter_format),
+                filters.formats.map { it.toLabel() }
+            ),
+            active = filters.formats.isNotEmpty(),
+            onClick = { onChipTap(FilterId.FORMAT) }
+        )
+        FilterBarChip(
+            label = pickChipLabel(
+                airingStatusTitle(manga = category == ResultCategory.MANGA),
+                filters.statuses.mapNotNull { status -> status.toLabel().takeIf { it.isNotEmpty() } }
+            ),
+            active = filters.statuses.isNotEmpty(),
+            onClick = { onChipTap(FilterId.STATUS) }
+        )
+        val year = yearAndSeasonValue(filters)
+        FilterBarChip(
+            label = if (year == null) {
+                stringResource(R.string.filter_year)
+            } else {
+                stringResource(R.string.filter_chip_value, stringResource(R.string.filter_year), year)
+            },
+            active = year != null,
+            onClick = { onChipTap(FilterId.YEAR) }
+        )
+        val more = filters.moreCount()
+        FilterBarChip(
+            label = countChipLabel(stringResource(R.string.more), more),
+            active = more > 0,
+            onClick = { onChipTap(FilterId.MORE) }
+        )
     }
 }
 
-private fun SearchFilters.typeChipLabel(): String =
-    "Type · ${searchType?.label() ?: "All"}"
-
-internal fun SearchType.label(): String = when (this) {
-    SearchType.ANIME -> "Anime"
-    SearchType.MANGA -> "Manga"
-    SearchType.CHARACTERS -> "Characters"
-    SearchType.STAFF -> "Staff"
-    SearchType.USERS -> "Users"
-    SearchType.STUDIOS -> "Studios"
+/** "Fall 2024", "2020–2024", "2020+". Null when neither a season nor a year is set. */
+@Composable
+private fun yearAndSeasonValue(filters: SearchFilters): String? {
+    val season = filters.season?.toLabel()
+    val years = filters.yearRange.label()
+    return listOfNotNull(season, years).joinToString(" ").ifEmpty { null }
 }
 
-private fun SearchFilters.yearChipLabel(): String = when {
-    yearRange.min != null && yearRange.max != null && yearRange.min == yearRange.max ->
-        "Year · ${yearRange.min}"
-    yearRange.min != null && yearRange.max != null -> "Year · ${yearRange.min}–${yearRange.max}"
-    yearRange.min != null -> "Year · ${yearRange.min}+"
-    yearRange.max != null -> "Year · ≤${yearRange.max}"
-    else -> "Year"
+internal fun IntRangeFilter.label(): String? = when {
+    min != null && max != null && min == max -> "$min"
+    min != null && max != null -> "$min–$max"
+    min != null -> "$min+"
+    max != null -> "≤$max"
+    else -> null
 }
 
-private fun SearchFilters.formatChipLabel(): String = when (formats.size) {
-    0 -> "Format"
-    1 -> "Format · ${formats.first().shortName()}"
-    else -> "Format · ${formats.first().shortName()} +${formats.size - 1}"
-}
-
+/** The filters the More sheet holds, for its chip's count. */
 private fun SearchFilters.moreCount(): Int = listOf(
-    statuses.isNotEmpty(),
-    season != null,
     sources.isNotEmpty(),
     country != null,
     score.isActive,
     episodes.isActive,
     chapters.isActive,
-    adultMode != com.anisync.android.domain.AdultMode.ANY
+    adultMode != AdultMode.ANY
 ).count { it }
-
-private fun SortOption.shortLabel(): String = when (this) {
-    SortOption.POPULARITY_DESC -> "Popularity"
-    SortOption.SCORE_DESC -> "Score"
-    SortOption.TRENDING_DESC -> "Trending"
-    SortOption.FAVOURITES_DESC -> "Favourites"
-    SortOption.START_DATE_DESC -> "Newest"
-    SortOption.START_DATE -> "Oldest"
-    SortOption.UPDATED_AT_DESC -> "Updated"
-    SortOption.TITLE_ROMAJI -> "Title (Romaji)"
-    SortOption.TITLE_ENGLISH -> "Title (English)"
-    SortOption.EPISODES_DESC -> "Episodes"
-    SortOption.DURATION_DESC -> "Duration"
-    SortOption.CHAPTERS_DESC -> "Chapters"
-    SortOption.VOLUMES_DESC -> "Volumes"
-}
-
-private fun com.anisync.android.type.MediaFormat.shortName(): String = when (this) {
-    com.anisync.android.type.MediaFormat.TV -> "TV"
-    com.anisync.android.type.MediaFormat.TV_SHORT -> "TV Short"
-    com.anisync.android.type.MediaFormat.MOVIE -> "Movie"
-    com.anisync.android.type.MediaFormat.SPECIAL -> "Special"
-    com.anisync.android.type.MediaFormat.OVA -> "OVA"
-    com.anisync.android.type.MediaFormat.ONA -> "ONA"
-    com.anisync.android.type.MediaFormat.MUSIC -> "Music"
-    com.anisync.android.type.MediaFormat.MANGA -> "Manga"
-    com.anisync.android.type.MediaFormat.NOVEL -> "Novel"
-    com.anisync.android.type.MediaFormat.ONE_SHOT -> "One-shot"
-    else -> name
-}

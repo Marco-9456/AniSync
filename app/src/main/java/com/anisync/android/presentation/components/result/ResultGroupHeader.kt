@@ -18,14 +18,14 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.presentation.components.SeeAllAction
 
 /**
- * The header over a run of results or library rows: the group's name and how many it holds, and a
- * See all where the run is only a preview of a longer list.
+ * The header over a run of results or library rows: the group's name, how many it holds where
+ * that is known, and a See all where the run is only a preview of a longer list.
  */
 @Composable
 fun ResultGroupHeader(
     title: String,
-    count: Int,
     modifier: Modifier = Modifier,
+    count: Int? = null,
     onSeeAll: (() -> Unit)? = null
 ) {
     Row(
@@ -44,11 +44,13 @@ fun ResultGroupHeader(
                 .weight(1f, fill = false)
                 .semantics { heading() }
         )
-        Text(
-            text = count.toString(),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (count != null) {
+            Text(
+                text = count.toString(),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         if (onSeeAll != null) {
             Spacer(Modifier.weight(1f))
             SeeAllAction(sectionTitle = title, onClick = onSeeAll)

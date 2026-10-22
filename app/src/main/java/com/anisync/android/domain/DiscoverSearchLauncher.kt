@@ -26,14 +26,14 @@ import javax.inject.Singleton
 @Singleton
 class DiscoverSearchLauncher @Inject constructor() {
 
-    private val _pending = MutableStateFlow<SearchFilters?>(null)
-    val pending: StateFlow<SearchFilters?> = _pending.asStateFlow()
+    private val _pending = MutableStateFlow<DiscoverSearchRequest?>(null)
+    val pending: StateFlow<DiscoverSearchRequest?> = _pending.asStateFlow()
 
     private val _navigationRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
     val navigationRequests: SharedFlow<Unit> = _navigationRequests.asSharedFlow()
 
-    fun launch(filters: SearchFilters) {
-        _pending.value = filters
+    fun launch(filters: SearchFilters, category: ResultCategory = ResultCategory.ALL) {
+        _pending.value = DiscoverSearchRequest(filters, category)
         _navigationRequests.tryEmit(Unit)
     }
 
@@ -41,3 +41,6 @@ class DiscoverSearchLauncher @Inject constructor() {
         _pending.value = null
     }
 }
+
+/** What a preset opens Discover search on: its filters, and the category its results land in. */
+data class DiscoverSearchRequest(val filters: SearchFilters, val category: ResultCategory)

@@ -1,13 +1,8 @@
 """
-Single-request universal search. Collapses the former 3-request fan-out
-(SearchMedia[ANIME] + SearchMedia[MANGA] + SearchAll) into one operation using
-aliased Page selections. The `$wantAnime` / `$wantManga` / `$wantEntities`
-booleans gate each bucket via @include so a type-pinned search fetches only what
-it needs while Auto mode fetches all buckets — still one HTTP round-trip.
-
-Media field set mirrors SearchMedia; entity field set mirrors SearchAll, so the
-existing mappers port over unchanged. Fragments are intentionally NOT used yet
-(see P3) to keep generated field access identical to the current queries.
+Single-request universal search: anime, manga and the four entity kinds as aliased Pages in one
+round trip. `$wantAnime` / `$wantManga` / `$wantEntities` gate each bucket via @include, so paging
+one category fetches only its own bucket. Each media half takes its own sort, because a length
+column means episodes on anime and chapters on manga.
 """
 query SearchEverything(
   $search: String,
@@ -16,7 +11,8 @@ query SearchEverything(
   $wantAnime: Boolean!,
   $wantManga: Boolean!,
   $wantEntities: Boolean!,
-  $sort: [MediaSort],
+  $animeSort: [MediaSort],
+  $mangaSort: [MediaSort],
   $genre_in: [String],
   $genre_not_in: [String],
   $tag_in: [String],
@@ -48,7 +44,7 @@ query SearchEverything(
     media(
       search: $search,
       type: ANIME,
-      sort: $sort,
+      sort: $animeSort,
       genre_in: $genre_in,
       genre_not_in: $genre_not_in,
       tag_in: $tag_in,
@@ -83,7 +79,7 @@ query SearchEverything(
     media(
       search: $search,
       type: MANGA,
-      sort: $sort,
+      sort: $mangaSort,
       genre_in: $genre_in,
       genre_not_in: $genre_not_in,
       tag_in: $tag_in,

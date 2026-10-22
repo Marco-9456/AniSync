@@ -117,6 +117,18 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.anisync.android.presentation.components.ScrollToTopOnRequest
+import androidx.compose.foundation.layout.Row
+import com.anisync.android.data.WhatsNewItem
+import com.anisync.android.domain.ResultCategory
+import com.anisync.android.presentation.components.LocalWhatsNew
+import com.anisync.android.presentation.components.WhatsNewDot
+import com.anisync.android.presentation.components.rememberActiveWhatsNew
+import com.anisync.android.presentation.discover.components.FilterId
+import com.anisync.android.presentation.discover.components.SearchFilterChipBar
+import com.anisync.android.presentation.discover.components.SearchFilterSheetHost
+import com.anisync.android.presentation.discover.components.SearchResultActions
+import com.anisync.android.presentation.discover.components.SearchResultsRail
+import com.anisync.android.presentation.settings.components.InfoNotice
 
 private const val TAG = "DiscoverScreen"
 
@@ -307,8 +319,6 @@ fun DiscoverScreen(
         coroutineScope.launch { searchBarState.animateToCollapsed() }
     }
 
-    val currentSearchFilters = uiState.searchFilters
-
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
@@ -386,14 +396,6 @@ fun DiscoverScreen(
         onReset = { viewModel.onAction(DiscoverAction.ResetSectionOrder) }
     )
 
-    val searchQuery = uiState.searchQuery
-    val searchAnime = uiState.searchAnime
-    val searchManga = uiState.searchManga
-    val groupedResults = uiState.groupedResults
-    val isSearching = uiState.isSearching
-    val searchError = uiState.searchError
-    val searchPaging = uiState.searchPaging
-
     val onCharacterItemClick: (Int) -> Unit = remember(onCharacterClick, searchBarState, coroutineScope, keyboardController) {
         { id ->
             keyboardController?.hide()
@@ -425,41 +427,26 @@ fun DiscoverScreen(
 
     val taxonomy by viewModel.taxonomy.collectAsStateWithLifecycle()
     val showAdultContent by viewModel.showAdultContent.collectAsStateWithLifecycle()
-    val viewMode = uiState.viewMode
-    val activeCategory = uiState.activeCategory
 
     DiscoverSearchOverlay(
+        state = uiState,
         searchBarState = searchBarState,
         textFieldState = textFieldState,
-        mediaType = currentMediaType,
         titleLanguage = titleLanguage,
-        searchFilters = currentSearchFilters,
         taxonomy = taxonomy,
         showAdultContent = showAdultContent,
         coroutineScope = coroutineScope,
         keyboardController = keyboardController,
         navController = navController,
-        searchQuery = searchQuery,
-        searchAnime = searchAnime,
-        searchManga = searchManga,
-        groupedResults = groupedResults,
-        isSearching = isSearching,
-        searchError = searchError,
-        viewMode = viewMode,
-        activeCategory = activeCategory,
-        searchPaging = searchPaging,
-        onLoadMore = { viewModel.onAction(DiscoverAction.LoadMoreResults) },
-        onSearch = { viewModel.onAction(DiscoverAction.OnSearch(it)) },
-        onClearFilters = { viewModel.onAction(DiscoverAction.ClearFilters) },
-        onFiltersChange = { viewModel.onAction(DiscoverAction.UpdateFilters(it)) },
-        onLoadTaxonomy = { viewModel.onAction(DiscoverAction.LoadTaxonomy) },
-        onViewModeChange = { viewModel.onAction(DiscoverAction.OnViewModeChange(it)) },
-        onCategoryChange = { viewModel.onAction(DiscoverAction.OnCategoryChange(it)) },
-        onSearchItemClick = onSearchItemClick,
-        onCharacterClick = onCharacterItemClick,
-        onStaffClick = onStaffItemClick,
-        onStudioClick = onStudioItemClick,
-        onUserClick = onUserItemClick
+        onAction = viewModel::onAction,
+        actions = SearchResultActions(
+            onMedia = onSearchItemClick,
+            onAddToList = { viewModel.onAction(DiscoverAction.AddToPlanning(it)) },
+            onCharacter = onCharacterItemClick,
+            onStaff = onStaffItemClick,
+            onStudio = onStudioItemClick,
+            onUser = onUserItemClick
+        )
     )
 }
 
@@ -587,11 +574,20 @@ private fun SearchInputField(
         // One line always: at a raised font scale the placeholder wrapped and took the whole
         // search bar with it, so the bar's height depended on the wording.
         placeholder = {
-            Text(
-                text = stringResource(placeholderTextRes),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(placeholderTextRes),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (!isExpanded && WhatsNewItem.DISCOVER_SEARCH_FILTERS in rememberActiveWhatsNew()) {
+                    WhatsNewDot()
+                }
+            }
         },
         leadingIcon = {
             if (isExpanded) {
@@ -959,88 +955,67 @@ private fun LibraryEntry.catalogueMarker(): String? {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DiscoverSearchOverlay(
+    state: DiscoverUiState,
     searchBarState: SearchBarState,
     textFieldState: TextFieldState,
-    mediaType: MediaType,
     titleLanguage: com.anisync.android.data.TitleLanguage,
-    searchFilters: com.anisync.android.domain.SearchFilters,
     taxonomy: SearchTaxonomy,
     showAdultContent: Boolean,
     coroutineScope: CoroutineScope,
     keyboardController: SoftwareKeyboardController?,
     navController: NavHostController?,
-    searchQuery: String,
-    searchAnime: List<LibraryEntry>,
-    searchManga: List<LibraryEntry>,
-    groupedResults: com.anisync.android.domain.GroupedSearchResults,
-    isSearching: Boolean,
-    searchError: String?,
-    viewMode: com.anisync.android.data.DiscoverViewMode,
-    activeCategory: ResultCategory,
-    searchPaging: SearchPaging,
-    onLoadMore: () -> Unit,
-    onSearch: (String) -> Unit,
-    onClearFilters: () -> Unit,
-    onFiltersChange: (com.anisync.android.domain.SearchFilters) -> Unit,
-    onLoadTaxonomy: () -> Unit,
-    onViewModeChange: (com.anisync.android.data.DiscoverViewMode) -> Unit,
-    onCategoryChange: (ResultCategory) -> Unit,
-    onSearchItemClick: (Int) -> Unit,
-    onCharacterClick: (Int) -> Unit,
-    onStaffClick: (Int) -> Unit,
-    onStudioClick: (Int) -> Unit,
-    onUserClick: (String) -> Unit
+    onAction: (DiscoverAction) -> Unit,
+    actions: SearchResultActions
 ) {
-    var openedFilter by remember {
-        mutableStateOf<com.anisync.android.presentation.discover.components.FilterId?>(null)
-    }
+    var openedFilter by remember { mutableStateOf<FilterId?>(null) }
+    val category = state.activeCategory
 
     ExpandedFullScreenSearchBar(
         state = searchBarState,
+        // On background rather than surfaceContainerHigh, so the result cards keep their contrast.
+        colors = SearchBarDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
         inputField = {
             ProvideDisplaySize {
                 SearchInputField(
                     searchBarState = searchBarState,
                     textFieldState = textFieldState,
-                    mediaType = mediaType,
+                    mediaType = state.mediaType,
                     coroutineScope = coroutineScope,
                     keyboardController = keyboardController,
-                    onSearch = { onSearch(textFieldState.text.toString()) }
+                    onSearch = { onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) }
                 )
             }
         }
     ) {
         ProvideDisplaySize {
             Column(modifier = Modifier.fillMaxSize()) {
-                com.anisync.android.presentation.discover.components.SearchFilterChipBar(
-                    filters = searchFilters,
-                    onChipTap = { filterId ->
-                        onLoadTaxonomy()
-                        openedFilter = filterId
-                    }
-                )
+                // Characters, staff, users and studios are found by name alone, so the media
+                // filters would have nothing to narrow there.
+                if (category.hasMediaFilters()) {
+                    SearchFilterChipBar(
+                        filters = state.searchFilters,
+                        category = category,
+                        onChipTap = { filterId ->
+                            onAction(DiscoverAction.LoadTaxonomy)
+                            openedFilter = filterId
+                        },
+                        onClear = { onAction(DiscoverAction.ClearFilters) }
+                    )
+                }
+                if (WhatsNewItem.DISCOVER_SEARCH_FILTERS in rememberActiveWhatsNew()) {
+                    val whatsNewStore = LocalWhatsNew.current
+                    InfoNotice(
+                        text = stringResource(R.string.whats_new_discover_filters),
+                        onDismiss = { whatsNewStore.markSeen(WhatsNewItem.DISCOVER_SEARCH_FILTERS) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
                 SearchResultsContent(
+                    state = state,
                     navController = navController,
-                    isSearching = isSearching,
-                    searchAnime = searchAnime,
-                    searchManga = searchManga,
-                    groupedResults = groupedResults,
-                    searchQuery = searchQuery,
-                    searchError = searchError,
                     titleLanguage = titleLanguage,
-                    viewMode = viewMode,
-                    activeCategory = activeCategory,
-                    searchPaging = searchPaging,
-                    searchFilters = searchFilters,
-                    onLoadMore = onLoadMore,
-                    onClearFilters = onClearFilters,
-                    onViewModeChange = onViewModeChange,
-                    onCategoryChange = onCategoryChange,
-                    onSearchItemClick = onSearchItemClick,
-                    onCharacterClick = onCharacterClick,
-                    onStaffClick = onStaffClick,
-                    onStudioClick = onStudioClick,
-                    onUserClick = onUserClick
+                    onAction = onAction,
+                    actions = actions
                 )
             }
         }
@@ -1050,155 +1025,146 @@ private fun DiscoverSearchOverlay(
     // widths), and this host sits OUTSIDE the overlay popup — never anchor them to the feed pane
     // hidden behind it.
     com.anisync.android.presentation.util.WindowModalSheetScope {
-        com.anisync.android.presentation.discover.components.SearchFilterSheetHost(
+        SearchFilterSheetHost(
             openedFilter = openedFilter,
-            filters = searchFilters,
-            mediaType = mediaType,
+            filters = state.searchFilters,
+            category = category,
+            hasQuery = state.searchQuery.isNotBlank(),
+            matchingTitles = state.matchingTitles,
             genres = taxonomy.genres,
             tags = taxonomy.tags,
             showAdultContent = showAdultContent,
-            onFiltersChange = onFiltersChange,
+            onFiltersChange = { onAction(DiscoverAction.UpdateFilters(it)) },
             onDismiss = { openedFilter = null }
         )
     }
 }
 
+private fun ResultCategory.hasMediaFilters(): Boolean =
+    this == ResultCategory.ALL || this == ResultCategory.ANIME || this == ResultCategory.MANGA
+
 @Composable
 private fun SearchResultsContent(
+    state: DiscoverUiState,
     navController: NavHostController?,
-    isSearching: Boolean,
-    searchAnime: List<LibraryEntry>,
-    searchManga: List<LibraryEntry>,
-    groupedResults: com.anisync.android.domain.GroupedSearchResults,
-    searchQuery: String,
-    searchError: String?,
     titleLanguage: com.anisync.android.data.TitleLanguage,
-    viewMode: com.anisync.android.data.DiscoverViewMode,
-    activeCategory: ResultCategory,
-    searchPaging: SearchPaging,
-    searchFilters: com.anisync.android.domain.SearchFilters,
-    onLoadMore: () -> Unit,
-    onClearFilters: () -> Unit,
-    onViewModeChange: (com.anisync.android.data.DiscoverViewMode) -> Unit,
-    onCategoryChange: (ResultCategory) -> Unit,
-    onSearchItemClick: (Int) -> Unit,
-    onCharacterClick: (Int) -> Unit,
-    onStaffClick: (Int) -> Unit,
-    onStudioClick: (Int) -> Unit,
-    onUserClick: (String) -> Unit
+    onAction: (DiscoverAction) -> Unit,
+    actions: SearchResultActions
 ) {
-    val hasAnyResults = searchAnime.isNotEmpty() || searchManga.isNotEmpty() || !groupedResults.isEmpty
-
-    when {
-        isSearching -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                AppCircularProgressIndicator()
-            }
-        }
-
-        searchError != null -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = stringResource(R.string.error_failed_to_load),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Text(
-                        text = searchError,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+    val category = state.activeCategory
+    val isGrid = state.viewMode == com.anisync.android.data.DiscoverViewMode.GRID
+    Column(modifier = Modifier.fillMaxSize()) {
+        // A preset can open on a category before anything is typed, and the rail says so.
+        if (state.hasSearchResults || category != ResultCategory.ALL) {
+            SearchResultsRail(
+                categories = state.railCategories,
+                activeCategory = category,
+                isGrid = isGrid,
+                onCategoryChange = { onAction(DiscoverAction.OnCategoryChange(it)) },
+                onGridChange = { grid ->
+                    onAction(
+                        DiscoverAction.OnViewModeChange(
+                            if (grid) com.anisync.android.data.DiscoverViewMode.GRID
+                            else com.anisync.android.data.DiscoverViewMode.LIST
+                        )
                     )
                 }
-            }
-        }
-
-        !hasAnyResults && searchQuery.isNotEmpty() -> {
-            DiscoverNoResultsState(
-                hasFilters = searchFilters.hasActiveFilters,
-                onClearFilters = onClearFilters
             )
         }
-
-        else -> {
-            val availableCategories = remember(searchAnime, searchManga, groupedResults) {
-                buildSet {
-                    add(ResultCategory.ALL)
-                    if (searchAnime.isNotEmpty()) add(ResultCategory.ANIME)
-                    if (searchManga.isNotEmpty()) add(ResultCategory.MANGA)
-                    if (groupedResults.characters.isNotEmpty()) add(ResultCategory.CHARACTERS)
-                    if (groupedResults.staff.isNotEmpty()) add(ResultCategory.STAFF)
-                    if (groupedResults.users.isNotEmpty()) add(ResultCategory.USERS)
-                    if (groupedResults.studios.isNotEmpty()) add(ResultCategory.STUDIOS)
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            when {
+                state.isSearching -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    AppCircularProgressIndicator()
                 }
-            }
-            // The same panel board on every width (phone and tablet read identically). Expanded widths
-            // wrap it in the two-pane list-detail (tap → on-demand detail pane); compact/medium render it
-            // directly and push the detail full screen on tap.
-            val isWideSearch = LocalAdaptiveInfo.current.supportsTwoPane && navController != null
-            Column(modifier = Modifier.fillMaxSize()) {
-                com.anisync.android.presentation.discover.components.SearchResultsHeader(
-                    activeCategory = activeCategory,
-                    availableCategories = availableCategories,
-                    viewMode = viewMode,
-                    onCategoryChange = onCategoryChange,
-                    onViewModeChange = onViewModeChange,
-                    // The All overview is always the fixed panel board; the toggle
-                    // applies to single-category results only.
-                    showViewToggle = activeCategory != ResultCategory.ALL
-                )
-                if (isWideSearch) {
+
+                state.searchError != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = stringResource(R.string.error_failed_to_load),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            text = state.searchError,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                !state.hasSearchResults -> {
+                    if (state.searchQuery.isNotEmpty() || state.searchFilters.hasActiveFilters) {
+                        DiscoverNoResultsState(
+                            hasFilters = state.searchFilters.hasNarrowingFilters,
+                            onClearFilters = { onAction(DiscoverAction.ClearFilters) }
+                        )
+                    }
+                }
+
+                // Expanded widths open a result in a detail pane beside the list, compact and
+                // medium push it full screen.
+                LocalAdaptiveInfo.current.supportsTwoPane && navController != null ->
                     TwoPaneListDetailScaffold(
-                        modifier = Modifier.weight(1f),
                         selectionSaver = SearchTargetSaver,
                         gutterPadding = PaddingValues(16.dp),
-                        listPane = { selectedTarget, onSelect ->
-                            com.anisync.android.presentation.discover.components.SearchResultsPanels(
-                                activeCategory = activeCategory,
-                                searchAnime = searchAnime,
-                                searchManga = searchManga,
-                                groupedResults = groupedResults,
+                        listPane = { selected, onSelect ->
+                            SearchResults(
+                                state = state,
                                 titleLanguage = titleLanguage,
-                                onShowAll = onCategoryChange,
-                                // Media/character/staff/studio open in the detail pane; users open full screen.
-                                onMediaClick = { onSelect(SearchTarget.Media(it)) },
-                                onCharacterClick = { onSelect(SearchTarget.Character(it)) },
-                                onStaffClick = { onSelect(SearchTarget.Staff(it)) },
-                                onStudioClick = { onSelect(SearchTarget.Studio(it)) },
-                                onUserClick = onUserClick,
-                                selectedTarget = selectedTarget,
-                                hasMoreResults = searchPaging.hasNextFor(activeCategory),
-                                onLoadMore = onLoadMore,
-                                viewMode = viewMode
+                                isGrid = isGrid,
+                                // Users open full screen, everything else in the pane.
+                                actions = SearchResultActions(
+                                    onMedia = { onSelect(SearchTarget.Media(it)) },
+                                    onAddToList = actions.onAddToList,
+                                    onCharacter = { onSelect(SearchTarget.Character(it)) },
+                                    onStaff = { onSelect(SearchTarget.Staff(it)) },
+                                    onStudio = { onSelect(SearchTarget.Studio(it)) },
+                                    onUser = actions.onUser
+                                ),
+                                onAction = onAction,
+                                selected = selected
                             )
                         },
                         detailPane = { target, onClose ->
                             SearchDetailPane(
                                 target = target,
-                                navController = navController!!,
+                                navController = navController,
                                 onClose = onClose
                             )
                         }
                     )
-                } else {
-                    com.anisync.android.presentation.discover.components.SearchResultsPanels(
-                        modifier = Modifier.weight(1f),
-                        activeCategory = activeCategory,
-                        searchAnime = searchAnime,
-                        searchManga = searchManga,
-                        groupedResults = groupedResults,
-                        titleLanguage = titleLanguage,
-                        onShowAll = onCategoryChange,
-                        onMediaClick = onSearchItemClick,
-                        onCharacterClick = onCharacterClick,
-                        onStaffClick = onStaffClick,
-                        onStudioClick = onStudioClick,
-                        onUserClick = onUserClick,
-                        hasMoreResults = searchPaging.hasNextFor(activeCategory),
-                        onLoadMore = onLoadMore,
-                        viewMode = viewMode
-                    )
-                }
+
+                else -> SearchResults(
+                    state = state,
+                    titleLanguage = titleLanguage,
+                    isGrid = isGrid,
+                    actions = actions,
+                    onAction = onAction
+                )
             }
         }
     }
+}
+
+@Composable
+private fun SearchResults(
+    state: DiscoverUiState,
+    titleLanguage: com.anisync.android.data.TitleLanguage,
+    isGrid: Boolean,
+    actions: SearchResultActions,
+    onAction: (DiscoverAction) -> Unit,
+    selected: SearchTarget? = null
+) {
+    com.anisync.android.presentation.discover.components.SearchResults(
+        activeCategory = state.activeCategory,
+        isGrid = isGrid,
+        anime = state.searchAnime,
+        manga = state.searchManga,
+        grouped = state.groupedResults,
+        paging = state.searchPaging,
+        titleLanguage = titleLanguage,
+        actions = actions,
+        onShowAll = { onAction(DiscoverAction.OnCategoryChange(it)) },
+        onLoadMore = { onAction(DiscoverAction.LoadMoreResults) },
+        selected = selected
+    )
 }

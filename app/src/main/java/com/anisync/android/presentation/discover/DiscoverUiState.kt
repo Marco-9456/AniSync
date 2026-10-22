@@ -8,16 +8,17 @@ import com.anisync.android.domain.DiscoverSection
 import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.MediaReview
+import com.anisync.android.domain.ResultCategory
 import com.anisync.android.domain.SearchFilters
 import com.anisync.android.presentation.discover.components.BrowseChip
 import com.anisync.android.type.MediaType
 
 /**
- * Category buckets shown above search results. The "All" entry always renders;
- * other entries appear only when their underlying list is non-empty, so the
- * user can't tap into a section that returned nothing.
+ * How many titles match in each media half, across every page. A category preview shows three of
+ * them, and a filter sheet's footer says how many a filter leaves.
  */
-enum class ResultCategory { ALL, ANIME, MANGA, CHARACTERS, STAFF, USERS, STUDIOS }
+@Immutable
+data class SearchTotals(val anime: Int = 0, val manga: Int = 0)
 
 /**
  * Pagination bookkeeping for the universal search. Media buckets page
@@ -127,6 +128,7 @@ data class DiscoverUiState(
     val searchAnime: List<LibraryEntry> = emptyList(),
     val searchManga: List<LibraryEntry> = emptyList(),
     val groupedResults: GroupedSearchResults = GroupedSearchResults(),
+    val searchTotals: SearchTotals = SearchTotals(),
     val isSearching: Boolean = false,
     val searchFilters: SearchFilters = SearchFilters(),
     val searchError: String? = null,
@@ -149,6 +151,34 @@ data class DiscoverUiState(
      */
     val hasNothingToShow: Boolean
         get() = !feeds.isInitialLoad && sectionOrder.none { feeds.of(it).items.isNotEmpty() }
+
+    val hasSearchResults: Boolean
+        get() = searchAnime.isNotEmpty() || searchManga.isNotEmpty() || !groupedResults.isEmpty
+
+    /**
+     * The rail's categories: All, every category with results, and the one a preset opened on even
+     * before its results arrive, so the rail already says what is being searched.
+     */
+    val railCategories: List<ResultCategory>
+        get() = ResultCategory.entries.filter { category ->
+            category == ResultCategory.ALL || category == activeCategory || when (category) {
+                ResultCategory.ANIME -> searchAnime.isNotEmpty()
+                ResultCategory.MANGA -> searchManga.isNotEmpty()
+                ResultCategory.CHARACTERS -> groupedResults.characters.isNotEmpty()
+                ResultCategory.STAFF -> groupedResults.staff.isNotEmpty()
+                ResultCategory.USERS -> groupedResults.users.isNotEmpty()
+                ResultCategory.STUDIOS -> groupedResults.studios.isNotEmpty()
+                ResultCategory.ALL -> true
+            }
+        }
+
+    /** Titles the filters leave in the category on screen, for a filter sheet's footer. */
+    val matchingTitles: Int
+        get() = when (activeCategory) {
+            ResultCategory.ANIME -> searchTotals.anime
+            ResultCategory.MANGA -> searchTotals.manga
+            else -> searchTotals.anime + searchTotals.manga
+        }
 }
 
 sealed interface DiscoverAction {
