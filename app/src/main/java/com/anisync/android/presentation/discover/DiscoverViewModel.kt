@@ -71,7 +71,9 @@ class DiscoverViewModel @Inject constructor(
 
     private data class SearchTriggerState(
         val query: String = "",
-        val filterHash: Int = 0
+        val filterHash: Int = 0,
+        /** Tells the Studios chip apart from a cleared search, which carries the same query and filters. */
+        val browsingStudios: Boolean = false
     )
 
     init {
@@ -121,7 +123,11 @@ class DiscoverViewModel @Inject constructor(
             )
         }
         loadTaxonomyIfNeeded()
-        searchTrigger.value = SearchTriggerState("", filters.hashCode())
+        searchTrigger.value = SearchTriggerState(
+            query = "",
+            filterHash = filters.hashCode(),
+            browsingStudios = category == ResultCategory.STUDIOS
+        )
     }
 
     /**
@@ -228,7 +234,8 @@ class DiscoverViewModel @Inject constructor(
     /**
      * Appends the next page of the active category's results. Media buckets page
      * independently; the four entity buckets share one request/page counter, so
-     * paging one entity category also grows the other three. A fresh search (new
+     * paging one entity category also grows the other three. Studios listed before
+     * a name is typed page alone. A fresh search (new
      * trigger) resets the paging state wholesale, which implicitly invalidates any
      * in-flight append: the guard re-reads the state after the response and drops
      * the page if the query/filters changed underneath it.
@@ -241,7 +248,9 @@ class DiscoverViewModel @Inject constructor(
 
         val wantAnime = category == ResultCategory.ANIME
         val wantManga = category == ResultCategory.MANGA
-        val wantEntities = !wantAnime && !wantManga
+        val browsingStudios = currentState.isBrowsingStudios()
+        val wantEntities = !wantAnime && !wantManga && !browsingStudios
+        val wantStudios = wantEntities || browsingStudios
         val nextPage = when {
             wantAnime -> paging.animePage + 1
             wantManga -> paging.mangaPage + 1
@@ -258,7 +267,8 @@ class DiscoverViewModel @Inject constructor(
                 page = nextPage,
                 wantAnime = wantAnime,
                 wantManga = wantManga,
-                wantEntities = wantEntities
+                wantEntities = wantEntities,
+                wantStudios = wantStudios
             )
 
             // Outside the update block, which re-runs under contention. The results already on
@@ -301,11 +311,11 @@ class DiscoverViewModel @Inject constructor(
                                 animeHasNext = if (wantAnime) data.animeHasNextPage else st.searchPaging.animeHasNext,
                                 mangaPage = if (wantManga) nextPage else st.searchPaging.mangaPage,
                                 mangaHasNext = if (wantManga) data.mangaHasNextPage else st.searchPaging.mangaHasNext,
-                                entitiesPage = if (wantEntities) nextPage else st.searchPaging.entitiesPage,
+                                entitiesPage = if (wantStudios) nextPage else st.searchPaging.entitiesPage,
                                 charactersHasNext = if (wantEntities) data.charactersHasNextPage else st.searchPaging.charactersHasNext,
                                 staffHasNext = if (wantEntities) data.staffHasNextPage else st.searchPaging.staffHasNext,
                                 usersHasNext = if (wantEntities) data.usersHasNextPage else st.searchPaging.usersHasNext,
-                                studiosHasNext = if (wantEntities) data.studiosHasNextPage else st.searchPaging.studiosHasNext
+                                studiosHasNext = if (wantStudios) data.studiosHasNextPage else st.searchPaging.studiosHasNext
                             )
                         )
                     }
@@ -363,13 +373,16 @@ class DiscoverViewModel @Inject constructor(
 
                     // Every category rides the one SearchEverything request, so the rail can
                     // show what each holds. Characters, staff, users and studios are found by
-                    // name alone, so they wait for a query.
+                    // name alone, so they wait for a query. The Studios chip is the exception
+                    // and lists the most favourited studios until a name narrows them.
+                    val browsingStudios = currentState.isBrowsingStudios()
                     val result = searchRepository.searchEverything(
                         query = query,
                         filters = filters,
-                        wantAnime = true,
-                        wantManga = true,
-                        wantEntities = query.isNotBlank()
+                        wantAnime = !browsingStudios,
+                        wantManga = !browsingStudios,
+                        wantEntities = query.isNotBlank(),
+                        wantStudios = query.isNotBlank() || browsingStudios
                     )
 
                     val data = (result as? Result.Success)?.data
@@ -671,7 +684,12 @@ class DiscoverViewModel @Inject constructor(
     }
 
     private fun DiscoverUiState.shouldSearch(): Boolean =
-        searchQuery.trim().length >= MIN_SEARCH_QUERY_LENGTH || searchFilters.hasActiveFilters
+        searchQuery.trim().length >= MIN_SEARCH_QUERY_LENGTH ||
+            searchFilters.hasActiveFilters ||
+            isBrowsingStudios()
+
+    private fun DiscoverUiState.isBrowsingStudios(): Boolean =
+        activeCategory == ResultCategory.STUDIOS && searchQuery.isBlank()
 }
 
 /**

@@ -183,9 +183,10 @@ class SearchRepositoryImpl @Inject constructor(
         perPage: Int,
         wantAnime: Boolean,
         wantManga: Boolean,
-        wantEntities: Boolean
+        wantEntities: Boolean,
+        wantStudios: Boolean
     ): Result<SearchEverythingResult> {
-        val key = "all:$query:${filters.hashCode()}:$page:$perPage:$wantAnime:$wantManga:$wantEntities"
+        val key = "all:$query:${filters.hashCode()}:$page:$perPage:$wantAnime:$wantManga:$wantEntities:$wantStudios"
         return dedupe(key) {
             safeApiCall {
                 val response = apolloClient.query(
@@ -196,6 +197,7 @@ class SearchRepositoryImpl @Inject constructor(
                         wantAnime = wantAnime,
                         wantManga = wantManga,
                         wantEntities = wantEntities,
+                        wantStudios = wantStudios,
                         animeSort = Optional.present(listOf(filters.sortFor(MediaType.ANIME, query))),
                         mangaSort = Optional.present(listOf(filters.sortFor(MediaType.MANGA, query))),
                         genre_in = filters.genresIncluded.toOptionalList(),

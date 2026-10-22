@@ -1,8 +1,9 @@
 """
 Single-request universal search: anime, manga and the four entity kinds as aliased Pages in one
 round trip. `$wantAnime` / `$wantManga` / `$wantEntities` gate each bucket via @include, so paging
-one category fetches only its own bucket. Each media half takes its own sort, because a length
-column means episodes on anime and chapters on manga.
+one category fetches only its own bucket. `$wantStudios` gates studios apart from the other three
+entities, because the Studios chip lists them before any name is typed. Each media half takes its
+own sort, because a length column means episodes on anime and chapters on manga.
 """
 query SearchEverything(
   $search: String,
@@ -11,6 +12,7 @@ query SearchEverything(
   $wantAnime: Boolean!,
   $wantManga: Boolean!,
   $wantEntities: Boolean!,
+  $wantStudios: Boolean!,
   $animeSort: [MediaSort],
   $mangaSort: [MediaSort],
   $genre_in: [String],
@@ -152,11 +154,12 @@ query SearchEverything(
       }
     }
   }
-  studios: Page(page: $page, perPage: $perPage) @include(if: $wantEntities) {
+  studios: Page(page: $page, perPage: $perPage) @include(if: $wantStudios) {
     pageInfo {
       hasNextPage
     }
-    studios(search: $search, sort: [SEARCH_MATCH]) {
+    # Without a search there is nothing to match, and the favourites order takes over.
+    studios(search: $search, sort: [SEARCH_MATCH, FAVOURITES_DESC]) {
       id
       name
       favourites
