@@ -19,10 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Search Results** - Discover and Library search draw their results with the Library's cards: a row with the cover, two lines of title and either the episode bar or the format, year, length, score and release state, and the Library grid card. In Discover, All previews three of each type with See all in the list and a rail of posters in the grid, and a title ends in its list or in Add to list. Library search groups its rows by list. A rail under the filters picks the category, with the list and grid switch pinned at its start.
 - **Search Filters And Sort** - Both searches share one filter bar and one set of sheets: options two to a row, a Clear chip once something is filtered, and a button that shows how many titles are left. Sort is a column and a direction, so every column sorts both ways, and Best match joins while a query is typed. Discover's Type filter became the rail, Airing status has its own chip, and Season moved in with Year.
 - **Library Grid** - Cards show the year beside the format and keep both lines of a long title.
+- **Studios** - The Studios chip in Discover lists the most favourited studios straight away, and typing a name narrows them.
 
 ### Fixed
 
 - **Library Sort** - The direction toggle shows which way the list runs, so Score reads Descending while the highest score comes first.
+- **Search Keyboard** - The search key closes the keyboard in Discover, Library and Forum search, so the results it covered come into view.
 
 ## [3.3.0] - 2026-10-20
 
