@@ -74,28 +74,6 @@ fun formatEpisodesBehind(count: Int): String {
 }
 
 /**
- * Formats episode count using plural resources.
- *
- * @param count The number of episodes
- * @return A formatted string like "1 Ep" or "12 Eps"
- */
-@Composable
-fun formatEpisodesCount(count: Int): String {
-    return pluralStringResource(R.plurals.episodes_count, count, count)
-}
-
-/**
- * Formats chapter count using plural resources.
- *
- * @param count The number of chapters
- * @return A formatted string like "1 Ch" or "10 Ch"
- */
-@Composable
-fun formatChaptersCount(count: Int): String {
-    return pluralStringResource(R.plurals.chapters_count, count, count)
-}
-
-/**
  * Formats a decimal number using the device's current locale.
  * Respects locale-specific decimal separators (e.g., "." for US, "," for Germany).
  *

@@ -67,7 +67,7 @@ private val CoverWidth = 58.dp
 
 /**
  * Compact, read-only row for another user's list entry on their profile (#78). Modelled on the
- * library's [com.anisync.android.presentation.library.components.LibraryListCard] but smaller and
+ * library's [com.anisync.android.presentation.library.components.LibraryQueueRow] but smaller and
  * non-interactive: it trades the progress bar and adjusters for a flow of metadata chips (status,
  * score, progress, format, rewatches) and a single-line preview of the user's freeform note.
  *

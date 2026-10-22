@@ -1,8 +1,5 @@
 package com.anisync.android.accessibility
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -24,13 +21,13 @@ import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.SegmentedTabItem
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
-import com.anisync.android.presentation.discover.components.CardStyle
-import com.anisync.android.presentation.discover.components.DiscoverMediaCard
+import com.anisync.android.presentation.components.result.DiscoverResultRow
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.type.MediaType
@@ -296,84 +293,41 @@ class AccessibilityTests {
         composeTestRule.onNodeWithText("Your collection").assertIsDisplayed()
     }
 
-    // ==================== DiscoverMediaCard Tests ====================
+    // ==================== Search result row Tests ====================
 
-    @OptIn(ExperimentalSharedTransitionApi::class)
     @Test
-    fun discoverMediaCard_hasClickLabel_forAccessibility() {
-        val testEntry = createTestLibraryEntry()
-
+    fun discoverResultRow_hasClickLabel_forAccessibility() {
         composeTestRule.setContent {
-            TestTheme {
-                SharedTransitionLayout {
-                    AnimatedVisibility(visible = true) {
-                        DiscoverMediaCard(
-                            item = testEntry,
-                            style = CardStyle.Standard(),
-                            onClick = {},
-                            sharedTransitionScope = this@SharedTransitionLayout,
-                            animatedVisibilityScope = this
-                        )
-                    }
-                }
-            }
+            TestTheme { TestResultRow(createTestLibraryEntry()) }
         }
 
-        // Verify the card has an onClick label for screen readers
+        // Verify the row has an onClick label for screen readers
         composeTestRule
             .onNode(AccessibilityTestUtils.hasOnClickLabel())
             .assertExists()
     }
 
-    @OptIn(ExperimentalSharedTransitionApi::class)
     @Test
-    fun discoverMediaCard_poster_hasContentDescription() {
+    fun discoverResultRow_cover_hasContentDescription() {
         val testEntry = createTestLibraryEntry()
 
         composeTestRule.setContent {
-            TestTheme {
-                SharedTransitionLayout {
-                    AnimatedVisibility(visible = true) {
-                        DiscoverMediaCard(
-                            item = testEntry,
-                            style = CardStyle.Standard(),
-                            onClick = {},
-                            sharedTransitionScope = this@SharedTransitionLayout,
-                            animatedVisibilityScope = this
-                        )
-                    }
-                }
-            }
+            TestTheme { TestResultRow(testEntry) }
         }
 
-        // Verify the poster image has content description with the title
+        // Verify the cover has a content description with the title
         composeTestRule
             .onNode(hasContentDescription(testEntry.titleRomaji!!, substring = true))
             .assertExists()
     }
 
-    @OptIn(ExperimentalSharedTransitionApi::class)
     @Test
-    fun discoverMediaCard_hasButtonRole() {
-        val testEntry = createTestLibraryEntry()
-
+    fun discoverResultRow_hasButtonRole() {
         composeTestRule.setContent {
-            TestTheme {
-                SharedTransitionLayout {
-                    AnimatedVisibility(visible = true) {
-                        DiscoverMediaCard(
-                            item = testEntry,
-                            style = CardStyle.Standard(),
-                            onClick = {},
-                            sharedTransitionScope = this@SharedTransitionLayout,
-                            animatedVisibilityScope = this
-                        )
-                    }
-                }
-            }
+            TestTheme { TestResultRow(createTestLibraryEntry()) }
         }
 
-        // Verify the card has Button role for interactivity
+        // Verify the row has Button role for interactivity
         composeTestRule
             .onNode(AccessibilityTestUtils.hasRole(Role.Button))
             .assertExists()
@@ -455,6 +409,16 @@ class AccessibilityTests {
     }
 
     // ==================== Helper Methods ====================
+
+    @Composable
+    private fun TestResultRow(entry: LibraryEntry) {
+        DiscoverResultRow(
+            entry = entry,
+            titleLanguage = TitleLanguage.ROMAJI,
+            onClick = {},
+            onAddToList = {}
+        )
+    }
 
     private fun createTestLibraryEntry(): LibraryEntry {
         return LibraryEntry(
