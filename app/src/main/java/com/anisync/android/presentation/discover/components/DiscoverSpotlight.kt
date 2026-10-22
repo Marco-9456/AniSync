@@ -55,12 +55,12 @@ import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
+import com.anisync.android.presentation.util.communityScoreLabel
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.presentation.util.toListIcon
 import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
-import java.util.Locale
 
 /**
  * The banner is lit right where the title sits, so the scrim has to be doing real work by the time
@@ -112,9 +112,7 @@ fun DiscoverSpotlight(
     val cacheKey = TransitionKeys.imageCacheKey(TransitionKeys.DISCOVER_SPOTLIGHT, item.mediaId) +
         "-" + LocalCoverQuality.current.name + TransitionKeys.coverVersion(artData)
 
-    val formattedScore = remember(item.averageScore) {
-        item.averageScore?.let { String.format(Locale.US, "%.1f", it / 10.0) }
-    }
+    val formattedScore = remember(item.averageScore) { item.communityScoreLabel() }
     val lengthLabel = remember(item) { item.lengthLabel() }
     val genreLabel = remember(item.genres) { item.genres.take(3).joinToString(" · ") }
 
