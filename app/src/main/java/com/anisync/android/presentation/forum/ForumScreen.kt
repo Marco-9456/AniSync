@@ -80,6 +80,7 @@ import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -230,6 +231,9 @@ fun ForumScreen(
         @Composable {
             val expanded = searchBarState.currentValue == SearchBarValue.Expanded
             val isSearchEmpty = textFieldState.text.isEmpty()
+            // The expanded field sits in the search dialog's own window, and only that window's
+            // controller can close the keyboard it opened.
+            val keyboardController = LocalSoftwareKeyboardController.current
 
             SearchBarDefaults.InputField(
                 // Without this the collapsed bar is sized by whatever it happens to contain, so
@@ -237,7 +241,7 @@ fun ForumScreen(
                 modifier = if (expanded) Modifier else Modifier.fillMaxWidth(),
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
-                onSearch = { focusManager.clearFocus() },
+                onSearch = { keyboardController?.hide() },
                 // One line always: at a raised font scale a wrapping placeholder takes the whole
                 // bar with it and the bar's height starts depending on the wording.
                 placeholder = {

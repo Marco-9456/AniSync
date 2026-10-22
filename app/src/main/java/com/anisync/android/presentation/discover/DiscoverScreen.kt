@@ -73,7 +73,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -344,7 +343,6 @@ fun DiscoverScreen(
                         textFieldState = textFieldState,
                         mediaType = currentMediaType,
                         coroutineScope = coroutineScope,
-                        keyboardController = keyboardController,
                         overflowExpanded = showOverflow,
                         onSearch = { viewModel.onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
                         onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) },
@@ -437,7 +435,6 @@ fun DiscoverScreen(
         taxonomy = taxonomy,
         showAdultContent = showAdultContent,
         coroutineScope = coroutineScope,
-        keyboardController = keyboardController,
         navController = navController,
         onAction = viewModel::onAction,
         actions = SearchResultActions(
@@ -459,7 +456,6 @@ private fun DiscoverTopBar(
     textFieldState: TextFieldState,
     mediaType: MediaType,
     coroutineScope: CoroutineScope,
-    keyboardController: SoftwareKeyboardController?,
     overflowExpanded: Boolean,
     onSearch: () -> Unit,
     onMediaTypeChange: (MediaType) -> Unit,
@@ -494,7 +490,6 @@ private fun DiscoverTopBar(
                     textFieldState = textFieldState,
                     mediaType = mediaType,
                     coroutineScope = coroutineScope,
-                    keyboardController = keyboardController,
                     onSearch = onSearch,
                     collapsedTrailing = {
                         Box {
@@ -541,13 +536,15 @@ private fun SearchInputField(
     textFieldState: TextFieldState,
     mediaType: MediaType,
     coroutineScope: CoroutineScope,
-    keyboardController: SoftwareKeyboardController?,
     onSearch: () -> Unit,
     collapsedTrailing: (@Composable () -> Unit)? = null
 ) {
     val isExpanded = searchBarState.currentValue == SearchBarValue.Expanded
     val hasText by remember { derivedStateOf { textFieldState.text.isNotEmpty() } }
+    // Read here, not passed in. The expanded field sits in the search dialog's own window, and
+    // only that window's controller can close the keyboard it opened.
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     // The overlay searches characters, staff and users too, so the placeholder says so rather
     // than promising only titles. Studios are an anime-side entity, so the manga wording drops them.
@@ -963,7 +960,6 @@ private fun DiscoverSearchOverlay(
     taxonomy: SearchTaxonomy,
     showAdultContent: Boolean,
     coroutineScope: CoroutineScope,
-    keyboardController: SoftwareKeyboardController?,
     navController: NavHostController?,
     onAction: (DiscoverAction) -> Unit,
     actions: SearchResultActions
@@ -982,7 +978,6 @@ private fun DiscoverSearchOverlay(
                     textFieldState = textFieldState,
                     mediaType = state.mediaType,
                     coroutineScope = coroutineScope,
-                    keyboardController = keyboardController,
                     onSearch = { onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) }
                 )
             }

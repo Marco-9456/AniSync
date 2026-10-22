@@ -331,7 +331,6 @@ fun LibraryScreen(
             // The arrow shows the way the list really runs, as the sort sheet's toggle does.
             isAscending = sortOption.flipDirection(isAscending),
             showListManagement = showListManagement,
-            onSearch = { keyboardController?.hide() },
             onBackClick = {
                 focusManager.clearFocus()
                 keyboardController?.hide()
@@ -1056,7 +1055,6 @@ private fun LibrarySearchBarInputField(
     showWhatsNewDot: Boolean,
     isAscending: Boolean,
     showListManagement: Boolean,
-    onSearch: () -> Unit,
     onBackClick: () -> Unit,
     onClearClick: () -> Unit,
     onToggleView: () -> Unit,
@@ -1064,6 +1062,9 @@ private fun LibrarySearchBarInputField(
     onOverflow: () -> Unit,
     overflowMenu: @Composable () -> Unit
 ) {
+    // Read here, not taken from the screen. The expanded field sits in the search dialog's own
+    // window, and only that window's controller can close the keyboard it opened.
+    val keyboardController = LocalSoftwareKeyboardController.current
     SearchBarDefaults.InputField(
         // Matches Discover: a collapsed bar sized by its content differs screen to screen.
         modifier = if (searchBarState.currentValue == SearchBarValue.Expanded) {
@@ -1074,7 +1075,7 @@ private fun LibrarySearchBarInputField(
         enabled = !showListManagement,
         searchBarState = searchBarState,
         textFieldState = textFieldState,
-        onSearch = { onSearch() },
+        onSearch = { keyboardController?.hide() },
         placeholder = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
