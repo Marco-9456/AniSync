@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- No "other", the shape of the Spanish string that crashed the feed. -->
+    <plurals name="partial_translation">
+        <item quantity="one">%d actualización</item>
+        <item quantity="many">%d actualizaciones</item>
+    </plurals>
+</resources>

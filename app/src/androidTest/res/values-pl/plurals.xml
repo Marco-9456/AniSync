@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- No "one" and no "other", so a count of 1 has to come from the fallback. -->
+    <plurals name="partial_translation">
+        <item quantity="few">%d aktualizacje</item>
+        <item quantity="many">%d aktualizacji</item>
+    </plurals>
+</resources>
