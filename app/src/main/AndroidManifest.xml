@@ -11,6 +11,11 @@
          time. Requested through the system dialog, never assumed. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Saving a share card to the gallery below Android 10. Asked for on the first save. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
     <!--
       Package visibility (Android 11+): declare that we interact with web browsers so the app can
       resolve and explicitly target one when opening links externally (see AppLinksUtil.openInBrowser).

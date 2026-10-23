@@ -1,8 +1,11 @@
 package com.anisync.android.presentation.share
 
+import android.Manifest
 import android.os.Build
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -228,6 +231,26 @@ private fun ShareCustomizerContent(
         }
     }
 
+    fun saveCard() = runAction { bmp ->
+        val ok = ShareUtils.saveCardToGallery(context, bmp)
+        if (ok) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        Toast.makeText(
+            context,
+            resources.getString(
+                if (ok) R.string.share_saved_to_gallery else R.string.share_save_failed
+            ),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    val storageAccess = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            saveCard()
+        } else {
+            Toast.makeText(context, R.string.share_save_needs_storage, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     // The caption baked onto the card also rides along as the shared text, above the link.
     val shareText = listOfNotNull(config.caption.trim().ifBlank { null }, link).joinToString("\n\n")
         .ifBlank { null }
@@ -274,16 +297,10 @@ private fun ShareCustomizerContent(
                     container = MaterialTheme.colorScheme.surfaceContainerHighest,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ) {
-                    runAction { bmp ->
-                        val ok = ShareUtils.saveCardToGallery(context, bmp)
-                        if (ok) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        Toast.makeText(
-                            context,
-                            resources.getString(
-                                if (ok) R.string.share_saved_to_gallery else R.string.share_save_failed
-                            ),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                    if (ShareUtils.saveNeedsStoragePermission(context)) {
+                        storageAccess.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    } else {
+                        saveCard()
                     }
                 }
                 SheetAction(
