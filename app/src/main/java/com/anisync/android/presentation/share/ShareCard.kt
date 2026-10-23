@@ -45,10 +45,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
@@ -69,7 +69,6 @@ import coil3.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.ui.theme.ProvideDisplaySize
 import com.anisync.android.util.ShareUtils
-import dev.shreyaspatil.capturable.controller.rememberCaptureController
 import kotlinx.coroutines.launch
 
 /**
@@ -193,7 +192,6 @@ fun ShareImageSheet(
  * focusing the caption simply scrolls it into view). Shared verbatim by both presentation hosts,
  * which wrap it in their own scroll container.
  */
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun ShareCustomizerContent(
     onDismiss: () -> Unit,
@@ -209,7 +207,7 @@ private fun ShareCustomizerContent(
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
-    val controller = rememberCaptureController()
+    val cardLayer = rememberGraphicsLayer()
     var busy by remember { mutableStateOf(false) }
     var config by remember {
         mutableStateOf(ShareCardConfig(template = templates.firstOrNull() ?: ShareCardTemplate.STANDARD))
@@ -221,7 +219,7 @@ private fun ShareCustomizerContent(
         scope.launch {
             busy = true
             try {
-                block(controller.captureAsync().await())
+                block(cardLayer.toImageBitmap())
             } catch (_: Throwable) {
                 // Node left composition mid-capture — keep the sheet open for a retry.
             } finally {
@@ -235,7 +233,7 @@ private fun ShareCustomizerContent(
         .ifBlank { null }
 
     ShareCaptureArea(
-        controller = controller,
+        layer = cardLayer,
         config = config,
         seedColor = seedColor,
         maxPreviewHeight = previewMaxHeight,

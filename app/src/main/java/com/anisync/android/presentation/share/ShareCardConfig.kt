@@ -23,13 +23,15 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
@@ -41,8 +43,6 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.ui.theme.shareCardColorScheme
-import dev.shreyaspatil.capturable.capturable
-import dev.shreyaspatil.capturable.controller.CaptureController
 import kotlin.math.roundToInt
 
 /** Card color palette for the exported image, independent of the app's active theme. */
@@ -79,17 +79,16 @@ private val PreviewMaxHeight = 280.dp
 
 /**
  * Renders [card] exactly as it will be exported — under the chosen [ShareCardTheme], inside the
- * chosen [ShareCardFormat] frame — and attaches the [controller] so the sheet can snapshot it.
+ * chosen [ShareCardFormat] frame — and records it into [layer] so the sheet can snapshot it.
  *
  * The capture node is laid out under an **overridden density** so it always measures to
  * [ExportWidthPx] px wide (crisp regardless of the device's real density), then scaled *down* for
  * on-screen display via [scaledToFit]. The capture reads the node's own high-res layer, so the
  * export stays full resolution while the preview fits the sheet.
  */
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ShareCaptureArea(
-    controller: CaptureController,
+    layer: GraphicsLayer,
     config: ShareCardConfig,
     seedColor: Color?,
     modifier: Modifier = Modifier,
@@ -119,7 +118,10 @@ fun ShareCaptureArea(
             Box(
                 Modifier
                     .scaledToFit(naturalScale, availWidthPx, maxPreviewHeightPx)
-                    .capturable(controller)
+                    .drawWithContent {
+                        layer.record { this@drawWithContent.drawContent() }
+                        drawLayer(layer)
+                    }
             ) {
                 ShareCardThemeScope(config.theme, seedColor) {
                     CompositionLocalProvider(LocalShareCardConfig provides config) {

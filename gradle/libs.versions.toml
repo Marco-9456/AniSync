@@ -36,7 +36,6 @@ appcompat = "1.8.0"
 reorderable = "3.1.0"
 okhttp = "5.5.0"
 biometric = "1.4.0-alpha07"
-capturable = "3.0.1"
 coroutinesTest = "1.11.0"
 apolloMockServer = "0.3.1"
 
@@ -102,7 +101,6 @@ reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reo
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 androidx-biometric-compose = { group = "androidx.biometric", name = "biometric-compose", version.ref = "biometric" }
-capturable = { group = "dev.shreyaspatil", name = "capturable", version.ref = "capturable" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

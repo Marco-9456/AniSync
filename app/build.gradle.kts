@@ -293,7 +293,6 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.biometric.compose)
-    implementation(libs.capturable)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
