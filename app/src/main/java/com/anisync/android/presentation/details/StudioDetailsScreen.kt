@@ -59,7 +59,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -95,6 +94,7 @@ import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.formatAsTitle
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.util.getTitle
 import kotlin.math.roundToInt
@@ -313,7 +313,7 @@ private fun StudioDetailsContent(
         else R.string.studio_label_other_studio
     )
     val metaLine = if (worksTotal != null) {
-        "$typeLabel · " + pluralStringResource(R.plurals.studio_titles_count, worksTotal, worksTotal)
+        "$typeLabel · " + pluralStringResourceOrDefault(R.plurals.studio_titles_count, worksTotal, worksTotal)
     } else {
         typeLabel
     }
@@ -381,7 +381,7 @@ private fun StudioDetailsContent(
         if (facts.isNotEmpty() && studio.hasNextPage) {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = pluralStringResource(
+                text = pluralStringResourceOrDefault(
                     R.plurals.studio_stats_scope,
                     studio.media.size,
                     studio.media.size

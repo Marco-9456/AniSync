@@ -43,7 +43,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -59,6 +58,7 @@ import com.anisync.android.domain.ThemeType
 import com.anisync.android.domain.countCoveredEpisodes
 import com.anisync.android.domain.formatEpisodeSpans
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import kotlinx.coroutines.delay
 
 /** Past this many episodes a per-episode mark is thinner than a hairline, so the bar draws spans. */
@@ -297,7 +297,7 @@ fun ThemeTile(
     val description = if (spans.isEmpty()) {
         theme.songTitle.orEmpty()
     } else {
-        pluralStringResource(R.plurals.themes_episodes, episodeQuantity(spans), coverageLabel)
+        pluralStringResourceOrDefault(R.plurals.themes_episodes, episodeQuantity(spans), coverageLabel)
     }
 
     // The ripple is rounded at the top to match the artwork and left square at the bottom, so
@@ -523,11 +523,11 @@ private fun ThemesSectionHeader(
     val subtitle = when {
         themes.isEmpty() -> null
         else -> listOfNotNull(
-            pluralStringResource(R.plurals.themes_openings_count, openings, openings)
+            pluralStringResourceOrDefault(R.plurals.themes_openings_count, openings, openings)
                 .takeIf { openings > 0 },
-            pluralStringResource(R.plurals.themes_endings_count, endings, endings)
+            pluralStringResourceOrDefault(R.plurals.themes_endings_count, endings, endings)
                 .takeIf { endings > 0 },
-            pluralStringResource(R.plurals.themes_inserts_count, inserts, inserts)
+            pluralStringResourceOrDefault(R.plurals.themes_inserts_count, inserts, inserts)
                 .takeIf { inserts > 0 }
         ).joinToString("  ·  ")
     }
@@ -659,7 +659,7 @@ private fun ThemesErrorCard(
 fun themeCoverageLabel(theme: MediaTheme, spans: List<EpisodeSpan>): String {
     val range = when {
         spans.isEmpty() -> stringResource(R.string.themes_all_episodes)
-        else -> pluralStringResource(
+        else -> pluralStringResourceOrDefault(
             R.plurals.themes_episodes,
             episodeQuantity(spans),
             formatEpisodeSpans(spans)
@@ -667,7 +667,7 @@ fun themeCoverageLabel(theme: MediaTheme, spans: List<EpisodeSpan>): String {
     }
     val versions = theme.versions.size
     return if (versions > 1) {
-        range + "  ·  " + pluralStringResource(R.plurals.themes_versions_count, versions, versions)
+        range + "  ·  " + pluralStringResourceOrDefault(R.plurals.themes_versions_count, versions, versions)
     } else {
         range
     }

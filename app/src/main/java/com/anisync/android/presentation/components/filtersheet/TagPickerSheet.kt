@@ -19,11 +19,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.components.SearchField
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 
 /**
  * One tag the picker can offer.
@@ -114,7 +114,7 @@ fun TagPickerSheet(
                     TagGroup(
                         label = stringResource(R.string.tag_picker_spoilers),
                         summary = if (untouched && !expanded) {
-                            pluralStringResource(R.plurals.tags_spoiler_hidden, spoilers.size, spoilers.size)
+                            pluralStringResourceOrDefault(R.plurals.tags_spoiler_hidden, spoilers.size, spoilers.size)
                         } else {
                             groupSummary(spoilers, included, excluded)
                         },
@@ -197,7 +197,7 @@ private fun TagGroup(
 @Composable
 private fun groupSummary(tags: List<TagChoice>, included: Set<String>, excluded: Set<String>): String =
     selectionSummary(tags.count { it.name in included }, tags.count { it.name in excluded })
-        ?: pluralStringResource(R.plurals.tag_picker_count, tags.size, tags.size)
+        ?: pluralStringResourceOrDefault(R.plurals.tag_picker_count, tags.size, tags.size)
 
 /** "2 included", "1 excluded", or both. Null while nothing is picked. */
 @Composable

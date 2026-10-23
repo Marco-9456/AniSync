@@ -45,7 +45,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,6 +55,7 @@ import com.anisync.android.domain.CommentNode
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 
@@ -332,7 +332,7 @@ fun ThreadCommentItem(
                         )
                         if (descendantCount > 0) {
                             Text(
-                                text = pluralStringResource(
+                                text = pluralStringResourceOrDefault(
                                     R.plurals.forum_collapsed_replies,
                                     descendantCount,
                                     descendantCount
@@ -448,7 +448,7 @@ fun ThreadCommentItem(
                                     .padding(horizontal = 10.dp, vertical = 8.dp)
                             ) {
                                 Text(
-                                    text = pluralStringResource(
+                                    text = pluralStringResourceOrDefault(
                                         R.plurals.forum_continue_thread_count,
                                         descendantCount,
                                         descendantCount

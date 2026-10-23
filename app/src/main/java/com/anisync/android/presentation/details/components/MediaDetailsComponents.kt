@@ -84,7 +84,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -108,6 +107,7 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.presentation.util.formatAsTitle
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.LocalExpressiveTypography
@@ -482,7 +482,7 @@ private fun MoreTagsChip(
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = pluralStringResource(R.plurals.tags_more, count, count),
+            text = pluralStringResourceOrDefault(R.plurals.tags_more, count, count),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
             color = primary
@@ -580,9 +580,9 @@ private fun SpoilerShutter(
             SpoilerTag()
             Text(
                 text = if (revealed) {
-                    pluralStringResource(R.plurals.tags_spoiler_revealed, tags.size, tags.size)
+                    pluralStringResourceOrDefault(R.plurals.tags_spoiler_revealed, tags.size, tags.size)
                 } else {
-                    pluralStringResource(R.plurals.tags_spoiler_hidden, tags.size, tags.size)
+                    pluralStringResourceOrDefault(R.plurals.tags_spoiler_hidden, tags.size, tags.size)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 fontStyle = FontStyle.Italic,

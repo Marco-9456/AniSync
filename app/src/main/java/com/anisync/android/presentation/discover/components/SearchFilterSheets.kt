@@ -31,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -60,6 +59,7 @@ import com.anisync.android.presentation.components.filtersheet.TagChoice
 import com.anisync.android.presentation.components.filtersheet.TagPickerSheet
 import com.anisync.android.presentation.components.filtersheet.TriState
 import com.anisync.android.presentation.components.filtersheet.airingStatusTitle
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaSeason
@@ -86,7 +86,7 @@ fun SearchFilterSheetHost(
 ) {
     val footer: @Composable () -> Unit = {
         SheetFooterButton(
-            text = pluralStringResource(R.plurals.library_show_results, matchingTitles, matchingTitles),
+            text = pluralStringResourceOrDefault(R.plurals.library_show_results, matchingTitles, matchingTitles),
             onClick = onDismiss
         )
     }

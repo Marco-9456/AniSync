@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.notifications.components
 
+import android.content.Context
 import android.content.res.Resources
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import com.anisync.android.presentation.components.UserAvatar
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -80,6 +82,7 @@ import com.anisync.android.domain.User
 import com.anisync.android.presentation.notifications.NotificationEntry
 import com.anisync.android.presentation.notifications.NotificationTarget
 import com.anisync.android.presentation.util.selectedPaneItem
+import com.anisync.android.util.getQuantityStringOrDefault
 import org.jsoup.Jsoup
 
 @Composable
@@ -99,7 +102,7 @@ fun NotificationGroupCard(
     // Every way out of this card counts as reading it, including the cover and the avatars.
     onOpened: () -> Unit = {}
 ) {
-    val payload = entry.toPayload(LocalResources.current)
+    val payload = entry.toPayload(LocalResources.current, LocalContext.current)
     // The cover and the avatars take the tap before the card does, so they carry it themselves.
     val openMedia: (Int) -> Unit = {
         onOpened()
@@ -479,7 +482,7 @@ private data class GroupPayload(
     }
 }
 
-private fun NotificationEntry.toPayload(res: Resources): GroupPayload {
+private fun NotificationEntry.toPayload(res: Resources, context: Context): GroupPayload {
     val rep = representative
     return when (rep) {
         is AiringNotification -> GroupPayload(
@@ -499,7 +502,7 @@ private fun NotificationEntry.toPayload(res: Resources): GroupPayload {
             actors = actors,
             headline = res.getString(
                 R.string.notifications_item_liked_activity,
-                combineActors(res, actors),
+                combineActors(res, context, actors),
                 activityNoun(res, rep.activity)
             ),
             activity = rep.activity,
@@ -507,7 +510,7 @@ private fun NotificationEntry.toPayload(res: Resources): GroupPayload {
         )
         is ActivityReplyLikeNotification -> activityLikePayload(
             actors = actors,
-            headline = res.getString(R.string.notifications_item_liked_reply, combineActors(res, actors)),
+            headline = res.getString(R.string.notifications_item_liked_reply, combineActors(res, context, actors)),
             activity = rep.activity,
             activityId = rep.activityId
         )
@@ -554,7 +557,7 @@ private fun NotificationEntry.toPayload(res: Resources): GroupPayload {
         is ThreadLikeNotification -> GroupPayload(
             headline = res.getString(
                 R.string.notifications_item_liked_thread,
-                combineActors(res, actors)
+                combineActors(res, context, actors)
             ),
             subtitlePlain = rep.threadTitle.takeIf { it.isNotBlank() },
             actors = actors,
@@ -564,7 +567,7 @@ private fun NotificationEntry.toPayload(res: Resources): GroupPayload {
         is ThreadCommentLikeNotification -> GroupPayload(
             headline = res.getString(
                 R.string.notifications_item_liked_comment,
-                combineActors(res, actors)
+                combineActors(res, context, actors)
             ),
             subtitlePlain = rep.threadTitle.takeIf { it.isNotBlank() },
             subtitleHtml = rep.commentPreview?.takeIf { it.isNotBlank() },
@@ -714,7 +717,7 @@ private fun actorName(res: Resources, user: User?): String =
     user?.name ?: res.getString(R.string.notification_actor_someone)
 
 /** "Hameru", "Hameru and Bob", "Hameru, Bob and 2 others". */
-private fun combineActors(res: Resources, actors: List<User>): String = when (actors.size) {
+private fun combineActors(res: Resources, context: Context, actors: List<User>): String = when (actors.size) {
     0 -> res.getString(R.string.notification_actor_someone)
     1 -> actors[0].name
     2 -> res.getString(R.string.notification_actors_two, actors[0].name, actors[1].name)
@@ -724,7 +727,7 @@ private fun combineActors(res: Resources, actors: List<User>): String = when (ac
             R.string.notifications_actors_list,
             actors[0].name,
             actors[1].name,
-            res.getQuantityString(R.plurals.notifications_actors_tail, others, others)
+            res.getQuantityStringOrDefault(context, R.plurals.notifications_actors_tail, others, others)
         )
     }
 }

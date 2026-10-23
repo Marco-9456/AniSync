@@ -39,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,6 +53,7 @@ import com.anisync.android.domain.UserActivity
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.profile.components.MediaTypeLabel
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.emphasis
 import java.time.Instant
 import java.time.LocalDate
@@ -129,7 +129,7 @@ internal fun ActivityDaySheetContent(
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                text = pluralStringResource(
+                text = pluralStringResourceOrDefault(
                     R.plurals.statistics_activity_count, activities.size, activities.size
                 ),
                 style = MaterialTheme.typography.labelMedium,

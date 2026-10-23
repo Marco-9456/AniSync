@@ -68,7 +68,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -85,6 +84,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import com.anisync.android.R
@@ -835,7 +835,7 @@ private fun ProfileNavBarIconWithBadge(
     } else if (unreadCount > 999) {
         stringResource(R.string.notifications_unread_overflow_a11y)
     } else {
-        pluralStringResource(
+        pluralStringResourceOrDefault(
             R.plurals.notifications_unread_count_a11y,
             unreadCount,
             unreadCount

@@ -70,7 +70,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -94,6 +93,7 @@ import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalLibraryStatuses
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.copyOnLongPress
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.StarGold
 import com.anisync.android.ui.theme.emphasis
 import java.text.NumberFormat
@@ -1200,7 +1200,7 @@ fun VoiceActorRow(
                 ) {
                     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
                         Text(
-                            text = pluralStringResource(
+                            text = pluralStringResourceOrDefault(
                                 R.plurals.person_titles_count,
                                 titleCount,
                                 titleCount

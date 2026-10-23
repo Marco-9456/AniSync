@@ -42,7 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -54,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -290,7 +290,7 @@ private fun FieldMessages(toast: ToastMessage, accent: Color) {
         }
         if (toast.overflow > 0) {
             Text(
-                text = pluralStringResource(R.plurals.toast_more_fields, toast.overflow, toast.overflow),
+                text = pluralStringResourceOrDefault(R.plurals.toast_more_fields, toast.overflow, toast.overflow),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )

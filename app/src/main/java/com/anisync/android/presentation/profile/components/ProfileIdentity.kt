@@ -66,6 +66,7 @@ import com.anisync.android.presentation.components.bannerScrimBrush
 import com.anisync.android.presentation.components.bannerScrimHeight
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.emphasis
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -571,7 +572,7 @@ private fun unreadCountAccessibilityLabel(count: Int): String =
     if (count > 999) {
         stringResource(R.string.notifications_unread_overflow_a11y)
     } else {
-        androidx.compose.ui.res.pluralStringResource(
+        pluralStringResourceOrDefault(
             R.plurals.notifications_unread_count_a11y,
             count,
             count

@@ -12,7 +12,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -32,6 +31,7 @@ import com.anisync.android.presentation.components.filtersheet.pickChipLabel
 import com.anisync.android.presentation.library.LibraryFilters
 import com.anisync.android.presentation.library.LibrarySort
 import com.anisync.android.presentation.library.LibraryTagOption
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaStatus
@@ -120,7 +120,7 @@ fun LibraryFilterSheetHost(
 ) {
     val footer: @Composable () -> Unit = {
         SheetFooterButton(
-            text = pluralStringResource(R.plurals.library_show_results, matchingTitles, matchingTitles),
+            text = pluralStringResourceOrDefault(R.plurals.library_show_results, matchingTitles, matchingTitles),
             onClick = onDismiss
         )
     }

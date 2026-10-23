@@ -59,7 +59,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -75,6 +74,7 @@ import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.SegmentedTabGroup
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -220,7 +220,7 @@ private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
 
     val sel = selected
     val headline = if (sel != null) {
-        pluralStringResource(
+        pluralStringResourceOrDefault(
             R.plurals.statistics_activity_count, sel.amount, sel.amount
         ) + "  ·  " + sel.date.format(dateFormatter)
     } else {

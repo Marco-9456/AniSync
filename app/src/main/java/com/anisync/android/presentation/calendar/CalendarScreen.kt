@@ -70,7 +70,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -92,6 +91,7 @@ import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.PaneDragHandle
 import com.anisync.android.presentation.util.TwoPaneRow
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.ui.theme.ExpressiveShapes
 import kotlinx.coroutines.Job
@@ -625,7 +625,7 @@ private fun MonthDayCell(
         day.date.format(DateTimeFormatter.ofPattern("EEEE, MMMM d", locale))
     }
     val countText = if (hasEpisodes) {
-        pluralStringResource(R.plurals.calendar_airing_count, day.episodes.size, day.episodes.size)
+        pluralStringResourceOrDefault(R.plurals.calendar_airing_count, day.episodes.size, day.episodes.size)
     } else {
         stringResource(R.string.calendar_empty_title)
     }
@@ -757,7 +757,7 @@ private fun DayDetailHeader(date: LocalDate, count: Int, isToday: Boolean) {
             text = if (count == 0) {
                 stringResource(R.string.calendar_empty_title)
             } else {
-                pluralStringResource(R.plurals.calendar_airing_count, count, count)
+                pluralStringResourceOrDefault(R.plurals.calendar_airing_count, count, count)
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant

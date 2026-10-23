@@ -49,7 +49,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,6 +63,7 @@ import com.anisync.android.domain.formatEpisodeSpans
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.VideoPlayer
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import java.net.URLEncoder
 
 /**
@@ -318,7 +318,7 @@ private fun CoverageSection(
             if (theme.episodeSpans.isEmpty()) {
                 stringResource(R.string.themes_all_episodes)
             } else {
-                pluralStringResource(
+                pluralStringResourceOrDefault(
                     R.plurals.themes_episodes,
                     episodeQuantity(theme.episodeSpans),
                     formatEpisodeSpans(theme.episodeSpans)
@@ -563,7 +563,7 @@ private fun VersionCard(
                         text = if (spans.isEmpty()) {
                             stringResource(R.string.themes_all_episodes)
                         } else {
-                            pluralStringResource(
+                            pluralStringResourceOrDefault(
                                 R.plurals.themes_episodes,
                                 episodeQuantity(spans),
                                 formatEpisodeSpans(spans)

@@ -41,7 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 
 import androidx.compose.ui.semantics.contentDescription
@@ -54,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.ActivityHistoryDay
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -133,7 +133,7 @@ internal fun ActivityWeekBreakdown(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = pluralStringResource(
+                    text = pluralStringResourceOrDefault(
                         R.plurals.statistics_activity_count, week.total, week.total
                     ),
                     style = MaterialTheme.typography.titleSmall,
@@ -267,7 +267,7 @@ private fun WeekNavigation(
                 text = when (week.offset) {
                     0 -> stringResource(R.string.statistics_activity_week_current)
                     -1 -> stringResource(R.string.statistics_activity_week_previous)
-                    else -> pluralStringResource(
+                    else -> pluralStringResourceOrDefault(
                         R.plurals.statistics_activity_weeks_ago,
                         abs(week.offset),
                         abs(week.offset)
@@ -336,7 +336,7 @@ private fun ActivityDayRow(
         DayDataState.Counted -> stringResource(
             R.string.a11y_activity_day,
             fullDayName,
-            pluralStringResource(R.plurals.statistics_activity_count, day.amount, day.amount)
+            pluralStringResourceOrDefault(R.plurals.statistics_activity_count, day.amount, day.amount)
         )
         DayDataState.Awaiting -> stringResource(R.string.a11y_activity_day_awaiting, fullDayName)
         DayDataState.Future -> fullDayName
@@ -466,7 +466,7 @@ private fun WeekSummary(
                 )
             )
             add(
-                stringResource(R.string.statistics_activity_awaiting) to pluralStringResource(
+                stringResource(R.string.statistics_activity_awaiting) to pluralStringResourceOrDefault(
                     R.plurals.statistics_activity_days, week.awaitingDays, week.awaitingDays
                 )
             )
