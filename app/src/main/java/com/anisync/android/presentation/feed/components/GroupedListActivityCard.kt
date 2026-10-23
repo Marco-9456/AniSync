@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -43,6 +42,7 @@ import com.anisync.android.domain.UserActivity
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.formatRelativeTimeSeconds
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import kotlinx.collections.immutable.ImmutableList
 
 /**
@@ -95,7 +95,7 @@ fun GroupedListActivityCard(
                     Text(
                         text = stringResource(
                             R.string.feed_group_summary,
-                            pluralStringResource(
+                            pluralStringResourceOrDefault(
                                 R.plurals.feed_group_updates,
                                 activities.size,
                                 activities.size
