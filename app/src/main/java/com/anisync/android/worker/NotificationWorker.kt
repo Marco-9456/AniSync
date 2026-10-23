@@ -45,6 +45,7 @@ import com.anisync.android.domain.ThreadLikeNotification
 import com.anisync.android.domain.User
 import com.anisync.android.domain.ActivityKind
 import com.anisync.android.type.MediaType
+import com.anisync.android.util.getQuantityStringOrDefault
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import com.anisync.android.domain.Result as DomainResult
@@ -438,7 +439,7 @@ class NotificationWorker @AssistedInject constructor(
         applicationContext.getString(resId, *args)
 
     private fun quantityString(resId: Int, quantity: Int, vararg args: Any): String =
-        applicationContext.resources.getQuantityString(resId, quantity, *args)
+        applicationContext.resources.getQuantityStringOrDefault(applicationContext, resId, quantity, *args)
 
     /**
      * One forum line, picking the counted or single form and dropping to the untitled variant
