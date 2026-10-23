@@ -219,7 +219,7 @@ private fun ShareCustomizerContent(
         scope.launch {
             busy = true
             try {
-                block(cardLayer.toImageBitmap())
+                block(cardLayer.toShareBitmap())
             } catch (_: Throwable) {
                 // Node left composition mid-capture — keep the sheet open for a retry.
             } finally {
