@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Library Sort** - The direction toggle shows which way the list runs, so Score reads Descending while the highest score comes first.
 - **Search Keyboard** - The search key closes the keyboard in Discover, Library and Forum search, so the results it covered come into view.
 - **Feed In Spanish** - The feed no longer closes when it groups a run of list updates while AniSync is in Spanish. Anywhere a translation lacks the wording for a count, the English wording shows instead, notifications included. (#160)
+- **Share Cards On Android 8** - A shared or saved card no longer comes out as diagonal streaks on phones whose graphics chip pads each row of the image. (#162)
+- **Saving Share Cards On Android 8 And 9** - Save asks for storage access the first time and puts the card in Pictures/AniSync as a PNG, as it does on newer versions. Before, it failed every time. (#163)
 
 ## [3.3.0] - 2026-10-20
 
