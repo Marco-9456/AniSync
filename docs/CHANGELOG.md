@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Library Sort** - The direction toggle shows which way the list runs, so Score reads Descending while the highest score comes first.
 - **Search Keyboard** - The search key closes the keyboard in Discover, Library and Forum search, so the results it covered come into view.
+- **Feed In Spanish** - The feed no longer closes when it groups a run of list updates while AniSync is in Spanish. Anywhere a translation lacks the wording for a count, the English wording shows instead, notifications included. (#160)
 
 ## [3.3.0] - 2026-10-20
 
