@@ -1,11 +1,21 @@
 package com.anisync.android.presentation.util
 
+import androidx.annotation.PluralsRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import com.anisync.android.R
+import com.anisync.android.util.getQuantityStringOrDefault
 import java.text.NumberFormat
+
+/** `pluralStringResource` with the fallback of [getQuantityStringOrDefault]. */
+@Composable
+@ReadOnlyComposable
+fun pluralStringResourceOrDefault(@PluralsRes id: Int, count: Int, vararg formatArgs: Any): String =
+    LocalResources.current.getQuantityStringOrDefault(LocalContext.current, id, count, *formatArgs)
 
 /**
  * Formats time until airing in a locale-aware manner using plural resources.
@@ -17,13 +27,13 @@ import java.text.NumberFormat
 @Composable
 fun formatTimeUntilAiring(seconds: Int): String {
     val days = seconds / 86400
-    if (days > 0) return pluralStringResource(R.plurals.time_days, days, days)
+    if (days > 0) return pluralStringResourceOrDefault(R.plurals.time_days, days, days)
     
     val hours = (seconds % 86400) / 3600
-    if (hours > 0) return pluralStringResource(R.plurals.time_hours, hours, hours)
+    if (hours > 0) return pluralStringResourceOrDefault(R.plurals.time_hours, hours, hours)
     
     val minutes = (seconds % 3600) / 60
-    return pluralStringResource(R.plurals.time_minutes, minutes, minutes)
+    return pluralStringResourceOrDefault(R.plurals.time_minutes, minutes, minutes)
 }
 
 /**
@@ -70,7 +80,7 @@ fun formatCompactNumber(value: Int): String = when {
  */
 @Composable
 fun formatEpisodesBehind(count: Int): String {
-    return pluralStringResource(R.plurals.episodes_behind, count, count)
+    return pluralStringResourceOrDefault(R.plurals.episodes_behind, count, count)
 }
 
 /**
