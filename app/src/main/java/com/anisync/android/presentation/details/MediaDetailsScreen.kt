@@ -360,7 +360,18 @@ fun MediaDetailsScreen(
         coverColor = (uiState as? DetailsUiState.Success)?.details?.coverColor
     ) {
         with(sharedTransitionScope) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            // The Library card morphs into the whole page, app bar and status bar scrim included. During
+            // the morph the container draws in the shared transition overlay, above anything left outside.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .sharedBounds(
+                        sharedContentState = rememberSharedContentState(key = containerKey),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ -> spatialSpec },
+                        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
+                    )
+            ) {
                 Scaffold(
                     containerColor = MaterialTheme.colorScheme.background,
                     contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
@@ -483,18 +494,9 @@ fun MediaDetailsScreen(
                             .fillMaxSize()
                             .padding(bottom = paddingValues.calculateBottomPadding())
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                // Note: We intentionally IGNORE top padding here to let the content
-                                // (specifically the header image) draw behind the transparent status bar.
-                                .sharedBounds(
-                                    sharedContentState = rememberSharedContentState(key = containerKey),
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                    boundsTransform = { _, _ -> spatialSpec },
-                                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
-                                )
-                        ) {
+                        // Note: We intentionally IGNORE top padding here to let the content
+                        // (specifically the header image) draw behind the transparent status bar.
+                        Box(modifier = Modifier.fillMaxSize()) {
                             when (val state = uiState) {
                                 is DetailsUiState.Loading -> DetailsSkeletonContent(onBackClick = onBackClick)
                             is DetailsUiState.Success -> {
