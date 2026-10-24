@@ -146,6 +146,7 @@ fun SettingsItem(
     enabled: Boolean = true,
     leadingContent: (@Composable () -> Unit)? = null,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    titleBadge: (@Composable () -> Unit)? = null,
     trailingContent: @Composable () -> Unit = {}
 ) {
     Surface(
@@ -177,11 +178,27 @@ fun SettingsItem(
                 modifier = Modifier.weight(1f).padding(end = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
+                val titleColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                if (titleBadge == null) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = titleColor
+                    )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = titleColor,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        titleBadge()
+                    }
+                }
                 if (subtitle != null) {
                     Text(
                         text = subtitle,
@@ -221,7 +238,8 @@ fun SwitchSettingsItem(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     icon: ImageVector? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    titleBadge: (@Composable () -> Unit)? = null
 ) {
     SettingsItem(
         title = title,
@@ -230,6 +248,7 @@ fun SwitchSettingsItem(
         enabled = enabled,
         onClick = { onCheckedChange(!checked) },
         modifier = modifier,
+        titleBadge = titleBadge,
         trailingContent = {
             Switch(
                 checked = checked,
