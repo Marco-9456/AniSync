@@ -214,8 +214,9 @@ private fun MenuRows(group: List<MenuEntry>) {
 }
 
 /**
- * Rows that show at most [maxVisible] at a time and scroll the rest. An edge with rows behind it
- * fades out and a thin bar marks the position, so a cut-off list reads as one that scrolls.
+ * Rows that show at most [maxVisible] at a time and scroll the rest. A sliver of the next row peeks
+ * out under them, an edge with rows behind it fades out and a thin bar marks the position, so a list
+ * cut short reads as one that scrolls.
  */
 @Composable
 private fun ScrollingRows(maxVisible: Int, rows: @Composable () -> Unit) {
@@ -226,14 +227,17 @@ private fun ScrollingRows(maxVisible: Int, rows: @Composable () -> Unit) {
         content = rows,
         modifier = Modifier
             .scrollHints(scrollState, barColor)
-            // The viewport takes the intrinsic height, which only counts the first rows.
+            // The viewport takes the intrinsic height, which only counts the first rows and the peek.
             .height(IntrinsicSize.Max)
             .verticalScroll(scrollState),
         measurePolicy = measurePolicy
     )
 }
 
-/** Stacks every row, but reports the height of the first [count] as its intrinsic height. */
+/**
+ * Stacks every row, but reports the height of the first [count], and of a sliver of the next one, as
+ * its intrinsic height.
+ */
 private fun firstRowsMeasurePolicy(count: Int) = object : MeasurePolicy {
     override fun MeasureScope.measure(measurables: List<Measurable>, constraints: Constraints): MeasureResult {
         val placeables = measurables.map { it.measure(constraints.copy(minHeight = 0)) }
@@ -249,16 +253,26 @@ private fun firstRowsMeasurePolicy(count: Int) = object : MeasurePolicy {
     }
 
     override fun IntrinsicMeasureScope.minIntrinsicHeight(measurables: List<IntrinsicMeasurable>, width: Int) =
-        measurables.take(count).sumOf { it.minIntrinsicHeight(width) }
+        firstRowsHeight(measurables, count) { it.minIntrinsicHeight(width) }
 
     override fun IntrinsicMeasureScope.maxIntrinsicHeight(measurables: List<IntrinsicMeasurable>, width: Int) =
-        measurables.take(count).sumOf { it.maxIntrinsicHeight(width) }
+        firstRowsHeight(measurables, count) { it.maxIntrinsicHeight(width) }
 
     override fun IntrinsicMeasureScope.minIntrinsicWidth(measurables: List<IntrinsicMeasurable>, height: Int) =
         measurables.maxOfOrNull { it.minIntrinsicWidth(height) } ?: 0
 
     override fun IntrinsicMeasureScope.maxIntrinsicWidth(measurables: List<IntrinsicMeasurable>, height: Int) =
         measurables.maxOfOrNull { it.maxIntrinsicWidth(height) } ?: 0
+}
+
+private fun IntrinsicMeasureScope.firstRowsHeight(
+    measurables: List<IntrinsicMeasurable>,
+    count: Int,
+    height: (IntrinsicMeasurable) -> Int,
+): Int {
+    val shown = measurables.take(count).sumOf(height)
+    val next = measurables.getOrNull(count) ?: return shown
+    return shown + minOf(NextRowPeek.roundToPx(), height(next))
 }
 
 /** Offscreen so the fade masks the rows alone, not the group surface behind them. */
@@ -302,6 +316,10 @@ private fun Modifier.scrollHints(state: ScrollState, barColor: Color): Modifier 
     }
 
 private val ScrollFadeLength = 16.dp
+
+// Taller than the fade, so the top of the next row's text shows before it fades out.
+private val NextRowPeek = 28.dp
+
 private val ScrollBarWidth = 4.dp
 private val ScrollBarInset = 4.dp
 private val ScrollBarMinLength = 24.dp
@@ -363,8 +381,9 @@ interface MenuScope {
     fun gap()
 
     /**
-     * Lets the current group scroll inside its own surface. It shows at most [maxVisibleItems] rows,
-     * and fewer when the menu has less room, while the other groups stay in view. One group per menu.
+     * Lets the current group scroll inside its own surface. It shows at most [maxVisibleItems] rows and
+     * a sliver of the next, and fewer when the menu has less room, while the other groups stay in view.
+     * One group per menu.
      */
     fun scrollable(maxVisibleItems: Int = Int.MAX_VALUE)
 }
