@@ -62,7 +62,6 @@ import java.util.Date
 private val CardWidth = 132.dp
 private val ItemGap = 12.dp
 private val AxisHeight = 12.dp
-private val NowMarkerWidth = 48.dp
 private const val PosterAspect = 171f / 243f
 
 /**
@@ -170,7 +169,7 @@ private fun BoxScope.Spine(elapsed: Boolean) {
 
 @Composable
 private fun NowMarker(height: Dp) {
-    Box(modifier = Modifier.width(NowMarkerWidth).height(height)) {
+    Box(modifier = Modifier.height(height).padding(horizontal = 6.dp)) {
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
