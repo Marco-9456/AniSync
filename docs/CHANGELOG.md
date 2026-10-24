@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Library Tag Filters** - Library search can filter by tag, with the same picker as Search: a search box, categories, and spoiler tags kept shut until opened. A tag only counts above AniList's rank cut-off of 18, as it does in Search, and adult tags stay hidden unless adult content is on. Tags come down in the background on a request of their own, for new titles and once a week, so the library refresh is as quick as before. (#158)
+- **Jump Back** - Holding the back arrow lists the pages behind the one you are on, newest first, down to the tab you started from, and a tap on one goes straight there. The tab comes back as you left it. In a tablet's detail pane the list ends on the list the pane was opened from. A tip points it out a few times, and a switch under General turns it off. (#161)
 
 ### Changed
 
@@ -28,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Feed In Spanish** - The feed no longer closes when it groups a run of list updates while AniSync is in Spanish. Anywhere a translation lacks the wording for a count, the English wording shows instead, notifications included. (#160)
 - **Share Cards On Android 8** - A shared or saved card no longer comes out as diagonal streaks on phones whose graphics chip pads each row of the image. (#162)
 - **Saving Share Cards On Android 8 And 9** - Save asks for storage access the first time and puts the card in Pictures/AniSync as a PNG, as it does on newer versions. Before, it failed every time. (#163)
+- **Media Page App Bar** - Opening a title from a Library card no longer leaves the back arrow, favourite and share off the page until the card has finished growing into it.
 
 ## [3.3.0] - 2026-10-20
 
