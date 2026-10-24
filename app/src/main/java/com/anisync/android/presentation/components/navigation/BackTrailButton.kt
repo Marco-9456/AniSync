@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.components.navigation
 
+import android.graphics.Rect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -36,7 +37,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -239,11 +240,15 @@ private fun BackTrailMenu(
     anchorBottom: Int,
 ) {
     // A long trail scrolls its pages inside the menu rather than climbing over the arrow it hangs
-    // from, and the tab stays in view under them. The margin is the one Material keeps between a
-    // menu and the window edge.
-    val windowHeight = LocalWindowInfo.current.containerSize.height
+    // from, and the tab stays in view under them. The room below the arrow is measured the way the
+    // popup measures it: against the window's visible frame, which leaves out the system bars, less
+    // the margin Material keeps to its edge. A taller menu would be moved up over the arrow.
+    val view = LocalView.current
     val margin = with(LocalDensity.current) { 48.dp.roundToPx() }
-    val maxHeight = (windowHeight - anchorBottom - margin).coerceAtLeast(margin)
+    val visibleHeight = remember(view, expanded, anchorBottom) {
+        Rect().also(view::getWindowVisibleDisplayFrame).height()
+    }
+    val maxHeight = (visibleHeight - anchorBottom - margin).coerceAtLeast(margin)
 
     Menu(
         expanded = expanded,
