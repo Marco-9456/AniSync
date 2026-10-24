@@ -762,6 +762,30 @@ class AppSettings @Inject constructor(
     }
 
     // ==========================================================================
+    // BACK TRAIL TIPS: three at most between them, and none once the trail is used
+    // ==========================================================================
+
+    /** Whether a back arrow may still point at its long press. */
+    fun backTrailTipsAllowed(): Boolean =
+        prefs.getInt(KEY_BACK_TRAIL_TIPS_SHOWN, 0) < MAX_BACK_TRAIL_TIPS &&
+            !prefs.getBoolean(KEY_BACK_TRAIL_OPENED, false)
+
+    /** Whether the tip for the first long chain has had its one showing. */
+    fun backTrailFirstTipShown(): Boolean = prefs.getBoolean(KEY_BACK_TRAIL_FIRST_TIP, false)
+
+    fun noteBackTrailTip(first: Boolean) {
+        val editor = prefs.edit()
+            .putInt(KEY_BACK_TRAIL_TIPS_SHOWN, prefs.getInt(KEY_BACK_TRAIL_TIPS_SHOWN, 0) + 1)
+        if (first) editor.putBoolean(KEY_BACK_TRAIL_FIRST_TIP, true)
+        editor.apply()
+    }
+
+    fun noteBackTrailOpened() {
+        if (prefs.getBoolean(KEY_BACK_TRAIL_OPENED, false)) return
+        prefs.edit().putBoolean(KEY_BACK_TRAIL_OPENED, true).apply()
+    }
+
+    // ==========================================================================
     // SUPPORT CARD — the tip nudge shown once after an update
     // ==========================================================================
 
@@ -1413,6 +1437,10 @@ companion object {
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
         private const val KEY_ONBOARDING_STARTED = "onboarding_started"
         private const val KEY_LAST_SEEN_VERSION_CODE = "last_seen_version_code"
+        private const val KEY_BACK_TRAIL_TIPS_SHOWN = "back_trail_tips_shown"
+        private const val KEY_BACK_TRAIL_FIRST_TIP = "back_trail_first_tip_shown"
+        private const val KEY_BACK_TRAIL_OPENED = "back_trail_opened"
+        private const val MAX_BACK_TRAIL_TIPS = 3
 
         private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
         private const val KEY_TITLE_LANGUAGE = "title_language"

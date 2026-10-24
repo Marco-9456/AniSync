@@ -9,13 +9,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +47,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.navigation.NavBackStackEntry
@@ -53,6 +62,9 @@ import com.anisync.android.presentation.navigation.tabRow
 import com.anisync.android.presentation.navigation.trailRow
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.rememberHapticFeedback
+import com.anisync.android.ui.theme.ProvideDisplaySize
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
 
 /**
@@ -64,7 +76,7 @@ import kotlin.math.roundToInt
  * visual inside a 48dp target. The page finds its own entry through the ViewModel store owner, which
  * a navigation host sets to the entry it is drawing.
  */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun BackTrailButton(
     onClick: () -> Unit,
@@ -76,61 +88,92 @@ fun BackTrailButton(
 ) {
     val host = LocalBackTrailHost.current
     val entry = LocalViewModelStoreOwner.current as? NavBackStackEntry
-    val trailEnabled by LocalAppSettings.current.backTrailEnabled.collectAsStateWithLifecycle()
+    val appSettings = LocalAppSettings.current
+    val trailEnabled by appSettings.backTrailEnabled.collectAsStateWithLifecycle()
     val trail = rememberBackTrail(host, entry).takeIf { trailEnabled }
     var expanded by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()
     val openTrail = {
         haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        appSettings.noteBackTrailOpened()
         expanded = true
     }
     val trailLabel = stringResource(R.string.a11y_back_trail)
     var anchorBottom by remember { mutableIntStateOf(0) }
     val shape = IconButtonDefaults.standardShape
 
+    val tooltipState = rememberTooltipState(isPersistent = true)
+    var tip by remember { mutableStateOf("") }
+    val rowCount = trail?.let { it.pages.size + if (it.tab != null || host?.list != null) 1 else 0 } ?: 0
+    val firstTip = stringResource(R.string.back_trail_tip)
+    // The first time a page has three rows behind it, once it has settled. A navigation host keeps
+    // an entering page short of RESUMED until its transition ends, so the tip never rides the motion.
+    LaunchedEffect(entry, rowCount >= TipRowCount) {
+        if (entry == null || rowCount < TipRowCount) return@LaunchedEffect
+        if (!appSettings.backTrailTipsAllowed() || appSettings.backTrailFirstTipShown()) return@LaunchedEffect
+        entry.lifecycle.currentStateFlow.first { it == Lifecycle.State.RESUMED }
+        if (!appSettings.backTrailTipsAllowed()) return@LaunchedEffect
+        appSettings.noteBackTrailTip(first = true)
+        tip = firstTip
+        withTimeoutOrNull(TipDurationMillis) { tooltipState.show() }
+    }
+
     Box(
         modifier = modifier.onGloballyPositioned { coordinates ->
             anchorBottom = (coordinates.positionInWindow().y + coordinates.size.height).roundToInt()
         }
     ) {
-        Box(
-            modifier = Modifier
-                .minimumInteractiveComponentSize()
-                .size(IconButtonDefaults.smallContainerSize())
-                .clip(shape)
-                .background(color = colors.containerColor, shape = shape)
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = if (trail != null) openTrail else null,
-                    onLongClickLabel = if (trail != null) trailLabel else null,
-                    role = Role.Button,
-                    // The trail plays its own tick, through the app's haptics switch.
-                    hapticFeedbackEnabled = false,
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = ripple(focusRingShape = shape),
-                )
-                .then(
-                    if (trail != null) {
-                        Modifier.semantics {
-                            customActions = listOf(
-                                CustomAccessibilityAction(trailLabel) {
-                                    openTrail()
-                                    true
-                                }
-                            )
-                        }
-                    } else {
-                        Modifier
-                    }
-                ),
-            contentAlignment = Alignment.Center,
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+            tooltip = {
+                ProvideDisplaySize {
+                    PlainTooltip { Text(tip) }
+                }
+            },
+            state = tooltipState,
+            // Never in the way: touches pass through, and any tap or scroll puts it away.
+            focusable = false,
+            enableUserInput = false,
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = colors.contentColor,
-                modifier = Modifier.size(iconSize)
-            )
+            Box(
+                modifier = Modifier
+                    .minimumInteractiveComponentSize()
+                    .size(IconButtonDefaults.smallContainerSize())
+                    .clip(shape)
+                    .background(color = colors.containerColor, shape = shape)
+                    .combinedClickable(
+                        onClick = onClick,
+                        onLongClick = if (trail != null) openTrail else null,
+                        onLongClickLabel = if (trail != null) trailLabel else null,
+                        role = Role.Button,
+                        // The trail plays its own tick, through the app's haptics switch.
+                        hapticFeedbackEnabled = false,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = ripple(focusRingShape = shape),
+                    )
+                    .then(
+                        if (trail != null) {
+                            Modifier.semantics {
+                                customActions = listOf(
+                                    CustomAccessibilityAction(trailLabel) {
+                                        openTrail()
+                                        true
+                                    }
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    tint = colors.contentColor,
+                    modifier = Modifier.size(iconSize)
+                )
+            }
         }
 
         if (host != null && trail != null) {
@@ -144,6 +187,9 @@ fun BackTrailButton(
         }
     }
 }
+
+private const val TipRowCount = 3
+private const val TipDurationMillis = 4_000L
 
 @Composable
 private fun BackTrailMenu(

@@ -2300,6 +2300,7 @@
     <string name="settings_back_trail">Hold back to jump</string>
     <string name="settings_back_trail_desc">Hold the back arrow to see the pages behind this one and jump straight to any of them</string>
     <string name="a11y_back_trail">Show the pages behind this one</string>
+    <string name="back_trail_tip">Hold to jump back to any page</string>
     <string name="settings_general">General</string>
     <string name="settings_general_desc">Start screen, language, app lock, streaming</string>
     <string name="settings_section_opening">Opening the app</string>
