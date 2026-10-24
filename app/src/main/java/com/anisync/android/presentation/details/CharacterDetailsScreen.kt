@@ -30,7 +30,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bloodtype
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Close
@@ -83,6 +82,7 @@ import com.anisync.android.presentation.components.bannerChromeContainer
 import com.anisync.android.presentation.components.bannerChromeTint
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.ImageViewerDialog
+import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.navigation.TrailKind
 import com.anisync.android.presentation.navigation.TrailLabel
 import com.anisync.android.presentation.details.components.AppearanceRow
@@ -203,13 +203,7 @@ fun CharacterDetailsScreen(
                 },
                 navigationIcon = {
                     if (!LocalPaneIsRoot.current) {
-                        IconButton(onClick = onBackClick, colors = chromeColors) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back),
-                                tint = iconTint
-                            )
-                        }
+                        BackTrailButton(onClick = onBackClick, colors = chromeColors)
                     }
                 },
                 actions = {

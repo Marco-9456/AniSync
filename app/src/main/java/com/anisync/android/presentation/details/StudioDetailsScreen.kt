@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
@@ -76,6 +75,7 @@ import com.anisync.android.presentation.components.bannerChromeContainer
 import com.anisync.android.presentation.components.bannerChromeTint
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.navigation.TrailKind
 import com.anisync.android.presentation.navigation.TrailLabel
 import com.anisync.android.presentation.details.components.AppearanceRow
@@ -184,13 +184,7 @@ fun StudioDetailsScreen(
                 },
                 navigationIcon = {
                     if (!LocalPaneIsRoot.current) {
-                        IconButton(onClick = onBackClick, colors = chromeColors) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back),
-                                tint = iconTint
-                            )
-                        }
+                        BackTrailButton(onClick = onBackClick, colors = chromeColors)
                     }
                 },
                 actions = {

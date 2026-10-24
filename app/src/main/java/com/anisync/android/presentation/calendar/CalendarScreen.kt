@@ -32,7 +32,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
@@ -81,6 +80,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
+import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.calendar.components.AiringEpisodeCard
 import com.anisync.android.presentation.calendar.components.CalendarDaySkeleton
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
@@ -167,12 +167,10 @@ fun CalendarScreen(
                             )
                         },
                         navigationIcon = {
-                            IconButton(onClick = onBackClick) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.navigate_back)
-                                )
-                            }
+                            BackTrailButton(
+                                onClick = onBackClick,
+                                contentDescription = stringResource(R.string.navigate_back)
+                            )
                         },
                         actions = {
                             FilledIconToggleButton(

@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -62,6 +63,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anisync.android.R
+import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import kotlinx.coroutines.flow.collectLatest
@@ -342,18 +344,17 @@ fun CollapsibleCommonTopBar(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (onBackClick != null && !paneIsRoot) {
-                IconButton(
+                BackTrailButton(
                     onClick = onBackClick,
+                    icon = navigationIcon,
+                    contentDescription = stringResource(R.string.navigate_back),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
                     modifier = Modifier
                         .padding(top = statusBarHeight + 4.dp, start = 4.dp)
                         .align(Alignment.TopStart)
-                ) {
-                    Icon(
-                        imageVector = navigationIcon,
-                        contentDescription = stringResource(R.string.navigate_back),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                )
             }
 
             Row(

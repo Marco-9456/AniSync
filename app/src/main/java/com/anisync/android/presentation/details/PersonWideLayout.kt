@@ -35,9 +35,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -84,6 +84,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.anisync.android.R
+import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.PaneDragHandle
@@ -459,18 +460,18 @@ private fun PersonBannerCard(
         // Chrome lives on the banner, the way the profile puts its settings/share action there.
         // A top app bar above the card would leave an empty band over it and, once the card has
         // collapsed to a strip, cover the name that just landed on it.
-        Row(
+        // The 48dp target takes 4dp of the inset, so the disc lines up with the buttons opposite.
+        BackTrailButton(
+            onClick = onBackClick,
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = Color.Black.copy(alpha = 0.36f),
+                contentColor = Color.White
+            ),
+            iconSize = 22.dp,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 8.dp, top = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BannerIconButton(
-                icon = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.back),
-                onClick = onBackClick
-            )
-        }
+                .padding(start = 4.dp, top = 4.dp)
+        )
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)

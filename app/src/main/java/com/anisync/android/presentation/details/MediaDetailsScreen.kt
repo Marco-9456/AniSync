@@ -137,6 +137,7 @@ import com.anisync.android.presentation.components.MediaArtworkThemeOverride
 import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.ContentMetadataSection
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
@@ -431,13 +432,11 @@ fun MediaDetailsScreen(
                                 },
                                 navigationIcon = {
                                     if (!LocalPaneIsRoot.current) {
-                                        IconButton(onClick = onBackClick, colors = chromeColors) {
-                                            Icon(
-                                                imageVector = navigationIcon,
-                                                contentDescription = stringResource(R.string.back),
-                                                tint = chromeTint
-                                            )
-                                        }
+                                        BackTrailButton(
+                                            onClick = onBackClick,
+                                            icon = navigationIcon,
+                                            colors = chromeColors
+                                        )
                                     }
                                 },
                                 actions = {

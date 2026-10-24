@@ -19,16 +19,12 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -58,6 +54,7 @@ import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.url
+import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.components.EmptyStateWithAction
 import com.anisync.android.presentation.components.SearchField
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
@@ -97,12 +94,10 @@ fun NotesJournalScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.navigate_back)
-                            )
-                        }
+                        BackTrailButton(
+                            onClick = onBackClick,
+                            contentDescription = stringResource(R.string.navigate_back)
+                        )
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = pageColor)
                 )
