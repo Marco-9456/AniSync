@@ -21,7 +21,8 @@ enum class WhatsNewItem(val sinceVersionCode: Int, val kind: Kind, val place: Pl
     STORAGE_COVER_QUALITY(22, Kind.MOVED),
     GENERAL_MOVED_NOTICE(22, Kind.MOVED),
     LIBRARY_SEARCH_FILTERS(23, Kind.MOVED, Place.LIBRARY),
-    DISCOVER_SEARCH_FILTERS(23, Kind.MOVED, Place.DISCOVER);
+    DISCOVER_SEARCH_FILTERS(23, Kind.MOVED, Place.DISCOVER),
+    GENERAL_BACK_TRAIL(23, Kind.NEW);
 
     enum class Kind { NEW, MOVED }
 

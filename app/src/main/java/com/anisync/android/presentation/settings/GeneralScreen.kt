@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,6 +48,7 @@ import com.anisync.android.R
 import com.anisync.android.data.AppLocale
 import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.presentation.components.LocalWhatsNew
+import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.settings.components.InfoNotice
 import com.anisync.android.data.StartScreen
@@ -102,7 +104,12 @@ fun GeneralScreen(
 
     val whatsNewStore = LocalWhatsNew.current
     val whatsNew = rememberActiveWhatsNew()
-    LaunchedEffect(Unit) { whatsNewStore.markSeen(WhatsNewItem.SETTINGS_GENERAL) }
+    // Read once on entry so the pill stays up for the visit that clears it.
+    val showBackTrailNew = remember { WhatsNewItem.GENERAL_BACK_TRAIL in whatsNewStore.active.value }
+    LaunchedEffect(Unit) {
+        whatsNewStore.markSeen(WhatsNewItem.SETTINGS_GENERAL)
+        whatsNewStore.markSeen(WhatsNewItem.GENERAL_BACK_TRAIL)
+    }
 
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_general),
@@ -147,7 +154,12 @@ fun GeneralScreen(
                 title = stringResource(R.string.settings_back_trail),
                 subtitle = stringResource(R.string.settings_back_trail_desc),
                 checked = backTrailEnabled,
-                onCheckedChange = { viewModel.onAction(SettingsAction.SetBackTrailEnabled(it)) }
+                onCheckedChange = { viewModel.onAction(SettingsAction.SetBackTrailEnabled(it)) },
+                titleBadge = if (showBackTrailNew) {
+                    { WhatsNewPill(WhatsNewItem.Kind.NEW) }
+                } else {
+                    null
+                }
             )
             SwitchSettingsItem(
                 icon = Icons.Default.Vibration,
