@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Search
@@ -69,6 +70,7 @@ fun GeneralScreen(
     // Read straight off AppSettings: the ViewModel's uiState is assembled from combines that
     // are already at their arity ceiling, and this is a single value with a single writer.
     val startScreen by LocalAppSettings.current.startScreen.collectAsStateWithLifecycle()
+    val backTrailEnabled by LocalAppSettings.current.backTrailEnabled.collectAsStateWithLifecycle()
 
     var showStartScreenSheet by rememberSaveable { mutableStateOf(false) }
     var showStreamingServiceSheet by rememberSaveable { mutableStateOf(false) }
@@ -139,6 +141,13 @@ fun GeneralScreen(
                 subtitle = stringResource(R.string.settings_nav_double_tap_search_desc),
                 checked = uiState.navBarDoubleTapSearch,
                 onCheckedChange = { viewModel.onAction(SettingsAction.SetNavBarDoubleTapSearch(it)) }
+            )
+            SwitchSettingsItem(
+                icon = Icons.Default.History,
+                title = stringResource(R.string.settings_back_trail),
+                subtitle = stringResource(R.string.settings_back_trail_desc),
+                checked = backTrailEnabled,
+                onCheckedChange = { viewModel.onAction(SettingsAction.SetBackTrailEnabled(it)) }
             )
             SwitchSettingsItem(
                 icon = Icons.Default.Vibration,

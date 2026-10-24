@@ -39,6 +39,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.navigation.NavBackStackEntry
 import com.anisync.android.R
@@ -50,6 +51,7 @@ import com.anisync.android.presentation.navigation.popBackStackTo
 import com.anisync.android.presentation.navigation.rememberBackTrail
 import com.anisync.android.presentation.navigation.tabRow
 import com.anisync.android.presentation.navigation.trailRow
+import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import kotlin.math.roundToInt
 
@@ -74,7 +76,8 @@ fun BackTrailButton(
 ) {
     val host = LocalBackTrailHost.current
     val entry = LocalViewModelStoreOwner.current as? NavBackStackEntry
-    val trail = rememberBackTrail(host, entry)
+    val trailEnabled by LocalAppSettings.current.backTrailEnabled.collectAsStateWithLifecycle()
+    val trail = rememberBackTrail(host, entry).takeIf { trailEnabled }
     var expanded by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()
     val openTrail = {

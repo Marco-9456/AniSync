@@ -305,6 +305,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetNavBarShowLabels -> appSettings.setNavBarShowLabels(action.show)
             is SettingsAction.SetNavBarDoubleTapSearch ->
                 appSettings.setNavBarDoubleTapSearch(action.enabled)
+            is SettingsAction.SetBackTrailEnabled -> appSettings.setBackTrailEnabled(action.enabled)
             is SettingsAction.SetNavBarCornerRadius -> appSettings.setNavBarCornerRadius(action.radius)
             is SettingsAction.SetAvatarShape -> appSettings.setAvatarShape(action.shape)
             is SettingsAction.SetAvatarBackgroundEnabled -> appSettings.setAvatarBackgroundEnabled(action.enabled)

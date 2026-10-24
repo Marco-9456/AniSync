@@ -250,6 +250,10 @@ class AppSettings @Inject constructor(
         MutableStateFlow(prefs.getBoolean(KEY_NAV_BAR_DOUBLE_TAP_SEARCH, true))
     val navBarDoubleTapSearch: StateFlow<Boolean> = _navBarDoubleTapSearch.asStateFlow()
 
+    // Whether holding a back arrow opens the trail of pages behind it. Off, a long press is a tap.
+    private val _backTrailEnabled = MutableStateFlow(prefs.getBoolean(KEY_BACK_TRAIL, true))
+    val backTrailEnabled: StateFlow<Boolean> = _backTrailEnabled.asStateFlow()
+
     private fun readNavBarStyle(): NavBarStyle {
         val name = runCatching { prefs.getString(KEY_NAV_BAR_STYLE, null) }.getOrNull()
         return runCatching { NavBarStyle.valueOf(name ?: NavBarStyle.ANCHORED.name) }
@@ -881,6 +885,11 @@ class AppSettings @Inject constructor(
         _navBarDoubleTapSearch.value = enabled
         prefs.edit().putBoolean(KEY_NAV_BAR_DOUBLE_TAP_SEARCH, enabled).apply()
     }
+
+    fun setBackTrailEnabled(enabled: Boolean) {
+        _backTrailEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_BACK_TRAIL, enabled).apply()
+    }
     
     /**
      * Enable or disable notifications.
@@ -1375,6 +1384,7 @@ companion object {
         private const val KEY_NAV_BAR_LABELS = "nav_bar_show_labels"
         private const val KEY_NAV_BAR_CORNER_RADIUS = "nav_bar_corner_radius"
         private const val KEY_NAV_BAR_DOUBLE_TAP_SEARCH = "nav_bar_double_tap_search"
+        private const val KEY_BACK_TRAIL = "back_trail"
 
         const val MIN_NAV_BAR_CORNER_RADIUS = 0f
         const val MAX_NAV_BAR_CORNER_RADIUS = 36f
