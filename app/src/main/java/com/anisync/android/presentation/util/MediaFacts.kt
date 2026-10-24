@@ -4,14 +4,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaStatus
 import com.anisync.android.type.MediaType
 import java.util.Locale
 
 /** Format and year, which every result card leads its facts with: "TV · 2023". */
 @Composable
-fun LibraryEntry.formatAndYear(): String? =
-    listOfNotNull(format?.toLabel(), releaseYear?.toString()).joinToString(" · ").ifEmpty { null }
+fun LibraryEntry.formatAndYear(): String? = formatAndYear(format, releaseYear)
+
+@Composable
+fun formatAndYear(format: MediaFormat?, year: Int?): String? =
+    listOfNotNull(format?.toLabel(), year?.toString()).joinToString(" · ").ifEmpty { null }
 
 /**
  * "28 eps" or "120 ch". Null when AniList has no length, and for a single episode or chapter,
