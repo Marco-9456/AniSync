@@ -1,10 +1,9 @@
-AniSync is a native Android client for AniList, the anime and manga tracking platform. It offers an offline-first experience for managing your watchlist, discovering new series, and staying connected with the community, built with modern Material 3 design.
+AniSync is a native Android client for AniList, the anime and manga tracking platform. It offers a fast way to manage your watchlist, discover new series, and stay connected with the community, built with modern Material 3 design.
 
 AniSync is not affiliated with AniList; it is a third-party client.
 
 <b>Highlights</b>
 
-* <b>Offline-first library</b> &mdash; full read/write access to your tracking data without an internet connection; changes sync when you are back online.
 * <b>Privacy-focused</b> &mdash; credentials are encrypted locally with AES-256-GCM. No trackers, no ads, no analytics.
 * <b>Material 3 UI</b> &mdash; modern design with dynamic theming and smooth animations.
 * <b>Home-screen widgets</b> &mdash; Up Next, Airing Today, Weekly Calendar, and Trending widgets powered by Jetpack Glance.
