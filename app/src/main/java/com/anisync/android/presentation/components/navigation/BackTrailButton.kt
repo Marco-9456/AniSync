@@ -200,6 +200,7 @@ fun BackTrailButton(
 }
 
 private const val TipRowCount = 3
+private const val TrailVisiblePages = 4
 private const val TipDurationMillis = 4_000L
 
 // Room for the tip on one line. Plain tooltips stop at 200dp, a few short of this one.
@@ -239,10 +240,11 @@ private fun BackTrailMenu(
     snapshot: TrailSnapshot,
     anchorBottom: Int,
 ) {
-    // A long trail scrolls its pages inside the menu rather than climbing over the arrow it hangs
-    // from, and the tab stays in view under them. The room below the arrow is measured the way the
-    // popup measures it: against the window's visible frame, which leaves out the system bars, less
-    // the margin Material keeps to its edge. A taller menu would be moved up over the arrow.
+    // A long trail shows a few pages at a time and scrolls the rest, so it never takes over the
+    // screen, and the tab stays in view under them. When even that does not fit below the arrow, as
+    // in landscape, the pages give up more room. The room is measured the way the popup measures it:
+    // against the window's visible frame, which leaves out the system bars, less the margin Material
+    // keeps to its edge. A taller menu would be moved up over the arrow.
     val view = LocalView.current
     val margin = with(LocalDensity.current) { 48.dp.roundToPx() }
     val visibleHeight = remember(view, expanded, anchorBottom) {
@@ -264,7 +266,7 @@ private fun BackTrailMenu(
             },
         offset = DpOffset(4.dp, 0.dp),
     ) {
-        scrollable()
+        scrollable(maxVisibleItems = TrailVisiblePages)
         snapshot.trail.pages.forEach { node ->
             val entry = snapshot.entry(node) ?: return@forEach
             val row = entry.trailRow()
