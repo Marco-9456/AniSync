@@ -2297,6 +2297,7 @@
     <string name="a11y_nav_search_tab">Search %1$s</string>
     <string name="settings_nav_double_tap_search">Double-tap to search</string>
     <string name="settings_nav_double_tap_search_desc">Tap a tab twice to open its search. Tapping the tab you are on scrolls it back to the top</string>
+    <string name="a11y_back_trail">Show the pages behind this one</string>
     <string name="settings_general">General</string>
     <string name="settings_general_desc">Start screen, language, app lock, streaming</string>
     <string name="settings_section_opening">Opening the app</string>
