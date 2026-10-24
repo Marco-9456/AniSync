@@ -1,11 +1,15 @@
 package com.anisync.android.presentation.navigation
 
+import android.os.SystemClock
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavBackStackEntry
@@ -19,7 +23,32 @@ import androidx.navigation.NavController
 class BackTrailHost(
     val navController: NavController,
     val list: TrailListRow? = null,
-)
+) {
+    /** The entry two steps back in quick succession landed on. Its arrow names the tab to jump to. */
+    var streakEntryId: String? by mutableStateOf(null)
+        private set
+
+    internal suspend fun watchBackStreaks() {
+        val streak = BackStreak()
+        var previous = navController.currentBackStack.value.map { it.id }
+        navController.currentBackStack.collect { stack ->
+            val current = stack.map { it.id }
+            if (wentBack(previous, current)) {
+                streakEntryId = current.last().takeIf { streak.next(SystemClock.elapsedRealtime()) }
+            } else if (current != previous) {
+                streakEntryId = null
+            }
+            previous = current
+        }
+    }
+}
+
+@Composable
+fun rememberBackTrailHost(navController: NavController, list: TrailListRow? = null): BackTrailHost {
+    val host = remember(navController, list) { BackTrailHost(navController, list) }
+    LaunchedEffect(host) { host.watchBackStreaks() }
+    return host
+}
 
 /** The list a two-pane detail was opened from, as the last row of the trail inside it. */
 class TrailListRow(

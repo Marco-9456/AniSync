@@ -45,3 +45,22 @@ fun backTrailOf(stack: List<TrailNode>, endsOnList: Boolean = false): BackTrail?
     val rows = pages.size + if (tab != null || endsOnList) 1 else 0
     return if (rows >= 2) BackTrail(pages, tab) else null
 }
+
+/**
+ * Whether the stack went from [previous] to [current], both entry ids from the bottom up, by going
+ * back: entries left the top and nothing new arrived. A jump down the trail counts as one step.
+ */
+fun wentBack(previous: List<String>, current: List<String>): Boolean =
+    current.isNotEmpty() && current.size < previous.size && previous.subList(0, current.size) == current
+
+/** Tells two steps back in quick succession, the sign of someone backing out of a long chain. */
+class BackStreak(private val windowMillis: Long = 3_000L) {
+    private var lastBackAt: Long? = null
+
+    /** Notes a step back at [atMillis] and whether it came within the window of the one before. */
+    fun next(atMillis: Long): Boolean {
+        val streak = lastBackAt?.let { atMillis - it <= windowMillis } == true
+        lastBackAt = atMillis
+        return streak
+    }
+}

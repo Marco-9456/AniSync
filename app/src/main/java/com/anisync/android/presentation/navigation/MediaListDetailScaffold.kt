@@ -394,9 +394,10 @@ internal fun PaneDetailHost(
     SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
         val paneNav = rememberNavController()
         val currentOnClose by rememberUpdatedState(onClose)
-        val backTrailHost = remember(paneNav, listIcon, listLabel) {
-            BackTrailHost(paneNav, TrailListRow(listIcon, listLabel) { currentOnClose() })
+        val listRow = remember(listIcon, listLabel) {
+            TrailListRow(listIcon, listLabel) { currentOnClose() }
         }
+        val backTrailHost = rememberBackTrailHost(paneNav, listRow)
 
         // Material 3: a two-pane detail's ROOT shows a trailing close (✕), not a leading back arrow;
         // only an entry drilled into within the pane keeps its back arrow. The pane is at its root

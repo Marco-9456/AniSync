@@ -106,15 +106,24 @@ fun BackTrailButton(
     var tip by remember { mutableStateOf("") }
     val rowCount = trail?.let { it.pages.size + if (it.tab != null || host?.list != null) 1 else 0 } ?: 0
     val firstTip = stringResource(R.string.back_trail_tip)
-    // The first time a page has three rows behind it, once it has settled. A navigation host keeps
-    // an entering page short of RESUMED until its transition ends, so the tip never rides the motion.
-    LaunchedEffect(entry, rowCount >= TipRowCount) {
+    val tabEntry = trail?.tab?.let { node ->
+        host?.navController?.currentBackStack?.value?.firstOrNull { it.id == node.entryId }
+    }
+    val tabName = tabEntry?.tabRow()?.title ?: host?.list?.let { stringResource(it.label) }
+    val tabTip = tabName?.let { stringResource(R.string.back_trail_tip_tab, it) }
+    val streakHere = entry != null && host?.streakEntryId == entry.id
+    // The first time a page has three rows behind it, and after two quick backs that still leave
+    // three, once the page has settled. A navigation host keeps an entering page short of RESUMED
+    // until its transition ends, so a tip never rides the motion.
+    LaunchedEffect(entry, rowCount >= TipRowCount, streakHere) {
         if (entry == null || rowCount < TipRowCount) return@LaunchedEffect
-        if (!appSettings.backTrailTipsAllowed() || appSettings.backTrailFirstTipShown()) return@LaunchedEffect
+        val first = !appSettings.backTrailFirstTipShown()
+        val text = (if (first) firstTip else tabTip.takeIf { streakHere }) ?: return@LaunchedEffect
+        if (!appSettings.backTrailTipsAllowed()) return@LaunchedEffect
         entry.lifecycle.currentStateFlow.first { it == Lifecycle.State.RESUMED }
         if (!appSettings.backTrailTipsAllowed()) return@LaunchedEffect
-        appSettings.noteBackTrailTip(first = true)
-        tip = firstTip
+        appSettings.noteBackTrailTip(first)
+        tip = text
         withTimeoutOrNull(TipDurationMillis) { tooltipState.show() }
     }
 

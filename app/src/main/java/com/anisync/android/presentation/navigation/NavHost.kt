@@ -288,7 +288,7 @@ fun AniSyncNavHost(
             )
         }
 
-        val backTrailHost = remember(navController) { BackTrailHost(navController) }
+        val backTrailHost = rememberBackTrailHost(navController)
 
         CompositionLocalProvider(
             LocalAniLinkCallbacks provides aniLinkCallbacks,

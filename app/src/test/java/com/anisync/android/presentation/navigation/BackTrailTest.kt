@@ -1,7 +1,9 @@
 package com.anisync.android.presentation.navigation
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackTrailTest {
@@ -119,5 +121,42 @@ class BackTrailTest {
     @Test
     fun `an empty stack shows no trail`() {
         assertNull(backTrailOf(emptyList()))
+    }
+
+    @Test
+    fun `popping the top is a step back`() {
+        assertTrue(wentBack(listOf("graph", "library", "a", "b"), listOf("graph", "library", "a")))
+    }
+
+    @Test
+    fun `a jump down the trail is a step back`() {
+        assertTrue(wentBack(listOf("graph", "library", "a", "b", "c"), listOf("graph", "library")))
+    }
+
+    @Test
+    fun `opening a page is no step back`() {
+        assertFalse(wentBack(listOf("graph", "library"), listOf("graph", "library", "a")))
+    }
+
+    @Test
+    fun `a tab switch that drops pages is no step back`() {
+        assertFalse(wentBack(listOf("graph", "library", "a", "b"), listOf("graph", "library", "discover")))
+    }
+
+    @Test
+    fun `two backs inside the window make a streak`() {
+        val streak = BackStreak(windowMillis = 3_000)
+
+        assertFalse(streak.next(atMillis = 10_000))
+        assertTrue(streak.next(atMillis = 12_500))
+    }
+
+    @Test
+    fun `backs further apart than the window make no streak`() {
+        val streak = BackStreak(windowMillis = 3_000)
+
+        assertFalse(streak.next(atMillis = 10_000))
+        assertFalse(streak.next(atMillis = 13_500))
+        assertTrue(streak.next(atMillis = 14_000))
     }
 }
