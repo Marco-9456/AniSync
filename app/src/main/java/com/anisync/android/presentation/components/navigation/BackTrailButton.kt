@@ -248,6 +248,9 @@ private fun BackTrailMenu(
     val margin = with(LocalDensity.current) { 48.dp.roundToPx() }
     val maxHeight = (windowHeight - anchorBottom - margin).coerceAtLeast(margin)
     val navController = host.navController
+    // Each opening starts on the newest page, wherever the last one was scrolled to.
+    val scrollState = rememberScrollState()
+    LaunchedEffect(expanded) { if (expanded) scrollState.scrollTo(0) }
 
     Menu(
         expanded = expanded,
@@ -261,7 +264,7 @@ private fun BackTrailMenu(
                 )
                 layout(placeable.width, placeable.height) { placeable.place(0, 0) }
             }
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(scrollState),
         offset = DpOffset(4.dp, 0.dp),
     ) {
         val stack = navController.currentBackStack.value
