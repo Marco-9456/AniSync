@@ -1,9 +1,13 @@
 package com.anisync.android.presentation.components.menu
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenuGroup
 import androidx.compose.material3.DropdownMenuPopup
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,7 +67,7 @@ fun Menu(
             offset
         )
     ) {
-        ProvideDisplaySize { MenuGroups(groups) }
+        ProvideDisplaySize { MenuGroups(groups, scope.scrollingGroup()) }
     }
 }
 
@@ -150,26 +154,38 @@ fun MenuField(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun MenuGroups(groups: List<List<MenuEntry>>) {
+private fun ColumnScope.MenuGroups(groups: List<List<MenuEntry>>, scrolling: List<MenuEntry>?) {
     val groupCount = groups.size
     groups.forEachIndexed { gIndex, group ->
-        DropdownMenuGroup(
-            shapes = MenuDefaults.groupShape(gIndex, groupCount),
-            containerColor = MenuDefaults.groupStandardContainerColor
-        ) {
-            val itemCount = group.count { it is MenuEntry.Item }
-            var itemIndex = 0
-            group.forEach { entry ->
-                when (entry) {
-                    is MenuEntry.Item -> {
-                        MenuItemRow(entry, itemIndex, itemCount)
-                        itemIndex++
+        val menuGroup: @Composable (Modifier) -> Unit = { groupModifier ->
+            DropdownMenuGroup(
+                shapes = MenuDefaults.groupShape(gIndex, groupCount),
+                containerColor = MenuDefaults.groupStandardContainerColor,
+                modifier = groupModifier
+            ) {
+                val itemCount = group.count { it is MenuEntry.Item }
+                var itemIndex = 0
+                group.forEach { entry ->
+                    when (entry) {
+                        is MenuEntry.Item -> {
+                            MenuItemRow(entry, itemIndex, itemCount)
+                            itemIndex++
+                        }
+                        MenuEntry.Divider -> HorizontalDivider(
+                            modifier = Modifier.padding(MenuDefaults.HorizontalDividerPadding)
+                        )
                     }
-                    MenuEntry.Divider -> HorizontalDivider(
-                        modifier = Modifier.padding(MenuDefaults.HorizontalDividerPadding)
-                    )
                 }
             }
+        }
+        if (group === scrolling) {
+            // The scroll sits inside the group's own surface, as in Material's scrolling menu. Around
+            // the surfaces it would clip their shadows flat at its top and bottom edges.
+            Box(Modifier.weight(1f, fill = false)) {
+                menuGroup(Modifier.verticalScroll(rememberScrollState()))
+            }
+        } else {
+            menuGroup(Modifier)
         }
         if (gIndex < groupCount - 1) Spacer(Modifier.height(8.dp))
     }
@@ -230,6 +246,12 @@ interface MenuScope {
 
     /** Splits subsequent items into a new visual group separated by 8dp of empty space. */
     fun gap()
+
+    /**
+     * Lets the current group give up height when the menu has less room than it needs and scroll
+     * its items instead, while the other groups stay in view. One group per menu.
+     */
+    fun scrollable()
 }
 
 private sealed interface MenuEntry {
@@ -250,6 +272,7 @@ private sealed interface MenuEntry {
 
 private class MenuScopeImpl : MenuScope {
     private val groups = mutableListOf(mutableListOf<MenuEntry>())
+    private var scrolling: List<MenuEntry>? = null
 
     override fun item(
         text: String,
@@ -287,5 +310,11 @@ private class MenuScopeImpl : MenuScope {
         }
     }
 
+    override fun scrollable() {
+        scrolling = groups.last()
+    }
+
     fun groups(): List<List<MenuEntry>> = groups.filter { it.isNotEmpty() }
+
+    fun scrollingGroup(): List<MenuEntry>? = scrolling?.takeIf { it.isNotEmpty() }
 }
