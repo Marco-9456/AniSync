@@ -26,6 +26,7 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.util.LocalAppSettings
 import org.junit.After
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -107,11 +108,7 @@ class BackTrailButtonTest {
 
         composeTestRule.runOnIdle {
             assertTrue(navController.currentDestination?.hasRoute<Library>() == true)
-            assertTrue(
-                navController.currentBackStack.value.none {
-                    it.destination.hasRoute<Calendar>() || it.destination.hasRoute<Notes>()
-                }
-            )
+            assertNull(navController.previousBackStackEntry)
         }
     }
 

@@ -58,10 +58,9 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.navigation.NavBackStackEntry
 import com.anisync.android.R
 import com.anisync.android.presentation.components.menu.Menu
-import com.anisync.android.presentation.navigation.BackTrail
 import com.anisync.android.presentation.navigation.BackTrailHost
 import com.anisync.android.presentation.navigation.LocalBackTrailHost
-import com.anisync.android.presentation.navigation.popBackStackTo
+import com.anisync.android.presentation.navigation.TrailSnapshot
 import com.anisync.android.presentation.navigation.rememberBackTrail
 import com.anisync.android.presentation.navigation.tabRow
 import com.anisync.android.presentation.navigation.trailRow
@@ -95,7 +94,8 @@ fun BackTrailButton(
     val entry = LocalViewModelStoreOwner.current as? NavBackStackEntry
     val appSettings = LocalAppSettings.current
     val trailEnabled by appSettings.backTrailEnabled.collectAsStateWithLifecycle()
-    val trail = rememberBackTrail(host, entry).takeIf { trailEnabled }
+    val snapshot = rememberBackTrail(host, entry).takeIf { trailEnabled }
+    val trail = snapshot?.trail
     var expanded by remember { mutableStateOf(false) }
     val haptic = rememberHapticFeedback()
     val openTrail = {
@@ -111,10 +111,8 @@ fun BackTrailButton(
     var tip by remember { mutableStateOf("") }
     val rowCount = trail?.rowCount ?: 0
     val firstTip = stringResource(R.string.back_trail_tip)
-    val tabEntry = trail?.tab?.let { node ->
-        host?.navController?.currentBackStack?.value?.firstOrNull { it.id == node.entryId }
-    }
-    val tabName = tabEntry?.tabRow()?.title ?: host?.list?.let { stringResource(it.label) }
+    val tabName = snapshot?.let { it.trail.tab?.let(it::entry) }?.tabRow()?.title
+        ?: host?.list?.let { stringResource(it.label) }
     val tabTip = tabName?.let { stringResource(R.string.back_trail_tip_tab, it) }
     val streakHere = entry != null && host?.streakEntryId == entry.id
     // The first time a page has three rows behind it, and after two quick backs that still leave
@@ -190,12 +188,12 @@ fun BackTrailButton(
             }
         }
 
-        if (host != null && trail != null) {
+        if (host != null && snapshot != null) {
             BackTrailMenu(
                 expanded = expanded,
                 onDismiss = { expanded = false },
                 host = host,
-                trail = trail,
+                snapshot = snapshot,
                 anchorBottom = anchorBottom,
             )
         }
@@ -239,7 +237,7 @@ private fun BackTrailMenu(
     expanded: Boolean,
     onDismiss: () -> Unit,
     host: BackTrailHost,
-    trail: BackTrail,
+    snapshot: TrailSnapshot,
     anchorBottom: Int,
 ) {
     // A long trail scrolls inside the menu rather than climbing over the arrow it hangs from. The
@@ -247,7 +245,6 @@ private fun BackTrailMenu(
     val windowHeight = LocalWindowInfo.current.containerSize.height
     val margin = with(LocalDensity.current) { 48.dp.roundToPx() }
     val maxHeight = (windowHeight - anchorBottom - margin).coerceAtLeast(margin)
-    val navController = host.navController
     // Each opening starts on the newest page, wherever the last one was scrolled to.
     val scrollState = rememberScrollState()
     LaunchedEffect(expanded) { if (expanded) scrollState.scrollTo(0) }
@@ -267,9 +264,8 @@ private fun BackTrailMenu(
             .verticalScroll(scrollState),
         offset = DpOffset(4.dp, 0.dp),
     ) {
-        val stack = navController.currentBackStack.value
-        trail.pages.forEach { node ->
-            val entry = stack.firstOrNull { it.id == node.entryId } ?: return@forEach
+        snapshot.trail.pages.forEach { node ->
+            val entry = snapshot.entry(node) ?: return@forEach
             val row = entry.trailRow()
             item(
                 text = row.title,
@@ -278,12 +274,12 @@ private fun BackTrailMenu(
                 maxLines = 1,
                 onClick = {
                     onDismiss()
-                    navController.popBackStackTo(node.entryId)
+                    host.popTo(node.entryId)
                 }
             )
         }
         gap()
-        val tab = trail.tab?.let { node -> stack.firstOrNull { it.id == node.entryId } }
+        val tab = snapshot.trail.tab?.let(snapshot::entry)
         val list = host.list
         if (tab != null) {
             val row = tab.tabRow()
@@ -293,7 +289,7 @@ private fun BackTrailMenu(
                 maxLines = 1,
                 onClick = {
                     onDismiss()
-                    navController.popBackStackTo(tab.id)
+                    host.popTo(tab.id)
                 }
             )
         } else if (list != null) {
