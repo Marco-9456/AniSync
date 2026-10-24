@@ -46,7 +46,12 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.PopupPositionProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
@@ -133,10 +138,10 @@ fun BackTrailButton(
         }
     ) {
         TooltipBox(
-            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Below),
+            positionProvider = rememberDiscAlignedPositionProvider(),
             tooltip = {
                 ProvideDisplaySize {
-                    PlainTooltip { Text(tip) }
+                    PlainTooltip(maxWidth = TipMaxWidth) { Text(tip) }
                 }
             },
             state = tooltipState,
@@ -199,6 +204,35 @@ fun BackTrailButton(
 
 private const val TipRowCount = 3
 private const val TipDurationMillis = 4_000L
+
+// Room for the tip on one line. Plain tooltips stop at 200dp, a few short of this one.
+private val TipMaxWidth = 280.dp
+
+/** Below the arrow, lined up with its 40dp disc rather than the 48dp target around it. */
+@Composable
+private fun rememberDiscAlignedPositionProvider(): PopupPositionProvider {
+    val density = LocalDensity.current
+    val inset = with(density) { ((48.dp - IconButtonDefaults.smallContainerSize().width) / 2).roundToPx() }
+    val spacing = with(density) { 4.dp.roundToPx() }
+    return remember(inset, spacing) {
+        object : PopupPositionProvider {
+            override fun calculatePosition(
+                anchorBounds: IntRect,
+                windowSize: IntSize,
+                layoutDirection: LayoutDirection,
+                popupContentSize: IntSize,
+            ): IntOffset {
+                val x = if (layoutDirection == LayoutDirection.Ltr) {
+                    anchorBounds.left + inset
+                } else {
+                    anchorBounds.right - inset - popupContentSize.width
+                }
+                val maxX = (windowSize.width - popupContentSize.width).coerceAtLeast(0)
+                return IntOffset(x.coerceIn(0, maxX), anchorBounds.bottom + spacing)
+            }
+        }
+    }
+}
 
 @Composable
 private fun BackTrailMenu(
