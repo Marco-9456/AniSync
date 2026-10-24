@@ -288,7 +288,12 @@ fun AniSyncNavHost(
             )
         }
 
-        CompositionLocalProvider(LocalAniLinkCallbacks provides aniLinkCallbacks) {
+        val backTrailHost = remember(navController) { BackTrailHost(navController) }
+
+        CompositionLocalProvider(
+            LocalAniLinkCallbacks provides aniLinkCallbacks,
+            LocalBackTrailHost provides backTrailHost,
+        ) {
         NavHost(
             navController = navController,
             startDestination = startDestination,
@@ -676,6 +681,7 @@ fun AniSyncNavHost(
                         )
                     },
                     onUserClick = navigateToUserProfile,
+                    onTrailLabel = backStackEntry::recordTrailLabel,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -801,6 +807,7 @@ fun AniSyncNavHost(
                     onStaffClick = { staffId ->
                         navController.navigate(StaffDetails(staffId))
                     },
+                    onTrailLabel = backStackEntry::recordTrailLabel,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -831,6 +838,7 @@ fun AniSyncNavHost(
                     onCharacterClick = { characterId ->
                         navController.navigate(CharacterDetails(characterId))
                     },
+                    onTrailLabel = backStackEntry::recordTrailLabel,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -856,6 +864,7 @@ fun AniSyncNavHost(
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, "studio"))
                     },
+                    onTrailLabel = backStackEntry::recordTrailLabel,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -1089,7 +1098,8 @@ fun AniSyncNavHost(
                                 navController.navigate(
                                     EditThreadBody(it, route.coverColor, route.profileColor)
                                 )
-                            }
+                            },
+                            onTrailLabel = backStackEntry::recordTrailLabel
                         )
                     }
                 }

@@ -82,6 +82,8 @@ import com.anisync.android.presentation.components.bannerChromeContainer
 import com.anisync.android.presentation.components.bannerChromeTint
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.components.ImageViewerDialog
+import com.anisync.android.presentation.navigation.TrailKind
+import com.anisync.android.presentation.navigation.TrailLabel
 import com.anisync.android.presentation.details.components.CharacterSkeletonContent
 import com.anisync.android.presentation.details.components.CreditRow
 import com.anisync.android.presentation.details.components.ExpandableBiography
@@ -117,6 +119,7 @@ fun StaffDetailsScreen(
     onBackClick: () -> Unit,
     onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
+    onTrailLabel: (TrailLabel) -> Unit = {},
     viewModel: StaffDetailsViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null
@@ -130,6 +133,8 @@ fun StaffDetailsScreen(
         derivedStateOf { scrollBehavior.state.contentOffset < -50f }
     }
     val details = (uiState as? StaffDetailsUiState.Success)?.details
+    val trailLabel = details?.let { TrailLabel(it.getName(titleLanguage), TrailKind.STAFF) }
+    LaunchedEffect(trailLabel) { trailLabel?.let(onTrailLabel) }
     // The wide layout hands the name to the banner as the header collapses, so the app bar title
     // would only say it twice.
     val adaptive = LocalAdaptiveInfo.current

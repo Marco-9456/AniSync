@@ -89,6 +89,8 @@ import com.anisync.android.domain.CommentNode
 import com.anisync.android.domain.ForumComment
 import com.anisync.android.domain.toCommentNode
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
+import com.anisync.android.presentation.navigation.TrailKind
+import com.anisync.android.presentation.navigation.TrailLabel
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.util.adaptiveReadingWidth
 import com.anisync.android.presentation.util.bouncyClickable
@@ -146,6 +148,7 @@ fun ThreadDetailScreen(
     targetCommentId: Int? = null,
     navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     onEditThread: (threadId: Int) -> Unit = {},
+    onTrailLabel: (TrailLabel) -> Unit = {},
     // Full-screen caps long-form thread text to a readable centered column. In a resizable two-pane
     // detail the pane width is already the constraint, so the caller passes false to let the thread
     // fill the pane (and use the room gained by collapsing the list) instead of staying centered.
@@ -155,6 +158,11 @@ fun ThreadDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val pullToRefreshState = rememberPullToRefreshState()
+
+    val loadedTitle = uiState.thread?.title
+    LaunchedEffect(loadedTitle) {
+        loadedTitle?.let { onTrailLabel(TrailLabel(it, TrailKind.THREAD)) }
+    }
     val context = LocalContext.current
 
     var collapsedIds by rememberSaveable(

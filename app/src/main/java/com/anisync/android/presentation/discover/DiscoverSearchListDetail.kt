@@ -1,8 +1,11 @@
 package com.anisync.android.presentation.discover
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.listSaver
 import androidx.navigation.NavHostController
+import com.anisync.android.R
 import com.anisync.android.presentation.navigation.CharacterDetails
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.PaneDetailHost
@@ -69,5 +72,7 @@ fun SearchDetailPane(
         startRoute = target.toPaneRoute(),
         navController = navController,
         onClose = onClose,
+        listIcon = Icons.Default.Search,
+        listLabel = R.string.search,
     )
 }

@@ -3,8 +3,11 @@ package com.anisync.android.presentation.library
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import com.anisync.android.R
 import com.anisync.android.presentation.navigation.MediaListDetailScaffold
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 
@@ -38,7 +41,11 @@ fun LibraryListDetail(
     }
 
     // Library list items don't show a selected state, so the pane's selected id is ignored here.
-    MediaListDetailScaffold(navController = navController) { _, onMediaClick ->
+    MediaListDetailScaffold(
+        navController = navController,
+        listIcon = Icons.Outlined.VideoLibrary,
+        listLabel = R.string.nav_library,
+    ) { _, onMediaClick ->
         LibraryScreen(
             onMediaClick = onMediaClick,
             onNavigateToCalendar = onNavigateToCalendar,

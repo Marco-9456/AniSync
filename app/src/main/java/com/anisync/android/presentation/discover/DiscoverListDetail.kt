@@ -3,11 +3,14 @@ package com.anisync.android.presentation.discover
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.listSaver
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.anisync.android.R
 import com.anisync.android.presentation.navigation.Calendar
 import com.anisync.android.presentation.navigation.CharacterDetails
 import com.anisync.android.presentation.navigation.LIST_DETAIL_PANE_SOURCE
@@ -123,6 +126,8 @@ fun DiscoverListDetail(
                 startRoute = target.toPaneRoute(),
                 navController = navController,
                 onClose = onClose,
+                listIcon = Icons.Outlined.Explore,
+                listLabel = R.string.nav_discover,
                 extraGraph = { paneNav, sharedScope ->
                     // Reviews are a Discover list item, so their detail lives in the pane too. The
                     // review's media banner drills to the media WITHIN the pane; users escalate.

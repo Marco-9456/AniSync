@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -38,6 +39,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.autoSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -346,6 +348,8 @@ fun <T : Any> TwoPaneListDetailScaffold(
 @Composable
 fun MediaListDetailScaffold(
     navController: NavHostController,
+    listIcon: ImageVector,
+    @StringRes listLabel: Int,
     modifier: Modifier = Modifier,
     listPane: @Composable (selectedMediaId: Int?, onMediaClick: (Int) -> Unit) -> Unit,
 ) {
@@ -357,6 +361,8 @@ fun MediaListDetailScaffold(
                 startRoute = MediaDetails(id, LIST_DETAIL_PANE_SOURCE),
                 navController = navController,
                 onClose = onClose,
+                listIcon = listIcon,
+                listLabel = listLabel,
             )
         },
     )
@@ -373,6 +379,7 @@ fun MediaListDetailScaffold(
  *
  * [extraGraph] registers destinations beyond the shared media graph (the Discover search pane adds a
  * user-profile root), receiving the pane [NavHostController] and the [SharedTransitionScope].
+ * [listIcon] and [listLabel] name the list pane in the back trail, where that row closes the pane.
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -380,10 +387,16 @@ internal fun PaneDetailHost(
     startRoute: Any,
     navController: NavHostController,
     onClose: () -> Unit,
+    listIcon: ImageVector,
+    @StringRes listLabel: Int,
     extraGraph: NavGraphBuilder.(paneNav: NavHostController, sharedScope: SharedTransitionScope) -> Unit = { _, _ -> },
 ) {
     SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
         val paneNav = rememberNavController()
+        val currentOnClose by rememberUpdatedState(onClose)
+        val backTrailHost = remember(paneNav, listIcon, listLabel) {
+            BackTrailHost(paneNav, TrailListRow(listIcon, listLabel) { currentOnClose() })
+        }
 
         // Material 3: a two-pane detail's ROOT shows a trailing close (✕), not a leading back arrow;
         // only an entry drilled into within the pane keeps its back arrow. The pane is at its root
@@ -406,7 +419,10 @@ internal fun PaneDetailHost(
             }
         }
 
-        CompositionLocalProvider(LocalPaneIsRoot provides paneIsRoot) {
+        CompositionLocalProvider(
+            LocalPaneIsRoot provides paneIsRoot,
+            LocalBackTrailHost provides backTrailHost,
+        ) {
         NavHost(
             navController = paneNav,
             startDestination = remember { startRoute },
@@ -481,6 +497,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
                 navController.navigate(CreateThread(mId, t, cover.orEmpty(), color))
             },
             onUserClick = { navController.navigateSafely(UserProfile(it)) },
+            onTrailLabel = backStackEntry::recordTrailLabel,
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
         )
@@ -493,6 +510,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
             onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             onStaffClick = { paneNav.navigate(StaffDetails(it)) },
+            onTrailLabel = backStackEntry::recordTrailLabel,
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
         )
@@ -505,6 +523,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
             onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
             onCharacterClick = { paneNav.navigate(CharacterDetails(it)) },
+            onTrailLabel = backStackEntry::recordTrailLabel,
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
         )
@@ -516,6 +535,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
             studioId = route.studioId,
             onBackClick = { if (!paneNav.popBackStack()) onClose() },
             onMediaClick = { paneNav.navigate(MediaDetails(it, LIST_DETAIL_PANE_SOURCE)) },
+            onTrailLabel = backStackEntry::recordTrailLabel,
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,
         )

@@ -159,6 +159,8 @@ import com.anisync.android.presentation.details.components.ReviewsListSheet
 import com.anisync.android.presentation.details.components.StaffItem
 import com.anisync.android.presentation.details.components.mediaStatsTabContent
 import com.anisync.android.presentation.library.components.ScoreOnCompleteSheet
+import com.anisync.android.presentation.navigation.TrailKind
+import com.anisync.android.presentation.navigation.TrailLabel
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
@@ -204,6 +206,7 @@ fun MediaDetailsScreen(
     onViewAllDiscussions: (mediaId: Int, mediaTitle: String, coverColor: String?) -> Unit,
     onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?, coverColor: String?) -> Unit,
     onUserClick: (String) -> Unit = {},
+    onTrailLabel: (TrailLabel) -> Unit = {},
     navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     viewModel: MediaDetailsViewModel = hiltViewModel(),
     themesViewModel: MediaThemesViewModel = hiltViewModel(),
@@ -233,6 +236,16 @@ fun MediaDetailsScreen(
     // AnimeThemes only carries anime, so the lookup waits until the page says which it is.
     val isAnime = (uiState as? DetailsUiState.Success)?.details?.type == com.anisync.android.type.MediaType.ANIME
     LaunchedEffect(isAnime) { themesViewModel.start(isAnime) }
+
+    val trailLabel = (uiState as? DetailsUiState.Success)?.details?.let { details ->
+        TrailLabel(
+            title = details.getTitle(titleLanguage),
+            kind = if (details.type == com.anisync.android.type.MediaType.MANGA) TrailKind.MANGA else TrailKind.ANIME,
+            format = details.format,
+            year = details.year ?: details.seasonYear,
+        )
+    }
+    LaunchedEffect(trailLabel) { trailLabel?.let(onTrailLabel) }
 
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
