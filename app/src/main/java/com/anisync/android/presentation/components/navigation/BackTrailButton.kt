@@ -5,8 +5,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -240,14 +238,12 @@ private fun BackTrailMenu(
     snapshot: TrailSnapshot,
     anchorBottom: Int,
 ) {
-    // A long trail scrolls inside the menu rather than climbing over the arrow it hangs from. The
-    // margin is the one Material keeps between a menu and the window edge.
+    // A long trail scrolls its pages inside the menu rather than climbing over the arrow it hangs
+    // from, and the tab stays in view under them. The margin is the one Material keeps between a
+    // menu and the window edge.
     val windowHeight = LocalWindowInfo.current.containerSize.height
     val margin = with(LocalDensity.current) { 48.dp.roundToPx() }
     val maxHeight = (windowHeight - anchorBottom - margin).coerceAtLeast(margin)
-    // Each opening starts on the newest page, wherever the last one was scrolled to.
-    val scrollState = rememberScrollState()
-    LaunchedEffect(expanded) { if (expanded) scrollState.scrollTo(0) }
 
     Menu(
         expanded = expanded,
@@ -260,10 +256,10 @@ private fun BackTrailMenu(
                     )
                 )
                 layout(placeable.width, placeable.height) { placeable.place(0, 0) }
-            }
-            .verticalScroll(scrollState),
+            },
         offset = DpOffset(4.dp, 0.dp),
     ) {
+        scrollable()
         snapshot.trail.pages.forEach { node ->
             val entry = snapshot.entry(node) ?: return@forEach
             val row = entry.trailRow()
