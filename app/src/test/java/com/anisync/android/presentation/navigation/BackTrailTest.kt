@@ -36,6 +36,7 @@ class BackTrailTest {
         )!!
 
         assertEquals(listOf("c", "b", "a"), trail.pageIds())
+        assertEquals(4, trail.rowCount)
     }
 
     @Test
@@ -106,6 +107,7 @@ class BackTrailTest {
 
         assertEquals(listOf("root"), trail.pageIds())
         assertNull(trail.tab)
+        assertEquals(2, trail.rowCount)
     }
 
     @Test

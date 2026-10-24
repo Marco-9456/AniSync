@@ -12,9 +12,12 @@ data class TrailNode(val entryId: String, val key: String?, val isTab: Boolean =
 
 /**
  * The pages behind the current one, newest first, and the tab under them. [tab] is null in a
- * two-pane detail, whose last row is the list the pane was opened from.
+ * two-pane detail, which [endsOnList] instead: its last row is the list the pane was opened from.
  */
-data class BackTrail(val pages: List<TrailNode>, val tab: TrailNode?)
+data class BackTrail(val pages: List<TrailNode>, val tab: TrailNode?, val endsOnList: Boolean = false) {
+    /** The rows the trail shows, which is also how many pages lie behind. */
+    val rowCount: Int get() = pages.size + if (tab != null || endsOnList) 1 else 0
+}
 
 /**
  * The trail for the page on top of [stack], which runs from the bottom of the back stack to the
@@ -42,8 +45,7 @@ fun backTrailOf(stack: List<TrailNode>, endsOnList: Boolean = false): BackTrail?
         if (seen.add(key)) pages += node
     }
 
-    val rows = pages.size + if (tab != null || endsOnList) 1 else 0
-    return if (rows >= 2) BackTrail(pages, tab) else null
+    return BackTrail(pages, tab, endsOnList).takeIf { it.rowCount >= 2 }
 }
 
 /**

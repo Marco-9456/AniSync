@@ -109,7 +109,7 @@ fun BackTrailButton(
 
     val tooltipState = rememberTooltipState(isPersistent = true)
     var tip by remember { mutableStateOf("") }
-    val rowCount = trail?.let { it.pages.size + if (it.tab != null || host?.list != null) 1 else 0 } ?: 0
+    val rowCount = trail?.rowCount ?: 0
     val firstTip = stringResource(R.string.back_trail_tip)
     val tabEntry = trail?.tab?.let { node ->
         host?.navController?.currentBackStack?.value?.firstOrNull { it.id == node.entryId }
