@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.anisync.android.ui.theme.ProvideDisplaySize
@@ -190,7 +191,7 @@ private fun MenuItemRow(entry: MenuEntry.Item, index: Int, count: Int) {
     SelectableDropdownMenuItem(
         selected = entry.selected,
         onClick = entry.onClick,
-        text = { Text(entry.text) },
+        text = { Text(entry.text, maxLines = entry.maxLines, overflow = TextOverflow.Ellipsis) },
         shapes = MenuDefaults.itemShape(index, count),
         leadingIcon = entry.leadingIcon?.let { icon ->
             { Icon(imageVector = icon, contentDescription = null) }
@@ -207,7 +208,7 @@ private fun MenuItemRow(entry: MenuEntry.Item, index: Int, count: Int) {
         enabled = entry.enabled,
         colors = colors,
         supportingText = entry.supportingText?.let { supporting ->
-            { Text(supporting) }
+            { Text(supporting, maxLines = entry.maxLines, overflow = TextOverflow.Ellipsis) }
         }
     )
 }
@@ -221,7 +222,8 @@ interface MenuScope {
         supportingText: String? = null,
         destructive: Boolean = false,
         enabled: Boolean = true,
-        selected: Boolean = false
+        selected: Boolean = false,
+        maxLines: Int = Int.MAX_VALUE
     )
 
     fun divider()
@@ -239,7 +241,8 @@ private sealed interface MenuEntry {
         val supportingText: String?,
         val destructive: Boolean,
         val enabled: Boolean,
-        val selected: Boolean
+        val selected: Boolean,
+        val maxLines: Int
     ) : MenuEntry
 
     data object Divider : MenuEntry
@@ -256,7 +259,8 @@ private class MenuScopeImpl : MenuScope {
         supportingText: String?,
         destructive: Boolean,
         enabled: Boolean,
-        selected: Boolean
+        selected: Boolean,
+        maxLines: Int
     ) {
         groups.last().add(
             MenuEntry.Item(
@@ -267,7 +271,8 @@ private class MenuScopeImpl : MenuScope {
                 supportingText = supportingText,
                 destructive = destructive,
                 enabled = enabled,
-                selected = selected
+                selected = selected,
+                maxLines = maxLines
             )
         )
     }
