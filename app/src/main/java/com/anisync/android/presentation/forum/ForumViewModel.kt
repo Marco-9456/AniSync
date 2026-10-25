@@ -619,7 +619,7 @@ class ForumViewModel @Inject constructor(
             }
         }
 
-        val newly = forumRepository.getRecentThreads(1, "CREATED_AT_DESC")
+        val newly = forumRepository.getRecentThreads(1, "ID_DESC")
         if (newly is Result.Success) {
             _uiState.update {
                 it.copy(

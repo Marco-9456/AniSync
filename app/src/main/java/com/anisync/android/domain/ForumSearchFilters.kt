@@ -13,8 +13,8 @@ import com.anisync.android.type.ThreadSort
 enum class ThreadSortOption(val apiValue: List<ThreadSort>) {
     RECENTLY_REPLIED(listOf(ThreadSort.REPLIED_AT_DESC)),
     LEAST_RECENTLY_REPLIED(listOf(ThreadSort.REPLIED_AT)),
-    NEWEST(listOf(ThreadSort.CREATED_AT_DESC)),
-    OLDEST(listOf(ThreadSort.CREATED_AT)),
+    NEWEST(listOf(ThreadSort.ID_DESC)),
+    OLDEST(listOf(ThreadSort.ID)),
     MOST_REPLIES(listOf(ThreadSort.REPLY_COUNT_DESC)),
     FEWEST_REPLIES(listOf(ThreadSort.REPLY_COUNT)),
     MOST_VIEWED(listOf(ThreadSort.VIEW_COUNT_DESC)),
