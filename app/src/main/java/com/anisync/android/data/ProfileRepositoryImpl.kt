@@ -194,7 +194,12 @@ class ProfileRepositoryImpl @Inject constructor(
             val rawActivities = mutableListOf<com.anisync.android.fragment.ActivityFields>()
             Trace.beginSection("AniSync.Profile.Query.UserActivities")
             val activitiesResponse = try {
-                apolloClient.query(GetUserActivitiesQuery(userId = Optional.present(user.id)))
+                apolloClient.query(
+                    GetUserActivitiesQuery(
+                        userId = Optional.present(user.id),
+                        isViewer = Optional.present(user.id == accountStore.activeAccount.value?.id)
+                    )
+                )
                     .fetchPolicy(policy)
                     .execute()
             } finally {
