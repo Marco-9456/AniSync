@@ -22,9 +22,9 @@ import com.anisync.android.domain.SearchFilters
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.domain.SearchSort
 import com.anisync.android.domain.SearchSortColumn
+import com.anisync.android.domain.seasonOfMonth
 import com.anisync.android.presentation.discover.components.BrowseChip
 import com.anisync.android.type.MediaFormat
-import com.anisync.android.type.MediaSeason
 import com.anisync.android.type.MediaType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
@@ -549,7 +549,7 @@ class DiscoverViewModel @Inject constructor(
                 val now = Calendar.getInstance()
                 openPresetSearch(
                     SearchFilters(
-                        season = now.currentSeason(),
+                        season = seasonOfMonth(now.get(Calendar.MONTH)),
                         yearRange = IntRangeFilter(
                             min = now.get(Calendar.YEAR),
                             max = now.get(Calendar.YEAR)
@@ -703,14 +703,6 @@ private const val MIN_SEARCH_QUERY_LENGTH = 2
 private const val MIN_REFRESH_SPINNER_MS = 800L
 
 private const val DAY_SECONDS = 24L * 60 * 60
-
-/** AniList buckets the year into four seasons starting in December. */
-private fun Calendar.currentSeason(): MediaSeason = when (get(Calendar.MONTH)) {
-    Calendar.DECEMBER, Calendar.JANUARY, Calendar.FEBRUARY -> MediaSeason.WINTER
-    Calendar.MARCH, Calendar.APRIL, Calendar.MAY -> MediaSeason.SPRING
-    Calendar.JUNE, Calendar.JULY, Calendar.AUGUST -> MediaSeason.SUMMER
-    else -> MediaSeason.FALL
-}
 
 data class SearchTaxonomy(
     val genres: List<String> = emptyList(),
