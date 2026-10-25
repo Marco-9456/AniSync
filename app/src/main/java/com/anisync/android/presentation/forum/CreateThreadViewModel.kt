@@ -110,7 +110,7 @@ class CreateThreadViewModel @Inject constructor(
 
     /**
      * Toggles a forum category, enforcing AniList's rules:
-     * - Selecting a standalone category (Misc / AniList Apps / Bug Reports /
+     * - Selecting a standalone category (General / AniList Apps / Bug Reports /
      *   Site Feedback) replaces the whole selection — it can't be combined.
      *   AniList Apps additionally drops any attached media.
      * - Otherwise the selection is capped at [MAX_THREAD_CATEGORIES].

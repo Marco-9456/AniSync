@@ -10,7 +10,7 @@ data class CreateThreadUiState(
     val title: String = "",
     val body: String = "",
     val selectedCategoryIds: Set<Int> = emptySet(),
-    val availableCategories: List<ForumCategory> = defaultCategories,
+    val availableCategories: List<ForumCategory> = defaultCategories.filterNot { it.id in leadOnlyCategoryIds },
     /**
      * Media attached to the thread as `mediaCategories` on the SaveThread mutation.
      * AniList treats these as a separate signal from forum [selectedCategoryIds]:
@@ -36,8 +36,8 @@ data class CreateThreadUiState(
     val isValid: Boolean get() = title.isNotBlank() && body.isNotBlank() && selectedCategoryIds.isNotEmpty()
 
     /**
-     * The standalone category currently selected (Misc / AniList Apps /
-     * Bug Reports / Site Feedback), or null. Only one can ever be selected at a
+     * The standalone category currently selected (General / Site Feedback /
+     * Bug Reports / AniList Apps), or null. Only one can ever be selected at a
      * time since picking one clears the rest.
      */
     val selectedExclusiveCategoryId: Int? get() = selectedCategoryIds.firstOrNull { it in exclusiveCategoryIds }
@@ -86,15 +86,18 @@ const val ANILIST_APPS_CATEGORY_ID = 18
 
 /**
  * Standalone AniList forum sections. Selecting one is mutually exclusive with
- * every other category: a Bug Reports / Site Feedback / Misc / AniList Apps
- * thread can't also live under a content category, so the rest are hidden.
+ * every other category: a General / Site Feedback / Bug Reports / AniList Apps
+ * thread can't also live under a content category, so the rest are disabled.
  */
 val exclusiveCategoryIds: Set<Int> = setOf(
+    7,  // General
     11, // Site Feedback
     12, // Bug Reports
-    17, // Misc
     18  // AniList Apps
 )
+
+/** Categories only AniList staff can post in. They stay browsable but are left out of the editor. */
+val leadOnlyCategoryIds: Set<Int> = setOf(13)
 
 /**
  * AniList forum category IDs verified from the live site. AniList doesn't expose
