@@ -574,8 +574,9 @@ class AppSettings @Inject constructor(
     private val _forumFeed = MutableStateFlow(prefs.getString(KEY_FORUM_FEED, null))
     val forumFeed: StateFlow<String?> = _forumFeed.asStateFlow()
 
+    // AniList merged Misc (17) into General (7), so a stored Misc would open an empty feed.
     private val _forumCategoryId = MutableStateFlow(
-        prefs.getInt(KEY_FORUM_CATEGORY_ID, -1).takeIf { it >= 0 }
+        prefs.getInt(KEY_FORUM_CATEGORY_ID, -1).takeIf { it >= 0 }?.let { if (it == 17) 7 else it }
     )
     val forumCategoryId: StateFlow<Int?> = _forumCategoryId.asStateFlow()
 
