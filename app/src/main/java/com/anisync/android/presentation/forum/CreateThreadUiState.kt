@@ -115,6 +115,6 @@ val defaultCategories = listOf(
     ForumCategory(13, "Site Announcements"),
     ForumCategory(15, "Recommendations"),
     ForumCategory(16, "Forum Games"),
-    ForumCategory(17, "Misc"),
-    ForumCategory(18, "AniList Apps")
+    ForumCategory(18, "AniList Apps"),
+    ForumCategory(19, "Events")
 )

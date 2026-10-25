@@ -8,7 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Casino
-import androidx.compose.material.icons.filled.Commute
+import androidx.compose.material.icons.filled.Celebration
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Gamepad
@@ -35,7 +35,8 @@ data class ForumCategoryTab(
 )
 
 /**
- * AniList's default forum categories, in the order the site lists them. Ids 6 and 14 do not exist.
+ * AniList's forum categories by id. Id 6 never existed, 14 is retired, and Misc (17) was merged into
+ * General in October 2026.
  */
 val forumCategoryTabs: List<ForumCategoryTab> = listOf(
     ForumCategoryTab(null, R.string.forum_category_all, Icons.Default.Forum),
@@ -53,8 +54,8 @@ val forumCategoryTabs: List<ForumCategoryTab> = listOf(
     ForumCategoryTab(13, R.string.forum_category_announcements, Icons.AutoMirrored.Filled.Announcement),
     ForumCategoryTab(15, R.string.forum_category_recommendations, Icons.Default.ThumbUp),
     ForumCategoryTab(16, R.string.forum_category_forum_games, Icons.Default.Casino),
-    ForumCategoryTab(17, R.string.forum_category_misc, Icons.Default.Commute),
     ForumCategoryTab(18, R.string.forum_category_anilist_apps, Icons.Default.Apps),
+    ForumCategoryTab(19, R.string.forum_category_events, Icons.Default.Celebration),
 )
 
 /** The AniList category id the Overview's third section previews. */

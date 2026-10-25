@@ -124,6 +124,7 @@
     <string name="forum_category_forum_games">Forum Games</string>
     <string name="forum_category_misc">Misc</string>
     <string name="forum_category_anilist_apps">AniList Apps</string>
+    <string name="forum_category_events">Events</string>
     <!-- Forum sort and filter -->
     <string name="forum_sort_and_filter">Sort &amp; filter</string>
     <string name="forum_sort_by">Sort by</string>
