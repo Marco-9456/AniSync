@@ -93,6 +93,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
+import com.anisync.android.domain.ContentLimits
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryPriority
 import com.anisync.android.domain.LibraryStatus
@@ -377,7 +378,9 @@ fun EditLibraryEntrySheet(
                         RewatchRow(
                             rewatches = rewatches,
                             isAnime = isAnime,
-                            onChange = { rewatches = it.coerceAtLeast(0) }
+                            onChange = {
+                                rewatches = it.coerceIn(ContentLimits.Rewatches.min, ContentLimits.Rewatches.max)
+                            }
                         )
 
                         NotesField(notes = notes, onNotesChange = { notes = it })
@@ -1547,6 +1550,7 @@ private fun RewatchRow(
             )
             FilledTonalIconButton(
                 onClick = { onChange(rewatches + 1) },
+                enabled = rewatches < ContentLimits.Rewatches.max,
                 modifier = Modifier.size(36.dp)
             ) {
                 Icon(
@@ -1565,7 +1569,7 @@ private fun NotesField(notes: String, onNotesChange: (String) -> Unit) {
         SectionLabel(text = stringResource(R.string.notes))
         OutlinedTextField(
             value = notes,
-            onValueChange = onNotesChange,
+            onValueChange = { onNotesChange(it.take(ContentLimits.ListNotes.max)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 92.dp),

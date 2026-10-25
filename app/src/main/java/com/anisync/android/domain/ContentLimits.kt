@@ -16,6 +16,8 @@ object ContentLimits {
     val ThreadBody = Bounds(min = 10, max = 30_000)
     val ThreadComment = Bounds(min = 1, max = 12_000)
     val Reply = Bounds(min = 2, max = 8_000)
+    val ListNotes = Bounds(min = 0, max = 6_000)
+    val Rewatches = Bounds(min = 0, max = 1_000)
 
     // AniList review constraints: body min 2600 chars counted as [reviewBodyLength] does,
     // summary 20..120 chars, score 0..100. The body has no documented upper bound, so the cap
