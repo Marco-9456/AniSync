@@ -835,6 +835,13 @@
     <string name="details_duration_minutes">%1$d min</string>
     <string name="details_score_average">weighted</string>
     <string name="details_score_average_ranked">weighted · #%1$d all-time</string>
+    <string name="details_score_info_title">Scores</string>
+    <string name="details_score_info_weighted">Weighted score</string>
+    <string name="details_score_info_mean">Mean score</string>
+    <string name="details_score_info_body">AniList weights each title\'s mean score by how many people rated it, so a handful of high ratings can\'t lift a title above ones rated by thousands. The weighted score rises toward the mean as more ratings come in, and never goes above it.</string>
+    <string name="details_score_info_threshold">Titles with fewer than 50 ratings have no weighted score yet. Light novels and one-shots need 35.</string>
+    <string name="details_score_info_read_more">Read AniList\'s explanation</string>
+    <string name="a11y_score_info">About the weighted score</string>
     <string name="cd_change_list_status">Change list status</string>
     <!-- Media details Stats tab -->
     <string name="media_stats_rankings">Rankings</string>

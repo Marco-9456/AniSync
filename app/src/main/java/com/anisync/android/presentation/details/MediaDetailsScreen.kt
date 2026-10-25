@@ -103,6 +103,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -157,6 +158,9 @@ import com.anisync.android.presentation.details.components.WatchOnRow
 import com.anisync.android.presentation.details.components.RecommendationItem
 import com.anisync.android.presentation.details.components.RelationItem
 import com.anisync.android.presentation.details.components.ReviewsListSheet
+import com.anisync.android.presentation.details.components.ScoreInfoSheet
+import com.anisync.android.presentation.details.components.WEIGHTED_SCORE_THREAD_ID
+import com.anisync.android.presentation.details.components.WEIGHTED_SCORE_THREAD_TITLE
 import com.anisync.android.presentation.details.components.StaffItem
 import com.anisync.android.presentation.details.components.mediaStatsTabContent
 import com.anisync.android.presentation.library.components.ScoreOnCompleteSheet
@@ -622,6 +626,17 @@ fun MediaDetailsScreen(
                                             state.details.coverColor
                                         )
                                     },
+                                    onScoreExplanationClick = {
+                                        shouldKeepChromeOverlayForReturn = true
+                                        hasObservedDetailsReEnter = false
+                                        // A site announcement, not this title's thread, so it keeps
+                                        // the app's own colours.
+                                        onDiscussionClick(
+                                            WEIGHTED_SCORE_THREAD_ID,
+                                            WEIGHTED_SCORE_THREAD_TITLE,
+                                            null
+                                        )
+                                    },
                                     onRecommendMedia = viewModel::recommendMedia,
                                     onUserClick = onUserClick,
                                     onStatusSelect = { status ->
@@ -941,6 +956,7 @@ fun DetailsPageContent(
     onDiscussionClick: (Int, String) -> Unit,
     onViewAllDiscussions: () -> Unit,
     onStartDiscussion: () -> Unit,
+    onScoreExplanationClick: () -> Unit,
     onRecommendMedia: (Int) -> Unit,
     onUserClick: (String) -> Unit,
     onStatusSelect: (LibraryStatus) -> Unit,
@@ -982,6 +998,7 @@ fun DetailsPageContent(
 
     // ImageViewerDialog state for cover/banner image; it opens on whichever was tapped.
     var showImageViewer by rememberSaveable { mutableStateOf(false) }
+    var showScoreInfo by rememberSaveable { mutableStateOf(false) }
     var viewerIndex by rememberSaveable { mutableIntStateOf(0) }
     val viewerImages = remember(details.cover.url() ?: details.coverUrl, details.bannerUrl) {
         listOfNotNull(details.coverUrl, details.bannerUrl)
@@ -1112,7 +1129,8 @@ fun DetailsPageContent(
                     onBannerClick = {
                         viewerIndex = viewerImages.indexOf(details.bannerUrl).coerceAtLeast(0)
                         showImageViewer = true
-                    }
+                    },
+                    onScoreClick = { showScoreInfo = true }
                 )
             }
 
@@ -1670,6 +1688,20 @@ fun DetailsPageContent(
         )
     }
 
+    val weightedScore = details.score
+    if (showScoreInfo && weightedScore != null) {
+        ScoreInfoSheet(
+            title = details.getTitle(titleLanguage),
+            weightedScore = weightedScore.asTenPointScore(),
+            meanScore = details.meanScore?.asTenPointScore(),
+            onReadMore = {
+                showScoreInfo = false
+                onScoreExplanationClick()
+            },
+            onDismiss = { showScoreInfo = false }
+        )
+    }
+
     if (showRecommendSheet) {
         details.type?.let { mediaType ->
             RecommendMediaSheet(
@@ -1708,6 +1740,7 @@ fun PageHeaderSection(
     titleLanguage: TitleLanguage,
     onCoverClick: () -> Unit = {},
     onBannerClick: () -> Unit = {},
+    onScoreClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -1730,8 +1763,7 @@ fun PageHeaderSection(
 
     // --- Data Preparation ---
     val displayTitle = remember(details, titleLanguage) { details.getTitle(titleLanguage) }
-    val formattedScore =
-        remember(details.score) { details.score?.let { String.format("%.1f", it / 10f) } }
+    val formattedScore = remember(details.score) { details.score?.asTenPointScore() }
 
     val bannerModel = remember(details) { details.headerBanner }
 
@@ -1807,10 +1839,14 @@ fun PageHeaderSection(
             spatialSpec = spatialSpec,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
-            onCoverClick = onCoverClick
+            onCoverClick = onCoverClick,
+            onScoreClick = onScoreClick
         )
     }
 }
+
+/** AniList's 100-point score the way the page writes it, 82 as 8.2. */
+private fun Int.asTenPointScore(): String = String.format("%.1f", this / 10f)
 
 @Composable
 private fun BannerImage(
@@ -1950,7 +1986,8 @@ private fun ContentRow(
     spatialSpec: FiniteAnimationSpec<Rect>,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onCoverClick: () -> Unit = {}
+    onCoverClick: () -> Unit = {},
+    onScoreClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coverData = details.cover.url() ?: details.coverUrl
@@ -2060,7 +2097,7 @@ private fun ContentRow(
                 // Row 2: the score, said in words. Popularity and favourites move to the Stats
                 // tab and the Information grid, where they can carry a label instead of an icon
                 // the viewer has to decode.
-                ScoreLine(details = details, formattedScore = formattedScore)
+                ScoreLine(details = details, formattedScore = formattedScore, onClick = onScoreClick)
             }
         }
     }
@@ -2095,7 +2132,7 @@ private fun MetadataTags(details: MediaDetails) {
  * heart, which asked the viewer to work out which was which.
  */
 @Composable
-private fun ScoreLine(details: MediaDetails, formattedScore: String) {
+private fun ScoreLine(details: MediaDetails, formattedScore: String, onClick: () -> Unit) {
     val topRank = remember(details.rankings) {
         details.rankings.firstOrNull {
             it.allTime && it.type == com.anisync.android.domain.MediaRankingType.RATED
@@ -2103,6 +2140,11 @@ private fun ScoreLine(details: MediaDetails, formattedScore: String) {
     }
 
     Row(
+        modifier = Modifier.clickable(
+            onClickLabel = stringResource(R.string.a11y_score_info),
+            role = Role.Button,
+            onClick = onClick
+        ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -2127,7 +2169,14 @@ private fun ScoreLine(details: MediaDetails, formattedScore: String) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
+        )
+        Icon(
+            imageVector = Icons.Outlined.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(14.dp)
         )
     }
 }
