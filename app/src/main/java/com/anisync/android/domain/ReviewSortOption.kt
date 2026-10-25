@@ -10,8 +10,8 @@ import com.anisync.android.type.ReviewSort
  * the orderings that read sensibly for reviews.
  */
 enum class ReviewSortOption(val apiValue: ReviewSort) {
-    NEWEST(ReviewSort.CREATED_AT_DESC),
-    OLDEST(ReviewSort.CREATED_AT),
+    NEWEST(ReviewSort.ID_DESC),
+    OLDEST(ReviewSort.ID),
     HIGHEST_SCORE(ReviewSort.SCORE_DESC),
     LOWEST_SCORE(ReviewSort.SCORE),
     MOST_LIKED(ReviewSort.RATING_DESC),

@@ -2,7 +2,7 @@ query GetRecentReviews(
   $mediaType: MediaType,
   $mediaId: Int,
   $userId: Int,
-  $sort: [ReviewSort] = [CREATED_AT_DESC],
+  $sort: [ReviewSort] = [ID_DESC],
   $page: Int = 1
 ) {
   Page(page: $page, perPage: 20) {
