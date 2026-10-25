@@ -80,11 +80,10 @@ class SearchRepositoryImpl @Inject constructor(
                     format_in = filters.formats.toOptionalList(),
                     status_in = filters.statuses.toOptionalList(),
                     source_in = filters.sources.toOptionalList(),
-                    startDate_greater = filters.yearRange.min?.let { Optional.present(it * 10000 + 101) }
-                        ?: Optional.absent(),
-                    startDate_lesser = filters.yearRange.max?.let { Optional.present(it * 10000 + 1231) }
-                        ?: Optional.absent(),
+                    startDate_greater = filters.startDateFloor(),
+                    startDate_lesser = filters.startDateCeiling(),
                     season = filters.season?.let { Optional.present(it) } ?: Optional.absent(),
+                    seasonYear = filters.seasonYear()?.let { Optional.present(it) } ?: Optional.absent(),
                     averageScore = filters.score.exact(),
                     averageScore_greater = filters.score.greater(),
                     averageScore_lesser = filters.score.lesser(),
@@ -207,11 +206,10 @@ class SearchRepositoryImpl @Inject constructor(
                         format_in = filters.formats.toOptionalList(),
                         status_in = filters.statuses.toOptionalList(),
                         source_in = filters.sources.toOptionalList(),
-                        startDate_greater = filters.yearRange.min?.let { Optional.present(it * 10000 + 101) }
-                            ?: Optional.absent(),
-                        startDate_lesser = filters.yearRange.max?.let { Optional.present(it * 10000 + 1231) }
-                            ?: Optional.absent(),
+                        startDate_greater = filters.startDateFloor(),
+                        startDate_lesser = filters.startDateCeiling(),
                         season = filters.season?.let { Optional.present(it) } ?: Optional.absent(),
+                        seasonYear = filters.seasonYear()?.let { Optional.present(it) } ?: Optional.absent(),
                         averageScore = filters.score.exact(),
                         averageScore_greater = filters.score.greater(),
                         averageScore_lesser = filters.score.lesser(),
@@ -382,6 +380,21 @@ class SearchRepositoryImpl @Inject constructor(
 
     private fun <T> Set<T>.toOptionalList(): Optional<List<T?>?> =
         if (isEmpty()) Optional.absent() else Optional.present(this.toList())
+
+    /**
+     * A season picked with a single year goes out as AniList's seasonYear, which counts a late
+     * December premiere into the Winter after it. A start date range would leave it out.
+     */
+    private fun SearchFilters.seasonYear(): Int? =
+        yearRange.min?.takeIf { season != null && it == yearRange.max }
+
+    private fun SearchFilters.startDateFloor(): Optional<Int?> =
+        yearRange.min?.takeIf { seasonYear() == null }?.let { Optional.present(it * 10000 + 101) }
+            ?: Optional.absent()
+
+    private fun SearchFilters.startDateCeiling(): Optional<Int?> =
+        yearRange.max?.takeIf { seasonYear() == null }?.let { Optional.present(it * 10000 + 1231) }
+            ?: Optional.absent()
 
     /**
      * AniList's `*_greater` / `*_lesser` filters are strict, so "X or more"
