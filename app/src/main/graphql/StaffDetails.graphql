@@ -35,7 +35,7 @@ fragment StaffVoicedCharacterFields on CharacterEdge {
         }
         type
         popularity
-        averageScore
+        averageScore: weightedScore
         favourites
         mediaListEntry {
             id
@@ -67,7 +67,7 @@ fragment StaffProductionMediaFields on MediaEdge {
         }
         type
         popularity
-        averageScore
+        averageScore: weightedScore
         favourites
         mediaListEntry {
             id

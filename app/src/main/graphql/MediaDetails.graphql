@@ -26,7 +26,7 @@ query GetMediaDetails($id: Int) {
             allTime
             context
         }
-        averageScore
+        averageScore: weightedScore
         meanScore
         popularity
         favourites
@@ -172,7 +172,7 @@ query GetMediaDetails($id: Int) {
                       extraLarge
                     }
                     format
-                    averageScore
+                    averageScore: weightedScore
                 }
             }
         }

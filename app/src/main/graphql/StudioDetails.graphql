@@ -33,7 +33,7 @@ query GetStudioDetails($id: Int, $page: Int) {
           startDate {
             year
           }
-          averageScore
+          averageScore: weightedScore
           popularity
           favourites
           mediaListEntry {

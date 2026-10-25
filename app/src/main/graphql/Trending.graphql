@@ -10,7 +10,7 @@ query GetTrending($season: MediaSeason, $seasonYear: Int, $perPage: Int) {
         large
         extraLarge
       }
-      averageScore
+      averageScore: weightedScore
     }
   }
 }

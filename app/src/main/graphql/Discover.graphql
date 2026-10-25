@@ -20,7 +20,7 @@ query GetMediaBySort($sort: [MediaSort], $type: MediaType, $perPage: Int) {
       volumes
       type
       format
-      averageScore
+      averageScore: weightedScore
       seasonYear
     }
   }
@@ -46,7 +46,7 @@ query GetUpcomingMedia($perPage: Int, $type: MediaType, $status: MediaStatus) {
       volumes
       type
       format
-      averageScore
+      averageScore: weightedScore
       season
       seasonYear
     }
@@ -86,7 +86,7 @@ query GetPaginatedMedia(
       volumes
       type
       format
-      averageScore
+      averageScore: weightedScore
       season
       seasonYear
     }

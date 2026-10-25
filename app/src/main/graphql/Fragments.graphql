@@ -13,7 +13,8 @@ fragment MediaCardFields on Media {
   episodes
   chapters
   volumes
-  averageScore
+  # AniList renamed the score to weightedScore. The alias keeps the name every mapper reads.
+  averageScore: weightedScore
   startDate {
     year
     month

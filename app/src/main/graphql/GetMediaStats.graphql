@@ -20,7 +20,7 @@ query GetMediaStats($id: Int) {
             nodes {
                 episode
                 date
-                averageScore
+                averageScore: weightedScore
                 inProgress
             }
         }

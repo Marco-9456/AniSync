@@ -18,7 +18,7 @@ query AiringSchedule($page: Int, $perPage: Int, $airingAtGreater: Int, $airingAt
                 format
                 episodes
                 popularity
-                averageScore
+                averageScore: weightedScore
                 externalLinks {
                     type
                     icon

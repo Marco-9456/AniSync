@@ -48,7 +48,7 @@ query GetCharacterDetails($id: Int!, $page: Int = 1) {
                         year
                     }
                     popularity
-                    averageScore
+                    averageScore: weightedScore
                     favourites
                     mediaListEntry {
                         id

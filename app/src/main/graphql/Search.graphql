@@ -15,9 +15,9 @@ query SearchMedia(
   $startDate_lesser: FuzzyDateInt,
   $season: MediaSeason,
   $seasonYear: Int,
-  $averageScore: Int,
-  $averageScore_greater: Int,
-  $averageScore_lesser: Int,
+  $weightedScore: Int,
+  $weightedScore_greater: Int,
+  $weightedScore_lesser: Int,
   $episodes: Int,
   $episodes_greater: Int,
   $episodes_lesser: Int,
@@ -48,9 +48,9 @@ query SearchMedia(
       startDate_lesser: $startDate_lesser,
       season: $season,
       seasonYear: $seasonYear,
-      averageScore: $averageScore,
-      averageScore_greater: $averageScore_greater,
-      averageScore_lesser: $averageScore_lesser,
+      weightedScore: $weightedScore,
+      weightedScore_greater: $weightedScore_greater,
+      weightedScore_lesser: $weightedScore_lesser,
       episodes: $episodes,
       episodes_greater: $episodes_greater,
       episodes_lesser: $episodes_lesser,
@@ -73,7 +73,7 @@ query SearchMedia(
         extraLarge
       }
       status
-      averageScore
+      averageScore: weightedScore
       episodes
       chapters
       volumes
