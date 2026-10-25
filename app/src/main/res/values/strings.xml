@@ -326,7 +326,7 @@
     <string name="sort_release_date">Release date</string>
     <string name="sort_default">Default</string>
     <string name="sort_popularity">Popularity</string>
-    <string name="sort_average_score">Average Score</string>
+    <string name="sort_average_score">Weighted Score</string>
     <string name="sort_favorites">Favorites</string>
     <string name="sort_newest">Newest</string>
     <string name="sort_oldest">Oldest</string>
@@ -833,8 +833,8 @@
     <string name="details_next_episode_in">Episode %1$d airs in %2$s</string>
     <string name="details_trailer">Trailer</string>
     <string name="details_duration_minutes">%1$d min</string>
-    <string name="details_score_average">avg</string>
-    <string name="details_score_average_ranked">avg · #%1$d all-time</string>
+    <string name="details_score_average">weighted</string>
+    <string name="details_score_average_ranked">weighted · #%1$d all-time</string>
     <string name="cd_change_list_status">Change list status</string>
     <!-- Media details Stats tab -->
     <string name="media_stats_rankings">Rankings</string>
