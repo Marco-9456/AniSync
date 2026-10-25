@@ -64,6 +64,7 @@ private val ItemGap = 12.dp
 private val AxisHeight = 18.dp
 private val AxisDotSize = 8.dp
 private val AxisDotSpacing = 8.dp
+private val AxisLabelGap = AxisDotSpacing - (AxisHeight - AxisDotSize) / 2
 private val SpineThickness = 2.dp
 private val NowMarkerHeight = 18.dp
 private const val PosterAspect = 171f / 243f
@@ -94,8 +95,8 @@ fun AiringTimeline(
     val rowHeight = with(LocalDensity.current) {
         // Trailing 6dp is slack for the two-line title, which otherwise measures a hair over
         // two line heights and gets clamped to one.
-        AxisHeight + (AxisDotSpacing - (AxisHeight - AxisDotSize) / 2) + 16.dp + 8.dp +
-                (CardWidth / PosterAspect) + 8.dp + 20.sp.toDp() * 2 + 6.dp
+        AxisHeight + AxisLabelGap + 16.dp + 8.dp + (CardWidth / PosterAspect) + 8.dp +
+            20.sp.toDp() * 2 + 6.dp
     }
     // Index of the first episode still to come; the marker slots in just before it.
     val nowIndex = remember(episodes, nowEpochSec) {
@@ -262,7 +263,7 @@ private fun AiringCard(
                         )
                 )
             }
-            Spacer(Modifier.height(AxisDotSpacing - (AxisHeight - AxisDotSize) / 2));
+            Spacer(Modifier.height(AxisLabelGap))
             Text(
                 text = timeText,
                 style = MaterialTheme.typography.labelSmall,
