@@ -2185,7 +2185,7 @@
     <string name="filter_more_title">More filters</string>
     <string name="filter_source">Source</string>
     <string name="filter_country">Country</string>
-    <string name="filter_mean_score">Mean score</string>
+    <string name="filter_mean_score">Weighted score</string>
     <string name="filter_episodes">Episodes</string>
     <string name="filter_chapters">Chapters</string>
     <string name="filter_adult_content">Adult content</string>
