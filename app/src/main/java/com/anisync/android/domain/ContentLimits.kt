@@ -13,7 +13,7 @@ object ContentLimits {
     val TextActivity = Bounds(min = 5, max = 10_000)
     val MessageActivity = Bounds(min = 2, max = 10_000)
     val ThreadTitle = Bounds(min = 6, max = 120)
-    val ThreadBody = Bounds(min = 0, max = 30_000)
+    val ThreadBody = Bounds(min = 10, max = 30_000)
     val ThreadComment = Bounds(min = 1, max = 12_000)
     val Reply = Bounds(min = 2, max = 8_000)
 

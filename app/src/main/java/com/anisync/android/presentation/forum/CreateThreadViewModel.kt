@@ -180,7 +180,12 @@ class CreateThreadViewModel @Inject constructor(
             hasError = true
         }
         val bodyLength = state.body.length
-        if (bodyLength > bodyBounds.max) {
+        if (state.body.trim().length < bodyBounds.min) {
+            _uiState.update {
+                it.copy(bodyError = "Body must be at least ${bodyBounds.min} characters")
+            }
+            hasError = true
+        } else if (bodyLength > bodyBounds.max) {
             _uiState.update {
                 it.copy(bodyError = "Body must be at most ${bodyBounds.max} characters")
             }
