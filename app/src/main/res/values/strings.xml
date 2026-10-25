@@ -1419,7 +1419,7 @@
     <string name="review_delete">Delete review</string>
     <string name="review_delete_confirm_title">Delete review?</string>
     <string name="review_delete_confirm_body">This permanently deletes your review. This cannot be undone.</string>
-    <string name="review_body_error">Review must be at least %1$d characters long. Do not pad your reviews to meet this requirement.</string>
+    <string name="review_body_error">Review must be at least %1$d characters long, excluding formatting. Do not pad your reviews to meet this requirement.</string>
     <string name="review_summary_error">Summary must be between %1$d and %2$d characters.</string>
     <string name="review_score_error">Score must be between %1$d and %2$d.</string>
     <string name="review_guidelines_notice">Please make sure to read the review guidelines before publishing.</string>

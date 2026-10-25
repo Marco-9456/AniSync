@@ -142,6 +142,8 @@ fun WriteReviewScreen(
         autoFocusBody = false,
         minLength = BodyBounds.min,
         maxLength = BodyBounds.max,
+        measureForMin = ContentLimits::reviewBodyLength,
+        showMinProgress = true,
         headerSlot = {
             ReviewMetaHeader(
                 summary = uiState.summary,

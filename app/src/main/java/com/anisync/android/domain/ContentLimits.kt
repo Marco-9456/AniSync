@@ -17,14 +17,39 @@ object ContentLimits {
     val ThreadComment = Bounds(min = 1, max = 12_000)
     val Reply = Bounds(min = 2, max = 8_000)
 
-    // AniList review constraints: body min 2200 chars, summary 20..120 chars,
-    // score 0..100. Body has no documented upper bound — cap high so the editor
-    // never falsely rejects a long review.
-    val ReviewBody = Bounds(min = 2_200, max = 200_000)
+    // AniList review constraints: body min 2600 chars counted as [reviewBodyLength] does,
+    // summary 20..120 chars, score 0..100. The body has no documented upper bound, so the cap
+    // sits high enough that the editor never rejects a long review.
+    val ReviewBody = Bounds(min = 2_600, max = 200_000)
     val ReviewSummary = Bounds(min = 20, max = 120)
     val ReviewScore = Bounds(min = 0, max = 100)
 
     data class Bounds(val min: Int, val max: Int) {
         fun isValid(length: Int) = length in min..max
     }
+
+    private val ImageMarkdown = Regex("""!\[[\s\S]*?]\([\s\S]*?\)""")
+    private val LinkTarget = Regex("""]\([\s\S]*?\)""")
+    private val Embed = Regex("""(img\d*%?|webm|youtube)\([\s\S]*?\)""", RegexOption.IGNORE_CASE)
+    private val HtmlTag = Regex("""<[\s\S]*?>""")
+    private val MarkdownSymbol = Regex("""[\[\]_>~\-#`*]""")
+    private val Invisible = Regex("[\u3164\u200E\u200B\u200C\u200D\uFEFF]")
+    private val WhitespaceRun = Regex("""(?U)\s{2,}""")
+
+    /**
+     * A review body's length the way AniList's review editor measures it: images, embeds, link
+     * targets, tags and markdown symbols stripped, invisible characters read as spaces and runs
+     * of whitespace collapsed.
+     */
+    fun reviewBodyLength(body: String): Int = body
+        .replace(ImageMarkdown, "")
+        .replace(LinkTarget, "")
+        .replace(Embed, "")
+        .replace(HtmlTag, "")
+        .replace(MarkdownSymbol, "")
+        .trim()
+        .replace(Invisible, " ")
+        .replace(WhitespaceRun, " ")
+        .trim()
+        .length
 }
