@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Library Tag Filters** - Library search can filter by tag, with the same picker as Search: a search box, categories, and spoiler tags kept shut until opened. A tag only counts above AniList's rank cut-off of 18, as it does in Search, and adult tags stay hidden unless adult content is on. Tags come down in the background on a request of their own, for new titles and once a week, so the library refresh is as quick as before. (#158)
 - **Jump Back** - Holding the back arrow lists the pages behind the one you are on, newest first, down to the tab you started from, and a tap on one goes straight there. The tab comes back as you left it. In a tablet's detail pane the list ends on the list the pane was opened from. A tip points it out a few times, and a switch under General turns it off. (#161)
+- **Weighted Score Explained** - Tapping the score on a title's page opens a sheet with the weighted and mean scores side by side, a short note on how AniList weights them, and a link to AniList's own explanation.
 
 ### Changed
 
@@ -21,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Search Filters And Sort** - Both searches share one filter bar and one set of sheets: options two to a row, a Clear chip once something is filtered, and a button that shows how many titles are left. Sort is a column and a direction, so every column sorts both ways, and Best match joins while a query is typed. Discover's Type filter became the rail, Airing status has its own chip, and Season moved in with Year.
 - **Library Grid** - Cards show the year beside the format and keep both lines of a long title.
 - **Studios** - The Studios chip in Discover lists the most favourited studios straight away, and typing a name narrows them.
+- **Forum Categories** - Misc left the category rail, since AniList merged it into General, and the new Events category took its place. A thread filed under General stays in General alone, as on AniList, and Site Announcements is no longer offered when writing a thread. A forum last left on Misc opens on General.
+- **Weighted Score** - The score AniList used to call average is called weighted, on title pages, in the sort options and in the search filter, which was labelled mean score by mistake.
 
 ### Fixed
 
@@ -30,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Share Cards On Android 8** - A shared or saved card no longer comes out as diagonal streaks on phones whose graphics chip pads each row of the image. (#162)
 - **Saving Share Cards On Android 8 And 9** - Save asks for storage access the first time and puts the card in Pictures/AniSync as a PNG, as it does on newer versions. Before, it failed every time. (#163)
 - **Media Page App Bar** - Opening a title from a Library card no longer leaves the back arrow, favourite and share off the page until the card has finished growing into it.
+- **Seasonal Browse** - The Seasonal chip opens the season AniList is in, so December shows Fall instead of the Winter that ended in March. A season picked with a single year also takes in the shows that premiered the December before, as AniList counts them.
+- **Review Length** - A review needs 2600 characters without its formatting before it can be published, as AniList now asks, and the counter shows how far there is to go.
+- **Thread Body** - A new thread needs a body of at least 10 characters, which AniList requires, instead of failing when it is sent.
+- **List Notes** - Notes stop at 6000 characters and rewatches at 1000, the most AniList accepts.
 
 ## [3.3.0] - 2026-10-20
 
