@@ -11,7 +11,7 @@ import com.anisync.android.GetTrendingQuery
 import com.anisync.android.data.local.dao.TrendingDao
 import com.anisync.android.data.local.entity.TrendingEntity
 import com.anisync.android.data.util.ApiError
-import com.anisync.android.type.MediaSeason
+import com.anisync.android.domain.seasonOfMonth
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
@@ -38,15 +38,7 @@ class TrendingWorker @AssistedInject constructor(
         return try {
             val calendar = Calendar.getInstance()
             val year = calendar.get(Calendar.YEAR)
-            val month = calendar.get(Calendar.MONTH) // 0-11
-            
-            // Determine Season
-            val season = when (month) {
-                0, 1, 2 -> MediaSeason.WINTER // Jan, Feb, Mar
-                3, 4, 5 -> MediaSeason.SPRING // Apr, May, Jun
-                6, 7, 8 -> MediaSeason.SUMMER // Jul, Aug, Sep
-                else -> MediaSeason.FALL      // Oct, Nov, Dec
-            }
+            val season = seasonOfMonth(calendar.get(Calendar.MONTH))
             
             val response = apolloClient.query(
                 GetTrendingQuery(
