@@ -105,6 +105,8 @@ fun RichTextScaffold(
     autoFocusBody: Boolean = true,
     minLength: Int = 1,
     maxLength: Int = 10_000,
+    measureForMin: (String) -> Int = { it.trim().length },
+    showMinProgress: Boolean = false,
     enableMediaAttach: Boolean = true,
     insertController: RichTextInsertController? = null,
     headerSlot: (@Composable ColumnScope.() -> Unit)? = null,
@@ -174,9 +176,10 @@ fun RichTextScaffold(
     }
 
     val isBlank by remember { derivedStateOf { bodyState.text.isBlank() } }
-    val meetsMinLength by remember(minLength) {
-        derivedStateOf { bodyState.text.trim().length >= minLength }
+    val minMeasure by remember(measureForMin) {
+        derivedStateOf { measureForMin(bodyState.text.toString()) }
     }
+    val meetsMinLength = minMeasure >= minLength
     val withinMaxLength by remember(maxLength) {
         derivedStateOf { bodyState.text.length <= maxLength }
     }
@@ -263,10 +266,12 @@ fun RichTextScaffold(
                 headerSlot?.invoke(this)
                 bodyEditor(Modifier.weight(1f).fillMaxWidth())
             }
+            val countingToMin = showMinProgress && !meetsMinLength
             RichTextCharCounter(
-                length = bodyState.text.length,
-                maxLength = maxLength,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
+                length = if (countingToMin) minMeasure else bodyState.text.length,
+                maxLength = if (countingToMin) minLength else maxLength,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
+                isMinimum = countingToMin
             )
         }
     }

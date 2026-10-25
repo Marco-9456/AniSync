@@ -213,17 +213,19 @@ private fun AppBarScope.formatItem(
     )
 }
 
+/** [maxLength] is a cap unless [isMinimum], when it is the count the text still has to reach. */
 @Composable
 fun RichTextCharCounter(
     length: Int,
     maxLength: Int,
     modifier: Modifier = Modifier,
-    style: TextStyle = MaterialTheme.typography.labelMedium
+    style: TextStyle = MaterialTheme.typography.labelMedium,
+    isMinimum: Boolean = false
 ) {
     Text(
         text = stringResource(R.string.richtext_char_count, length, maxLength),
         style = style,
-        color = if (length > maxLength * 0.9) MaterialTheme.colorScheme.error
+        color = if (!isMinimum && length > maxLength * 0.9) MaterialTheme.colorScheme.error
         else MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
     )
