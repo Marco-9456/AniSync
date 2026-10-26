@@ -107,6 +107,95 @@ class UserOptionsSyncTest {
         assertEquals(base.includeAdultContentInQuickSearch, applied.includeAdultContentInQuickSearch)
     }
 
+    private val adultSubOptions = setOf(
+        UserOptionField.INCLUDE_ADULT_IN_SEARCH,
+        UserOptionField.INCLUDE_ADULT_IN_QUICK_SEARCH,
+        UserOptionField.DISPLAY_ADULT_ACTIVITIES,
+    )
+
+    // What AniList answers with while adult content is off.
+    private val adultOff = base.copy(
+        displayAdultContent = false,
+        includeAdultContentInSearch = false,
+        includeAdultContentInQuickSearch = false,
+        displayAdultActivities = false,
+    )
+
+    @Test
+    fun `turning adult content on turns the 18+ sub-options on, as AniList does`() {
+        val synced = LocalOptionsState(serverSnapshot = adultOff, local = adultOff)
+        val edited = synced.edited(UserOptionsPatch(displayAdultContent = true))
+        assertTrue(edited.local.displayAdultContent)
+        assertTrue(edited.local.includeAdultContentInSearch)
+        assertTrue(edited.local.includeAdultContentInQuickSearch)
+        assertTrue(edited.local.displayAdultActivities)
+        assertEquals(adultSubOptions + UserOptionField.DISPLAY_ADULT_CONTENT, edited.dirty)
+
+        val withSearchOff = synced.edited(
+            UserOptionsPatch(displayAdultContent = true, includeAdultContentInSearch = false),
+        )
+        assertEquals(false, withSearchOff.local.includeAdultContentInSearch)
+    }
+
+    @Test
+    fun `other edits leave the 18+ sub-options alone`() {
+        val synced = LocalOptionsState(serverSnapshot = adultOff, local = adultOff)
+        val edited = synced.edited(UserOptionsPatch(scoreFormat = ScoreFormat.POINT_5))
+        assertEquals(setOf(UserOptionField.SCORE_FORMAT), edited.dirty)
+        assertEquals(false, edited.local.includeAdultContentInSearch)
+    }
+
+    @Test
+    fun `the 18+ sub-options go out after adult content is turned on, never with it`() {
+        val fields = adultSubOptions + UserOptionField.DISPLAY_ADULT_CONTENT + UserOptionField.SCORE_FORMAT
+        assertEquals(
+            listOf(setOf(UserOptionField.DISPLAY_ADULT_CONTENT, UserOptionField.SCORE_FORMAT), adultSubOptions),
+            base.copy(displayAdultContent = true).pushBatches(fields),
+        )
+        assertEquals(listOf(fields), base.copy(displayAdultContent = false).pushBatches(fields))
+        assertEquals(listOf(adultSubOptions), base.copy(displayAdultContent = true).pushBatches(adultSubOptions))
+    }
+
+    @Test
+    fun `AniList resetting the sub-options in its answer is not a conflict`() {
+        // Search was switched off again after turning adult content on, and is still to be pushed.
+        val sent = adultOff.copy(
+            displayAdultContent = true,
+            includeAdultContentInQuickSearch = true,
+            displayAdultActivities = true,
+        )
+        val state = LocalOptionsState(
+            serverSnapshot = adultOff,
+            local = sent,
+            dirty = adultSubOptions + UserOptionField.DISPLAY_ADULT_CONTENT,
+        )
+        val answer = adultOff.copy(
+            displayAdultContent = true,
+            includeAdultContentInSearch = true,
+            includeAdultContentInQuickSearch = true,
+            displayAdultActivities = true,
+        )
+        val acked = state.acknowledged(setOf(UserOptionField.DISPLAY_ADULT_CONTENT), sent, answer)
+        assertEquals(null, acked.conflict)
+        assertEquals(setOf(UserOptionField.INCLUDE_ADULT_IN_SEARCH), acked.dirty)
+        assertEquals(false, acked.local.includeAdultContentInSearch)
+        assertEquals(answer, acked.serverSnapshot)
+    }
+
+    @Test
+    fun `a field edited again while its push was out stays dirty`() {
+        val sent = base.copy(scoreFormat = ScoreFormat.POINT_5)
+        val now = LocalOptionsState(
+            serverSnapshot = base,
+            local = base.copy(scoreFormat = ScoreFormat.POINT_3),
+            dirty = setOf(UserOptionField.SCORE_FORMAT),
+        )
+        val acked = now.acknowledged(setOf(UserOptionField.SCORE_FORMAT), sent, answer = sent)
+        assertEquals(setOf(UserOptionField.SCORE_FORMAT), acked.dirty)
+        assertEquals(ScoreFormat.POINT_3, acked.local.scoreFormat)
+        assertEquals(null, acked.conflict)
+    }
+
     @Test
     fun `a pending edit the server also changed still becomes a conflict`() {
         val state = LocalOptionsState(

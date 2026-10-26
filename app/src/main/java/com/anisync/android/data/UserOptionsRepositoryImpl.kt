@@ -15,9 +15,10 @@ import com.anisync.android.domain.Result
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.UserOptionsPatch
 import com.anisync.android.domain.UserOptionsRepository
-import com.anisync.android.domain.applyPatch
-import com.anisync.android.domain.affectedFields
+import com.anisync.android.domain.acknowledged
+import com.anisync.android.domain.edited
 import com.anisync.android.domain.patchForFields
+import com.anisync.android.domain.pushBatches
 import com.anisync.android.domain.reconciledWith
 import com.anisync.android.domain.takeFields
 import com.anisync.android.worker.UserOptionsFlushWorker
@@ -101,14 +102,7 @@ class UserOptionsRepositoryImpl @Inject constructor(
 
     override fun applyEdit(patch: UserOptionsPatch) {
         val accountId = currentAccountId() ?: return
-        val current = _state.value ?: LocalOptionsState()
-        commit(
-            accountId,
-            current.copy(
-                local = current.local.applyPatch(patch),
-                dirty = current.dirty + patch.affectedFields(),
-            ),
-        )
+        commit(accountId, (_state.value ?: LocalOptionsState()).edited(patch))
         scheduleFlush()
     }
 
@@ -125,26 +119,27 @@ class UserOptionsRepositoryImpl @Inject constructor(
             val pushFields = state.dirty - (state.conflict?.fields ?: emptySet())
             if (pushFields.isEmpty()) return
 
-            val patch = state.local.patchForFields(pushFields)
-            // Through safeApiCall like everything else: classification throws now, and this was the
-            // one call left that let an ApiError out. The gate refusing a background push is
-            // temporary, but it reached the worker as a thrown exception, which WorkManager turns
-            // into a permanent failure rather than a retry.
-            val push = safeApiCall {
-                val response = apolloClient.mutation(patch.toMutation()).execute()
-                if (response.hasErrors()) throw Exception(response.errors?.firstOrNull()?.message)
-                response.data?.UpdateUser?.toDomain() ?: throw Exception("No options came back")
-            }
-            // keep dirty; a later flush retries
-            val updated = (push as? Result.Success)?.data ?: return
+            for (batch in state.local.pushBatches(pushFields)) {
+                val sent = _state.value ?: return
+                // The answer to the first request can already hold what the second was going to send.
+                val fields = batch intersect sent.dirty
+                if (fields.isEmpty()) continue
+                val patch = sent.local.patchForFields(fields)
+                // Through safeApiCall like everything else: classification throws now, and this was the
+                // one call left that let an ApiError out. The gate refusing a background push is
+                // temporary, but it reached the worker as a thrown exception, which WorkManager turns
+                // into a permanent failure rather than a retry.
+                val push = safeApiCall {
+                    val response = apolloClient.mutation(patch.toMutation()).execute()
+                    if (response.hasErrors()) throw Exception(response.errors?.firstOrNull()?.message)
+                    response.data?.UpdateUser?.toDomain() ?: throw Exception("No options came back")
+                }
+                // keep dirty; a later flush retries
+                val updated = (push as? Result.Success)?.data ?: return
 
-            commit(
-                accountId,
-                state.copy(
-                    serverSnapshot = state.serverSnapshot.takeFields(pushFields, updated),
-                    dirty = state.dirty - pushFields,
-                ),
-            )
+                val now = _state.value ?: return
+                commit(accountId, now.acknowledged(fields, sent.local, updated))
+            }
         }
     }
 

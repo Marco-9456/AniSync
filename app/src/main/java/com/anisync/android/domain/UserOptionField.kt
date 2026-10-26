@@ -123,6 +123,28 @@ fun AniListUserOptions.patchForFields(fields: Set<UserOptionField>): UserOptions
 fun AniListUserOptions.takeFields(fields: Set<UserOptionField>, from: AniListUserOptions): AniListUserOptions =
     applyPatch(from.patchForFields(fields))
 
+private val AdultSubOptions = setOf(
+    UserOptionField.INCLUDE_ADULT_IN_SEARCH,
+    UserOptionField.INCLUDE_ADULT_IN_QUICK_SEARCH,
+    UserOptionField.DISPLAY_ADULT_ACTIVITIES,
+)
+
+/**
+ * Applies a local edit. AniList turns all three 18+ sub-options on whenever adult content is turned on,
+ * so they turn on here too, and are pushed with it so AniList ends up holding what the switches show.
+ */
+fun LocalOptionsState.edited(patch: UserOptionsPatch): LocalOptionsState {
+    if (patch.displayAdultContent != true) {
+        return copy(local = local.applyPatch(patch), dirty = dirty + patch.affectedFields())
+    }
+    val reset = local.copy(
+        includeAdultContentInSearch = true,
+        includeAdultContentInQuickSearch = true,
+        displayAdultActivities = true,
+    )
+    return copy(local = reset.applyPatch(patch), dirty = dirty + AdultSubOptions + patch.affectedFields())
+}
+
 /**
  * Merges a fresh server snapshot into local state. Clean fields adopt the server value, and a dirty field
  * the server also changed since the baseline becomes a conflict (the local value is kept until the user
@@ -141,3 +163,31 @@ fun LocalOptionsState.reconciledWith(fresh: AniListUserOptions): LocalOptionsSta
         conflict = if (conflictFields.isNotEmpty()) ConflictState(conflictFields, fresh) else null,
     )
 }
+
+/**
+ * Takes in AniList's [answer] to a push of [pushed] built from the working copy [sent]. The answer is the
+ * new baseline, so nothing it changed is a conflict, AniList's own resets included, and a pushed field
+ * stays dirty only when it was edited again while the push was out.
+ */
+fun LocalOptionsState.acknowledged(
+    pushed: Set<UserOptionField>,
+    sent: AniListUserOptions,
+    answer: AniListUserOptions,
+): LocalOptionsState {
+    val unresolved = conflict?.fields.orEmpty()
+    return copy(
+        serverSnapshot = serverSnapshot.takeFields(UserOptionField.entries.toSet() - unresolved, answer),
+        dirty = dirty - (pushed - sent.differingFields(local)),
+    ).reconciledWith(answer)
+}
+
+/**
+ * The requests that push [fields] from this working copy. A request carrying displayAdultContent: true
+ * turns every 18+ sub-option back on whatever else it says, so the sub-options follow in one of their own.
+ */
+fun AniListUserOptions.pushBatches(fields: Set<UserOptionField>): List<Set<UserOptionField>> =
+    if (displayAdultContent && UserOptionField.DISPLAY_ADULT_CONTENT in fields) {
+        listOf(fields - AdultSubOptions, fields intersect AdultSubOptions)
+    } else {
+        listOf(fields)
+    }
