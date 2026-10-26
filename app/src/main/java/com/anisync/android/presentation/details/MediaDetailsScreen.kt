@@ -95,6 +95,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.ScaleFactor
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -2160,16 +2161,9 @@ private fun ScoreLine(details: MediaDetails, formattedScore: String, onClick: ()
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
-        Text(
-            text = if (topRank != null) {
-                stringResource(R.string.details_score_average_ranked, topRank.rank)
-            } else {
-                stringResource(R.string.details_score_average)
-            },
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        ScoreLabel(
+            ranked = topRank?.let { stringResource(R.string.details_score_average_ranked, it.rank) },
+            plain = stringResource(R.string.details_score_average),
             modifier = Modifier.weight(1f, fill = false)
         )
         Icon(
@@ -2178,6 +2172,28 @@ private fun ScoreLine(details: MediaDetails, formattedScore: String, onClick: ()
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(14.dp)
         )
+    }
+}
+
+/**
+ * The words after the score. The rank goes when the line runs out of room, on a narrow phone or at a
+ * large font size, so the line never ends in an ellipsis before the info mark.
+ */
+@Composable
+private fun ScoreLabel(ranked: String?, plain: String, modifier: Modifier = Modifier) {
+    val style = MaterialTheme.typography.labelMedium
+    val color = MaterialTheme.colorScheme.onSurfaceVariant
+    Layout(
+        modifier = modifier,
+        content = {
+            Text(text = ranked ?: plain, style = style, color = color, maxLines = 1, softWrap = false)
+            Text(text = plain, style = style, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    ) { measurables, constraints ->
+        val (full, short) = measurables
+        val fits = full.maxIntrinsicWidth(constraints.maxHeight) <= constraints.maxWidth
+        val placeable = (if (fits) full else short).measure(constraints.copy(minWidth = 0))
+        layout(placeable.width, placeable.height) { placeable.place(0, 0) }
     }
 }
 
