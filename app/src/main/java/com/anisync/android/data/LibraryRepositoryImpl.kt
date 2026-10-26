@@ -26,7 +26,6 @@ import com.anisync.android.domain.Result
 import com.anisync.android.domain.Tag
 import com.anisync.android.type.MediaListStatus
 import com.anisync.android.type.MediaType
-import com.anisync.android.util.AniListTextEncoder.encodeForAniList
 import com.anisync.android.widget.core.WidgetRefresh
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
@@ -435,7 +434,7 @@ class LibraryRepositoryImpl @Inject constructor(
                     } else {
                         Optional.absent()
                     },
-                    notes = Optional.presentIfNotNull(updatedEntry.notes?.let(::encodeForAniList)),
+                    notes = Optional.presentIfNotNull(updatedEntry.notes),
                     startedAt = updatedEntry.startedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
                     completedAt = updatedEntry.completedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
                     customLists = Optional.present(updatedEntry.customLists),

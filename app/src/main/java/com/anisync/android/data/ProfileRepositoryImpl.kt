@@ -24,7 +24,6 @@ import com.anisync.android.domain.ProfileRefreshTimings
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.UserProfile
-import com.anisync.android.util.AniListTextEncoder.encodeForAniList
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
@@ -376,7 +375,7 @@ class ProfileRepositoryImpl @Inject constructor(
     override suspend fun updateAbout(about: String): Result<Unit> {
         return safeApiCall {
             val response = apolloClient.mutation(
-                com.anisync.android.UpdateAboutMutation(about = Optional.present(encodeForAniList(about)))
+                com.anisync.android.UpdateAboutMutation(about = Optional.present(about))
             ).execute()
 
             if (response.hasErrors()) {
@@ -871,7 +870,7 @@ class ProfileRepositoryImpl @Inject constructor(
                 com.anisync.android.SaveMessageActivityMutation(
                     id = if (id != null) Optional.present(id) else Optional.absent(),
                     recipientId = recipientId,
-                    message = encodeForAniList(message),
+                    message = message,
                     `private` = Optional.present(isPrivate)
                 )
             ).execute()

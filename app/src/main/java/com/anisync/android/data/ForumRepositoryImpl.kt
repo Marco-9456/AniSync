@@ -28,7 +28,6 @@ import com.anisync.android.domain.Result
 import com.anisync.android.domain.ThreadSortOption
 import com.anisync.android.domain.UserSummary
 import com.anisync.android.type.ThreadSort
-import com.anisync.android.util.AniListTextEncoder.encodeForAniList
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
@@ -455,8 +454,8 @@ class ForumRepositoryImpl @Inject constructor(
             val response = apolloClient.mutation(
                 CreateForumThreadMutation(
                     id = if (id != null) Optional.present(id) else Optional.absent(),
-                    title = encodeForAniList(title),
-                    body = encodeForAniList(body),
+                    title = title,
+                    body = body,
                     categories = categoryIds,
                     mediaCategories = if (mediaCategoryIds != null) Optional.present(mediaCategoryIds) else Optional.absent()
                 )
@@ -472,7 +471,7 @@ class ForumRepositoryImpl @Inject constructor(
                 CreateForumCommentMutation(
                     id = if (id != null) Optional.present(id) else Optional.absent(),
                     threadId = threadId,
-                    comment = encodeForAniList(comment)
+                    comment = comment
                 )
             ).execute()
             response.data?.SaveThreadComment?.toForumComment()
@@ -491,7 +490,7 @@ class ForumRepositoryImpl @Inject constructor(
                 CreateForumCommentReplyMutation(
                     id = if (id != null) Optional.present(id) else Optional.absent(),
                     threadId = threadId,
-                    comment = encodeForAniList(comment),
+                    comment = comment,
                     parentCommentId = parentCommentId
                 )
             ).execute()
