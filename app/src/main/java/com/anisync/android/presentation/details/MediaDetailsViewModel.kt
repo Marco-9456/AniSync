@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.local.dao.LibraryDao
+import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.ForumRepository
@@ -144,11 +145,11 @@ class MediaDetailsViewModel @Inject constructor(
     }
 
     /**
-     * Observe media details from local cache, with the viewer's note overlaid from their library
-     * entry. The library row is the source of truth for notes (it's what the editor writes and what
-     * sync keeps fresh), whereas the separately-cached media_details row can predate the note or lag
-     * an edit — so reading the note from there would leave it blank until a manual refresh. Pulling it
-     * from the library makes it appear immediately and update the instant it's edited.
+     * Observe media details from local cache, with the viewer's entry overlaid from their library.
+     * The library row is what the edit sheet opens on and what every write lands in first, and each
+     * details fetch brings it up to date, whereas the media_details copy only moves when the title
+     * itself is refetched. Reading status and progress from that copy let the tracker show one
+     * version of the entry while the edit sheet opened on another.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<DetailsUiState> = combine(
@@ -159,11 +160,8 @@ class MediaDetailsViewModel @Inject constructor(
     ) { details, libraryEntry ->
         when {
             details == null -> DetailsUiState.Loading // No cached data yet, still loading
-            // In the library → the library note is authoritative (blank/null means no note). Only
-            // fall back to the media_details copy when the entry isn't cached for this account.
-            libraryEntry != null -> DetailsUiState.Success(
-                details.copy(listNotes = libraryEntry.notes?.takeIf { it.isNotBlank() })
-            )
+            // Only fall back to the media_details copy when the entry isn't cached for this account.
+            libraryEntry != null -> DetailsUiState.Success(details.withListEntry(libraryEntry))
             else -> DetailsUiState.Success(details)
         }
     }
@@ -701,6 +699,15 @@ class MediaDetailsViewModel @Inject constructor(
         }
     }
 }
+
+private fun MediaDetails.withListEntry(entry: LibraryEntryEntity) = copy(
+    listEntryId = entry.id,
+    listStatus = entry.status,
+    listProgress = entry.progress,
+    listNotes = entry.notes?.takeIf { it.isNotBlank() },
+    listEntryPrivate = entry.isPrivate,
+    listEntryHiddenFromStatusLists = entry.hiddenFromStatusLists
+)
 
 /**
  * Paging state for the full Cast / Staff See-all grids. [items] is the running,
