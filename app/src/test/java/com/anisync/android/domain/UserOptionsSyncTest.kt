@@ -106,4 +106,16 @@ class UserOptionsSyncTest {
         assertEquals(base.includeAdultContentInSearch, applied.includeAdultContentInSearch)
         assertEquals(base.includeAdultContentInQuickSearch, applied.includeAdultContentInQuickSearch)
     }
+
+    @Test
+    fun `a pending edit the server also changed still becomes a conflict`() {
+        val state = LocalOptionsState(
+            serverSnapshot = base,
+            local = base.copy(scoreFormat = ScoreFormat.POINT_100),
+            dirty = setOf(UserOptionField.SCORE_FORMAT),
+        )
+        val merged = state.reconciledWith(base.copy(scoreFormat = ScoreFormat.POINT_5))
+        assertEquals(setOf(UserOptionField.SCORE_FORMAT), merged.conflict?.fields)
+        assertEquals(ScoreFormat.POINT_100, merged.local.scoreFormat)
+    }
 }

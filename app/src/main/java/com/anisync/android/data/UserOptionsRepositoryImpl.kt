@@ -13,13 +13,12 @@ import com.anisync.android.domain.ConflictState
 import com.anisync.android.domain.LocalOptionsState
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.ScoreFormat
-import com.anisync.android.domain.UserOptionField
 import com.anisync.android.domain.UserOptionsPatch
 import com.anisync.android.domain.UserOptionsRepository
 import com.anisync.android.domain.applyPatch
 import com.anisync.android.domain.affectedFields
-import com.anisync.android.domain.differingFields
 import com.anisync.android.domain.patchForFields
+import com.anisync.android.domain.reconciledWith
 import com.anisync.android.domain.takeFields
 import com.anisync.android.worker.UserOptionsFlushWorker
 import com.apollographql.apollo.ApolloClient
@@ -96,32 +95,8 @@ class UserOptionsRepositoryImpl @Inject constructor(
         reconcile(accountId, fresh)
     }
 
-    /**
-     * Merge a fresh server snapshot into local state. Clean (non-dirty) fields adopt the server value;
-     * a dirty field whose server value changed since our baseline becomes a conflict (local value is
-     * kept until the user resolves it).
-     */
     private fun reconcile(accountId: Int, fresh: AniListUserOptions) {
-        val current = _state.value ?: LocalOptionsState()
-        val all = UserOptionField.entries.toSet()
-        // Dirty edits still genuinely pending: the local value disagrees with the fresh server value.
-        // A dirty field the server already agrees with isn't pending (and isn't a conflict).
-        val pending = current.dirty intersect current.local.differingFields(fresh)
-        // A conflict is a pending edit where the server also moved since our baseline.
-        val conflictFields = pending intersect current.serverSnapshot.differingFields(fresh)
-        // Everything not pending adopts the server value (clean fields + converged dirty edits).
-        val adopt = all - pending
-
-        commit(
-            accountId,
-            current.copy(
-                local = current.local.takeFields(adopt, fresh),
-                // Baseline advances to the server everywhere except unresolved conflicts.
-                serverSnapshot = current.serverSnapshot.takeFields(all - conflictFields, fresh),
-                dirty = pending,
-                conflict = if (conflictFields.isNotEmpty()) ConflictState(conflictFields, fresh) else null,
-            ),
-        )
+        commit(accountId, (_state.value ?: LocalOptionsState()).reconciledWith(fresh))
     }
 
     override fun applyEdit(patch: UserOptionsPatch) {

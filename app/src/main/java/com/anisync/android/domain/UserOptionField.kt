@@ -122,3 +122,22 @@ fun AniListUserOptions.patchForFields(fields: Set<UserOptionField>): UserOptions
 /** Returns a copy with [fields] taken from [from], other fields unchanged. */
 fun AniListUserOptions.takeFields(fields: Set<UserOptionField>, from: AniListUserOptions): AniListUserOptions =
     applyPatch(from.patchForFields(fields))
+
+/**
+ * Merges a fresh server snapshot into local state. Clean fields adopt the server value, and a dirty field
+ * the server also changed since the baseline becomes a conflict (the local value is kept until the user
+ * resolves it).
+ */
+fun LocalOptionsState.reconciledWith(fresh: AniListUserOptions): LocalOptionsState {
+    val all = UserOptionField.entries.toSet()
+    // Dirty edits still genuinely pending: the local value disagrees with the fresh server value.
+    val pending = dirty intersect local.differingFields(fresh)
+    // A conflict is a pending edit where the server also moved since the baseline.
+    val conflictFields = pending intersect serverSnapshot.differingFields(fresh)
+    return copy(
+        local = local.takeFields(all - pending, fresh),
+        serverSnapshot = serverSnapshot.takeFields(all - conflictFields, fresh),
+        dirty = pending,
+        conflict = if (conflictFields.isNotEmpty()) ConflictState(conflictFields, fresh) else null,
+    )
+}
