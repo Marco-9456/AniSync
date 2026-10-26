@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Jump Back** - Holding the back arrow lists the pages behind the one you are on, newest first, down to the tab you started from, and a tap on one goes straight there. The tab comes back as you left it. In a tablet's detail pane the list ends on the list the pane was opened from. A tip points it out a few times, and a switch under General turns it off. (#161)
 - **Weighted Score Explained** - Tapping the score on a title's page opens a sheet with the weighted and mean scores side by side, a short note on how AniList weights them, and a link to AniList's own explanation.
 - **Mutual Followers** - Social on a profile has a Mutual Followers tab beside Following and Followers, listing the people who follow that user back.
-- **Remove Followers** - On your own profile, holding someone under Social, Followers asks whether to remove them from your followers.
-- **18+ Options** - With adult content on, the AniList options show the three switches AniList added under it: 18+ titles in search, 18+ titles in quick search, and other people's 18+ activity. Discover search follows the first, the title pickers in threads, recommendations and filters follow the second, and the feed and other people's profiles follow the third.
+- **Remove Followers** - On your own profile, each person under Social, Followers has a remove button on their picture, which asks before removing them from your followers.
+- **18+ Options** - With adult content on, the AniList options show the three switches AniList added under it: 18+ titles in search, 18+ titles in quick search, and other people's 18+ activity. Discover search follows the first, the title pickers in threads, recommendations and filters follow the second, and the feed and other people's profiles follow the third. Turning adult content on turns all three back on, as AniList does.
 - **Submission Updates** - Notifications say when AniList accepts, partly accepts or rejects a title, staff or character submission you made, with the reviewer's note, and they have a Submissions filter of their own.
 
 ### Changed
@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Review Length** - A review needs 2600 characters without its formatting before it can be published, as AniList now asks, and the counter shows how far there is to go.
 - **Thread Body** - A new thread needs a body of at least 10 characters, which AniList requires, instead of failing when it is sent.
 - **List Notes** - Notes stop at 6000 characters and rewatches at 1000, the most AniList accepts.
+- **Scoring System** - Library scores switch to a new scoring system a few seconds after it is picked, where they kept the old numbers until the list was refreshed. Editing a score in between could save it on the wrong scale.
 
 ## [3.3.0] - 2026-10-20
 
