@@ -9,7 +9,6 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.entity.LibraryEntryEntity
-import com.anisync.android.data.local.toDomain
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumThread
@@ -368,9 +367,19 @@ class MediaDetailsViewModel @Inject constructor(
     fun openEditSheet() {
         viewModelScope.launch {
             val details = (uiState.value as? DetailsUiState.Success)?.details ?: return@launch
-            
-            val existingEntry = libraryDao.getEntry(accountStore.activeAccount.value?.id ?: -1, mediaId)
-            val draft = existingEntry?.toDomain() ?: LibraryEntry(
+
+            var existingEntry = libraryRepository.getEntry(mediaId)
+            if (existingEntry == null && details.listEntryId != null) {
+                // On the list with no library row to edit. A blank draft would save over the real
+                // entry, so fetch it first, which writes the row.
+                val result = detailsRepository.refreshMediaDetails(mediaId)
+                if (result is Result.Error) {
+                    toastManager.showResultError(result)
+                    return@launch
+                }
+                existingEntry = libraryRepository.getEntry(mediaId)
+            }
+            val draft = existingEntry ?: LibraryEntry(
                 id = 0,
                 mediaId = details.id,
                 titleRomaji = details.titleRomaji,
