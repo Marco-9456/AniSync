@@ -124,7 +124,10 @@ class LibraryRepositoryImpl @Inject constructor(
             val lists = response.data?.MediaListCollection?.lists ?: emptyList()
             val options = response.data?.MediaListCollection?.user?.mediaListOptions
 
-            val scoreFormatApi = resolvedScoreFormat
+            // The scores in this response are in the scoring system it names, and a cached viewer can
+            // still hold the one AniList converted them away from.
+            val scoreFormatApi = options?.scoreFormat
+                ?: resolvedScoreFormat
                 ?: apolloClient.query(GetViewerQuery())
                     .fetchPolicy(FetchPolicy.CacheFirst)
                     .execute()
