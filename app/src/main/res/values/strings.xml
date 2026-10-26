@@ -459,6 +459,12 @@
     <string name="setting_haptic_description">Vibrate on touch interactions</string>
     <string name="setting_score_on_complete">Ask for a score when finishing</string>
     <string name="setting_score_on_complete_desc">When a title on your list moves to Completed. Adding a new title as Completed never asks.</string>
+    <string name="setting_adult_in_search">Include 18+ in search</string>
+    <string name="setting_adult_in_search_desc">Discover search shows 18+ titles unless a filter leaves them out</string>
+    <string name="setting_adult_in_quick_search">Include 18+ in quick search</string>
+    <string name="setting_adult_in_quick_search_desc">The title pickers in threads, recommendations and forum and review filters</string>
+    <string name="setting_others_adult_activity">Show others\' 18+ activity</string>
+    <string name="setting_others_adult_activity_desc">Other people\'s list updates for 18+ titles, in the feed and on their profiles</string>
     <string name="setting_app_icon">App icon</string>
     <string name="setting_app_icon_desc">The new icon appears once you leave the app. A shortcut pinned to the home screen may need adding again.</string>
     <string name="app_icon_ink">Ink</string>

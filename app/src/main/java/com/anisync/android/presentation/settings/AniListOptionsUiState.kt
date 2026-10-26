@@ -25,6 +25,9 @@ sealed interface AniListOptionsAction {
 
     // Content & titles
     data class SetAdultContent(val enabled: Boolean) : AniListOptionsAction
+    data class SetAdultInSearch(val enabled: Boolean) : AniListOptionsAction
+    data class SetAdultInQuickSearch(val enabled: Boolean) : AniListOptionsAction
+    data class SetOthersAdultActivity(val enabled: Boolean) : AniListOptionsAction
     data class SetTitleLanguage(val language: AniListTitleLanguage) : AniListOptionsAction
     data class SetStaffNameLanguage(val language: AniListStaffNameLanguage) : AniListOptionsAction
     data class SetScoreFormat(val format: ScoreFormat) : AniListOptionsAction

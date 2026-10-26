@@ -28,6 +28,7 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,14 +37,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.anisync.android.R
 import com.anisync.android.data.StaffNameLanguage
 import com.anisync.android.data.TitleLanguage
+import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.AniListListActivityStatus
 import com.anisync.android.domain.AniListStaffNameLanguage
 import com.anisync.android.domain.AniListTitleLanguage
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.presentation.components.AppModalBottomSheet
+import com.anisync.android.presentation.components.LocalWhatsNew
+import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.settings.components.SettingsPickerSheet
 import com.anisync.android.ui.theme.AniListProfileColors
 
@@ -60,6 +66,11 @@ internal fun AniListOptionsContent(
 ) {
     val options = uiState.options
 
+    val whatsNewStore = LocalWhatsNew.current
+    // Read once on entry so the pill stays up for the visit that clears it.
+    val showAdultOptionsNew = remember { WhatsNewItem.ANILIST_ADULT_OPTIONS in whatsNewStore.active.value }
+    LaunchedEffect(Unit) { whatsNewStore.markSeen(WhatsNewItem.ANILIST_ADULT_OPTIONS) }
+
     SectionHeader("These settings are stored on your AniList account and sync with the website.")
 
     // ── Content & titles ─────────────────────────────────────────────────────────────────────────
@@ -70,7 +81,32 @@ internal fun AniListOptionsContent(
             subtitle = "Include 18+ anime and manga in search, the activity feed, and lists",
             checked = options?.displayAdultContent == true,
             onCheckedChange = { onAction(AniListOptionsAction.SetAdultContent(it)) },
+            titleBadge = if (showAdultOptionsNew) {
+                { WhatsNewPill(WhatsNewItem.Kind.NEW) }
+            } else {
+                null
+            },
         )
+        if (options?.displayAdultContent == true) {
+            SwitchSettingsItem(
+                title = stringResource(R.string.setting_adult_in_search),
+                subtitle = stringResource(R.string.setting_adult_in_search_desc),
+                checked = options.includeAdultContentInSearch,
+                onCheckedChange = { onAction(AniListOptionsAction.SetAdultInSearch(it)) },
+            )
+            SwitchSettingsItem(
+                title = stringResource(R.string.setting_adult_in_quick_search),
+                subtitle = stringResource(R.string.setting_adult_in_quick_search_desc),
+                checked = options.includeAdultContentInQuickSearch,
+                onCheckedChange = { onAction(AniListOptionsAction.SetAdultInQuickSearch(it)) },
+            )
+            SwitchSettingsItem(
+                title = stringResource(R.string.setting_others_adult_activity),
+                subtitle = stringResource(R.string.setting_others_adult_activity_desc),
+                checked = options.displayAdultActivities,
+                onCheckedChange = { onAction(AniListOptionsAction.SetOthersAdultActivity(it)) },
+            )
+        }
 
         var showTitleSheet by remember { mutableStateOf(false) }
         SelectionSettingsItem(

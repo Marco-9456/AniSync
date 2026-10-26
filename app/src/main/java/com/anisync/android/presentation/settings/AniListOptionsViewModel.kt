@@ -55,6 +55,15 @@ class AniListOptionsViewModel @Inject constructor(
             is AniListOptionsAction.SetAdultContent ->
                 repository.applyEdit(UserOptionsPatch(displayAdultContent = action.enabled))
 
+            is AniListOptionsAction.SetAdultInSearch ->
+                repository.applyEdit(UserOptionsPatch(includeAdultContentInSearch = action.enabled))
+
+            is AniListOptionsAction.SetAdultInQuickSearch ->
+                repository.applyEdit(UserOptionsPatch(includeAdultContentInQuickSearch = action.enabled))
+
+            is AniListOptionsAction.SetOthersAdultActivity ->
+                repository.applyEdit(UserOptionsPatch(displayAdultActivities = action.enabled))
+
             is AniListOptionsAction.SetTitleLanguage ->
                 repository.applyEdit(UserOptionsPatch(titleLanguage = action.language))
 
