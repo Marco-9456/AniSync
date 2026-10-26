@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Library Tag Filters** - Library search can filter by tag, with the same picker as Search: a search box, categories, and spoiler tags kept shut until opened. A tag only counts above AniList's rank cut-off of 18, as it does in Search, and adult tags stay hidden unless adult content is on. Tags come down in the background on a request of their own, for new titles and once a week, so the library refresh is as quick as before. (#158)
 - **Jump Back** - Holding the back arrow lists the pages behind the one you are on, newest first, down to the tab you started from, and a tap on one goes straight there. The tab comes back as you left it. In a tablet's detail pane the list ends on the list the pane was opened from. A tip points it out a few times, and a switch under General turns it off. (#161)
 - **Weighted Score Explained** - Tapping the score on a title's page opens a sheet with the weighted and mean scores side by side, a short note on how AniList weights them, and a link to AniList's own explanation.
+- **Mutual Followers** - Social on a profile has a Mutual Followers tab beside Following and Followers, listing the people who follow that user back.
+- **Remove Followers** - On your own profile, holding someone under Social, Followers asks whether to remove them from your followers.
+- **18+ Options** - With adult content on, the AniList options show the three switches AniList added under it: 18+ titles in search, 18+ titles in quick search, and other people's 18+ activity. Discover search follows the first, the title pickers in threads, recommendations and filters follow the second, and the feed and other people's profiles follow the third.
+- **Submission Updates** - Notifications say when AniList accepts, partly accepts or rejects a title, staff or character submission you made, with the reviewer's note, and they have a Submissions filter of their own.
 
 ### Changed
 
@@ -24,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Studios** - The Studios chip in Discover lists the most favourited studios straight away, and typing a name narrows them.
 - **Forum Categories** - Misc left the category rail, since AniList merged it into General, and the new Events category took its place. A thread filed under General stays in General alone, as on AniList, and Site Announcements is no longer offered when writing a thread. A forum last left on Misc opens on General.
 - **Weighted Score** - The score AniList used to call average is called weighted, on title pages, in the sort options and in the search filter, which was labelled mean score by mistake.
+- **Same Universe** - A related title set in the same universe says so, where it read Other before.
+- **Emoji** - Emoji in statuses, messages, replies, forum posts, reviews, bios and notes go to AniList as they are, now that it stores them, and every limit counts an emoji as one character, as AniList does. That makes a lone emoji too short for a reply or a message, as it is on the website.
 
 ### Fixed
 
