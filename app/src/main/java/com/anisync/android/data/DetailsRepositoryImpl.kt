@@ -120,6 +120,7 @@ class DetailsRepositoryImpl @Inject constructor(
     override suspend fun refreshMediaDetails(id: Int): Result<Unit> {
         val owner = accountStore.activeAccount.value?.id
         return safeApiCall {
+            val rowWhenAsked = owner?.let { libraryDao.getEntry(it, id) }
             val askedAt = System.currentTimeMillis()
             val response = apolloClient.query(
                 GetMediaDetailsQuery(id = Optional.present(id))
@@ -353,7 +354,7 @@ class DetailsRepositoryImpl @Inject constructor(
 
             mediaDetailsDao.insert(details.toEntity())
             if (owner != null) {
-                syncLibraryEntry(owner, media.toLibraryEntry(), libraryDao.getEntry(owner, id), listEntry, askedAt)
+                syncLibraryEntry(owner, media.toLibraryEntry(), rowWhenAsked, listEntry, askedAt)
             }
         }
     }
@@ -368,11 +369,12 @@ class DetailsRepositoryImpl @Inject constructor(
     private suspend fun syncLibraryEntry(
         owner: Int,
         base: LibraryEntry,
-        local: LibraryEntryEntity?,
+        rowWhenAsked: LibraryEntryEntity?,
         server: ViewerListEntryFields?,
         askedAt: Long,
     ) {
-        when (val plan = planListEntrySync(local, server, askedAt)) {
+        val row = libraryDao.getEntry(owner, base.mediaId)
+        when (val plan = planListEntrySync(rowWhenAsked, row, server, askedAt)) {
             ListEntrySync.Keep -> Unit
             ListEntrySync.Drop -> {
                 libraryDao.deleteByMediaId(owner, base.mediaId)
@@ -453,13 +455,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 .execute()
                 .dataOrThrow()
                 .Media ?: return@safeApiCall
-            syncLibraryEntry(
-                owner,
-                local.toDomain(),
-                libraryDao.getEntry(owner, mediaId),
-                media.mediaListEntry?.viewerListEntryFields,
-                askedAt
-            )
+            syncLibraryEntry(owner, local.toDomain(), local, media.mediaListEntry?.viewerListEntryFields, askedAt)
         }
     }
 

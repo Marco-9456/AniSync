@@ -18,18 +18,22 @@ internal sealed interface ListEntrySync {
 }
 
 /**
- * Decides what an answer requested at [askedAt] may do to [local].
+ * Decides what an answer requested at [askedAt] may do to [local], which was [localWhenAsked] when
+ * the request went out.
  *
- * A row written after [askedAt] stays, since the answer can predate a change made here while it was
- * on its way. Otherwise AniList's `updatedAt` decides. It moves on every save from any client and
- * stays put for an edit that has not been sent yet, so a row that is only ahead locally keeps it.
+ * A row written or removed after [askedAt] stays as it is, since the answer can predate a change
+ * made here while it was on its way. Otherwise AniList's `updatedAt` decides. It moves on every save
+ * from any client and stays put for an edit that has not been sent yet, so a row that is only ahead
+ * locally keeps it.
  */
 internal fun planListEntrySync(
+    localWhenAsked: LibraryEntryEntity?,
     local: LibraryEntryEntity?,
     server: ViewerListEntryFields?,
     askedAt: Long,
 ): ListEntrySync = when {
     local != null && local.lastUpdated >= askedAt -> ListEntrySync.Keep
+    localWhenAsked != null && local == null -> ListEntrySync.Keep
     server == null -> if (local == null) ListEntrySync.Keep else ListEntrySync.Drop
     local == null || local.id != server.id -> ListEntrySync.Take(server)
     (server.updatedAtMillis() ?: 0L) > (local.updatedAt ?: 0L) -> ListEntrySync.Take(server)

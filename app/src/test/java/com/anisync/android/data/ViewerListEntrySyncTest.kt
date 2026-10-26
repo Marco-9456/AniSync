@@ -67,57 +67,60 @@ class ViewerListEntrySyncTest {
         createdAt = 1_789_000_000,
     )
 
+    /** The row was the same when the request went out as when the answer came back. */
+    private fun plan(local: LibraryEntryEntity?, server: ViewerListEntryFields?) =
+        planListEntrySync(local, local, server, askedAt)
+
     @Test
     fun `no row and no entry leave nothing to do`() {
-        assertEquals(ListEntrySync.Keep, planListEntrySync(null, null, askedAt))
+        assertEquals(ListEntrySync.Keep, plan(null, null))
     }
 
     @Test
     fun `an entry the library has no row for is taken`() {
         val server = entry()
-        assertEquals(ListEntrySync.Take(server), planListEntrySync(null, server, askedAt))
+        assertEquals(ListEntrySync.Take(server), plan(null, server))
     }
 
     @Test
     fun `an entry saved elsewhere since the last sync replaces the row`() {
         val server = entry(updatedAtSeconds = 1_790_000_100)
-        assertEquals(
-            ListEntrySync.Take(server),
-            planListEntrySync(row(updatedAt = 1_790_000_000_000L), server, askedAt)
-        )
+        assertEquals(ListEntrySync.Take(server), plan(row(updatedAt = 1_790_000_000_000L), server))
     }
 
     @Test
     fun `an entry no newer than the row leaves a change still waiting to be sent`() {
         val server = entry(updatedAtSeconds = 1_790_000_000)
-        assertEquals(
-            ListEntrySync.Keep,
-            planListEntrySync(row(updatedAt = 1_790_000_000_000L), server, askedAt)
-        )
+        assertEquals(ListEntrySync.Keep, plan(row(updatedAt = 1_790_000_000_000L), server))
     }
 
     @Test
     fun `a row written while the answer was on its way stays`() {
         val server = entry(updatedAtSeconds = 1_799_000_000)
-        assertEquals(ListEntrySync.Keep, planListEntrySync(row(lastUpdated = askedAt), server, askedAt))
-        assertEquals(ListEntrySync.Keep, planListEntrySync(row(lastUpdated = askedAt + 1), null, askedAt))
+        assertEquals(ListEntrySync.Keep, planListEntrySync(row(), row(lastUpdated = askedAt), server, askedAt))
+        assertEquals(ListEntrySync.Keep, planListEntrySync(row(), row(lastUpdated = askedAt + 1), null, askedAt))
+    }
+
+    @Test
+    fun `a row removed while the answer was on its way stays removed`() {
+        assertEquals(ListEntrySync.Keep, planListEntrySync(row(), null, entry(), askedAt))
     }
 
     @Test
     fun `a title taken off the list elsewhere drops its row`() {
-        assertEquals(ListEntrySync.Drop, planListEntrySync(row(), null, askedAt))
+        assertEquals(ListEntrySync.Drop, plan(row(), null))
     }
 
     @Test
     fun `a row kept under another entry id is replaced`() {
         val server = entry(id = 605969824, updatedAtSeconds = 1)
-        assertEquals(ListEntrySync.Take(server), planListEntrySync(row(id = 0), server, askedAt))
+        assertEquals(ListEntrySync.Take(server), plan(row(id = 0), server))
     }
 
     @Test
     fun `a row without AniList's timestamp takes any entry`() {
         val server = entry()
-        assertEquals(ListEntrySync.Take(server), planListEntrySync(row(updatedAt = null), server, askedAt))
+        assertEquals(ListEntrySync.Take(server), plan(row(updatedAt = null), server))
     }
 
     @Test
