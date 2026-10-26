@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.anisync.android.data.local.entity.MediaDetailsEntity
+import com.anisync.android.domain.LibraryStatus
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -40,6 +41,22 @@ interface MediaDetailsDao {
 
     @Query("UPDATE media_details SET isFavourite = :isFavourite WHERE id = :id")
     suspend fun updateFavouriteStatus(id: Int, isFavourite: Boolean)
+
+    /** The viewer's entry as the page shows it when the library holds no row for the title. */
+    @Query(
+        "UPDATE media_details SET listEntryId = :entryId, listStatus = :status, " +
+            "listProgress = :progress, listNotes = :notes, listEntryPrivate = :isPrivate, " +
+            "listEntryHiddenFromStatusLists = :hiddenFromStatusLists WHERE id = :id"
+    )
+    suspend fun updateListEntry(
+        id: Int,
+        entryId: Int?,
+        status: LibraryStatus?,
+        progress: Int?,
+        notes: String?,
+        isPrivate: Boolean?,
+        hiddenFromStatusLists: Boolean?
+    )
 
     /**
      * Clear all cached media details.

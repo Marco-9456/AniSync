@@ -27,3 +27,12 @@ fragment ViewerListEntryFields on MediaList {
   updatedAt
   createdAt
 }
+
+query GetViewerListEntry($mediaId: Int!) {
+  Media(id: $mediaId) {
+    id
+    mediaListEntry {
+      ...ViewerListEntryFields
+    }
+  }
+}

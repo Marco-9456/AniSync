@@ -10,6 +10,7 @@ import com.anisync.android.GetStaffCharactersPageQuery
 import com.anisync.android.GetStaffDetailsQuery
 import com.anisync.android.GetStaffProductionPageQuery
 import com.anisync.android.GetStudioDetailsQuery
+import com.anisync.android.GetViewerListEntryQuery
 import com.anisync.android.SaveMediaListEntryMutation
 import com.anisync.android.ToggleFavouriteMutation
 import com.anisync.android.data.local.dao.LibraryDao
@@ -21,6 +22,7 @@ import com.anisync.android.data.mapper.mapFuzzyDateToLong
 import com.anisync.android.data.mapper.toApiStatus
 import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.mapper.todayUtcMillis
+import com.anisync.android.data.util.dataOrThrow
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.fragment.StaffProductionMediaFields
 import com.anisync.android.fragment.StaffVoicedCharacterFields
@@ -63,6 +65,7 @@ import com.anisync.android.util.stripHtml
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.doNotStore
 import com.apollographql.cache.normalized.fetchPolicy
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -70,6 +73,9 @@ import javax.inject.Inject
 
 private const val HOUR_MS = 60L * 60L * 1000L
 private const val DAY_MS = 24L * HOUR_MS
+
+/** How long a checked copy of the viewer's own entry is trusted before a title page asks again. */
+private const val LIST_ENTRY_RECHECK_MS = 60L * 1000L
 
 private val MONTH_ABBR = arrayOf(
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -368,12 +374,24 @@ class DetailsRepositoryImpl @Inject constructor(
     ) {
         when (val plan = planListEntrySync(local, server, askedAt)) {
             ListEntrySync.Keep -> Unit
-            ListEntrySync.Drop -> libraryDao.deleteByMediaId(owner, base.mediaId)
-            is ListEntrySync.Take -> libraryDao.replaceEntry(
-                base.withListEntry(plan.entry)
-                    .toEntity(base.type ?: MediaType.ANIME)
-                    .copy(ownerId = owner)
-            )
+            ListEntrySync.Drop -> {
+                libraryDao.deleteByMediaId(owner, base.mediaId)
+                mediaDetailsDao.updateListEntry(base.mediaId, null, null, null, null, null, null)
+            }
+            is ListEntrySync.Take -> {
+                val entry = base.withListEntry(plan.entry)
+                libraryDao.replaceEntry(entry.toEntity(base.type ?: MediaType.ANIME).copy(ownerId = owner))
+                // The page reads this copy once the library has no row, so it has to agree.
+                mediaDetailsDao.updateListEntry(
+                    id = entry.mediaId,
+                    entryId = entry.id,
+                    status = entry.status,
+                    progress = entry.progress,
+                    notes = entry.notes,
+                    isPrivate = entry.isPrivate,
+                    hiddenFromStatusLists = entry.hiddenFromStatusLists
+                )
+            }
         }
     }
 
@@ -418,6 +436,31 @@ class DetailsRepositoryImpl @Inject constructor(
         val stale = countdownElapsed || age >= staleAfterMillis(cached.status)
 
         return if (stale) refreshMediaDetails(id) else Result.Success(Unit)
+    }
+
+    override suspend fun refreshListEntryIfStale(mediaId: Int): Result<Unit> {
+        val owner = accountStore.activeAccount.value?.id ?: return Result.Success(Unit)
+        val local = libraryDao.getEntry(owner, mediaId) ?: return Result.Success(Unit)
+        // A details fetch carries the entry too, so it counts as a check.
+        val checkedAt = maxOf(local.lastUpdated, mediaDetailsDao.getById(mediaId)?.lastUpdated ?: 0L)
+        if (System.currentTimeMillis() - checkedAt < LIST_ENTRY_RECHECK_MS) return Result.Success(Unit)
+
+        return safeApiCall {
+            val askedAt = System.currentTimeMillis()
+            val media = apolloClient.query(GetViewerListEntryQuery(mediaId = mediaId))
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .doNotStore(true)
+                .execute()
+                .dataOrThrow()
+                .Media ?: return@safeApiCall
+            syncLibraryEntry(
+                owner,
+                local.toDomain(),
+                libraryDao.getEntry(owner, mediaId),
+                media.mediaListEntry?.viewerListEntryFields,
+                askedAt
+            )
+        }
     }
 
     /**

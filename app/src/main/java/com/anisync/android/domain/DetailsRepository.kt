@@ -24,6 +24,14 @@ interface DetailsRepository {
     suspend fun refreshMediaDetailsIfStale(id: Int): Result<Unit>
 
     /**
+     * Asks AniList for the viewer's own entry on [mediaId] when the library's copy has gone a minute
+     * without being checked. The website and other apps change it far more often than the title
+     * changes, so a page whose media is still fresh can hold an entry that is not. Does nothing for a
+     * title the library has no row for.
+     */
+    suspend fun refreshListEntryIfStale(mediaId: Int): Result<Unit>
+
+    /**
      * Update media list entry (status, progress).
      */
     suspend fun updateMediaListEntry(

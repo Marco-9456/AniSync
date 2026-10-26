@@ -195,19 +195,27 @@ class MediaDetailsViewModel @Inject constructor(
      */
     private fun refreshIfStale() {
         viewModelScope.launch {
-            var attempts = 0
-            while (true) {
-                val result = detailsRepository.refreshMediaDetailsIfStale(mediaId)
-                // Only a rate limit says when it will be worth asking again. Anything else is left
-                // alone, and anything already cached is on screen regardless.
-                val waitSeconds = (result as? Result.Error)?.countdownSeconds
-                if (waitSeconds == null || waitSeconds <= 0) return@launch
-                if (++attempts > MAX_RATE_LIMIT_RETRIES) return@launch
-                // The skeleton is the honest state while AniList is refusing requests. What it must
-                // not do is stay there once the wait is over, which is what happened when this
-                // dropped the failure and nobody ever asked again.
-                delay(waitSeconds * 1_000 + RETRY_GRACE_MS)
+            refreshMediaIfStale()
+            // Nobody is waiting on this, the page already shows the library's copy.
+            withRequestPriority(RequestPriority.Prefetch) {
+                detailsRepository.refreshListEntryIfStale(mediaId)
             }
+        }
+    }
+
+    private suspend fun refreshMediaIfStale() {
+        var attempts = 0
+        while (true) {
+            val result = detailsRepository.refreshMediaDetailsIfStale(mediaId)
+            // Only a rate limit says when it will be worth asking again. Anything else is left
+            // alone, and anything already cached is on screen regardless.
+            val waitSeconds = (result as? Result.Error)?.countdownSeconds
+            if (waitSeconds == null || waitSeconds <= 0) return
+            if (++attempts > MAX_RATE_LIMIT_RETRIES) return
+            // The skeleton is the honest state while AniList is refusing requests. What it must
+            // not do is stay there once the wait is over, which is what happened when this
+            // dropped the failure and nobody ever asked again.
+            delay(waitSeconds * 1_000 + RETRY_GRACE_MS)
         }
     }
 
