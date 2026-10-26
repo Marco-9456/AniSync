@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NotificationBadgeStore
+import com.anisync.android.data.filterAdultActivities
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.AnimeStatistics
 import com.anisync.android.domain.CachePolicy
@@ -369,7 +370,7 @@ class ProfileViewModel @Inject constructor(
     /**
      * Bumped when the Profile tab is reselected, asking the page to scroll back to the top.
      * Kept beside [uiState] rather than inside it: that state is assembled by a wide combine
-     * whose arguments are read back by index, and a fourteenth flow buys nothing here.
+     * whose arguments are read back by index, and one more flow buys nothing here.
      */
     val scrollToTopRequest: StateFlow<Long> = _scrollToTopRequest.asStateFlow()
 
@@ -380,6 +381,9 @@ class ProfileViewModel @Inject constructor(
             onScrollToTop = { _scrollToTopRequest.update { current -> current + 1 } }
         )
     }
+
+    private val adultActivityOptions =
+        combine(appSettings.showAdultContent, appSettings.othersAdultActivity, ::Pair)
 
     val uiState: StateFlow<ProfileUiState> = combine(
         profileState,
@@ -394,7 +398,8 @@ class ProfileViewModel @Inject constructor(
         viewerIdFlow,
         notificationBadgeStore.unreadCount,
         favoritesState,
-        activityPaginationState
+        activityPaginationState,
+        adultActivityOptions
     ) { params ->
         val remote = params[0] as ProfileUiState
         val local = params[1] as ProfileUiLocalState
@@ -412,6 +417,8 @@ class ProfileViewModel @Inject constructor(
         val unreadCount = params[10] as Int
         val favoritesOverlay = params[11] as FavoritesState
         val pagination = params[12] as ActivityPaginationState
+        @Suppress("UNCHECKED_CAST")
+        val (showAdultContent, showOthersAdultActivity) = params[13] as Pair<Boolean, Boolean>
 
         // Fold lazily-loaded older activity pages into the profile's initial feed
         // (deduped, newest-first) before overlays apply, so a like/subscribe/delete
@@ -450,13 +457,27 @@ class ProfileViewModel @Inject constructor(
             mergedRemote.copy(profile = profile.copy(activities = patched))
         }
 
+        // AniList leaves the 18+ activity options to each app, so other people's 18+ list updates
+        // are dropped here, where a change to the setting applies without a refetch.
+        val visible = remoteWithOverrides.profile?.let { p ->
+            remoteWithOverrides.copy(
+                profile = p.copy(
+                    activities = p.activities.filterAdultActivities(
+                        showAdultContent = showAdultContent,
+                        showOthersAdultActivity = showOthersAdultActivity,
+                        viewerId = viewerId,
+                    )
+                )
+            )
+        } ?: remoteWithOverrides
+
         // Swap in the lazily-loaded full favourite-anime list once available; until then the page-1
         // preview carried by the profile fetch stands.
         val withFavorites = favoritesOverlay.fullAnime?.let { full ->
-            remoteWithOverrides.profile?.let { p ->
-                remoteWithOverrides.copy(profile = p.copy(favoriteAnime = full))
+            visible.profile?.let { p ->
+                visible.copy(profile = p.copy(favoriteAnime = full))
             }
-        } ?: remoteWithOverrides
+        } ?: visible
 
         withFavorites.copy(
             isRefreshing = local.isRefreshing,
