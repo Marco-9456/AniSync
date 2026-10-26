@@ -36,8 +36,14 @@ fun AniListStaffNameLanguage.toLocalStaffNameLanguage(): StaffNameLanguage = whe
 }
 
 /**
- * Drops activity for 18+ media when adult content is off, matching the AniList website. Text and
- * message activities carry no media (so [UserActivity.mediaIsAdult] is false) and always pass.
+ * Drops other people's activity for 18+ media unless the account shows adult content and their 18+
+ * activity, matching the AniList website. The viewer's own activity always passes, and so do text
+ * and message activities, which carry no media (so [UserActivity.mediaIsAdult] is false).
  */
-fun List<UserActivity>.filterAdultActivities(showAdultContent: Boolean): List<UserActivity> =
-    if (showAdultContent) this else filterNot { it.mediaIsAdult }
+fun List<UserActivity>.filterAdultActivities(
+    showAdultContent: Boolean,
+    showOthersAdultActivity: Boolean = true,
+    viewerId: Int? = null,
+): List<UserActivity> =
+    if (showAdultContent && showOthersAdultActivity) this
+    else filterNot { it.mediaIsAdult && (viewerId == null || it.userId != viewerId) }

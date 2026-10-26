@@ -1,6 +1,7 @@
 package com.anisync.android.data
 
 import com.anisync.android.GetActivityFeedQuery
+import com.anisync.android.data.account.AccountStore
 import com.anisync.android.data.mapper.toDomain
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.FeedFilter
@@ -20,6 +21,7 @@ import javax.inject.Inject
 class FeedRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val appSettings: AppSettings,
+    private val accountStore: AccountStore,
 ) : FeedRepository {
 
     override suspend fun getFeed(
@@ -68,10 +70,8 @@ class FeedRepositoryImpl @Inject constructor(
         }
         val pageData = response.data?.Page ?: throw Exception("Failed to load feed")
 
-        // Respect the viewer's AniList "display adult content" option (mirrored into AppSettings):
-        // hide list activity for 18+ media, matching the website. Text/message activities carry no
-        // media, so mediaIsAdult is false for them and they pass through untouched.
-        val showAdult = appSettings.showAdultContent.value
+        // Respect the viewer's AniList adult options (mirrored into AppSettings), as the website does.
+        // AniList leaves this filtering to each app.
         val items = pageData.activities
             ?.filterNotNull()
             // Hide activity from users the viewer has blocked on AniList (issue #76). isBlocked is
@@ -83,7 +83,11 @@ class FeedRepositoryImpl @Inject constructor(
                     activity.onMessageActivity?.recipient?.isBlocked == true
             }
             ?.mapNotNull { it.activityFields.toDomain() }
-            ?.filterAdultActivities(showAdult)
+            ?.filterAdultActivities(
+                showAdultContent = appSettings.showAdultContent.value,
+                showOthersAdultActivity = appSettings.othersAdultActivity.value,
+                viewerId = accountStore.activeAccount.value?.id,
+            )
             ?.distinctBy { it.id }
             ?: emptyList()
 

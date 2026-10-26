@@ -41,8 +41,8 @@ class UserOptionsMappingTest {
 
     // ── filterAdultActivities (feed — fixes #53) ─────────────────────────────────────────────────
 
-    private fun activity(id: Int, isAdult: Boolean) =
-        UserActivity(id = id, timestamp = 0L, mediaIsAdult = isAdult)
+    private fun activity(id: Int, isAdult: Boolean, userId: Int? = null) =
+        UserActivity(id = id, timestamp = 0L, mediaIsAdult = isAdult, userId = userId)
 
     @Test
     fun `feed drops adult list activity when adult content off`() {
@@ -56,6 +56,28 @@ class UserOptionsMappingTest {
         val feed = listOf(activity(1, isAdult = false), activity(2, isAdult = true))
         val filtered = feed.filterAdultActivities(showAdultContent = true)
         assertEquals(listOf(1, 2), filtered.map { it.id })
+    }
+
+    @Test
+    fun `others' adult activity goes when the account hides it, the viewer's own stays`() {
+        val feed = listOf(
+            activity(1, isAdult = true, userId = 7),
+            activity(2, isAdult = true, userId = 8),
+            activity(3, isAdult = false, userId = 8),
+        )
+        val filtered = feed.filterAdultActivities(
+            showAdultContent = true,
+            showOthersAdultActivity = false,
+            viewerId = 7,
+        )
+        assertEquals(listOf(1, 3), filtered.map { it.id })
+    }
+
+    @Test
+    fun `the viewer's own adult activity stays with adult content off`() {
+        val feed = listOf(activity(1, isAdult = true, userId = 7), activity(2, isAdult = true, userId = 8))
+        val filtered = feed.filterAdultActivities(showAdultContent = false, viewerId = 7)
+        assertEquals(listOf(1), filtered.map { it.id })
     }
 
     // ── Title / staff-name language mapping (6→3 collapse) ───────────────────────────────────────
