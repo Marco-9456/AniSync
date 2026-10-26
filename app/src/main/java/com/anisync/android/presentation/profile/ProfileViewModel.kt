@@ -165,15 +165,18 @@ class ProfileViewModel @Inject constructor(
         val isSocialLoading: Boolean = false,
         val socialFollowing: List<com.anisync.android.domain.SocialUser> = emptyList(),
         val socialFollowers: List<com.anisync.android.domain.SocialUser> = emptyList(),
+        val socialMutuals: List<com.anisync.android.domain.SocialUser> = emptyList(),
         val socialThreads: List<com.anisync.android.domain.ForumThread> = emptyList(),
         val socialComments: List<com.anisync.android.domain.SocialThreadComment> = emptyList(),
         val socialErrorMessage: String? = null,
         val followingTotal: Int? = null,
         val followersTotal: Int? = null,
+        val mutualsTotal: Int? = null,
         val hasFetchedSocialData: Boolean = false,
         val socialPage: Int = 1,
         val followingHasNextPage: Boolean = false,
         val followersHasNextPage: Boolean = false,
+        val mutualsHasNextPage: Boolean = false,
         val threadsHasNextPage: Boolean = false,
         val commentsHasNextPage: Boolean = false,
         val isSocialPaginating: Boolean = false
@@ -502,14 +505,17 @@ class ProfileViewModel @Inject constructor(
             isSavingActivityEdit = local.isSavingActivityEdit,
             socialFollowing = social.socialFollowing,
             socialFollowers = social.socialFollowers,
+            socialMutuals = social.socialMutuals,
             socialThreads = social.socialThreads,
             socialComments = social.socialComments,
             isSocialLoading = social.isSocialLoading,
             socialErrorMessage = social.socialErrorMessage,
             followingTotal = social.followingTotal,
             followersTotal = social.followersTotal,
+            mutualsTotal = social.mutualsTotal,
             followingHasNextPage = social.followingHasNextPage,
             followersHasNextPage = social.followersHasNextPage,
+            mutualsHasNextPage = social.mutualsHasNextPage,
             threadsHasNextPage = social.threadsHasNextPage,
             commentsHasNextPage = social.commentsHasNextPage,
             isSocialPaginating = social.isSocialPaginating,
@@ -1538,14 +1544,17 @@ class ProfileViewModel @Inject constructor(
                             isSocialLoading = false,
                             socialFollowing = page.data.following,
                             socialFollowers = page.data.followers,
+                            socialMutuals = page.data.mutuals,
                             socialThreads = page.data.threads,
                             socialComments = page.data.comments,
                             hasFetchedSocialData = true,
                             socialPage = 1,
                             followingTotal = page.followingTotal,
                             followersTotal = page.followersTotal,
+                            mutualsTotal = page.mutualsTotal,
                             followingHasNextPage = page.followingHasNextPage,
                             followersHasNextPage = page.followersHasNextPage,
+                            mutualsHasNextPage = page.mutualsHasNextPage,
                             threadsHasNextPage = page.threadsHasNextPage,
                             commentsHasNextPage = page.commentsHasNextPage
                         )
@@ -1570,6 +1579,7 @@ class ProfileViewModel @Inject constructor(
         val hasNext = when (activeTab) {
             ProfileSocialTab.FOLLOWING -> current.followingHasNextPage
             ProfileSocialTab.FOLLOWERS -> current.followersHasNextPage
+            ProfileSocialTab.MUTUALS -> current.mutualsHasNextPage
             ProfileSocialTab.FORUM_THREADS -> current.threadsHasNextPage
             ProfileSocialTab.FORUM_COMMENTS -> current.commentsHasNextPage
         }
@@ -1596,12 +1606,15 @@ class ProfileViewModel @Inject constructor(
                             // index-keyed rows but are deduped too to avoid showing twice.
                             socialFollowing = (it.socialFollowing + p.data.following).distinctBy { u -> u.id },
                             socialFollowers = (it.socialFollowers + p.data.followers).distinctBy { u -> u.id },
+                            socialMutuals = (it.socialMutuals + p.data.mutuals).distinctBy { u -> u.id },
                             socialThreads = (it.socialThreads + p.data.threads).distinctBy { t -> t.id },
                             socialComments = (it.socialComments + p.data.comments).distinctBy { c -> c.id },
                             followingTotal = p.followingTotal ?: it.followingTotal,
                             followersTotal = p.followersTotal ?: it.followersTotal,
+                            mutualsTotal = p.mutualsTotal ?: it.mutualsTotal,
                             followingHasNextPage = p.followingHasNextPage,
                             followersHasNextPage = p.followersHasNextPage,
+                            mutualsHasNextPage = p.mutualsHasNextPage,
                             threadsHasNextPage = p.threadsHasNextPage,
                             commentsHasNextPage = p.commentsHasNextPage
                         )

@@ -23,12 +23,13 @@ enum class WhatsNewItem(val sinceVersionCode: Int, val kind: Kind, val place: Pl
     LIBRARY_SEARCH_FILTERS(23, Kind.MOVED, Place.LIBRARY),
     DISCOVER_SEARCH_FILTERS(23, Kind.MOVED, Place.DISCOVER),
     GENERAL_BACK_TRAIL(23, Kind.NEW),
-    ANILIST_ADULT_OPTIONS(23, Kind.NEW);
+    ANILIST_ADULT_OPTIONS(23, Kind.NEW),
+    PROFILE_MUTUALS(23, Kind.NEW, Place.PROFILE);
 
     enum class Kind { NEW, MOVED }
 
     /** The surface whose way in wears the dot, so the settings gear only points at settings. */
-    enum class Place { SETTINGS, LIBRARY, DISCOVER }
+    enum class Place { SETTINGS, LIBRARY, DISCOVER, PROFILE }
 }
 
 /**

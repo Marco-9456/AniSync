@@ -879,6 +879,7 @@
     <string name="profile_activity_lists">Lists</string>
     <string name="profile_social_following">Following</string>
     <string name="profile_social_followers">Followers</string>
+    <string name="profile_social_mutuals">Mutual Followers</string>
     <string name="profile_social_forum_threads">Forum Threads</string>
     <string name="profile_social_forum_comments">Forum Comments</string>
     <string name="profile_view_biography">View Biography</string>

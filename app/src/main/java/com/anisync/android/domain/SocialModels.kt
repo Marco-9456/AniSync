@@ -30,6 +30,7 @@ data class SocialThreadComment(
 data class UserSocialData(
     val following: List<SocialUser>,
     val followers: List<SocialUser>,
+    val mutuals: List<SocialUser>,
     val threads: List<ForumThread>,
     val comments: List<SocialThreadComment>
 )
@@ -40,8 +41,10 @@ data class UserSocialPage(
     // Totals for the whole list rather than the loaded page; null when AniList omits them.
     val followingTotal: Int?,
     val followersTotal: Int?,
+    val mutualsTotal: Int?,
     val followingHasNextPage: Boolean,
     val followersHasNextPage: Boolean,
+    val mutualsHasNextPage: Boolean,
     val threadsHasNextPage: Boolean,
     val commentsHasNextPage: Boolean
 )

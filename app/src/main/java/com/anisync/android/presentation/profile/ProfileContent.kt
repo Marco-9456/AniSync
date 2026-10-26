@@ -59,10 +59,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.WhatsNewDot
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
+import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
@@ -620,12 +623,14 @@ internal fun ProfileTabsButtonGroup(
     onTabSelected: (ProfileTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val mutualsNew = WhatsNewItem.PROFILE_MUTUALS in rememberActiveWhatsNew()
     SegmentedTabGroup(
         options = ProfileTab.entries,
         selected = selectedTab,
         onSelect = onTabSelected,
         label = { stringResource(it.titleRes) },
         modifier = modifier.padding(vertical = 8.dp),
-        icon = ::profileTabIcon
+        icon = ::profileTabIcon,
+        badge = { tab -> if (tab == ProfileTab.SOCIAL && mutualsNew) ({ WhatsNewDot() }) else null }
     )
 }

@@ -49,14 +49,17 @@ data class ProfileUiState(
     val isUserMangaListLoading: Boolean = false,
     val socialFollowing: List<SocialUser> = emptyList(),
     val socialFollowers: List<SocialUser> = emptyList(),
+    val socialMutuals: List<SocialUser> = emptyList(),
     val socialThreads: List<ForumThread> = emptyList(),
     val socialComments: List<SocialThreadComment> = emptyList(),
     val isSocialLoading: Boolean = false,
     val socialErrorMessage: String? = null,
     val followingTotal: Int? = null,
     val followersTotal: Int? = null,
+    val mutualsTotal: Int? = null,
     val followingHasNextPage: Boolean = false,
     val followersHasNextPage: Boolean = false,
+    val mutualsHasNextPage: Boolean = false,
     val threadsHasNextPage: Boolean = false,
     val commentsHasNextPage: Boolean = false,
     val isSocialPaginating: Boolean = false,
@@ -190,6 +193,7 @@ enum class ProfileActivityFilter(@StringRes val labelRes: Int) {
 enum class ProfileSocialTab(@StringRes val labelRes: Int) {
     FOLLOWING(R.string.profile_social_following),
     FOLLOWERS(R.string.profile_social_followers),
+    MUTUALS(R.string.profile_social_mutuals),
     FORUM_THREADS(R.string.profile_social_forum_threads),
     FORUM_COMMENTS(R.string.profile_social_forum_comments)
 }

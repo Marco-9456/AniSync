@@ -552,6 +552,14 @@ class ProfileRepositoryImpl @Inject constructor(
                 )
             } ?: emptyList()
 
+            val mutuals = data.mutuals?.mutualFollowers?.filterNotNull()?.map {
+                com.anisync.android.domain.SocialUser(
+                    id = it.id,
+                    name = it.name,
+                    avatarUrl = it.avatar?.large
+                )
+            } ?: emptyList()
+
             val threads = data.threads?.threads?.filterNotNull()?.map { thread ->
                 com.anisync.android.domain.ForumThread(
                     id = thread.id,
@@ -604,13 +612,16 @@ class ProfileRepositoryImpl @Inject constructor(
                 data = com.anisync.android.domain.UserSocialData(
                     following = following,
                     followers = followers,
+                    mutuals = mutuals,
                     threads = threads,
                     comments = comments
                 ),
                 followingTotal = data.following?.pageInfo?.total,
                 followersTotal = data.followers?.pageInfo?.total,
+                mutualsTotal = data.mutuals?.pageInfo?.total,
                 followingHasNextPage = data.following?.pageInfo?.hasNextPage == true,
                 followersHasNextPage = data.followers?.pageInfo?.hasNextPage == true,
+                mutualsHasNextPage = data.mutuals?.pageInfo?.hasNextPage == true,
                 threadsHasNextPage = data.threads?.pageInfo?.hasNextPage == true,
                 commentsHasNextPage = data.comments?.pageInfo?.hasNextPage == true
             )

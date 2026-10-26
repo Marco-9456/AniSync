@@ -413,6 +413,19 @@ query GetUserSocialData($userId: Int!, $page: Int = 1) {
       }
     }
   }
+  mutuals: Page(page: $page, perPage: 25) {
+    pageInfo {
+      hasNextPage
+      total
+    }
+    mutualFollowers(userId: $userId) {
+      id
+      name
+      avatar {
+        large
+      }
+    }
+  }
   threads: Page(page: $page, perPage: 15) {
     pageInfo {
       hasNextPage
