@@ -43,7 +43,7 @@ object ContentLimits {
     private val HtmlTag = Regex("""<[\s\S]*?>""")
     private val MarkdownSymbol = Regex("""[\[\]_>~\-#`*]""")
     private val Invisible = Regex("[\u3164\u200E\u200B\u200C\u200D\uFEFF]")
-    private val WhitespaceRun = Regex("""(?U)\s{2,}""")
+    private val WhitespaceRun = Regex("""\s{2,}""")
 
     /**
      * A review body's length the way AniList's review editor measures it: images, embeds, link
