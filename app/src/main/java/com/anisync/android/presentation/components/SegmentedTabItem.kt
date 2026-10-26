@@ -70,7 +70,8 @@ fun SegmentedTabItem(
     onClick: () -> Unit,
     icon: ImageVector,
     label: String,
-    count: Int? = null
+    count: Int? = null,
+    badge: (@Composable () -> Unit)? = null
 ) {
     val hapticFeedback = rememberHapticFeedback()
     val isSelected = selected
@@ -199,6 +200,7 @@ fun SegmentedTabItem(
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
             )
+            badge?.invoke()
             if (count != null) {
                 Surface(
                     shape = RoundedCornerShape(50),

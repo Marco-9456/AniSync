@@ -57,6 +57,7 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
  * @param scrollState Horizontal scroll state of the scrollable layout. Hoist it when the same
  *   logical strip is rendered twice (e.g. an in-list copy plus a pinned copy) so both stay at the
  *   same offset; ignored when [fillEqually] is true.
+ * @param badge Optional mark after an option's label, such as the What's New dot.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -69,7 +70,8 @@ fun <T> SegmentedTabGroup(
     icon: (T) -> ImageVector? = { null },
     fillEqually: Boolean = false,
     labelStyle: TextStyle = MaterialTheme.typography.labelLarge,
-    scrollState: ScrollState = rememberScrollState()
+    scrollState: ScrollState = rememberScrollState(),
+    badge: (T) -> (@Composable () -> Unit)? = { null }
 ) {
     val haptic = rememberHapticFeedback()
 
@@ -117,6 +119,10 @@ fun <T> SegmentedTabGroup(
                         null
                     }
                 )
+                badge(option)?.let { mark ->
+                    Spacer(modifier = Modifier.width(6.dp))
+                    mark()
+                }
             }
         }
     }
