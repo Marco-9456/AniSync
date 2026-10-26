@@ -78,13 +78,7 @@ query GetMediaDetails($id: Int) {
             rank
         }
         mediaListEntry {
-            id
-            status
-            progress
-            score
-            notes
-            private
-            hiddenFromStatusLists
+            ...ViewerListEntryFields
         }
         characters(perPage: 25) {
             edges {

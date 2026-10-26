@@ -1,0 +1,29 @@
+# The viewer's own entry for one title, with every field the library row keeps, so a title page can
+# bring that row up to date without pulling the whole list again.
+
+fragment ViewerListEntryFields on MediaList {
+  id
+  status
+  progress
+  progressVolumes
+  score
+  advancedScores
+  repeat
+  priority
+  notes
+  private
+  hiddenFromStatusLists
+  startedAt {
+    year
+    month
+    day
+  }
+  completedAt {
+    year
+    month
+    day
+  }
+  customLists
+  updatedAt
+  createdAt
+}

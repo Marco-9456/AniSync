@@ -97,6 +97,13 @@ interface LibraryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrReplace(entry: LibraryEntryEntity)
 
+    /** Writes [entry] over its account's row for the same title, even one kept under an older id. */
+    @Transaction
+    suspend fun replaceEntry(entry: LibraryEntryEntity) {
+        deleteByMediaId(entry.ownerId, entry.mediaId)
+        insertOrReplace(entry)
+    }
+
     /**
      * Delete all entries of a media type for an account.
      */

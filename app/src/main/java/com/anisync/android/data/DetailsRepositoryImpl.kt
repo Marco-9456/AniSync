@@ -14,14 +14,17 @@ import com.anisync.android.SaveMediaListEntryMutation
 import com.anisync.android.ToggleFavouriteMutation
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
+import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.data.local.toDomain
 import com.anisync.android.data.local.toEntity
+import com.anisync.android.data.mapper.mapFuzzyDateToLong
 import com.anisync.android.data.mapper.toApiStatus
 import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.mapper.todayUtcMillis
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.fragment.StaffProductionMediaFields
 import com.anisync.android.fragment.StaffVoicedCharacterFields
+import com.anisync.android.fragment.ViewerListEntryFields
 import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterInfo
 import com.anisync.android.domain.CharacterMedia
@@ -30,6 +33,7 @@ import com.anisync.android.domain.CoverImage
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.ExternalLink
 import com.anisync.android.domain.ExternalLinkType
+import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.MediaAiringTrend
@@ -108,7 +112,9 @@ class DetailsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refreshMediaDetails(id: Int): Result<Unit> {
+        val owner = accountStore.activeAccount.value?.id
         return safeApiCall {
+            val askedAt = System.currentTimeMillis()
             val response = apolloClient.query(
                 GetMediaDetailsQuery(id = Optional.present(id))
             )
@@ -117,7 +123,7 @@ class DetailsRepositoryImpl @Inject constructor(
 
             val media = response.data?.Media ?: throw Exception("Media not found")
 
-            val listEntry = media.mediaListEntry
+            val listEntry = media.mediaListEntry?.viewerListEntryFields
             val listStatus = listEntry?.status?.toDomainStatus()
 
             val characters = media.characters?.edges?.filterNotNull()?.map { edge ->
@@ -340,8 +346,61 @@ class DetailsRepositoryImpl @Inject constructor(
             )
 
             mediaDetailsDao.insert(details.toEntity())
+            if (owner != null) {
+                syncLibraryEntry(owner, media.toLibraryEntry(), libraryDao.getEntry(owner, id), listEntry, askedAt)
+            }
         }
     }
+
+    /**
+     * Brings the library row for [base]'s title in line with what AniList answered at [askedAt].
+     *
+     * The page shows the entry this fetch brought back while the edit sheet opens on the library row,
+     * which otherwise only moves when the whole list is refetched. Saving a sheet that opened on an
+     * older row sends that older progress back to AniList.
+     */
+    private suspend fun syncLibraryEntry(
+        owner: Int,
+        base: LibraryEntry,
+        local: LibraryEntryEntity?,
+        server: ViewerListEntryFields?,
+        askedAt: Long,
+    ) {
+        when (val plan = planListEntrySync(local, server, askedAt)) {
+            ListEntrySync.Keep -> Unit
+            ListEntrySync.Drop -> libraryDao.deleteByMediaId(owner, base.mediaId)
+            is ListEntrySync.Take -> libraryDao.replaceEntry(
+                base.withListEntry(plan.entry)
+                    .toEntity(base.type ?: MediaType.ANIME)
+                    .copy(ownerId = owner)
+            )
+        }
+    }
+
+    /** The title's half of a library row, filled the way the list sync fills it. */
+    private fun GetMediaDetailsQuery.Media.toLibraryEntry(): LibraryEntry = LibraryEntry(
+        id = 0,
+        mediaId = id,
+        titleRomaji = title?.romaji,
+        titleEnglish = title?.english,
+        titleNative = title?.native,
+        titleUserPreferred = title?.userPreferred ?: "Unknown Title",
+        coverUrl = coverImage?.extraLarge,
+        cover = CoverImage.of(coverImage?.medium, coverImage?.large, coverImage?.extraLarge),
+        progress = 0,
+        totalEpisodes = episodes,
+        totalChapters = chapters,
+        totalVolumes = volumes,
+        type = type,
+        format = format,
+        status = LibraryStatus.UNKNOWN,
+        nextAiringEpisode = nextAiringEpisode?.episode,
+        timeUntilAiring = nextAiringEpisode?.timeUntilAiring,
+        mediaStatus = status?.name,
+        nextAiringEpisodeTime = nextAiringEpisode?.airingAt?.toLong(),
+        mediaStartDate = startDate?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
+        genres = genres?.filterNotNull() ?: emptyList()
+    )
 
     override suspend fun refreshMediaDetailsIfStale(id: Int): Result<Unit> {
         val cached = mediaDetailsDao.getById(id)
