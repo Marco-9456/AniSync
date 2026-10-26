@@ -93,6 +93,8 @@ fun NotificationGroupCard(
     onActivityClick: (Int) -> Unit,
     onThreadClick: (threadId: Int, commentId: Int?) -> Unit,
     modifier: Modifier = Modifier,
+    onStaffClick: (Int) -> Unit = {},
+    onCharacterClick: (Int) -> Unit = {},
     // The target open in the two-pane detail (or null). When this card resolves to that target it
     // shows the Material 3 selection ring (two-pane only).
     selectedTarget: NotificationTarget? = null,
@@ -104,9 +106,13 @@ fun NotificationGroupCard(
 ) {
     val payload = entry.toPayload(LocalResources.current, LocalContext.current)
     // The cover and the avatars take the tap before the card does, so they carry it themselves.
-    val openMedia: (Int) -> Unit = {
-        onOpened()
-        onMediaClick(it)
+    val openSubject: (() -> Unit)? = if (payload.hasSubject) {
+        {
+            onOpened()
+            payload.openSubject(onMediaClick, onStaffClick, onCharacterClick)
+        }
+    } else {
+        null
     }
     val openUser: (String) -> Unit = {
         onOpened()
@@ -127,7 +133,9 @@ fun NotificationGroupCard(
             if (payload.expandableNote) {
                 expanded = !expanded
             } else {
-                payload.handleClick(onMediaClick, onUserClick, onActivityClick, onThreadClick)
+                payload.handleClick(
+                    onMediaClick, onUserClick, onActivityClick, onThreadClick, onStaffClick, onCharacterClick
+                )
             }
         },
         modifier = modifier
@@ -153,7 +161,7 @@ fun NotificationGroupCard(
                 payload = payload,
                 expanded = expanded,
                 isUnread = isUnread,
-                onMediaClick = openMedia
+                onSubjectClick = openSubject
             )
         } else {
             // Social layout: vertical stack — avatars/icon header, headline, subtitle.
@@ -163,7 +171,7 @@ fun NotificationGroupCard(
                 expanded = expanded,
                 isUnread = isUnread,
                 containerColor = containerColor,
-                onMediaClick = openMedia,
+                onSubjectClick = openSubject,
                 onUserClick = openUser
             )
         }
@@ -228,7 +236,7 @@ private fun MediaCardBody(
     payload: GroupPayload,
     expanded: Boolean,
     isUnread: Boolean,
-    onMediaClick: (Int) -> Unit
+    onSubjectClick: (() -> Unit)?
 ) {
     Row(
         modifier = Modifier.padding(16.dp),
@@ -236,7 +244,7 @@ private fun MediaCardBody(
     ) {
         MediaCoverThumb(
             url = payload.leadingMediaCover!!,
-            onClick = { payload.mediaId?.let(onMediaClick) }
+            onClick = onSubjectClick
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -264,14 +272,14 @@ private fun SocialCardBody(
     expanded: Boolean,
     isUnread: Boolean,
     containerColor: Color,
-    onMediaClick: (Int) -> Unit,
+    onSubjectClick: (() -> Unit)?,
     onUserClick: (String) -> Unit
 ) {
     Column(modifier = Modifier.padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             NotificationLeading(
                 payload = payload,
-                onMediaClick = onMediaClick,
+                onSubjectClick = onSubjectClick,
                 onUserClick = onUserClick,
                 containerColor = containerColor
             )
@@ -352,7 +360,7 @@ private fun htmlToPlainExcerpt(html: String): String {
 @Composable
 private fun NotificationLeading(
     payload: GroupPayload,
-    onMediaClick: (Int) -> Unit,
+    onSubjectClick: (() -> Unit)?,
     onUserClick: (String) -> Unit,
     containerColor: Color
 ) {
@@ -361,7 +369,7 @@ private fun NotificationLeading(
         payload.leadingMediaCover != null -> {
             MediaCoverThumb(
                 url = payload.leadingMediaCover,
-                onClick = { payload.mediaId?.let(onMediaClick) }
+                onClick = onSubjectClick
             )
         }
         payload.actors.isNotEmpty() -> {
@@ -448,6 +456,8 @@ private data class GroupPayload(
     val leadingMediaCover: String? = null,
     val activityId: Int? = null,
     val mediaId: Int? = null,
+    val staffId: Int? = null,
+    val characterId: Int? = null,
     val threadId: Int? = null,
     val threadCommentId: Int? = null,
     val userName: String? = null,
@@ -458,13 +468,30 @@ private data class GroupPayload(
         onMediaClick: (Int) -> Unit,
         onUserClick: (String) -> Unit,
         onActivityClick: (Int) -> Unit,
-        onThreadClick: (Int, Int?) -> Unit
+        onThreadClick: (Int, Int?) -> Unit,
+        onStaffClick: (Int) -> Unit,
+        onCharacterClick: (Int) -> Unit
     ) {
         when {
             activityId != null -> onActivityClick(activityId)
             threadId != null -> onThreadClick(threadId, threadCommentId)
-            mediaId != null -> onMediaClick(mediaId)
+            hasSubject -> openSubject(onMediaClick, onStaffClick, onCharacterClick)
             userName != null -> onUserClick(userName)
+        }
+    }
+
+    /** The title, staff member or character the cover stands for. */
+    val hasSubject: Boolean get() = mediaId != null || staffId != null || characterId != null
+
+    fun openSubject(
+        onMediaClick: (Int) -> Unit,
+        onStaffClick: (Int) -> Unit,
+        onCharacterClick: (Int) -> Unit
+    ) {
+        when {
+            mediaId != null -> onMediaClick(mediaId)
+            staffId != null -> onStaffClick(staffId)
+            characterId != null -> onCharacterClick(characterId)
         }
     }
 
@@ -477,6 +504,9 @@ private data class GroupPayload(
             target is NotificationTarget.Thread &&
                 target.threadId == threadId && target.commentId == threadCommentId
         mediaId != null -> target is NotificationTarget.Media && target.mediaId == mediaId
+        staffId != null -> target is NotificationTarget.Staff && target.staffId == staffId
+        characterId != null ->
+            target is NotificationTarget.Character && target.characterId == characterId
         userName != null -> target is NotificationTarget.Profile && target.username == userName
         else -> false
     }

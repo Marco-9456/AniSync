@@ -37,7 +37,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.anisync.android.R
 import com.anisync.android.presentation.activity.ActivityDetailScreen
+import com.anisync.android.presentation.details.CharacterDetailsScreen
 import com.anisync.android.presentation.details.MediaDetailsScreen
+import com.anisync.android.presentation.details.StaffDetailsScreen
 import com.anisync.android.presentation.forum.ThreadDetailScreen
 import com.anisync.android.presentation.navigation.ActivityDetail
 import com.anisync.android.presentation.navigation.CharacterDetails
@@ -97,6 +99,8 @@ fun NotificationsListDetail(
             onThreadClick = { threadId, commentId ->
                 navController.navigate(ForumThreadDetail(threadId, "", commentId ?: 0))
             },
+            onStaffClick = { navController.navigate(StaffDetails(it)) },
+            onCharacterClick = { navController.navigate(CharacterDetails(it)) },
             onSettingsClick = onSettingsClick,
             modifier = modifier,
         )
@@ -122,6 +126,8 @@ fun NotificationsListDetail(
                 onThreadClick = { threadId, commentId ->
                     onSelect(NotificationTarget.Thread(threadId, commentId))
                 },
+                onStaffClick = { onSelect(NotificationTarget.Staff(it)) },
+                onCharacterClick = { onSelect(NotificationTarget.Character(it)) },
                 onSettingsClick = onSettingsClick,
                 selectedTarget = selectedTarget,
             )
@@ -138,6 +144,8 @@ sealed interface NotificationTarget {
     data class Activity(val activityId: Int) : NotificationTarget
     data class Thread(val threadId: Int, val commentId: Int?) : NotificationTarget
     data class Profile(val username: String) : NotificationTarget
+    data class Staff(val staffId: Int) : NotificationTarget
+    data class Character(val characterId: Int) : NotificationTarget
 }
 
 private fun NotificationTarget.toPaneRoute(): Any = when (this) {
@@ -145,6 +153,8 @@ private fun NotificationTarget.toPaneRoute(): Any = when (this) {
     is NotificationTarget.Activity -> ActivityDetail(activityId)
     is NotificationTarget.Thread -> ForumThreadDetail(threadId, "", commentId ?: 0)
     is NotificationTarget.Profile -> UserProfile(username)
+    is NotificationTarget.Staff -> StaffDetails(staffId)
+    is NotificationTarget.Character -> CharacterDetails(characterId)
 }
 
 // Persists the open target across configuration changes. A -1 comment id encodes "no comment".
@@ -155,6 +165,8 @@ private val NotificationTargetSaver = listSaver<NotificationTarget?, Any>(
             is NotificationTarget.Activity -> listOf("activity", target.activityId)
             is NotificationTarget.Thread -> listOf("thread", target.threadId, target.commentId ?: -1)
             is NotificationTarget.Profile -> listOf("profile", target.username)
+            is NotificationTarget.Staff -> listOf("staff", target.staffId)
+            is NotificationTarget.Character -> listOf("character", target.characterId)
             null -> emptyList()
         }
     },
@@ -164,6 +176,8 @@ private val NotificationTargetSaver = listSaver<NotificationTarget?, Any>(
             "activity" -> NotificationTarget.Activity(saved[1] as Int)
             "thread" -> NotificationTarget.Thread(saved[1] as Int, (saved[2] as Int).takeIf { it >= 0 })
             "profile" -> NotificationTarget.Profile(saved[1] as String)
+            "staff" -> NotificationTarget.Staff(saved[1] as Int)
+            "character" -> NotificationTarget.Character(saved[1] as Int)
             else -> null
         }
     },
@@ -279,6 +293,30 @@ private fun NotificationDetailPane(
                     onUserClick = navigateUser,
                     targetCommentId = route.commentId.takeIf { it != 0 },                    onEditThread = { navController.navigate(EditThreadBody(it)) },
                     capContentWidth = false,
+                )
+            }
+
+            composable<StaffDetails> { backStackEntry ->
+                val route: StaffDetails = backStackEntry.toRoute()
+                StaffDetailsScreen(
+                    staffId = route.staffId,
+                    onBackClick = { if (!paneNav.popBackStack()) onClose() },
+                    onMediaClick = { navController.navigate(MediaDetails(it, SOURCE)) },
+                    onCharacterClick = { navController.navigate(CharacterDetails(it)) },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                )
+            }
+
+            composable<CharacterDetails> { backStackEntry ->
+                val route: CharacterDetails = backStackEntry.toRoute()
+                CharacterDetailsScreen(
+                    characterId = route.characterId,
+                    onBackClick = { if (!paneNav.popBackStack()) onClose() },
+                    onMediaClick = { navController.navigate(MediaDetails(it, SOURCE)) },
+                    onStaffClick = { navController.navigate(StaffDetails(it)) },
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
                 )
             }
 
