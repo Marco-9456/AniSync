@@ -98,6 +98,9 @@ interface ProfileRepository {
      */
     suspend fun toggleFollow(userId: Int): Result<Boolean>
 
+    /** Stops [userId] following the viewer. */
+    suspend fun removeFollower(userId: Int): Result<Unit>
+
     /**
      * Fetch user's reviews.
      */

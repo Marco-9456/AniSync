@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.padding
 import android.content.Intent
 import android.net.Uri
 import android.os.SystemClock
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -179,6 +182,27 @@ fun ProfileScreen(
             },
             onDismiss = {
                 viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false))
+            }
+        )
+    }
+
+    uiState.followerToRemove?.let { follower ->
+        AppAlertDialog(
+            onDismissRequest = { viewModel.onAction(ProfileAction.DismissRemoveFollower) },
+            title = { Text(stringResource(R.string.profile_remove_follower_title)) },
+            text = { Text(stringResource(R.string.profile_remove_follower_body, follower.name)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.onAction(ProfileAction.ConfirmRemoveFollower) }) {
+                    Text(
+                        text = stringResource(R.string.profile_remove_follower_confirm),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.onAction(ProfileAction.DismissRemoveFollower) }) {
+                    Text(stringResource(R.string.cancel))
+                }
             }
         )
     }

@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import com.anisync.android.RemoveFollowerMutation
 import com.anisync.android.data.util.InflightTracker
 import com.anisync.android.GetFullUserProfileQuery
 import com.anisync.android.GetUserActivitiesQuery
@@ -656,6 +657,16 @@ class ProfileRepositoryImpl @Inject constructor(
             }
 
             response.data?.ToggleFollow?.isFollowing ?: false
+        }
+    }
+
+    override suspend fun removeFollower(userId: Int): Result<Unit> {
+        return safeApiCall {
+            val response = apolloClient.mutation(RemoveFollowerMutation(userId = userId)).execute()
+            response.exception?.let { throw it }
+            if (response.hasErrors()) {
+                throw Exception(response.errors?.firstOrNull()?.message ?: "Failed to remove follower")
+            }
         }
     }
 

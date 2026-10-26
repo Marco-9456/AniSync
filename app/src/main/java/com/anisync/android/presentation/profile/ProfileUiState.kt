@@ -84,7 +84,9 @@ data class ProfileUiState(
     val isActivitiesPaginating: Boolean = false,
     /** Activity currently being edited via the inline compose sheet, or null if none. */
     val editingActivity: com.anisync.android.domain.UserActivity? = null,
-    val isSavingActivityEdit: Boolean = false
+    val isSavingActivityEdit: Boolean = false,
+    /** The follower the viewer asked to remove, awaiting the confirm dialog. */
+    val followerToRemove: SocialUser? = null
 )
 
 data class StatisticsUiModel(
@@ -233,6 +235,9 @@ sealed interface ProfileAction {
     data object ConsumeMessageSentEvent : ProfileAction
     data object LoadMoreActivities : ProfileAction
     data object LoadMoreSocial : ProfileAction
+    data class AskToRemoveFollower(val follower: SocialUser) : ProfileAction
+    data object ConfirmRemoveFollower : ProfileAction
+    data object DismissRemoveFollower : ProfileAction
     data object LoadMoreReviews : ProfileAction
     data class ToggleActivitySubscription(val activityId: Int) : ProfileAction
     data class ToggleActivityLike(val activityId: Int) : ProfileAction

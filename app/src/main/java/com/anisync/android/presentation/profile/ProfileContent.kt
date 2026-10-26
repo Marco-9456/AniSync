@@ -480,6 +480,11 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onThreadClick = onThreadClick,
                 onCommentClick = onCommentClick,
                 onLoadMore = { onAction(ProfileAction.LoadMoreSocial) },
+                onRemoveFollower = if (uiState.viewerId == profile.id) {
+                    { onAction(ProfileAction.AskToRemoveFollower(it)) }
+                } else {
+                    null
+                },
                 userColumns = portraitColumns
             )
         }

@@ -880,6 +880,11 @@
     <string name="profile_social_following">Following</string>
     <string name="profile_social_followers">Followers</string>
     <string name="profile_social_mutuals">Mutual Followers</string>
+    <string name="profile_remove_follower_hint">Hold a follower to remove them.</string>
+    <string name="profile_remove_follower_title">Remove follower?</string>
+    <string name="profile_remove_follower_body">%1$s will no longer follow you.</string>
+    <string name="profile_remove_follower_confirm">Remove</string>
+    <string name="a11y_remove_follower">Remove follower</string>
     <string name="profile_social_forum_threads">Forum Threads</string>
     <string name="profile_social_forum_comments">Forum Comments</string>
     <string name="profile_view_biography">View Biography</string>

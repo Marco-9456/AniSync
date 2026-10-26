@@ -156,7 +156,8 @@ class ProfileViewModel @Inject constructor(
         val isFollowerOfViewer: Boolean = false,
         val isFollowLoading: Boolean = false,
         val editingActivity: com.anisync.android.domain.UserActivity? = null,
-        val isSavingActivityEdit: Boolean = false
+        val isSavingActivityEdit: Boolean = false,
+        val followerToRemove: com.anisync.android.domain.SocialUser? = null
     )
 
     private val localState = MutableStateFlow(ProfileUiLocalState())
@@ -503,6 +504,7 @@ class ProfileViewModel @Inject constructor(
             messageSentEvent = local.messageSentEvent,
             editingActivity = local.editingActivity,
             isSavingActivityEdit = local.isSavingActivityEdit,
+            followerToRemove = local.followerToRemove,
             socialFollowing = social.socialFollowing,
             socialFollowers = social.socialFollowers,
             socialMutuals = social.socialMutuals,
@@ -696,6 +698,11 @@ class ProfileViewModel @Inject constructor(
 
             is ProfileAction.LoadMoreActivities -> loadMoreActivities()
             is ProfileAction.LoadMoreSocial -> loadMoreSocial()
+            is ProfileAction.AskToRemoveFollower ->
+                localState.update { it.copy(followerToRemove = action.follower) }
+            is ProfileAction.DismissRemoveFollower ->
+                localState.update { it.copy(followerToRemove = null) }
+            is ProfileAction.ConfirmRemoveFollower -> removeFollower()
             is ProfileAction.LoadMoreReviews -> loadMoreReviews()
             is ProfileAction.ToggleActivitySubscription -> toggleActivitySubscription(action.activityId)
             is ProfileAction.ToggleActivityLike -> toggleActivityLike(action.activityId)
@@ -1623,6 +1630,29 @@ class ProfileViewModel @Inject constructor(
                 is Result.Error -> {
                     socialState.update { it.copy(isSocialPaginating = false) }
                 }
+            }
+        }
+    }
+
+    private fun removeFollower() {
+        val follower = localState.value.followerToRemove ?: return
+        localState.update { it.copy(followerToRemove = null) }
+        viewModelScope.launch {
+            when (val result = profileRepository.removeFollower(follower.id)) {
+                is Result.Success -> socialState.update { social ->
+                    val wasMutual = social.socialMutuals.any { it.id == follower.id }
+                    social.copy(
+                        socialFollowers = social.socialFollowers.filterNot { it.id == follower.id },
+                        socialMutuals = social.socialMutuals.filterNot { it.id == follower.id },
+                        followersTotal = social.followersTotal?.minus(1)?.coerceAtLeast(0),
+                        mutualsTotal = if (wasMutual) {
+                            social.mutualsTotal?.minus(1)?.coerceAtLeast(0)
+                        } else {
+                            social.mutualsTotal
+                        }
+                    )
+                }
+                is Result.Error -> toastManager.showResultError(result)
             }
         }
     }

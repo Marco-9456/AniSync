@@ -547,6 +547,12 @@ mutation ToggleUserFollow($userId: Int!) {
   }
 }
 
+mutation RemoveFollower($userId: Int!) {
+  DeleteFollower(userId: $userId) {
+    id
+  }
+}
+
 mutation SaveMessageActivity(
   $id: Int,
   $recipientId: Int!,
