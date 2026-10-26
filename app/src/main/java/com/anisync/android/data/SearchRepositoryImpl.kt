@@ -40,11 +40,18 @@ class SearchRepositoryImpl @Inject constructor(
      * Resolves the `isAdult` query filter. The per-search [AdultMode] chip takes precedence; when it
      * is [AdultMode.ANY] (the default) the global "show adult content" preference acts as a floor, so
      * a user with adult content off never sees 18+ results unless they explicitly ask for them via
-     * the chip. This is the fix for the previously-inert toggle.
+     * the chip. This is the fix for the previously-inert toggle. AniList's account also says whether
+     * search and quick search take in 18+ titles by default, and leaves applying that to each app.
      */
-    private fun resolveAdultFilter(mode: com.anisync.android.domain.AdultMode): Optional<Boolean?> =
-        resolveAdultIsAdult(mode, appSettings.showAdultContent.value)
+    private fun resolveAdultFilter(
+        mode: com.anisync.android.domain.AdultMode,
+        quickSearch: Boolean,
+    ): Optional<Boolean?> {
+        val includeByDefault =
+            if (quickSearch) appSettings.adultInQuickSearch.value else appSettings.adultInSearch.value
+        return resolveAdultIsAdult(mode, appSettings.showAdultContent.value, includeByDefault)
             ?.let { Optional.present(it) } ?: Optional.absent()
+    }
 
     private fun SearchFilters.sortFor(type: MediaType, query: String): MediaSort =
         sort.toMediaSort(type, appSettings.titleLanguage.value, hasQuery = query.isNotBlank())
@@ -95,7 +102,7 @@ class SearchRepositoryImpl @Inject constructor(
                     chapters_lesser = filters.chapters.lesser(),
                     countryOfOrigin = filters.country?.let { Optional.present(it.code) }
                         ?: Optional.absent(),
-                    isAdult = resolveAdultFilter(filters.adultMode)
+                    isAdult = resolveAdultFilter(filters.adultMode, quickSearch = true)
                 )
             )
                 .fetchPolicy(FetchPolicy.NetworkOnly)
@@ -221,7 +228,7 @@ class SearchRepositoryImpl @Inject constructor(
                         chapters_lesser = filters.chapters.lesser(),
                         countryOfOrigin = filters.country?.let { Optional.present(it.code) }
                             ?: Optional.absent(),
-                        isAdult = resolveAdultFilter(filters.adultMode)
+                        isAdult = resolveAdultFilter(filters.adultMode, quickSearch = false)
                     )
                 )
                     .fetchPolicy(FetchPolicy.NetworkFirst)

@@ -39,6 +39,18 @@ class UserOptionsMappingTest {
         assertEquals(true, resolveAdultIsAdult(AdultMode.ONLY, showAdultContent = true))
     }
 
+    @Test
+    fun `ANY hides adult when the account leaves it out of this search`() {
+        assertEquals(
+            false,
+            resolveAdultIsAdult(AdultMode.ANY, showAdultContent = true, includeByDefault = false),
+        )
+        assertEquals(
+            true,
+            resolveAdultIsAdult(AdultMode.ONLY, showAdultContent = true, includeByDefault = false),
+        )
+    }
+
     // ── filterAdultActivities (feed — fixes #53) ─────────────────────────────────────────────────
 
     private fun activity(id: Int, isAdult: Boolean, userId: Int? = null) =
