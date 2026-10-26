@@ -123,8 +123,8 @@ query GetMediaDetails($id: Int) {
             edges {
                 # Version 1 has no SOURCE value at all, so every source relation collapses into
                 # ADAPTATION — a light novel an anime was adapted from reads as an adaptation of it.
-                # Version 2 is the enum the AniList site itself renders (#126).
-                relationType(version: 2)
+                # Version 3 adds SAME_UNIVERSE, which version 2 files under OTHER (#126).
+                relationType(version: 3)
                 node {
                     id
                     title {
