@@ -81,12 +81,25 @@ class LibrarySyncWorker @AssistedInject constructor(
         }
 
         /**
+         * Fetches [type] again even when a sync is already under way, since that one can have started
+         * before AniList changed the scores.
+         */
+        fun resync(context: Context, type: MediaType) {
+            enqueue(context, type, policy = ExistingWorkPolicy.REPLACE)
+        }
+
+        /**
          * Asks for a sync of [type], one in flight per type at most.
          *
          * KEEP not REPLACE: the widget asks on every render while the list is empty, and replacing
          * would restart the fetch each time and never finish it.
          */
-        fun enqueue(context: Context, type: MediaType, onlyIfEmpty: Boolean = false) {
+        fun enqueue(
+            context: Context,
+            type: MediaType,
+            onlyIfEmpty: Boolean = false,
+            policy: ExistingWorkPolicy = ExistingWorkPolicy.KEEP,
+        ) {
             val request = OneTimeWorkRequestBuilder<LibrarySyncWorker>()
                 .setInputData(
                     Data.Builder()
@@ -103,7 +116,7 @@ class LibrarySyncWorker @AssistedInject constructor(
 
             WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(
                 "library_sync_${type.rawValue}",
-                ExistingWorkPolicy.KEEP,
+                policy,
                 request
             )
         }

@@ -21,6 +21,7 @@ import com.anisync.android.domain.patchForFields
 import com.anisync.android.domain.pushBatches
 import com.anisync.android.domain.reconciledWith
 import com.anisync.android.domain.takeFields
+import com.anisync.android.worker.LibrarySyncWorker
 import com.anisync.android.worker.UserOptionsFlushWorker
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
@@ -44,6 +45,7 @@ import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.anisync.android.type.MediaListStatus as ApiListStatus
+import com.anisync.android.type.MediaType
 import com.anisync.android.type.ScoreFormat as ApiScoreFormat
 import com.anisync.android.type.UserStaffNameLanguage as ApiStaffNameLanguage
 import com.anisync.android.type.UserTitleLanguage as ApiTitleLanguage
@@ -103,7 +105,9 @@ class UserOptionsRepositoryImpl @Inject constructor(
     override fun applyEdit(patch: UserOptionsPatch) {
         val accountId = currentAccountId() ?: return
         commit(accountId, (_state.value ?: LocalOptionsState()).edited(patch))
-        scheduleFlush()
+        // The library shows every score in the scoring system, and AniList only converts them once the
+        // new one reaches it, so that change goes out without waiting.
+        scheduleFlush(immediate = patch.scoreFormat != null)
     }
 
     override suspend fun flush() {
@@ -169,15 +173,21 @@ class UserOptionsRepositoryImpl @Inject constructor(
 
     /** Persist, publish, and mirror behavior-affecting values into [AppSettings]. */
     private fun commit(accountId: Int, state: LocalOptionsState) {
+        val before = _state.value?.serverSnapshot?.scoreFormat
         store.write(accountId, state)
         _state.value = state
         mirror(state.local)
+        // AniList has converted every list score to the new scoring system, so the stored ones are stale.
+        if (before != null && before != state.serverSnapshot.scoreFormat) {
+            LibrarySyncWorker.resync(context, MediaType.ANIME)
+            LibrarySyncWorker.resync(context, MediaType.MANGA)
+        }
     }
 
-    private fun scheduleFlush() {
+    private fun scheduleFlush(immediate: Boolean = false) {
         debounceJob?.cancel()
         debounceJob = scope.launch {
-            delay(FLUSH_DEBOUNCE_MS)
+            if (!immediate) delay(FLUSH_DEBOUNCE_MS)
             // Launched beside the debounce rather than inside it, so an edit made while a push is out
             // restarts the wait without cancelling a request AniList may already have applied.
             scope.launch { flush() }
