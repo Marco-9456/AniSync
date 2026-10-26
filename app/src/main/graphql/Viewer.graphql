@@ -9,6 +9,9 @@ query GetViewer {
     options {
       titleLanguage
       displayAdultContent
+      includeAdultContentInSearch
+      includeAdultContentInQuickSearch
+      displayAdultActivities
       airingNotifications
       profileColor
       timezone

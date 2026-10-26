@@ -89,4 +89,21 @@ class UserOptionsSyncTest {
         assertEquals(ScoreFormat.POINT_5, applied.scoreFormat) // selected → taken
         assertEquals(base.airingNotifications, applied.airingNotifications) // unselected → unchanged
     }
+
+    @Test
+    fun `the 18+ sub-options sync as fields of their own`() {
+        val server = base.copy(includeAdultContentInSearch = false, displayAdultActivities = false)
+        assertEquals(
+            setOf(UserOptionField.INCLUDE_ADULT_IN_SEARCH, UserOptionField.DISPLAY_ADULT_ACTIVITIES),
+            base.differingFields(server),
+        )
+
+        val patch = server.patchForFields(setOf(UserOptionField.DISPLAY_ADULT_ACTIVITIES))
+        assertEquals(setOf(UserOptionField.DISPLAY_ADULT_ACTIVITIES), patch.affectedFields())
+
+        val applied = base.applyPatch(patch)
+        assertEquals(false, applied.displayAdultActivities)
+        assertEquals(base.includeAdultContentInSearch, applied.includeAdultContentInSearch)
+        assertEquals(base.includeAdultContentInQuickSearch, applied.includeAdultContentInQuickSearch)
+    }
 }

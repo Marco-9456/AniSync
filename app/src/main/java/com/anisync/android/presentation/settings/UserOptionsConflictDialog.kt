@@ -86,6 +86,9 @@ private fun UserOptionsConflictDialog(
 /** Human-readable label for a conflicting option field. */
 private fun UserOptionField.displayName(): String = when (this) {
     UserOptionField.DISPLAY_ADULT_CONTENT -> "Adult content"
+    UserOptionField.INCLUDE_ADULT_IN_SEARCH -> "Adult titles in search"
+    UserOptionField.INCLUDE_ADULT_IN_QUICK_SEARCH -> "Adult titles in quick search"
+    UserOptionField.DISPLAY_ADULT_ACTIVITIES -> "Other people's adult activity"
     UserOptionField.TITLE_LANGUAGE -> "Title language"
     UserOptionField.STAFF_NAME_LANGUAGE -> "Staff & character names"
     UserOptionField.SCORE_FORMAT -> "Scoring system"
@@ -99,6 +102,9 @@ private fun UserOptionField.displayName(): String = when (this) {
 /** Human-readable value of a single field, for spelling out each side of a conflict. */
 private fun AniListUserOptions.conflictValueLabel(field: UserOptionField): String = when (field) {
     UserOptionField.DISPLAY_ADULT_CONTENT -> if (displayAdultContent) "On" else "Off"
+    UserOptionField.INCLUDE_ADULT_IN_SEARCH -> if (includeAdultContentInSearch) "On" else "Off"
+    UserOptionField.INCLUDE_ADULT_IN_QUICK_SEARCH -> if (includeAdultContentInQuickSearch) "On" else "Off"
+    UserOptionField.DISPLAY_ADULT_ACTIVITIES -> if (displayAdultActivities) "On" else "Off"
     UserOptionField.TITLE_LANGUAGE -> titleLanguage?.toBaseLanguage().label()
     UserOptionField.STAFF_NAME_LANGUAGE -> staffNameLanguage.label()
     UserOptionField.SCORE_FORMAT -> scoreFormat.label()

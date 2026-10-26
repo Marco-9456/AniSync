@@ -14,6 +14,10 @@ import kotlinx.serialization.Serializable
 data class AniListUserOptions(
     val titleLanguage: AniListTitleLanguage? = null,
     val displayAdultContent: Boolean = false,
+    /** The three 18+ sub-options. AniList only applies them while [displayAdultContent] is on. */
+    val includeAdultContentInSearch: Boolean = true,
+    val includeAdultContentInQuickSearch: Boolean = true,
+    val displayAdultActivities: Boolean = true,
     val airingNotifications: Boolean = true,
     /** AniList profile highlight color name (blue/purple/pink/orange/red/green/gray), or null. */
     val profileColor: String? = null,
@@ -65,6 +69,9 @@ enum class AniListListActivityStatus {
  */
 data class UserOptionsPatch(
     val displayAdultContent: Boolean? = null,
+    val includeAdultContentInSearch: Boolean? = null,
+    val includeAdultContentInQuickSearch: Boolean? = null,
+    val displayAdultActivities: Boolean? = null,
     val titleLanguage: AniListTitleLanguage? = null,
     val staffNameLanguage: AniListStaffNameLanguage? = null,
     val scoreFormat: ScoreFormat? = null,

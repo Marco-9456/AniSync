@@ -9,6 +9,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class UserOptionField {
     DISPLAY_ADULT_CONTENT,
+    INCLUDE_ADULT_IN_SEARCH,
+    INCLUDE_ADULT_IN_QUICK_SEARCH,
+    DISPLAY_ADULT_ACTIVITIES,
     TITLE_LANGUAGE,
     STAFF_NAME_LANGUAGE,
     SCORE_FORMAT,
@@ -49,6 +52,11 @@ fun AniListUserOptions.differingFields(other: AniListUserOptions): Set<UserOptio
 private fun AniListUserOptions.valueEquals(other: AniListUserOptions, field: UserOptionField): Boolean =
     when (field) {
         UserOptionField.DISPLAY_ADULT_CONTENT -> displayAdultContent == other.displayAdultContent
+        UserOptionField.INCLUDE_ADULT_IN_SEARCH ->
+            includeAdultContentInSearch == other.includeAdultContentInSearch
+        UserOptionField.INCLUDE_ADULT_IN_QUICK_SEARCH ->
+            includeAdultContentInQuickSearch == other.includeAdultContentInQuickSearch
+        UserOptionField.DISPLAY_ADULT_ACTIVITIES -> displayAdultActivities == other.displayAdultActivities
         UserOptionField.TITLE_LANGUAGE -> titleLanguage == other.titleLanguage
         UserOptionField.STAFF_NAME_LANGUAGE -> staffNameLanguage == other.staffNameLanguage
         UserOptionField.SCORE_FORMAT -> scoreFormat == other.scoreFormat
@@ -63,6 +71,9 @@ private fun AniListUserOptions.valueEquals(other: AniListUserOptions, field: Use
 /** The fields a patch sets (its non-null members). */
 fun UserOptionsPatch.affectedFields(): Set<UserOptionField> = buildSet {
     if (displayAdultContent != null) add(UserOptionField.DISPLAY_ADULT_CONTENT)
+    if (includeAdultContentInSearch != null) add(UserOptionField.INCLUDE_ADULT_IN_SEARCH)
+    if (includeAdultContentInQuickSearch != null) add(UserOptionField.INCLUDE_ADULT_IN_QUICK_SEARCH)
+    if (displayAdultActivities != null) add(UserOptionField.DISPLAY_ADULT_ACTIVITIES)
     if (titleLanguage != null) add(UserOptionField.TITLE_LANGUAGE)
     if (staffNameLanguage != null) add(UserOptionField.STAFF_NAME_LANGUAGE)
     if (scoreFormat != null) add(UserOptionField.SCORE_FORMAT)
@@ -76,6 +87,9 @@ fun UserOptionsPatch.affectedFields(): Set<UserOptionField> = buildSet {
 /** Returns a copy with the patch's non-null fields applied. */
 fun AniListUserOptions.applyPatch(patch: UserOptionsPatch): AniListUserOptions = copy(
     displayAdultContent = patch.displayAdultContent ?: displayAdultContent,
+    includeAdultContentInSearch = patch.includeAdultContentInSearch ?: includeAdultContentInSearch,
+    includeAdultContentInQuickSearch = patch.includeAdultContentInQuickSearch ?: includeAdultContentInQuickSearch,
+    displayAdultActivities = patch.displayAdultActivities ?: displayAdultActivities,
     titleLanguage = patch.titleLanguage ?: titleLanguage,
     staffNameLanguage = patch.staffNameLanguage ?: staffNameLanguage,
     scoreFormat = patch.scoreFormat ?: scoreFormat,
@@ -89,6 +103,11 @@ fun AniListUserOptions.applyPatch(patch: UserOptionsPatch): AniListUserOptions =
 /** Builds a patch carrying this snapshot's values for exactly [fields] (for pushing dirty fields). */
 fun AniListUserOptions.patchForFields(fields: Set<UserOptionField>): UserOptionsPatch = UserOptionsPatch(
     displayAdultContent = displayAdultContent.takeIf { UserOptionField.DISPLAY_ADULT_CONTENT in fields },
+    includeAdultContentInSearch =
+        includeAdultContentInSearch.takeIf { UserOptionField.INCLUDE_ADULT_IN_SEARCH in fields },
+    includeAdultContentInQuickSearch =
+        includeAdultContentInQuickSearch.takeIf { UserOptionField.INCLUDE_ADULT_IN_QUICK_SEARCH in fields },
+    displayAdultActivities = displayAdultActivities.takeIf { UserOptionField.DISPLAY_ADULT_ACTIVITIES in fields },
     titleLanguage = titleLanguage.takeIf { UserOptionField.TITLE_LANGUAGE in fields },
     staffNameLanguage = staffNameLanguage.takeIf { UserOptionField.STAFF_NAME_LANGUAGE in fields },
     scoreFormat = scoreFormat.takeIf { UserOptionField.SCORE_FORMAT in fields },

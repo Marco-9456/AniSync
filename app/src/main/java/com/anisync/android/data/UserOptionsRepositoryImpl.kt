@@ -217,6 +217,11 @@ class UserOptionsRepositoryImpl @Inject constructor(
     /** The options that drive local app behavior always follow the local working copy. */
     private fun mirror(local: AniListUserOptions) {
         appSettings.setShowAdultContent(local.displayAdultContent)
+        appSettings.setAdultSubOptions(
+            inSearch = local.includeAdultContentInSearch,
+            inQuickSearch = local.includeAdultContentInQuickSearch,
+            othersActivity = local.displayAdultActivities,
+        )
         local.titleLanguage?.let { appSettings.setTitleLanguage(it.toLocalTitleLanguage()) }
         local.staffNameLanguage?.let { appSettings.setStaffNameLanguage(it.toLocalStaffNameLanguage()) }
         local.scoreFormat?.let { appSettings.setUserScoreFormat(it) }
@@ -229,6 +234,9 @@ class UserOptionsRepositoryImpl @Inject constructor(
     private fun GetViewerQuery.Viewer.toDomain(): AniListUserOptions = buildOptions(
         titleLanguage = options?.titleLanguage,
         displayAdultContent = options?.displayAdultContent,
+        includeAdultContentInSearch = options?.includeAdultContentInSearch,
+        includeAdultContentInQuickSearch = options?.includeAdultContentInQuickSearch,
+        displayAdultActivities = options?.displayAdultActivities,
         airingNotifications = options?.airingNotifications,
         profileColor = options?.profileColor,
         timezone = options?.timezone,
@@ -242,6 +250,9 @@ class UserOptionsRepositoryImpl @Inject constructor(
     private fun UpdateUserOptionsMutation.UpdateUser.toDomain(): AniListUserOptions = buildOptions(
         titleLanguage = options?.titleLanguage,
         displayAdultContent = options?.displayAdultContent,
+        includeAdultContentInSearch = options?.includeAdultContentInSearch,
+        includeAdultContentInQuickSearch = options?.includeAdultContentInQuickSearch,
+        displayAdultActivities = options?.displayAdultActivities,
         airingNotifications = options?.airingNotifications,
         profileColor = options?.profileColor,
         timezone = options?.timezone,
@@ -255,6 +266,9 @@ class UserOptionsRepositoryImpl @Inject constructor(
     private fun buildOptions(
         titleLanguage: ApiTitleLanguage?,
         displayAdultContent: Boolean?,
+        includeAdultContentInSearch: Boolean?,
+        includeAdultContentInQuickSearch: Boolean?,
+        displayAdultActivities: Boolean?,
         airingNotifications: Boolean?,
         profileColor: String?,
         timezone: String?,
@@ -266,6 +280,9 @@ class UserOptionsRepositoryImpl @Inject constructor(
     ): AniListUserOptions = AniListUserOptions(
         titleLanguage = titleLanguage.toDomain(),
         displayAdultContent = displayAdultContent ?: false,
+        includeAdultContentInSearch = includeAdultContentInSearch ?: true,
+        includeAdultContentInQuickSearch = includeAdultContentInQuickSearch ?: true,
+        displayAdultActivities = displayAdultActivities ?: true,
         airingNotifications = airingNotifications ?: true,
         profileColor = profileColor,
         timezone = timezone,
@@ -281,6 +298,9 @@ class UserOptionsRepositoryImpl @Inject constructor(
 
     private fun UserOptionsPatch.toMutation(): UpdateUserOptionsMutation = UpdateUserOptionsMutation(
         displayAdultContent = displayAdultContent.toOptional(),
+        includeAdultContentInSearch = includeAdultContentInSearch.toOptional(),
+        includeAdultContentInQuickSearch = includeAdultContentInQuickSearch.toOptional(),
+        displayAdultActivities = displayAdultActivities.toOptional(),
         titleLanguage = (titleLanguage?.toApi()).toOptional(),
         staffNameLanguage = (staffNameLanguage?.toApi()).toOptional(),
         scoreFormat = (scoreFormat?.toApi()).toOptional(),

@@ -405,6 +405,16 @@ class AppSettings @Inject constructor(
     )
     val showAdultContent: StateFlow<Boolean> = _showAdultContent.asStateFlow()
 
+    // AniList's 18+ sub-options, mirrored the same way. They only count while adult content is on.
+    private val _adultInSearch = MutableStateFlow(prefs.getBoolean(KEY_ADULT_IN_SEARCH, true))
+    val adultInSearch: StateFlow<Boolean> = _adultInSearch.asStateFlow()
+
+    private val _adultInQuickSearch = MutableStateFlow(prefs.getBoolean(KEY_ADULT_IN_QUICK_SEARCH, true))
+    val adultInQuickSearch: StateFlow<Boolean> = _adultInQuickSearch.asStateFlow()
+
+    private val _othersAdultActivity = MutableStateFlow(prefs.getBoolean(KEY_OTHERS_ADULT_ACTIVITY, true))
+    val othersAdultActivity: StateFlow<Boolean> = _othersAdultActivity.asStateFlow()
+
     /**
      * Discover's rail order, per media type. The two tabs do not carry the same set (the airing
      * timeline is anime only, Releasing now is manga only), so one shared order could not describe
@@ -1117,6 +1127,17 @@ class AppSettings @Inject constructor(
         prefs.edit().putBoolean(KEY_SHOW_ADULT_CONTENT, show).apply()
     }
 
+    fun setAdultSubOptions(inSearch: Boolean, inQuickSearch: Boolean, othersActivity: Boolean) {
+        _adultInSearch.value = inSearch
+        _adultInQuickSearch.value = inQuickSearch
+        _othersAdultActivity.value = othersActivity
+        prefs.edit()
+            .putBoolean(KEY_ADULT_IN_SEARCH, inSearch)
+            .putBoolean(KEY_ADULT_IN_QUICK_SEARCH, inQuickSearch)
+            .putBoolean(KEY_OTHERS_ADULT_ACTIVITY, othersActivity)
+            .apply()
+    }
+
     fun setDiscoverSearchViewMode(mode: DiscoverViewMode) {
         _discoverSearchViewMode.value = mode
         prefs.edit().putInt(KEY_DISCOVER_SEARCH_VIEW_MODE, mode.ordinal).apply()
@@ -1468,6 +1489,9 @@ companion object {
         private const val KEY_USER_SCORE_FORMAT = "user_score_format"
         private const val KEY_SHOW_PRIVATE_ENTRIES = "show_private_entries"
         private const val KEY_SHOW_ADULT_CONTENT = "show_adult_content"
+        private const val KEY_ADULT_IN_SEARCH = "adult_in_search"
+        private const val KEY_ADULT_IN_QUICK_SEARCH = "adult_in_quick_search"
+        private const val KEY_OTHERS_ADULT_ACTIVITY = "others_adult_activity"
         private const val KEY_STAFF_NAME_LANGUAGE = "staff_name_language"
         private const val KEY_DISCOVER_SEARCH_VIEW_MODE = "discover_search_view_mode"
         private const val KEY_LAST_SELECTED_ANIME_TAB = "last_selected_anime_tab"

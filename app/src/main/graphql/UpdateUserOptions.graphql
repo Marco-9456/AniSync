@@ -1,5 +1,8 @@
 mutation UpdateUserOptions(
   $displayAdultContent: Boolean,
+  $includeAdultContentInSearch: Boolean,
+  $includeAdultContentInQuickSearch: Boolean,
+  $displayAdultActivities: Boolean,
   $titleLanguage: UserTitleLanguage,
   $staffNameLanguage: UserStaffNameLanguage,
   $scoreFormat: ScoreFormat,
@@ -11,6 +14,9 @@ mutation UpdateUserOptions(
 ) {
   UpdateUser(
     displayAdultContent: $displayAdultContent,
+    includeAdultContentInSearch: $includeAdultContentInSearch,
+    includeAdultContentInQuickSearch: $includeAdultContentInQuickSearch,
+    displayAdultActivities: $displayAdultActivities,
     titleLanguage: $titleLanguage,
     staffNameLanguage: $staffNameLanguage,
     scoreFormat: $scoreFormat,
@@ -24,6 +30,9 @@ mutation UpdateUserOptions(
     options {
       titleLanguage
       displayAdultContent
+      includeAdultContentInSearch
+      includeAdultContentInQuickSearch
+      displayAdultActivities
       airingNotifications
       profileColor
       timezone
