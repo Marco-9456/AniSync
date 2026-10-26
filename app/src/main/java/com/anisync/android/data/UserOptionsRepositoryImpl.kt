@@ -178,7 +178,9 @@ class UserOptionsRepositoryImpl @Inject constructor(
         debounceJob?.cancel()
         debounceJob = scope.launch {
             delay(FLUSH_DEBOUNCE_MS)
-            flush()
+            // Launched beside the debounce rather than inside it, so an edit made while a push is out
+            // restarts the wait without cancelling a request AniList may already have applied.
+            scope.launch { flush() }
         }
         // Safety net: survives process death and waits for connectivity.
         UserOptionsFlushWorker.enqueue(context)
