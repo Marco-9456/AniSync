@@ -38,4 +38,16 @@ class ContentLimitsTest {
         assertEquals(3, ContentLimits.reviewBodyLength("a​​b"))
         assertEquals(3, ContentLimits.reviewBodyLength("a \n\n b"))
     }
+
+    @Test
+    fun `an emoji counts as one character, as AniList counts it`() {
+        assertEquals(1, ContentLimits.characterCount("🐢"))
+        assertEquals(3, ContentLimits.characterCount("a🐢b"))
+    }
+
+    @Test
+    fun `cap never splits an emoji`() {
+        assertEquals("ab🐢", ContentLimits.cap("ab🐢cd", 3))
+        assertEquals("short", ContentLimits.cap("short", 10))
+    }
 }

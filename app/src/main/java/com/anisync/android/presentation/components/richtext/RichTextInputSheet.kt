@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
+import com.anisync.android.domain.ContentLimits
 import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -87,7 +88,9 @@ fun RichTextInputSheet(
     enablePreview: Boolean = true,
     enableMediaAttach: Boolean = true,
     fullScreen: Boolean = false,
-    isSubmitEnabled: (body: String) -> Boolean = { it.trim().length in minLength..maxLength },
+    isSubmitEnabled: (body: String) -> Boolean = {
+        ContentLimits.characterCount(it.trim()) in minLength..maxLength
+    },
     bottomBarLeading: (@Composable RowScope.() -> Unit)? = null
 ) {
     val bodyState = rememberSaveable(prefillBody, saver = TextFieldState.Saver) {
@@ -274,7 +277,7 @@ fun RichTextInputSheet(
                                     )
                                     if (!counterInCorner) {
                                         RichTextCharCounter(
-                                            length = bodyState.text.length,
+                                            length = ContentLimits.characterCount(bodyState.text),
                                             maxLength = maxLength,
                                             modifier = Modifier
                                                 .align(Alignment.End)
@@ -284,7 +287,7 @@ fun RichTextInputSheet(
                                 }
                                 if (counterInCorner) {
                                     RichTextCharCounter(
-                                        length = bodyState.text.length,
+                                        length = ContentLimits.characterCount(bodyState.text),
                                         maxLength = maxLength,
                                         modifier = Modifier
                                             .align(Alignment.BottomEnd)

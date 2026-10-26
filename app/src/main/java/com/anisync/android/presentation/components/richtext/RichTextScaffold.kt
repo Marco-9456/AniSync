@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.BottomAppBarDefaults
+import com.anisync.android.domain.ContentLimits
 import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -105,7 +106,7 @@ fun RichTextScaffold(
     autoFocusBody: Boolean = true,
     minLength: Int = 1,
     maxLength: Int = 10_000,
-    measureForMin: (String) -> Int = { it.trim().length },
+    measureForMin: (String) -> Int = { ContentLimits.characterCount(it.trim()) },
     showMinProgress: Boolean = false,
     enableMediaAttach: Boolean = true,
     insertController: RichTextInsertController? = null,
@@ -181,7 +182,7 @@ fun RichTextScaffold(
     }
     val meetsMinLength = minMeasure >= minLength
     val withinMaxLength by remember(maxLength) {
-        derivedStateOf { bodyState.text.length <= maxLength }
+        derivedStateOf { ContentLimits.characterCount(bodyState.text) <= maxLength }
     }
     val hasBodyChanges by remember {
         derivedStateOf { bodyState.text.toString() != initialBodySnapshot }
@@ -268,7 +269,7 @@ fun RichTextScaffold(
             }
             val countingToMin = showMinProgress && !meetsMinLength
             RichTextCharCounter(
-                length = if (countingToMin) minMeasure else bodyState.text.length,
+                length = if (countingToMin) minMeasure else ContentLimits.characterCount(bodyState.text),
                 maxLength = if (countingToMin) minLength else maxLength,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
                 isMinimum = countingToMin

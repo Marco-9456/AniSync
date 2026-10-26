@@ -4,6 +4,7 @@ import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.delete
+import com.anisync.android.domain.ContentLimits
 
 /**
  * Caps the field at [maxLength] characters. Excess input is silently dropped
@@ -13,7 +14,9 @@ import androidx.compose.foundation.text.input.delete
  */
 internal class MaxLengthInputTransformation(private val maxLength: Int) : InputTransformation {
     override fun TextFieldBuffer.transformInput() {
-        if (length > maxLength) delete(maxLength, length)
+        val text = asCharSequence()
+        if (ContentLimits.characterCount(text) <= maxLength) return
+        delete(Character.offsetByCodePoints(text, 0, maxLength), length)
     }
 }
 

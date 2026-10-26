@@ -167,7 +167,7 @@ class CreateThreadViewModel @Inject constructor(
         val bodyBounds = ContentLimits.ThreadBody
 
         var hasError = false
-        val titleLength = state.title.trim().length
+        val titleLength = ContentLimits.characterCount(state.title.trim())
         if (titleLength < titleBounds.min) {
             _uiState.update {
                 it.copy(titleError = "Title must be at least ${titleBounds.min} characters")
@@ -179,8 +179,8 @@ class CreateThreadViewModel @Inject constructor(
             }
             hasError = true
         }
-        val bodyLength = state.body.length
-        if (state.body.trim().length < bodyBounds.min) {
+        val bodyLength = ContentLimits.characterCount(state.body)
+        if (ContentLimits.characterCount(state.body.trim()) < bodyBounds.min) {
             _uiState.update {
                 it.copy(bodyError = "Body must be at least ${bodyBounds.min} characters")
             }

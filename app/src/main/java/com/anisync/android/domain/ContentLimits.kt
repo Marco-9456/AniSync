@@ -30,6 +30,13 @@ object ContentLimits {
         fun isValid(length: Int) = length in min..max
     }
 
+    /** AniList counts characters, so an emoji is one even though it takes two UTF-16 units. */
+    fun characterCount(text: CharSequence): Int = Character.codePointCount(text, 0, text.length)
+
+    /** [text] cut to at most [max] characters, never through the middle of an emoji. */
+    fun cap(text: String, max: Int): String =
+        if (characterCount(text) <= max) text else text.substring(0, text.offsetByCodePoints(0, max))
+
     private val ImageMarkdown = Regex("""!\[[\s\S]*?]\([\s\S]*?\)""")
     private val LinkTarget = Regex("""]\([\s\S]*?\)""")
     private val Embed = Regex("""(img\d*%?|webm|youtube)\([\s\S]*?\)""", RegexOption.IGNORE_CASE)
@@ -53,5 +60,5 @@ object ContentLimits {
         .replace(Invisible, " ")
         .replace(WhitespaceRun, " ")
         .trim()
-        .length
+        .let(::characterCount)
 }

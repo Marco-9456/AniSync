@@ -97,7 +97,7 @@ class WriteReviewViewModel @Inject constructor(
         val scoreBounds = ContentLimits.ReviewScore
 
         var hasError = false
-        val summaryLen = state.summary.trim().length
+        val summaryLen = ContentLimits.characterCount(state.summary.trim())
         if (!summaryBounds.isValid(summaryLen)) {
             _uiState.update {
                 it.copy(summaryError = "${summaryBounds.min}–${summaryBounds.max} characters")

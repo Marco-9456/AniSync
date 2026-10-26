@@ -118,7 +118,7 @@ fun WriteReviewScreen(
         )
     }
 
-    val summaryValid = SummaryBounds.isValid(uiState.summary.trim().length)
+    val summaryValid = SummaryBounds.isValid(ContentLimits.characterCount(uiState.summary.trim()))
     val scoreValid = uiState.score in 0..100
     // Dirty = differs from the loaded values, so opening an existing review and backing out
     // untouched doesn't trip the discard prompt.
@@ -181,7 +181,7 @@ private fun ReviewMetaHeader(
         TextField(
             value = summary,
             onValueChange = { new ->
-                onSummaryChange(if (new.length <= SummaryBounds.max) new else new.take(SummaryBounds.max))
+                onSummaryChange(ContentLimits.cap(new, SummaryBounds.max))
             },
             placeholder = { Text(stringResource(R.string.review_summary_hint)) },
             isError = summaryError != null,
@@ -196,7 +196,7 @@ private fun ReviewMetaHeader(
             modifier = Modifier.fillMaxWidth()
         )
         Text(
-            text = "${summary.trim().length} / ${SummaryBounds.max}",
+            text = "${ContentLimits.characterCount(summary.trim())} / ${SummaryBounds.max}",
             style = MaterialTheme.typography.labelSmall,
             color = if (summaryError != null) MaterialTheme.colorScheme.error
             else MaterialTheme.colorScheme.onSurfaceVariant,

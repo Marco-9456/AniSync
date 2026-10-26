@@ -54,7 +54,9 @@ fun DirectMessageInputSheet(
         prefillBody = initialBody,
         minLength = MessageBounds.min,
         maxLength = MessageBounds.max,
-        isSubmitEnabled = { MessageBounds.isValid(it.trim().length) && !isSending },
+        isSubmitEnabled = {
+            MessageBounds.isValid(ContentLimits.characterCount(it.trim())) && !isSending
+        },
         bottomBarLeading = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Switch(

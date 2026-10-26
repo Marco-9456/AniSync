@@ -1569,7 +1569,7 @@ private fun NotesField(notes: String, onNotesChange: (String) -> Unit) {
         SectionLabel(text = stringResource(R.string.notes))
         OutlinedTextField(
             value = notes,
-            onValueChange = { onNotesChange(it.take(ContentLimits.ListNotes.max)) },
+            onValueChange = { onNotesChange(ContentLimits.cap(it, ContentLimits.ListNotes.max)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 92.dp),

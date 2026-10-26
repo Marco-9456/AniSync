@@ -123,7 +123,7 @@ fun ForumThreadInputScreen(
     val externalUnsaved = uiState.title.isNotBlank() ||
         uiState.selectedCategoryIds.isNotEmpty() ||
         uiState.selectedMediaCategories.map { it.mediaId } != uiState.prefilledMediaCategoryIds
-    val externallyValid = TitleBounds.isValid(uiState.title.trim().length) &&
+    val externallyValid = TitleBounds.isValid(ContentLimits.characterCount(uiState.title.trim())) &&
         uiState.selectedCategoryIds.isNotEmpty()
 
     RichTextScaffold(
