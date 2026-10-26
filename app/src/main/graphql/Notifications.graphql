@@ -232,6 +232,52 @@ query GetNotifications(
         reason
         createdAt
       }
+      ... on MediaSubmissionUpdateNotification {
+        id
+        type
+        contexts
+        status
+        notes
+        submittedTitle
+        createdAt
+        media {
+          ...NotifMedia
+        }
+      }
+      ... on StaffSubmissionUpdateNotification {
+        id
+        type
+        contexts
+        status
+        notes
+        createdAt
+        staff {
+          id
+          name {
+            userPreferred
+          }
+          image {
+            large
+          }
+        }
+      }
+      ... on CharacterSubmissionUpdateNotification {
+        id
+        type
+        contexts
+        status
+        notes
+        createdAt
+        character {
+          id
+          name {
+            userPreferred
+          }
+          image {
+            large
+          }
+        }
+      }
     }
   }
 }

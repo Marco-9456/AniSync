@@ -198,6 +198,48 @@ data class MediaDeletionNotification(
     val deletedMediaTitle: String
 ) : Notification
 
+/**
+ * AniList's answer to a data submission the viewer made. The sentence reads `contexts[0]`, the
+ * subject, `contexts[1]`, then [status], which is how AniList's site puts it together, and [notes]
+ * is the reviewer's note.
+ */
+data class MediaSubmissionUpdateNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val contexts: List<String>,
+    val status: String,
+    val notes: String,
+    /** Null when the submission proposed a new title and was turned down. */
+    val media: Media?,
+    /** The proposed title of a new entry, set only when [media] is null. */
+    val submittedTitle: String?
+) : Notification
+
+data class StaffSubmissionUpdateNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val contexts: List<String>,
+    val status: String,
+    val notes: String,
+    val staffId: Int?,
+    val staffName: String?,
+    val staffImageUrl: String?
+) : Notification
+
+data class CharacterSubmissionUpdateNotification(
+    override val id: Int,
+    override val type: NotificationType,
+    override val createdAt: Int,
+    val contexts: List<String>,
+    val status: String,
+    val notes: String,
+    val characterId: Int?,
+    val characterName: String?,
+    val characterImageUrl: String?
+) : Notification
+
 data class UnknownNotification(
     override val id: Int,
     override val type: NotificationType,

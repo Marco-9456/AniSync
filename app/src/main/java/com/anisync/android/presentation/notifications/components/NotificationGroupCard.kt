@@ -67,11 +67,14 @@ import com.anisync.android.domain.ActivityReplyNotification
 import com.anisync.android.domain.ActivityReplySubscribedNotification
 import com.anisync.android.domain.ActivitySnapshot
 import com.anisync.android.domain.AiringNotification
+import com.anisync.android.domain.CharacterSubmissionUpdateNotification
 import com.anisync.android.domain.FollowingNotification
 import com.anisync.android.domain.MediaDataChangeNotification
 import com.anisync.android.domain.MediaDeletionNotification
 import com.anisync.android.domain.MediaMergeNotification
+import com.anisync.android.domain.MediaSubmissionUpdateNotification
 import com.anisync.android.domain.RelatedMediaAdditionNotification
+import com.anisync.android.domain.StaffSubmissionUpdateNotification
 import com.anisync.android.domain.ThreadCommentLikeNotification
 import com.anisync.android.domain.ThreadCommentMentionNotification
 import com.anisync.android.domain.ThreadCommentReplyNotification
@@ -683,11 +686,59 @@ private fun NotificationEntry.toPayload(res: Resources, context: Context): Group
             fallbackIcon = Icons.Default.Delete,
             expandableNote = rep.reason.isNotBlank()
         )
+        is MediaSubmissionUpdateNotification -> submissionPayload(
+            res = res,
+            subject = rep.media?.title ?: rep.submittedTitle,
+            status = rep.status,
+            notes = rep.notes,
+            image = rep.media?.coverUrl,
+            mediaId = rep.media?.id
+        )
+        is StaffSubmissionUpdateNotification -> submissionPayload(
+            res = res,
+            subject = rep.staffName,
+            status = rep.status,
+            notes = rep.notes,
+            image = rep.staffImageUrl,
+            staffId = rep.staffId
+        )
+        is CharacterSubmissionUpdateNotification -> submissionPayload(
+            res = res,
+            subject = rep.characterName,
+            status = rep.status,
+            notes = rep.notes,
+            image = rep.characterImageUrl,
+            characterId = rep.characterId
+        )
         is UnknownNotification -> GroupPayload(
             headline = res.getString(R.string.notifications_item_unknown)
         )
     }
 }
+
+/** A submission's verdict, with the reviewer's note expandable like a moderation reason. */
+private fun submissionPayload(
+    res: Resources,
+    subject: String?,
+    status: String,
+    notes: String,
+    image: String?,
+    mediaId: Int? = null,
+    staffId: Int? = null,
+    characterId: Int? = null
+): GroupPayload = GroupPayload(
+    headline = subject?.takeIf { it.isNotBlank() }
+        ?: res.getString(R.string.notifications_item_submission_fallback),
+    subtitlePlain = status.takeIf { it.isNotBlank() }
+        ?.let { res.getString(R.string.notifications_item_submission_status, it.lowercase()) },
+    subtitleHtml = notes.takeIf { it.isNotBlank() },
+    fallbackIcon = Icons.Default.Edit,
+    leadingMediaCover = image,
+    mediaId = mediaId,
+    staffId = staffId,
+    characterId = characterId,
+    expandableNote = notes.isNotBlank()
+)
 
 private fun activityLikePayload(
     actors: List<User>,

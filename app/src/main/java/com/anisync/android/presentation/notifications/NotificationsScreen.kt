@@ -349,4 +349,5 @@ private fun NotificationFilter.labelRes(): Int = when (this) {
     NotificationFilter.FORUM -> R.string.notifications_filter_forum
     NotificationFilter.FOLLOWS -> R.string.notifications_filter_follows
     NotificationFilter.MEDIA -> R.string.notifications_filter_media
+    NotificationFilter.SUBMISSIONS -> R.string.notifications_filter_submissions
 }

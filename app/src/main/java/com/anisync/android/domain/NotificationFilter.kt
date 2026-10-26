@@ -26,5 +26,10 @@ enum class NotificationFilter(val types: List<NotificationType>) {
         NotificationType.MEDIA_DATA_CHANGE,
         NotificationType.MEDIA_MERGE,
         NotificationType.MEDIA_DELETION
+    )),
+    SUBMISSIONS(listOf(
+        NotificationType.MEDIA_SUBMISSION_UPDATE,
+        NotificationType.STAFF_SUBMISSION_UPDATE,
+        NotificationType.CHARACTER_SUBMISSION_UPDATE
     ))
 }

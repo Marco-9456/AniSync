@@ -14,16 +14,19 @@ import com.anisync.android.domain.ActivityReplyNotification
 import com.anisync.android.domain.ActivityReplySubscribedNotification
 import com.anisync.android.domain.AiringNotification
 import com.anisync.android.domain.AiringSchedule
+import com.anisync.android.domain.CharacterSubmissionUpdateNotification
 import com.anisync.android.domain.CoverImage
 import com.anisync.android.domain.FollowingNotification
 import com.anisync.android.domain.Media
 import com.anisync.android.domain.MediaDataChangeNotification
 import com.anisync.android.domain.MediaDeletionNotification
 import com.anisync.android.domain.MediaMergeNotification
+import com.anisync.android.domain.MediaSubmissionUpdateNotification
 import com.anisync.android.domain.Notification
 import com.anisync.android.domain.NotificationPage
 import com.anisync.android.domain.NotificationRepository
 import com.anisync.android.domain.RelatedMediaAdditionNotification
+import com.anisync.android.domain.StaffSubmissionUpdateNotification
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.ThreadCommentLikeNotification
 import com.anisync.android.domain.ThreadCommentMentionNotification
@@ -366,6 +369,44 @@ class NotificationRepositoryImpl @Inject constructor(
                 context = data.context ?: "",
                 reason = data.reason ?: "",
                 deletedMediaTitle = data.deletedMediaTitle ?: ""
+            )
+        }
+        notification.onMediaSubmissionUpdateNotification?.let { data ->
+            return MediaSubmissionUpdateNotification(
+                id = data.id,
+                type = data.type ?: NotificationType.MEDIA_SUBMISSION_UPDATE,
+                createdAt = data.createdAt ?: 0,
+                contexts = data.contexts?.filterNotNull() ?: emptyList(),
+                status = data.status.orEmpty(),
+                notes = data.notes.orEmpty(),
+                media = data.media?.notifMedia?.toDomain(),
+                submittedTitle = data.submittedTitle?.takeIf { it.isNotBlank() }
+            )
+        }
+        notification.onStaffSubmissionUpdateNotification?.let { data ->
+            return StaffSubmissionUpdateNotification(
+                id = data.id,
+                type = data.type ?: NotificationType.STAFF_SUBMISSION_UPDATE,
+                createdAt = data.createdAt ?: 0,
+                contexts = data.contexts?.filterNotNull() ?: emptyList(),
+                status = data.status.orEmpty(),
+                notes = data.notes.orEmpty(),
+                staffId = data.staff?.id,
+                staffName = data.staff?.name?.userPreferred,
+                staffImageUrl = data.staff?.image?.large
+            )
+        }
+        notification.onCharacterSubmissionUpdateNotification?.let { data ->
+            return CharacterSubmissionUpdateNotification(
+                id = data.id,
+                type = data.type ?: NotificationType.CHARACTER_SUBMISSION_UPDATE,
+                createdAt = data.createdAt ?: 0,
+                contexts = data.contexts?.filterNotNull() ?: emptyList(),
+                status = data.status.orEmpty(),
+                notes = data.notes.orEmpty(),
+                characterId = data.character?.id,
+                characterName = data.character?.name?.userPreferred,
+                characterImageUrl = data.character?.image?.large
             )
         }
         return null
