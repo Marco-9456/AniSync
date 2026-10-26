@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -19,10 +20,13 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
 import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -71,7 +75,7 @@ fun LazyListScope.profileSocialTab(
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit = { _, _, _ -> },
     onLoadMore: () -> Unit = {},
     userColumns: Int = 3,
-    /** Set on the viewer's own profile, where a follower can be held to remove them. */
+    /** Set on the viewer's own profile, where each follower carries a remove button. */
     onRemoveFollower: ((SocialUser) -> Unit)? = null
 ) {
     val selectedTab = uiState.selectedSocialTab
@@ -248,7 +252,7 @@ private fun LazyListScope.renderSocialUsers(
     isPaginating: Boolean,
     onLoadMore: () -> Unit,
     userColumns: Int,
-    onUserLongClick: ((SocialUser) -> Unit)? = null
+    onRemoveUser: ((SocialUser) -> Unit)? = null
 ) {
     if (users.isEmpty()) {
         item(key = "social_users_empty") {
@@ -261,16 +265,6 @@ private fun LazyListScope.renderSocialUsers(
     } else {
         val rowItems = users.chunked(userColumns)
         item(key = "social_top_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
-        if (onUserLongClick != null) {
-            item(key = "social_remove_hint") {
-                Text(
-                    text = stringResource(R.string.profile_remove_follower_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-                )
-            }
-        }
 
         itemsIndexed(
             items = rowItems,
@@ -292,7 +286,7 @@ private fun LazyListScope.renderSocialUsers(
                             user = user,
                             onClick = { onUserClick(user.name) },
                             modifier = Modifier.fillMaxWidth(),
-                            onLongClick = onUserLongClick?.let { { it(user) } }
+                            onRemove = onRemoveUser?.let { { it(user) } }
                         )
                     }
                 }
@@ -331,7 +325,7 @@ private fun SocialUserItem(
     user: SocialUser,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onLongClick: (() -> Unit)? = null
+    onRemove: (() -> Unit)? = null
 ) {
     val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
 
@@ -341,23 +335,40 @@ private fun SocialUserItem(
             .clip(imageShape)
             .bouncyCombinedClickable(
                 onClick = onClick,
-                onLongClick = onLongClick,
+                onLongClick = onRemove,
                 role = Role.Button,
                 onClickLabel = user.name,
                 onLongClickLabel = stringResource(R.string.a11y_remove_follower)
             )
             .padding(bottom = dimensionResource(R.dimen.spacing_small))
     ) {
-        AsyncImage(
-            model = user.avatarUrl,
-            contentDescription = user.name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .height(dimensionResource(R.dimen.character_image_height))
-                .fillMaxWidth()
-                .clip(imageShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
+        Box {
+            AsyncImage(
+                model = user.avatarUrl,
+                contentDescription = user.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .height(dimensionResource(R.dimen.character_image_height))
+                    .fillMaxWidth()
+                    .clip(imageShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+            if (onRemove != null) {
+                FilledTonalIconButton(
+                    onClick = onRemove,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PersonRemove,
+                        contentDescription = stringResource(R.string.a11y_remove_follower_named, user.name),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
         Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
         Text(
             text = user.name,
