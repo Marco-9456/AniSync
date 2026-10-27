@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Thread Body** - A new thread needs a body of at least 10 characters, which AniList requires, instead of failing when it is sent.
 - **List Notes** - Notes stop at 6000 characters and rewatches at 1000, the most AniList accepts.
 - **Scoring System** - Library scores switch to a new scoring system a few seconds after it is picked, where they kept the old numbers until the list was refreshed. Editing a score in between could save it on the wrong scale.
-- **Editing From A Title's Page** - The edit sheet opens on the entry the page shows. It could open on an older copy from the library, missing progress and dates logged elsewhere since, and saving it sent that older progress back to AniList. A title on your list that the library had not loaded yet opened as a blank new entry, and saving that overwrote the real one. (#165)
+- **Editing Entries** - The edit sheet, on a title's page or in the Library, opens on your entry as AniList has it. It could open on an older copy, missing progress and dates logged on the website or in another app since, and saving it sent that older progress back to AniList. A title on your list that the library had not loaded yet opened as a blank new entry, and saving that overwrote the real one. (#165)
 - **Switching Accounts** - A title's page no longer shows the previous account's status and progress on a title the new account has not added.
 
 ## [3.3.0] - 2026-10-20
