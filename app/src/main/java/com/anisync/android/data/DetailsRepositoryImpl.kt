@@ -107,6 +107,7 @@ class DetailsRepositoryImpl @Inject constructor(
     private val mediaDetailsDao: MediaDetailsDao,
     private val libraryDao: LibraryDao,
     private val favouriteOverrideStore: FavouriteOverrideStore,
+    private val refreshTimes: LibraryRefreshTimes,
     private val accountStore: com.anisync.android.data.account.AccountStore
 ) : DetailsRepository {
 
@@ -373,6 +374,7 @@ class DetailsRepositoryImpl @Inject constructor(
         server: ViewerListEntryFields?,
         askedAt: Long,
     ) {
+        refreshTimes.markEntryChecked(owner, base.mediaId, askedAt)
         val row = libraryDao.getEntry(owner, base.mediaId)
         when (val plan = planListEntrySync(rowWhenAsked, row, server, askedAt)) {
             ListEntrySync.Keep -> Unit
@@ -444,7 +446,11 @@ class DetailsRepositoryImpl @Inject constructor(
         val owner = accountStore.activeAccount.value?.id ?: return Result.Success(Unit)
         val local = libraryDao.getEntry(owner, mediaId) ?: return Result.Success(Unit)
         // A details fetch carries the entry too, so it counts as a check.
-        val checkedAt = maxOf(local.lastUpdated, mediaDetailsDao.getById(mediaId)?.lastUpdated ?: 0L)
+        val checkedAt = maxOf(
+            local.lastUpdated,
+            refreshTimes.entryCheckedAt(owner, mediaId) ?: 0L,
+            mediaDetailsDao.getById(mediaId)?.lastUpdated ?: 0L
+        )
         if (System.currentTimeMillis() - checkedAt < LIST_ENTRY_RECHECK_MS) return Result.Success(Unit)
 
         return safeApiCall {
