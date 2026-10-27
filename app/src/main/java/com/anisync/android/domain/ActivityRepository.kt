@@ -12,7 +12,8 @@ interface ActivityRepository {
     /** Drops the in-memory cached viewer id so the next call re-resolves it (used on account switch). */
     fun clearViewerCache()
     suspend fun toggleSubscription(activityId: Int, subscribe: Boolean): Result<Unit>
-    suspend fun saveTextActivity(text: String, id: Int? = null): Result<Unit>
+    /** Posts a status, or edits one when [id] is given, and returns it as AniList saved it. */
+    suspend fun saveTextActivity(text: String, id: Int? = null): Result<UserActivity>
 
     /**
      * Update an existing MessageActivity. AniList requires [recipientId] even on edit
@@ -23,7 +24,7 @@ interface ActivityRepository {
         recipientId: Int,
         message: String,
         isPrivate: Boolean
-    ): Result<Unit>
+    ): Result<UserActivity>
 
     /** List of users who liked the given root activity. */
     suspend fun getActivityLikes(activityId: Int): Result<List<UserSummary>>

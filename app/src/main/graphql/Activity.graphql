@@ -207,18 +207,7 @@ mutation DeleteActivityReply($id: Int!) {
 mutation SaveTextActivity($id: Int, $text: String!) {
   SaveTextActivity(id: $id, text: $text) {
     id
-    text(asHtml: true)
-    createdAt
-    likeCount
-    isLiked
-    replyCount
-    user {
-      id
-      name
-      avatar {
-        large
-      }
-    }
+    ...ActivityFields
   }
 }
 

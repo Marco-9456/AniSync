@@ -566,6 +566,7 @@ mutation SaveMessageActivity(
     private: $private
   ) {
     id
+    ...ActivityFields
   }
 }
 
