@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Same Universe** - A related title set in the same universe says so, where it read Other before.
 - **Emoji** - Emoji in statuses, messages, replies, forum posts, reviews, bios and notes go to AniList as they are, now that it stores them, and every limit counts an emoji as one character, as AniList does. That makes a lone emoji too short for a reply or a message, as it is on the website.
 - **Keeping Up** - Your lists refresh in the background when AniSync comes back after ten minutes or more, and a title's page checks your entry with AniList each time it opens, so episodes and chapters logged on the website or in another app show up without a pull to refresh. (#165)
+- **Search Field** - Discover and Library search move the search field out of the way as the results scroll down and bring it back on the first scroll up, as the bar over Discover does. The filters and the rail stay in place, and the keyboard closes as the field leaves.
 
 ### Fixed
 
@@ -50,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Coming Back To The Feed** - Going back to the feed from an activity's replies, a profile or a title keeps your place. It used to swap everything loaded for the first page and drop you near the top. New activity goes on top for the pill to offer, and when more than a page of it came in, the pill reloads the feed instead. (#164)
 - **Coming Back To A Profile** - Going back to a profile keeps your place in its activity, social, reviews, stats and list tabs. After a minute on the page, coming back cut the paged lists to their first page and swapped the others for a spinner. Saving an edited status or message, in the feed or on a profile, updates it where it is instead of reloading the list, and a page you come back to below its tabs keeps them pinned at the top. (#164)
 - **Muted Notifications** - Notifications muted in the phone's settings stay silent when they stack. Once two or more were showing, the stack took the sound and settings of activity replies, whatever type they were. (#170)
+- **Search Rail** - Results in Discover and Library search stop a little short of the rail above them as they scroll, as they do under the rail on Discover, instead of running right up against it.
 
 ## [3.3.0] - 2026-10-20
 
