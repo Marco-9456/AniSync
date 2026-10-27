@@ -9,6 +9,7 @@ import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.ActivityUpdate
 import com.anisync.android.domain.FeedFilter
+import com.anisync.android.domain.FeedPage
 import com.anisync.android.domain.FeedRepository
 import com.anisync.android.domain.FeedScope
 import com.anisync.android.domain.MainTab
@@ -427,8 +428,8 @@ class FeedViewModel @Inject constructor(
     }
 
     /**
-     * [silent] loads without the spinner and without clearing what is on screen: the result only
-     * counts what is new, which is what the "new activity" pill offers to scroll to.
+     * [silent] loads page 1 without the spinner and lays it over what is on screen rather than
+     * replacing it. What it adds on top is what the "new activity" pill offers to scroll to.
      */
     private fun load(page: Int, replaceExisting: Boolean = false, silent: Boolean = false) {
         loadJob?.cancel()
@@ -468,16 +469,13 @@ class FeedViewModel @Inject constructor(
                 is Result.Success -> {
                     val data = result.data
                     _uiState.update { current ->
+                        if (silent && current.items.isNotEmpty()) {
+                            return@update current.withFirstPage(data)
+                        }
                         val merged = if (replaceExisting || page == 1) {
                             data.items
                         } else {
                             (current.items + data.items).distinctBy { it.id }
-                        }
-                        val known = current.items.mapTo(mutableSetOf()) { it.id }
-                        val newCount = if (silent) {
-                            data.items.count { it.id !in known }
-                        } else {
-                            0
                         }
                         current.copy(
                             isLoading = false,
@@ -487,7 +485,7 @@ class FeedViewModel @Inject constructor(
                             items = merged.toPersistentList(),
                             hasNextPage = data.hasNextPage,
                             currentPage = data.currentPage,
-                            newActivityCount = newCount,
+                            newActivityCount = 0,
                             errorMessage = null,
                             errorCode = null
                         )
@@ -518,6 +516,23 @@ class FeedViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * A silent page 1 under a feed the reader may be pages into. Swapping the feed for page 1 threw
+     * away every page below it, and the activity the reader had scrolled to went with them (#164).
+     * The pages below keep their cursor, and a page that cannot join leaves the feed as it is.
+     */
+    private fun FeedUiState.withFirstPage(data: FeedPage): FeedUiState {
+        val merged = mergeFirstPage(items, data.items) ?: return this
+        val known = items.mapTo(mutableSetOf()) { it.id }
+        return copy(
+            isAuthenticated = true,
+            items = merged.toPersistentList(),
+            newActivityCount = merged.count { it.id !in known },
+            errorMessage = null,
+            errorCode = null
+        )
     }
 
     private fun showResultError(result: Result.Error) {
