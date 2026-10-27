@@ -282,8 +282,17 @@ class FeedViewModel @Inject constructor(
             when (result) {
                 is Result.Success -> {
                     toastManager.showToast(ToastType.SUCCESS, message = "Activity updated")
-                    _uiState.update { it.copy(isSavingEdit = false, editingActivity = null) }
-                    load(page = 1, replaceExisting = true)
+                    // The saved copy goes where the old one was. Reloading page 1 for it dropped
+                    // the pages below, and the edited activity with them when it sat that deep.
+                    val saved = result.data
+                    _uiState.update { state ->
+                        state.copy(
+                            isSavingEdit = false,
+                            editingActivity = null,
+                            items = state.items.map { if (it.id == saved.id) saved else it }
+                                .toPersistentList()
+                        )
+                    }
                 }
                 is Result.Error -> {
                     _uiState.update { it.copy(isSavingEdit = false) }

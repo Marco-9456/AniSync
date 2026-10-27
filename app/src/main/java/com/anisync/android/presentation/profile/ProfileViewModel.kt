@@ -286,6 +286,10 @@ class ProfileViewModel @Inject constructor(
     // Optimistically-deleted activity ids hidden from the UI until confirmed.
     private val deletedActivityIds = MutableStateFlow<Set<Int>>(emptySet())
 
+    // Text of activities edited here, as AniList saved it: activityId -> saved copy.
+    private val editedActivities =
+        MutableStateFlow<Map<Int, com.anisync.android.domain.UserActivity>>(emptyMap())
+
     private val viewerIdFlow = MutableStateFlow<Int?>(null)
 
     private val targetUsername: String? = savedStateHandle.get<String>("username")
@@ -403,7 +407,8 @@ class ProfileViewModel @Inject constructor(
         notificationBadgeStore.unreadCount,
         favoritesState,
         activityPaginationState,
-        adultActivityOptions
+        adultActivityOptions,
+        editedActivities
     ) { params ->
         val remote = params[0] as ProfileUiState
         val local = params[1] as ProfileUiLocalState
@@ -423,6 +428,8 @@ class ProfileViewModel @Inject constructor(
         val pagination = params[12] as ActivityPaginationState
         @Suppress("UNCHECKED_CAST")
         val (showAdultContent, showOthersAdultActivity) = params[13] as Pair<Boolean, Boolean>
+        @Suppress("UNCHECKED_CAST")
+        val edited = params[14] as Map<Int, com.anisync.android.domain.UserActivity>
 
         // Fold lazily-loaded older activity pages into the profile's initial feed
         // (deduped, newest-first) before overlays apply, so a like/subscribe/delete
@@ -441,7 +448,8 @@ class ProfileViewModel @Inject constructor(
         }
 
         val needsOverlay = mergedRemote.profile != null &&
-            (subOverrides.isNotEmpty() || likeOverrides.isNotEmpty() || deletedIds.isNotEmpty())
+            (subOverrides.isNotEmpty() || likeOverrides.isNotEmpty() || deletedIds.isNotEmpty() ||
+                edited.isNotEmpty())
         val remoteWithOverrides = if (!needsOverlay) {
             mergedRemote
         } else {
@@ -451,6 +459,7 @@ class ProfileViewModel @Inject constructor(
                 .filterNot { deletedIds.contains(it.id) }
                 .map { a ->
                     var next = a
+                    edited[a.id]?.let { e -> next = next.copy(text = e.text, bodyMarkdown = e.bodyMarkdown) }
                     subOverrides[a.id]?.let { sub -> next = next.copy(isSubscribed = sub) }
                     likeOverrides[a.id]?.let { (liked, count) ->
                         next = next.copy(isLiked = liked, likeCount = count)
@@ -755,7 +764,9 @@ class ProfileViewModel @Inject constructor(
                     localState.update {
                         it.copy(isSavingActivityEdit = false, editingActivity = null)
                     }
-                    refresh()
+                    // Patched in place. A refresh for it cut the activity list back to its first
+                    // batch, and the edited activity went with it when it sat further down.
+                    editedActivities.update { it + (result.data.id to result.data) }
                 }
                 is Result.Error -> {
                     localState.update { it.copy(isSavingActivityEdit = false) }
