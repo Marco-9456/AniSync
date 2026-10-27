@@ -29,6 +29,11 @@ data class FeedUiState(
     val activityMergeMinutes: Int? = null,
     /** Activities a background refresh pulled in above what the reader has already seen. */
     val newActivityCount: Int = 0,
+    /**
+     * More is new than one page holds, so the new activity is not in the list and the pill reloads
+     * the feed rather than scrolling up to it.
+     */
+    val newActivityNeedsReload: Boolean = false,
     /** Bumped when the Feed tab is reselected, asking the list to scroll back to the top. */
     val scrollToTopRequest: Long = 0L,
     val errorMessage: String? = null,
@@ -54,6 +59,8 @@ sealed interface FeedAction {
     data class OnListTypeChange(val mediaType: FeedMediaType) : FeedAction
     data object ToggleGroupListUpdates : FeedAction
     data object DismissNewActivity : FeedAction
+    /** A tap on the pill: up to the new activity, or a reload when it is not in the list. */
+    data object ShowNewActivity : FeedAction
     data class ToggleSubscribe(val activityId: Int) : FeedAction
     data class ToggleLike(val activityId: Int) : FeedAction
     data class DeleteActivity(val activityId: Int) : FeedAction

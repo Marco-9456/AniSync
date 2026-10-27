@@ -178,7 +178,7 @@ fun FeedScreen(
             NewActivityPill(
                 count = uiState.newActivityCount,
                 onClick = {
-                    viewModel.onAction(FeedAction.DismissNewActivity)
+                    viewModel.onAction(FeedAction.ShowNewActivity)
                     coroutineScope.launch { listState.animateScrollToItem(0) }
                 },
                 modifier = Modifier

@@ -212,8 +212,19 @@ class FeedViewModel @Inject constructor(
             }
 
             is FeedAction.DismissNewActivity -> {
-                if (_uiState.value.newActivityCount == 0) return
+                val state = _uiState.value
+                // Reaching the top only answers the pill when the new activity is up there.
+                if (state.newActivityCount == 0 || state.newActivityNeedsReload) return
                 _uiState.update { it.copy(newActivityCount = 0) }
+            }
+
+            is FeedAction.ShowNewActivity -> {
+                if (!_uiState.value.newActivityNeedsReload) {
+                    onAction(FeedAction.DismissNewActivity)
+                    return
+                }
+                _uiState.update { it.copy(newActivityCount = 0, newActivityNeedsReload = false) }
+                onAction(FeedAction.Refresh)
             }
 
             is FeedAction.ToggleGroupListUpdates -> {
@@ -485,7 +496,9 @@ class FeedViewModel @Inject constructor(
                             items = merged.toPersistentList(),
                             hasNextPage = data.hasNextPage,
                             currentPage = data.currentPage,
-                            newActivityCount = 0,
+                            // Paging on down leaves the pill's offer standing.
+                            newActivityCount = if (page == 1) 0 else current.newActivityCount,
+                            newActivityNeedsReload = page != 1 && current.newActivityNeedsReload,
                             errorMessage = null,
                             errorCode = null
                         )
@@ -521,15 +534,18 @@ class FeedViewModel @Inject constructor(
     /**
      * A silent page 1 under a feed the reader may be pages into. Swapping the feed for page 1 threw
      * away every page below it, and the activity the reader had scrolled to went with them (#164).
-     * The pages below keep their cursor, and a page that cannot join leaves the feed as it is.
+     * The pages below keep their cursor. A page that cannot join leaves the feed as it is and has
+     * the pill offer a reload.
      */
     private fun FeedUiState.withFirstPage(data: FeedPage): FeedUiState {
-        val merged = mergeFirstPage(items, data.items) ?: return this
+        val merged = mergeFirstPage(items, data.items)
+            ?: return copy(newActivityCount = data.items.size, newActivityNeedsReload = true)
         val known = items.mapTo(mutableSetOf()) { it.id }
         return copy(
             isAuthenticated = true,
             items = merged.toPersistentList(),
             newActivityCount = merged.count { it.id !in known },
+            newActivityNeedsReload = false,
             errorMessage = null,
             errorCode = null
         )
