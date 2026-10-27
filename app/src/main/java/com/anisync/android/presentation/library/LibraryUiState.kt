@@ -128,6 +128,8 @@ data class LibraryUiState(
     val showScoreOnCards: Boolean = true,
     /** An entry a + just finished with no score on it, waiting on the score sheet. */
     val scorePromptEntry: LibraryEntry? = null,
+    /** The entry the edit sheet is open on, checked against AniList before it opened. */
+    val editingEntry: LibraryEntry? = null,
     /** Poster grid (true) or single-column rows. One choice for every list, not one per list. */
     val isGridView: Boolean = true,
     /** Narrows library search only. The lists themselves are never filtered. */
@@ -188,6 +190,8 @@ sealed interface LibraryAction {
     data class OnSearchOpened(val currentTabId: String) : LibraryAction
     data class IncrementProgress(val mediaId: Int) : LibraryAction
     data class DecrementProgress(val mediaId: Int) : LibraryAction
+    data class EditEntry(val entry: LibraryEntry) : LibraryAction
+    data object DismissEditor : LibraryAction
     data class UpdateEntry(val entry: LibraryEntry) : LibraryAction
     data class SaveCompletionScore(
         val score: Double,

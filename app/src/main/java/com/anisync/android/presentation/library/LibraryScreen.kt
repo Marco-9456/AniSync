@@ -225,7 +225,6 @@ fun LibraryScreen(
     var showBulkScore by rememberSaveable { mutableStateOf(false) }
     var showBulkAddToList by rememberSaveable { mutableStateOf(false) }
     var showBulkPriority by rememberSaveable { mutableStateOf(false) }
-    var editingEntry by remember { mutableStateOf<LibraryEntry?>(null) }
 
     val tabs = remember(uiState.tabOrder, uiState.hiddenListNames, uiState.customListNames) {
         uiState.tabOrder.mapNotNull { id ->
@@ -267,7 +266,9 @@ fun LibraryScreen(
     val handleIncrement = remember(viewModel) {
         { mediaId: Int -> viewModel.onAction(LibraryAction.IncrementProgress(mediaId)) }
     }
-    val handleEdit = remember { { entry: LibraryEntry -> editingEntry = entry } }
+    val handleEdit = remember(viewModel) {
+        { entry: LibraryEntry -> viewModel.onAction(LibraryAction.EditEntry(entry)) }
+    }
 
     LaunchedEffect(Unit) { viewModel.onAction(LibraryAction.OnScreenVisible) }
 
@@ -625,7 +626,7 @@ fun LibraryScreen(
                                         val id = uiState.selectedEntryIds.firstOrNull()
                                         uiState.entries.find { it.id == id }?.let { entry ->
                                             viewModel.onAction(LibraryAction.ClearSelection)
-                                            editingEntry = entry
+                                            handleEdit(entry)
                                         }
                                     },
                                     onSetPriority = { showBulkPriority = true },
@@ -790,7 +791,7 @@ fun LibraryScreen(
         }
     )
 
-    editingEntry?.let { entry ->
+    uiState.editingEntry?.let { entry ->
         val sheet = @Composable {
             EditLibraryEntrySheet(
                 entry = entry,
@@ -798,14 +799,14 @@ fun LibraryScreen(
                 scoreFormat = uiState.userScoreFormat,
                 availableCustomLists = uiState.customListNames,
                 advancedScoringCategories = uiState.advancedScoringCategories,
-                onDismiss = { editingEntry = null },
+                onDismiss = { viewModel.onAction(LibraryAction.DismissEditor) },
                 onSave = { updatedEntry ->
                     viewModel.onAction(LibraryAction.UpdateEntry(updatedEntry))
-                    editingEntry = null
+                    viewModel.onAction(LibraryAction.DismissEditor)
                 },
                 onDelete = {
                     viewModel.onAction(LibraryAction.DeleteEntry(entry.id, entry.mediaId))
-                    editingEntry = null
+                    viewModel.onAction(LibraryAction.DismissEditor)
                 }
             )
         }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.network.RequestPriority
 import com.anisync.android.data.network.withRequestPriority
+import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
@@ -39,6 +40,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import com.anisync.android.domain.MainTab
 import com.anisync.android.domain.TabReselectBus
@@ -48,6 +50,7 @@ import com.anisync.android.domain.observeTab
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
+    private val detailsRepository: DetailsRepository,
     private val profileRepository: ProfileRepository,
     private val appSettings: AppSettings,
     private val toastManager: ToastManager,
@@ -74,6 +77,9 @@ class LibraryViewModel @Inject constructor(
             "status:DROPPED",
             "status:FAVORITES"
         )
+
+        /** Long enough for the check on a slow connection, short enough not to feel like a hang. */
+        private const val EDITOR_CHECK_TIMEOUT_MS = 2_000L
     }
 
     private val _uiState = MutableStateFlow(
@@ -238,6 +244,8 @@ class LibraryViewModel @Inject constructor(
 
             is LibraryAction.IncrementProgress -> updateProgress(action.mediaId, 1)
             is LibraryAction.DecrementProgress -> updateProgress(action.mediaId, -1)
+            is LibraryAction.EditEntry -> openEditor(action.entry)
+            is LibraryAction.DismissEditor -> closeEditor()
             is LibraryAction.UpdateEntry -> updateEntry(action.entry)
             is LibraryAction.SaveCompletionScore ->
                 saveCompletionScore(action.score, action.advancedScores, action.notes)
@@ -761,6 +769,32 @@ class LibraryViewModel @Inject constructor(
             val current = libraryRepository.getEntry(prompted.mediaId) ?: prompted
             updateEntry(current.withCompletionScore(score, advancedScores, notes))
         }
+    }
+
+    private var editorJob: Job? = null
+
+    /**
+     * Opens the edit sheet on [entry] as AniList has it now. The row can be up to a list refresh old,
+     * and a sheet opened on it would send its older progress back with any edit. The check is skipped
+     * for an entry checked in the last minute, and a slow or refused one leaves the row as it is.
+     */
+    private fun openEditor(entry: LibraryEntry) {
+        editorJob?.cancel()
+        editorJob = viewModelScope.launch {
+            withTimeoutOrNull(EDITOR_CHECK_TIMEOUT_MS) {
+                withRequestPriority(RequestPriority.Prefetch) {
+                    detailsRepository.refreshListEntryIfStale(entry.mediaId)
+                }
+            }
+            // Gone means it was taken off the list elsewhere, and the card goes with it.
+            val current = libraryRepository.getEntry(entry.mediaId) ?: return@launch
+            _uiState.update { it.copy(editingEntry = current) }
+        }
+    }
+
+    private fun closeEditor() {
+        editorJob?.cancel()
+        _uiState.update { it.copy(editingEntry = null) }
     }
 
     private fun updateEntry(entry: LibraryEntry) {
