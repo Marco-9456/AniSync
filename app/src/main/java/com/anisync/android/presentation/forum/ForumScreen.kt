@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBars
@@ -78,6 +79,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -96,6 +98,8 @@ import com.anisync.android.domain.ForumThread
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyState
+import com.anisync.android.presentation.components.HideKeyboardOnCollapse
+import com.anisync.android.presentation.components.rememberSearchFieldCollapse
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ScrollToTopFab
 import com.anisync.android.presentation.components.SectionHeader
@@ -575,12 +579,31 @@ fun ForumScreen(
     // Fullscreen advanced-search overlay. Its filter bar is the shipped one, untouched.
     val searchFilters = uiState.searchFilters
     val searchActive = searchFilters.query.trim().length >= 2 || searchFilters.hasActiveFilters
+    val fieldCollapse = rememberSearchFieldCollapse(searchBarState)
+    val hasSearchResults = searchActive && uiState.searchResults.isNotEmpty()
+    LaunchedEffect(fieldCollapse, hasSearchResults) {
+        if (!hasSearchResults) fieldCollapse.expand()
+    }
     ExpandedFullScreenSearchBar(
         state = searchBarState,
-        inputField = { ProvideDisplaySize(content = inputField) }
+        inputField = {
+            ProvideDisplaySize {
+                Box(modifier = fieldCollapse.field, propagateMinConstraints = true) { inputField() }
+            }
+        }
     ) {
         ProvideDisplaySize {
-            Column(modifier = Modifier.fillMaxSize()) {
+            HideKeyboardOnCollapse(fieldCollapse)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        fieldCollapse.content(
+                            topInset = WindowInsets.safeDrawing.getTop(LocalDensity.current),
+                            background = SearchBarDefaults.colors().containerColor
+                        )
+                    )
+            ) {
                 ForumSearchFilterChipBar(
                     filters = searchFilters,
                     onChipTap = { openedFilter = it },
@@ -650,7 +673,9 @@ fun ForumScreen(
                             bottom = systemBarsPadding.calculateBottomPadding() + 16.dp
                         ),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .nestedScroll(fieldCollapse.nestedScrollConnection)
+                            .fillMaxSize()
                     ) {
                         itemsIndexed(
                             items = uiState.searchResults,
