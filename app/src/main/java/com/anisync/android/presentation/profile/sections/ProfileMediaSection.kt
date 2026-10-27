@@ -84,7 +84,8 @@ fun LazyListScope.profileMediaTab(
     }
 
     val items = itemsByStatus[selectedStatus].orEmpty()
-    if (isLoading) {
+    // A reload keeps the list on screen rather than swapping it for a spinner (#164).
+    if (isLoading && items.isEmpty()) {
         item(key = "media_loading_${transitionPrefix}", contentType = "loading") {
             Box(
                 modifier = Modifier

@@ -96,7 +96,9 @@ fun LazyListScope.profileStatsTab(
         Spacer(modifier = Modifier.height(16.dp))
     }
 
-    if (uiState.isStatsLoading) {
+    // A reload keeps the stats on screen. Swapping them for a spinner, or for the error of a failed
+    // reload, sent the reader back to the top of the tab (#164).
+    if (uiState.isStatsLoading && uiState.statsData == null) {
         item(key = "stats_loading") {
             Box(
                 modifier = Modifier
@@ -110,7 +112,7 @@ fun LazyListScope.profileStatsTab(
         return
     }
 
-    if (uiState.statsErrorMessage != null) {
+    if (uiState.statsErrorMessage != null && uiState.statsData == null) {
         item(key = "stats_error") {
             Box(
                 modifier = Modifier
