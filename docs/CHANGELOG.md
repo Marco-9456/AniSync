@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Editing Entries** - The edit sheet, on a title's page or in the Library, opens on your entry as AniList has it. It could open on an older copy, missing progress and dates logged on the website or in another app since, and saving it sent that older progress back to AniList. A title on your list that the library had not loaded yet opened as a blank new entry, and saving that overwrote the real one. (#165)
 - **Switching Accounts** - A title's page no longer shows the previous account's status and progress on a title the new account has not added.
 - **Coming Back To The Feed** - Going back to the feed from an activity's replies, a profile or a title keeps your place. It used to swap everything loaded for the first page and drop you near the top. New activity goes on top for the pill to offer, and when more than a page of it came in, the pill reloads the feed instead. (#164)
-- **Coming Back To A Profile** - Going back to a profile keeps your place in its activity, social, reviews, stats and list tabs. After a minute on the page, coming back cut the paged lists to their first page and swapped the others for a spinner. (#164)
+- **Coming Back To A Profile** - Going back to a profile keeps your place in its activity, social, reviews, stats and list tabs. After a minute on the page, coming back cut the paged lists to their first page and swapped the others for a spinner. Saving an edited status or message, in the feed or on a profile, updates it where it is instead of reloading the list, and a page you come back to below its tabs keeps them pinned at the top. (#164)
 
 ## [3.3.0] - 2026-10-20
 
