@@ -667,6 +667,8 @@ class NotificationWorker @AssistedInject constructor(
             )
             .setGroup(group)
             .setGroupSummary(true)
+            // Each child already alerted on its own channel, so a muted type stays silent in a stack.
+            .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
             .setAutoCancel(true)
             .setContentIntent(deepLinkIntent("anisync://notifications", ctx, SUMMARY_ID))
 
@@ -916,6 +918,7 @@ class NotificationWorker @AssistedInject constructor(
             .setStyle(inboxStyle)
             .setGroup(groupKey(GROUP_KEY_AIRING, ctx))
             .setGroupSummary(true)
+            .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
             .setAutoCancel(true)
             .setContentIntent(deepLinkIntent("anisync://notifications", ctx, SUMMARY_ID))
 
