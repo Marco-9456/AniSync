@@ -85,7 +85,13 @@ fun rememberSearchFieldCollapse(searchBarState: SearchBarState): SearchFieldColl
     val expanded = searchBarState.currentValue == SearchBarValue.Expanded
     val scrollState = remember(expanded) { SearchBarScrollState(0f, 0f, 0f) }
     val behavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior(scrollState = scrollState)
-    return remember(behavior) { SearchFieldCollapse(scrollState, behavior.nestedScrollConnection) }
+    val collapse = remember(behavior) { SearchFieldCollapse(scrollState, behavior.nestedScrollConnection) }
+    // The bar reports Expanded until it has finished shrinking, so follow its target instead and
+    // bring the field back while it shrinks.
+    LaunchedEffect(collapse, searchBarState.targetValue) {
+        if (searchBarState.targetValue == SearchBarValue.Collapsed) collapse.expand()
+    }
+    return collapse
 }
 
 /**
