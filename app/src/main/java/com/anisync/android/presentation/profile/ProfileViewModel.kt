@@ -886,8 +886,10 @@ class ProfileViewModel @Inject constructor(
                     val s = SystemClock.elapsedRealtime()
                     try {
                         when (selectedTab) {
-                            ProfileTab.SOCIAL -> fetchSocialData(forceRefresh = true)
-                            ProfileTab.REVIEWS -> fetchReviews(forceRefresh = true)
+                            // Social and reviews come in pages, and reloading one cuts it back to
+                            // page 1. A soft refresh only fills in a list that has not loaded (#164).
+                            ProfileTab.SOCIAL -> fetchSocialData(forceRefresh = forceNetwork)
+                            ProfileTab.REVIEWS -> fetchReviews(forceRefresh = forceNetwork)
                             ProfileTab.STATS -> fetchStats(forceRefresh = true)
                             // The heatmap rides the stats payload. An explicit pull forces the
                             // network (like the other tabs); a soft refresh stays network-first
