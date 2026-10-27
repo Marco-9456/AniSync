@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
@@ -79,6 +80,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -96,6 +98,8 @@ import com.anisync.android.domain.LibraryPriority
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.result.ResultGroupHeader
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.HideKeyboardOnCollapse
+import com.anisync.android.presentation.components.rememberSearchFieldCollapse
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.WhatsNewDot
@@ -655,14 +659,31 @@ fun LibraryScreen(
         uiState.activeSearchCategory
     ) { librarySearchView(uiState) }
 
+    val fieldCollapse = rememberSearchFieldCollapse(searchBarState)
+    val hasSearchResults =
+        uiState.searchMatches.isNotEmpty() && !uiState.isLoading && uiState.errorMessage == null
+    LaunchedEffect(fieldCollapse, hasSearchResults) {
+        if (!hasSearchResults) fieldCollapse.expand()
+    }
+
     ExpandedFullScreenSearchBar(
         state = searchBarState,
         // On background rather than surfaceContainerHigh, so the cards keep their contrast.
         colors = SearchBarDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
-        inputField = { ProvideDisplaySize(content = inputField) }
+        inputField = {
+            ProvideDisplaySize {
+                Box(modifier = fieldCollapse.field, propagateMinConstraints = true) { inputField() }
+            }
+        }
     ) {
         ProvideDisplaySize {
+            HideKeyboardOnCollapse(fieldCollapse)
             LibrarySearchOverlay(
+                modifier = fieldCollapse.content(
+                    topInset = WindowInsets.safeDrawing.getTop(LocalDensity.current),
+                    background = MaterialTheme.colorScheme.background
+                ),
+                resultsModifier = Modifier.nestedScroll(fieldCollapse.nestedScrollConnection),
                 uiState = uiState,
                 view = searchView,
                 isSearchQueryEmpty = isSearchQueryEmpty,

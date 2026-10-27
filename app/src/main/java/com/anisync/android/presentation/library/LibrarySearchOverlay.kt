@@ -101,9 +101,11 @@ internal fun LibrarySearchOverlay(
     onGridChange: (Boolean) -> Unit,
     onResultClick: (Int) -> Unit,
     onIncrement: (Int) -> Unit,
-    onEdit: (LibraryEntry) -> Unit
+    onEdit: (LibraryEntry) -> Unit,
+    modifier: Modifier = Modifier,
+    resultsModifier: Modifier = Modifier
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
         LibraryFilterChipBar(
             sort = uiState.sortOption,
             isAscending = uiState.isAscending,
@@ -153,7 +155,8 @@ internal fun LibrarySearchOverlay(
                     view = view,
                     onResultClick = onResultClick,
                     onIncrement = onIncrement,
-                    onEdit = onEdit
+                    onEdit = onEdit,
+                    modifier = resultsModifier
                 )
             }
         }
@@ -195,7 +198,8 @@ private fun LibrarySearchResults(
     view: LibrarySearchView,
     onResultClick: (Int) -> Unit,
     onIncrement: (Int) -> Unit,
-    onEdit: (LibraryEntry) -> Unit
+    onEdit: (LibraryEntry) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val mediaType = uiState.mediaType
     fun LibraryEntry.canIncrement() = status == LibraryStatus.CURRENT || status == LibraryStatus.REPEATING
@@ -210,7 +214,7 @@ private fun LibrarySearchResults(
             contentPadding = padding,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
-            modifier = Modifier.fillMaxSize()
+            modifier = modifier.fillMaxSize()
         ) {
             items(view.entries, key = { "search_${it.mediaId}" }, contentType = { "LibraryEntry" }) { entry ->
                 LibraryPosterCard(
@@ -238,7 +242,7 @@ private fun LibrarySearchResults(
             contentPadding = padding,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize()
+            modifier = modifier.fillMaxSize()
         ) {
             groups.forEach { (status, entries) ->
                 if (groups.size > 1) {
