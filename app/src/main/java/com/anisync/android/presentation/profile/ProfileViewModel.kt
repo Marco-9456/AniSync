@@ -852,7 +852,9 @@ class ProfileViewModel @Inject constructor(
         // A refresh replaces the activity seed with a fresh page 1, so drop any
         // lazily-loaded older pages — they'd misalign or duplicate atop the new seed.
         // Keep the active filter so pagination keeps paging that type's stream.
-        seedActivityPagination(localState.value.selectedActivityFilter)
+        // The soft refresh on resume keeps them. It reads back the cached seed they
+        // follow, and the reader it lands under may be pages deep (#164).
+        if (forceNetwork) seedActivityPagination(localState.value.selectedActivityFilter)
 
         viewModelScope.launch {
             Trace.beginSection("AniSync.Profile.Refresh.Total")
