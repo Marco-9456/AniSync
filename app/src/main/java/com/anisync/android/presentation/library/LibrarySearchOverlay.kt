@@ -174,7 +174,8 @@ private fun LibrarySearchRail(
     }
     PinnedRail(
         pinned = { ViewModeToggle(isGrid = uiState.isGridView, onGridChange = onGridChange) },
-        listState = listState
+        listState = listState,
+        modifier = Modifier.padding(bottom = 8.dp)
     ) {
         items(view.categories, key = { it.first.toId() }) { (tab, count) ->
             LibraryRailChip(
@@ -198,7 +199,7 @@ private fun LibrarySearchResults(
 ) {
     val mediaType = uiState.mediaType
     fun LibraryEntry.canIncrement() = status == LibraryStatus.CURRENT || status == LibraryStatus.REPEATING
-    val padding = PaddingValues(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 24.dp)
+    val padding = PaddingValues(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 24.dp)
 
     if (uiState.isGridView) {
         // One flat grid: headers left half-empty poster rows, and each card's tab already says

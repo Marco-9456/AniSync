@@ -322,7 +322,7 @@ private fun OverviewRails(
     modifier: Modifier
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier.fillMaxSize()
     ) {
@@ -373,7 +373,7 @@ private fun CategoryResults(
     }
 }
 
-private val ResultsPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 24.dp)
+private val ResultsPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 24.dp)
 
 /**
  * Endless scroll: the footer only composes once scrolled into view, and asks for the next page

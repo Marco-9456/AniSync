@@ -1053,6 +1053,7 @@ private fun SearchResultsContent(
         // A preset can open on a category before anything is typed, and the rail says so.
         if (state.hasSearchResults || category != ResultCategory.ALL) {
             SearchResultsRail(
+                modifier = Modifier.padding(bottom = 8.dp),
                 categories = state.railCategories,
                 activeCategory = category,
                 isGrid = isGrid,
