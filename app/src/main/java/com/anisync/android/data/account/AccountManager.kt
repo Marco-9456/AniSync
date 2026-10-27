@@ -6,6 +6,7 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NotificationBadgeStore
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.dao.LibraryDao
+import com.anisync.android.data.local.dao.MediaDetailsDao
 import com.anisync.android.data.local.dao.SavedForumThreadDao
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.PreferencesRepository
@@ -44,6 +45,7 @@ class AccountManager @Inject constructor(
     private val accountStore: AccountStore,
     private val apolloClient: ApolloClient,
     private val libraryDao: LibraryDao,
+    private val mediaDetailsDao: MediaDetailsDao,
     private val airingScheduleDao: AiringScheduleDao,
     private val savedForumThreadDao: SavedForumThreadDao,
     private val preferencesRepository: PreferencesRepository,
@@ -227,6 +229,9 @@ class AccountManager @Inject constructor(
     private suspend fun clearLocalState() {
         withContext(Dispatchers.IO) {
             runCatching { apolloClient.apolloStore.clearAll() }
+            // Cached title pages are shared by every account, and a page falls back to the entry
+            // on its row when the library has none for the title.
+            mediaDetailsDao.clearListEntries()
             savedForumThreadDao.deleteAll()
             // Notification dedup is per-account now (kept across switches) — not wiped here.
             appSettings.clearAccountScoped()

@@ -58,6 +58,13 @@ interface MediaDetailsDao {
         hiddenFromStatusLists: Boolean?
     )
 
+    /** Takes the viewer's entry off every cached title, since it belongs to whoever fetched it. */
+    @Query(
+        "UPDATE media_details SET listEntryId = NULL, listStatus = NULL, listProgress = NULL, " +
+            "listNotes = NULL, listEntryPrivate = NULL, listEntryHiddenFromStatusLists = NULL"
+    )
+    suspend fun clearListEntries()
+
     /**
      * Clear all cached media details.
      */
