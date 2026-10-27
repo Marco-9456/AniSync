@@ -51,6 +51,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.os.LocaleListCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.anisync.android.data.AppLocale
@@ -372,13 +374,13 @@ class MainActivity : AppCompatActivity() {
 
                                 // Both libraries have to exist locally for the list indicators to be
                                 // truthful on the browsing screens, and only the anime one is fetched
-                                // by opening the Library tab.
+                                // by opening the Library tab. They also have to catch up with what was
+                                // watched elsewhere while the app sat in the background.
                                 LaunchedEffect(sessionEpoch, isLoggedIn) {
-                                    if (isLoggedIn) {
-                                        listOf(MediaType.ANIME, MediaType.MANGA).forEach { type ->
-                                            LibrarySyncWorker.enqueueIfEmpty(this@MainActivity, type)
-                                        }
-                                    }
+                                    if (isLoggedIn) syncLibrariesIfStale()
+                                }
+                                LifecycleEventEffect(Lifecycle.Event.ON_START) {
+                                    if (isLoggedIn) syncLibrariesIfStale()
                                 }
 
                                 // Signing out later returns to the plain LoginScreen — onboarding is
@@ -436,6 +438,12 @@ class MainActivity : AppCompatActivity() {
         handleAuthRedirect(intent)
         if (!routeAccountDeepLink(intent)) {
             _newIntents.tryEmit(intent)
+        }
+    }
+
+    private fun syncLibrariesIfStale() {
+        listOf(MediaType.ANIME, MediaType.MANGA).forEach { type ->
+            LibrarySyncWorker.enqueueIfStale(this, type)
         }
     }
 

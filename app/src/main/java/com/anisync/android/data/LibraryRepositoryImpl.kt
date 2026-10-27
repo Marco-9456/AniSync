@@ -62,6 +62,7 @@ class LibraryRepositoryImpl @Inject constructor(
     private val mediaTagsDao: MediaTagsDao,
     private val appSettings: AppSettings,
     private val accountStore: AccountStore,
+    private val refreshTimes: LibraryRefreshTimes,
     @param:ApplicationContext private val context: Context
 ) : LibraryRepository {
 
@@ -259,8 +260,12 @@ class LibraryRepositoryImpl @Inject constructor(
             }
 
             libraryDao.smartMergeByType(owner, type, entries.map { it.toEntity(type).copy(ownerId = owner) })
+            refreshTimes.markRefreshed(owner, type)
         }
     }
+
+    override fun lastRefreshedAt(type: MediaType): Long? =
+        refreshTimes.lastRefreshedAt(currentOwnerId(), type)
 
     override fun observeLibraryTags(): Flow<Map<Int, List<Tag>>> =
         mediaTagsDao.observeAll().map { rows -> rows.associate { it.mediaId to it.tags } }

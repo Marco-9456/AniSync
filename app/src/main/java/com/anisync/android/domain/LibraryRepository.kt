@@ -25,6 +25,12 @@ interface LibraryRepository {
      */
     suspend fun refreshLibrary(username: String, type: MediaType): Result<Unit>
 
+    /**
+     * When [refreshLibrary] last brought the active account's [type] list down since the app
+     * started, or null when it has not yet.
+     */
+    fun lastRefreshedAt(type: MediaType): Long?
+
     /** Every cached title's tags, keyed by media id. [syncLibraryTags] is what fills it. */
     fun observeLibraryTags(): Flow<Map<Int, List<Tag>>>
 
