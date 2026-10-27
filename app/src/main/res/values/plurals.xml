@@ -1,17 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Episode counts: "1 Ep" / "12 Eps" -->
-    <plurals name="episodes_count">
-        <item quantity="one">%d Ep</item>
-        <item quantity="other">%d Eps</item>
-    </plurals>
-
-    <!-- Chapter counts: "1 Ch" / "10 Ch" -->
-    <plurals name="chapters_count">
-        <item quantity="one">%d Ch</item>
-        <item quantity="other">%d Ch</item>
-    </plurals>
-
     <!-- Episodes behind: "1 EP BEHIND" / "3 EPS BEHIND" -->
     <plurals name="episodes_behind">
         <item quantity="one">%d EP BEHIND</item>
@@ -34,21 +22,5 @@
     <plurals name="time_minutes">
         <item quantity="one">%dm</item>
         <item quantity="other">%dm</item>
-    </plurals>
-
-    <!-- Days unit for profile: "Day" / "Days" -->
-    <plurals name="days_unit">
-        <item quantity="one">Day</item>
-        <item quantity="other">Days</item>
-    </plurals>
-
-    <!-- Plurals for episodes/chapters -->
-    <plurals name="episodes_format">
-        <item quantity="one">%d Episode</item>
-        <item quantity="other">%d Episodes</item>
-    </plurals>
-    <plurals name="chapters_format">
-        <item quantity="one">%d Chapter</item>
-        <item quantity="other">%d Chapters</item>
     </plurals>
 </resources>
