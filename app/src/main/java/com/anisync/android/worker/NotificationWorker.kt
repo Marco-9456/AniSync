@@ -649,20 +649,27 @@ class NotificationWorker @AssistedInject constructor(
     private fun maybePostSocialSummary(ctx: AcctCtx) {
         val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val group = groupKey(GROUP_KEY_SOCIAL, ctx)
-        val activeInGroup = nm.activeNotifications.count { sbn ->
+        val children = nm.activeNotifications.filter { sbn ->
             sbn.notification.group == group &&
                 (sbn.notification.flags and android.app.Notification.FLAG_GROUP_SUMMARY) == 0
         }
-        if (activeInGroup < 2) return
+        if (children.size < 2) return
 
-        val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.ACTIVITY_REPLY_CHANNEL_ID)
+        // Take the most prominent channel among the children, so a stack of muted likes stays in
+        // the silent section and a channel the user turned off can't hide the summary.
+        val channelId = children
+            .map { it.notification.channelId }
+            .distinct()
+            .maxBy { nm.getNotificationChannel(it)?.importance ?: NotificationManager.IMPORTANCE_NONE }
+
+        val builder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(string(R.string.notification_social_summary_title))
             .setContentText(
                 quantityString(
                     R.plurals.notification_social_summary_count,
-                    activeInGroup,
-                    activeInGroup
+                    children.size,
+                    children.size
                 )
             )
             .setGroup(group)
