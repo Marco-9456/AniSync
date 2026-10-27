@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Weighted Score** - The score AniList used to call average is called weighted, on title pages, in the sort options and in the search filter, which was labelled mean score by mistake.
 - **Same Universe** - A related title set in the same universe says so, where it read Other before.
 - **Emoji** - Emoji in statuses, messages, replies, forum posts, reviews, bios and notes go to AniList as they are, now that it stores them, and every limit counts an emoji as one character, as AniList does. That makes a lone emoji too short for a reply or a message, as it is on the website.
+- **Keeping Up** - Your lists refresh in the background when AniSync comes back after ten minutes or more, and a title's page checks your entry with AniList each time it opens, so episodes and chapters logged on the website or in another app show up without a pull to refresh. (#165)
 
 ### Fixed
 
@@ -44,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Thread Body** - A new thread needs a body of at least 10 characters, which AniList requires, instead of failing when it is sent.
 - **List Notes** - Notes stop at 6000 characters and rewatches at 1000, the most AniList accepts.
 - **Scoring System** - Library scores switch to a new scoring system a few seconds after it is picked, where they kept the old numbers until the list was refreshed. Editing a score in between could save it on the wrong scale.
+- **Editing From A Title's Page** - The edit sheet opens on the entry the page shows. It could open on an older copy from the library, missing progress and dates logged elsewhere since, and saving it sent that older progress back to AniList. A title on your list that the library had not loaded yet opened as a blank new entry, and saving that overwrote the real one. (#165)
+- **Switching Accounts** - A title's page no longer shows the previous account's status and progress on a title the new account has not added.
 
 ## [3.3.0] - 2026-10-20
 
