@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -70,6 +71,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -85,6 +87,8 @@ import com.anisync.android.R
 import com.anisync.android.domain.DiscoverSection
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.HideKeyboardOnCollapse
+import com.anisync.android.presentation.components.rememberSearchFieldCollapse
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.discover.components.AiringTimeline
 import com.anisync.android.presentation.discover.components.BrowseChip
@@ -537,6 +541,7 @@ private fun SearchInputField(
     mediaType: MediaType,
     coroutineScope: CoroutineScope,
     onSearch: () -> Unit,
+    modifier: Modifier = Modifier,
     collapsedTrailing: (@Composable () -> Unit)? = null
 ) {
     val isExpanded = searchBarState.currentValue == SearchBarValue.Expanded
@@ -562,7 +567,7 @@ private fun SearchInputField(
         // Without this the collapsed bar is sized by whatever it happens to contain, so Discover
         // (leading icon, longer placeholder) sat at the cap while Library sat under it and the two
         // screens showed visibly different bars. Both fill the width instead.
-        modifier = if (isExpanded) Modifier else Modifier.fillMaxWidth(),
+        modifier = if (isExpanded) modifier else modifier.fillMaxWidth(),
         searchBarState = searchBarState,
         textFieldState = textFieldState,
         onSearch = {
@@ -967,6 +972,14 @@ private fun DiscoverSearchOverlay(
     var openedFilter by remember { mutableStateOf<FilterId?>(null) }
     val category = state.activeCategory
 
+    val fieldCollapse = rememberSearchFieldCollapse(searchBarState)
+    // A spinner, an error or an empty result has nothing to scroll, so nothing else could bring
+    // the field back.
+    val hasResultList = state.hasSearchResults && !state.isSearching && state.searchError == null
+    LaunchedEffect(fieldCollapse, hasResultList) {
+        if (!hasResultList) fieldCollapse.expand()
+    }
+
     ExpandedFullScreenSearchBar(
         state = searchBarState,
         // On background rather than surfaceContainerHigh, so the result cards keep their contrast.
@@ -978,13 +991,20 @@ private fun DiscoverSearchOverlay(
                     textFieldState = textFieldState,
                     mediaType = state.mediaType,
                     coroutineScope = coroutineScope,
-                    onSearch = { onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) }
+                    onSearch = { onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
+                    modifier = fieldCollapse.field
                 )
             }
         }
     ) {
         ProvideDisplaySize {
-            Column(modifier = Modifier.fillMaxSize()) {
+            HideKeyboardOnCollapse(fieldCollapse)
+            val topInset = WindowInsets.safeDrawing.getTop(LocalDensity.current)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(fieldCollapse.content(topInset, MaterialTheme.colorScheme.background))
+            ) {
                 // Characters, staff, users and studios are found by name alone, so the media
                 // filters would have nothing to narrow there.
                 if (category.hasMediaFilters()) {
@@ -1011,7 +1031,8 @@ private fun DiscoverSearchOverlay(
                     navController = navController,
                     titleLanguage = titleLanguage,
                     onAction = onAction,
-                    actions = actions
+                    actions = actions,
+                    resultsModifier = Modifier.nestedScroll(fieldCollapse.nestedScrollConnection)
                 )
             }
         }
@@ -1045,7 +1066,8 @@ private fun SearchResultsContent(
     navController: NavHostController?,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     onAction: (DiscoverAction) -> Unit,
-    actions: SearchResultActions
+    actions: SearchResultActions,
+    resultsModifier: Modifier = Modifier
 ) {
     val category = state.activeCategory
     val isGrid = state.viewMode == com.anisync.android.data.DiscoverViewMode.GRID
@@ -1112,6 +1134,7 @@ private fun SearchResultsContent(
                                 state = state,
                                 titleLanguage = titleLanguage,
                                 isGrid = isGrid,
+                                modifier = resultsModifier,
                                 // Users open full screen, everything else in the pane.
                                 actions = SearchResultActions(
                                     onMedia = { onSelect(SearchTarget.Media(it)) },
@@ -1139,7 +1162,8 @@ private fun SearchResultsContent(
                     titleLanguage = titleLanguage,
                     isGrid = isGrid,
                     actions = actions,
-                    onAction = onAction
+                    onAction = onAction,
+                    modifier = resultsModifier
                 )
             }
         }
@@ -1153,6 +1177,7 @@ private fun SearchResults(
     isGrid: Boolean,
     actions: SearchResultActions,
     onAction: (DiscoverAction) -> Unit,
+    modifier: Modifier = Modifier,
     selected: SearchTarget? = null
 ) {
     com.anisync.android.presentation.discover.components.SearchResults(
@@ -1166,6 +1191,7 @@ private fun SearchResults(
         actions = actions,
         onShowAll = { onAction(DiscoverAction.OnCategoryChange(it)) },
         onLoadMore = { onAction(DiscoverAction.LoadMoreResults) },
+        modifier = modifier,
         selected = selected
     )
 }
