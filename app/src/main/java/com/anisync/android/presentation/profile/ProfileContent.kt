@@ -170,7 +170,15 @@ fun ProfileContent(
     val dockPx = with(LocalDensity.current) { statusBarInset.roundToPx() }.toFloat()
     var contentTopWindow by remember { mutableFloatStateOf(0f) }
     var inlineTabsTopWindow by remember { mutableFloatStateOf(Float.MAX_VALUE) }
-    val tabsDocked by remember { derivedStateOf { inlineTabsTopWindow <= contentTopWindow + dockPx } }
+    val listState = rememberLazyListState()
+    ScrollToTopOnRequest(scrollToTopRequest, listState)
+    // Coming back to the page below the tabs never lays the in-list strip out, so its top is never
+    // measured and the pinned copy goes by the list's position instead.
+    val tabsDocked by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 1 || inlineTabsTopWindow <= contentTopWindow + dockPx
+        }
+    }
 
     PullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
@@ -189,9 +197,6 @@ fun ProfileContent(
             )
         }
     ) {
-    val listState = rememberLazyListState()
-    ScrollToTopOnRequest(scrollToTopRequest, listState)
-
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),

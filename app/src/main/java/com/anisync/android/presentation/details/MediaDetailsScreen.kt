@@ -1100,8 +1100,12 @@ fun DetailsPageContent(
     val dockPx = with(density) { topBarHeight.roundToPx() }.toFloat()
     var contentTopWindow by remember { mutableFloatStateOf(0f) }
     var inlineTabsTopWindow by remember { mutableFloatStateOf(Float.MAX_VALUE) }
+    // Coming back to the page below the tabs never lays the in-list strip out, so its top is never
+    // measured and the pinned copy goes by the list's position instead. The tabs are item 2.
     val tabsDocked by remember {
-        derivedStateOf { inlineTabsTopWindow <= contentTopWindow + dockPx }
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 2 || inlineTabsTopWindow <= contentTopWindow + dockPx
+        }
     }
 
     Box(
