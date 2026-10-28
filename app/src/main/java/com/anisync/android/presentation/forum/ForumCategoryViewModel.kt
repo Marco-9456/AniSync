@@ -2,6 +2,7 @@ package com.anisync.android.presentation.forum
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.R
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.Result
@@ -171,11 +172,11 @@ class ForumCategoryViewModel @Inject constructor(
             if (isSaved) {
                 forumRepository.unsaveThread(thread.id)
                 _uiState.update { it.copy(savedThreadIds = (it.savedThreadIds - thread.id).toPersistentSet()) }
-                toastManager.showToast(ToastType.SUCCESS, message = "Thread unsaved")
+                toastManager.showToast(ToastType.SUCCESS, R.string.thread_unsaved)
             } else {
                 forumRepository.saveThread(thread)
                 _uiState.update { it.copy(savedThreadIds = (it.savedThreadIds + thread.id).toPersistentSet()) }
-                toastManager.showToast(ToastType.SUCCESS, message = "Thread saved")
+                toastManager.showToast(ToastType.SUCCESS, R.string.thread_saved)
             }
             threadEventBus.publish(ThreadUpdate(thread.id, isSaved = !isSaved))
         }
@@ -197,7 +198,7 @@ class ForumCategoryViewModel @Inject constructor(
                 is Result.Success -> {
                     toastManager.showToast(
                         ToastType.SUCCESS,
-                        message = if (newState) "Subscribed to thread" else "Unsubscribed from thread"
+                        message = if (newState) R.string.subscribed_to_thread else R.string.unsubscribed_from_thread
                     )
                 }
 

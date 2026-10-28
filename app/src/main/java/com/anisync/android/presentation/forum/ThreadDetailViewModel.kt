@@ -2,6 +2,7 @@ package com.anisync.android.presentation.forum
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.R
 import com.anisync.android.domain.ForumComment
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.PaginatedResult
@@ -266,7 +267,7 @@ class ThreadDetailViewModel @Inject constructor(
             if (targetMissed) {
                 toastManager.showToast(
                     ToastType.INFO,
-                    message = "Comment unavailable, showing thread from start"
+                    message = R.string.forum_comment_unavailable
                 )
             }
         }

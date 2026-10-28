@@ -2,6 +2,7 @@ package com.anisync.android.presentation.forum
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumSearchFilters
@@ -368,10 +369,10 @@ class ForumViewModel @Inject constructor(
         viewModelScope.launch {
             if (isCurrentlySaved) {
                 forumRepository.unsaveThread(thread.id)
-                toastManager.showToast(ToastType.SUCCESS, message = "Thread unsaved")
+                toastManager.showToast(ToastType.SUCCESS, R.string.thread_unsaved)
             } else {
                 forumRepository.saveThread(thread)
-                toastManager.showToast(ToastType.SUCCESS, message = "Thread saved")
+                toastManager.showToast(ToastType.SUCCESS, R.string.thread_saved)
             }
             // The Saved collection is the list being looked at, so it has to re-read Room.
             val state = _uiState.value
