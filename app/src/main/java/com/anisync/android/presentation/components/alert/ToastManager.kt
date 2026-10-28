@@ -2,6 +2,7 @@ package com.anisync.android.presentation.components.alert
 
 import android.content.Context
 import android.os.SystemClock
+import androidx.annotation.StringRes
 import com.anisync.android.R
 import com.anisync.android.data.network.findApiError
 import com.anisync.android.data.util.ApiError
@@ -78,6 +79,11 @@ class ToastManager @Inject constructor(
             secondaryAction = secondaryAction,
             key = key,
         )
+    }
+
+    /** A toast whose message is one of the app's strings, read in the app's own language. */
+    fun showToast(type: ToastType, @StringRes message: Int, vararg formatArgs: Any) {
+        showToast(type, message = AppLocale.wrap(context).getString(message, *formatArgs))
     }
 
     /** Takes the toast off screen. The cause, if there is one, is left to raise it again. */
