@@ -47,9 +47,11 @@ fun pickThemeSong(
     return null
 }
 
-/** Cuts with audio that are neither spoilers nor adult. */
-private fun MediaTheme.playableVersions(): List<ThemeVersion> =
-    versions.filter { it.audio != null && !it.spoiler && !it.nsfw }
+/**
+ * Cuts with audio. AnimeThemes' spoiler and NSFW flags describe the video, and a recap plays only
+ * the song of a title the user has watched, so neither flag rules a cut out.
+ */
+private fun MediaTheme.playableVersions(): List<ThemeVersion> = versions.filter { it.audio != null }
 
 /** The plain cut before a dub or an edit of the same slot, then by number. */
 private val themeOrder = compareBy<MediaTheme>(
