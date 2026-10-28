@@ -1,8 +1,12 @@
 package com.anisync.android.presentation.review
 
+import android.content.Context
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.R
 import com.anisync.android.ReviewDetailsQuery
+import com.anisync.android.data.util.AppLocale
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.Result
@@ -13,6 +17,7 @@ import com.apollographql.cache.normalized.fetchPolicy
 import com.anisync.android.type.ReviewRating
 import com.anisync.android.ui.theme.MediaArtworkSchemes
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,11 +37,15 @@ data class ReviewDetailUiState(
 class ReviewDetailViewModel @Inject constructor(
     private val apolloClient: ApolloClient,
     private val detailsRepository: DetailsRepository,
-    private val artworkSchemes: MediaArtworkSchemes
+    private val artworkSchemes: MediaArtworkSchemes,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReviewDetailUiState())
     val uiState: StateFlow<ReviewDetailUiState> = _uiState.asStateFlow()
+
+    // Through AppLocale, since the application context keeps the system language.
+    private fun string(@StringRes id: Int): String = AppLocale.wrap(context).getString(id)
 
     fun load(reviewId: Int) {
         viewModelScope.launch {
@@ -51,7 +60,7 @@ class ReviewDetailViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = response.errors?.first()?.message ?: "Failed to load review"
+                            errorMessage = response.errors?.first()?.message ?: string(R.string.failed_to_load_review)
                         )
                     }
                     return@launch
@@ -59,7 +68,7 @@ class ReviewDetailViewModel @Inject constructor(
 
                 val data = response.data?.Review
                 if (data == null) {
-                    _uiState.update { it.copy(isLoading = false, errorMessage = "Review not found") }
+                    _uiState.update { it.copy(isLoading = false, errorMessage = string(R.string.review_not_found)) }
                     return@launch
                 }
 
@@ -92,7 +101,7 @@ class ReviewDetailViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isLoading = false, errorMessage = e.message ?: "Failed to load review")
+                    it.copy(isLoading = false, errorMessage = e.message ?: string(R.string.failed_to_load_review))
                 }
             }
         }
