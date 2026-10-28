@@ -4,8 +4,12 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -42,6 +46,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -85,7 +91,10 @@ import com.anisync.android.presentation.share.FavouritesShareCard
 import com.anisync.android.presentation.share.ProfileStatsShareCard
 import com.anisync.android.presentation.share.ShareCardTemplate
 import com.anisync.android.presentation.share.ShareImageSheet
+import com.anisync.android.presentation.statistics.StatsRail
+import com.anisync.android.presentation.statistics.StatsShareFab
 import com.anisync.android.type.MediaType
+import kotlinx.coroutines.launch
 import com.anisync.android.util.ShareUtils
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.anisync.android.presentation.components.ScrollToTopOnRequest
@@ -154,6 +163,7 @@ fun ProfileContent(
             onLastReplyClick = onLastReplyClick,
             showAccountSwitcher = showAccountSwitcher,
             onAccountSwitchClick = onAccountSwitchClick,
+            onShareStats = { statsShareVisible = true },
             statsColumns = statsColumns,
             modifier = modifier
         )
@@ -178,6 +188,45 @@ fun ProfileContent(
         derivedStateOf {
             listState.firstVisibleItemIndex > 1 || inlineTabsTopWindow <= contentTopWindow + dockPx
         }
+    }
+
+    // Picking a tab or a Statistics view docks the strip, so the page starts at the top of the
+    // screen. Each view comes back where it was left.
+    val scope = rememberCoroutineScope()
+    val dockStrip: suspend () -> Unit = {
+        listState.scrollToItem(PROFILE_TABS_INDEX)
+        listState.scrollBy(-dockPx)
+    }
+    val statsScroll = remember { mutableMapOf<StatsView, Pair<Int, Int>>() }
+    var restoreStatsView by remember { mutableStateOf<StatsView?>(null) }
+    LaunchedEffect(uiState.selectedStatsView, restoreStatsView) {
+        val view = restoreStatsView
+        if (view == null || view != uiState.selectedStatsView) return@LaunchedEffect
+        restoreStatsView = null
+        val saved = statsScroll[view]
+        if (saved != null) listState.scrollToItem(saved.first, saved.second) else dockStrip()
+    }
+    val onTabSelected: (ProfileTab) -> Unit = { tab ->
+        onAction(ProfileAction.SelectTab(tab))
+        scope.launch { dockStrip() }
+    }
+    val onStatsViewSelected: (StatsView) -> Unit = { view ->
+        if (view != uiState.selectedStatsView) {
+            if (tabsDocked) {
+                statsScroll[uiState.selectedStatsView] =
+                    listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+            }
+            restoreStatsView = view
+            onAction(ProfileAction.SelectStatsView(view))
+        }
+    }
+    val tabStrip: @Composable () -> Unit = {
+        ProfileTabStrip(
+            uiState = uiState,
+            onTabSelected = onTabSelected,
+            onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
+            onStatsViewSelected = onStatsViewSelected
+        )
     }
 
     PullToRefreshBox(
@@ -243,10 +292,7 @@ fun ProfileContent(
                     .fillMaxWidth()
                     .onGloballyPositioned { inlineTabsTopWindow = it.boundsInWindow().top }
             ) {
-                ProfileTabsButtonGroup(
-                    selectedTab = uiState.selectedTab,
-                    onTabSelected = { onAction(ProfileAction.SelectTab(it)) }
-                )
+                tabStrip()
             }
         }
 
@@ -270,7 +316,6 @@ fun ProfileContent(
             studioColumns = studioColumns,
             statsColumns = statsColumns,
             showShareActions = true,
-            onShareStats = { statsShareVisible = true },
             onShareFavourites = { favouritesShareVisible = true }
         )
     }
@@ -283,12 +328,19 @@ fun ProfileContent(
                 .fillMaxWidth()
         ) {
             Box(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-                ProfileTabsButtonGroup(
-                    selectedTab = uiState.selectedTab,
-                    onTabSelected = { onAction(ProfileAction.SelectTab(it)) }
-                )
+                tabStrip()
             }
         }
+    }
+
+    if (uiState.selectedTab == ProfileTab.STATS && uiState.statsData != null) {
+        StatsShareFab(
+            onClick = { statsShareVisible = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 16.dp, bottom = 16.dp + LocalMainNavBarInset.current)
+        )
     }
     }
     }
@@ -430,7 +482,6 @@ internal fun LazyListScope.profileSelectedTabContent(
     studioColumns: Int,
     statsColumns: Int,
     showShareActions: Boolean = false,
-    onShareStats: () -> Unit = {},
     onShareFavourites: () -> Unit = {}
 ) {
     when (uiState.selectedTab) {
@@ -567,17 +618,9 @@ internal fun LazyListScope.profileSelectedTabContent(
         }
 
         ProfileTab.STATS -> {
-            if (showShareActions && uiState.statsData != null) {
-                item(key = "stats_share_action") {
-                    ShareTabAction(
-                        label = stringResource(R.string.share_stats_card),
-                        onClick = onShareStats
-                    )
-                }
-            }
+            item(key = "stats_top_gap") { Spacer(Modifier.height(8.dp)) }
             profileStatsTab(
                 uiState = uiState,
-                onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
                 onVoiceActorClick = onVoiceActorClick,
                 onStaffClick = onStaffClick,
                 onStudioClick = onStudioClick,
@@ -626,6 +669,33 @@ private fun profileTabIcon(tab: ProfileTab): ImageVector {
         ProfileTab.STATS -> Icons.Default.BarChart
     }
 }
+
+/** The profile tabs, and under them the Statistics rail while Statistics is open. */
+@Composable
+internal fun ProfileTabStrip(
+    uiState: ProfileUiState,
+    onTabSelected: (ProfileTab) -> Unit,
+    onStatsTypeSelected: (ProfileStatsType) -> Unit,
+    onStatsViewSelected: (StatsView) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        ProfileTabsButtonGroup(selectedTab = uiState.selectedTab, onTabSelected = onTabSelected)
+        if (uiState.selectedTab == ProfileTab.STATS) {
+            StatsRail(
+                statsType = uiState.selectedStatsType,
+                views = StatsView.entries.filter { it != StatsView.RECAPS },
+                selectedView = uiState.selectedStatsView,
+                onTypeSelected = onStatsTypeSelected,
+                onViewSelected = onStatsViewSelected,
+                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+            )
+        }
+    }
+}
+
+/** The in-list strip sits right after the profile header. */
+private const val PROFILE_TABS_INDEX = 1
 
 @Composable
 internal fun ProfileTabsButtonGroup(

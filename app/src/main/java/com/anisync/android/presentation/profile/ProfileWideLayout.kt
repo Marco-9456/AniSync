@@ -17,9 +17,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import com.anisync.android.presentation.statistics.StatsShareFab
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -284,6 +287,7 @@ fun ProfileWideLayout(
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     showAccountSwitcher: Boolean,
     onAccountSwitchClick: () -> Unit,
+    onShareStats: () -> Unit,
     statsColumns: Int,
     modifier: Modifier = Modifier
 ) {
@@ -354,6 +358,7 @@ fun ProfileWideLayout(
                 onLastReplyClick = onLastReplyClick,
                 showAccountSwitcher = showAccountSwitcher,
                 onAccountSwitchClick = onAccountSwitchClick,
+                onShareStats = onShareStats,
                 statsColumns = statsColumns,
                 collapse = collapse,
                 modifier = Modifier.weight(1f)
@@ -482,6 +487,7 @@ private fun ProfileTwoPane(
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     showAccountSwitcher: Boolean,
     onAccountSwitchClick: () -> Unit,
+    onShareStats: () -> Unit,
     statsColumns: Int,
     collapse: BioCollapseState,
     modifier: Modifier = Modifier
@@ -560,6 +566,7 @@ private fun ProfileTwoPane(
                 onCommentClick = onCommentClick,
                 onActivityClick = onActivityClick,
                 onLastReplyClick = onLastReplyClick,
+                onShareStats = onShareStats,
                 statsColumns = statsColumns
             )
         }
@@ -771,12 +778,16 @@ private fun ProfileTabPane(
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit,
     onActivityClick: (Int) -> Unit,
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
+    onShareStats: () -> Unit,
     statsColumns: Int,
     modifier: Modifier = Modifier
 ) {
     // Column counts come from the pane, not the window: this pane is a fraction of the window wide,
     // and a window-derived count budgets for space it does not have, squeezing every cell.
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // The tabs never scroll here, so each Statistics view simply keeps a list state of its own.
+        val listStateKey = if (uiState.selectedTab == ProfileTab.STATS) uiState.selectedStatsView.name else uiState.selectedTab.name
+        val listState = rememberSaveable(listStateKey, saver = LazyListState.Saver) { LazyListState() }
         val portraitColumns = profileGridColumns(baseMinSize = 150.dp, availableWidth = maxWidth)
         val studioColumns = profileGridColumns(
             baseMinSize = 240.dp,
@@ -785,9 +796,11 @@ private fun ProfileTabPane(
         )
 
         Column(modifier = Modifier.fillMaxSize()) {
-            ProfileTabsButtonGroup(
-                selectedTab = uiState.selectedTab,
+            ProfileTabStrip(
+                uiState = uiState,
                 onTabSelected = { onAction(ProfileAction.SelectTab(it)) },
+                onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
+                onStatsViewSelected = { onAction(ProfileAction.SelectStatsView(it)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -808,6 +821,7 @@ private fun ProfileTabPane(
                 }
             ) {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 48.dp + LocalMainNavBarInset.current)
                 ) {
@@ -830,6 +844,16 @@ private fun ProfileTabPane(
                         portraitColumns = portraitColumns,
                         studioColumns = studioColumns,
                         statsColumns = statsColumns
+                    )
+                }
+
+                if (uiState.selectedTab == ProfileTab.STATS && uiState.statsData != null) {
+                    StatsShareFab(
+                        onClick = onShareStats,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .navigationBarsPadding()
+                            .padding(end = 16.dp, bottom = 16.dp + LocalMainNavBarInset.current)
                     )
                 }
             }
