@@ -5,9 +5,7 @@ import androidx.compose.ui.graphics.toArgb
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.math.abs
 
 /**
  * Pins each genre's color to the fills on the Share cards, Stats and Wrapped frames. A seed or a
@@ -24,6 +22,7 @@ class GenreColorsTest {
         "Fantasy" to (0x584C72 to 0xEBDEFF),
         "Mecha" to (0x35566F to 0xCCE6FF),
         "Music" to (0x724929 to 0xFFDDC7),
+        "Mystery" to (0x255A5A to 0xB7EDEC),
         "Psychological" to (0x4B5074 to 0xDFE1FF),
         "Romance" to (0x744550 to 0xFFDAE1),
         "Sci-Fi" to (0x285966 to 0xBBEBFA),
@@ -54,10 +53,22 @@ class GenreColorsTest {
     }
 
     @Test
-    fun `drama matches its light fill within one step`() {
+    fun `drama keeps MaterialKolor's light fill`() {
         val drama = genreColor("Drama", dark = false)!!
         assertEquals(0xADD2FE, rgb(drama.container))
-        assertWithinOneStep(0x20486C, rgb(drama.content))
+        assertEquals(0x20486D, rgb(drama.content))
+    }
+
+    @Test
+    fun `undrawn genres sit in the widest gaps between the drawn hues`() {
+        val expected = mapOf(
+            "Hentai" to 0x6D4C22,
+            "Sports" to 0x595422,
+            "Horror" to 0x4A572C,
+            "Thriller" to 0x295B50,
+            "Mahou Shoujo" to 0x65496A,
+        )
+        for ((genre, container) in expected) assertEquals(genre, container, rgb(genreColor(genre, dark = true)!!.container))
     }
 
     @Test
@@ -72,11 +83,4 @@ class GenreColorsTest {
     }
 
     private fun rgb(color: Color) = color.toArgb() and 0xFFFFFF
-
-    private fun assertWithinOneStep(expected: Int, actual: Int) {
-        for (shift in listOf(16, 8, 0)) {
-            val delta = abs(((expected shr shift) and 0xFF) - ((actual shr shift) and 0xFF))
-            assertTrue("channel off by $delta", delta <= 1)
-        }
-    }
 }
