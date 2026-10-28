@@ -142,7 +142,7 @@
     <string name="discover_browse_manhwa">Manhwa</string>
     <string name="discover_browse_manhua">Manhua</string>
     <string name="discover_browse_light_novels">Light novels</string>
-    <string name="discover_reorder_title">Zmień kolejność sekcji</string>
+    <string name="discover_reorder_title">Zarządzaj sekcjami</string>
     <string name="discover_reorder_reset">Reset</string>
     <string name="discover_section_show">Pokarz sekcję</string>
     <string name="discover_section_hide">Ukryj sekcję</string>
@@ -1314,4 +1314,14 @@
     <string name="calendar_title">Kalendarz premier</string>
     <string name="calendar_open">Kalendarz premier</string>
     <string name="calendar_following_only">Pokarz tylko seriale z twojej listy</string>
+    <string name="forum_category_events">Wydarzenia</string>
+    <string name="forum_sort_fewest_replies">Najmniej odpowiedzi</string>
+    <string name="forum_sort_least_viewed">Najmniej obejrzane</string>
+    <string name="forum_sort_title_az">Tytuł A-Z</string>
+    <string name="forum_sort_title_za">Tytuł Z-A</string>
+    <string name="discover_section_popular">Najpopularniejsze</string>
+    <string name="discover_section_not_yet_released">Nie wypuszczone</string>
+    <string name="discover_reorder_caption">Przeciągnij aby zmienić układ. Ukryj sekcje klikając na oko. Anime i Manga mają niezależne układy.</string>
+    <string name="sort_last_added">Dodane</string>
+    <string name="sort_start_date">Rozpoczęte</string>
 </resources>
