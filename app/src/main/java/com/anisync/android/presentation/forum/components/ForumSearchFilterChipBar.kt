@@ -43,7 +43,7 @@ fun ForumSearchFilterChipBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         SheetChip(
-            label = "Sort · ${filters.sort.shortLabel()}",
+            label = stringResource(R.string.library_filter_chip_sort, filters.sort.shortLabel()),
             active = filters.sort != ThreadSortOption.Default,
             onClick = { onChipTap(ForumFilterId.SORT) }
         )
@@ -102,16 +102,19 @@ private fun SheetChip(
 }
 
 /** Human-readable label for a thread sort option, used by the chip + sort sheet. */
-internal fun ThreadSortOption.shortLabel(): String = when (this) {
-    ThreadSortOption.RECENTLY_REPLIED -> "Recently replied"
-    ThreadSortOption.LEAST_RECENTLY_REPLIED -> "Least recently replied"
-    ThreadSortOption.NEWEST -> "Newest"
-    ThreadSortOption.OLDEST -> "Oldest"
-    ThreadSortOption.MOST_REPLIES -> "Most replies"
-    ThreadSortOption.FEWEST_REPLIES -> "Fewest replies"
-    ThreadSortOption.MOST_VIEWED -> "Most viewed"
-    ThreadSortOption.LEAST_VIEWED -> "Least viewed"
-    ThreadSortOption.TITLE -> "Title A-Z"
-    ThreadSortOption.TITLE_DESC -> "Title Z-A"
-    ThreadSortOption.RELEVANCE -> "Relevance"
-}
+@Composable
+internal fun ThreadSortOption.shortLabel(): String = stringResource(
+    when (this) {
+        ThreadSortOption.RECENTLY_REPLIED -> R.string.forum_sort_field_last_reply
+        ThreadSortOption.LEAST_RECENTLY_REPLIED -> R.string.forum_sort_least_recently_replied
+        ThreadSortOption.NEWEST -> R.string.forum_sort_newest_short
+        ThreadSortOption.OLDEST -> R.string.forum_sort_oldest_short
+        ThreadSortOption.MOST_REPLIES -> R.string.forum_sort_most_replies
+        ThreadSortOption.FEWEST_REPLIES -> R.string.forum_sort_fewest_replies
+        ThreadSortOption.MOST_VIEWED -> R.string.forum_sort_most_viewed
+        ThreadSortOption.LEAST_VIEWED -> R.string.forum_sort_least_viewed
+        ThreadSortOption.TITLE -> R.string.forum_sort_title_az
+        ThreadSortOption.TITLE_DESC -> R.string.forum_sort_title_za
+        ThreadSortOption.RELEVANCE -> R.string.forum_sort_field_relevance
+    }
+)
