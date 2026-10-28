@@ -114,6 +114,11 @@
     <string name="forum_sort_field_relevance">Relevance</string>
     <string name="forum_sort_most_replies">Most replies</string>
     <string name="forum_sort_most_viewed">Most viewed</string>
+    <string name="forum_sort_least_recently_replied">Least recently replied</string>
+    <string name="forum_sort_fewest_replies">Fewest replies</string>
+    <string name="forum_sort_least_viewed">Least viewed</string>
+    <string name="forum_sort_title_az">Title A-Z</string>
+    <string name="forum_sort_title_za">Title Z-A</string>
     <string name="forum_sort_best_match_note">Best match only ranks once you have typed a search term.</string>
     <string name="forum_show_threads_count">Show %1$d threads</string>
     <!-- Forum thread actions -->
