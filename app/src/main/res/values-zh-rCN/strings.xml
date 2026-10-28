@@ -1,3 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="nav_library">仓库</string>
+    <string name="nav_discover">探索</string>
+    <string name="nav_feed">动态</string>
+    <string name="nav_forum">论坛</string>
+    <string name="nav_profile">主页</string>
+    <string name="feed_filter_all">全部</string>
+    <string name="feed_filter_status">状态</string>
+    <string name="feed_scope_global">全球</string>
+    <string name="feed_scope_following">我的关注</string>
+    <string name="feed_empty_global_title">暂无动态</string>
+    <string name="feed_empty_global">暂无动态，下滑刷新！</string>
+    <string name="feed_empty_following_title">暂无关注</string>
+    <string name="feed_empty_following">你关注的人状态与更新皆会在此显示~</string>
+    <string name="feed_empty_following_action">查看全域动态</string>
+    <string name="feed_empty_offline_title">暂无加载</string>
+    <string name="feed_empty_offline_desc">动态需要联网，检查网路连线后下滑刷新！</string>
+    <plurals name="feed_group_updates">
+        <item quantity="other">%d 条目录更新</item>
+    </plurals>
+    <string name="feed_day_today">今日</string>
+    <string name="feed_day_yesterday">昨日</string>
+    <string name="feed_new_posts">%d 条更新</string>
+    <string name="feed_empty_filtered_title">对 %1$s 无匹配结果</string>
+    <string name="feed_empty_filtered_body">%1$s 屏蔽了所有动态更新！</string>
+    <string name="feed_empty_clear_filters">清空过滤器</string>
+    <string name="feed_menu_group_updates">群组化清单更新</string>
+    <string name="feed_menu_group_updates_description">每人每小时</string>
+    <string name="feed_menu_merge_window">合并窗口</string>
+    <string name="feed_group_summary">%1$s · %2$s</string>
 </resources>
