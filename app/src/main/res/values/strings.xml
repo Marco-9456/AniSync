@@ -1430,6 +1430,13 @@
     <string name="statistics_taste_focused">Your taste is laser-focused</string>
     <string name="statistics_taste_balanced">Balanced taste</string>
     <string name="statistics_taste_eclectic">Wide, eclectic taste</string>
+    <!-- Statistics views -->
+    <string name="stats_view_recaps">Recaps</string>
+    <string name="stats_view_taste">Taste</string>
+    <string name="stats_view_how_you_watch">How you watch</string>
+    <string name="stats_view_how_you_read">How you read</string>
+    <string name="stats_view_eras">Eras</string>
+    <string name="stats_view_people">People</string>
     <!-- Airing calendar -->
     <string name="calendar_title">Airing Calendar</string>
     <string name="calendar_open">Airing calendar</string>

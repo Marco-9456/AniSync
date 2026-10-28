@@ -39,6 +39,8 @@ data class ProfileUiState(
     val selectedMangaStatus: LibraryStatus = LibraryStatus.CURRENT,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
     val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
+    val selectedStatsView: StatsView = StatsView.OVERVIEW,
+    val genreSort: GenreSort = GenreSort.TITLES,
     val isEditProfileDialogVisible: Boolean = false,
     val isBiographySheetVisible: Boolean = false,
     val userAnimeList: List<LibraryEntry> = emptyList(),
@@ -165,14 +167,30 @@ data class LengthUiModel(
 @Immutable
 enum class ProfileTab(@StringRes val titleRes: Int) {
     OVERVIEW(R.string.profile_tab_overview),
+    STATS(R.string.statistics_title),
     ACTIVITY(R.string.profile_tab_activity),
     ANIME(R.string.media_type_anime),
     MANGA(R.string.media_type_manga),
     FAVORITES(R.string.section_favorites),
     SOCIAL(R.string.profile_tab_social),
-    REVIEWS(R.string.section_reviews),
-    STATS(R.string.statistics_title)
+    REVIEWS(R.string.section_reviews)
 }
+
+/** The views behind the Statistics rail's chips. Recaps only exists on the viewer's own profile. */
+@Immutable
+enum class StatsView {
+    OVERVIEW,
+    RECAPS,
+    ACTIVITY,
+    TASTE,
+    HOW_YOU_WATCH,
+    ERAS,
+    PEOPLE
+}
+
+/** How the Taste view orders its genres. */
+@Immutable
+enum class GenreSort { TITLES, HOURS, SCORE }
 
 @Immutable
 enum class ProfileFavoritesFilter(@StringRes val labelRes: Int) {
@@ -222,6 +240,8 @@ sealed interface ProfileAction {
     data class SelectMangaStatus(val status: LibraryStatus) : ProfileAction
     data class SelectSocialTab(val tab: ProfileSocialTab) : ProfileAction
     data class SelectStatsType(val type: ProfileStatsType) : ProfileAction
+    data class SelectStatsView(val view: StatsView) : ProfileAction
+    data class SelectGenreSort(val sort: GenreSort) : ProfileAction
     data class SetEditProfileDialogVisible(val visible: Boolean) : ProfileAction
     data class SetBiographySheetVisible(val visible: Boolean) : ProfileAction
     data class SelectReview(val review: MediaReview?) : ProfileAction

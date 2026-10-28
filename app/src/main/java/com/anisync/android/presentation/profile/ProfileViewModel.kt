@@ -145,6 +145,8 @@ class ProfileViewModel @Inject constructor(
         val selectedMangaStatus: LibraryStatus = LibraryStatus.CURRENT,
         val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
+        val selectedStatsView: StatsView = StatsView.OVERVIEW,
+        val genreSort: GenreSort = GenreSort.TITLES,
         val isEditProfileDialogVisible: Boolean = false,
         val isBiographySheetVisible: Boolean = false,
         val selectedReview: com.anisync.android.domain.MediaReview? = null,
@@ -505,6 +507,8 @@ class ProfileViewModel @Inject constructor(
             selectedMangaStatus = local.selectedMangaStatus,
             selectedSocialTab = local.selectedSocialTab,
             selectedStatsType = local.selectedStatsType,
+            selectedStatsView = local.selectedStatsView,
+            genreSort = local.genreSort,
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
             isBiographySheetVisible = local.isBiographySheetVisible,
             selectedReview = local.selectedReview,
@@ -624,6 +628,10 @@ class ProfileViewModel @Inject constructor(
                     it.copy(selectedStatsType = action.type)
                 }
             }
+
+            is ProfileAction.SelectStatsView -> localState.update { it.copy(selectedStatsView = action.view) }
+
+            is ProfileAction.SelectGenreSort -> localState.update { it.copy(genreSort = action.sort) }
 
             is ProfileAction.SelectActivityFilter -> {
                 if (localState.value.selectedActivityFilter != action.filter) {
