@@ -84,9 +84,16 @@ class ThemeSongPickTest {
     }
 
     @Test
-    fun `spoiler and adult cuts are skipped`() {
-        val themes = listOf(theme(1, ThemeType.OP, 1, "1-25", spoiler = true), theme(2, ThemeType.OP, 2, "26-51"))
-        assertEquals("OP2", pick(1..5, themes)!!.theme.slug)
+    fun `spoiler and NSFW flags on the video do not stop the song`() {
+        val themes = listOf(theme(1, ThemeType.OP, 1, "1-25", spoiler = true, nsfw = true), theme(2, ThemeType.OP, 2, "26-51"))
+        assertEquals("OP1", pick(1..5, themes)!!.theme.slug)
+    }
+
+    @Test
+    fun `a film plays its spoiler flagged ending`() {
+        val shinEvangelion = listOf(theme(1, ThemeType.ED, 1, null, spoiler = true))
+        val choice = pickThemeSong(listOf(ThemeSongCandidate(3786, isFilm = true, watched = 1..1))) { shinEvangelion }!!
+        assertEquals("ED1", choice.theme.slug)
     }
 
     @Test
@@ -111,6 +118,7 @@ class ThemeSongPickTest {
         slug: String = type.name + (sequence ?: ""),
         audio: Boolean = true,
         spoiler: Boolean = false,
+        nsfw: Boolean = false,
     ) = MediaTheme(
         id = id,
         type = type,
@@ -118,16 +126,16 @@ class ThemeSongPickTest {
         slug = slug,
         songTitle = "Song $id",
         artists = listOf("Artist"),
-        versions = listOf(version(id, episodes, audio, spoiler)),
+        versions = listOf(version(id, episodes, audio, spoiler, nsfw)),
     )
 
-    private fun version(id: Int, episodes: String?, audio: Boolean, spoiler: Boolean = false) = ThemeVersion(
+    private fun version(id: Int, episodes: String?, audio: Boolean, spoiler: Boolean = false, nsfw: Boolean = false) = ThemeVersion(
         id = id,
         version = 1,
         rawEpisodes = episodes,
         notes = null,
         spoiler = spoiler,
-        nsfw = false,
+        nsfw = nsfw,
         videos = emptyList(),
         audio = if (audio) ThemeAudio("https://a.animethemes.moe/$id.ogg", 3_500_000) else null,
     )
