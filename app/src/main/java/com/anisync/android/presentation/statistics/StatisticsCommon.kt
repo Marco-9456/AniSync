@@ -70,17 +70,18 @@ fun RatingBadge(meanScore: Float, size: RatingBadgeSize = RatingBadgeSize.Defaul
     }
 }
 
+@Composable
 fun formatDisplayName(format: String): String = when (format) {
-    "TV" -> "TV Series"
-    "TV_SHORT" -> "Short"
-    "MOVIE" -> "Movie"
-    "SPECIAL" -> "Special"
-    "OVA" -> "OVA"
-    "ONA" -> "ONA"
-    "MUSIC" -> "Music"
-    "MANGA" -> "Manga"
-    "NOVEL" -> "Novel"
-    "ONE_SHOT" -> "One Shot"
+    "TV" -> stringResource(R.string.format_tv_series)
+    "TV_SHORT" -> stringResource(R.string.format_tv_short)
+    "MOVIE" -> stringResource(R.string.format_movie)
+    "SPECIAL" -> stringResource(R.string.format_special)
+    "OVA" -> stringResource(R.string.format_ova)
+    "ONA" -> stringResource(R.string.format_ona)
+    "MUSIC" -> stringResource(R.string.format_music)
+    "MANGA" -> stringResource(R.string.media_type_manga)
+    "NOVEL" -> stringResource(R.string.format_novel)
+    "ONE_SHOT" -> stringResource(R.string.format_one_shot)
     else -> format.replace("_", " ")
         .lowercase()
         .replaceFirstChar { it.uppercase() }
