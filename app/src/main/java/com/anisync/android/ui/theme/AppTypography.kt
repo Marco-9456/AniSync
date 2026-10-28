@@ -25,7 +25,7 @@ import kotlin.math.roundToInt
 
 private val FONT_RES_ID = R.font.google_sans_flex
 
-private val DefaultLineHeightStyle = LineHeightStyle(
+internal val DefaultLineHeightStyle = LineHeightStyle(
     alignment = LineHeightStyle.Alignment.Center,
     trim = LineHeightStyle.Trim.None,
 )

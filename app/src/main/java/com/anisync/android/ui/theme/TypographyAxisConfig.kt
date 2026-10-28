@@ -41,4 +41,10 @@ object TypographyAxisConfig {
 
     /** Tabular numerics for the editorial / statistics surfaces (see [ExpressiveTypography]). */
     val numeric = FontAxes(weight = 700f, opticalSize = 48f, width = 100f, roundness = 100f)
+
+    /** heroWide: big numbers, month and year names and ranks. Sized per use through [WideRole]. */
+    val heroWide = FontAxes(weight = 900f, width = 125f, roundness = 100f)
+
+    /** titleWide: titles, tile values and names beside heroWide. Sized per use through [WideRole]. */
+    val titleWide = FontAxes(weight = 800f, width = 112f, roundness = 100f)
 }

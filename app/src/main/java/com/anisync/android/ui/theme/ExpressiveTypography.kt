@@ -33,6 +33,10 @@ data class ExpressiveTypography(
     val numericMono: TextStyle,
     /** 13sp W400 — section descriptions / bylines. */
     val sectionByline: TextStyle,
+    /** W900 at wdth 125 for big numbers, month and year names and ranks. */
+    val heroWide: WideRole,
+    /** W800 at wdth 112 for titles, tile values and names beside heroWide. */
+    val titleWide: WideRole,
 )
 
 /**
@@ -107,6 +111,8 @@ internal fun defaultExpressiveTypography(
             letterSpacing = 0.2.sp,
             platformStyle = PlatformTextStyle(includeFontPadding = false),
         ),
+        heroWide = WideRole(TypographyAxisConfig.heroWide, overrides.display),
+        titleWide = WideRole(TypographyAxisConfig.titleWide, overrides.title),
     )
 }
 
