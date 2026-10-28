@@ -2,6 +2,7 @@ package com.anisync.android.presentation.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.R
 import com.anisync.android.domain.ActivityEventBus
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.ActivityUpdate
@@ -62,7 +63,7 @@ class CreateStatusViewModel @Inject constructor(
                 is Result.Success -> {
                     activityEventBus.publish(ActivityUpdate(id = 0, created = true))
                     _uiState.update { it.copy(isSubmitting = false) }
-                    toastManager.showToast(ToastType.SUCCESS, message = "Status posted")
+                    toastManager.showToast(ToastType.SUCCESS, R.string.status_posted)
                     _events.tryEmit(CreateStatusEvent.Posted)
                 }
 

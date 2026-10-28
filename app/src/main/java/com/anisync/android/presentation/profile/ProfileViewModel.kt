@@ -12,6 +12,7 @@ import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NotificationBadgeStore
 import com.anisync.android.data.filterAdultActivities
+import com.anisync.android.data.util.AppLocale
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.AnimeStatistics
 import com.anisync.android.domain.CachePolicy
@@ -746,7 +747,7 @@ class ProfileViewModel @Inject constructor(
                 com.anisync.android.domain.ActivityType.MESSAGE -> {
                     val recipientId = target.recipientId
                     if (recipientId == null) {
-                        Result.Error("Missing recipient")
+                        Result.Error(AppLocale.wrap(context).getString(R.string.missing_recipient))
                     } else {
                         activityRepository.saveMessageActivity(
                             id = target.id,
@@ -756,11 +757,11 @@ class ProfileViewModel @Inject constructor(
                         )
                     }
                 }
-                else -> Result.Error("Cannot edit this activity type")
+                else -> Result.Error(AppLocale.wrap(context).getString(R.string.cannot_edit_activity_type))
             }
             when (result) {
                 is Result.Success -> {
-                    toastManager.showToast(ToastType.SUCCESS, message = "Activity updated")
+                    toastManager.showToast(ToastType.SUCCESS, R.string.activity_updated)
                     localState.update {
                         it.copy(isSavingActivityEdit = false, editingActivity = null)
                     }
@@ -795,7 +796,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = activityRepository.deleteActivity(activityId)) {
                 is Result.Success -> {
-                    toastManager.showToast(ToastType.SUCCESS, message = "Activity deleted")
+                    toastManager.showToast(ToastType.SUCCESS, R.string.activity_deleted)
                 }
                 is Result.Error -> {
                     deletedActivityIds.update { it - activityId }
@@ -839,7 +840,7 @@ class ProfileViewModel @Inject constructor(
                             messageSentEvent = System.currentTimeMillis()
                         )
                     }
-                    toastManager.showToast(ToastType.SUCCESS, message = "Message sent")
+                    toastManager.showToast(ToastType.SUCCESS, R.string.message_sent)
                 }
                 is Result.Error -> {
                     localState.update {

@@ -1,9 +1,12 @@
 package com.anisync.android.presentation.feed
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.account.AccountManager
+import com.anisync.android.data.util.AppLocale
 import com.anisync.android.domain.ActivityEventBus
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.ActivityType
@@ -20,6 +23,7 @@ import com.anisync.android.domain.UserOptionsRepository
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.collections.immutable.toPersistentSet
@@ -45,6 +49,7 @@ class FeedViewModel @Inject constructor(
     private val appSettings: AppSettings,
     private val userOptionsRepository: UserOptionsRepository,
     private val toastManager: ToastManager,
+    @ApplicationContext private val context: Context,
     tabReselectBus: TabReselectBus
 ) : ViewModel() {
 
@@ -267,7 +272,7 @@ class FeedViewModel @Inject constructor(
                 ActivityType.MESSAGE -> {
                     val recipientId = target.recipientId
                     if (recipientId == null) {
-                        Result.Error("Missing recipient")
+                        Result.Error(AppLocale.wrap(context).getString(R.string.missing_recipient))
                     } else {
                         activityRepository.saveMessageActivity(
                             id = target.id,
@@ -277,11 +282,11 @@ class FeedViewModel @Inject constructor(
                         )
                     }
                 }
-                else -> Result.Error("Cannot edit this activity type")
+                else -> Result.Error(AppLocale.wrap(context).getString(R.string.cannot_edit_activity_type))
             }
             when (result) {
                 is Result.Success -> {
-                    toastManager.showToast(ToastType.SUCCESS, message = "Activity updated")
+                    toastManager.showToast(ToastType.SUCCESS, R.string.activity_updated)
                     // The saved copy goes where the old one was. Reloading page 1 for it dropped
                     // the pages below, and the edited activity with them when it sat that deep.
                     val saved = result.data
@@ -400,7 +405,7 @@ class FeedViewModel @Inject constructor(
             when (result) {
                 is Result.Success -> {
                     activityEventBus.publish(ActivityUpdate(activityId, deleted = true))
-                    toastManager.showToast(ToastType.SUCCESS, message = "Activity deleted")
+                    toastManager.showToast(ToastType.SUCCESS, R.string.activity_deleted)
                 }
                 is Result.Error -> {
                     // Restore the activity at its previous index
