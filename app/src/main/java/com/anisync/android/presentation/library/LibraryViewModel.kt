@@ -2,6 +2,7 @@ package com.anisync.android.presentation.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.network.RequestPriority
 import com.anisync.android.data.network.withRequestPriority
@@ -809,7 +810,7 @@ class LibraryViewModel @Inject constructor(
     private fun deleteEntry(entryId: Int, mediaId: Int) {
         viewModelScope.launch {
             when (val result = libraryRepository.deleteEntry(entryId, mediaId)) {
-                is Result.Success -> toastManager.showToast(ToastType.SUCCESS, message = "Entry removed")
+                is Result.Success -> toastManager.showToast(ToastType.SUCCESS, R.string.entry_deleted)
                 is Result.Error -> showResultError(result)
             }
         }
@@ -893,7 +894,7 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = libraryRepository.createCustomList(listName, type)) {
                 is Result.Success -> {
-                    toastManager.showToast(ToastType.SUCCESS, message = "List '$listName' created.")
+                    toastManager.showToast(ToastType.SUCCESS, R.string.list_created, listName)
                     refresh()
                 }
                 is Result.Error -> showResultError(result)
@@ -921,7 +922,7 @@ class LibraryViewModel @Inject constructor(
                         appSettings.setHiddenMangaLists(hiddenLists)
                     }
 
-                    toastManager.showToast(ToastType.SUCCESS, message = "List '$listName' deleted")
+                    toastManager.showToast(ToastType.SUCCESS, R.string.list_deleted, listName)
                     refresh()
                 }
 

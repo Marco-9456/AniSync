@@ -575,7 +575,7 @@ class SettingsViewModel @Inject constructor(
                 cacheInventory.clearAll()
                 _cacheSize.value = formatFileSize(cacheInventory.totalBytes())
                 _isCacheCleared.value = true
-                toastManager.showToast(ToastType.SUCCESS, message = "Cache cleared")
+                toastManager.showToast(ToastType.SUCCESS, R.string.settings_cache_cleared)
             } catch (e: Exception) {
                 // Silently fail - cache might be in use
             } finally {

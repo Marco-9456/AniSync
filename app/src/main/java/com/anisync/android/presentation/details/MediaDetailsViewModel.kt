@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.details
 
+import com.anisync.android.R
 import com.anisync.android.data.network.RequestPriority
 import com.anisync.android.data.network.withRequestPriority
 import android.content.Context
@@ -550,7 +551,7 @@ class MediaDetailsViewModel @Inject constructor(
                     refresh()
                     toastManager.showToast(
                         type = com.anisync.android.presentation.components.alert.ToastType.SUCCESS,
-                        message = "Recommendation added"
+                        message = R.string.recommend_added
                     )
                 }
                 is Result.Error -> toastManager.showResultError(result)
