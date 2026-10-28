@@ -1,11 +1,9 @@
 package com.anisync.android.domain.recap
 
-private const val MIN_NAME_LENGTH = 4
-
 /** Words two related titles often share without naming a franchise. */
 private val GENERIC_WORDS = setOf(
-    "movie", "film", "season", "part", "special", "specials", "gekijouban", "series", "final",
-    "edition", "version", "chapter", "episode",
+    "the", "no", "movie", "film", "season", "part", "special", "specials", "gekijouban", "series",
+    "final", "edition", "version", "chapter", "episode", "hen",
 )
 
 /**
@@ -47,7 +45,7 @@ internal fun largestFranchise(rankedIds: List<Int>, media: Map<Int, RecapMedia>)
 }
 
 private fun words(title: String): List<String> =
-    title.split(Regex("[^\\p{L}\\p{N}]+")).filter { it.length >= MIN_NAME_LENGTH }
+    title.split(Regex("[^\\p{L}\\p{N}]+")).filter { word -> word.isNotEmpty() && !word.all(Char::isDigit) }
 
 /** The longest word every title shares, as the first title spells it. */
 private fun sharedWord(titles: List<String>): String? {
