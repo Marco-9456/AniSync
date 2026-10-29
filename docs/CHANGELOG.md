@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Remove Followers** - On your own profile, each person under Social, Followers has a remove button on their picture, which asks before removing them from your followers.
 - **18+ Options** - With adult content on, the AniList options show the three switches AniList added under it: 18+ titles in search, 18+ titles in quick search, and other people's 18+ activity. Discover search follows the first, the title pickers in threads, recommendations and filters follow the second, and the feed and other people's profiles follow the third. Turning adult content on turns all three back on, as AniList does.
 - **Submission Updates** - Notifications say when AniList accepts, partly accepts or rejects a title, staff or character submission you made, with the reviewer's note, and they have a Submissions filter of their own.
+- **Open On Profile** - Open on, under General and in the first-run setup, can pin the app to your profile.
 
 ### Changed
 
