@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import com.anisync.android.presentation.statistics.StatsPaneSurfaces
 import com.anisync.android.presentation.statistics.StatsShareFab
 import com.anisync.android.presentation.statistics.statsFabClearance
 import androidx.compose.foundation.rememberScrollState
@@ -305,10 +304,12 @@ fun ProfileWideLayout(
     val hasBio = !profile.about.isNullOrBlank()
     val collapse = remember(density, profile.id, hasBio) { BioCollapseState(density) }
 
+    // ST4 draws the profile flat on the page background, the identity column and the tab pane
+    // without cards around them. The resize handle stays between them.
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             ProfileBannerSurface(
@@ -516,7 +517,9 @@ private fun ProfileTwoPane(
         modifier = modifier
             .fillMaxSize()
             .onSizeChanged { rowWidthPx = it.width },
-        gutterColor = MaterialTheme.colorScheme.surfaceContainer,
+        gutterColor = MaterialTheme.colorScheme.background,
+        leadingColor = MaterialTheme.colorScheme.background,
+        trailingColor = MaterialTheme.colorScheme.background,
         gutterPadding = PaddingValues(start = WideGutterStart, top = 12.dp, end = 16.dp, bottom = 16.dp),
         handle = {
             PaneDragHandle(
@@ -823,35 +826,33 @@ private fun ProfileTabPane(
                 }
             ) {
                 val showStatsFab = uiState.selectedTab == ProfileTab.STATS && uiState.statsData != null
-                StatsPaneSurfaces(enabled = uiState.selectedTab == ProfileTab.STATS) {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            bottom = LocalMainNavBarInset.current + if (showStatsFab) statsFabClearance() else 48.dp
-                        )
-                    ) {
-                        profileSelectedTabContent(
-                            profile = profile,
-                            uiState = uiState,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            onAction = onAction,
-                            onMediaClick = onMediaClick,
-                            onCharacterClick = onCharacterClick,
-                            onStaffClick = onStaffClick,
-                            onVoiceActorClick = onVoiceActorClick,
-                            onStudioClick = onStudioClick,
-                            onUserClick = onUserClick,
-                            onThreadClick = onThreadClick,
-                            onCommentClick = onCommentClick,
-                            onActivityClick = onActivityClick,
-                            onLastReplyClick = onLastReplyClick,
-                            portraitColumns = portraitColumns,
-                            studioColumns = studioColumns,
-                            statsColumns = statsColumns
-                        )
-                    }
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        bottom = LocalMainNavBarInset.current + if (showStatsFab) statsFabClearance() else 48.dp
+                    )
+                ) {
+                    profileSelectedTabContent(
+                        profile = profile,
+                        uiState = uiState,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        onAction = onAction,
+                        onMediaClick = onMediaClick,
+                        onCharacterClick = onCharacterClick,
+                        onStaffClick = onStaffClick,
+                        onVoiceActorClick = onVoiceActorClick,
+                        onStudioClick = onStudioClick,
+                        onUserClick = onUserClick,
+                        onThreadClick = onThreadClick,
+                        onCommentClick = onCommentClick,
+                        onActivityClick = onActivityClick,
+                        onLastReplyClick = onLastReplyClick,
+                        portraitColumns = portraitColumns,
+                        studioColumns = studioColumns,
+                        statsColumns = statsColumns
+                    )
                 }
 
                 if (showStatsFab) {
