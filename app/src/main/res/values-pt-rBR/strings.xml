@@ -1247,12 +1247,12 @@
     <string name="notification_following">Começou a te seguir</string>
     <string name="notification_kind_status">atualização de status</string>
     <string name="notification_kind_anime_list">atualização da lista de anime</string>
-    <string name="notification_kind_manga_list">atualização da lista de mangá</string>
+    <string name="notification_kind_manga_list">atualização na lista de mangá</string>
     <string name="notification_kind_message">mensagem</string>
     <string name="notification_kind_post">postagem</string>
     <string name="notification_kind_status_indefinite">uma atualização de status</string>
     <string name="notification_kind_anime_list_indefinite">uma atualização da lista de anime</string>
-    <string name="notification_kind_manga_list_indefinite">uma atualização da lista de mangá</string>
+    <string name="notification_kind_manga_list_indefinite">uma atualização na lista de mangá</string>
     <string name="notification_kind_message_indefinite">uma mensagem</string>
     <string name="notification_kind_post_indefinite">uma postagem</string>
     <string name="notification_social_summary_title">Nova atividade</string>
