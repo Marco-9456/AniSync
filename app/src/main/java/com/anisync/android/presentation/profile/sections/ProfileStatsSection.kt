@@ -30,6 +30,7 @@ import com.anisync.android.domain.GenreStat
 import com.anisync.android.domain.formatOneDecimal
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.TagStat
+import com.anisync.android.domain.stats.Eras
 import com.anisync.android.domain.stats.ScoreSummary
 import com.anisync.android.domain.formatExactCount
 import com.anisync.android.domain.splitMinutes
@@ -50,6 +51,11 @@ import com.anisync.android.presentation.statistics.ActivityInsightTiles
 import com.anisync.android.presentation.statistics.AtAGlance
 import com.anisync.android.presentation.statistics.StatsSectionHeader
 import com.anisync.android.presentation.statistics.StatsTiles
+import com.anisync.android.presentation.statistics.DecadesCard
+import com.anisync.android.presentation.statistics.ErasSpanHero
+import com.anisync.android.presentation.statistics.ReleaseCapsules
+import com.anisync.android.presentation.statistics.StartedNote
+import com.anisync.android.presentation.statistics.YearsTimelineCard
 import com.anisync.android.presentation.statistics.ListTile
 import com.anisync.android.presentation.statistics.ListTilesCard
 import com.anisync.android.presentation.statistics.FormatsCard
@@ -74,11 +80,9 @@ import com.anisync.android.presentation.statistics.HeroDashboard
 import com.anisync.android.presentation.statistics.GenreBoard
 import com.anisync.android.presentation.statistics.HorizontalStatsSection
 import com.anisync.android.presentation.statistics.MonthChart
-import com.anisync.android.presentation.statistics.ReleaseYearsHistogramSection
 import com.anisync.android.presentation.statistics.StaffCardModern
 import com.anisync.android.presentation.statistics.StudioCardModern
 import com.anisync.android.presentation.statistics.VoiceActorCardModern
-import com.anisync.android.presentation.statistics.YearComparisonSection
 import com.anisync.android.presentation.util.DashboardSection
 import com.anisync.android.presentation.util.StatsDashboardGrid
 
@@ -160,6 +164,14 @@ fun LazyListScope.profileStatsTab(
     if (view == StatsView.TASTE && taste != null) {
         statsTaste(taste, uiState.genreSort, onGenreSortSelected, statsColumns)
         return
+    }
+    if (view == StatsView.ERAS) {
+        val eras = if (isManga) statsData.mangaStats?.eras else statsData.animeStats.eras
+        if (eras != null) {
+            val isOwnProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
+            statsEras(eras, isManga, isOwnProfile, statsColumns)
+            return
+        }
     }
     if (view == StatsView.HOW_YOU_WATCH) {
         val isOwnProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
@@ -475,6 +487,68 @@ private fun LazyListScope.statsTaste(
     }
 }
 
+/** The Eras view: the span, decades, then release and start years. */
+private fun LazyListScope.statsEras(eras: Eras, isManga: Boolean, isOwnProfile: Boolean, columns: Int) {
+    val released: @Composable (Modifier) -> Unit = { modifier ->
+        YearsTimelineCard(
+            title = stringResource(
+                when {
+                    !isOwnProfile -> R.string.stats_eras_released_other
+                    isManga -> R.string.stats_eras_released_manga
+                    else -> R.string.stats_eras_released_anime
+                }
+            ),
+            years = eras.releaseYears,
+            modifier = modifier
+        ) { ReleaseCapsules(eras) }
+    }
+    val started: @Composable (Modifier) -> Unit = { modifier ->
+        YearsTimelineCard(
+            title = stringResource(
+                when {
+                    !isOwnProfile -> R.string.stats_eras_started_other
+                    isManga -> R.string.stats_eras_started_manga
+                    else -> R.string.stats_eras_started_anime
+                }
+            ),
+            years = eras.startYears,
+            modifier = modifier
+        ) { StartedNote(eras, isManga, isOwnProfile) }
+    }
+    if (columns <= 1) {
+        item(key = "eras_span") { ErasSpanHero(eras, isManga, isOwnProfile, Modifier.padding(horizontal = 16.dp)) }
+        item(key = "eras_decades_header") { StatsSectionHeader(stringResource(R.string.stats_header_by_decade)) }
+        item(key = "eras_decades") { DecadesCard(eras, isManga, isOwnProfile, Modifier.padding(horizontal = 16.dp)) }
+        item(key = "eras_released_header") { StatsSectionHeader(stringResource(R.string.stats_header_released)) }
+        item(key = "eras_released") { released(Modifier.padding(horizontal = 16.dp)) }
+        if (eras.startYears.isNotEmpty()) {
+            item(key = "eras_started_header") { StatsSectionHeader(stringResource(R.string.stats_header_started)) }
+            item(key = "eras_started") { started(Modifier.padding(horizontal = 16.dp)) }
+        }
+    } else {
+        item(key = "eras_wide") {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Column(Modifier.weight(1f)) {
+                    ErasSpanHero(eras, isManga, isOwnProfile)
+                    StatsSectionHeader(stringResource(R.string.stats_header_by_decade), inset = 8.dp)
+                    DecadesCard(eras, isManga, isOwnProfile)
+                }
+                Column(Modifier.weight(1f)) {
+                    StatsSectionHeader(stringResource(R.string.stats_header_released), inset = 8.dp, top = 0.dp)
+                    released(Modifier)
+                    if (eras.startYears.isNotEmpty()) {
+                        StatsSectionHeader(stringResource(R.string.stats_header_started), inset = 8.dp)
+                        started(Modifier)
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** How you watch (How you read for manga): time, the lists, formats, lengths and countries. */
 private fun LazyListScope.statsHowYouWatch(
     hero: @Composable () -> Unit,
@@ -727,16 +801,6 @@ private fun animeStatSections(
     onStudioClick: (Int) -> Unit = {}
 ): List<DashboardSection> = buildList {
     when (view) {
-        StatsView.ERAS -> {
-            if (stats.releaseYearDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_years") { ReleaseYearsHistogramSection(stats.releaseYearDistribution) })
-            }
-            if (stats.startYearDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_year_compare") {
-                    YearComparisonSection(release = stats.releaseYearDistribution, start = stats.startYearDistribution)
-                })
-            }
-        }
         StatsView.PEOPLE -> {
             if (stats.voiceActorDistribution.isNotEmpty()) {
                 add(DashboardSection("anime_voice_actors") {
@@ -766,7 +830,8 @@ private fun animeStatSections(
                 })
             }
         }
-        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.HOW_YOU_WATCH, StatsView.RECAPS -> Unit
+        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.HOW_YOU_WATCH, StatsView.ERAS,
+        StatsView.RECAPS -> Unit
     }
 }
 
@@ -776,16 +841,6 @@ private fun mangaStatSections(
     onStaffClick: (Int) -> Unit = {}
 ): List<DashboardSection> = buildList {
     when (view) {
-        StatsView.ERAS -> {
-            if (stats.releaseYearDistribution.isNotEmpty()) {
-                add(DashboardSection("manga_years") { ReleaseYearsHistogramSection(stats.releaseYearDistribution) })
-            }
-            if (stats.startYearDistribution.isNotEmpty()) {
-                add(DashboardSection("manga_year_compare") {
-                    YearComparisonSection(release = stats.releaseYearDistribution, start = stats.startYearDistribution)
-                })
-            }
-        }
         StatsView.PEOPLE -> if (stats.staffDistribution.isNotEmpty()) {
             add(DashboardSection("manga_staff") {
                 HorizontalStatsSection(
@@ -795,6 +850,7 @@ private fun mangaStatSections(
                 ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
             })
         }
-        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.HOW_YOU_WATCH, StatsView.RECAPS -> Unit
+        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.HOW_YOU_WATCH, StatsView.ERAS,
+        StatsView.RECAPS -> Unit
     }
 }

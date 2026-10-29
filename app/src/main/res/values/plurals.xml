@@ -153,4 +153,20 @@
         <item quantity="one">%d title has no chapter count on AniList yet.</item>
         <item quantity="other">%d titles have no chapter count on AniList yet.</item>
     </plurals>
+    <plurals name="stats_eras_decades_anime">
+        <item quantity="one">%d decade of anime.</item>
+        <item quantity="other">%d decades of anime.</item>
+    </plurals>
+    <plurals name="stats_eras_decades_manga">
+        <item quantity="one">%d decade of manga.</item>
+        <item quantity="other">%d decades of manga.</item>
+    </plurals>
+    <plurals name="stats_eras_peak_titles">
+        <item quantity="one">peak, %1$s title</item>
+        <item quantity="other">peak, %1$s titles</item>
+    </plurals>
+    <plurals name="a11y_timeline_bar">
+        <item quantity="one">%1$d, %2$d title</item>
+        <item quantity="other">%1$d, %2$d titles</item>
+    </plurals>
 </resources>
