@@ -1024,7 +1024,6 @@
     <string name="statistics_activity_less">Less</string>
     <string name="statistics_activity_more">More</string>
     <string name="statistics_activity_a11y">Activity heatmap with %1$d activities over the past year</string>
-    <string name="statistics_activity_update_info">AniList updates your stats automatically every 48 hours</string>
     <plurals name="statistics_activity_count">
         <item quantity="one">%d activity</item>
         <item quantity="other">%d activities</item>
@@ -1468,6 +1467,22 @@
     <string name="stats_weekdays_friday">Fridays</string>
     <string name="stats_weekdays_saturday">Saturdays</string>
     <string name="stats_weekdays_sunday">Sundays</string>
+    <string name="stats_activity_recount_note">AniList recounts this about every 48 hours, so the last two days fill in later.</string>
+    <string name="stats_streak_every_kept_day">Every day AniList still keeps, which is about six months.</string>
+    <string name="stats_streak_none">No two days in a row yet.</string>
+    <string name="stats_streak_range">%1$s to %2$s.</string>
+    <string name="stats_busiest_weekday">busiest weekday</string>
+    <string name="stats_a_day">a day</string>
+    <string name="stats_activities_over_days">%1$s over %2$s.</string>
+    <string name="stats_busiest_day">busiest day</string>
+    <string name="stats_by_weekday">By weekday</string>
+    <string name="stats_by_month">By month</string>
+    <string name="stats_months_partial_both">%1$s starts on the %2$s and %3$s ends on the %4$s, so both are partial.</string>
+    <string name="stats_months_partial_first">%1$s starts on the %2$s, so it is partial.</string>
+    <string name="stats_months_partial_last">%1$s ends on the %2$s, so it is partial.</string>
+    <string name="stats_months_partial_single">%1$s runs from the %2$s to the %3$s, so it is partial.</string>
+    <string name="stats_activity_empty_title">No activity yet</string>
+    <string name="stats_activity_empty_body">AniList keeps about six months of activity. Anything logged in that time shows up here once it is counted.</string>
     <!-- Airing calendar -->
     <string name="calendar_title">Airing Calendar</string>
     <string name="calendar_open">Airing calendar</string>

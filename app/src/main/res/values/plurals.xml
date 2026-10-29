@@ -77,4 +77,12 @@
         <item quantity="one">%d role</item>
         <item quantity="other">%d roles</item>
     </plurals>
+    <plurals name="stats_weekday_share">
+        <item quantity="one">%1$s of your %2$s activity.</item>
+        <item quantity="other">%1$s of your %2$s activities.</item>
+    </plurals>
+    <plurals name="stats_busiest_day_detail">
+        <item quantity="one">%d activity. Tap to see what it was.</item>
+        <item quantity="other">%d activities. Tap to see what they were.</item>
+    </plurals>
 </resources>

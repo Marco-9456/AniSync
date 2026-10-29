@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,7 +28,7 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.formatExactCount
 import com.anisync.android.domain.splitMinutes
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
-import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.profile.AnimeStatisticsUi
 import com.anisync.android.presentation.profile.MangaStatisticsUi
 import com.anisync.android.presentation.profile.ProfileStatsType
@@ -35,11 +36,14 @@ import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.profile.StatisticsUiModel
 import com.anisync.android.presentation.profile.StatsView
 import com.anisync.android.presentation.profile.StatusUiModel
-import com.anisync.android.presentation.statistics.ActivityHistorySection
+import com.anisync.android.presentation.statistics.ActivityHistoryCard
+import com.anisync.android.presentation.statistics.ActivityInsightTiles
 import com.anisync.android.presentation.statistics.AtAGlance
 import com.anisync.android.presentation.statistics.CountryDistributionRow
 import com.anisync.android.presentation.statistics.EpisodeLengthDistributionSection
+import com.anisync.android.presentation.statistics.StatsSectionHeader
 import com.anisync.android.presentation.statistics.StatsTiles
+import com.anisync.android.presentation.statistics.WeekdayChart
 import com.anisync.android.presentation.statistics.buildAtAGlance
 import com.anisync.android.presentation.statistics.countOf
 import com.anisync.android.presentation.statistics.heroLists
@@ -50,6 +54,7 @@ import com.anisync.android.presentation.statistics.FormatsSection
 import com.anisync.android.presentation.statistics.GenreCardModern
 import com.anisync.android.presentation.statistics.HeroDashboard
 import com.anisync.android.presentation.statistics.HorizontalStatsSection
+import com.anisync.android.presentation.statistics.MonthChart
 import com.anisync.android.presentation.statistics.ReadVolumeBreakdown
 import com.anisync.android.presentation.statistics.ReleaseYearsHistogramSection
 import com.anisync.android.presentation.statistics.ScoreHistogramSection
@@ -133,16 +138,9 @@ fun LazyListScope.profileStatsTab(
         statsOverview(uiState, statsData, isManga, statsColumns, onOpenView)
         return
     }
-    if (view == StatsView.ACTIVITY && statsData.activityHistory.isNotEmpty()) {
-        item(key = "activity_heatmap") {
-            ActivityHistorySection(
-                statsData.activityHistory,
-                userId = uiState.profile?.id ?: 0,
-                onMediaClick = onMediaClick,
-                onActivityClick = onActivityClick
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-        }
+    if (view == StatsView.ACTIVITY) {
+        statsActivity(statsData, uiState.profile?.id ?: 0, statsColumns, onMediaClick, onActivityClick)
+        return
     }
 
     if (uiState.selectedStatsType == ProfileStatsType.ANIME) {
@@ -236,7 +234,7 @@ private fun LazyListScope.statsOverview(
     if (columns <= 1) {
         item(key = "overview_hero") { Box(Modifier.padding(horizontal = 16.dp)) { heroAndTiles() } }
         item(key = "overview_glance_header") {
-            SectionHeader(title = stringResource(R.string.stats_at_a_glance), modifier = Modifier.padding(top = 24.dp))
+            StatsSectionHeader(title = stringResource(R.string.stats_at_a_glance))
         }
         item(key = "overview_glance") {
             AtAGlance(glance, onOpen = onOpenView, modifier = Modifier.padding(horizontal = 16.dp))
@@ -249,6 +247,69 @@ private fun LazyListScope.statsOverview(
             ) {
                 Box(Modifier.weight(1f)) { heroAndTiles() }
                 AtAGlance(glance, onOpen = onOpenView, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+/** The Activity view: the history card, four insights, then activity by weekday and by month. */
+private fun LazyListScope.statsActivity(
+    statsData: StatisticsUiModel,
+    userId: Int,
+    columns: Int,
+    onMediaClick: (Int) -> Unit,
+    onActivityClick: (Int) -> Unit,
+) {
+    val history = statsData.activityHistory
+    val insights = statsData.activityInsights
+    if (history.isEmpty() || insights == null) {
+        item(key = "activity_empty") {
+            EmptyState(
+                icon = Icons.Default.CalendarMonth,
+                title = stringResource(R.string.stats_activity_empty_title),
+                description = stringResource(R.string.stats_activity_empty_body)
+            )
+        }
+        return
+    }
+    if (columns <= 1) {
+        item(key = "activity_history") {
+            ActivityHistoryCard(history, userId, onMediaClick, onActivityClick, Modifier.padding(horizontal = 16.dp))
+        }
+        item(key = "activity_insights") {
+            ActivityInsightTiles(
+                insights = insights,
+                history = history,
+                userId = userId,
+                onMediaClick = onMediaClick,
+                onActivityClick = onActivityClick,
+                modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp)
+            )
+        }
+        item(key = "activity_weekday_header") { StatsSectionHeader(stringResource(R.string.stats_by_weekday)) }
+        item(key = "activity_weekdays") { WeekdayChart(insights, Modifier.padding(horizontal = 16.dp)) }
+        item(key = "activity_month_header") { StatsSectionHeader(stringResource(R.string.stats_by_month)) }
+        item(key = "activity_months") { MonthChart(insights, Modifier.padding(horizontal = 16.dp)) }
+    } else {
+        // The heatmap needs the pane's full width to show every week without scrolling, so the
+        // history card spans it and the insights take one row of four beneath.
+        item(key = "activity_wide") {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                ActivityHistoryCard(history, userId, onMediaClick, onActivityClick)
+                ActivityInsightTiles(insights, history, userId, onMediaClick, onActivityClick, columns = 4)
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        StatsSectionHeader(stringResource(R.string.stats_by_weekday), inset = 8.dp, top = 12.dp)
+                        WeekdayChart(insights)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        StatsSectionHeader(stringResource(R.string.stats_by_month), inset = 8.dp, top = 12.dp)
+                        MonthChart(insights)
+                    }
+                }
             }
         }
     }

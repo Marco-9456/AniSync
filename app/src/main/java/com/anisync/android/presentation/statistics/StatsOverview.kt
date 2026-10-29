@@ -114,7 +114,7 @@ fun StatsTiles(tiles: List<StatTileModel>, modifier: Modifier = Modifier) {
 
 /** [base] shrunk a point at a time until [text] fits [maxWidth] on one line, never below 14. */
 @Composable
-private fun fittedStyle(text: String, base: TextStyle, maxWidth: Dp): TextStyle {
+internal fun fittedStyle(text: String, base: TextStyle, maxWidth: Dp): TextStyle {
     var style = base
     var width = measuredWidth(text, style)
     while (width > maxWidth && style.fontSize.value > 14f) {
