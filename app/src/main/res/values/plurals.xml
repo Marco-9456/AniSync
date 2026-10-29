@@ -101,4 +101,56 @@
         <item quantity="one">Show %d more</item>
         <item quantity="other">Show %d more</item>
     </plurals>
+    <plurals name="stats_unit_days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <plurals name="stats_unit_hours">
+        <item quantity="one">hour</item>
+        <item quantity="other">hours</item>
+    </plurals>
+    <plurals name="stats_unit_minutes">
+        <item quantity="one">minute</item>
+        <item quantity="other">minutes</item>
+    </plurals>
+    <plurals name="stats_unit_chapters">
+        <item quantity="one">chapter</item>
+        <item quantity="other">chapters</item>
+    </plurals>
+    <plurals name="stats_hours_total">
+        <item quantity="one">%1$s hour</item>
+        <item quantity="other">%1$s hours</item>
+    </plurals>
+    <plurals name="stats_episodes_total">
+        <item quantity="one">%1$s episode</item>
+        <item quantity="other">%1$s episodes</item>
+    </plurals>
+    <plurals name="stats_hero_volumes">
+        <item quantity="one">%1$s volume</item>
+        <item quantity="other">%1$s volumes</item>
+    </plurals>
+    <plurals name="stats_titles">
+        <item quantity="one">%1$s title</item>
+        <item quantity="other">%1$s titles</item>
+    </plurals>
+    <plurals name="stats_chapters_short">
+        <item quantity="one">%1$s chapter</item>
+        <item quantity="other">%1$s chapters</item>
+    </plurals>
+    <plurals name="stats_length_episodes">
+        <item quantity="one">%d episode</item>
+        <item quantity="other">%d episodes</item>
+    </plurals>
+    <plurals name="stats_length_chapters">
+        <item quantity="one">%d chapter</item>
+        <item quantity="other">%d chapters</item>
+    </plurals>
+    <plurals name="stats_lengths_unknown">
+        <item quantity="one">%d title has no episode count on AniList yet.</item>
+        <item quantity="other">%d titles have no episode count on AniList yet.</item>
+    </plurals>
+    <plurals name="stats_lengths_unknown_manga">
+        <item quantity="one">%d title has no chapter count on AniList yet.</item>
+        <item quantity="other">%d titles have no chapter count on AniList yet.</item>
+    </plurals>
 </resources>

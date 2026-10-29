@@ -61,7 +61,8 @@ fun HeroDashboard(
     mediaType: MediaType,
     note: String?,
     staleNote: String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    detail: String? = null,
 ) {
     val expressive = LocalExpressiveTypography.current
     val content = MaterialTheme.colorScheme.onPrimaryContainer
@@ -88,6 +89,10 @@ fun HeroDashboard(
             }
             if (lead != null) {
                 Text(text = lead, style = expressive.editorialLead, color = content.copy(alpha = 0.85f))
+            }
+            if (detail != null) {
+                Spacer(Modifier.height(10.dp))
+                Text(text = detail, style = MaterialTheme.typography.bodyMedium, color = content.copy(alpha = 0.85f))
             }
             if (lists.isNotEmpty()) {
                 Spacer(Modifier.height(14.dp))

@@ -630,7 +630,7 @@ internal fun monogram(name: String): String =
     name.split(' ', '-').filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }
 
 @Composable
-private fun shortFormatName(format: String): String = when (format) {
+internal fun shortFormatName(format: String): String = when (format) {
     "TV" -> "TV"
     "OVA", "ONA" -> format
     else -> formatDisplayName(format)

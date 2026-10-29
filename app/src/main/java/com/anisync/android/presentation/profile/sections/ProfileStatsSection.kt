@@ -24,7 +24,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.domain.CountryStat
+import com.anisync.android.domain.FormatStat
 import com.anisync.android.domain.GenreStat
+import com.anisync.android.domain.formatOneDecimal
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.TagStat
 import com.anisync.android.domain.stats.ScoreSummary
@@ -34,6 +37,7 @@ import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.profile.AnimeStatisticsUi
 import com.anisync.android.presentation.profile.GenreSort
+import com.anisync.android.presentation.profile.LengthUiModel
 import com.anisync.android.presentation.profile.MangaStatisticsUi
 import com.anisync.android.presentation.profile.ProfileStatsType
 import com.anisync.android.presentation.profile.ProfileUiState
@@ -44,10 +48,13 @@ import com.anisync.android.presentation.profile.StatusUiModel
 import com.anisync.android.presentation.statistics.ActivityHistoryCard
 import com.anisync.android.presentation.statistics.ActivityInsightTiles
 import com.anisync.android.presentation.statistics.AtAGlance
-import com.anisync.android.presentation.statistics.CountryDistributionRow
-import com.anisync.android.presentation.statistics.EpisodeLengthDistributionSection
 import com.anisync.android.presentation.statistics.StatsSectionHeader
 import com.anisync.android.presentation.statistics.StatsTiles
+import com.anisync.android.presentation.statistics.ListTile
+import com.anisync.android.presentation.statistics.ListTilesCard
+import com.anisync.android.presentation.statistics.FormatsCard
+import com.anisync.android.presentation.statistics.LengthsCard
+import com.anisync.android.presentation.statistics.CountriesCard
 import com.anisync.android.presentation.statistics.TagBoard
 import com.anisync.android.presentation.statistics.TasteScoresCard
 import com.anisync.android.presentation.statistics.TasteSpreadCard
@@ -58,17 +65,18 @@ import com.anisync.android.presentation.statistics.heroLists
 import com.anisync.android.presentation.statistics.overviewTiles
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.type.MediaType
-import com.anisync.android.presentation.statistics.FormatsSection
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import com.anisync.android.presentation.statistics.HeroDashboard
 import com.anisync.android.presentation.statistics.GenreBoard
 import com.anisync.android.presentation.statistics.HorizontalStatsSection
 import com.anisync.android.presentation.statistics.MonthChart
-import com.anisync.android.presentation.statistics.ReadVolumeBreakdown
 import com.anisync.android.presentation.statistics.ReleaseYearsHistogramSection
 import com.anisync.android.presentation.statistics.StaffCardModern
-import com.anisync.android.presentation.statistics.StatusDistributionDonut
 import com.anisync.android.presentation.statistics.StudioCardModern
-import com.anisync.android.presentation.statistics.TimeSpentBreakdown
 import com.anisync.android.presentation.statistics.VoiceActorCardModern
 import com.anisync.android.presentation.statistics.YearComparisonSection
 import com.anisync.android.presentation.util.DashboardSection
@@ -152,6 +160,39 @@ fun LazyListScope.profileStatsTab(
     if (view == StatsView.TASTE && taste != null) {
         statsTaste(taste, uiState.genreSort, onGenreSortSelected, statsColumns)
         return
+    }
+    if (view == StatsView.HOW_YOU_WATCH) {
+        val isOwnProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
+        val joinedAt = uiState.profile?.createdAt
+        val manga = statsData.mangaStats
+        if (!isManga) {
+            val anime = statsData.animeStats
+            statsHowYouWatch(
+                hero = { AnimeTimeHero(anime, joinedAt, isOwnProfile) },
+                statuses = anime.statusDistribution,
+                total = anime.totalCount,
+                formats = anime.formatDistribution,
+                lengths = anime.lengthDistribution,
+                countries = anime.countryDistribution,
+                isManga = false,
+                isOwnProfile = isOwnProfile,
+                columns = statsColumns
+            )
+            return
+        } else if (manga != null) {
+            statsHowYouWatch(
+                hero = { MangaReadHero(manga, joinedAt, isOwnProfile) },
+                statuses = manga.statusDistribution,
+                total = manga.totalCount,
+                formats = manga.formatDistribution,
+                lengths = manga.lengthDistribution,
+                countries = manga.countryDistribution,
+                isManga = true,
+                isOwnProfile = isOwnProfile,
+                columns = statsColumns
+            )
+            return
+        }
     }
 
     if (uiState.selectedStatsType == ProfileStatsType.ANIME) {
@@ -434,6 +475,165 @@ private fun LazyListScope.statsTaste(
     }
 }
 
+/** How you watch (How you read for manga): time, the lists, formats, lengths and countries. */
+private fun LazyListScope.statsHowYouWatch(
+    hero: @Composable () -> Unit,
+    statuses: List<StatusUiModel>,
+    total: Int,
+    formats: List<FormatStat>,
+    lengths: List<LengthUiModel>,
+    countries: List<CountryStat>,
+    isManga: Boolean,
+    isOwnProfile: Boolean,
+    columns: Int,
+) {
+    val mediaType = if (isManga) MediaType.MANGA else MediaType.ANIME
+    val tiles = statuses.heroLists().map { ListTile(it.status, it.count) }
+    val lists: @Composable (Modifier) -> Unit = { modifier ->
+        ListTilesCard(tiles, statuses.countOf(LibraryStatus.COMPLETED), total, mediaType, isOwnProfile, modifier)
+    }
+    val listsTitle = if (isOwnProfile) R.string.stats_header_your_lists else R.string.stats_header_their_lists
+    val lengthsTitle = if (isManga) R.string.stats_header_chapter_length else R.string.stats_header_episode_length
+    if (columns <= 1) {
+        item(key = "watch_hero") { Box(Modifier.padding(horizontal = 16.dp)) { hero() } }
+        if (tiles.isNotEmpty()) {
+            item(key = "watch_lists_header") { StatsSectionHeader(stringResource(listsTitle)) }
+            item(key = "watch_lists") { lists(Modifier.padding(horizontal = 16.dp)) }
+        }
+        if (formats.isNotEmpty()) {
+            item(key = "watch_formats_header") { StatsSectionHeader(stringResource(R.string.stats_header_formats)) }
+            item(key = "watch_formats") { FormatsCard(formats, isManga, Modifier.padding(horizontal = 16.dp)) }
+        }
+        if (lengths.any { it.label.isNotEmpty() }) {
+            item(key = "watch_lengths_header") { StatsSectionHeader(stringResource(lengthsTitle)) }
+            item(key = "watch_lengths") { LengthsCard(lengths, isManga, Modifier.padding(horizontal = 16.dp)) }
+        }
+        if (countries.isNotEmpty()) {
+            item(key = "watch_countries_header") { StatsSectionHeader(stringResource(R.string.stats_header_countries)) }
+            item(key = "watch_countries") { CountriesCard(countries, Modifier.padding(horizontal = 16.dp)) }
+        }
+    } else {
+        item(key = "watch_wide") {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Column(Modifier.weight(1f)) {
+                    hero()
+                    if (tiles.isNotEmpty()) {
+                        StatsSectionHeader(stringResource(listsTitle), inset = 8.dp)
+                        lists(Modifier)
+                    }
+                    if (countries.isNotEmpty()) {
+                        StatsSectionHeader(stringResource(R.string.stats_header_countries), inset = 8.dp)
+                        CountriesCard(countries)
+                    }
+                }
+                Column(Modifier.weight(1f)) {
+                    if (formats.isNotEmpty()) {
+                        StatsSectionHeader(stringResource(R.string.stats_header_formats), inset = 8.dp, top = 0.dp)
+                        FormatsCard(formats, isManga)
+                    }
+                    if (lengths.any { it.label.isNotEmpty() }) {
+                        StatsSectionHeader(stringResource(lengthsTitle), inset = 8.dp)
+                        LengthsCard(lengths, isManga)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** The anime time hero: days on the wide axis, what is left over, and the daily average. */
+@Composable
+private fun AnimeTimeHero(stats: AnimeStatisticsUi, joinedAt: Long?, isOwnProfile: Boolean) {
+    val locale = LocalConfiguration.current.locales[0]
+    val parts = splitMinutes(stats.minutesWatched)
+    val hours = pluralStringResourceOrDefault(R.plurals.stats_hours, parts.hours, parts.hours)
+    val minutes = pluralStringResourceOrDefault(R.plurals.stats_minutes, parts.minutes, parts.minutes)
+    val (value, unit, lead) = when {
+        parts.days > 0 -> Triple(
+            parts.days,
+            pluralStringResourceOrDefault(R.plurals.stats_unit_days, parts.days),
+            when {
+                parts.hours > 0 && parts.minutes > 0 -> stringResource(R.string.stats_time_on_top_two, hours, minutes)
+                parts.hours > 0 -> stringResource(R.string.stats_time_on_top, hours)
+                parts.minutes > 0 -> stringResource(R.string.stats_time_on_top, minutes)
+                else -> null
+            }
+        )
+        parts.hours > 0 -> Triple(
+            parts.hours,
+            pluralStringResourceOrDefault(R.plurals.stats_unit_hours, parts.hours),
+            if (parts.minutes > 0) stringResource(R.string.stats_time_on_top, minutes) else null
+        )
+        else -> Triple(parts.minutes, pluralStringResourceOrDefault(R.plurals.stats_unit_minutes, parts.minutes), null)
+    }
+    val detail = joinedAt?.takeIf { stats.minutesWatched > 0 }?.let { millis ->
+        val joined = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+        val days = ChronoUnit.DAYS.between(joined, LocalDate.now()).coerceAtLeast(1)
+        val perDay = (stats.minutesWatched / days).toInt()
+        val perDayText = when {
+            perDay >= 60 && perDay % 60 > 0 -> stringResource(R.string.stats_per_day_hm, perDay / 60, perDay % 60)
+            perDay >= 60 -> stringResource(R.string.stats_per_day_h, perDay / 60)
+            else -> stringResource(R.string.stats_per_day_m, perDay.coerceAtLeast(1))
+        }
+        val totalHours = stats.minutesWatched / 60
+        stringResource(
+            if (isOwnProfile) R.string.stats_time_detail_own else R.string.stats_time_detail_other,
+            pluralStringResourceOrDefault(R.plurals.stats_hours_total, totalHours, formatExactCount(totalHours, locale)),
+            pluralStringResourceOrDefault(R.plurals.stats_episodes_total, stats.episodesWatched, formatExactCount(stats.episodesWatched, locale)),
+            perDayText,
+            monthYear(joined, locale)
+        )
+    }
+    HeroDashboard(
+        eyebrow = stringResource(R.string.stats_time_eyebrow),
+        value = formatExactCount(value, locale),
+        unit = unit,
+        lead = lead,
+        lists = emptyList(),
+        mediaType = MediaType.ANIME,
+        note = null,
+        staleNote = null,
+        detail = detail
+    )
+}
+
+/** The manga hero: chapters on the wide axis, volumes under them, and the daily average. */
+@Composable
+private fun MangaReadHero(stats: MangaStatisticsUi, joinedAt: Long?, isOwnProfile: Boolean) {
+    val locale = LocalConfiguration.current.locales[0]
+    val detail = joinedAt?.takeIf { stats.chaptersRead > 0 }?.let { millis ->
+        val joined = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+        val days = ChronoUnit.DAYS.between(joined, LocalDate.now()).coerceAtLeast(1)
+        stringResource(
+            if (isOwnProfile) R.string.stats_read_detail_own else R.string.stats_read_detail_other,
+            formatOneDecimal(stats.chaptersRead.toDouble() / days, locale),
+            monthYear(joined, locale)
+        )
+    }
+    HeroDashboard(
+        eyebrow = stringResource(R.string.stats_read_eyebrow),
+        value = formatExactCount(stats.chaptersRead, locale),
+        unit = pluralStringResourceOrDefault(R.plurals.stats_unit_chapters, stats.chaptersRead),
+        lead = stats.volumesRead.takeIf { it > 0 }?.let {
+            pluralStringResourceOrDefault(R.plurals.stats_hero_volumes, it, formatExactCount(it, locale))
+        },
+        lists = emptyList(),
+        mediaType = MediaType.MANGA,
+        note = null,
+        staleNote = null,
+        detail = detail
+    )
+}
+
+/** "June 2019", in the locale's own order and month form. */
+private fun monthYear(date: LocalDate, locale: java.util.Locale): String {
+    val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, "MMMMyyyy")
+    return date.format(DateTimeFormatter.ofPattern(pattern, locale))
+}
+
 @Composable
 private fun AnimeHero(stats: AnimeStatisticsUi, isOwnProfile: Boolean) {
     val locale = LocalConfiguration.current.locales[0]
@@ -527,23 +727,6 @@ private fun animeStatSections(
     onStudioClick: (Int) -> Unit = {}
 ): List<DashboardSection> = buildList {
     when (view) {
-        StatsView.HOW_YOU_WATCH -> {
-            if (stats.minutesWatched > 0) {
-                add(DashboardSection("anime_time") { TimeSpentBreakdown(stats.minutesWatched) })
-            }
-            if (stats.statusDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_status") { StatusDistributionDonut(stats.statusDistribution) })
-            }
-            if (stats.formatDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_formats") { FormatsSection(stats.formatDistribution) })
-            }
-            if (stats.lengthDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_lengths") { EpisodeLengthDistributionSection(stats.lengthDistribution) })
-            }
-            if (stats.countryDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_countries") { CountryDistributionRow(stats.countryDistribution) })
-            }
-        }
         StatsView.ERAS -> {
             if (stats.releaseYearDistribution.isNotEmpty()) {
                 add(DashboardSection("anime_years") { ReleaseYearsHistogramSection(stats.releaseYearDistribution) })
@@ -583,7 +766,7 @@ private fun animeStatSections(
                 })
             }
         }
-        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.RECAPS -> Unit
+        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.HOW_YOU_WATCH, StatsView.RECAPS -> Unit
     }
 }
 
@@ -593,28 +776,6 @@ private fun mangaStatSections(
     onStaffClick: (Int) -> Unit = {}
 ): List<DashboardSection> = buildList {
     when (view) {
-        StatsView.HOW_YOU_WATCH -> {
-            if (stats.chaptersRead > 0 || stats.volumesRead > 0) {
-                add(DashboardSection("manga_read") { ReadVolumeBreakdown(stats.chaptersRead, stats.volumesRead) })
-            }
-            if (stats.statusDistribution.isNotEmpty()) {
-                add(DashboardSection("manga_status") { StatusDistributionDonut(stats.statusDistribution, isManga = true) })
-            }
-            if (stats.formatDistribution.isNotEmpty()) {
-                add(DashboardSection("manga_formats") { FormatsSection(stats.formatDistribution) })
-            }
-            if (stats.lengthDistribution.isNotEmpty()) {
-                add(DashboardSection("manga_lengths") {
-                    EpisodeLengthDistributionSection(
-                        stats.lengthDistribution,
-                        title = stringResource(R.string.statistics_chapter_length_distribution)
-                    )
-                })
-            }
-            if (stats.countryDistribution.isNotEmpty()) {
-                add(DashboardSection("manga_countries") { CountryDistributionRow(stats.countryDistribution) })
-            }
-        }
         StatsView.ERAS -> {
             if (stats.releaseYearDistribution.isNotEmpty()) {
                 add(DashboardSection("manga_years") { ReleaseYearsHistogramSection(stats.releaseYearDistribution) })
@@ -634,6 +795,6 @@ private fun mangaStatSections(
                 ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
             })
         }
-        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.RECAPS -> Unit
+        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.HOW_YOU_WATCH, StatsView.RECAPS -> Unit
     }
 }
