@@ -24,6 +24,9 @@ import com.anisync.android.domain.stats.uncountedChanges
 import com.anisync.android.presentation.statistics.bucketActivityDays
 import com.anisync.android.domain.CachePolicy
 import com.anisync.android.domain.GenreStat
+import com.anisync.android.domain.PeopleList
+import com.anisync.android.domain.PeopleSort
+import com.anisync.android.domain.PersonStat
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
@@ -156,6 +159,9 @@ class ProfileViewModel @Inject constructor(
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
         val selectedStatsView: StatsView = StatsView.OVERVIEW,
         val genreSort: GenreSort = GenreSort.TITLES,
+        val peopleSorts: Map<PeopleList, PeopleSort> = emptyMap(),
+        val peopleExpanded: Set<PeopleList> = emptySet(),
+        val peopleFetched: Map<PeopleList, Map<PeopleSort, List<PersonStat>>> = emptyMap(),
         val isEditProfileDialogVisible: Boolean = false,
         val isBiographySheetVisible: Boolean = false,
         val selectedReview: com.anisync.android.domain.MediaReview? = null,
@@ -520,6 +526,9 @@ class ProfileViewModel @Inject constructor(
             selectedStatsType = local.selectedStatsType,
             selectedStatsView = local.selectedStatsView,
             genreSort = local.genreSort,
+            peopleSorts = local.peopleSorts,
+            peopleExpanded = local.peopleExpanded,
+            peopleFetched = local.peopleFetched,
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
             isBiographySheetVisible = local.isBiographySheetVisible,
             selectedReview = local.selectedReview,
@@ -645,6 +654,19 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.SelectStatsView -> localState.update { it.copy(selectedStatsView = action.view) }
 
             is ProfileAction.SelectGenreSort -> localState.update { it.copy(genreSort = action.sort) }
+            is ProfileAction.SelectPeopleSort -> {
+                localState.update { it.copy(peopleSorts = it.peopleSorts + (action.list to action.sort)) }
+                if (action.sort != PeopleSort.COUNT || action.list in localState.value.peopleExpanded) {
+                    fetchPeople(action.list, action.sort)
+                }
+            }
+            is ProfileAction.TogglePeopleExpanded -> {
+                val expanding = action.list !in localState.value.peopleExpanded
+                localState.update {
+                    it.copy(peopleExpanded = if (expanding) it.peopleExpanded + action.list else it.peopleExpanded - action.list)
+                }
+                if (expanding) fetchPeople(action.list, localState.value.peopleSorts[action.list] ?: PeopleSort.COUNT)
+            }
 
             is ProfileAction.SelectActivityFilter -> {
                 if (localState.value.selectedActivityFilter != action.filter) {
@@ -1449,6 +1471,24 @@ class ProfileViewModel @Inject constructor(
                 releaseMeans = stats.releaseYearDistribution.associate { it.year to it.meanScore.toDouble() }
             )
         )
+    }
+
+    /**
+     * Loads one People list in one order, up to AniList's hundred entries, once per list and order.
+     * The rows already shown stay until it lands, and stay if it fails.
+     */
+    private fun fetchPeople(list: PeopleList, sort: PeopleSort) {
+        if (localState.value.peopleFetched[list]?.containsKey(sort) == true) return
+        val userId = uiState.value.profile?.id ?: return
+        viewModelScope.launch {
+            val result = statisticsRepository.getPeopleStatistics(userId, list, sort)
+            if (result is Result.Success) {
+                localState.update { state ->
+                    val forList = state.peopleFetched[list].orEmpty() + (sort to result.data)
+                    state.copy(peopleFetched = state.peopleFetched + (list to forList))
+                }
+            }
+        }
     }
 
     /**

@@ -13,6 +13,10 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,6 +32,10 @@ import com.anisync.android.R
 import com.anisync.android.domain.CountryStat
 import com.anisync.android.domain.FormatStat
 import com.anisync.android.domain.GenreStat
+import com.anisync.android.domain.PeopleList
+import com.anisync.android.domain.PeopleSort
+import com.anisync.android.domain.PersonStat
+import com.anisync.android.domain.inPeopleOrder
 import com.anisync.android.domain.formatOneDecimal
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.TagStat
@@ -52,9 +60,13 @@ import com.anisync.android.presentation.statistics.ActivityInsightTiles
 import com.anisync.android.presentation.statistics.AtAGlance
 import com.anisync.android.presentation.statistics.StatsSectionHeader
 import com.anisync.android.presentation.statistics.StatsTiles
+import com.anisync.android.presentation.statistics.statsBodySmall
 import com.anisync.android.presentation.statistics.PeopleListCard
+import com.anisync.android.presentation.statistics.PeopleSortOption
 import com.anisync.android.presentation.statistics.PeopleSpotlight
-import com.anisync.android.presentation.statistics.PersonRow
+import com.anisync.android.presentation.statistics.ShowMore
+import com.anisync.android.presentation.statistics.chaptersLabel
+import com.anisync.android.presentation.statistics.hoursLabel
 import com.anisync.android.presentation.statistics.rolesLabel
 import com.anisync.android.presentation.statistics.titlesLabel
 import com.anisync.android.presentation.statistics.DecadesCard
@@ -91,6 +103,8 @@ fun LazyListScope.profileStatsTab(
     uiState: ProfileUiState,
     onOpenView: (StatsView) -> Unit,
     onGenreSortSelected: (GenreSort) -> Unit,
+    onPeopleSortSelected: (PeopleList, PeopleSort) -> Unit,
+    onPeopleExpandToggled: (PeopleList) -> Unit,
     onVoiceActorClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
@@ -212,30 +226,45 @@ fun LazyListScope.profileStatsTab(
         val isOwnProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
         val favourites = uiState.profile?.favoriteStaffOverview.orEmpty().map { it.id }.toSet()
         val manga = statsData.mangaStats
-        if (!isManga) {
+        val lists = if (!isManga) {
             val anime = statsData.animeStats
-            statsPeople(
-                voiceActors = anime.voiceActorDistribution.map { PersonRow(it.id, it.name, it.imageUrl, it.count, it.hoursWatched, it.meanScore) },
-                staff = anime.staffDistribution.map { PersonRow(it.id, it.name, it.imageUrl, it.count, it.hoursWatched, it.meanScore) },
-                studios = anime.studioDistribution.take(STUDIO_ROWS).map { PersonRow(it.id, it.studioName, null, it.count, it.hoursWatched, it.meanScore) },
-                favourites = favourites,
-                isManga = false,
-                isOwnProfile = isOwnProfile,
-                columns = statsColumns,
-                onVoiceActorClick = onVoiceActorClick,
-                onStaffClick = onStaffClick,
-                onStudioClick = onStudioClick
+            listOf(
+                PeopleList.ANIME_VOICE_ACTORS to anime.voiceActorDistribution.map {
+                    PersonStat(it.id, it.name, it.imageUrl, it.count, it.meanScore, it.hoursWatched)
+                },
+                PeopleList.ANIME_STAFF to anime.staffDistribution.map {
+                    PersonStat(it.id, it.name, it.imageUrl, it.count, it.meanScore, it.hoursWatched)
+                },
+                PeopleList.ANIME_STUDIOS to anime.studioDistribution.map {
+                    PersonStat(it.id, it.studioName, null, it.count, it.meanScore, it.hoursWatched)
+                },
             )
-            return
-        } else if (manga != null) {
+        } else {
+            manga?.let {
+                listOf(
+                    PeopleList.MANGA_STAFF to it.staffDistribution.map { staff ->
+                        PersonStat(staff.id, staff.name, staff.imageUrl, staff.count, staff.meanScore, staff.hoursWatched)
+                    }
+                )
+            }
+        }
+        if (lists != null) {
             statsPeople(
-                voiceActors = emptyList(),
-                staff = manga.staffDistribution.map { PersonRow(it.id, it.name, it.imageUrl, it.count, it.hoursWatched, it.meanScore) },
-                studios = emptyList(),
+                lists = lists.map { (list, initial) ->
+                    PeopleListModel(
+                        list = list,
+                        initial = initial,
+                        sort = uiState.peopleSorts[list] ?: PeopleSort.COUNT,
+                        expanded = list in uiState.peopleExpanded,
+                        fetched = uiState.peopleFetched[list]
+                    )
+                },
                 favourites = favourites,
-                isManga = true,
+                isManga = isManga,
                 isOwnProfile = isOwnProfile,
                 columns = statsColumns,
+                onSortSelected = onPeopleSortSelected,
+                onToggleExpanded = onPeopleExpandToggled,
                 onVoiceActorClick = onVoiceActorClick,
                 onStaffClick = onStaffClick,
                 onStudioClick = onStudioClick
@@ -470,7 +499,7 @@ private fun LazyListScope.statsTaste(
     val note: @Composable () -> Unit = {
         Text(
             text = stringResource(R.string.stats_adult_note),
-            style = MaterialTheme.typography.bodySmall,
+            style = statsBodySmall(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 24.dp, top = 16.dp, end = 24.dp)
         )
@@ -576,22 +605,50 @@ private fun LazyListScope.statsEras(eras: Eras, isManga: Boolean, isOwnProfile: 
     }
 }
 
-/** The People view: the spotlight, then voice actors, staff and studios, ranked. */
+/** One People list as the view draws it: its first rows from the stats, its order and what was fetched. */
+private class PeopleListModel(
+    val list: PeopleList,
+    val initial: List<PersonStat>,
+    val sort: PeopleSort,
+    val expanded: Boolean,
+    val fetched: Map<PeopleSort, List<PersonStat>>?,
+) {
+    /** Ten people or twelve studios before Show more. */
+    val cap: Int = if (list == PeopleList.ANIME_STUDIOS) STUDIO_ROWS else PEOPLE_ROWS
+
+    /** The fetched list for this order, or the first rows put in order until it lands. */
+    val ordered: List<PersonStat> = (fetched?.get(sort) ?: initial).inPeopleOrder(sort)
+
+    val shown: List<PersonStat> = if (expanded) ordered else ordered.take(cap)
+
+    /** More may wait on AniList while only the first rows are here and they filled their cap. */
+    val showMore: ShowMore? = when {
+        expanded -> ShowMore.FEWER
+        ordered.size > cap -> ShowMore.MORE
+        fetched?.get(sort) == null && initial.size >= cap -> ShowMore.MORE
+        else -> null
+    }
+}
+
+/** The People view: the spotlight, then voice actors, staff and studios, each with its own order. */
 private fun LazyListScope.statsPeople(
-    voiceActors: List<PersonRow>,
-    staff: List<PersonRow>,
-    studios: List<PersonRow>,
+    lists: List<PeopleListModel>,
     favourites: Set<Int>,
     isManga: Boolean,
     isOwnProfile: Boolean,
     columns: Int,
+    onSortSelected: (PeopleList, PeopleSort) -> Unit,
+    onToggleExpanded: (PeopleList) -> Unit,
     onVoiceActorClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
     onStudioClick: (Int) -> Unit,
 ) {
-    val spotlightVoice = voiceActors.firstOrNull()
-    val spotlightPerson = spotlightVoice ?: staff.firstOrNull()
-    if (spotlightPerson == null && studios.isEmpty()) {
+    val voiceActors = lists.firstOrNull { it.list == PeopleList.ANIME_VOICE_ACTORS }?.initial.orEmpty()
+    val staff = lists.firstOrNull { it.list == PeopleList.ANIME_STAFF || it.list == PeopleList.MANGA_STAFF }?.initial.orEmpty()
+    val spotlightVoice = voiceActors.maxByOrNull { it.count }
+    val spotlightPerson = spotlightVoice ?: staff.maxByOrNull { it.count }
+    val visible = lists.filter { it.initial.isNotEmpty() }
+    if (spotlightPerson == null && visible.isEmpty()) {
         item(key = "people_empty") {
             Text(
                 text = stringResource(R.string.stats_teaser_people_locked),
@@ -611,7 +668,7 @@ private fun LazyListScope.statsPeople(
             } else {
                 pluralStringResourceOrDefault(R.plurals.stats_titles, spotlightPerson.count, formatExactCount(spotlightPerson.count, locale))
             }
-            val amount = spotlightPerson.hours.roundToInt()
+            val amount = spotlightPerson.amount.roundToInt()
             val time = if (isManga) {
                 pluralStringResourceOrDefault(R.plurals.stats_chapters_short, amount, formatExactCount(amount, locale))
             } else {
@@ -644,49 +701,54 @@ private fun LazyListScope.statsPeople(
             )
         }
     }
-    val voiceHeader: @Composable (Modifier, Dp, Dp) -> Unit = { modifier, inset, top ->
+    val card: @Composable (PeopleListModel, Dp, Dp, Modifier) -> Unit = { model, inset, top, modifier ->
+        val isVoice = model.list == PeopleList.ANIME_VOICE_ACTORS
         StatsSectionHeader(
-            title = stringResource(R.string.stats_header_voice_actors),
-            subtitle = stringResource(if (isOwnProfile) R.string.stats_header_voice_actors_sub_own else R.string.stats_header_voice_actors_sub_other),
+            title = stringResource(
+                when (model.list) {
+                    PeopleList.ANIME_VOICE_ACTORS -> R.string.stats_header_voice_actors
+                    PeopleList.ANIME_STUDIOS -> R.string.stats_header_studios
+                    PeopleList.ANIME_STAFF, PeopleList.MANGA_STAFF -> R.string.stats_header_staff
+                }
+            ),
+            inset = inset,
+            top = top
+        )
+        PeopleListCard(
+            rows = model.shown,
+            sorts = listOf(
+                PeopleSortOption(
+                    PeopleSort.COUNT,
+                    stringResource(if (isVoice) R.string.stats_people_sort_roles else R.string.stats_genre_sort_titles),
+                    if (isVoice) Icons.Default.Person else Icons.Default.Tv
+                ),
+                PeopleSortOption(
+                    PeopleSort.PROGRESS,
+                    stringResource(if (isManga) R.string.stats_genre_sort_chapters else R.string.stats_genre_sort_hours),
+                    if (isManga) Icons.AutoMirrored.Filled.MenuBook else Icons.Default.Schedule
+                ),
+                PeopleSortOption(PeopleSort.SCORE, stringResource(R.string.stats_genre_sort_score), Icons.Default.Star),
+            ),
+            selectedSort = model.sort,
+            onSortChange = { onSortSelected(model.list, it) },
+            countLabel = { if (isVoice) rolesLabel(it) else titlesLabel(it) },
+            amountLabel = { if (isManga) chaptersLabel(it) else hoursLabel(it) },
+            onClick = when (model.list) {
+                PeopleList.ANIME_VOICE_ACTORS -> onVoiceActorClick
+                PeopleList.ANIME_STUDIOS -> onStudioClick
+                PeopleList.ANIME_STAFF, PeopleList.MANGA_STAFF -> onStaffClick
+            },
+            showMore = model.showMore,
+            onToggleMore = { onToggleExpanded(model.list) },
             modifier = modifier,
-            inset = inset,
-            top = top
-        )
-    }
-    val staffHeader: @Composable (Dp, Dp) -> Unit = { inset, top ->
-        StatsSectionHeader(
-            title = stringResource(R.string.stats_header_staff),
-            subtitle = stringResource(R.string.stats_header_staff_sub),
-            inset = inset,
-            top = top
-        )
-    }
-    val studiosHeader: @Composable (Dp, Dp) -> Unit = { inset, top ->
-        StatsSectionHeader(
-            title = stringResource(R.string.stats_header_studios),
-            subtitle = stringResource(R.string.stats_header_studios_sub),
-            inset = inset,
-            top = top
+            monogram = model.list == PeopleList.ANIME_STUDIOS
         )
     }
     if (columns <= 1) {
         item(key = "people_spotlight") { spotlight(Modifier.padding(horizontal = 16.dp)) }
-        if (voiceActors.isNotEmpty()) {
-            item(key = "people_voice_header") { voiceHeader(Modifier, 24.dp, 24.dp) }
-            item(key = "people_voice") {
-                PeopleListCard(voiceActors, { rolesLabel(it) }, onVoiceActorClick, Modifier.padding(horizontal = 16.dp))
-            }
-        }
-        if (staff.isNotEmpty()) {
-            item(key = "people_staff_header") { staffHeader(24.dp, 24.dp) }
-            item(key = "people_staff") {
-                PeopleListCard(staff, { titlesLabel(it) }, onStaffClick, Modifier.padding(horizontal = 16.dp))
-            }
-        }
-        if (studios.isNotEmpty()) {
-            item(key = "people_studios_header") { studiosHeader(24.dp, 24.dp) }
-            item(key = "people_studios") {
-                PeopleListCard(studios, { titlesLabel(it) }, onStudioClick, Modifier.padding(horizontal = 16.dp), monogram = true)
+        visible.forEach { model ->
+            item(key = "people_" + model.list.name) {
+                Column { card(model, 24.dp, 24.dp, Modifier.padding(horizontal = 16.dp)) }
             }
         }
     } else {
@@ -697,20 +759,10 @@ private fun LazyListScope.statsPeople(
             ) {
                 Column(Modifier.weight(1f)) {
                     spotlight(Modifier)
-                    if (voiceActors.isNotEmpty()) {
-                        voiceHeader(Modifier, 8.dp, 24.dp)
-                        PeopleListCard(voiceActors, { rolesLabel(it) }, onVoiceActorClick)
-                    }
+                    visible.firstOrNull()?.let { card(it, 8.dp, 24.dp, Modifier) }
                 }
                 Column(Modifier.weight(1f)) {
-                    if (staff.isNotEmpty()) {
-                        staffHeader(8.dp, 0.dp)
-                        PeopleListCard(staff, { titlesLabel(it) }, onStaffClick)
-                    }
-                    if (studios.isNotEmpty()) {
-                        studiosHeader(8.dp, 24.dp)
-                        PeopleListCard(studios, { titlesLabel(it) }, onStudioClick, monogram = true)
-                    }
+                    visible.drop(1).forEachIndexed { index, model -> card(model, 8.dp, if (index == 0) 0.dp else 24.dp, Modifier) }
                 }
             }
         }
@@ -718,6 +770,7 @@ private fun LazyListScope.statsPeople(
 }
 
 private const val STUDIO_ROWS = 12
+private const val PEOPLE_ROWS = 10
 
 /** How you watch (How you read for manga): time, the lists, formats, lengths and countries. */
 private fun LazyListScope.statsHowYouWatch(

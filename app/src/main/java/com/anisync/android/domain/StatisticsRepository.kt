@@ -19,4 +19,7 @@ interface StatisticsRepository {
         userId: Int,
         policy: CachePolicy = CachePolicy.NetworkFirst
     ): Result<UserStatistics>
+
+    /** Up to [PEOPLE_LIMIT] entries of one People list, in [sort] order as AniList sorts it. */
+    suspend fun getPeopleStatistics(userId: Int, list: PeopleList, sort: PeopleSort): Result<List<PersonStat>>
 }

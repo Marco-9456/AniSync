@@ -1,5 +1,8 @@
 package com.anisync.android.presentation.profile
 
+import com.anisync.android.domain.PeopleList
+import com.anisync.android.domain.PeopleSort
+import com.anisync.android.domain.PersonStat
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -45,6 +48,11 @@ data class ProfileUiState(
     val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
     val selectedStatsView: StatsView = StatsView.OVERVIEW,
     val genreSort: GenreSort = GenreSort.TITLES,
+    /** The order each People list is in, COUNT when it was never changed. */
+    val peopleSorts: Map<PeopleList, PeopleSort> = emptyMap(),
+    val peopleExpanded: Set<PeopleList> = emptySet(),
+    /** Longer People lists fetched for an order or a Show more, by list and order. */
+    val peopleFetched: Map<PeopleList, Map<PeopleSort, List<PersonStat>>> = emptyMap(),
     val isEditProfileDialogVisible: Boolean = false,
     val isBiographySheetVisible: Boolean = false,
     val userAnimeList: List<LibraryEntry> = emptyList(),
@@ -255,6 +263,8 @@ sealed interface ProfileAction {
     data class SelectStatsType(val type: ProfileStatsType) : ProfileAction
     data class SelectStatsView(val view: StatsView) : ProfileAction
     data class SelectGenreSort(val sort: GenreSort) : ProfileAction
+    data class SelectPeopleSort(val list: PeopleList, val sort: PeopleSort) : ProfileAction
+    data class TogglePeopleExpanded(val list: PeopleList) : ProfileAction
     data class SetEditProfileDialogVisible(val visible: Boolean) : ProfileAction
     data class SetBiographySheetVisible(val visible: Boolean) : ProfileAction
     data class SelectReview(val review: MediaReview?) : ProfileAction

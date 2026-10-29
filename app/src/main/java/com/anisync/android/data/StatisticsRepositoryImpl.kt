@@ -1,5 +1,11 @@
 package com.anisync.android.data
 
+import com.anisync.android.GetUserPeopleStatisticsQuery
+import com.anisync.android.domain.PEOPLE_LIMIT
+import com.anisync.android.domain.PeopleList
+import com.anisync.android.domain.PeopleSort
+import com.anisync.android.domain.PersonStat
+import com.anisync.android.type.UserStatisticsSort
 import com.anisync.android.GetUserStatisticsQuery
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.ActivityHistoryDay
@@ -76,6 +82,53 @@ class StatisticsRepositoryImpl @Inject constructor(
                 }
             )
         }
+    }
+
+    override suspend fun getPeopleStatistics(
+        userId: Int,
+        list: PeopleList,
+        sort: PeopleSort
+    ): Result<List<PersonStat>> = safeApiCall {
+        val response = apolloClient.query(
+            GetUserPeopleStatisticsQuery(
+                userId = userId,
+                sort = Optional.present(listOf(sort.toApi())),
+                limit = Optional.present(PEOPLE_LIMIT),
+                animeVoiceActors = list == PeopleList.ANIME_VOICE_ACTORS,
+                animeStaff = list == PeopleList.ANIME_STAFF,
+                animeStudios = list == PeopleList.ANIME_STUDIOS,
+                mangaStaff = list == PeopleList.MANGA_STAFF
+            )
+        ).fetchPolicy(FetchPolicy.NetworkFirst).execute()
+        val statistics = response.data?.User?.statistics ?: throw Exception("No statistics available")
+        when (list) {
+            PeopleList.ANIME_VOICE_ACTORS -> statistics.anime?.voiceActors.orEmpty().mapNotNull { entry ->
+                entry?.voiceActor?.let {
+                    PersonStat(it.id, it.name?.full ?: "Unknown", it.image?.medium, entry.count, (entry.meanScore ?: 0.0).toFloat(), (entry.minutesWatched ?: 0) / 60f)
+                }
+            }
+            PeopleList.ANIME_STAFF -> statistics.anime?.staff.orEmpty().mapNotNull { entry ->
+                entry?.staff?.let {
+                    PersonStat(it.id, it.name?.full ?: "Unknown", it.image?.medium, entry.count, (entry.meanScore ?: 0.0).toFloat(), (entry.minutesWatched ?: 0) / 60f)
+                }
+            }
+            PeopleList.ANIME_STUDIOS -> statistics.anime?.studios.orEmpty().mapNotNull { entry ->
+                entry?.studio?.let {
+                    PersonStat(it.id, it.name, null, entry.count, (entry.meanScore ?: 0.0).toFloat(), (entry.minutesWatched ?: 0) / 60f)
+                }
+            }
+            PeopleList.MANGA_STAFF -> statistics.manga?.staff.orEmpty().mapNotNull { entry ->
+                entry?.staff?.let {
+                    PersonStat(it.id, it.name?.full ?: "Unknown", it.image?.medium, entry.count, (entry.meanScore ?: 0.0).toFloat(), (entry.chaptersRead ?: 0).toFloat())
+                }
+            }
+        }
+    }
+
+    private fun PeopleSort.toApi(): UserStatisticsSort = when (this) {
+        PeopleSort.COUNT -> UserStatisticsSort.COUNT_DESC
+        PeopleSort.PROGRESS -> UserStatisticsSort.PROGRESS_DESC
+        PeopleSort.SCORE -> UserStatisticsSort.MEAN_SCORE_DESC
     }
 
     private fun CachePolicy.toFetchPolicy(): FetchPolicy = when (this) {

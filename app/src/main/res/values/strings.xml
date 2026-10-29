@@ -1585,13 +1585,11 @@
     <string name="stats_people_favourite_own">Also in your favourites</string>
     <string name="stats_people_favourite_other">Also in their favourites</string>
     <string name="stats_people_line">%1$s · %2$s</string>
+    <string name="stats_people_sort_roles">Roles</string>
+    <string name="stats_people_show_more">Show more</string>
     <string name="stats_header_voice_actors">Voice actors</string>
     <string name="stats_header_staff">Staff</string>
     <string name="stats_header_studios">Studios</string>
-    <string name="stats_header_voice_actors_sub_own">By roles in your anime</string>
-    <string name="stats_header_voice_actors_sub_other">By roles in their anime</string>
-    <string name="stats_header_staff_sub">By titles they worked on</string>
-    <string name="stats_header_studios_sub">By titles</string>
     <string name="stats_spotlight_voice_own">The voice you hear most</string>
     <string name="stats_spotlight_voice_other">The voice they hear most</string>
     <string name="stats_spotlight_staff_own">The name you see most</string>

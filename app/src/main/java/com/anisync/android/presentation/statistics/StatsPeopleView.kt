@@ -5,55 +5,53 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.domain.PeopleSort
+import com.anisync.android.domain.PersonStat
 import com.anisync.android.domain.formatExactCount
 import com.anisync.android.domain.formatOneDecimal
+import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalAvatarShape
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.lineBox
 import kotlin.math.roundToInt
 
-/** One person or studio in a People list. [count] is roles for voice actors and titles otherwise. */
-@Immutable
-data class PersonRow(
-    val id: Int,
-    val name: String,
-    val imageUrl: String?,
-    val count: Int,
-    val hours: Float,
-    val meanScore: Float,
-)
-
 /** The person who turns up most, large, with how often and whether they are a favourite too. */
 @Composable
 fun PeopleSpotlight(
-    person: PersonRow,
+    person: PersonStat,
     eyebrow: String,
     detail: String,
     isFavourite: Boolean,
@@ -107,29 +105,52 @@ fun PeopleSpotlight(
     }
 }
 
+/** One option of a People list's sort group. */
+class PeopleSortOption(val sort: PeopleSort, val label: String, val icon: ImageVector)
+
+/** Whether a list has a Show more row, and which way it points. */
+enum class ShowMore { MORE, FEWER }
+
 /**
- * Ranked people or studios, the first rank lit. Each row opens its page. Studios draw a monogram
- * in place of a picture.
+ * A ranked People list: its sort group, the rows in that order, the first rank lit, and a Show
+ * more row when there is more to see. Each row opens its page. Studios draw a monogram in place
+ * of a picture.
  */
 @Composable
 fun PeopleListCard(
-    rows: List<PersonRow>,
+    rows: List<PersonStat>,
+    sorts: List<PeopleSortOption>,
+    selectedSort: PeopleSort,
+    onSortChange: (PeopleSort) -> Unit,
     countLabel: @Composable (Int) -> String,
+    amountLabel: @Composable (Int) -> String,
     onClick: (Int) -> Unit,
+    showMore: ShowMore?,
+    onToggleMore: () -> Unit,
     modifier: Modifier = Modifier,
     monogram: Boolean = false,
 ) {
-    if (rows.isEmpty()) return
     val locale = LocalConfiguration.current.locales[0]
     val scheme = MaterialTheme.colorScheme
     val rankStyle = LocalExpressiveTypography.current.titleWide.style(16.sp, 22.sp)
+    // The sort group draws 44dp in a 48dp touch row and Show more draws its line in a 40dp one,
+    // so the paddings around them are what is left of the frame's 8dp gaps.
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(scheme.surfaceContainerLow)
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(start = 12.dp, top = 6.dp, end = 12.dp, bottom = if (showMore != null) 2.dp else 8.dp)
     ) {
+        SegmentedTabGroup(
+            options = sorts,
+            selected = sorts.first { it.sort == selectedSort },
+            onSelect = { onSortChange(it.sort) },
+            label = { it.label },
+            icon = { it.icon },
+            fillEqually = true
+        )
+        Spacer(Modifier.height(6.dp))
         rows.forEachIndexed { index, row ->
             Row(
                 modifier = Modifier
@@ -171,12 +192,8 @@ fun PeopleListCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = stringResource(
-                            R.string.stats_people_line,
-                            countLabel(row.count),
-                            stringResource(R.string.stats_genre_hours, formatExactCount(row.hours.roundToInt(), locale))
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
+                        text = stringResource(R.string.stats_people_line, countLabel(row.count), amountLabel(row.amount.roundToInt())),
+                        style = statsBodySmall(),
                         color = scheme.onSurfaceVariant,
                         maxLines = 1
                     )
@@ -206,18 +223,67 @@ fun PeopleListCard(
                 }
             }
         }
+        if (showMore != null) {
+            ShowMoreRow(
+                text = stringResource(if (showMore == ShowMore.MORE) R.string.stats_people_show_more else R.string.stats_tags_show_fewer),
+                expanded = showMore == ShowMore.FEWER,
+                onClick = onToggleMore,
+                inset = 4.dp
+            )
+        }
+    }
+}
+
+/**
+ * A Show more or Show fewer line in primary, in a 40dp touch row. [inset] is the space before the
+ * words, which People rows indent by 4dp.
+ */
+@Composable
+fun ShowMoreRow(text: String, expanded: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, inset: Dp = 0.dp) {
+    val scheme = MaterialTheme.colorScheme
+    Row(
+        modifier = modifier
+            .heightIn(min = 40.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(start = inset, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(text = text, style = MaterialTheme.typography.labelLarge, color = scheme.primary)
+        Icon(
+            imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+            contentDescription = null,
+            tint = scheme.primary,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
 /** A 48dp monogram carries its initials at this size, as the frame draws it. */
 private const val MONOGRAM_TEXT = 14.5f
 
-/** "51 roles" or "89 titles", for a row's count. */
+/** "51 roles", for a voice actor row. */
 @Composable
 fun rolesLabel(count: Int): String = pluralStringResourceOrDefault(R.plurals.stats_roles, count, count)
 
+/** "89 titles", for a staff or studio row. */
 @Composable
 fun titlesLabel(count: Int): String {
     val locale = LocalConfiguration.current.locales[0]
     return pluralStringResourceOrDefault(R.plurals.stats_titles, count, formatExactCount(count, locale))
+}
+
+/** "176 h", time with someone's anime. */
+@Composable
+fun hoursLabel(hours: Int): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return stringResource(R.string.stats_genre_hours, formatExactCount(hours, locale))
+}
+
+/** "340 chapters", time with someone's manga. */
+@Composable
+fun chaptersLabel(chapters: Int): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return pluralStringResourceOrDefault(R.plurals.stats_chapters_short, chapters, formatExactCount(chapters, locale))
 }
