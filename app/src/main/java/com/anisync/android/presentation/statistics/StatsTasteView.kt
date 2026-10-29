@@ -2,9 +2,6 @@ package com.anisync.android.presentation.statistics
 
 import android.icu.text.MessageFormat
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.indication
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,17 +16,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,12 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -61,6 +54,7 @@ import com.anisync.android.domain.formatOneDecimal
 import com.anisync.android.domain.stats.ScoreSummary
 import com.anisync.android.domain.stats.TasteSpread
 import com.anisync.android.domain.stats.tasteSpread
+import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.profile.GenreSort
 import com.anisync.android.presentation.profile.ScoreUiModel
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
@@ -379,16 +373,16 @@ fun GenreBoard(
     val rows = genres.sortedByDescending(metric).take(GENRE_ROWS)
     val max = rows.maxOfOrNull(metric)?.takeIf { it > 0f } ?: 1f
 
-    // The sort buttons draw 40dp inside a 48dp touch row, so the padding above and the gap below
-    // are 4dp short of the 16 and 12 the frame draws.
+    // The sort buttons draw 44dp inside a 48dp touch row, so the padding above and the gap below
+    // are 2dp short of the 16 and 12 the frame draws.
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(scheme.surfaceContainerLow)
-            .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp)
+            .padding(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 16.dp)
     ) {
-        SortRow(
+        SegmentedTabGroup(
             options = GenreSort.entries,
             selected = sort,
             onSelect = onSortChange,
@@ -400,9 +394,17 @@ fun GenreBoard(
                         GenreSort.SCORE -> R.string.stats_genre_sort_score
                     }
                 )
-            }
+            },
+            icon = { option ->
+                when (option) {
+                    GenreSort.TITLES -> Icons.Default.Tv
+                    GenreSort.HOURS -> if (isManga) Icons.AutoMirrored.Filled.MenuBook else Icons.Default.Schedule
+                    GenreSort.SCORE -> Icons.Default.Star
+                }
+            },
+            fillEqually = true
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(10.dp))
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             rows.forEachIndexed { index, genre ->
                 val value = when (sort) {
@@ -542,69 +544,6 @@ private fun BestRated(genres: List<GenreStat>, locale: Locale) {
 private const val BEST_RATED = 3
 private val BestRatedThresholds = listOf(100, 50, 20, 10, 5)
 
-/**
- * A connected row of equal buttons, 40dp tall inside a 48dp touch row. The selected one takes
- * primary and keeps its place in the row's shape.
- */
-@Composable
-private fun <T> SortRow(
-    options: List<T>,
-    selected: T,
-    onSelect: (T) -> Unit,
-    label: @Composable (T) -> String,
-) {
-    val scheme = MaterialTheme.colorScheme
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        options.forEachIndexed { index, option ->
-            val isSelected = option == selected
-            val interaction = remember { MutableInteractionSource() }
-            val shape = sortShape(index, options.lastIndex)
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .selectable(
-                        selected = isSelected,
-                        interactionSource = interaction,
-                        indication = null,
-                        role = Role.Tab,
-                        onClick = { onSelect(option) }
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(40.dp)
-                        .clip(shape)
-                        .background(if (isSelected) scheme.primary else scheme.surfaceContainerHigh)
-                        .indication(interaction, ripple()),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = label(option),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (isSelected) scheme.onPrimary else scheme.onSurface,
-                        maxLines = 1,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-private fun sortShape(index: Int, lastIndex: Int): Shape = when (index) {
-    0 -> RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp, topEnd = 6.dp, bottomEnd = 6.dp)
-    lastIndex -> RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp, topEnd = 20.dp, bottomEnd = 20.dp)
-    else -> RoundedCornerShape(6.dp)
-}
-
 /** The most common tags, twelve at first and the rest a tap away. */
 @Composable
 fun TagBoard(tags: List<TagStat>, modifier: Modifier = Modifier) {
@@ -614,86 +553,75 @@ fun TagBoard(tags: List<TagStat>, modifier: Modifier = Modifier) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val shown = if (expanded) tags else tags.take(TAGS_FIRST)
     val max = tags.maxOf { it.count }.coerceAtLeast(1)
+    val hasMore = tags.size > TAGS_FIRST
+    // Show more draws its line in a 40dp touch row, so the card keeps less padding under it.
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(scheme.surfaceContainerLow)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = if (hasMore) 6.dp else 16.dp)
     ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = stringResource(R.string.stats_tags_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = scheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = stringResource(R.string.stats_tags_shown, shown.size, tags.size),
-                style = MaterialTheme.typography.labelMedium,
-                color = scheme.onSurfaceVariant
-            )
-        }
-        shown.forEach { tag ->
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = tag.name,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = scheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.stats_tag_line,
-                            formatExactCount(tag.count, locale),
-                            formatOneDecimal(tag.meanScore.toDouble(), locale)
-                        ),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = scheme.onSurfaceVariant,
-                        maxLines = 1
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.stats_tags_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = scheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = stringResource(R.string.stats_tags_shown, shown.size, tags.size),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = scheme.onSurfaceVariant
+                )
+            }
+            shown.forEach { tag ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = tag.name,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = scheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.stats_tag_line,
+                                formatExactCount(tag.count, locale),
+                                formatOneDecimal(tag.meanScore.toDouble(), locale)
+                            ),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = scheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = { tag.count.toFloat() / max },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp),
+                        color = scheme.secondary,
+                        trackColor = scheme.surfaceContainerHigh,
+                        strokeCap = StrokeCap.Round,
+                        gapSize = 0.dp,
+                        drawStopIndicator = {}
                     )
                 }
-                LinearProgressIndicator(
-                    progress = { tag.count.toFloat() / max },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp),
-                    color = scheme.secondary,
-                    trackColor = scheme.surfaceContainerHigh,
-                    strokeCap = StrokeCap.Round,
-                    gapSize = 0.dp,
-                    drawStopIndicator = {}
-                )
             }
         }
-        if (tags.size > TAGS_FIRST) {
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(role = Role.Button) { expanded = !expanded },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = if (expanded) {
-                        stringResource(R.string.stats_tags_show_fewer)
-                    } else {
-                        pluralStringResourceOrDefault(R.plurals.stats_tags_show_more, tags.size - TAGS_FIRST, tags.size - TAGS_FIRST)
-                    },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = scheme.primary
-                )
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = scheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+        if (hasMore) {
+            ShowMoreRow(
+                text = if (expanded) {
+                    stringResource(R.string.stats_tags_show_fewer)
+                } else {
+                    pluralStringResourceOrDefault(R.plurals.stats_tags_show_more, tags.size - TAGS_FIRST, tags.size - TAGS_FIRST)
+                },
+                expanded = expanded,
+                onClick = { expanded = !expanded }
+            )
         }
     }
 }
