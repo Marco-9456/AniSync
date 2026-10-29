@@ -1442,7 +1442,8 @@
     <string name="stats_hero_watch_time_single">%1$s of watching</string>
     <string name="stats_hero_lists_note_own">%1$s on your lists. Planning stays on the list but is not counted in the %2$s.</string>
     <string name="stats_hero_lists_note_other">%1$s on their lists. Planning stays on the list but is not counted in the %2$s.</string>
-    <string name="stats_tile_taste">Taste · σ %1$s</string>
+    <string name="stats_tile_taste_word">Taste</string>
+    <string name="stats_tile_taste">%1$s · %2$s %3$s</string>
     <string name="stats_tile_top_genre">Top genre</string>
     <string name="stats_taste_focused">Focused</string>
     <string name="stats_taste_balanced">Balanced</string>

@@ -75,7 +75,10 @@ import java.time.LocalDate
 import java.util.Locale
 import kotlin.math.roundToInt
 
-/** One of the three tiles under the hero. Words get a smaller value size than numbers. */
+/**
+ * One of the three tiles under the hero. Words get a smaller value size than numbers. The label is
+ * drawn as given, already in capitals, so a σ inside it stays a σ.
+ */
 @Immutable
 data class StatTileModel(val icon: ImageVector, val value: String, val label: String, val isWord: Boolean = false)
 
@@ -106,7 +109,7 @@ fun StatsTiles(tiles: List<StatTileModel>, modifier: Modifier = Modifier) {
                     )
                 }
                 Text(
-                    text = tile.label.uppercase(),
+                    text = tile.label,
                     style = LocalExpressiveTypography.current.statLabel.copy(letterSpacing = 1.2.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
@@ -684,14 +687,19 @@ fun overviewTiles(
         StatTileModel(
             icon = Icons.Default.Equalizer,
             value = stringResource(spread.labelRes()),
-            label = stringResource(R.string.stats_tile_taste, formatScoreNumber(standardDeviation)),
+            label = stringResource(
+                R.string.stats_tile_taste,
+                stringResource(R.string.stats_tile_taste_word).uppercase(locale),
+                stringResource(R.string.stats_sigma),
+                formatScoreNumber(standardDeviation)
+            ),
             isWord = true
         )
     } else {
         StatTileModel(
             icon = Icons.Default.LocalOffer,
             value = topGenre ?: "",
-            label = stringResource(R.string.stats_tile_top_genre),
+            label = stringResource(R.string.stats_tile_top_genre).uppercase(locale),
             isWord = topGenre != null && topGenre.length > SHORT_WORD
         )
     }
@@ -699,9 +707,9 @@ fun overviewTiles(
         StatTileModel(
             icon = if (isManga) Icons.AutoMirrored.Filled.MenuBook else Icons.Default.PlayArrow,
             value = formatExactCount(count, locale),
-            label = countLabel
+            label = countLabel.uppercase(locale)
         ),
-        StatTileModel(Icons.Default.Star, formatScoreNumber(meanScore), stringResource(R.string.statistics_mean_score)),
+        StatTileModel(Icons.Default.Star, formatScoreNumber(meanScore), stringResource(R.string.statistics_mean_score).uppercase(locale)),
         third,
     )
 }
