@@ -316,7 +316,8 @@ fun ProfileContent(
             studioColumns = studioColumns,
             statsColumns = statsColumns,
             showShareActions = true,
-            onShareFavourites = { favouritesShareVisible = true }
+            onShareFavourites = { favouritesShareVisible = true },
+            onStatsViewSelected = onStatsViewSelected
         )
     }
 
@@ -482,7 +483,8 @@ internal fun LazyListScope.profileSelectedTabContent(
     studioColumns: Int,
     statsColumns: Int,
     showShareActions: Boolean = false,
-    onShareFavourites: () -> Unit = {}
+    onShareFavourites: () -> Unit = {},
+    onStatsViewSelected: (StatsView) -> Unit = { onAction(ProfileAction.SelectStatsView(it)) }
 ) {
     when (uiState.selectedTab) {
         ProfileTab.OVERVIEW -> {
@@ -621,6 +623,7 @@ internal fun LazyListScope.profileSelectedTabContent(
             item(key = "stats_top_gap") { Spacer(Modifier.height(8.dp)) }
             profileStatsTab(
                 uiState = uiState,
+                onOpenView = onStatsViewSelected,
                 onVoiceActorClick = onVoiceActorClick,
                 onStaffClick = onStaffClick,
                 onStudioClick = onStudioClick,

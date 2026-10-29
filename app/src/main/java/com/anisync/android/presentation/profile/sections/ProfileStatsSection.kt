@@ -3,6 +3,7 @@ package com.anisync.android.presentation.profile.sections
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -11,28 +12,40 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Equalizer
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.formatExactCount
+import com.anisync.android.domain.splitMinutes
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
+import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.profile.AnimeStatisticsUi
 import com.anisync.android.presentation.profile.MangaStatisticsUi
 import com.anisync.android.presentation.profile.ProfileStatsType
 import com.anisync.android.presentation.profile.ProfileUiState
+import com.anisync.android.presentation.profile.StatisticsUiModel
 import com.anisync.android.presentation.profile.StatsView
+import com.anisync.android.presentation.profile.StatusUiModel
 import com.anisync.android.presentation.statistics.ActivityHistorySection
+import com.anisync.android.presentation.statistics.AtAGlance
 import com.anisync.android.presentation.statistics.CountryDistributionRow
-import com.anisync.android.presentation.statistics.EditorialStat
 import com.anisync.android.presentation.statistics.EpisodeLengthDistributionSection
+import com.anisync.android.presentation.statistics.StatsTiles
+import com.anisync.android.presentation.statistics.buildAtAGlance
+import com.anisync.android.presentation.statistics.countOf
+import com.anisync.android.presentation.statistics.heroLists
+import com.anisync.android.presentation.statistics.overviewTiles
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
+import com.anisync.android.type.MediaType
 import com.anisync.android.presentation.statistics.FormatsSection
 import com.anisync.android.presentation.statistics.GenreCardModern
 import com.anisync.android.presentation.statistics.HeroDashboard
@@ -50,10 +63,10 @@ import com.anisync.android.presentation.statistics.VoiceActorCardModern
 import com.anisync.android.presentation.statistics.YearComparisonSection
 import com.anisync.android.presentation.util.DashboardSection
 import com.anisync.android.presentation.util.StatsDashboardGrid
-import com.anisync.android.presentation.util.formatDecimal
 
 fun LazyListScope.profileStatsTab(
     uiState: ProfileUiState,
+    onOpenView: (StatsView) -> Unit,
     onVoiceActorClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
@@ -115,6 +128,11 @@ fun LazyListScope.profileStatsTab(
     }
 
     val view = uiState.selectedStatsView
+    val isManga = uiState.selectedStatsType == ProfileStatsType.MANGA
+    if (view == StatsView.OVERVIEW && (!isManga || statsData.mangaStats != null)) {
+        statsOverview(uiState, statsData, isManga, statsColumns, onOpenView)
+        return
+    }
     if (view == StatsView.ACTIVITY && statsData.activityHistory.isNotEmpty()) {
         item(key = "activity_heatmap") {
             ActivityHistorySection(
@@ -169,6 +187,131 @@ fun LazyListScope.profileStatsTab(
 }
 
 /**
+ * The Overview: the hero, three tiles and "At a glance". On a wide pane the teasers move to a
+ * column of their own beside the hero.
+ */
+private fun LazyListScope.statsOverview(
+    uiState: ProfileUiState,
+    statsData: StatisticsUiModel,
+    isManga: Boolean,
+    columns: Int,
+    onOpenView: (StatsView) -> Unit,
+) {
+    val manga = statsData.mangaStats
+    val glance = if (isManga && manga != null) {
+        buildAtAGlance(manga, statsData.activityInsights, statsData.activityHistory)
+    } else {
+        buildAtAGlance(statsData.animeStats, statsData.activityInsights, statsData.activityHistory)
+    }
+    val isOwnProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
+    val heroAndTiles: @Composable () -> Unit = {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (isManga && manga != null) MangaHero(manga, isOwnProfile) else AnimeHero(statsData.animeStats, isOwnProfile)
+            StatsTiles(
+                if (isManga && manga != null) {
+                    overviewTiles(
+                        count = manga.chaptersRead,
+                        countLabel = stringResource(R.string.statistics_chapters),
+                        isManga = true,
+                        meanScore = manga.meanScore,
+                        standardDeviation = manga.standardDeviation,
+                        summary = manga.scoreSummary,
+                        topGenre = manga.genreDistribution.maxByOrNull { it.count }?.genre
+                    )
+                } else {
+                    val anime = statsData.animeStats
+                    overviewTiles(
+                        count = anime.episodesWatched,
+                        countLabel = stringResource(R.string.statistics_episodes),
+                        isManga = false,
+                        meanScore = anime.meanScore,
+                        standardDeviation = anime.standardDeviation,
+                        summary = anime.scoreSummary,
+                        topGenre = anime.genreDistribution.maxByOrNull { it.count }?.genre
+                    )
+                }
+            )
+        }
+    }
+    if (columns <= 1) {
+        item(key = "overview_hero") { Box(Modifier.padding(horizontal = 16.dp)) { heroAndTiles() } }
+        item(key = "overview_glance_header") {
+            SectionHeader(title = stringResource(R.string.stats_at_a_glance), modifier = Modifier.padding(top = 24.dp))
+        }
+        item(key = "overview_glance") {
+            AtAGlance(glance, onOpen = onOpenView, modifier = Modifier.padding(horizontal = 16.dp))
+        }
+    } else {
+        item(key = "overview_wide") {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(Modifier.weight(1f)) { heroAndTiles() }
+                AtAGlance(glance, onOpen = onOpenView, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun AnimeHero(stats: AnimeStatisticsUi, isOwnProfile: Boolean) {
+    val locale = LocalConfiguration.current.locales[0]
+    val parts = splitMinutes(stats.minutesWatched)
+    val days = pluralStringResourceOrDefault(R.plurals.statistics_activity_days, parts.days, parts.days)
+    val hours = pluralStringResourceOrDefault(R.plurals.stats_hours, parts.hours, parts.hours)
+    val minutes = pluralStringResourceOrDefault(R.plurals.stats_minutes, parts.minutes, parts.minutes)
+    val lead = when {
+        stats.minutesWatched <= 0 -> null
+        parts.days > 0 && parts.hours > 0 -> stringResource(R.string.stats_hero_watch_time, days, hours)
+        parts.days > 0 -> stringResource(R.string.stats_hero_watch_time_single, days)
+        parts.hours > 0 && parts.minutes > 0 -> stringResource(R.string.stats_hero_watch_time, hours, minutes)
+        parts.hours > 0 -> stringResource(R.string.stats_hero_watch_time_single, hours)
+        else -> stringResource(R.string.stats_hero_watch_time_single, minutes)
+    }
+    HeroDashboard(
+        eyebrow = stringResource(R.string.stats_hero_eyebrow_anime),
+        value = formatExactCount(stats.totalCount, locale),
+        unit = pluralStringResourceOrDefault(R.plurals.stats_unit_anime, stats.totalCount),
+        lead = lead,
+        lists = stats.statusDistribution.heroLists(),
+        mediaType = MediaType.ANIME,
+        note = listsNote(stats.statusDistribution, stats.totalCount, isOwnProfile),
+        staleNote = null
+    )
+}
+
+@Composable
+private fun MangaHero(stats: MangaStatisticsUi, isOwnProfile: Boolean) {
+    val locale = LocalConfiguration.current.locales[0]
+    HeroDashboard(
+        eyebrow = stringResource(R.string.stats_hero_eyebrow_manga),
+        value = formatExactCount(stats.totalCount, locale),
+        unit = pluralStringResourceOrDefault(R.plurals.stats_unit_manga, stats.totalCount),
+        lead = stats.chaptersRead.takeIf { it > 0 }?.let {
+            pluralStringResourceOrDefault(R.plurals.stats_hero_chapters_read, it, formatExactCount(it, locale))
+        },
+        lists = stats.statusDistribution.heroLists(),
+        mediaType = MediaType.MANGA,
+        note = listsNote(stats.statusDistribution, stats.totalCount, isOwnProfile),
+        staleNote = null
+    )
+}
+
+/** Explains the gap between AniList's total, which leaves Planning out, and what is on the lists. */
+@Composable
+private fun listsNote(statuses: List<StatusUiModel>, total: Int, isOwnProfile: Boolean): String? {
+    if (statuses.countOf(LibraryStatus.PLANNING) <= 0) return null
+    val locale = LocalConfiguration.current.locales[0]
+    val onLists = formatExactCount(statuses.sumOf { it.count }, locale)
+    return stringResource(
+        if (isOwnProfile) R.string.stats_hero_lists_note_own else R.string.stats_hero_lists_note_other,
+        onLists,
+        formatExactCount(total, locale)
+    )
+}
+
+/**
  * Emits a view's section cards. On compact ([columns] <= 1, i.e. a compact window) each section is
  * its own lazy item (full-bleed, lazily composed); otherwise the first section spans full width and
  * the rest go into a [StatsDashboardGrid] inside one item. [columns] only gates compact-vs-flow, the
@@ -204,19 +347,6 @@ private fun animeStatSections(
     onStudioClick: (Int) -> Unit = {}
 ): List<DashboardSection> = buildList {
     when (view) {
-        StatsView.OVERVIEW -> add(DashboardSection("anime_hero") {
-            HeroDashboard(
-                primaryValue = stats.totalCount.toString(),
-                primaryUnit = "anime",
-                primaryLabel = stringResource(R.string.statistics_total_anime),
-                accentText = stringResource(R.string.statistics_days_of_your_life, formatDecimal(stats.daysWatched)),
-                secondaryRow = listOf(
-                    EditorialStat(stats.episodesWatched.toString(), stringResource(R.string.statistics_episodes), Icons.Default.PlayArrow),
-                    EditorialStat(formatDecimal(stats.meanScore), stringResource(R.string.statistics_mean_score), Icons.Rounded.Star),
-                    EditorialStat(formatDecimal(stats.standardDeviation), stringResource(R.string.statistics_std_dev), Icons.Default.Equalizer)
-                )
-            )
-        })
         StatsView.TASTE -> {
             if (stats.scoreDistribution.isNotEmpty()) {
                 add(DashboardSection("anime_scores") { ScoreHistogramSection(stats.scoreDistribution, stats.meanScore) })
@@ -293,7 +423,7 @@ private fun animeStatSections(
                 })
             }
         }
-        StatsView.ACTIVITY, StatsView.RECAPS -> Unit
+        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.RECAPS -> Unit
     }
 }
 
@@ -303,18 +433,6 @@ private fun mangaStatSections(
     onStaffClick: (Int) -> Unit = {}
 ): List<DashboardSection> = buildList {
     when (view) {
-        StatsView.OVERVIEW -> add(DashboardSection("manga_hero") {
-            HeroDashboard(
-                primaryValue = stats.totalCount.toString(),
-                primaryUnit = "manga",
-                primaryLabel = stringResource(R.string.statistics_total_manga),
-                secondaryRow = listOf(
-                    EditorialStat(stats.chaptersRead.toString(), stringResource(R.string.statistics_chapters), Icons.AutoMirrored.Filled.MenuBook),
-                    EditorialStat(formatDecimal(stats.meanScore), stringResource(R.string.statistics_mean_score), Icons.Rounded.Star),
-                    EditorialStat(formatDecimal(stats.standardDeviation), stringResource(R.string.statistics_std_dev), Icons.Default.Equalizer)
-                )
-            )
-        })
         StatsView.TASTE -> {
             if (stats.scoreDistribution.isNotEmpty()) {
                 add(DashboardSection("manga_scores") { ScoreHistogramSection(stats.scoreDistribution, stats.meanScore) })
@@ -376,6 +494,6 @@ private fun mangaStatSections(
                 ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
             })
         }
-        StatsView.ACTIVITY, StatsView.RECAPS -> Unit
+        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.RECAPS -> Unit
     }
 }

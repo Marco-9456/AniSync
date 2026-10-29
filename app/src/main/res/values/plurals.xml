@@ -23,4 +23,58 @@
         <item quantity="one">%dm</item>
         <item quantity="other">%dm</item>
     </plurals>
+
+    <!-- Statistics -->
+    <plurals name="stats_unit_anime">
+        <item quantity="one">anime</item>
+        <item quantity="other">anime</item>
+    </plurals>
+    <plurals name="stats_unit_manga">
+        <item quantity="one">manga</item>
+        <item quantity="other">manga</item>
+    </plurals>
+    <plurals name="stats_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="stats_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <plurals name="stats_hero_chapters_read">
+        <item quantity="one">%1$s chapter read</item>
+        <item quantity="other">%1$s chapters read</item>
+    </plurals>
+    <plurals name="stats_hero_stale">
+        <item quantity="one">AniList recounts these about every two days, so a change from this week is not in yet.</item>
+        <item quantity="other">AniList recounts these about every two days, so %d changes from this week are not in yet.</item>
+    </plurals>
+    <plurals name="stats_day_streak">
+        <item quantity="one">day streak</item>
+        <item quantity="other">day streak</item>
+    </plurals>
+    <plurals name="stats_active_days">
+        <item quantity="one">active day</item>
+        <item quantity="other">active days</item>
+    </plurals>
+    <plurals name="stats_busiest_on_count">
+        <item quantity="one">Busiest on %1$s, %2$d activity</item>
+        <item quantity="other">Busiest on %1$s, %2$d activities</item>
+    </plurals>
+    <plurals name="stats_teaser_top_genre">
+        <item quantity="one">your top genre, %d title</item>
+        <item quantity="other">your top genre, %d titles</item>
+    </plurals>
+    <plurals name="stats_teaser_century">
+        <item quantity="one">a century of anime, %d decade</item>
+        <item quantity="other">a century of anime, %d decades</item>
+    </plurals>
+    <plurals name="stats_teaser_decades_peak">
+        <item quantity="one">%1$d decade, peak in %2$d</item>
+        <item quantity="other">%1$d decades, peak in %2$d</item>
+    </plurals>
+    <plurals name="stats_roles">
+        <item quantity="one">%d role</item>
+        <item quantity="other">%d roles</item>
+    </plurals>
 </resources>
