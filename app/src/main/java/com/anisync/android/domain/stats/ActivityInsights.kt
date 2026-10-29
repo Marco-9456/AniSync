@@ -13,6 +13,7 @@ data class ActivityInsights(
     val total: Int,
     val days: Int,
     val longestStreak: Int,
+    val streakStart: LocalDate,
     /** True when the longest streak starts on the oldest day AniList still keeps. */
     val streakIsOpenEnded: Boolean,
     val busiestWeekday: DayOfWeek,
@@ -23,6 +24,7 @@ data class ActivityInsights(
     val byMonth: List<MonthActivity>,
 ) {
     val perDay: Double get() = total.toDouble() / days
+    val streakEnd: LocalDate get() = streakStart.plusDays(longestStreak - 1L)
 }
 
 data class MonthActivity(
@@ -86,6 +88,7 @@ fun activityInsights(amounts: Map<LocalDate, Int>): ActivityInsights? {
         total = active.values.sum(),
         days = days,
         longestStreak = bestRun,
+        streakStart = bestStart,
         streakIsOpenEnded = bestStart == first && days >= ACTIVITY_RETENTION_DAYS - RECOUNT_LAG_DAYS,
         busiestWeekday = busiestWeekday,
         busiestWeekdayTotal = byWeekday.getValue(busiestWeekday),

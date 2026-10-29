@@ -54,7 +54,10 @@ class ActivityInsightsTest {
             LocalDate.of(2026, 10, 2) to 0,
             LocalDate.of(2026, 10, 3) to 1,
         )
-        assertEquals(4, activityInsights(days)!!.longestStreak)
+        val insights = activityInsights(days)!!
+        assertEquals(4, insights.longestStreak)
+        assertEquals(LocalDate.of(2026, 9, 28), insights.streakStart)
+        assertEquals(LocalDate.of(2026, 10, 1), insights.streakEnd)
     }
 
     @Test
