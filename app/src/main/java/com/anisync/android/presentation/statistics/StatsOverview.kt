@@ -62,6 +62,7 @@ import com.anisync.android.ui.theme.ListIndicatorKind
 import com.anisync.android.ui.theme.LocalAvatarShape
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.genreColor
+import com.anisync.android.ui.theme.lineBox
 import com.anisync.android.ui.theme.listIndicatorColor
 import java.text.NumberFormat
 import java.time.DayOfWeek
@@ -90,11 +91,13 @@ fun StatsTiles(tiles: List<StatTileModel>, modifier: Modifier = Modifier) {
                 Spacer(Modifier.height(6.dp))
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
                     val size = if (tile.isWord) 22f else 26f
+                    val style = fittedStyle(tile.value, titleWide.style(size.sp, 32.sp), maxWidth)
                     Text(
                         text = tile.value,
-                        style = fittedStyle(tile.value, titleWide.style(size.sp, 32.sp), maxWidth),
+                        style = style,
                         color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1
+                        maxLines = 1,
+                        modifier = Modifier.lineBox(style)
                     )
                 }
                 Text(
@@ -225,11 +228,13 @@ private fun ActivityTeaserCard(teaser: ActivityTeaser, onClick: () -> Unit) {
                     insights.streakIsOpenEnded -> stringResource(R.string.stats_count_open_ended, insights.longestStreak)
                     else -> insights.longestStreak.toString()
                 }
+                val valueStyle = LocalExpressiveTypography.current.heroWide.style(44.sp, 48.sp, (-1.5).sp)
                 Text(
                     text = value,
-                    style = LocalExpressiveTypography.current.heroWide.style(44.sp, 48.sp, (-1.5).sp),
+                    style = valueStyle,
                     color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1
+                    maxLines = 1,
+                    modifier = Modifier.lineBox(valueStyle)
                 )
                 Text(
                     text = if (showStreak) {
@@ -297,12 +302,14 @@ private fun TasteTeaserCard(teaser: TasteTeaser, onClick: () -> Unit) {
     val container = colors?.container ?: MaterialTheme.colorScheme.secondaryContainer
     val content = colors?.content ?: MaterialTheme.colorScheme.onSecondaryContainer
     Teaser(title = stringResource(R.string.stats_view_taste), onClick = onClick, container = container, content = content) {
+        val genreStyle = LocalExpressiveTypography.current.titleWide.style(28.sp, 34.sp, (-0.5).sp)
         Text(
             text = teaser.genre,
-            style = LocalExpressiveTypography.current.titleWide.style(28.sp, 34.sp, (-0.5).sp),
+            style = genreStyle,
             color = content,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.lineBox(genreStyle)
         )
         Text(
             text = pluralStringResourceOrDefault(R.plurals.stats_teaser_top_genre, teaser.genreTitles, teaser.genreTitles),
@@ -367,11 +374,13 @@ private fun FormatTeaserCard(teaser: FormatTeaser, onClick: () -> Unit) {
     Teaser(title = stringResource(R.string.stats_view_how_you_watch), onClick = onClick) {
         if (first != null) {
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val formatStyle = LocalExpressiveTypography.current.heroWide.style(40.sp, 44.sp)
                 Text(
                     text = shortFormatName(first.first),
-                    style = LocalExpressiveTypography.current.heroWide.style(40.sp, 44.sp),
+                    style = formatStyle,
                     color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1
+                    maxLines = 1,
+                    modifier = Modifier.lineBox(formatStyle)
                 )
                 Text(
                     text = stringResource(R.string.stats_teaser_format_share, percent(first.second, total)),
@@ -435,11 +444,13 @@ private fun ErasTeaserCard(teaser: ErasTeaser, onClick: () -> Unit) {
     val span = eras.newestYear - eras.oldestYear
     val decades = (span / 10.0).roundToInt()
     Teaser(title = stringResource(R.string.stats_view_eras), onClick = onClick) {
+        val rangeStyle = LocalExpressiveTypography.current.heroWide.style(21.sp, 30.sp)
         Text(
             text = stringResource(R.string.stats_year_range, eras.oldestYear, eras.newestYear),
-            style = LocalExpressiveTypography.current.heroWide.style(21.sp, 30.sp),
+            style = rangeStyle,
             color = MaterialTheme.colorScheme.primary,
-            maxLines = 1
+            maxLines = 1,
+            modifier = Modifier.lineBox(rangeStyle)
         )
         Text(
             text = if (span >= CENTURY) {
@@ -570,11 +581,13 @@ internal fun StudioMonogram(name: String, size: Dp, textSize: Float, modifier: M
             .background(MaterialTheme.colorScheme.secondaryContainer),
         contentAlignment = Alignment.Center
     ) {
+        val style = LocalExpressiveTypography.current.titleWide.style(textSize.sp, (textSize * 18 / 13).sp)
         Text(
             text = monogram(name),
-            style = LocalExpressiveTypography.current.titleWide.style(textSize.sp, (textSize * 18 / 13).sp),
+            style = style,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
-            maxLines = 1
+            maxLines = 1,
+            modifier = Modifier.lineBox(style)
         )
     }
 }

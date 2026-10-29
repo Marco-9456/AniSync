@@ -39,6 +39,7 @@ import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.ListIndicatorKind
 import com.anisync.android.ui.theme.LocalExpressiveTypography
+import com.anisync.android.ui.theme.lineBox
 import com.anisync.android.ui.theme.listIndicatorArtColor
 
 /** One list on the hero's bar and legend. */
@@ -76,7 +77,7 @@ fun HeroDashboard(
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(text = eyebrow.uppercase(), style = expressive.statLabel, color = content.copy(alpha = 0.7f))
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(text = value, style = heroStyle, color = content, maxLines = 1)
+                Text(text = value, style = heroStyle, color = content, maxLines = 1, modifier = Modifier.lineBox(heroStyle))
                 Text(
                     text = unit,
                     style = unitStyle,
