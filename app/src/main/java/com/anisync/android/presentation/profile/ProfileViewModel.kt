@@ -1389,7 +1389,8 @@ class ProfileViewModel @Inject constructor(
             scoreSummary = summarizeScores(buckets.associate { it.score to it.count }),
             eras = eras(
                 releaseYears = stats.releaseYearDistribution.associate { it.year to it.count },
-                startYears = stats.startYearDistribution.associate { it.year to it.count }
+                startYears = stats.startYearDistribution.associate { it.year to it.count },
+                releaseMeans = stats.releaseYearDistribution.associate { it.year to it.meanScore.toDouble() }
             )
         )
     }
@@ -1435,7 +1436,8 @@ class ProfileViewModel @Inject constructor(
             scoreSummary = summarizeScores(buckets.associate { it.score to it.count }),
             eras = eras(
                 releaseYears = stats.releaseYearDistribution.associate { it.year to it.count },
-                startYears = stats.startYearDistribution.associate { it.year to it.count }
+                startYears = stats.startYearDistribution.associate { it.year to it.count },
+                releaseMeans = stats.releaseYearDistribution.associate { it.year to it.meanScore.toDouble() }
             )
         )
     }

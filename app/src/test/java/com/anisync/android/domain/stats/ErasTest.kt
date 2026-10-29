@@ -51,4 +51,19 @@ class ErasTest {
     fun `no start years leaves the start peak out`() {
         assertNull(eras(releaseYears, emptyMap())!!.peakStartYear)
     }
+
+    @Test
+    fun `the best scored year needs a fair share of titles`() {
+        val eras = eras(
+            releaseYears = mapOf(2020 to 138, 2025 to 4, 2026 to 18, 2019 to 100),
+            startYears = emptyMap(),
+            releaseMeans = mapOf(2020 to 70.0, 2025 to 95.0, 2026 to 84.7, 2019 to 72.0),
+        )!!
+        assertEquals(YearMean(2026, 84.7), eras.bestScoredYear)
+    }
+
+    @Test
+    fun `no means leave no best scored year`() {
+        assertNull(eras(mapOf(2020 to 10), emptyMap())!!.bestScoredYear)
+    }
 }
