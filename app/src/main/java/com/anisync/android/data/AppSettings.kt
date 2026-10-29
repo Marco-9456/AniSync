@@ -83,7 +83,8 @@ enum class StartScreen(val tabKey: String?) {
     LIBRARY("library"),
     DISCOVER("discover"),
     FEED("feed"),
-    FORUM("forum")
+    FORUM("forum"),
+    PROFILE("profile")
 }
 
 /**

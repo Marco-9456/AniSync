@@ -262,14 +262,15 @@ fun MainScreen(
     val navBarCornerRadius by viewModel.navBarCornerRadius.collectAsStateWithLifecycle()
     val navBarSuppressor = remember { MainNavBarSuppressor() }
 
-    // Cold-launch restore: open on the tab the user last visited (Library/Discover/
-    // Feed/Forum). Compose Navigation restores its own back stack across process
-    // death, so this only governs a genuinely fresh start.
+    // Cold-launch restore: open on the tab pinned under Open on, or else the tab the user
+    // last visited (Library/Discover/Feed/Forum). Compose Navigation restores its own back
+    // stack across process death, so this only governs a genuinely fresh start.
     val startDestination: Any = remember(viewModel.startTabKey) {
         when (viewModel.startTabKey) {
             "discover" -> Discover
             "feed" -> Feed
             "forum" -> Forum
+            "profile" -> Profile
             else -> Library
         }
     }

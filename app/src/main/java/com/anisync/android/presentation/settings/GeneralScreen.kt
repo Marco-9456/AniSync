@@ -297,5 +297,6 @@ private fun startScreenLabel(screen: StartScreen): String = stringResource(
         StartScreen.DISCOVER -> R.string.nav_discover
         StartScreen.FEED -> R.string.nav_feed
         StartScreen.FORUM -> R.string.nav_forum
+        StartScreen.PROFILE -> R.string.nav_profile
     }
 )
