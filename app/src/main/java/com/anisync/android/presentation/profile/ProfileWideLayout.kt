@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import com.anisync.android.presentation.statistics.StatsShareFab
+import com.anisync.android.presentation.statistics.statsFabClearance
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -820,10 +821,13 @@ private fun ProfileTabPane(
                     )
                 }
             ) {
+                val showStatsFab = uiState.selectedTab == ProfileTab.STATS && uiState.statsData != null
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 48.dp + LocalMainNavBarInset.current)
+                    contentPadding = PaddingValues(
+                        bottom = LocalMainNavBarInset.current + if (showStatsFab) statsFabClearance() else 48.dp
+                    )
                 ) {
                     profileSelectedTabContent(
                         profile = profile,
@@ -847,7 +851,7 @@ private fun ProfileTabPane(
                     )
                 }
 
-                if (uiState.selectedTab == ProfileTab.STATS && uiState.statsData != null) {
+                if (showStatsFab) {
                     StatsShareFab(
                         onClick = onShareStats,
                         modifier = Modifier

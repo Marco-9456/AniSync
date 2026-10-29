@@ -93,6 +93,7 @@ import com.anisync.android.presentation.share.ShareCardTemplate
 import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.statistics.StatsRail
 import com.anisync.android.presentation.statistics.StatsShareFab
+import com.anisync.android.presentation.statistics.statsFabClearance
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.launch
 import com.anisync.android.util.ShareUtils
@@ -246,10 +247,13 @@ fun ProfileContent(
             )
         }
     ) {
+    val showStatsFab = uiState.selectedTab == ProfileTab.STATS && uiState.statsData != null
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 48.dp + LocalMainNavBarInset.current)
+        contentPadding = PaddingValues(
+            bottom = LocalMainNavBarInset.current + if (showStatsFab) statsFabClearance() else 48.dp
+        )
     ) {
         item(key = "profile_header", contentType = "header") {
             ProfileTopSection(
@@ -334,7 +338,7 @@ fun ProfileContent(
         }
     }
 
-    if (uiState.selectedTab == ProfileTab.STATS && uiState.statsData != null) {
+    if (showStatsFab) {
         StatsShareFab(
             onClick = { statsShareVisible = true },
             modifier = Modifier
