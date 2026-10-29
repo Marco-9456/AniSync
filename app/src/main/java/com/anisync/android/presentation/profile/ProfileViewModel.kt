@@ -1362,7 +1362,7 @@ class ProfileViewModel @Inject constructor(
 
         val maxLengthCount = stats.lengthDistribution.maxOfOrNull { it.count } ?: 1
         val lengthsUi = stats.lengthDistribution.map {
-            LengthUiModel(it.length, it.count, it.count.toFloat() / maxLengthCount.coerceAtLeast(1))
+            LengthUiModel(it.length, it.count, it.count.toFloat() / maxLengthCount.coerceAtLeast(1), it.meanScore)
         }
 
         val statusesUi = stats.statusDistribution.toStatusUi()
@@ -1411,7 +1411,7 @@ class ProfileViewModel @Inject constructor(
 
         val maxLengthCount = stats.lengthDistribution.maxOfOrNull { it.count } ?: 1
         val lengthsUi = stats.lengthDistribution.map {
-            LengthUiModel(it.length, it.count, it.count.toFloat() / maxLengthCount.coerceAtLeast(1))
+            LengthUiModel(it.length, it.count, it.count.toFloat() / maxLengthCount.coerceAtLeast(1), it.meanScore)
         }
 
         val statusesUi = stats.statusDistribution.toStatusUi()

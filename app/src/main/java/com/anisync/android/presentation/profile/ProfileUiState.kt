@@ -170,7 +170,8 @@ data class StatusUiModel(
 data class LengthUiModel(
     val label: String,
     val count: Int,
-    val heightFraction: Float
+    val heightFraction: Float,
+    val meanScore: Float = 0f
 )
 
 @Immutable

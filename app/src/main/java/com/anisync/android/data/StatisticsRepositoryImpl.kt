@@ -160,7 +160,7 @@ class StatisticsRepositoryImpl @Inject constructor(
             }?.filter { it.year > 0 }?.sortedByDescending { it.year } ?: emptyList(),
             lengthDistribution = lengths?.mapNotNull { l ->
                 l?.let {
-                    val label = it.length ?: return@let null
+                    val label = it.length.orEmpty()
                     LengthStat(
                         length = label,
                         count = it.count,
@@ -291,7 +291,7 @@ class StatisticsRepositoryImpl @Inject constructor(
             }?.filter { it.year > 0 }?.sortedByDescending { it.year } ?: emptyList(),
             lengthDistribution = lengths?.mapNotNull { l ->
                 l?.let {
-                    val label = it.length ?: return@let null
+                    val label = it.length.orEmpty()
                     LengthStat(
                         length = label,
                         count = it.count,
