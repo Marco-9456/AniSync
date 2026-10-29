@@ -3,8 +3,11 @@ package com.anisync.android.presentation.statistics
 import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.stats.ActivityInsights
+import com.anisync.android.domain.stats.ScoreBucket
+import com.anisync.android.domain.stats.teaserBuckets
 import com.anisync.android.presentation.profile.AnimeStatisticsUi
 import com.anisync.android.presentation.profile.MangaStatisticsUi
+import com.anisync.android.presentation.profile.ScoreUiModel
 import com.anisync.android.presentation.profile.StatusUiModel
 
 /** Someone has to appear in at least two titles before the People teaser names them. */
@@ -27,7 +30,7 @@ fun buildAtAGlance(
                 genre = top.genre,
                 genreTitles = top.count,
                 nextGenres = genres.drop(1).take(NEXT_GENRES).map { it.genre to it.count },
-                scores = stats.scoreDistribution,
+                scores = stats.scoreDistribution.teaserScores(stats.scoreSummary.mostGiven),
                 summary = stats.scoreSummary,
                 meanScore = stats.meanScore,
             )
@@ -70,7 +73,7 @@ fun buildAtAGlance(
                 genre = top.genre,
                 genreTitles = top.count,
                 nextGenres = genres.drop(1).take(NEXT_GENRES).map { it.genre to it.count },
-                scores = stats.scoreDistribution,
+                scores = stats.scoreDistribution.teaserScores(stats.scoreSummary.mostGiven),
                 summary = stats.scoreSummary,
                 meanScore = stats.meanScore,
             )
@@ -98,6 +101,14 @@ fun buildAtAGlance(
 }
 
 private const val NEXT_GENRES = 3
+
+/** The teaser's ten steps of the score spread, heights scaled to the tallest of them. */
+internal fun List<ScoreUiModel>.teaserScores(mostGiven: Int?): List<ScoreUiModel> {
+    val window = teaserBuckets(map { ScoreBucket(it.score, it.count) }, mostGiven)
+    val max = window.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
+    val byScore = associateBy { it.score }
+    return window.mapNotNull { bucket -> byScore[bucket.score]?.copy(heightFraction = bucket.count.toFloat() / max) }
+}
 
 internal fun List<StatusUiModel>.countOf(status: LibraryStatus): Int =
     firstOrNull { it.status == status.name }?.count ?: 0

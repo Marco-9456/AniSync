@@ -365,14 +365,14 @@ private fun ScoreMiniBars(scores: List<ScoreUiModel>, summary: ScoreSummary, col
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(5.5.dp),
         verticalAlignment = Alignment.Bottom
     ) {
         scores.forEachIndexed { index, bucket ->
             Box(
                 Modifier
                     .width(12.dp)
-                    .height((52f * bucket.heightFraction).coerceAtLeast(6f).dp)
+                    .height((48f * bucket.heightFraction).coerceAtLeast(6f).dp)
                     .clip(RoundedCornerShape(6.dp))
                     .background(if (index == lit) color else color.copy(alpha = 0.45f))
             )
