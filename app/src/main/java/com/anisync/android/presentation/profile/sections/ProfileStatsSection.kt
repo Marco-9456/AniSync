@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.CountryStat
@@ -51,6 +52,11 @@ import com.anisync.android.presentation.statistics.ActivityInsightTiles
 import com.anisync.android.presentation.statistics.AtAGlance
 import com.anisync.android.presentation.statistics.StatsSectionHeader
 import com.anisync.android.presentation.statistics.StatsTiles
+import com.anisync.android.presentation.statistics.PeopleListCard
+import com.anisync.android.presentation.statistics.PeopleSpotlight
+import com.anisync.android.presentation.statistics.PersonRow
+import com.anisync.android.presentation.statistics.rolesLabel
+import com.anisync.android.presentation.statistics.titlesLabel
 import com.anisync.android.presentation.statistics.DecadesCard
 import com.anisync.android.presentation.statistics.ErasSpanHero
 import com.anisync.android.presentation.statistics.ReleaseCapsules
@@ -76,15 +82,10 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import kotlin.math.roundToInt
 import com.anisync.android.presentation.statistics.HeroDashboard
 import com.anisync.android.presentation.statistics.GenreBoard
-import com.anisync.android.presentation.statistics.HorizontalStatsSection
 import com.anisync.android.presentation.statistics.MonthChart
-import com.anisync.android.presentation.statistics.StaffCardModern
-import com.anisync.android.presentation.statistics.StudioCardModern
-import com.anisync.android.presentation.statistics.VoiceActorCardModern
-import com.anisync.android.presentation.util.DashboardSection
-import com.anisync.android.presentation.util.StatsDashboardGrid
 
 fun LazyListScope.profileStatsTab(
     uiState: ProfileUiState,
@@ -207,43 +208,65 @@ fun LazyListScope.profileStatsTab(
         }
     }
 
-    if (uiState.selectedStatsType == ProfileStatsType.ANIME) {
-        val sections = animeStatSections(
-            statsData.animeStats,
-            view,
-            onVoiceActorClick = onVoiceActorClick,
-            onStaffClick = onStaffClick,
-            onStudioClick = onStudioClick
-        )
-        statsDashboard(sections, statsColumns)
-    } else {
-        val mangaStats = statsData.mangaStats
-        if (mangaStats == null) {
-            item(key = "manga_no_stats") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.MenuBook,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.surfaceContainerHighest
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.statistics_no_manga_stats),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+    if (view == StatsView.PEOPLE) {
+        val isOwnProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
+        val favourites = uiState.profile?.favoriteStaffOverview.orEmpty().map { it.id }.toSet()
+        val manga = statsData.mangaStats
+        if (!isManga) {
+            val anime = statsData.animeStats
+            statsPeople(
+                voiceActors = anime.voiceActorDistribution.map { PersonRow(it.id, it.name, it.imageUrl, it.count, it.hoursWatched, it.meanScore) },
+                staff = anime.staffDistribution.map { PersonRow(it.id, it.name, it.imageUrl, it.count, it.hoursWatched, it.meanScore) },
+                studios = anime.studioDistribution.take(STUDIO_ROWS).map { PersonRow(it.id, it.studioName, null, it.count, it.hoursWatched, it.meanScore) },
+                favourites = favourites,
+                isManga = false,
+                isOwnProfile = isOwnProfile,
+                columns = statsColumns,
+                onVoiceActorClick = onVoiceActorClick,
+                onStaffClick = onStaffClick,
+                onStudioClick = onStudioClick
+            )
+            return
+        } else if (manga != null) {
+            statsPeople(
+                voiceActors = emptyList(),
+                staff = manga.staffDistribution.map { PersonRow(it.id, it.name, it.imageUrl, it.count, it.hoursWatched, it.meanScore) },
+                studios = emptyList(),
+                favourites = favourites,
+                isManga = true,
+                isOwnProfile = isOwnProfile,
+                columns = statsColumns,
+                onVoiceActorClick = onVoiceActorClick,
+                onStaffClick = onStaffClick,
+                onStudioClick = onStudioClick
+            )
+            return
+        }
+    }
+
+    if (isManga && statsData.mangaStats == null) {
+        item(key = "manga_no_stats") {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.MenuBook,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.surfaceContainerHighest
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.statistics_no_manga_stats),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-        } else {
-            statsDashboard(mangaStatSections(mangaStats, view, onStaffClick = onStaffClick), statsColumns)
         }
     }
 }
@@ -549,6 +572,149 @@ private fun LazyListScope.statsEras(eras: Eras, isManga: Boolean, isOwnProfile: 
     }
 }
 
+/** The People view: the spotlight, then voice actors, staff and studios, ranked. */
+private fun LazyListScope.statsPeople(
+    voiceActors: List<PersonRow>,
+    staff: List<PersonRow>,
+    studios: List<PersonRow>,
+    favourites: Set<Int>,
+    isManga: Boolean,
+    isOwnProfile: Boolean,
+    columns: Int,
+    onVoiceActorClick: (Int) -> Unit,
+    onStaffClick: (Int) -> Unit,
+    onStudioClick: (Int) -> Unit,
+) {
+    val spotlightVoice = voiceActors.firstOrNull()
+    val spotlightPerson = spotlightVoice ?: staff.firstOrNull()
+    if (spotlightPerson == null && studios.isEmpty()) {
+        item(key = "people_empty") {
+            Text(
+                text = stringResource(R.string.stats_teaser_people_locked),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+        }
+        return
+    }
+    val spotlight: @Composable (Modifier) -> Unit = { modifier ->
+        if (spotlightPerson != null) {
+            val locale = LocalConfiguration.current.locales[0]
+            val isVoice = spotlightVoice != null
+            val count = if (isVoice) {
+                pluralStringResourceOrDefault(R.plurals.stats_roles, spotlightPerson.count, spotlightPerson.count)
+            } else {
+                pluralStringResourceOrDefault(R.plurals.stats_titles, spotlightPerson.count, formatExactCount(spotlightPerson.count, locale))
+            }
+            val amount = spotlightPerson.hours.roundToInt()
+            val time = if (isManga) {
+                pluralStringResourceOrDefault(R.plurals.stats_chapters_short, amount, formatExactCount(amount, locale))
+            } else {
+                pluralStringResourceOrDefault(R.plurals.stats_hours_total, amount, formatExactCount(amount, locale))
+            }
+            PeopleSpotlight(
+                person = spotlightPerson,
+                eyebrow = stringResource(
+                    when {
+                        isVoice && isOwnProfile -> R.string.stats_spotlight_voice_own
+                        isVoice -> R.string.stats_spotlight_voice_other
+                        isOwnProfile -> R.string.stats_spotlight_staff_own
+                        else -> R.string.stats_spotlight_staff_other
+                    }
+                ),
+                detail = stringResource(
+                    when {
+                        isManga && isOwnProfile -> R.string.stats_spotlight_detail_manga_own
+                        isManga -> R.string.stats_spotlight_detail_manga_other
+                        isOwnProfile -> R.string.stats_spotlight_detail_anime_own
+                        else -> R.string.stats_spotlight_detail_anime_other
+                    },
+                    count,
+                    time
+                ),
+                isFavourite = spotlightPerson.id in favourites,
+                isOwnProfile = isOwnProfile,
+                onClick = { if (isVoice) onVoiceActorClick(spotlightPerson.id) else onStaffClick(spotlightPerson.id) },
+                modifier = modifier
+            )
+        }
+    }
+    val voiceHeader: @Composable (Modifier, Dp, Dp) -> Unit = { modifier, inset, top ->
+        StatsSectionHeader(
+            title = stringResource(R.string.stats_header_voice_actors),
+            subtitle = stringResource(if (isOwnProfile) R.string.stats_header_voice_actors_sub_own else R.string.stats_header_voice_actors_sub_other),
+            modifier = modifier,
+            inset = inset,
+            top = top
+        )
+    }
+    val staffHeader: @Composable (Dp, Dp) -> Unit = { inset, top ->
+        StatsSectionHeader(
+            title = stringResource(R.string.stats_header_staff),
+            subtitle = stringResource(R.string.stats_header_staff_sub),
+            inset = inset,
+            top = top
+        )
+    }
+    val studiosHeader: @Composable (Dp, Dp) -> Unit = { inset, top ->
+        StatsSectionHeader(
+            title = stringResource(R.string.stats_header_studios),
+            subtitle = stringResource(R.string.stats_header_studios_sub),
+            inset = inset,
+            top = top
+        )
+    }
+    if (columns <= 1) {
+        item(key = "people_spotlight") { spotlight(Modifier.padding(horizontal = 16.dp)) }
+        if (voiceActors.isNotEmpty()) {
+            item(key = "people_voice_header") { voiceHeader(Modifier, 24.dp, 24.dp) }
+            item(key = "people_voice") {
+                PeopleListCard(voiceActors, { rolesLabel(it) }, onVoiceActorClick, Modifier.padding(horizontal = 16.dp))
+            }
+        }
+        if (staff.isNotEmpty()) {
+            item(key = "people_staff_header") { staffHeader(24.dp, 24.dp) }
+            item(key = "people_staff") {
+                PeopleListCard(staff, { titlesLabel(it) }, onStaffClick, Modifier.padding(horizontal = 16.dp))
+            }
+        }
+        if (studios.isNotEmpty()) {
+            item(key = "people_studios_header") { studiosHeader(24.dp, 24.dp) }
+            item(key = "people_studios") {
+                PeopleListCard(studios, { titlesLabel(it) }, onStudioClick, Modifier.padding(horizontal = 16.dp), monogram = true)
+            }
+        }
+    } else {
+        item(key = "people_wide") {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Column(Modifier.weight(1f)) {
+                    spotlight(Modifier)
+                    if (voiceActors.isNotEmpty()) {
+                        voiceHeader(Modifier, 8.dp, 24.dp)
+                        PeopleListCard(voiceActors, { rolesLabel(it) }, onVoiceActorClick)
+                    }
+                }
+                Column(Modifier.weight(1f)) {
+                    if (staff.isNotEmpty()) {
+                        staffHeader(8.dp, 0.dp)
+                        PeopleListCard(staff, { titlesLabel(it) }, onStaffClick)
+                    }
+                    if (studios.isNotEmpty()) {
+                        studiosHeader(8.dp, 24.dp)
+                        PeopleListCard(studios, { titlesLabel(it) }, onStudioClick, monogram = true)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private const val STUDIO_ROWS = 12
+
 /** How you watch (How you read for manga): time, the lists, formats, lengths and countries. */
 private fun LazyListScope.statsHowYouWatch(
     hero: @Composable () -> Unit,
@@ -763,94 +929,4 @@ private fun listsNote(statuses: List<StatusUiModel>, total: Int, isOwnProfile: B
         onLists,
         formatExactCount(total, locale)
     )
-}
-
-/**
- * Emits a view's section cards. On compact ([columns] <= 1, i.e. a compact window) each section is
- * its own lazy item (full-bleed, lazily composed); otherwise the first section spans full width and
- * the rest go into a [StatsDashboardGrid] inside one item. [columns] only gates compact-vs-flow, the
- * grid itself measures its container and flows the cards across as many columns as fit.
- */
-private fun LazyListScope.statsDashboard(
-    sections: List<DashboardSection>,
-    columns: Int
-) {
-    if (sections.isEmpty()) return
-    if (columns <= 1) {
-        sections.forEach { section ->
-            item(key = section.key) {
-                section.content()
-                Spacer(Modifier.height(24.dp))
-            }
-        }
-    } else {
-        item(key = "stats_dashboard") {
-            Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                sections.first().content()
-                StatsDashboardGrid(sections = sections.drop(1))
-            }
-        }
-    }
-}
-
-private fun animeStatSections(
-    stats: AnimeStatisticsUi,
-    view: StatsView,
-    onVoiceActorClick: (Int) -> Unit = {},
-    onStaffClick: (Int) -> Unit = {},
-    onStudioClick: (Int) -> Unit = {}
-): List<DashboardSection> = buildList {
-    when (view) {
-        StatsView.PEOPLE -> {
-            if (stats.voiceActorDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_voice_actors") {
-                    HorizontalStatsSection(
-                        title = stringResource(R.string.statistics_top_voice_actors),
-                        items = stats.voiceActorDistribution,
-                        key = { it.id }
-                    ) { VoiceActorCardModern(it, onClick = { onVoiceActorClick(it.id) }) }
-                })
-            }
-            if (stats.staffDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_staff") {
-                    HorizontalStatsSection(
-                        title = stringResource(R.string.statistics_top_staff),
-                        items = stats.staffDistribution,
-                        key = { it.id }
-                    ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
-                })
-            }
-            if (stats.studioDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_studios") {
-                    HorizontalStatsSection(
-                        title = stringResource(R.string.statistics_top_studios),
-                        items = stats.studioDistribution,
-                        key = { it.id }
-                    ) { StudioCardModern(it, onClick = { onStudioClick(it.id) }) }
-                })
-            }
-        }
-        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.HOW_YOU_WATCH, StatsView.ERAS,
-        StatsView.RECAPS -> Unit
-    }
-}
-
-private fun mangaStatSections(
-    stats: MangaStatisticsUi,
-    view: StatsView,
-    onStaffClick: (Int) -> Unit = {}
-): List<DashboardSection> = buildList {
-    when (view) {
-        StatsView.PEOPLE -> if (stats.staffDistribution.isNotEmpty()) {
-            add(DashboardSection("manga_staff") {
-                HorizontalStatsSection(
-                    title = stringResource(R.string.statistics_top_staff),
-                    items = stats.staffDistribution,
-                    key = { it.id }
-                ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
-            })
-        }
-        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.HOW_YOU_WATCH, StatsView.ERAS,
-        StatsView.RECAPS -> Unit
-    }
 }

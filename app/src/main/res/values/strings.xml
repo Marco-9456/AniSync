@@ -1581,6 +1581,24 @@
     <string name="stats_eras_year_twice_other">%1$d was their year twice: %2$s of its releases on the list, and %3$s titles started.</string>
     <string name="stats_eras_started_most_own">You started the most titles in %1$d, %2$s of them.</string>
     <string name="stats_eras_started_most_other">They started the most titles in %1$d, %2$s of them.</string>
+    <string name="stats_people_favourite_own">Also in your favourites</string>
+    <string name="stats_people_favourite_other">Also in their favourites</string>
+    <string name="stats_people_line">%1$s · %2$s</string>
+    <string name="stats_header_voice_actors">Voice actors</string>
+    <string name="stats_header_staff">Staff</string>
+    <string name="stats_header_studios">Studios</string>
+    <string name="stats_header_voice_actors_sub_own">By roles in your anime</string>
+    <string name="stats_header_voice_actors_sub_other">By roles in their anime</string>
+    <string name="stats_header_staff_sub">By titles they worked on</string>
+    <string name="stats_header_studios_sub">By titles</string>
+    <string name="stats_spotlight_voice_own">The voice you hear most</string>
+    <string name="stats_spotlight_voice_other">The voice they hear most</string>
+    <string name="stats_spotlight_staff_own">The name you see most</string>
+    <string name="stats_spotlight_staff_other">The name they see most</string>
+    <string name="stats_spotlight_detail_anime_own">%1$s in your anime, %2$s of them</string>
+    <string name="stats_spotlight_detail_anime_other">%1$s in their anime, %2$s of them</string>
+    <string name="stats_spotlight_detail_manga_own">%1$s in your manga, %2$s of them</string>
+    <string name="stats_spotlight_detail_manga_other">%1$s in their manga, %2$s of them</string>
     <!-- Airing calendar -->
     <string name="calendar_title">Airing Calendar</string>
     <string name="calendar_open">Airing calendar</string>

@@ -59,10 +59,17 @@ import kotlin.math.roundToInt
 
 /** A section header as the stats views space it: 24 above, 4 to the card below. */
 @Composable
-fun StatsSectionHeader(title: String, modifier: Modifier = Modifier, inset: Dp = 24.dp, top: Dp = 24.dp) {
+fun StatsSectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    inset: Dp = 24.dp,
+    top: Dp = 24.dp,
+) {
     SectionHeader(
         title = title,
         modifier = modifier,
+        subtitle = subtitle,
         padding = PaddingValues(start = inset, end = inset, top = top + 8.dp, bottom = 12.dp)
     )
 }
