@@ -15,6 +15,10 @@ import com.anisync.android.data.filterAdultActivities
 import com.anisync.android.data.util.AppLocale
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.AnimeStatistics
+import com.anisync.android.domain.stats.activityInsights
+import com.anisync.android.domain.stats.eras
+import com.anisync.android.domain.stats.summarizeScores
+import com.anisync.android.presentation.statistics.bucketActivityDays
 import com.anisync.android.domain.CachePolicy
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.LibraryEntry
@@ -1307,7 +1311,14 @@ class ProfileViewModel @Inject constructor(
                     val processedData = kotlinx.coroutines.withContext(Dispatchers.Default) {
                         val animeUi = processAnimeStats(result.data.scoreFormat, result.data.animeStats)
                         val mangaUi = result.data.mangaStats?.let { processMangaStats(it, result.data.scoreFormat) }
-                        StatisticsUiModel(animeUi, mangaUi, activityHistory = result.data.activityHistory)
+                        StatisticsUiModel(
+                            animeUi,
+                            mangaUi,
+                            activityHistory = result.data.activityHistory,
+                            activityInsights = activityInsights(
+                                bucketActivityDays(result.data.activityHistory).mapValues { it.value.amount }
+                            )
+                        )
                     }
 
                     statsState.update {
@@ -1371,7 +1382,12 @@ class ProfileViewModel @Inject constructor(
             studioDistribution = stats.studioDistribution.take(20),
             voiceActorDistribution = stats.voiceActorDistribution.take(10),
             staffDistribution = stats.staffDistribution.take(10),
-            countryDistribution = stats.countryDistribution
+            countryDistribution = stats.countryDistribution,
+            scoreSummary = summarizeScores(stats.scoreDistribution.associate { it.score to it.count }),
+            eras = eras(
+                releaseYears = stats.releaseYearDistribution.associate { it.year to it.count },
+                startYears = stats.startYearDistribution.associate { it.year to it.count }
+            )
         )
     }
 
@@ -1413,7 +1429,12 @@ class ProfileViewModel @Inject constructor(
             startYearDistribution = startYearsUi,
             lengthDistribution = lengthsUi,
             staffDistribution = stats.staffDistribution.take(10),
-            countryDistribution = stats.countryDistribution
+            countryDistribution = stats.countryDistribution,
+            scoreSummary = summarizeScores(stats.scoreDistribution.associate { it.score to it.count }),
+            eras = eras(
+                releaseYears = stats.releaseYearDistribution.associate { it.year to it.count },
+                startYears = stats.startYearDistribution.associate { it.year to it.count }
+            )
         )
     }
 

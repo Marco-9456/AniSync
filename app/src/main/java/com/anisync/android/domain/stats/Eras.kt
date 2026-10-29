@@ -10,6 +10,8 @@ data class Eras(
     val total: Int,
     val peakReleaseYear: YearCount,
     val peakStartYear: YearCount?,
+    val releaseYears: Map<Int, Int>,
+    val startYears: Map<Int, Int>,
 ) {
     val peakDecadeShare: Double get() = peakDecade.count.toDouble() / total
 }
@@ -34,6 +36,8 @@ fun eras(releaseYears: Map<Int, Int>, startYears: Map<Int, Int>): Eras? {
         total = released.values.sum(),
         peakReleaseYear = released.peak()!!,
         peakStartYear = startYears.filterValues { it > 0 }.peak(),
+        releaseYears = released,
+        startYears = startYears.filterValues { it > 0 },
     )
 }
 

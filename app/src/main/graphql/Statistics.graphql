@@ -43,13 +43,13 @@ query GetUserStatistics($userId: Int) {
           meanScore
           minutesWatched
         }
-        releaseYears(limit: 12, sort: [COUNT_DESC]) {
+        releaseYears(sort: [COUNT_DESC]) {
           releaseYear
           count
           meanScore
           minutesWatched
         }
-        startYears(limit: 12, sort: [COUNT_DESC]) {
+        startYears(sort: [COUNT_DESC]) {
           startYear
           count
           meanScore
@@ -142,13 +142,13 @@ query GetUserStatistics($userId: Int) {
           meanScore
           chaptersRead
         }
-        releaseYears(limit: 12, sort: [COUNT_DESC]) {
+        releaseYears(sort: [COUNT_DESC]) {
           releaseYear
           count
           meanScore
           chaptersRead
         }
-        startYears(limit: 12, sort: [COUNT_DESC]) {
+        startYears(sort: [COUNT_DESC]) {
           startYear
           count
           meanScore

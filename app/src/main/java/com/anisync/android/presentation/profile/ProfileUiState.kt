@@ -19,6 +19,10 @@ import com.anisync.android.domain.StudioStat
 import com.anisync.android.domain.TagStat
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.domain.VoiceActorStat
+import com.anisync.android.domain.stats.ActivityInsights
+import com.anisync.android.domain.stats.Eras
+import com.anisync.android.domain.stats.ScoreSummary
+import com.anisync.android.domain.stats.summarizeScores
 
 @Stable
 data class ProfileUiState(
@@ -94,7 +98,8 @@ data class ProfileUiState(
 data class StatisticsUiModel(
     val animeStats: AnimeStatisticsUi,
     val mangaStats: MangaStatisticsUi?,
-    val activityHistory: List<ActivityHistoryDay> = emptyList()
+    val activityHistory: List<ActivityHistoryDay> = emptyList(),
+    val activityInsights: ActivityInsights? = null
 )
 
 data class AnimeStatisticsUi(
@@ -115,7 +120,9 @@ data class AnimeStatisticsUi(
     val studioDistribution: List<StudioStat>,
     val voiceActorDistribution: List<VoiceActorStat>,
     val staffDistribution: List<StaffStat>,
-    val countryDistribution: List<CountryStat>
+    val countryDistribution: List<CountryStat>,
+    val scoreSummary: ScoreSummary = summarizeScores(emptyMap()),
+    val eras: Eras? = null
 )
 
 data class MangaStatisticsUi(
@@ -133,7 +140,9 @@ data class MangaStatisticsUi(
     val startYearDistribution: List<YearUiModel>,
     val lengthDistribution: List<LengthUiModel>,
     val staffDistribution: List<StaffStat>,
-    val countryDistribution: List<CountryStat>
+    val countryDistribution: List<CountryStat>,
+    val scoreSummary: ScoreSummary = summarizeScores(emptyMap()),
+    val eras: Eras? = null
 )
 
 data class ScoreUiModel(
