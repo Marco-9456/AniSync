@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import com.anisync.android.presentation.statistics.StatsPaneSurfaces
 import com.anisync.android.presentation.statistics.StatsShareFab
 import com.anisync.android.presentation.statistics.statsFabClearance
 import androidx.compose.foundation.rememberScrollState
@@ -822,33 +823,35 @@ private fun ProfileTabPane(
                 }
             ) {
                 val showStatsFab = uiState.selectedTab == ProfileTab.STATS && uiState.statsData != null
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        bottom = LocalMainNavBarInset.current + if (showStatsFab) statsFabClearance() else 48.dp
-                    )
-                ) {
-                    profileSelectedTabContent(
-                        profile = profile,
-                        uiState = uiState,
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        onAction = onAction,
-                        onMediaClick = onMediaClick,
-                        onCharacterClick = onCharacterClick,
-                        onStaffClick = onStaffClick,
-                        onVoiceActorClick = onVoiceActorClick,
-                        onStudioClick = onStudioClick,
-                        onUserClick = onUserClick,
-                        onThreadClick = onThreadClick,
-                        onCommentClick = onCommentClick,
-                        onActivityClick = onActivityClick,
-                        onLastReplyClick = onLastReplyClick,
-                        portraitColumns = portraitColumns,
-                        studioColumns = studioColumns,
-                        statsColumns = statsColumns
-                    )
+                StatsPaneSurfaces(enabled = uiState.selectedTab == ProfileTab.STATS) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            bottom = LocalMainNavBarInset.current + if (showStatsFab) statsFabClearance() else 48.dp
+                        )
+                    ) {
+                        profileSelectedTabContent(
+                            profile = profile,
+                            uiState = uiState,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            onAction = onAction,
+                            onMediaClick = onMediaClick,
+                            onCharacterClick = onCharacterClick,
+                            onStaffClick = onStaffClick,
+                            onVoiceActorClick = onVoiceActorClick,
+                            onStudioClick = onStudioClick,
+                            onUserClick = onUserClick,
+                            onThreadClick = onThreadClick,
+                            onCommentClick = onCommentClick,
+                            onActivityClick = onActivityClick,
+                            onLastReplyClick = onLastReplyClick,
+                            portraitColumns = portraitColumns,
+                            studioColumns = studioColumns,
+                            statsColumns = statsColumns
+                        )
+                    }
                 }
 
                 if (showStatsFab) {
