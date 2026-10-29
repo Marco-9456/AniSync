@@ -20,6 +20,7 @@ import com.anisync.android.domain.stats.eras
 import com.anisync.android.domain.stats.summarizeScores
 import com.anisync.android.presentation.statistics.bucketActivityDays
 import com.anisync.android.domain.CachePolicy
+import com.anisync.android.domain.GenreStat
 import com.anisync.android.domain.GetProfileUseCase
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
@@ -93,6 +94,7 @@ class ProfileViewModel @Inject constructor(
         /** Minimum gap between user-initiated refreshes (pull-to-refresh). */
         private const val GESTURE_REFRESH_COOLDOWN_MS = 5_000L
 
+        private const val ADULT_GENRE = "Hentai"
     }
 
     /**
@@ -1309,8 +1311,9 @@ class ProfileViewModel @Inject constructor(
                 is Result.Success -> {
                     // Process data on default dispatcher
                     val processedData = kotlinx.coroutines.withContext(Dispatchers.Default) {
-                        val animeUi = processAnimeStats(result.data.scoreFormat, result.data.animeStats)
-                        val mangaUi = result.data.mangaStats?.let { processMangaStats(it, result.data.scoreFormat) }
+                        val showAdult = appSettings.showAdultContent.value
+                        val animeUi = processAnimeStats(result.data.scoreFormat, result.data.animeStats, showAdult)
+                        val mangaUi = result.data.mangaStats?.let { processMangaStats(it, result.data.scoreFormat, showAdult) }
                         StatisticsUiModel(
                             animeUi,
                             mangaUi,
@@ -1341,7 +1344,7 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun processAnimeStats(scoreFormat: ScoreFormat?, stats: AnimeStatistics): AnimeStatisticsUi {
+    private fun processAnimeStats(scoreFormat: ScoreFormat?, stats: AnimeStatistics, showAdult: Boolean): AnimeStatisticsUi {
         val effectiveScoreFormat = scoreFormat ?: inferScoreFormat(stats.scoreDistribution.map { it.score })
         val scoreUi = bucketScores(effectiveScoreFormat, stats.scoreDistribution.map { it.score to it.count })
 
@@ -1373,8 +1376,8 @@ class ProfileViewModel @Inject constructor(
             minutesWatched = stats.minutesWatched,
             statusDistribution = statusesUi,
             scoreDistribution = scoreUi,
-            genreDistribution = stats.genreDistribution.take(20),
-            tagDistribution = stats.tagDistribution.take(25),
+            genreDistribution = stats.genreDistribution.filterAdultGenres(showAdult).take(20),
+            tagDistribution = stats.tagDistribution.filter { showAdult || !it.isAdult }.take(25),
             formatDistribution = stats.formatDistribution,
             releaseYearDistribution = releaseYearsUi,
             startYearDistribution = startYearsUi,
@@ -1391,7 +1394,7 @@ class ProfileViewModel @Inject constructor(
         )
     }
 
-    private fun processMangaStats(stats: MangaStatistics, scoreFormat: ScoreFormat?): MangaStatisticsUi {
+    private fun processMangaStats(stats: MangaStatistics, scoreFormat: ScoreFormat?, showAdult: Boolean): MangaStatisticsUi {
         val effectiveScoreFormat = scoreFormat ?: inferScoreFormat(stats.scoreDistribution.map { it.score })
         val scoreUi = bucketScores(effectiveScoreFormat, stats.scoreDistribution.map { it.score to it.count })
 
@@ -1422,8 +1425,8 @@ class ProfileViewModel @Inject constructor(
             standardDeviation = stats.standardDeviation.toDouble(),
             statusDistribution = statusesUi,
             scoreDistribution = scoreUi,
-            genreDistribution = stats.genreDistribution.take(20),
-            tagDistribution = stats.tagDistribution.take(25),
+            genreDistribution = stats.genreDistribution.filterAdultGenres(showAdult).take(20),
+            tagDistribution = stats.tagDistribution.filter { showAdult || !it.isAdult }.take(25),
             formatDistribution = stats.formatDistribution,
             releaseYearDistribution = releaseYearsUi,
             startYearDistribution = startYearsUi,
@@ -1500,6 +1503,10 @@ class ProfileViewModel @Inject constructor(
                 )
             }
     }
+
+    /** Hentai is AniList's one adult genre, and it follows the adult content setting. */
+    private fun List<GenreStat>.filterAdultGenres(showAdult: Boolean): List<GenreStat> =
+        if (showAdult) this else filterNot { it.genre == ADULT_GENRE }
 
     private fun inferScoreFormat(scores: List<Int>): ScoreFormat {
         val maxScore = scores.maxOrNull() ?: 10

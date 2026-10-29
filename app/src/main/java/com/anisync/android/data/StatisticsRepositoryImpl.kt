@@ -113,7 +113,8 @@ class StatisticsRepositoryImpl @Inject constructor(
                         name = it.name,
                         count = t.count,
                         meanScore = (t.meanScore ?: 0.0).toFloat(),
-                        hoursWatched = (t.minutesWatched ?: 0) / 60f
+                        hoursWatched = (t.minutesWatched ?: 0) / 60f,
+                        isAdult = it.isAdult == true
                     )
                 }
             } ?: emptyList(),
@@ -243,7 +244,8 @@ class StatisticsRepositoryImpl @Inject constructor(
                         name = it.name,
                         count = t.count,
                         meanScore = (t.meanScore ?: 0.0).toFloat(),
-                        hoursWatched = (t.chaptersRead ?: 0).toFloat()
+                        hoursWatched = (t.chaptersRead ?: 0).toFloat(),
+                        isAdult = it.isAdult == true
                     )
                 }
             } ?: emptyList(),

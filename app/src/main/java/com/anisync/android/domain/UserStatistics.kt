@@ -88,7 +88,8 @@ data class TagStat(
     val name: String,
     val count: Int,
     val meanScore: Float,
-    val hoursWatched: Float
+    val hoursWatched: Float,
+    val isAdult: Boolean = false
 )
 
 @Immutable

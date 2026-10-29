@@ -26,6 +26,7 @@ query GetUserStatistics($userId: Int) {
           tag {
             id
             name
+            isAdult
           }
           count
           meanScore
@@ -125,6 +126,7 @@ query GetUserStatistics($userId: Int) {
           tag {
             id
             name
+            isAdult
           }
           count
           meanScore
