@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -35,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -42,6 +46,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -167,13 +172,21 @@ data class PeopleTeaser(
 fun AtAGlance(model: AtAGlanceModel, onOpen: (StatsView) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         model.activity?.let { ActivityTeaserCard(it, onClick = { onOpen(StatsView.ACTIVITY) }) }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(Modifier.weight(1f)) { model.taste?.let { TasteTeaserCard(it, onClick = { onOpen(StatsView.TASTE) }) } }
-            Box(Modifier.weight(1f)) { model.format?.let { FormatTeaserCard(it, onClick = { onOpen(StatsView.HOW_YOU_WATCH) }) } }
+        // A narrow pane or a larger display size can push a teaser past 212dp, so each pair grows
+        // together rather than clipping its last line.
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val cell = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+            Box(cell) { model.taste?.let { TasteTeaserCard(it, onClick = { onOpen(StatsView.TASTE) }) } }
+            Box(cell) { model.format?.let { FormatTeaserCard(it, onClick = { onOpen(StatsView.HOW_YOU_WATCH) }) } }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(Modifier.weight(1f)) { model.eras?.let { ErasTeaserCard(it, onClick = { onOpen(StatsView.ERAS) }) } }
-            Box(Modifier.weight(1f)) { PeopleTeaserCard(model.people, onClick = { onOpen(StatsView.PEOPLE) }) }
+        Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val cell = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+            Box(cell) { model.eras?.let { ErasTeaserCard(it, onClick = { onOpen(StatsView.ERAS) }) } }
+            Box(cell) { PeopleTeaserCard(model.people, onClick = { onOpen(StatsView.PEOPLE) }) }
         }
     }
 }
@@ -192,7 +205,7 @@ private fun Teaser(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .then(if (fixedHeight) Modifier.height(TeaserHeight) else Modifier)
+            .then(if (fixedHeight) Modifier.fillMaxHeight().heightIn(min = TeaserHeight) else Modifier)
             .clip(RoundedCornerShape(24.dp))
             .background(container)
             .clickable(role = Role.Button, onClick = onClick)
@@ -403,26 +416,46 @@ private fun FormatTeaserCard(teaser: FormatTeaser, onClick: () -> Unit) {
     }
 }
 
-/** The formats side by side by share, in a fixed order of colours. */
+/**
+ * The formats side by side by share, in a fixed order of colours. A plain layout rather than a
+ * BoxWithConstraints, so the teaser rows can ask for its intrinsic height.
+ */
 @Composable
 private fun FormatShareBar(shares: List<Pair<String, Int>>) {
     val colors = formatColors()
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val visible = shares.take(colors.size)
-        val widths = segmentWidths(visible.map { it.second }, maxWidth - 2.dp * (visible.size - 1).coerceAtLeast(0))
-        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+    val visible = shares.take(colors.size)
+    Layout(
+        content = {
             visible.forEachIndexed { index, _ ->
                 Box(
                     Modifier
-                        .width(widths[index])
-                        .height(12.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .background(colors[index])
                 )
             }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(12.dp)
+    ) { measurables, constraints ->
+        if (!constraints.hasBoundedWidth) return@Layout layout(0, constraints.minHeight) {}
+        val gap = ShareGap.roundToPx()
+        val available = (constraints.maxWidth - gap * (measurables.size - 1).coerceAtLeast(0)).toDp()
+        val widths = segmentWidths(visible.map { it.second }, available)
+        val placeables = measurables.mapIndexed { index, measurable ->
+            measurable.measure(Constraints.fixed(widths[index].roundToPx().coerceAtLeast(0), constraints.maxHeight))
+        }
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            var x = 0
+            placeables.forEach { placeable ->
+                placeable.place(x, 0)
+                x += placeable.width + gap
+            }
         }
     }
 }
+
+private val ShareGap = 2.dp
 
 @Composable
 internal fun formatColors(): List<Color> {
