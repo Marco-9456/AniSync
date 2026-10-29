@@ -712,7 +712,8 @@ internal fun ProfileTabsButtonGroup(
         selected = selectedTab,
         onSelect = onTabSelected,
         label = { stringResource(it.titleRes) },
-        modifier = modifier.padding(vertical = 8.dp),
+        // 6 rather than 8: each 44dp tab sits in a 48dp touch box.
+        modifier = modifier.padding(vertical = 6.dp),
         icon = ::profileTabIcon,
         badge = { tab -> if (tab == ProfileTab.SOCIAL && mutualsNew) ({ WhatsNewDot() }) else null }
     )
