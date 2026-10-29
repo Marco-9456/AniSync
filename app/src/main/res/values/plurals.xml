@@ -85,4 +85,20 @@
         <item quantity="one">%d activity. Tap to see what it was.</item>
         <item quantity="other">%d activities. Tap to see what they were.</item>
     </plurals>
+    <plurals name="stats_spread_count">
+        <item quantity="one">%1$s %2$s</item>
+        <item quantity="other">%1$s %2$ss</item>
+    </plurals>
+    <plurals name="stats_spread_perfect">
+        <item quantity="one">%1$s perfect 100</item>
+        <item quantity="other">%1$s perfect 100s</item>
+    </plurals>
+    <plurals name="stats_best_rated">
+        <item quantity="one">Best rated, with %d title or more</item>
+        <item quantity="other">Best rated, with %d titles or more</item>
+    </plurals>
+    <plurals name="stats_tags_show_more">
+        <item quantity="one">Show %d more</item>
+        <item quantity="other">Show %d more</item>
+    </plurals>
 </resources>

@@ -24,15 +24,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.domain.GenreStat
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.TagStat
+import com.anisync.android.domain.stats.ScoreSummary
 import com.anisync.android.domain.formatExactCount
 import com.anisync.android.domain.splitMinutes
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.profile.AnimeStatisticsUi
+import com.anisync.android.presentation.profile.GenreSort
 import com.anisync.android.presentation.profile.MangaStatisticsUi
 import com.anisync.android.presentation.profile.ProfileStatsType
 import com.anisync.android.presentation.profile.ProfileUiState
+import com.anisync.android.presentation.profile.ScoreUiModel
 import com.anisync.android.presentation.profile.StatisticsUiModel
 import com.anisync.android.presentation.profile.StatsView
 import com.anisync.android.presentation.profile.StatusUiModel
@@ -43,6 +48,9 @@ import com.anisync.android.presentation.statistics.CountryDistributionRow
 import com.anisync.android.presentation.statistics.EpisodeLengthDistributionSection
 import com.anisync.android.presentation.statistics.StatsSectionHeader
 import com.anisync.android.presentation.statistics.StatsTiles
+import com.anisync.android.presentation.statistics.TagBoard
+import com.anisync.android.presentation.statistics.TasteScoresCard
+import com.anisync.android.presentation.statistics.TasteSpreadCard
 import com.anisync.android.presentation.statistics.WeekdayChart
 import com.anisync.android.presentation.statistics.buildAtAGlance
 import com.anisync.android.presentation.statistics.countOf
@@ -51,18 +59,15 @@ import com.anisync.android.presentation.statistics.overviewTiles
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.type.MediaType
 import com.anisync.android.presentation.statistics.FormatsSection
-import com.anisync.android.presentation.statistics.GenreCardModern
 import com.anisync.android.presentation.statistics.HeroDashboard
+import com.anisync.android.presentation.statistics.GenreBoard
 import com.anisync.android.presentation.statistics.HorizontalStatsSection
 import com.anisync.android.presentation.statistics.MonthChart
 import com.anisync.android.presentation.statistics.ReadVolumeBreakdown
 import com.anisync.android.presentation.statistics.ReleaseYearsHistogramSection
-import com.anisync.android.presentation.statistics.ScoreHistogramSection
 import com.anisync.android.presentation.statistics.StaffCardModern
-import com.anisync.android.presentation.statistics.StandardDeviationCard
 import com.anisync.android.presentation.statistics.StatusDistributionDonut
 import com.anisync.android.presentation.statistics.StudioCardModern
-import com.anisync.android.presentation.statistics.TagCloudSection
 import com.anisync.android.presentation.statistics.TimeSpentBreakdown
 import com.anisync.android.presentation.statistics.VoiceActorCardModern
 import com.anisync.android.presentation.statistics.YearComparisonSection
@@ -72,6 +77,7 @@ import com.anisync.android.presentation.util.StatsDashboardGrid
 fun LazyListScope.profileStatsTab(
     uiState: ProfileUiState,
     onOpenView: (StatsView) -> Unit,
+    onGenreSortSelected: (GenreSort) -> Unit,
     onVoiceActorClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
@@ -140,6 +146,11 @@ fun LazyListScope.profileStatsTab(
     }
     if (view == StatsView.ACTIVITY) {
         statsActivity(statsData, uiState.profile?.id ?: 0, statsColumns, onMediaClick, onActivityClick)
+        return
+    }
+    val taste = if (isManga) statsData.mangaStats?.let(::tasteModel) else tasteModel(statsData.animeStats)
+    if (view == StatsView.TASTE && taste != null) {
+        statsTaste(taste, uiState.genreSort, onGenreSortSelected, statsColumns)
         return
     }
 
@@ -315,6 +326,114 @@ private fun LazyListScope.statsActivity(
     }
 }
 
+/** What the Taste view draws, the same for anime and manga. */
+private class TasteModel(
+    val scores: List<ScoreUiModel>,
+    val summary: ScoreSummary,
+    val meanScore: Double,
+    val standardDeviation: Double,
+    val totalCount: Int,
+    val genres: List<GenreStat>,
+    val tags: List<TagStat>,
+    val isManga: Boolean,
+)
+
+private fun tasteModel(stats: AnimeStatisticsUi) = TasteModel(
+    scores = stats.scoreDistribution,
+    summary = stats.scoreSummary,
+    meanScore = stats.meanScore,
+    standardDeviation = stats.standardDeviation,
+    totalCount = stats.totalCount,
+    genres = stats.genreDistribution,
+    tags = stats.tagDistribution,
+    isManga = false,
+)
+
+private fun tasteModel(stats: MangaStatisticsUi) = TasteModel(
+    scores = stats.scoreDistribution,
+    summary = stats.scoreSummary,
+    meanScore = stats.meanScore,
+    standardDeviation = stats.standardDeviation,
+    totalCount = stats.totalCount,
+    genres = stats.genreDistribution,
+    tags = stats.tagDistribution,
+    isManga = true,
+)
+
+/** The Taste view: scores and how far they spread, genres, then tags. */
+private fun LazyListScope.statsTaste(
+    taste: TasteModel,
+    genreSort: GenreSort,
+    onGenreSortSelected: (GenreSort) -> Unit,
+    columns: Int,
+) {
+    val scores: @Composable (Modifier) -> Unit = { modifier ->
+        if (taste.summary.scored > 0) {
+            TasteScoresCard(taste.scores, taste.summary, taste.meanScore, taste.totalCount, modifier)
+        } else {
+            Text(
+                text = stringResource(R.string.stats_teaser_score_prompt),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = modifier.padding(horizontal = 8.dp)
+            )
+        }
+    }
+    val spread: @Composable (Modifier) -> Unit = { modifier ->
+        if (taste.summary.hasSpread && taste.standardDeviation > 0.0) {
+            TasteSpreadCard(taste.standardDeviation, taste.scores, taste.meanScore, modifier)
+        }
+    }
+    val genres: @Composable (Modifier) -> Unit = { modifier ->
+        GenreBoard(taste.genres, genreSort, onGenreSortSelected, taste.isManga, modifier)
+    }
+    val note: @Composable () -> Unit = {
+        Text(
+            text = stringResource(R.string.stats_adult_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 24.dp, top = 16.dp, end = 24.dp)
+        )
+    }
+    if (columns <= 1) {
+        item(key = "taste_scores") { scores(Modifier.padding(horizontal = 16.dp)) }
+        item(key = "taste_spread") { spread(Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp)) }
+        if (taste.genres.isNotEmpty()) {
+            item(key = "taste_genres_header") { StatsSectionHeader(stringResource(R.string.stats_header_genres)) }
+            item(key = "taste_genres") { genres(Modifier.padding(horizontal = 16.dp)) }
+        }
+        if (taste.tags.isNotEmpty()) {
+            item(key = "taste_tags_header") { StatsSectionHeader(stringResource(R.string.stats_header_tags)) }
+            item(key = "taste_tags") { TagBoard(taste.tags, Modifier.padding(horizontal = 16.dp)) }
+        }
+        item(key = "taste_adult_note") { note() }
+    } else {
+        item(key = "taste_wide") {
+            Column {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        scores(Modifier)
+                        spread(Modifier)
+                        if (taste.tags.isNotEmpty()) {
+                            StatsSectionHeader(stringResource(R.string.stats_header_tags), inset = 8.dp, top = 12.dp)
+                            TagBoard(taste.tags)
+                        }
+                    }
+                    if (taste.genres.isNotEmpty()) {
+                        Column(Modifier.weight(1f)) {
+                            genres(Modifier)
+                        }
+                    }
+                }
+                note()
+            }
+        }
+    }
+}
+
 @Composable
 private fun AnimeHero(stats: AnimeStatisticsUi, isOwnProfile: Boolean) {
     val locale = LocalConfiguration.current.locales[0]
@@ -408,26 +527,6 @@ private fun animeStatSections(
     onStudioClick: (Int) -> Unit = {}
 ): List<DashboardSection> = buildList {
     when (view) {
-        StatsView.TASTE -> {
-            if (stats.scoreDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_scores") { ScoreHistogramSection(stats.scoreDistribution, stats.meanScore) })
-            }
-            if (stats.standardDeviation > 0.0) {
-                add(DashboardSection("anime_stddev") { StandardDeviationCard(stats.standardDeviation, stats.meanScore) })
-            }
-            if (stats.genreDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_genres") {
-                    HorizontalStatsSection(
-                        title = stringResource(R.string.statistics_top_genres),
-                        items = stats.genreDistribution,
-                        key = { it.genre }
-                    ) { GenreCardModern(it) }
-                })
-            }
-            if (stats.tagDistribution.isNotEmpty()) {
-                add(DashboardSection("anime_tags") { TagCloudSection(stats.tagDistribution) })
-            }
-        }
         StatsView.HOW_YOU_WATCH -> {
             if (stats.minutesWatched > 0) {
                 add(DashboardSection("anime_time") { TimeSpentBreakdown(stats.minutesWatched) })
@@ -484,7 +583,7 @@ private fun animeStatSections(
                 })
             }
         }
-        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.RECAPS -> Unit
+        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.RECAPS -> Unit
     }
 }
 
@@ -494,26 +593,6 @@ private fun mangaStatSections(
     onStaffClick: (Int) -> Unit = {}
 ): List<DashboardSection> = buildList {
     when (view) {
-        StatsView.TASTE -> {
-            if (stats.scoreDistribution.isNotEmpty()) {
-                add(DashboardSection("manga_scores") { ScoreHistogramSection(stats.scoreDistribution, stats.meanScore) })
-            }
-            if (stats.standardDeviation > 0.0) {
-                add(DashboardSection("manga_stddev") { StandardDeviationCard(stats.standardDeviation, stats.meanScore) })
-            }
-            if (stats.genreDistribution.isNotEmpty()) {
-                add(DashboardSection("manga_genres") {
-                    HorizontalStatsSection(
-                        title = stringResource(R.string.statistics_top_genres),
-                        items = stats.genreDistribution,
-                        key = { it.genre }
-                    ) { GenreCardModern(it) }
-                })
-            }
-            if (stats.tagDistribution.isNotEmpty()) {
-                add(DashboardSection("manga_tags") { TagCloudSection(stats.tagDistribution) })
-            }
-        }
         StatsView.HOW_YOU_WATCH -> {
             if (stats.chaptersRead > 0 || stats.volumesRead > 0) {
                 add(DashboardSection("manga_read") { ReadVolumeBreakdown(stats.chaptersRead, stats.volumesRead) })
@@ -555,6 +634,6 @@ private fun mangaStatSections(
                 ) { StaffCardModern(it, onClick = { onStaffClick(it.id) }) }
             })
         }
-        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.RECAPS -> Unit
+        StatsView.OVERVIEW, StatsView.ACTIVITY, StatsView.TASTE, StatsView.RECAPS -> Unit
     }
 }

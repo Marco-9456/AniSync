@@ -1483,6 +1483,29 @@
     <string name="stats_months_partial_single">%1$s runs from the %2$s to the %3$s, so it is partial.</string>
     <string name="stats_activity_empty_title">No activity yet</string>
     <string name="stats_activity_empty_body">AniList keeps about six months of activity. Anything logged in that time shows up here once it is counted.</string>
+    <string name="stats_scores_title">Scores</string>
+    <string name="stats_scores_scored">%1$s of %2$s scored</string>
+    <string name="stats_scores_mean_pill">mean %1$s</string>
+    <string name="stats_score_mean">mean</string>
+    <string name="stats_score_median">median</string>
+    <string name="stats_score_most_given">most given</string>
+    <string name="stats_sigma" translatable="false">σ</string>
+    <string name="stats_spread_focused_body">Your scores stay close together, most within %1$d points of %2$s.</string>
+    <string name="stats_spread_balanced_body">Most of your scores land within %1$d points of your mean of %2$s.</string>
+    <string name="stats_spread_eclectic_body">Your scores spread wide, from %1$s to %2$s.</string>
+    <string name="stats_header_genres">Genres</string>
+    <string name="stats_header_tags">Tags</string>
+    <string name="stats_genre_sort_titles">Titles</string>
+    <string name="stats_genre_sort_hours">Hours</string>
+    <string name="stats_genre_sort_chapters">Chapters</string>
+    <string name="stats_genre_sort_score">Score</string>
+    <string name="stats_genre_hours">%1$s h</string>
+    <string name="stats_genre_mean">★ %1$s</string>
+    <string name="stats_tags_title">Most common tags</string>
+    <string name="stats_tags_shown">%1$d of %2$d</string>
+    <string name="stats_tag_line">%1$s  ·  ★ %2$s</string>
+    <string name="stats_tags_show_fewer">Show fewer</string>
+    <string name="stats_adult_note">Adult genres and tags follow your adult content setting.</string>
     <!-- Airing calendar -->
     <string name="calendar_title">Airing Calendar</string>
     <string name="calendar_open">Airing calendar</string>

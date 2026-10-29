@@ -628,6 +628,7 @@ internal fun LazyListScope.profileSelectedTabContent(
             profileStatsTab(
                 uiState = uiState,
                 onOpenView = onStatsViewSelected,
+                onGenreSortSelected = { onAction(ProfileAction.SelectGenreSort(it)) },
                 onVoiceActorClick = onVoiceActorClick,
                 onStaffClick = onStaffClick,
                 onStudioClick = onStudioClick,
