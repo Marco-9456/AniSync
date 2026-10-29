@@ -35,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -52,10 +53,17 @@ import com.anisync.android.ui.theme.lineBox
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
+import java.time.format.TextStyle as DateStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlin.math.roundToInt
+
+/**
+ * bodySmall at the 18dp pitch the stats frames draw, so a two line note is as tall as in the frame
+ * rather than the 16dp paragraph pitch.
+ */
+@Composable
+fun statsBodySmall(): TextStyle = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp)
 
 /** A section header as the stats views space it: 24 above, 4 to the card below. */
 @Composable
@@ -230,7 +238,7 @@ private fun InsightTile(tile: InsightTileModel, valueWidth: Dp, modifier: Modifi
         val style = fittedStyle(tile.value, heroWide.style(tile.valueSize.sp, 38.sp, (-1).sp), valueWidth)
         Text(text = tile.value, style = style, color = tile.content, maxLines = 1, modifier = Modifier.lineBox(style))
         Text(text = tile.label, style = MaterialTheme.typography.titleSmall, color = tile.content)
-        Text(text = tile.detail, style = MaterialTheme.typography.bodySmall, color = tile.content.copy(alpha = 0.8f))
+        Text(text = tile.detail, style = statsBodySmall(), color = tile.content.copy(alpha = 0.8f))
     }
 }
 
@@ -248,7 +256,7 @@ fun WeekdayChart(insights: ActivityInsights, modifier: Modifier = Modifier) {
     val bars = (0L until 7L).map { offset ->
         val day = first.plus(offset)
         ChartBar(
-            label = day.getDisplayName(TextStyle.SHORT, locale),
+            label = day.getDisplayName(DateStyle.SHORT, locale),
             count = insights.byWeekday[day] ?: 0,
             isPeak = day == insights.busiestWeekday
         )
@@ -263,7 +271,7 @@ fun MonthChart(insights: ActivityInsights, modifier: Modifier = Modifier) {
     val peak = insights.byMonth.maxByOrNull { it.total }
     val bars = insights.byMonth.map { month ->
         ChartBar(
-            label = month.month.month.getDisplayName(TextStyle.SHORT, locale),
+            label = month.month.month.getDisplayName(DateStyle.SHORT, locale),
             count = month.total,
             isPeak = month == peak,
             isPartial = month.startsLate || month.endsEarly
@@ -305,7 +313,7 @@ private fun partialMonthsNote(months: List<MonthActivity>, locale: Locale): Stri
 }
 
 private fun monthName(month: MonthActivity, locale: Locale): String =
-    month.month.month.getDisplayName(TextStyle.FULL_STANDALONE, locale).replaceFirstChar { it.titlecase(locale) }
+    month.month.month.getDisplayName(DateStyle.FULL_STANDALONE, locale).replaceFirstChar { it.titlecase(locale) }
 
 /**
  * Bars on a shared baseline, the tallest 112dp, each with its count above and its label below.
@@ -363,7 +371,7 @@ private fun BarChartCard(
         }
         if (note != null) {
             Spacer(Modifier.height(6.dp))
-            Text(text = note, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+            Text(text = note, style = statsBodySmall(), color = scheme.onSurfaceVariant)
         }
     }
 }
@@ -378,4 +386,4 @@ internal fun shortDate(date: LocalDate, locale: Locale): String {
 }
 
 internal fun weekdayName(day: DayOfWeek, locale: Locale): String =
-    day.getDisplayName(TextStyle.FULL_STANDALONE, locale).replaceFirstChar { it.titlecase(locale) }
+    day.getDisplayName(DateStyle.FULL_STANDALONE, locale).replaceFirstChar { it.titlecase(locale) }

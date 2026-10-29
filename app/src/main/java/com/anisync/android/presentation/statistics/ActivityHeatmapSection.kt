@@ -187,7 +187,7 @@ private fun RecountNote() {
         )
         Text(
             text = stringResource(R.string.stats_activity_recount_note),
-            style = MaterialTheme.typography.bodySmall,
+            style = statsBodySmall(),
             color = color
         )
     }

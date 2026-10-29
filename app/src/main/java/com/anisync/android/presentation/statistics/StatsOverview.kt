@@ -268,7 +268,7 @@ private fun ActivityTeaserCard(teaser: ActivityTeaser, onClick: () -> Unit) {
                     } else {
                         pluralStringResourceOrDefault(R.plurals.stats_busiest_on_count, insights.busiestWeekdayTotal, weekday, insights.busiestWeekdayTotal)
                     },
-                    style = MaterialTheme.typography.bodySmall,
+                    style = statsBodySmall(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -329,7 +329,7 @@ private fun TasteTeaserCard(teaser: TasteTeaser, onClick: () -> Unit) {
         )
         Text(
             text = pluralStringResourceOrDefault(R.plurals.stats_teaser_top_genre, teaser.genreTitles, teaser.genreTitles),
-            style = MaterialTheme.typography.bodySmall,
+            style = statsBodySmall(),
             color = content.copy(alpha = 0.85f)
         )
         if (teaser.summary.hasSpread) {
@@ -347,7 +347,7 @@ private fun TasteTeaserCard(teaser: TasteTeaser, onClick: () -> Unit) {
             if (teaser.nextGenres.isNotEmpty()) {
                 Text(
                     text = stringResource(R.string.stats_teaser_then, joinWithAnd(teaser.nextGenres.map { "${it.first} ${it.second}" })),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = statsBodySmall(),
                     color = content.copy(alpha = 0.8f)
                 )
             }
@@ -414,7 +414,7 @@ private fun FormatTeaserCard(teaser: FormatTeaser, onClick: () -> Unit) {
             else -> null
         }
         if (line != null) {
-            Text(text = line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = line, style = statsBodySmall(), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -494,7 +494,7 @@ private fun ErasTeaserCard(teaser: ErasTeaser, onClick: () -> Unit) {
             } else {
                 pluralStringResourceOrDefault(R.plurals.stats_teaser_decades_peak, decades, decades, eras.peakReleaseYear.year)
             },
-            style = MaterialTheme.typography.bodySmall,
+            style = statsBodySmall(),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         if (eras.decades.size >= DECADES_FOR_DECADE_BARS) {
@@ -571,7 +571,7 @@ private fun PeopleTeaserCard(teaser: PeopleTeaser, onClick: () -> Unit) {
         if (teaser.personName == null && teaser.studioName == null) {
             Text(
                 text = stringResource(R.string.stats_teaser_people_locked),
-                style = MaterialTheme.typography.bodySmall,
+                style = statsBodySmall(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             return@Teaser
@@ -602,7 +602,7 @@ private fun PeopleTeaserCard(teaser: PeopleTeaser, onClick: () -> Unit) {
 private fun PersonLines(name: String, detail: String) {
     Column {
         Text(text = name, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(text = detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        Text(text = detail, style = statsBodySmall(), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
     }
 }
 

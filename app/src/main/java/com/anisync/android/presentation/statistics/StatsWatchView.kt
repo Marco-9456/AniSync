@@ -225,7 +225,7 @@ fun FormatsCard(formats: List<FormatStat>, isManga: Boolean, modifier: Modifier 
         if (best != null && sorted.size > 1) {
             Text(
                 text = stringResource(bestFormatRes(best.format)),
-                style = MaterialTheme.typography.bodySmall,
+                style = statsBodySmall(),
                 color = scheme.onSurfaceVariant
             )
         }
@@ -356,7 +356,7 @@ fun LengthsCard(lengths: List<LengthUiModel>, isManga: Boolean, modifier: Modifi
                     unknown,
                     unknown
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = statsBodySmall(),
                 color = scheme.onSurfaceVariant
             )
         }

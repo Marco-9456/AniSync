@@ -124,7 +124,7 @@ fun HeroDashboard(
             }
             if (note != null) {
                 Spacer(Modifier.height(4.dp))
-                Text(text = note, style = MaterialTheme.typography.bodySmall, color = content.copy(alpha = 0.7f))
+                Text(text = note, style = statsBodySmall(), color = content.copy(alpha = 0.7f))
             }
             if (staleNote != null) {
                 Spacer(Modifier.height(4.dp))
@@ -135,7 +135,7 @@ fun HeroDashboard(
                         tint = content.copy(alpha = 0.75f),
                         modifier = Modifier.size(16.dp)
                     )
-                    Text(text = staleNote, style = MaterialTheme.typography.bodySmall, color = content.copy(alpha = 0.75f))
+                    Text(text = staleNote, style = statsBodySmall(), color = content.copy(alpha = 0.75f))
                 }
             }
         }
