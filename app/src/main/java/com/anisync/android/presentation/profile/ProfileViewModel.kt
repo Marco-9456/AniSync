@@ -20,6 +20,7 @@ import com.anisync.android.domain.stats.ScoreBucket
 import com.anisync.android.domain.stats.eras
 import com.anisync.android.domain.stats.scoreBuckets
 import com.anisync.android.domain.stats.summarizeScores
+import com.anisync.android.domain.stats.uncountedChanges
 import com.anisync.android.presentation.statistics.bucketActivityDays
 import com.anisync.android.domain.CachePolicy
 import com.anisync.android.domain.GenreStat
@@ -77,6 +78,7 @@ class ProfileViewModel @Inject constructor(
     private val detailsRepository: com.anisync.android.domain.DetailsRepository,
     private val statisticsRepository: StatisticsRepository,
     private val activityRepository: ActivityRepository,
+    private val libraryRepository: com.anisync.android.domain.LibraryRepository,
     private val accountManager: com.anisync.android.data.account.AccountManager,
     private val appSettings: AppSettings,
     private val notificationBadgeStore: NotificationBadgeStore,
@@ -211,7 +213,9 @@ class ProfileViewModel @Inject constructor(
         val isStatsLoading: Boolean = false,
         val statsData: StatisticsUiModel? = null,
         val statsErrorMessage: String? = null,
-        val hasFetchedStats: Boolean = false
+        val hasFetchedStats: Boolean = false,
+        val uncountedAnime: Int = 0,
+        val uncountedManga: Int = 0
     )
 
     private val statsState = MutableStateFlow(StatsState())
@@ -548,6 +552,8 @@ class ProfileViewModel @Inject constructor(
             reviewsHasNextPage = reviews.reviewsHasNextPage,
             isReviewsPaginating = reviews.isReviewsPaginating,
             statsData = stats.statsData,
+            uncountedAnime = stats.uncountedAnime,
+            uncountedManga = stats.uncountedManga,
             isStatsLoading = stats.isStatsLoading,
             statsErrorMessage = stats.statsErrorMessage,
             userAnimeList = mediaLists.userAnimeList,
@@ -1325,11 +1331,14 @@ class ProfileViewModel @Inject constructor(
                         )
                     }
 
+                    val uncounted = if (userId == viewerIdFlow.value) uncountedOnLists(processedData) else 0 to 0
                     statsState.update {
                         it.copy(
                             isStatsLoading = false,
                             statsData = processedData,
-                            hasFetchedStats = true
+                            hasFetchedStats = true,
+                            uncountedAnime = uncounted.first,
+                            uncountedManga = uncounted.second
                         )
                     }
                 }
@@ -1440,6 +1449,19 @@ class ProfileViewModel @Inject constructor(
                 releaseMeans = stats.releaseYearDistribution.associate { it.year to it.meanScore.toDouble() }
             )
         )
+    }
+
+    /**
+     * Changes on the viewer's own anime and manga lists that AniList's statistics have not counted
+     * yet, read from the library rows in Room.
+     */
+    private suspend fun uncountedOnLists(stats: StatisticsUiModel): Pair<Int, Int> {
+        fun List<LibraryEntry>.byStatus() = filter { it.status != LibraryStatus.UNKNOWN }.groupingBy { it.status.name }.eachCount()
+        fun List<StatusUiModel>.byStatus() = associate { it.status to it.count }
+        val anime = libraryRepository.observeLibrary("", com.anisync.android.type.MediaType.ANIME).first()
+        val manga = libraryRepository.observeLibrary("", com.anisync.android.type.MediaType.MANGA).first()
+        return uncountedChanges(anime.byStatus(), stats.animeStats.statusDistribution.byStatus()) to
+            (stats.mangaStats?.let { uncountedChanges(manga.byStatus(), it.statusDistribution.byStatus()) } ?: 0)
     }
 
     /** The same twenty steps for every list format, scaled to the most given one. */

@@ -291,7 +291,11 @@ private fun LazyListScope.statsOverview(
     val isOwnProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
     val heroAndTiles: @Composable () -> Unit = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (isManga && manga != null) MangaHero(manga, isOwnProfile) else AnimeHero(statsData.animeStats, isOwnProfile)
+            if (isManga && manga != null) {
+                MangaHero(manga, isOwnProfile, uiState.uncountedManga)
+            } else {
+                AnimeHero(statsData.animeStats, isOwnProfile, uiState.uncountedAnime)
+            }
             StatsTiles(
                 if (isManga && manga != null) {
                     overviewTiles(
@@ -875,7 +879,7 @@ private fun monthYear(date: LocalDate, locale: java.util.Locale): String {
 }
 
 @Composable
-private fun AnimeHero(stats: AnimeStatisticsUi, isOwnProfile: Boolean) {
+private fun AnimeHero(stats: AnimeStatisticsUi, isOwnProfile: Boolean, uncounted: Int) {
     val locale = LocalConfiguration.current.locales[0]
     val parts = splitMinutes(stats.minutesWatched)
     val days = pluralStringResourceOrDefault(R.plurals.statistics_activity_days, parts.days, parts.days)
@@ -897,12 +901,12 @@ private fun AnimeHero(stats: AnimeStatisticsUi, isOwnProfile: Boolean) {
         lists = stats.statusDistribution.heroLists(),
         mediaType = MediaType.ANIME,
         note = listsNote(stats.statusDistribution, stats.totalCount, isOwnProfile),
-        staleNote = null
+        staleNote = uncountedNote(uncounted)
     )
 }
 
 @Composable
-private fun MangaHero(stats: MangaStatisticsUi, isOwnProfile: Boolean) {
+private fun MangaHero(stats: MangaStatisticsUi, isOwnProfile: Boolean, uncounted: Int) {
     val locale = LocalConfiguration.current.locales[0]
     HeroDashboard(
         eyebrow = stringResource(R.string.stats_hero_eyebrow_manga),
@@ -914,9 +918,14 @@ private fun MangaHero(stats: MangaStatisticsUi, isOwnProfile: Boolean) {
         lists = stats.statusDistribution.heroLists(),
         mediaType = MediaType.MANGA,
         note = listsNote(stats.statusDistribution, stats.totalCount, isOwnProfile),
-        staleNote = null
+        staleNote = uncountedNote(uncounted)
     )
 }
+
+/** Says how many of the viewer's own changes AniList has not counted yet, when there are any. */
+@Composable
+private fun uncountedNote(uncounted: Int): String? =
+    if (uncounted > 0) pluralStringResourceOrDefault(R.plurals.stats_hero_stale, uncounted, uncounted) else null
 
 /** Explains the gap between AniList's total, which leaves Planning out, and what is on the lists. */
 @Composable

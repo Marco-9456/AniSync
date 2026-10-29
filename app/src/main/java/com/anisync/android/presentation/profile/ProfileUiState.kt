@@ -80,6 +80,9 @@ data class ProfileUiState(
     val messageSendError: String? = null,
     val messageSentEvent: Long? = null,
     val statsData: StatisticsUiModel? = null,
+    /** Changes on the viewer's own lists that AniList's statistics have not counted yet. */
+    val uncountedAnime: Int = 0,
+    val uncountedManga: Int = 0,
     val isStatsLoading: Boolean = false,
     val statsErrorMessage: String? = null,
     val viewerId: Int? = null,
