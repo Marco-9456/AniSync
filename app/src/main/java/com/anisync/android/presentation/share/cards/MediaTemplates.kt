@@ -102,6 +102,8 @@ object MediaCardTemplate : ShareTemplate<ShareSubject.Media> {
 }
 
 
+// --- Poster ---
+
 @Composable
 private fun PosterChat(subject: ShareSubject.Media, spec: CardSpec) {
     val titleWide = LocalExpressiveTypography.current.titleWide
@@ -341,6 +343,8 @@ private fun PosterProgress(subject: ShareSubject.Media) {
 }
 
 
+// --- Bento ---
+
 @Composable
 private fun MediaBento(subject: ShareSubject.Media, spec: CardSpec) {
     val size = spec.size
@@ -541,6 +545,8 @@ private fun BentoAboutTile(subject: ShareSubject.Media, spec: CardSpec) {
 }
 
 
+// --- Card ---
+
 @Composable
 private fun MediaCard(subject: ShareSubject.Media, spec: CardSpec) {
     val size = spec.size
@@ -713,6 +719,8 @@ private fun CardStatus(subject: ShareSubject.Media) {
     }
 }
 
+
+// --- Shared pieces ---
 
 private val StatusPillHeight = 30.dp
 

@@ -73,6 +73,8 @@ object StatsGenresTemplate : ShareTemplate<ShareSubject.Stats> {
 }
 
 
+// --- Big number ---
+
 private data class BigNumberLayout(
     val banner: Dp,
     val avatar: Dp,
@@ -263,6 +265,8 @@ private fun SmallTile(value: String, label: String, container: Color, content: C
     }
 }
 
+
+// --- Bento ---
 
 @Composable
 private fun StatsBento(subject: ShareSubject.Stats, spec: CardSpec) {
@@ -505,6 +509,8 @@ private fun BentoStudioTile(subject: ShareSubject.Stats, modifier: Modifier) {
 }
 
 
+// --- Genres ---
+
 private data class GenresLayout(
     val avatar: Dp,
     val avatarStart: Dp,
@@ -608,6 +614,8 @@ private fun GenreBar(rank: Int, genre: GenreCount, fraction: Float) {
     }
 }
 
+
+// --- Shared ---
 
 /** The avatar beside a name and an eyebrow, how every stats card opens. */
 @Composable
