@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -361,15 +362,19 @@ private fun TasteTeaserCard(teaser: TasteTeaser, onClick: () -> Unit) {
     }
 }
 
-/** Ten buckets of the score spread, the most given one lit. */
+/**
+ * Up to ten steps of the score spread, the most given one lit. Ten bars sit 5.5dp apart as the
+ * frame draws them, and a list scored in fewer steps spreads its bars over the same width.
+ */
 @Composable
 private fun ScoreMiniBars(scores: List<ScoreUiModel>, summary: ScoreSummary, color: Color) {
     val lit = scores.indexOfFirst { bucket -> summary.mostGiven != null && bucket.score >= summary.mostGiven }
     Row(
         modifier = Modifier
+            .widthIn(max = MiniBarsWidth)
             .fillMaxWidth()
             .height(52.dp),
-        horizontalArrangement = Arrangement.spacedBy(5.5.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Bottom
     ) {
         scores.forEachIndexed { index, bucket ->
@@ -383,6 +388,9 @@ private fun ScoreMiniBars(scores: List<ScoreUiModel>, summary: ScoreSummary, col
         }
     }
 }
+
+/** Ten 12dp bars 5.5dp apart. */
+private val MiniBarsWidth = 169.5.dp
 
 @Composable
 private fun FormatTeaserCard(teaser: FormatTeaser, onClick: () -> Unit) {

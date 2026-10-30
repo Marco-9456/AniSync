@@ -132,8 +132,9 @@ fun TasteScoresCard(
 }
 
 /**
- * Twenty bars on a 128dp baseline, the most given one lit, a line and a pill at the mean, and the
- * first, middle, most given and last steps labelled underneath.
+ * A bar for each step the list was scored in on a 128dp baseline, the most given one lit, a line
+ * and a pill at the mean, and the first, middle, most given and last steps labelled underneath.
+ * Bars keep the frame's 14dp when a list has fewer steps than twenty.
  */
 @Composable
 private fun ScoreHistogram(scores: List<ScoreUiModel>, mostGiven: Int?, meanScore: Double) {
@@ -146,9 +147,10 @@ private fun ScoreHistogram(scores: List<ScoreUiModel>, mostGiven: Int?, meanScor
             .height(HistogramHeight)
     ) {
         val steps = scores.size.coerceAtLeast(1)
-        val barWidth = (maxWidth - BarsStart - BarsEnd - BarGap * (steps - 1)) / steps
-        val stride = barWidth + BarGap
-        fun centre(index: Float): Dp = BarsStart + stride * index + barWidth / 2
+        val slot = (maxWidth - BarsStart - BarsEnd - BarGap * (steps - 1)) / steps
+        val barWidth = slot.coerceAtMost(BarMaxWidth)
+        val stride = slot + BarGap
+        fun centre(index: Float): Dp = BarsStart + stride * index + slot / 2
 
         Row(
             modifier = Modifier
@@ -159,18 +161,23 @@ private fun ScoreHistogram(scores: List<ScoreUiModel>, mostGiven: Int?, meanScor
             verticalAlignment = Alignment.Bottom
         ) {
             scores.forEach { bucket ->
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height((BarsMax * bucket.heightFraction).roundToInt().coerceAtLeast(BarsMin).dp)
-                        .clip(RoundedCornerShape(barWidth / 2))
-                        .background(scheme.primary.copy(alpha = if (bucket.score == mostGiven) 1f else 0.38f))
-                )
+                Box(Modifier.weight(1f), contentAlignment = Alignment.BottomCenter) {
+                    Box(
+                        Modifier
+                            .width(barWidth)
+                            .height((BarsMax * bucket.heightFraction).roundToInt().coerceAtLeast(BarsMin).dp)
+                            .clip(RoundedCornerShape(barWidth / 2))
+                            .background(scheme.primary.copy(alpha = if (bucket.score == mostGiven) 1f else 0.38f))
+                    )
+                }
             }
         }
 
         if (scores.any { it.count > 0 }) {
-            val meanX = centre((meanScore / STEP - 1).toFloat())
+            val first = scores.first().score
+            val span = (scores.last().score - first).coerceAtLeast(1)
+            val meanIndex = ((meanScore - first) / span * scores.lastIndex).toFloat()
+            val meanX = centre(meanIndex.coerceIn(0f, scores.lastIndex.toFloat()))
             Box(
                 Modifier
                     .padding(top = MeanLineTop)
@@ -225,13 +232,13 @@ private fun Modifier.centredAt(x: Dp): Modifier = layout { measurable, constrain
     layout(constraints.maxWidth, placeable.height) { placeable.place(left, 0) }
 }
 
-private const val STEP = 5.0
 private val HistogramHeight = 150.dp
 private val BarsHeight = 128.dp
 private const val BarsMax = 100f
 private const val BarsMin = 6
 private val BarsStart = 2.dp
 private val BarsEnd = 7.dp
+private val BarMaxWidth = 14.dp
 private val BarGap = 5.dp
 private val MeanLineTop = 8.dp
 private val LabelsTop = 134.dp
