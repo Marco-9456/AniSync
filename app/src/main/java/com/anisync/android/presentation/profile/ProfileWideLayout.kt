@@ -17,12 +17,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import com.anisync.android.presentation.statistics.StatsShareFab
+import com.anisync.android.presentation.statistics.statsFabBottomInset
 import com.anisync.android.presentation.statistics.statsFabClearance
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -830,7 +830,7 @@ private fun ProfileTabPane(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
-                        bottom = LocalMainNavBarInset.current + if (showStatsFab) statsFabClearance() else 48.dp
+                        bottom = if (showStatsFab) statsFabClearance() else LocalMainNavBarInset.current + 48.dp
                     )
                 ) {
                     profileSelectedTabContent(
@@ -860,8 +860,7 @@ private fun ProfileTabPane(
                         onClick = onShareStats,
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
-                            .navigationBarsPadding()
-                            .padding(end = 16.dp, bottom = 16.dp + LocalMainNavBarInset.current)
+                            .padding(end = 16.dp, bottom = 16.dp + statsFabBottomInset())
                     )
                 }
             }

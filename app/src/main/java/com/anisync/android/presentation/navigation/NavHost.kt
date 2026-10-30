@@ -19,6 +19,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
@@ -84,6 +85,7 @@ import com.anisync.android.presentation.settings.StorageScreen
 import com.anisync.android.presentation.settings.UpdatesScreen
 import com.anisync.android.presentation.util.AniLinkCallbacks
 import com.anisync.android.presentation.util.LocalAniLinkCallbacks
+import com.anisync.android.presentation.util.LocalMainNavBarInset
 
 // =============================================================================
 // TAB ORDER HELPER
@@ -527,39 +529,42 @@ fun AniSyncNavHost(
                     { mediaId: Int -> onMediaClick(mediaId, "user_profile") } 
                 }
                 
-                ProfileScreen(
-                    onMediaClick = onProfileMediaClick,
-                    onCharacterClick = { characterId ->
-                        navController.navigate(CharacterDetails(characterId))
-                    },
-                    onStaffClick = { staffId ->
-                        navController.navigate(StaffDetails(staffId))
-                    },
-                    onVoiceActorClick = { staffId ->
-                        navController.navigate(StaffDetails(staffId))
-                    },
-                    onStudioClick = { studioId ->
-                        navController.navigate(StudioDetails(studioId))
-                    },
-                    onUserClick = navigateToUserProfile,
-                    onThreadClick = { threadId, threadTitle, profileColor ->
-                        navController.navigate(
-                            ForumThreadDetail(threadId, threadTitle, profileColor = profileColor)
-                        )
-                    },
-                    onCommentClick = { threadId, commentId, threadTitle, profileColor ->
-                        navController.navigate(
-                            ForumThreadDetail(threadId, threadTitle, commentId, profileColor = profileColor)
-                        )
-                    },
-                    onActivityClick = navigateToProfileActivity,
-                    onLastReplyClick = navigateToProfileActivityReply,
-                    onLogoutClick = { }, // Not used for other users
-                    onNavigateToSettings = { }, // Not used for other users
-                    isOwnProfile = false,
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedVisibilityScope = this
-                )
+                // Someone else's profile hides the main bar, so nothing on it has a bar to clear.
+                CompositionLocalProvider(LocalMainNavBarInset provides 0.dp) {
+                    ProfileScreen(
+                        onMediaClick = onProfileMediaClick,
+                        onCharacterClick = { characterId ->
+                            navController.navigate(CharacterDetails(characterId))
+                        },
+                        onStaffClick = { staffId ->
+                            navController.navigate(StaffDetails(staffId))
+                        },
+                        onVoiceActorClick = { staffId ->
+                            navController.navigate(StaffDetails(staffId))
+                        },
+                        onStudioClick = { studioId ->
+                            navController.navigate(StudioDetails(studioId))
+                        },
+                        onUserClick = navigateToUserProfile,
+                        onThreadClick = { threadId, threadTitle, profileColor ->
+                            navController.navigate(
+                                ForumThreadDetail(threadId, threadTitle, profileColor = profileColor)
+                            )
+                        },
+                        onCommentClick = { threadId, commentId, threadTitle, profileColor ->
+                            navController.navigate(
+                                ForumThreadDetail(threadId, threadTitle, commentId, profileColor = profileColor)
+                            )
+                        },
+                        onActivityClick = navigateToProfileActivity,
+                        onLastReplyClick = navigateToProfileActivityReply,
+                        onLogoutClick = { }, // Not used for other users
+                        onNavigateToSettings = { }, // Not used for other users
+                        isOwnProfile = false,
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedVisibilityScope = this
+                    )
+                }
             }
 
             // =================================================================

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -76,6 +75,7 @@ import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
+import com.anisync.android.presentation.statistics.statsFabBottomInset
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
@@ -252,7 +252,7 @@ fun ProfileContent(
         state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            bottom = LocalMainNavBarInset.current + if (showStatsFab) statsFabClearance() else 48.dp
+            bottom = if (showStatsFab) statsFabClearance() else LocalMainNavBarInset.current + 48.dp
         )
     ) {
         item(key = "profile_header", contentType = "header") {
@@ -343,8 +343,7 @@ fun ProfileContent(
             onClick = { statsShareVisible = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(end = 16.dp, bottom = 16.dp + LocalMainNavBarInset.current)
+                .padding(end = 16.dp, bottom = 16.dp + statsFabBottomInset())
         )
     }
     }
