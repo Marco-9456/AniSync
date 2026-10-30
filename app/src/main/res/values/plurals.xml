@@ -129,6 +129,10 @@
         <item quantity="one">%1$s volume</item>
         <item quantity="other">%1$s volumes</item>
     </plurals>
+    <plurals name="stats_works">
+        <item quantity="one">%1$s work</item>
+        <item quantity="other">%1$s works</item>
+    </plurals>
     <plurals name="stats_titles">
         <item quantity="one">%1$s title</item>
         <item quantity="other">%1$s titles</item>

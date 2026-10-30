@@ -173,7 +173,9 @@ data class ErasTeaser(val eras: Eras)
 data class PeopleTeaser(
     val personName: String?,
     val personImage: String?,
-    val personRoles: Int,
+    val personCount: Int,
+    /** Manga names its staff member, counted in works, where anime names a voice actor's roles. */
+    val personIsStaff: Boolean = false,
     val studioName: String?,
     val studioTitles: Int,
 )
@@ -614,7 +616,7 @@ private fun PeopleTeaserCard(teaser: PeopleTeaser, onClick: () -> Unit) {
                         .clip(LocalAvatarShape.current)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
-                PersonLines(teaser.personName, pluralStringResourceOrDefault(R.plurals.stats_roles, teaser.personRoles, teaser.personRoles))
+                PersonLines(teaser.personName, if (teaser.personIsStaff) worksLabel(teaser.personCount) else rolesLabel(teaser.personCount))
             }
         }
         if (teaser.studioName != null) {

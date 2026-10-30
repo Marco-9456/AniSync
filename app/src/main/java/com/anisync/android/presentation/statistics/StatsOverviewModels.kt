@@ -50,7 +50,7 @@ fun buildAtAGlance(
         people = PeopleTeaser(
             personName = voiceActor?.name,
             personImage = voiceActor?.imageUrl,
-            personRoles = voiceActor?.count ?: 0,
+            personCount = voiceActor?.count ?: 0,
             studioName = studio?.studioName,
             studioTitles = studio?.count ?: 0,
         ),
@@ -94,7 +94,8 @@ fun buildAtAGlance(
         people = PeopleTeaser(
             personName = staff?.name,
             personImage = staff?.imageUrl,
-            personRoles = staff?.count ?: 0,
+            personCount = staff?.count ?: 0,
+            personIsStaff = true,
             studioName = null,
             studioTitles = 0,
         ),

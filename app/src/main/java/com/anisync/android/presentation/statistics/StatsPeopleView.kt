@@ -267,7 +267,14 @@ private const val MONOGRAM_TEXT = 14.5f
 @Composable
 fun rolesLabel(count: Int): String = pluralStringResourceOrDefault(R.plurals.stats_roles, count, count)
 
-/** "89 titles", for a staff or studio row. */
+/** "91 works", for a staff row. */
+@Composable
+fun worksLabel(count: Int): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return pluralStringResourceOrDefault(R.plurals.stats_works, count, formatExactCount(count, locale))
+}
+
+/** "89 titles", for a studio row. */
 @Composable
 fun titlesLabel(count: Int): String {
     val locale = LocalConfiguration.current.locales[0]

@@ -69,6 +69,7 @@ import com.anisync.android.presentation.statistics.chaptersLabel
 import com.anisync.android.presentation.statistics.hoursLabel
 import com.anisync.android.presentation.statistics.rolesLabel
 import com.anisync.android.presentation.statistics.titlesLabel
+import com.anisync.android.presentation.statistics.worksLabel
 import com.anisync.android.presentation.statistics.DecadesCard
 import com.anisync.android.presentation.statistics.ErasSpanHero
 import com.anisync.android.presentation.statistics.ReleaseCapsules
@@ -663,11 +664,7 @@ private fun LazyListScope.statsPeople(
         if (spotlightPerson != null) {
             val locale = LocalConfiguration.current.locales[0]
             val isVoice = spotlightVoice != null
-            val count = if (isVoice) {
-                pluralStringResourceOrDefault(R.plurals.stats_roles, spotlightPerson.count, spotlightPerson.count)
-            } else {
-                pluralStringResourceOrDefault(R.plurals.stats_titles, spotlightPerson.count, formatExactCount(spotlightPerson.count, locale))
-            }
+            val count = if (isVoice) rolesLabel(spotlightPerson.count) else worksLabel(spotlightPerson.count)
             val amount = spotlightPerson.amount.roundToInt()
             val time = if (isManga) {
                 pluralStringResourceOrDefault(R.plurals.stats_chapters_short, amount, formatExactCount(amount, locale))
@@ -731,7 +728,13 @@ private fun LazyListScope.statsPeople(
             ),
             selectedSort = model.sort,
             onSortChange = { onSortSelected(model.list, it) },
-            countLabel = { if (isVoice) rolesLabel(it) else titlesLabel(it) },
+            countLabel = { count ->
+                when (model.list) {
+                    PeopleList.ANIME_VOICE_ACTORS -> rolesLabel(count)
+                    PeopleList.ANIME_STAFF, PeopleList.MANGA_STAFF -> worksLabel(count)
+                    PeopleList.ANIME_STUDIOS -> titlesLabel(count)
+                }
+            },
             amountLabel = { if (isManga) chaptersLabel(it) else hoursLabel(it) },
             onClick = when (model.list) {
                 PeopleList.ANIME_VOICE_ACTORS -> onVoiceActorClick
