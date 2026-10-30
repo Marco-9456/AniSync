@@ -88,6 +88,17 @@ enum class StartScreen(val tabKey: String?) {
 }
 
 /**
+ * The size a share card opens at in the studio. [CHAT] fits its height to the content and keeps
+ * rounded corners, the others are fixed at 1:1, 4:5 and 9:16.
+ */
+enum class CardSize {
+    CHAT,
+    SQUARE,
+    PORTRAIT,
+    STORY
+}
+
+/**
  * Visual style of the bottom navigation bar.
  *
  *  - [ANCHORED]: bar pinned to the bottom edge with rounded top corners.
@@ -596,6 +607,29 @@ class AppSettings @Inject constructor(
     // on the screen the user left. Profile and Settings are intentionally never stored.
     private val _lastMainTab = MutableStateFlow(prefs.getString(KEY_LAST_MAIN_TAB, null))
     val lastMainTab: StateFlow<String?> = _lastMainTab.asStateFlow()
+
+    // Share cards: whether scores start hidden in the studio, and the size it opens at.
+    private val _hideScoresOnCards = MutableStateFlow(prefs.getBoolean(KEY_HIDE_SCORES_ON_CARDS, false))
+    val hideScoresOnCards: StateFlow<Boolean> = _hideScoresOnCards.asStateFlow()
+
+    fun setHideScoresOnCards(hidden: Boolean) {
+        _hideScoresOnCards.value = hidden
+        prefs.edit().putBoolean(KEY_HIDE_SCORES_ON_CARDS, hidden).apply()
+    }
+
+    private val _defaultCardSize = MutableStateFlow(readDefaultCardSize())
+    val defaultCardSize: StateFlow<CardSize> = _defaultCardSize.asStateFlow()
+
+    private fun readDefaultCardSize(): CardSize {
+        val name = runCatching { prefs.getString(KEY_DEFAULT_CARD_SIZE, null) }.getOrNull()
+            ?: return CardSize.STORY
+        return runCatching { CardSize.valueOf(name) }.getOrDefault(CardSize.STORY)
+    }
+
+    fun setDefaultCardSize(size: CardSize) {
+        _defaultCardSize.value = size
+        prefs.edit().putString(KEY_DEFAULT_CARD_SIZE, size.name).apply()
+    }
 
     private val _startScreen = MutableStateFlow(readStartScreen())
     val startScreen: StateFlow<StartScreen> = _startScreen.asStateFlow()
@@ -1531,6 +1565,8 @@ companion object {
         private const val KEY_FORUM_CATEGORY_ID = "forum_category_id"
         private const val KEY_LAST_MAIN_TAB = "last_main_tab"
         private const val KEY_START_SCREEN = "start_screen"
+        private const val KEY_HIDE_SCORES_ON_CARDS = "hide_scores_on_cards"
+        private const val KEY_DEFAULT_CARD_SIZE = "default_card_size"
         private const val KEY_MEDIA_HOST = "media_host"
         private const val KEY_LITTERBOX_DURATION = "litterbox_duration"
         private const val KEY_CUSTOM_HOST_URL = "custom_host_url"
