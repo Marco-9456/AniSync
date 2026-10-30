@@ -1377,7 +1377,7 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun processAnimeStats(stats: AnimeStatistics, showAdult: Boolean): AnimeStatisticsUi {
-        val buckets = scoreBuckets(stats.scoreDistribution.associate { it.score to it.count })
+        val buckets = scoreBuckets(stats.scoreDistribution)
 
         val sortedReleaseYears = stats.releaseYearDistribution.sortedBy { it.year }.takeLast(12)
         val maxReleaseYearCount = sortedReleaseYears.maxOfOrNull { it.count } ?: 1
@@ -1427,7 +1427,7 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun processMangaStats(stats: MangaStatistics, showAdult: Boolean): MangaStatisticsUi {
-        val buckets = scoreBuckets(stats.scoreDistribution.associate { it.score to it.count })
+        val buckets = scoreBuckets(stats.scoreDistribution)
 
         val sortedReleaseYears = stats.releaseYearDistribution.sortedBy { it.year }.takeLast(12)
         val maxReleaseYearCount = sortedReleaseYears.maxOfOrNull { it.count } ?: 1

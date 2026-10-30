@@ -2,7 +2,7 @@ package com.anisync.android.domain.stats
 
 /**
  * What a score distribution says beyond AniList's own mean. Scores are on the 100 point scale,
- * as AniList's statistics return them, and a score of 0 means unscored.
+ * as [scoreBuckets] places them, and a score of 0 means unscored.
  */
 data class ScoreSummary(
     val scored: Int,
