@@ -1504,7 +1504,7 @@ class ProfileViewModel @Inject constructor(
             (stats.mangaStats?.let { uncountedChanges(manga.byStatus(), it.statusDistribution.byStatus()) } ?: 0)
     }
 
-    /** The same twenty steps for every list format, scaled to the most given one. */
+    /** Each step the list was counted in, scaled to the most given one. */
     private fun scoreUi(buckets: List<ScoreBucket>): List<ScoreUiModel> {
         val max = buckets.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
         return buckets.map { bucket ->
