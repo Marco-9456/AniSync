@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -158,7 +159,12 @@ data class TasteTeaser(
 )
 
 @Immutable
-data class FormatTeaser(val shares: List<Pair<String, Int>>, val completedShare: Int?, val onlyCountry: String?)
+data class FormatTeaser(
+    val shares: List<Pair<String, Int>>,
+    val completedShare: Int?,
+    val onlyCountry: String?,
+    val isManga: Boolean = false,
+)
 
 @Immutable
 data class ErasTeaser(val eras: Eras)
@@ -396,12 +402,20 @@ private val MiniBarsWidth = 169.5.dp
 private fun FormatTeaserCard(teaser: FormatTeaser, onClick: () -> Unit) {
     val total = teaser.shares.sumOf { it.second }.coerceAtLeast(1)
     val first = teaser.shares.firstOrNull()
-    Teaser(title = stringResource(R.string.stats_view_how_you_watch), onClick = onClick) {
+    val title = if (teaser.isManga) R.string.stats_view_how_you_read else R.string.stats_view_how_you_watch
+    Teaser(title = stringResource(title), onClick = onClick) {
         if (first != null) {
-            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val formatStyle = LocalExpressiveTypography.current.heroWide.style(40.sp, 44.sp)
+            // TV, OVA and ONA take the frame's 40sp. A longer name steps down, and the share moves
+            // under it when the two no longer fit side by side.
+            val name = shortFormatName(first.first)
+            FlowRow(itemVerticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val formatStyle = if (name.length <= SHORT_FORMAT) {
+                    LocalExpressiveTypography.current.heroWide.style(40.sp, 44.sp)
+                } else {
+                    LocalExpressiveTypography.current.heroWide.style(28.sp, 32.sp)
+                }
                 Text(
-                    text = shortFormatName(first.first),
+                    text = name,
                     style = formatStyle,
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
@@ -737,6 +751,9 @@ fun overviewTiles(
 }
 
 private const val SHORT_WORD = 6
+
+/** Format names up to this long fit the teaser at the frame's size. */
+private const val SHORT_FORMAT = 3
 
 internal fun TasteSpread.labelRes(): Int = when (this) {
     TasteSpread.FOCUSED -> R.string.stats_taste_focused

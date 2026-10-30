@@ -87,6 +87,7 @@ fun buildAtAGlance(
                     null
                 },
                 onlyCountry = stats.countryDistribution.singleOrNull()?.countryCode?.takeIf { completed == 0 },
+                isManga = true,
             )
         },
         eras = stats.eras?.let(::ErasTeaser),
