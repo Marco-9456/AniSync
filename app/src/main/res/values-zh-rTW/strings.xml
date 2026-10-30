@@ -258,7 +258,7 @@
     <string name="discover_section_error_title">無法加載</string>
     <string name="recent_reviews_title">近期回顧</string>
     <string name="recent_reviews_empty">暫無回顧</string>
-    <string name="airing_episode_in">第 %1$d / %2$s 集</string>
+    <string name="airing_episode_in">第 %1$d 集， %2$s 後</string>
     <string name="progress_format">%1$d / %2$s</string>
     <string name="progress_unknown">？</string>
     <string name="empty_watching">你還沒新增觀看動畫…</string>
@@ -278,7 +278,7 @@
     <string name="stat_status">狀態</string>
     <string name="stat_source">原作</string>
     <string name="stat_next_episode">下一集</string>
-    <string name="airing_countdown_value">第 %1$d / %2$s 集</string>
+    <string name="airing_countdown_value">第 %1$d 集， %2$s 後</string>
     <string name="source_original">原創</string>
     <string name="source_manga">漫畫</string>
     <string name="source_light_novel">輕小說</string>
@@ -1379,7 +1379,7 @@
     <string name="widget_wp_left">還剩 %1$d 集</string>
     <string name="widget_wp_syncing_manga">打開 AniSync 來同步你的漫畫</string>
     <string name="widget_wp_current_ep">第 %1$d 集</string>
-    <string name="widget_wp_next_ep">第 %1$d / %2$s 集</string>
+    <string name="widget_wp_next_ep">第 %1$d 集， %2$s 後</string>
     <string name="widget_wp_empty_title">暫無現在進行</string>
     <string name="widget_wp_empty_body">此處顯示你正在觀看的系列，鄰近完結的至上排序</string>
     <string name="widget_wp_empty_body_manga">此處顯示你正在閱讀的系列，鄰近完結的至上排序</string>
