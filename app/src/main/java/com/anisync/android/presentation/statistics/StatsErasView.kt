@@ -95,7 +95,7 @@ private fun spanSentence(eras: Eras, isManga: Boolean, isOwnProfile: Boolean): S
         decades >= 2 -> pluralStringResourceOrDefault(
             if (isManga) R.plurals.stats_eras_decades_manga else R.plurals.stats_eras_decades_anime,
             decades,
-            decades
+            spelledOut(decades).replaceFirstChar { it.titlecase() }
         )
         else -> null
     }
@@ -343,7 +343,7 @@ fun StartedNote(eras: Eras, isManga: Boolean, isOwnProfile: Boolean) {
                 isManga -> R.string.stats_eras_year_twice_own_manga
                 else -> R.string.stats_eras_year_twice_own
             },
-            start.year,
+            start.year.toString(),
             formatExactCount(eras.peakReleaseYear.count, locale),
             formatExactCount(start.count, locale)
         )

@@ -1471,8 +1471,6 @@
     <string name="stats_score_median">median</string>
     <string name="stats_score_most_given">most given</string>
     <string name="stats_sigma" translatable="false">σ</string>
-    <string name="stats_spread_focused_body">Your scores stay close together, most within %1$d points of %2$s.</string>
-    <string name="stats_spread_balanced_body">Most of your scores land within %1$d points of your mean of %2$s.</string>
     <string name="stats_spread_eclectic_body">Your scores spread wide, from %1$s to %2$s.</string>
     <string name="stats_header_genres">Genres</string>
     <string name="stats_header_tags">Tags</string>
@@ -1557,9 +1555,9 @@
     <string name="stats_eras_started_manga">When you started reading</string>
     <string name="stats_eras_started_other">When they started them</string>
     <string name="stats_eras_best_scored">best scored, ★ %1$s</string>
-    <string name="stats_eras_year_twice_own">%1$d was your year twice: %2$s of its releases watched, and %3$s titles started.</string>
-    <string name="stats_eras_year_twice_own_manga">%1$d was your year twice: %2$s of its releases read, and %3$s titles started.</string>
-    <string name="stats_eras_year_twice_other">%1$d was their year twice: %2$s of its releases on the list, and %3$s titles started.</string>
+    <string name="stats_eras_year_twice_own">%1$s was your year twice: %2$s of its releases watched, and %3$s titles started.</string>
+    <string name="stats_eras_year_twice_own_manga">%1$s was your year twice: %2$s of its releases read, and %3$s titles started.</string>
+    <string name="stats_eras_year_twice_other">%1$s was their year twice: %2$s of its releases on the list, and %3$s titles started.</string>
     <string name="stats_eras_started_most_own">You started the most titles in %1$d, %2$s of them.</string>
     <string name="stats_eras_started_most_other">They started the most titles in %1$d, %2$s of them.</string>
     <string name="stats_people_favourite_own">Also in your favourites</string>

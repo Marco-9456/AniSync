@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -490,9 +491,14 @@ private fun ErasTeaserCard(teaser: ErasTeaser, onClick: () -> Unit) {
         )
         Text(
             text = if (span >= CENTURY) {
-                pluralStringResourceOrDefault(R.plurals.stats_teaser_century, decades, decades)
+                pluralStringResourceOrDefault(R.plurals.stats_teaser_century, decades, spelledOut(decades))
             } else {
-                pluralStringResourceOrDefault(R.plurals.stats_teaser_decades_peak, decades, decades, eras.peakReleaseYear.year)
+                pluralStringResourceOrDefault(
+                    R.plurals.stats_teaser_decades_peak,
+                    decades,
+                    spelledOut(decades),
+                    eras.peakReleaseYear.year.toString()
+                )
             },
             style = statsBodySmall(),
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -646,6 +652,14 @@ private fun formatScoreNumber(value: Double): String {
 }
 
 private fun percent(part: Int, total: Int): String = "${(part * 100.0 / total).roundToInt()}%"
+
+/** [count] in words, "ten", in the reader's language, as the frames write small counts. */
+@Composable
+internal fun spelledOut(count: Int): String {
+    val locale = LocalConfiguration.current.locales[0]
+    val format = remember(locale) { android.icu.text.MessageFormat("{0,spellout}", locale) }
+    return format.format(arrayOf(count))
+}
 
 @Composable
 internal fun countryName(code: String): String {

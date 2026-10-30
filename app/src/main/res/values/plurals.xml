@@ -66,12 +66,12 @@
         <item quantity="other">your top genre, %d titles</item>
     </plurals>
     <plurals name="stats_teaser_century">
-        <item quantity="one">a century of anime, %d decade</item>
-        <item quantity="other">a century of anime, %d decades</item>
+        <item quantity="one">a century of anime, %1$s decade</item>
+        <item quantity="other">a century of anime, %1$s decades</item>
     </plurals>
     <plurals name="stats_teaser_decades_peak">
-        <item quantity="one">%1$d decade, peak in %2$d</item>
-        <item quantity="other">%1$d decades, peak in %2$d</item>
+        <item quantity="one">%1$s decade, peak in %2$s</item>
+        <item quantity="other">%1$s decades, peak in %2$s</item>
     </plurals>
     <plurals name="stats_roles">
         <item quantity="one">%d role</item>
@@ -154,16 +154,24 @@
         <item quantity="other">%d titles have no chapter count on AniList yet.</item>
     </plurals>
     <plurals name="stats_eras_decades_anime">
-        <item quantity="one">%d decade of anime.</item>
-        <item quantity="other">%d decades of anime.</item>
+        <item quantity="one">%1$s decade of anime.</item>
+        <item quantity="other">%1$s decades of anime.</item>
     </plurals>
     <plurals name="stats_eras_decades_manga">
-        <item quantity="one">%d decade of manga.</item>
-        <item quantity="other">%d decades of manga.</item>
+        <item quantity="one">%1$s decade of manga.</item>
+        <item quantity="other">%1$s decades of manga.</item>
     </plurals>
     <plurals name="stats_eras_peak_titles">
         <item quantity="one">peak, %1$s title</item>
         <item quantity="other">peak, %1$s titles</item>
+    </plurals>
+    <plurals name="stats_spread_focused_body">
+        <item quantity="one">Your scores stay close together, most within %1$d point of %2$s.</item>
+        <item quantity="other">Your scores stay close together, most within %1$d points of %2$s.</item>
+    </plurals>
+    <plurals name="stats_spread_balanced_body">
+        <item quantity="one">Most of your scores land within %1$d point of your mean of %2$s.</item>
+        <item quantity="other">Most of your scores land within %1$d points of your mean of %2$s.</item>
     </plurals>
     <plurals name="a11y_timeline_bar">
         <item quantity="one">%1$d, %2$d title</item>

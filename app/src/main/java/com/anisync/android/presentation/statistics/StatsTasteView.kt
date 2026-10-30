@@ -327,13 +327,13 @@ private fun spreadSentence(
     val points = standardDeviation.roundToInt()
     val mean = formatOneDecimal(meanScore, locale)
     return when (spread) {
-        TasteSpread.FOCUSED -> stringResource(R.string.stats_spread_focused_body, points, mean)
-        TasteSpread.BALANCED -> stringResource(R.string.stats_spread_balanced_body, points, mean)
+        TasteSpread.FOCUSED -> pluralStringResourceOrDefault(R.plurals.stats_spread_focused_body, points, points, mean)
+        TasteSpread.BALANCED -> pluralStringResourceOrDefault(R.plurals.stats_spread_balanced_body, points, points, mean)
         TasteSpread.ECLECTIC -> {
             val low = scores.firstOrNull { it.count > 0 }
             val high = scores.lastOrNull { it.count > 0 }
             if (low == null || high == null || low.score == high.score) {
-                stringResource(R.string.stats_spread_balanced_body, points, mean)
+                pluralStringResourceOrDefault(R.plurals.stats_spread_balanced_body, points, points, mean)
             } else {
                 val spellOut = remember(locale) { MessageFormat("{0,spellout}", locale) }
                 fun spelled(count: Int): String = spellOut.format(arrayOf(count))

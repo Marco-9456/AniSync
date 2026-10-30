@@ -131,8 +131,8 @@ fun ActivityHistorySection(
 fun ActivityHistoryCard(
     days: List<ActivityHistoryDay>,
     userId: Int,
-    onMediaClick: (Int) -> Unit = {},
-    onActivityClick: (Int) -> Unit = {},
+    onMediaClick: (Int) -> Unit,
+    onActivityClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (days.isEmpty()) return
