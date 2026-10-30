@@ -182,7 +182,7 @@ data class PeopleTeaser(
 
 /** "At a glance": one teaser per view, each opening its view. */
 @Composable
-fun AtAGlance(model: AtAGlanceModel, onOpen: (StatsView) -> Unit, modifier: Modifier = Modifier) {
+fun AtAGlance(model: AtAGlanceModel, isOwnProfile: Boolean, onOpen: (StatsView) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         model.activity?.let { ActivityTeaserCard(it, onClick = { onOpen(StatsView.ACTIVITY) }) }
         // A narrow pane or a larger display size can push a teaser past 212dp, so each pair grows
@@ -191,15 +191,15 @@ fun AtAGlance(model: AtAGlanceModel, onOpen: (StatsView) -> Unit, modifier: Modi
             val cell = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-            Box(cell) { model.taste?.let { TasteTeaserCard(it, onClick = { onOpen(StatsView.TASTE) }) } }
-            Box(cell) { model.format?.let { FormatTeaserCard(it, onClick = { onOpen(StatsView.HOW_YOU_WATCH) }) } }
+            Box(cell) { model.taste?.let { TasteTeaserCard(it, isOwnProfile, onClick = { onOpen(StatsView.TASTE) }) } }
+            Box(cell) { model.format?.let { FormatTeaserCard(it, isOwnProfile, onClick = { onOpen(StatsView.HOW_YOU_WATCH) }) } }
         }
         Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val cell = Modifier
                 .weight(1f)
                 .fillMaxHeight()
             Box(cell) { model.eras?.let { ErasTeaserCard(it, onClick = { onOpen(StatsView.ERAS) }) } }
-            Box(cell) { PeopleTeaserCard(model.people, onClick = { onOpen(StatsView.PEOPLE) }) }
+            Box(cell) { PeopleTeaserCard(model.people, isOwnProfile, onClick = { onOpen(StatsView.PEOPLE) }) }
         }
     }
 }
@@ -323,7 +323,7 @@ private fun MiniHeatmap(history: List<ActivityHistoryDay>) {
 private const val MINI_WEEKS = 10
 
 @Composable
-private fun TasteTeaserCard(teaser: TasteTeaser, onClick: () -> Unit) {
+private fun TasteTeaserCard(teaser: TasteTeaser, isOwnProfile: Boolean, onClick: () -> Unit) {
     val colors = genreColor(teaser.genre)
     val container = colors?.container ?: MaterialTheme.colorScheme.secondaryContainer
     val content = colors?.content ?: MaterialTheme.colorScheme.onSecondaryContainer
@@ -338,7 +338,11 @@ private fun TasteTeaserCard(teaser: TasteTeaser, onClick: () -> Unit) {
             modifier = Modifier.lineBox(genreStyle)
         )
         Text(
-            text = pluralStringResourceOrDefault(R.plurals.stats_teaser_top_genre, teaser.genreTitles, teaser.genreTitles),
+            text = pluralStringResourceOrDefault(
+                if (isOwnProfile) R.plurals.stats_teaser_top_genre else R.plurals.stats_teaser_top_genre_other,
+                teaser.genreTitles,
+                teaser.genreTitles
+            ),
             style = statsBodySmall(),
             color = content.copy(alpha = 0.85f)
         )
@@ -362,7 +366,7 @@ private fun TasteTeaserCard(teaser: TasteTeaser, onClick: () -> Unit) {
                 )
             }
             Text(
-                text = stringResource(R.string.stats_teaser_score_prompt),
+                text = stringResource(if (isOwnProfile) R.string.stats_teaser_score_prompt else R.string.stats_teaser_score_prompt_other),
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
                 color = content.copy(alpha = 0.85f)
             )
@@ -401,7 +405,7 @@ private fun ScoreMiniBars(scores: List<ScoreUiModel>, summary: ScoreSummary, col
 private val MiniBarsWidth = 169.5.dp
 
 @Composable
-private fun FormatTeaserCard(teaser: FormatTeaser, onClick: () -> Unit) {
+private fun FormatTeaserCard(teaser: FormatTeaser, isOwnProfile: Boolean, onClick: () -> Unit) {
     val total = teaser.shares.sumOf { it.second }.coerceAtLeast(1)
     val first = teaser.shares.firstOrNull()
     val title = if (teaser.isManga) R.string.stats_view_how_you_read else R.string.stats_view_how_you_watch
@@ -434,7 +438,10 @@ private fun FormatTeaserCard(teaser: FormatTeaser, onClick: () -> Unit) {
             Spacer(Modifier.height(2.dp))
         }
         val line = when {
-            teaser.completedShare != null -> stringResource(R.string.stats_teaser_finish_rate, "${teaser.completedShare}%")
+            teaser.completedShare != null -> stringResource(
+                if (isOwnProfile) R.string.stats_teaser_finish_rate else R.string.stats_teaser_finish_rate_other,
+                "${teaser.completedShare}%"
+            )
             teaser.onlyCountry != null -> stringResource(R.string.stats_teaser_one_country, countryName(teaser.onlyCountry))
             else -> null
         }
@@ -596,11 +603,11 @@ private fun YearMiniBars(eras: Eras) {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun PeopleTeaserCard(teaser: PeopleTeaser, onClick: () -> Unit) {
+private fun PeopleTeaserCard(teaser: PeopleTeaser, isOwnProfile: Boolean, onClick: () -> Unit) {
     Teaser(title = stringResource(R.string.stats_view_people), onClick = onClick, spacing = 8.dp) {
         if (teaser.personName == null && teaser.studioName == null) {
             Text(
-                text = stringResource(R.string.stats_teaser_people_locked),
+                text = stringResource(if (isOwnProfile) R.string.stats_teaser_people_locked else R.string.stats_teaser_people_locked_other),
                 style = statsBodySmall(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -270,6 +270,7 @@ fun TasteSpreadCard(
     standardDeviation: Double,
     scores: List<ScoreUiModel>,
     meanScore: Double,
+    isOwnProfile: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val spread = tasteSpread(standardDeviation) ?: return
@@ -295,7 +296,7 @@ fun TasteSpreadCard(
                 modifier = Modifier.lineBox(wordStyle)
             )
             Text(
-                text = spreadSentence(spread, standardDeviation, scores, meanScore, locale),
+                text = spreadSentence(spread, standardDeviation, scores, meanScore, isOwnProfile, locale),
                 style = MaterialTheme.typography.bodyMedium,
                 color = scheme.onSurfaceVariant
             )
@@ -329,18 +330,25 @@ private fun spreadSentence(
     standardDeviation: Double,
     scores: List<ScoreUiModel>,
     meanScore: Double,
+    isOwnProfile: Boolean,
     locale: Locale,
 ): String {
     val points = standardDeviation.roundToInt()
     val mean = formatOneDecimal(meanScore, locale)
+    val balanced = if (isOwnProfile) R.plurals.stats_spread_balanced_body else R.plurals.stats_spread_balanced_body_other
     return when (spread) {
-        TasteSpread.FOCUSED -> pluralStringResourceOrDefault(R.plurals.stats_spread_focused_body, points, points, mean)
-        TasteSpread.BALANCED -> pluralStringResourceOrDefault(R.plurals.stats_spread_balanced_body, points, points, mean)
+        TasteSpread.FOCUSED -> pluralStringResourceOrDefault(
+            if (isOwnProfile) R.plurals.stats_spread_focused_body else R.plurals.stats_spread_focused_body_other,
+            points,
+            points,
+            mean
+        )
+        TasteSpread.BALANCED -> pluralStringResourceOrDefault(balanced, points, points, mean)
         TasteSpread.ECLECTIC -> {
             val low = scores.firstOrNull { it.count > 0 }
             val high = scores.lastOrNull { it.count > 0 }
             if (low == null || high == null || low.score == high.score) {
-                pluralStringResourceOrDefault(R.plurals.stats_spread_balanced_body, points, points, mean)
+                pluralStringResourceOrDefault(balanced, points, points, mean)
             } else {
                 val spellOut = remember(locale) { MessageFormat("{0,spellout}", locale) }
                 fun spelled(count: Int): String = spellOut.format(arrayOf(count))
@@ -350,7 +358,11 @@ private fun spreadSentence(
                 } else {
                     pluralStringResourceOrDefault(R.plurals.stats_spread_count, high.count, spelled(high.count), high.label)
                 }
-                stringResource(R.string.stats_spread_eclectic_body, lowPart, highPart)
+                stringResource(
+                    if (isOwnProfile) R.string.stats_spread_eclectic_body else R.string.stats_spread_eclectic_body_other,
+                    lowPart,
+                    highPart
+                )
             }
         }
     }

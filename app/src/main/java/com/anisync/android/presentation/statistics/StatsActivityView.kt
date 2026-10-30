@@ -91,6 +91,7 @@ fun ActivityInsightTiles(
     insights: ActivityInsights,
     history: List<ActivityHistoryDay>,
     userId: Int,
+    isOwnProfile: Boolean,
     onMediaClick: (Int) -> Unit,
     onActivityClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -127,7 +128,7 @@ fun ActivityInsightTiles(
             valueSize = WeekdaySize,
             label = stringResource(R.string.stats_busiest_weekday),
             detail = pluralStringResourceOrDefault(
-                R.plurals.stats_weekday_share,
+                if (isOwnProfile) R.plurals.stats_weekday_share else R.plurals.stats_weekday_share_other,
                 insights.total,
                 formatExactCount(insights.busiestWeekdayTotal, locale),
                 total

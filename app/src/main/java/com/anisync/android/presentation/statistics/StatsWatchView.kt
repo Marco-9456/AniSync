@@ -154,7 +154,7 @@ private fun tileLabelStyle() = MaterialTheme.typography.labelLarge.copy(
 
 /** Formats side by side by share, then one row each with its titles, share, time and mean. */
 @Composable
-fun FormatsCard(formats: List<FormatStat>, isManga: Boolean, modifier: Modifier = Modifier) {
+fun FormatsCard(formats: List<FormatStat>, isManga: Boolean, isOwnProfile: Boolean, modifier: Modifier = Modifier) {
     if (formats.isEmpty()) return
     val locale = LocalConfiguration.current.locales[0]
     val scheme = MaterialTheme.colorScheme
@@ -224,7 +224,7 @@ fun FormatsCard(formats: List<FormatStat>, isManga: Boolean, modifier: Modifier 
         }
         if (best != null && sorted.size > 1) {
             Text(
-                text = stringResource(bestFormatRes(best.format)),
+                text = stringResource(if (isOwnProfile) bestFormatRes(best.format) else theirBestFormatRes(best.format)),
                 style = statsBodySmall(),
                 color = scheme.onSurfaceVariant
             )
@@ -290,6 +290,20 @@ private fun bestFormatRes(format: String): Int = when (format) {
     "NOVEL" -> R.string.stats_best_format_novel
     "ONE_SHOT" -> R.string.stats_best_format_one_shot
     else -> R.string.stats_best_format_other
+}
+
+private fun theirBestFormatRes(format: String): Int = when (format) {
+    "TV" -> R.string.stats_best_format_tv_theirs
+    "TV_SHORT" -> R.string.stats_best_format_tv_short_theirs
+    "MOVIE" -> R.string.stats_best_format_movie_theirs
+    "SPECIAL" -> R.string.stats_best_format_special_theirs
+    "OVA" -> R.string.stats_best_format_ova_theirs
+    "ONA" -> R.string.stats_best_format_ona_theirs
+    "MUSIC" -> R.string.stats_best_format_music_theirs
+    "MANGA" -> R.string.stats_best_format_manga_theirs
+    "NOVEL" -> R.string.stats_best_format_novel_theirs
+    "ONE_SHOT" -> R.string.stats_best_format_one_shot_theirs
+    else -> R.string.stats_best_format_other_theirs
 }
 
 /** Titles by how long they run, shortest first, with the titles AniList has no count for noted. */

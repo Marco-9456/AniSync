@@ -65,6 +65,10 @@
         <item quantity="one">your top genre, %d title</item>
         <item quantity="other">your top genre, %d titles</item>
     </plurals>
+    <plurals name="stats_teaser_top_genre_other">
+        <item quantity="one">their top genre, %d title</item>
+        <item quantity="other">their top genre, %d titles</item>
+    </plurals>
     <plurals name="stats_teaser_century">
         <item quantity="one">a century of anime, %1$s decade</item>
         <item quantity="other">a century of anime, %1$s decades</item>
@@ -80,6 +84,10 @@
     <plurals name="stats_weekday_share">
         <item quantity="one">%1$s of your %2$s activity.</item>
         <item quantity="other">%1$s of your %2$s activities.</item>
+    </plurals>
+    <plurals name="stats_weekday_share_other">
+        <item quantity="one">%1$s of their %2$s activity.</item>
+        <item quantity="other">%1$s of their %2$s activities.</item>
     </plurals>
     <plurals name="stats_busiest_day_detail">
         <item quantity="one">%d activity. Tap to see what it was.</item>
@@ -173,9 +181,17 @@
         <item quantity="one">Your scores stay close together, most within %1$d point of %2$s.</item>
         <item quantity="other">Your scores stay close together, most within %1$d points of %2$s.</item>
     </plurals>
+    <plurals name="stats_spread_focused_body_other">
+        <item quantity="one">Their scores stay close together, most within %1$d point of %2$s.</item>
+        <item quantity="other">Their scores stay close together, most within %1$d points of %2$s.</item>
+    </plurals>
     <plurals name="stats_spread_balanced_body">
         <item quantity="one">Most of your scores land within %1$d point of your mean of %2$s.</item>
         <item quantity="other">Most of your scores land within %1$d points of your mean of %2$s.</item>
+    </plurals>
+    <plurals name="stats_spread_balanced_body_other">
+        <item quantity="one">Most of their scores land within %1$d point of their mean of %2$s.</item>
+        <item quantity="other">Most of their scores land within %1$d points of their mean of %2$s.</item>
     </plurals>
     <plurals name="a11y_timeline_bar">
         <item quantity="one">%1$d, %2$d title</item>

@@ -168,29 +168,28 @@ fun LazyListScope.profileStatsTab(
 
     val view = uiState.selectedStatsView
     val isManga = uiState.selectedStatsType == ProfileStatsType.MANGA
+    val isOwnProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
     if (view == StatsView.OVERVIEW && (!isManga || statsData.mangaStats != null)) {
         statsOverview(uiState, statsData, isManga, statsColumns, onOpenView)
         return
     }
     if (view == StatsView.ACTIVITY) {
-        statsActivity(statsData, uiState.profile?.id ?: 0, statsColumns, onMediaClick, onActivityClick)
+        statsActivity(statsData, uiState.profile?.id ?: 0, isOwnProfile, statsColumns, onMediaClick, onActivityClick)
         return
     }
     val taste = if (isManga) statsData.mangaStats?.let(::tasteModel) else tasteModel(statsData.animeStats)
     if (view == StatsView.TASTE && taste != null) {
-        statsTaste(taste, uiState.genreSort, onGenreSortSelected, statsColumns)
+        statsTaste(taste, uiState.genreSort, onGenreSortSelected, isOwnProfile, statsColumns)
         return
     }
     if (view == StatsView.ERAS) {
         val eras = if (isManga) statsData.mangaStats?.eras else statsData.animeStats.eras
         if (eras != null) {
-            val isOwnProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
             statsEras(eras, isManga, isOwnProfile, statsColumns)
             return
         }
     }
     if (view == StatsView.HOW_YOU_WATCH) {
-        val isOwnProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
         val joinedAt = uiState.profile?.createdAt
         val manga = statsData.mangaStats
         if (!isManga) {
@@ -224,7 +223,6 @@ fun LazyListScope.profileStatsTab(
     }
 
     if (view == StatsView.PEOPLE) {
-        val isOwnProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
         val favourites = uiState.profile?.favoriteStaffOverview.orEmpty().map { it.id }.toSet()
         val manga = statsData.mangaStats
         val lists = if (!isManga) {
@@ -358,7 +356,7 @@ private fun LazyListScope.statsOverview(
             StatsSectionHeader(title = stringResource(R.string.stats_at_a_glance))
         }
         item(key = "overview_glance") {
-            AtAGlance(glance, onOpen = onOpenView, modifier = Modifier.padding(horizontal = 16.dp))
+            AtAGlance(glance, isOwnProfile, onOpen = onOpenView, modifier = Modifier.padding(horizontal = 16.dp))
         }
     } else {
         item(key = "overview_wide") {
@@ -367,7 +365,7 @@ private fun LazyListScope.statsOverview(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Box(Modifier.weight(1f)) { heroAndTiles() }
-                AtAGlance(glance, onOpen = onOpenView, modifier = Modifier.weight(1f))
+                AtAGlance(glance, isOwnProfile, onOpen = onOpenView, modifier = Modifier.weight(1f))
             }
         }
     }
@@ -377,6 +375,7 @@ private fun LazyListScope.statsOverview(
 private fun LazyListScope.statsActivity(
     statsData: StatisticsUiModel,
     userId: Int,
+    isOwnProfile: Boolean,
     columns: Int,
     onMediaClick: (Int) -> Unit,
     onActivityClick: (Int) -> Unit,
@@ -402,6 +401,7 @@ private fun LazyListScope.statsActivity(
                 insights = insights,
                 history = history,
                 userId = userId,
+                isOwnProfile = isOwnProfile,
                 onMediaClick = onMediaClick,
                 onActivityClick = onActivityClick,
                 modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp)
@@ -420,7 +420,7 @@ private fun LazyListScope.statsActivity(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 ActivityHistoryCard(history, userId, onMediaClick, onActivityClick)
-                ActivityInsightTiles(insights, history, userId, onMediaClick, onActivityClick, columns = 4)
+                ActivityInsightTiles(insights, history, userId, isOwnProfile, onMediaClick, onActivityClick, columns = 4)
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Column(Modifier.weight(1f)) {
                         StatsSectionHeader(stringResource(R.string.stats_by_weekday), inset = 8.dp, top = 12.dp)
@@ -475,6 +475,7 @@ private fun LazyListScope.statsTaste(
     taste: TasteModel,
     genreSort: GenreSort,
     onGenreSortSelected: (GenreSort) -> Unit,
+    isOwnProfile: Boolean,
     columns: Int,
 ) {
     val scores: @Composable (Modifier) -> Unit = { modifier ->
@@ -482,7 +483,7 @@ private fun LazyListScope.statsTaste(
             TasteScoresCard(taste.scores, taste.summary, taste.meanScore, taste.totalCount, modifier)
         } else {
             Text(
-                text = stringResource(R.string.stats_teaser_score_prompt),
+                text = stringResource(if (isOwnProfile) R.string.stats_teaser_score_prompt else R.string.stats_teaser_score_prompt_other),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = modifier.padding(horizontal = 8.dp)
@@ -491,7 +492,7 @@ private fun LazyListScope.statsTaste(
     }
     val spread: @Composable (Modifier) -> Unit = { modifier ->
         if (taste.summary.hasSpread && taste.standardDeviation > 0.0) {
-            TasteSpreadCard(taste.standardDeviation, taste.scores, taste.meanScore, modifier)
+            TasteSpreadCard(taste.standardDeviation, taste.scores, taste.meanScore, isOwnProfile, modifier)
         }
     }
     val genres: @Composable (Modifier) -> Unit = { modifier ->
@@ -652,7 +653,7 @@ private fun LazyListScope.statsPeople(
     if (spotlightPerson == null && visible.isEmpty()) {
         item(key = "people_empty") {
             Text(
-                text = stringResource(R.string.stats_teaser_people_locked),
+                text = stringResource(if (isOwnProfile) R.string.stats_teaser_people_locked else R.string.stats_teaser_people_locked_other),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 24.dp)
@@ -802,7 +803,7 @@ private fun LazyListScope.statsHowYouWatch(
         }
         if (formats.isNotEmpty()) {
             item(key = "watch_formats_header") { StatsSectionHeader(stringResource(R.string.stats_header_formats)) }
-            item(key = "watch_formats") { FormatsCard(formats, isManga, Modifier.padding(horizontal = 16.dp)) }
+            item(key = "watch_formats") { FormatsCard(formats, isManga, isOwnProfile, Modifier.padding(horizontal = 16.dp)) }
         }
         if (lengths.any { it.label.isNotEmpty() }) {
             item(key = "watch_lengths_header") { StatsSectionHeader(stringResource(lengthsTitle)) }
@@ -832,7 +833,7 @@ private fun LazyListScope.statsHowYouWatch(
                 Column(Modifier.weight(1f)) {
                     if (formats.isNotEmpty()) {
                         StatsSectionHeader(stringResource(R.string.stats_header_formats), inset = 8.dp, top = 0.dp)
-                        FormatsCard(formats, isManga)
+                        FormatsCard(formats, isManga, isOwnProfile)
                     }
                     if (lengths.any { it.label.isNotEmpty() }) {
                         StatsSectionHeader(stringResource(lengthsTitle), inset = 8.dp)

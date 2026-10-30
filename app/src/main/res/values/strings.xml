@@ -1434,10 +1434,13 @@
     <string name="stats_teaser_mean_mode">mean %1$s · most given %2$s</string>
     <string name="stats_teaser_then">then %1$s</string>
     <string name="stats_teaser_score_prompt">Score five titles to see your spread</string>
+    <string name="stats_teaser_score_prompt_other">Their spread shows once they score five titles</string>
     <string name="stats_teaser_format_share">first, %1$s</string>
     <string name="stats_teaser_finish_rate">You finish %1$s of what you start.</string>
+    <string name="stats_teaser_finish_rate_other">They finish %1$s of what they start.</string>
     <string name="stats_teaser_one_country">Every title so far comes from %1$s.</string>
     <string name="stats_teaser_people_locked">Voice actors, staff and studios show up once someone appears in two of your titles.</string>
+    <string name="stats_teaser_people_locked_other">Voice actors, staff and studios show up once someone appears in two of their titles.</string>
     <string name="stats_year_range">%1$d to %2$d</string>
     <string name="stats_short_year">\'%1$02d</string>
     <string name="stats_list_and">%1$s and %2$s</string>
@@ -1472,6 +1475,7 @@
     <string name="stats_score_most_given">most given</string>
     <string name="stats_sigma" translatable="false">σ</string>
     <string name="stats_spread_eclectic_body">Your scores spread wide, from %1$s to %2$s.</string>
+    <string name="stats_spread_eclectic_body_other">Their scores spread wide, from %1$s to %2$s.</string>
     <string name="stats_header_genres">Genres</string>
     <string name="stats_header_tags">Tags</string>
     <string name="stats_genre_sort_titles">Titles</string>
@@ -1516,6 +1520,17 @@
     <string name="stats_best_format_novel">Light novels get your best scores.</string>
     <string name="stats_best_format_one_shot">One shots get your best scores.</string>
     <string name="stats_best_format_other">This format gets your best scores.</string>
+    <string name="stats_best_format_tv_theirs">TV series get their best scores.</string>
+    <string name="stats_best_format_tv_short_theirs">TV shorts get their best scores.</string>
+    <string name="stats_best_format_movie_theirs">Movies get their best scores.</string>
+    <string name="stats_best_format_special_theirs">Specials get their best scores.</string>
+    <string name="stats_best_format_ova_theirs">OVAs get their best scores.</string>
+    <string name="stats_best_format_ona_theirs">ONAs get their best scores.</string>
+    <string name="stats_best_format_music_theirs">Music videos get their best scores.</string>
+    <string name="stats_best_format_manga_theirs">Manga gets their best scores.</string>
+    <string name="stats_best_format_novel_theirs">Light novels get their best scores.</string>
+    <string name="stats_best_format_one_shot_theirs">One shots get their best scores.</string>
+    <string name="stats_best_format_other_theirs">This format gets their best scores.</string>
     <string name="stats_not_scored">not scored</string>
     <string name="stats_length_range">%1$s to %2$s</string>
     <string name="stats_length_or_more">%1$s or more</string>
