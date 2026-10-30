@@ -31,12 +31,6 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.util.formatDecimal
 
-data class EditorialStat(
-    val value: String,
-    val label: String,
-    val icon: ImageVector? = null
-)
-
 enum class RatingBadgeSize { Default, Small }
 
 @Composable

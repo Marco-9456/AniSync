@@ -1004,18 +1004,12 @@
     <string name="a11y_wp_card_unknown_manga">%1$s, %2$d chapters read, total unknown</string>
     <!-- Statistics Screen -->
     <string name="statistics_title">Statistics</string>
-    <string name="statistics_total_anime">Total Anime</string>
     <string name="statistics_episodes">Episodes</string>
     <string name="statistics_mean_score">Mean Score</string>
-    <string name="statistics_score_distribution">Score Distribution</string>
     <string name="statistics_top_genres">Top Genres</string>
-    <string name="statistics_formats">Formats</string>
-    <string name="statistics_top_studios">Top Studios</string>
     <string name="profile_favorites_studios">Studios</string>
-    <string name="statistics_by_year">By Release Year</string>
     <string name="statistics_anime">Anime</string>
     <string name="statistics_manga">Manga</string>
-    <string name="statistics_total_manga">Total Manga</string>
     <string name="statistics_chapters">Chapters</string>
     <string name="statistics_no_manga_stats">No manga statistics available</string>
     <!-- Activity heatmap -->
@@ -1414,21 +1408,7 @@
     <string name="locked">Locked</string>
     <string name="cd_go_back_one_level">Go back one level</string>
     <string name="cd_thread_depth">Thread depth: %d levels deep. Tap to go back.</string>
-    <string name="statistics_std_dev">Standard Deviation</string>
-    <string name="statistics_days_of_your_life">≈ %1$s days of your life</string>
-    <string name="statistics_top_tags">Top Tags</string>
-    <string name="statistics_top_voice_actors">Top Voice Actors</string>
-    <string name="statistics_top_staff">Top Staff</string>
-    <string name="statistics_length_distribution">Episode Length</string>
-    <string name="statistics_chapter_length_distribution">Chapter Count</string>
-    <string name="statistics_start_year">Started Watching</string>
     <string name="statistics_status_breakdown">Status Breakdown</string>
-    <string name="statistics_country_distribution">Countries</string>
-    <string name="statistics_peak_year">Your Peak Year</string>
-    <string name="statistics_time_breakdown">Time Spent</string>
-    <string name="statistics_taste_focused">Your taste is laser-focused</string>
-    <string name="statistics_taste_balanced">Balanced taste</string>
-    <string name="statistics_taste_eclectic">Wide, eclectic taste</string>
     <!-- Statistics views -->
     <string name="stats_view_recaps">Recaps</string>
     <string name="stats_view_taste">Taste</string>
