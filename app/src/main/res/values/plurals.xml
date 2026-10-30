@@ -197,4 +197,77 @@
         <item quantity="one">%1$d, %2$d title</item>
         <item quantity="other">%1$d, %2$d titles</item>
     </plurals>
+    <!-- Share cards -->
+    <plurals name="share_progress_episodes_of">
+        <item quantity="one">%1$s of %2$s episode</item>
+        <item quantity="other">%1$s of %2$s episodes</item>
+    </plurals>
+    <plurals name="share_progress_chapters_of">
+        <item quantity="one">%1$s of %2$s chapter</item>
+        <item quantity="other">%1$s of %2$s chapters</item>
+    </plurals>
+    <plurals name="share_media_episode_count">
+        <item quantity="one">%1$s episode</item>
+        <item quantity="other">%1$s episodes</item>
+    </plurals>
+    <plurals name="share_media_chapter_count">
+        <item quantity="one">%1$s chapter</item>
+        <item quantity="other">%1$s chapters</item>
+    </plurals>
+    <plurals name="share_duration_days">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <plurals name="share_duration_hours">
+        <item quantity="one">%1$s hour</item>
+        <item quantity="other">%1$s hours</item>
+    </plurals>
+    <plurals name="share_stats_sentence_manga">
+        <item quantity="one">manga, %1$s chapter read</item>
+        <item quantity="other">manga, %1$s chapters read</item>
+    </plurals>
+    <plurals name="share_stats_title_count">
+        <item quantity="one">%1$s title</item>
+        <item quantity="other">%1$s titles</item>
+    </plurals>
+    <plurals name="share_favourites_count">
+        <item quantity="one">%1$s favourite</item>
+        <item quantity="other">%1$s favourites</item>
+    </plurals>
+    <plurals name="share_known_for_more">
+        <item quantity="one">and in %1$s more title</item>
+        <item quantity="other">and in %1$s more titles</item>
+    </plurals>
+    <plurals name="share_review_helpful">
+        <item quantity="one">%1$s · %2$s found it helpful</item>
+        <item quantity="other">%1$s · %2$s found it helpful</item>
+    </plurals>
+    <plurals name="share_recap_episodes_word">
+        <item quantity="one">episode</item>
+        <item quantity="other">episodes</item>
+    </plurals>
+    <plurals name="share_recap_titles_word">
+        <item quantity="one">title</item>
+        <item quantity="other">titles</item>
+    </plurals>
+    <plurals name="share_recap_finished_word">
+        <item quantity="one">finished</item>
+        <item quantity="other">finished</item>
+    </plurals>
+    <plurals name="share_recap_episode_count">
+        <item quantity="one">%1$s episode</item>
+        <item quantity="other">%1$s episodes</item>
+    </plurals>
+    <plurals name="share_recap_hour_count">
+        <item quantity="one">%1$s hour</item>
+        <item quantity="other">%1$s hours</item>
+    </plurals>
+    <plurals name="share_recap_busiest_month">
+        <item quantity="one">%1$s was your busiest month: %2$s episode.</item>
+        <item quantity="other">%1$s was your busiest month: %2$s episodes.</item>
+    </plurals>
+    <plurals name="share_recap_manga_chapters">
+        <item quantity="one">manga chapter</item>
+        <item quantity="other">manga chapters</item>
+    </plurals>
 </resources>
