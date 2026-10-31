@@ -16,6 +16,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonColors
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -58,6 +60,7 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
  *   logical strip is rendered twice (e.g. an in-list copy plus a pinned copy) so both stay at the
  *   same offset; ignored when [fillEqually] is true.
  * @param badge Optional mark after an option's label, such as the What's New dot.
+ * @param colors The buttons' colors, for a group that has to read as a secondary choice.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -71,7 +74,8 @@ fun <T> SegmentedTabGroup(
     fillEqually: Boolean = false,
     labelStyle: TextStyle = MaterialTheme.typography.labelLarge,
     scrollState: ScrollState = rememberScrollState(),
-    badge: (T) -> (@Composable () -> Unit)? = { null }
+    badge: (T) -> (@Composable () -> Unit)? = { null },
+    colors: ToggleButtonColors = ToggleButtonDefaults.colors(),
 ) {
     val haptic = rememberHapticFeedback()
 
@@ -101,7 +105,8 @@ fun <T> SegmentedTabGroup(
                     onSelect(option)
                 },
                 modifier = if (fillEqually) Modifier.weight(1f) else Modifier,
-                shapes = shapes
+                shapes = shapes,
+                colors = colors,
             ) {
                 icon(option)?.let { vector ->
                     Icon(imageVector = vector, contentDescription = null)
