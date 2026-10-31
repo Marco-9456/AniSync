@@ -1710,6 +1710,7 @@
     <string name="share_template_quote">Quote</string>
     <string name="share_template_summary">Summary</string>
     <string name="share_media_score">score</string>
+    <string name="share_score_percent">%1$d%%</string>
     <string name="share_media_community_score">Community score</string>
     <string name="share_progress_episode_of">Episode %1$s of %2$s</string>
     <string name="share_progress_episode">Episode %1$s</string>
@@ -1765,7 +1766,6 @@
     <string name="share_panel_background">Background</string>
     <string name="share_panel_details">Details</string>
     <string name="share_section_size">Size</string>
-    <string name="share_section_template">Template</string>
     <string name="share_section_palette_cover">Palette from the cover</string>
     <string name="share_section_palette_picture">Palette from the picture</string>
     <string name="share_section_tone">Tone</string>
@@ -1780,7 +1780,7 @@
     <string name="share_background_gradient">Gradient</string>
     <string name="share_background_solid">Solid</string>
     <string name="share_background_clear">Clear</string>
-    <string name="share_background_clear_note">Clear keeps the corners transparent, so it is offered on the Card size only.</string>
+    <string name="share_background_clear_note">Clear keeps the corners transparent, so it switches to the Card size.</string>
     <string name="share_dim">Dim</string>
     <string name="share_dim_value">%1$d%%</string>
     <string name="share_swatch_app">App</string>

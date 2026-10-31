@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -59,7 +60,6 @@ import com.anisync.android.presentation.share.cards.CardBackground
 import com.anisync.android.presentation.share.cards.CardSpec
 import com.anisync.android.presentation.share.cards.CardTone
 import com.anisync.android.presentation.share.cards.ShareSubject
-import java.util.Locale
 import kotlin.math.roundToInt
 
 /** What the Color panel needs to draw each swatch the way the card will wear it. */
@@ -85,7 +85,7 @@ fun StudioPanelContent(
 @Composable
 private fun SectionLabel(text: String) {
     Text(
-        text = text.uppercase(LocalConfiguration.current.locales[0] ?: Locale.getDefault()),
+        text = text.uppercase(LocalConfiguration.current.locales[0]),
         style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.4.sp),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -98,22 +98,6 @@ private fun LayoutPanel(state: ShareStudioUiState, onAction: (ShareStudioAction)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             CardSize.entries.forEach { size ->
                 SizeTile(size, selected = state.spec.size == size, onClick = { onAction(ShareStudioAction.SelectSize(size)) }, modifier = Modifier.weight(1f))
-            }
-        }
-        Spacer(Modifier.height(2.dp))
-        SectionLabel(stringResource(R.string.share_section_template))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            state.templates.forEachIndexed { index, template ->
-                FilterChip(
-                    selected = index == state.templateIndex,
-                    onClick = { onAction(ShareStudioAction.SelectTemplate(index)) },
-                    label = { Text(stringResource(template.label)) },
-                    leadingIcon = if (index == state.templateIndex) {
-                        { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                    } else {
-                        null
-                    },
-                )
             }
         }
     }
@@ -155,8 +139,8 @@ private fun SizeTile(size: CardSize, selected: Boolean, onClick: () -> Unit, mod
                         .border(2.dp, if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant, RoundedCornerShape(5.dp))
                 )
             }
-            Text(stringResource(label), style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1)
-            Text(stringResource(sub), style = MaterialTheme.typography.labelSmall, color = hint.copy(alpha = 0.8f), maxLines = 1)
+            Text(stringResource(label), style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1, autoSize = TileLabelSize)
+            Text(stringResource(sub), style = MaterialTheme.typography.labelSmall, color = hint.copy(alpha = 0.8f), maxLines = 1, autoSize = TileHintSize)
         }
     }
 }
@@ -272,16 +256,13 @@ private fun BackgroundPanel(
         SectionLabel(stringResource(R.string.share_panel_background))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             CardBackground.entries.forEach { background ->
-                val enabled = background != CardBackground.CLEAR || state.clearAllowed
                 val selected = state.spec.background == background
                 Surface(
                     onClick = { onAction(ShareStudioAction.SelectBackground(background)) },
-                    enabled = enabled,
                     shape = RoundedCornerShape(20.dp),
                     color = if (selected) scheme.primaryContainer else scheme.surfaceContainer,
                     modifier = Modifier
                         .weight(1f)
-                        .alpha(if (enabled) 1f else DisabledAlpha)
                         .semantics { this.selected = selected },
                 ) {
                     Column(
@@ -302,6 +283,7 @@ private fun BackgroundPanel(
                             style = MaterialTheme.typography.labelLarge,
                             color = if (selected) scheme.onPrimaryContainer else scheme.onSurface,
                             maxLines = 1,
+                            autoSize = TileLabelSize,
                         )
                     }
                 }
@@ -347,7 +329,7 @@ private fun BackgroundSwatch(background: CardBackground, looks: List<SwatchLook>
             Box(modifier.clip(shape).background(Brush.horizontalGradient(listOf(first, second))))
         }
         CardBackground.GRADIENT -> Box(modifier.clip(shape).background(Brush.verticalGradient(listOf(card.primaryContainer, card.surface))))
-        CardBackground.SOLID -> Box(modifier.clip(shape).background(card.surfaceContainerHigh))
+        CardBackground.SOLID -> Box(modifier.clip(shape).background(card.surface).border(1.dp, card.outlineVariant, shape))
         CardBackground.CLEAR -> {
             val stroke = MaterialTheme.colorScheme.onSurfaceVariant
             Box(
@@ -412,6 +394,10 @@ private fun DetailsPanel(state: ShareStudioUiState, onAction: (ShareStudioAction
 }
 
 private const val FullSwatchRow = 6
+
+/** Labels shrink rather than cut off where a quarter of a narrow phone is too small for them. */
+private val TileLabelSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 14.sp)
+private val TileHintSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 11.sp)
 private const val DisabledAlpha = 0.38f
 
 /** The panel height on a phone, so switching panels never moves the card. */
