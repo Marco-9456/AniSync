@@ -56,9 +56,8 @@ class ShareStudioViewModel @Inject constructor(
     fun onAction(action: ShareStudioAction) {
         when (action) {
             is ShareStudioAction.SelectTemplate -> _uiState.update { state ->
-                val template = state.templates.getOrNull(action.index) ?: return@update state
-                val background = if (state.backgroundChosen) state.spec.background else template.defaultBackground
-                state.copy(templateIndex = action.index, spec = state.spec.copy(background = background.allowedAt(state.spec.size, template)))
+                if (action.index !in state.templates.indices) return@update state
+                state.copy(templateIndex = action.index)
             }
             is ShareStudioAction.SelectSize -> _uiState.update { state ->
                 state.copy(spec = state.spec.copy(size = action.size, background = state.spec.background.allowedAt(action.size, state.template)))
@@ -71,8 +70,9 @@ class ShareStudioViewModel @Inject constructor(
                 it.copy(spec = it.spec.copy(tone = action.tone), toneChosen = true)
             }
             is ShareStudioAction.SelectBackground -> _uiState.update { state ->
-                if (action.background == CardBackground.CLEAR && !state.clearAllowed) return@update state
-                state.copy(spec = state.spec.copy(background = action.background), backgroundChosen = true)
+                // Clear only exists at Card for chats, so picking it takes the card there.
+                val size = if (action.background == CardBackground.CLEAR) CardSize.CHAT else state.spec.size
+                state.copy(spec = state.spec.copy(size = size, background = action.background))
             }
             is ShareStudioAction.SetDim -> _uiState.update { it.copy(spec = it.spec.copy(dim = action.dim.coerceIn(0f, 1f))) }
             is ShareStudioAction.ToggleDetail -> _uiState.update { state ->
@@ -94,7 +94,6 @@ class ShareStudioViewModel @Inject constructor(
                     state.copy(
                         templateIndex = 0,
                         spec = defaultSpec(subject, templatesFor(subject).first()),
-                        backgroundChosen = false,
                         toneChosen = false,
                         swatchIndex = 0,
                     )

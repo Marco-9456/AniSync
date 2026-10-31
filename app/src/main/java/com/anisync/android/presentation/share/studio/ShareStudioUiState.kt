@@ -30,8 +30,6 @@ data class ShareStudioUiState(
     val failed: Boolean = false,
     val templateIndex: Int = 0,
     val spec: CardSpec = CardSpec(size = CardSize.STORY),
-    /** Until the viewer picks one, each template shows its own background. */
-    val backgroundChosen: Boolean = false,
     /** Until the viewer picks one, the card follows the app's light or dark tone. */
     val toneChosen: Boolean = false,
     val swatches: List<StudioSwatch> = emptyList(),
