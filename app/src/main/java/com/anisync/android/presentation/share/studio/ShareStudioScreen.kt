@@ -29,6 +29,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -83,6 +84,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
@@ -91,6 +93,7 @@ import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.MediaArtworkThemeOverride
 import com.anisync.android.presentation.components.ProfileColorThemeOverride
 import com.anisync.android.presentation.components.SegmentedTabGroup
+import com.anisync.android.presentation.share.cards.CardBackground
 import com.anisync.android.presentation.share.cards.CardTone
 import com.anisync.android.presentation.share.cards.Render
 import com.anisync.android.presentation.share.cards.fixedHeight
@@ -458,7 +461,13 @@ private fun StagePager(
                     ShareCaptureArea(
                         layer = if (page == pager.currentPage) layer else null,
                         modifier = Modifier
-                            .dropShadow(shape, Shadow(radius = 33.dp, color = Color.Black.copy(alpha = 0.55f), offset = DpOffset(0.dp, 14.dp)))
+                            .then(
+                                if (state.spec.background == CardBackground.CLEAR) {
+                                    Modifier
+                                } else {
+                                    Modifier.dropShadow(shape, Shadow(radius = 33.dp, color = Color.Black.copy(alpha = 0.55f), offset = DpOffset(0.dp, 14.dp)))
+                                }
+                            )
                             .clip(shape),
                     ) {
                         MaterialTheme(colorScheme = cardScheme) {
@@ -567,7 +576,7 @@ private fun RowScope.StudioAction(icon: ImageVector, label: String, busy: Boolea
         enabled = !busy,
         modifier = Modifier.weight(1f).height(56.dp),
         shape = CircleShape,
-        contentPadding = PaddingValues(horizontal = 14.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (primary) scheme.primary else scheme.surfaceContainerHigh,
             contentColor = if (primary) scheme.onPrimary else scheme.onSurface,
@@ -575,7 +584,12 @@ private fun RowScope.StudioAction(icon: ImageVector, label: String, busy: Boolea
     ) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 14.sp),
+        )
     }
 }
 
