@@ -385,10 +385,7 @@ private fun BentoTotal(subject: ShareSubject.Stats, spec: CardSpec, modifier: Mo
             modifier = Modifier.padding(start = 16.dp, top = 20.dp).lineBox(style),
         )
         Text(
-            text = pluralStringResourceOrDefault(
-                if (subject.isManga) R.plurals.stats_unit_manga else R.plurals.stats_unit_anime,
-                subject.count,
-            ).cardUpper(),
+            text = stringResource(if (subject.isManga) R.string.share_stats_unit_manga else R.string.share_stats_unit_anime).cardUpper(),
             style = cardEyebrow(),
             color = content.copy(alpha = 0.8f),
             modifier = Modifier.padding(start = 18.dp, top = 84.dp),
