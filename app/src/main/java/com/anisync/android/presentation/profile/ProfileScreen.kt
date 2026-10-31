@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.SystemClock
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +57,7 @@ fun ProfileScreen(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     isOwnProfile: Boolean = true,
+    onShareCard: (ShareStudio) -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -144,7 +146,8 @@ fun ProfileScreen(
                             onLastReplyClick(activityId, replyId, profileColor)
                         },
                         showAccountSwitcher = isOwnProfile && accounts.size > 1,
-                        onAccountSwitchClick = { showAccountSwitcherSheet = true }
+                        onAccountSwitchClick = { showAccountSwitcherSheet = true },
+                        onShareCard = onShareCard
                     )
                 }
 

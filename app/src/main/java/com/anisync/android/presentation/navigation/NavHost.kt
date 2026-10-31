@@ -28,6 +28,8 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
+import com.anisync.android.presentation.share.studio.ShareStudioScreen
+import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.presentation.activity.ActivityDetailScreen
 import com.anisync.android.presentation.activity.EditActivityScreen
 import com.anisync.android.presentation.calendar.CalendarScreen
@@ -508,6 +510,7 @@ fun AniSyncNavHost(
                     onLogoutClick = onLogout,
                     onNavigateToSettings = onNavigateToSettings,
                     onNavigateToNotifications = onNavigateToNotifications,
+                    onShareCard = { navController.navigate(it) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -561,6 +564,7 @@ fun AniSyncNavHost(
                         onLogoutClick = { }, // Not used for other users
                         onNavigateToSettings = { }, // Not used for other users
                         isOwnProfile = false,
+                        onShareCard = { navController.navigate(it) },
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = this
                     )
@@ -686,6 +690,9 @@ fun AniSyncNavHost(
                         )
                     },
                     onUserClick = navigateToUserProfile,
+                    onShareCard = { id, coverColor ->
+                        navController.navigate(ShareStudio(ShareStudioSubject.MEDIA.name, id, coverColor = coverColor))
+                    },
                     onTrailLabel = backStackEntry::recordTrailLabel,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
@@ -760,8 +767,25 @@ fun AniSyncNavHost(
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, "review"))
                     },
+                    onShareCard = { id, coverColor ->
+                        navController.navigate(ShareStudio(ShareStudioSubject.REVIEW.name, id, coverColor = coverColor))
+                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
+                )
+            }
+
+            composable<ShareStudio>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val route: ShareStudio = backStackEntry.toRoute()
+                ShareStudioScreen(
+                    coverColor = route.coverColor,
+                    profileColor = route.profileColor,
+                    onClose = { navController.popBackStack() }
                 )
             }
 
@@ -806,6 +830,7 @@ fun AniSyncNavHost(
                 CharacterDetailsScreen(
                     characterId = character.characterId,
                     onBackClick = { navController.popBackStack() },
+                    onShareCard = { id -> navController.navigate(ShareStudio(ShareStudioSubject.CHARACTER.name, id)) },
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, com.anisync.android.presentation.util.TransitionKeys.CHARACTER))
                     },
@@ -837,6 +862,7 @@ fun AniSyncNavHost(
                 StaffDetailsScreen(
                     staffId = staff.staffId,
                     onBackClick = { navController.popBackStack() },
+                    onShareCard = { id -> navController.navigate(ShareStudio(ShareStudioSubject.STAFF.name, id)) },
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, "staff"))
                     },

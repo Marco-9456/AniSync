@@ -289,6 +289,7 @@ fun ProfileWideLayout(
     showAccountSwitcher: Boolean,
     onAccountSwitchClick: () -> Unit,
     onShareStats: () -> Unit,
+    onShareFavourites: () -> Unit,
     statsColumns: Int,
     modifier: Modifier = Modifier
 ) {
@@ -362,6 +363,7 @@ fun ProfileWideLayout(
                 showAccountSwitcher = showAccountSwitcher,
                 onAccountSwitchClick = onAccountSwitchClick,
                 onShareStats = onShareStats,
+                onShareFavourites = onShareFavourites,
                 statsColumns = statsColumns,
                 collapse = collapse,
                 modifier = Modifier.weight(1f)
@@ -491,6 +493,7 @@ private fun ProfileTwoPane(
     showAccountSwitcher: Boolean,
     onAccountSwitchClick: () -> Unit,
     onShareStats: () -> Unit,
+    onShareFavourites: () -> Unit,
     statsColumns: Int,
     collapse: BioCollapseState,
     modifier: Modifier = Modifier
@@ -572,6 +575,7 @@ private fun ProfileTwoPane(
                 onActivityClick = onActivityClick,
                 onLastReplyClick = onLastReplyClick,
                 onShareStats = onShareStats,
+                onShareFavourites = onShareFavourites,
                 statsColumns = statsColumns
             )
         }
@@ -784,6 +788,7 @@ private fun ProfileTabPane(
     onActivityClick: (Int) -> Unit,
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     onShareStats: () -> Unit,
+    onShareFavourites: () -> Unit,
     statsColumns: Int,
     modifier: Modifier = Modifier
 ) {
@@ -851,7 +856,9 @@ private fun ProfileTabPane(
                         onLastReplyClick = onLastReplyClick,
                         portraitColumns = portraitColumns,
                         studioColumns = studioColumns,
-                        statsColumns = statsColumns
+                        statsColumns = statsColumns,
+                        showShareActions = true,
+                        onShareFavourites = onShareFavourites
                     )
                 }
 

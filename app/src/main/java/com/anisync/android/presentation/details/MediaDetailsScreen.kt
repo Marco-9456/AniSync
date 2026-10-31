@@ -175,11 +175,6 @@ import com.anisync.android.presentation.util.formatAsTitle
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.presentation.util.toIcon
 import com.anisync.android.presentation.util.toLabel
-import com.anisync.android.presentation.share.MediaShareCard
-import com.anisync.android.presentation.share.ShareCardTemplate
-import com.anisync.android.presentation.share.ShareImageSheet
-import com.anisync.android.presentation.share.parseCoverColor
-import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.getTitle
 
 
@@ -212,6 +207,7 @@ fun MediaDetailsScreen(
     onViewAllDiscussions: (mediaId: Int, mediaTitle: String, coverColor: String?) -> Unit,
     onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?, coverColor: String?) -> Unit,
     onUserClick: (String) -> Unit = {},
+    onShareCard: (mediaId: Int, coverColor: String?) -> Unit = { _, _ -> },
     onTrailLabel: (TrailLabel) -> Unit = {},
     navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     viewModel: MediaDetailsViewModel = hiltViewModel(),
@@ -255,7 +251,6 @@ fun MediaDetailsScreen(
 
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val containerKey = TransitionKeys.container(sourceScreen, mediaId)
-    var showShareImageSheet by rememberSaveable { mutableStateOf(false) }
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     // Hoisted to the screen (alongside listState) so the selected tab survives a character/staff
     // round-trip and anything that rebuilds the Success subtree, which would reset state kept inside
@@ -457,7 +452,7 @@ fun MediaDetailsScreen(
                                             boxSize = 40.dp
                                         )
                                         IconButton(
-                                            onClick = { showShareImageSheet = true },
+                                            onClick = { onShareCard(details.id, details.coverColor) },
                                             colors = chromeColors
                                         ) {
                                             Icon(
@@ -724,19 +719,6 @@ fun MediaDetailsScreen(
                 )
             }
 
-            if (showShareImageSheet) {
-                (uiState as? DetailsUiState.Success)?.details?.let { details ->
-                    ShareImageSheet(
-                        onDismiss = { showShareImageSheet = false },
-                        link = AniListUrls.mediaUrl(details.id, details.type),
-                        seedColor = parseCoverColor(details.coverColor),
-                        supportsPrivacy = true,
-                        templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
-                    ) {
-                        MediaShareCard(details = details, scoreFormat = userScoreFormat)
-                    }
-                }
-            }
         }
     }
 }

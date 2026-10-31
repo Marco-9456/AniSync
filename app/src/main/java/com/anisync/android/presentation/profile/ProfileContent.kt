@@ -87,11 +87,9 @@ import com.anisync.android.presentation.profile.sections.profileMediaTab
 import com.anisync.android.presentation.profile.sections.profileReviewsTab
 import com.anisync.android.presentation.profile.sections.profileSocialTab
 import com.anisync.android.presentation.profile.sections.profileStatsTab
-import com.anisync.android.presentation.share.FavouritesShareCard
-import com.anisync.android.presentation.share.ProfileStatsShareCard
-import com.anisync.android.presentation.share.ShareCardTemplate
-import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.statistics.StatsRail
+import com.anisync.android.presentation.navigation.ShareStudio
+import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.presentation.statistics.StatsShareFab
 import com.anisync.android.presentation.statistics.statsFabClearance
 import com.anisync.android.type.MediaType
@@ -131,15 +129,37 @@ fun ProfileContent(
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
     showAccountSwitcher: Boolean = false,
     onAccountSwitchClick: () -> Unit = {},
+    onShareCard: (ShareStudio) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val pullToRefreshState = rememberPullToRefreshState()
     val statsColumns = dashboardColumns()
 
-    // Share-as-image sheets for the Stats and Favourites tabs, hosted at screen scope below.
-    var statsShareVisible by remember { mutableStateOf(false) }
-    var favouritesShareVisible by remember { mutableStateOf(false) }
+    // Someone else's profile keeps its colours in the studio, the viewer's own follows the app.
+    val shareProfileColor = if (isOwnProfile) null else profile.profileColor
+    val shareStats = {
+        onShareCard(
+            ShareStudio(
+                subject = ShareStudioSubject.STATS.name,
+                id = profile.id,
+                userName = profile.name,
+                mediaType = if (uiState.selectedStatsType == ProfileStatsType.MANGA) MediaType.MANGA.rawValue else MediaType.ANIME.rawValue,
+                profileColor = shareProfileColor,
+            )
+        )
+    }
+    val shareFavourites = {
+        onShareCard(
+            ShareStudio(
+                subject = ShareStudioSubject.FAVOURITES.name,
+                id = profile.id,
+                userName = profile.name,
+                mediaType = if (uiState.selectedFavoritesFilter == ProfileFavoritesFilter.MANGA) MediaType.MANGA.rawValue else MediaType.ANIME.rawValue,
+                profileColor = shareProfileColor,
+            )
+        )
+    }
 
     if (LocalAdaptiveInfo.current.supportsTwoPane) {
         ProfileWideLayout(
@@ -164,7 +184,8 @@ fun ProfileContent(
             onLastReplyClick = onLastReplyClick,
             showAccountSwitcher = showAccountSwitcher,
             onAccountSwitchClick = onAccountSwitchClick,
-            onShareStats = { statsShareVisible = true },
+            onShareStats = shareStats,
+            onShareFavourites = shareFavourites,
             statsColumns = statsColumns,
             modifier = modifier
         )
@@ -320,7 +341,7 @@ fun ProfileContent(
             studioColumns = studioColumns,
             statsColumns = statsColumns,
             showShareActions = true,
-            onShareFavourites = { favouritesShareVisible = true },
+            onShareFavourites = shareFavourites,
             onStatsViewSelected = onStatsViewSelected
         )
     }
@@ -340,7 +361,7 @@ fun ProfileContent(
 
     if (showStatsFab) {
         StatsShareFab(
-            onClick = { statsShareVisible = true },
+            onClick = shareStats,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 16.dp + statsFabBottomInset())
@@ -356,59 +377,6 @@ fun ProfileContent(
                 onAction(ProfileAction.SetBiographySheetVisible(false))
             }
         )
-    }
-
-    val profileUrl = "https://anilist.co/user/${profile.name}"
-
-    if (statsShareVisible) {
-        uiState.statsData?.let { stats ->
-            ShareImageSheet(
-                onDismiss = { statsShareVisible = false },
-                link = profileUrl,
-                templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
-                templateLabel = { tmpl ->
-                    stringResource(
-                        if (tmpl == ShareCardTemplate.STANDARD) R.string.share_template_stats
-                        else R.string.share_template_recap
-                    )
-                }
-            ) {
-                ProfileStatsShareCard(
-                    profile = profile,
-                    stats = stats,
-                    type = uiState.selectedStatsType
-                )
-            }
-        }
-    }
-
-    if (favouritesShareVisible) {
-        val isAnime = uiState.selectedFavoritesFilter == ProfileFavoritesFilter.ANIME
-        val entries = if (isAnime) profile.favoriteAnime else profile.favoriteMangaOverview
-        if (entries.isNotEmpty()) {
-            ShareImageSheet(
-                onDismiss = { favouritesShareVisible = false },
-                link = profileUrl,
-                templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
-                templateLabel = { tmpl ->
-                    stringResource(
-                        if (tmpl == ShareCardTemplate.STANDARD) R.string.share_template_grid
-                        else R.string.share_template_ranked
-                    )
-                }
-            ) {
-                FavouritesShareCard(
-                    heading = stringResource(
-                        if (isAnime) R.string.share_fav_heading_anime
-                        else R.string.share_fav_heading_manga
-                    ),
-                    eyebrow = stringResource(R.string.share_fav_eyebrow),
-                    entries = entries,
-                    bannerUrl = profile.bannerUrl,
-                    handle = profile.name
-                )
-            }
-        }
     }
 
     uiState.selectedReview?.let { review ->

@@ -63,8 +63,6 @@ import com.anisync.android.presentation.components.RichTextHost
 import com.anisync.android.presentation.components.rememberParsedRichText
 import com.anisync.android.presentation.components.richTextItems
 import com.anisync.android.presentation.components.TranslateIconButton
-import com.anisync.android.presentation.share.ReviewShareCard
-import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.adaptiveReadingWidth
@@ -78,6 +76,7 @@ fun ReviewDetailScreen(
     onBackClick: () -> Unit,
     onUserClick: (String) -> Unit,
     onMediaClick: (Int) -> Unit,
+    onShareCard: (reviewId: Int, coverColor: String?) -> Unit = { _, _ -> },
     viewModel: ReviewDetailViewModel = hiltViewModel(),
     sourceScreen: String = "link",
     coverColor: String? = null,
@@ -86,7 +85,6 @@ fun ReviewDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var showShareImage by remember { mutableStateOf(false) }
 
     LaunchedEffect(reviewId) { viewModel.load(reviewId) }
 
@@ -105,7 +103,7 @@ fun ReviewDetailScreen(
                 )
                 IconButton(
                     onClick = {
-                        if (uiState.review != null) showShareImage = true
+                        if (uiState.review != null) onShareCard(reviewId, uiState.mediaCoverColor ?: coverColor)
                         else ShareUtils.shareText(context, "https://anilist.co/review/$reviewId")
                     }
                 ) {
@@ -143,15 +141,6 @@ fun ReviewDetailScreen(
                 uiState.review != null -> {
                     val review = uiState.review!!
                     val mediaId = uiState.mediaId
-
-                    if (showShareImage) {
-                        ShareImageSheet(
-                            onDismiss = { showShareImage = false },
-                            link = "https://anilist.co/review/$reviewId"
-                        ) {
-                            ReviewShareCard(review = review)
-                        }
-                    }
 
                     // A review body can run to well over a hundred images. Rendered in one scrolling
                     // Column every one of them composed and started a request the moment the screen
