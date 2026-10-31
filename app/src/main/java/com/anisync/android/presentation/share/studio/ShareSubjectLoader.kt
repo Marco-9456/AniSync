@@ -16,6 +16,7 @@ import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.StaffDetails
 import com.anisync.android.domain.StatisticsRepository
 import com.anisync.android.domain.UserProfile
@@ -94,7 +95,7 @@ class ShareSubjectLoader @Inject constructor(
             year = details.seasonYear ?: details.year,
             studios = studios,
             genres = details.genres.filterAdult(),
-            score = formatCommunityScore(details.score ?: details.meanScore, appSettings.userScoreFormat.value),
+            score = cardScore(details.score ?: details.meanScore),
             popularity = details.popularity,
             favourites = details.favourites,
             total = if (isManga) details.chapters else details.episodes,
@@ -254,6 +255,18 @@ class ShareSubjectLoader @Inject constructor(
         }
         val name = route.userName ?: return null
         return (profileRepository.fetchUserProfile(name, forceNetwork = false) as? Result.Success)?.data
+    }
+
+    /**
+     * The community score in the viewer's own scale. Stars and faces do not read on a tile, so those
+     * scales get AniList's percentage instead.
+     */
+    private fun cardScore(score: Int?): String? {
+        val value = score?.takeIf { it > 0 } ?: return null
+        return when (val format = appSettings.userScoreFormat.value) {
+            ScoreFormat.POINT_5, ScoreFormat.POINT_3 -> resources.getString(R.string.share_score_percent, value)
+            else -> formatCommunityScore(value, format)
+        }
     }
 
     /** The title a character is best known for: their most popular main role, or their most popular one. */
