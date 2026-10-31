@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -210,6 +211,7 @@ private fun ColorPanel(state: ShareStudioUiState, looks: List<SwatchLook>, onAct
                 checkedContainerColor = scheme.secondaryContainer,
                 checkedContentColor = scheme.onSecondaryContainer,
             ),
+            labelWeight = FontWeight.Medium,
         )
     }
 }
@@ -222,29 +224,23 @@ private fun SwatchItem(label: String, look: SwatchLook, selected: Boolean, onCli
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Surface(
-            onClick = onClick,
-            shape = RoundedCornerShape(16.dp),
-            color = Color.Transparent,
-            modifier = Modifier
-                .size(56.dp)
-                .semantics {
-                    contentDescription = description
-                    role = Role.RadioButton
-                    this.selected = selected
-                },
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                if (selected) {
-                    Box(Modifier.requiredSize(64.dp).border(2.dp, scheme.primary, RoundedCornerShape(20.dp)))
-                }
-                Box(
-                    Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(look.container),
-                    contentAlignment = Alignment.Center,
-                ) {
+        Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
+            if (selected) {
+                Box(Modifier.requiredSize(64.dp).border(2.dp, scheme.primary, RoundedCornerShape(20.dp)))
+            }
+            Surface(
+                onClick = onClick,
+                shape = RoundedCornerShape(16.dp),
+                color = look.container,
+                modifier = Modifier
+                    .size(48.dp)
+                    .semantics {
+                        contentDescription = description
+                        role = Role.RadioButton
+                        this.selected = selected
+                    },
+            ) {
+                Box(contentAlignment = Alignment.Center) {
                     Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(24.dp).background(look.source))
                     if (selected) {
                         Icon(Icons.Filled.Check, contentDescription = null, tint = look.onContainer, modifier = Modifier.size(20.dp))
@@ -377,7 +373,7 @@ private fun DetailsPanel(state: ShareStudioUiState, onAction: (ShareStudioAction
     val subject = state.subject ?: return
     Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionLabel(stringResource(R.string.share_section_details))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             subject.details.forEach { detail ->
                 val selected = state.spec.shows(detail)
                 FilterChip(
@@ -419,4 +415,4 @@ private const val FullSwatchRow = 6
 private const val DisabledAlpha = 0.38f
 
 /** The panel height on a phone, so switching panels never moves the card. */
-val PhonePanelHeight: Dp = 218.dp
+val PhonePanelHeight: Dp = 240.dp

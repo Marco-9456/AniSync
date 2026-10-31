@@ -79,6 +79,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -92,6 +93,7 @@ import com.anisync.android.presentation.components.ProfileColorThemeOverride
 import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.share.cards.CardTone
 import com.anisync.android.presentation.share.cards.Render
+import com.anisync.android.presentation.share.cards.fixedHeight
 import com.anisync.android.presentation.share.cards.ShareSubject
 import com.anisync.android.presentation.share.toShareBitmap
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
@@ -363,6 +365,8 @@ private fun PanelSelector(panel: StudioPanel, onAction: (ShareStudioAction) -> U
             containerColor = scheme.surfaceContainerHigh,
             contentColor = scheme.onSurface,
         ),
+        labelWeight = FontWeight.Medium,
+        contentPadding = PaddingValues(horizontal = 6.dp),
     )
 }
 
@@ -429,13 +433,16 @@ private fun StagePager(
     ) {
         val hintArea = if (wide) 88.dp else 64.dp
         val cardArea = maxHeight - hintArea - if (wide) 56.dp else 18.dp
-        val peek = if (wide) (maxWidth - CardPreviewWidth) / 2 else 56.dp
+        // Pages are as wide as the card shows, so the neighbours' edges peek in from the sides.
+        val cardHeight = state.spec.size.fixedHeight ?: ChatPreviewHeight
+        val shown = minOf(CardPreviewWidth, CardPreviewWidth * (cardArea / cardHeight), maxWidth - 64.dp)
+        val peek = (maxWidth - shown) / 2
         Column(Modifier.fillMaxSize()) {
             Spacer(Modifier.height(if (wide) 56.dp else 18.dp))
             HorizontalPager(
                 state = pager,
                 contentPadding = PaddingValues(horizontal = peek.coerceAtLeast(16.dp)),
-                pageSpacing = if (wide) 24.dp else 16.dp,
+                pageSpacing = if (wide) 60.dp else 56.dp,
                 modifier = Modifier.fillMaxWidth().height(cardArea),
             ) { page ->
                 val template = templates[page]
@@ -475,6 +482,7 @@ private fun StagePager(
 }
 
 private val CardPreviewWidth = 360.dp
+private val ChatPreviewHeight = 420.dp
 private const val NeighbourAlpha = 0.45f
 
 @Composable
