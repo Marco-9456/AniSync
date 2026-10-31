@@ -313,7 +313,11 @@ private fun KnownForTile(knownFor: KnownFor) {
         Column(Modifier.weight(1f)) {
             Text(
                 text = stringResource(
-                    if (knownFor.isMain) R.string.share_known_for_main else R.string.share_known_for_supporting,
+                    when (knownFor.role) {
+                        KnownForRole.MAIN -> R.string.share_known_for_main
+                        KnownForRole.SUPPORTING -> R.string.share_known_for_supporting
+                        KnownForRole.BACKGROUND -> R.string.share_known_for_title
+                    },
                     knownFor.title,
                 ),
                 style = cardText(14, 20, FontWeight.Bold),

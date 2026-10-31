@@ -248,9 +248,12 @@ sealed interface ShareSubject {
     }
 }
 
+/** How a character appears in the title they are best known for. */
+enum class KnownForRole { MAIN, SUPPORTING, BACKGROUND }
+
 /** The title a character is best known for, and how many more they appear in. */
 @Immutable
-data class KnownFor(val title: String, val coverUrl: String?, val isMain: Boolean, val more: Int)
+data class KnownFor(val title: String, val coverUrl: String?, val role: KnownForRole, val more: Int)
 
 /** A recap as its share cards print it. Built from a real recap in Phase 5, from preview data until then. */
 @Immutable

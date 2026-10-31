@@ -24,6 +24,7 @@ import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.share.cards.CardImage
 import com.anisync.android.presentation.share.cards.GenreCount
 import com.anisync.android.presentation.share.cards.KnownFor
+import com.anisync.android.presentation.share.cards.KnownForRole
 import com.anisync.android.presentation.share.cards.ShareSubject
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.aniListProfileSeedColor
@@ -264,7 +265,11 @@ class ShareSubjectLoader @Inject constructor(
         return KnownFor(
             title = pick.getTitle(language),
             coverUrl = pick.cover?.preferred(CoverQuality.LARGE) ?: pick.coverUrl,
-            isMain = pick.characterRole == MAIN,
+            role = when (pick.characterRole) {
+                MAIN -> KnownForRole.MAIN
+                SUPPORTING -> KnownForRole.SUPPORTING
+                else -> KnownForRole.BACKGROUND
+            },
             more = (total - 1).coerceAtLeast(0),
         )
     }
@@ -316,6 +321,7 @@ class ShareSubjectLoader @Inject constructor(
         const val FAVOURITES = 5
         const val COMPLETED = "COMPLETED"
         const val MAIN = "MAIN"
+        const val SUPPORTING = "SUPPORTING"
 
         /** A leap year, so 29 February still formats. */
         const val LEAP_YEAR = 2000
