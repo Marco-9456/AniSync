@@ -1,9 +1,9 @@
 package com.anisync.android.presentation.share.cards
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -52,6 +52,7 @@ import com.anisync.android.data.CardSize
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.formatCommunityCount
 import com.anisync.android.domain.formatExactCount
+import com.anisync.android.presentation.statistics.fittedStyle
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.lineBox
@@ -163,13 +164,14 @@ private val PosterPortrait = PosterBesideSpec(140.dp, 199.dp, 20.dp, 2.dp, 8.dp,
 @Composable
 private fun PosterBeside(subject: ShareSubject.Media, spec: CardSpec, layout: PosterBesideSpec) {
     val titleWide = LocalExpressiveTypography.current.titleWide
+    val coverHeight = layout.coverHeight - captionReserve(spec)
     Column(Modifier.fillMaxSize().padding(24.dp)) {
         Row {
             CoverWithStatus(
                 subject = subject,
                 spec = spec,
-                width = layout.coverWidth,
-                height = layout.coverHeight,
+                width = layout.coverWidth * (coverHeight / layout.coverHeight),
+                height = coverHeight,
                 corner = layout.coverCorner,
                 pillInset = 16.dp,
             )
@@ -191,7 +193,7 @@ private fun PosterBeside(subject: ShareSubject.Media, spec: CardSpec, layout: Po
             }
         }
         PosterFacts(subject, spec, Modifier.padding(top = layout.factsTop - 14.dp))
-        CardCaption(spec, posterCaptionStyle(), MaterialTheme.colorScheme.onSurface, Modifier.padding(top = 12.dp))
+        CardCaption(spec, posterCaptionStyle(), MaterialTheme.colorScheme.onSurface, Modifier.padding(top = 8.dp).fillMaxWidth())
         if (!layout.progressBeside && showsProgress(subject, spec)) {
             Spacer(Modifier.height(16.dp))
             PosterProgress(subject)
@@ -214,7 +216,9 @@ private fun PosterStory(subject: ShareSubject.Media, spec: CardSpec) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(44.dp))
-        CoverWithStatus(subject, spec, width = 196.dp, height = 278.dp, corner = 24.dp, pillInset = 20.dp)
+        val reserve = captionReserve(spec)
+        val coverHeight = 278.dp - if (reserve > 0.dp) reserve + 8.dp else 0.dp
+        CoverWithStatus(subject, spec, width = 196.dp * (coverHeight / 278.dp), height = coverHeight, corner = 24.dp, pillInset = 20.dp)
         Spacer(Modifier.height(16.dp))
         Text(
             text = subject.name,
@@ -227,13 +231,12 @@ private fun PosterStory(subject: ShareSubject.Media, spec: CardSpec) {
         )
         Spacer(Modifier.height(8.dp))
         MediaMeta(subject, spec, allStudios = true, maxLines = 1, center = true)
-        val hasCaption = spec.caption.isNotBlank()
-        PosterFacts(subject, spec, Modifier.padding(top = if (hasCaption) 4.dp else 10.dp))
+        PosterFacts(subject, spec, Modifier.padding(top = 10.dp))
         CardCaption(
             spec = spec,
             style = posterCaptionStyle(),
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 8.dp).fillMaxWidth(),
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp).fillMaxWidth(),
         )
         Spacer(Modifier.weight(1f))
         if (showsProgress(subject, spec)) {
@@ -310,12 +313,14 @@ private fun PosterFacts(subject: ShareSubject.Media, spec: CardSpec, modifier: M
                     .padding(horizontal = 8.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text = value,
-                    style = titleWide.style(22.sp, 28.sp),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                )
+                BoxWithConstraints(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = value,
+                        style = fittedStyle(value, titleWide.style(22.sp, 28.sp), maxWidth),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                    )
+                }
                 Text(
                     text = stringResource(label),
                     style = cardText(11, 16, FontWeight.Medium),
@@ -355,17 +360,18 @@ private fun MediaBento(subject: ShareSubject.Media, spec: CardSpec) {
         CardSize.STORY -> 216.dp
         else -> 160.dp
     }
-    val topHeight = when (size) {
+    val fullHeight = when (size) {
         CardSize.CHAT -> 170.dp
         CardSize.STORY -> 306.dp
         else -> 232.dp
     }
+    val topHeight = fullHeight - captionReserve(spec)
     Column(
         modifier = Modifier.fillMaxWidth().padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(Modifier.fillMaxWidth().height(topHeight), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CardPicture(subject.coverUrl, RoundedCornerShape(24.dp), Modifier.width(coverWidth).fillMaxHeight())
+            CardPicture(subject.coverUrl, RoundedCornerShape(24.dp), Modifier.width(coverWidth * (topHeight / fullHeight)).fillMaxHeight())
             Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 val showScore = spec.shows(CardDetail.SCORE) && subject.score != null
                 val showProgress = showsStatus(spec)
@@ -374,6 +380,7 @@ private fun MediaBento(subject: ShareSubject.Media, spec: CardSpec) {
             }
         }
         BentoTitleTile(subject, spec, Modifier.height(if (size == CardSize.STORY) 122.dp else 96.dp))
+        CardCaption(spec, cardText(15, 20, FontWeight.SemiBold), MaterialTheme.colorScheme.onSurface, Modifier.padding(horizontal = 4.dp))
         if (size == CardSize.PORTRAIT || size == CardSize.STORY) {
             BentoFactTiles(subject, spec, Modifier.height(if (size == CardSize.STORY) 84.dp else 82.dp))
         }
@@ -385,14 +392,14 @@ private fun MediaBento(subject: ShareSubject.Media, spec: CardSpec) {
 private fun BentoScoreTile(score: String, size: CardSize, modifier: Modifier) {
     val heroWide = LocalExpressiveTypography.current.heroWide
     val chat = size == CardSize.CHAT
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(MaterialTheme.colorScheme.primaryContainer)
             .padding(start = 16.dp, end = 12.dp),
     ) {
-        val style = heroWide.style(if (chat) 32.sp else 48.sp, 52.sp, (-1).sp)
+        val style = fittedStyle(score, heroWide.style(if (chat) 32.sp else 48.sp, 52.sp, (-1).sp), maxWidth)
         Text(
             text = score,
             style = style,
@@ -415,7 +422,7 @@ private fun BentoScoreTile(score: String, size: CardSize, modifier: Modifier) {
 private fun BentoProgressTile(subject: ShareSubject.Media, size: CardSize, modifier: Modifier) {
     val titleWide = LocalExpressiveTypography.current.titleWide
     val chat = size == CardSize.CHAT
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
@@ -434,7 +441,7 @@ private fun BentoProgressTile(subject: ShareSubject.Media, size: CardSize, modif
         if (value != null) {
             Text(
                 text = value,
-                style = titleWide.style(if (chat) 22.sp else 28.sp, 34.sp),
+                style = fittedStyle(value, titleWide.style(if (chat) 22.sp else 28.sp, 34.sp), maxWidth),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 modifier = Modifier.padding(top = if (chat) 30.dp else 36.dp),
@@ -502,7 +509,7 @@ private fun BentoFactTiles(subject: ShareSubject.Media, spec: CardSpec, modifier
     val heroWide = LocalExpressiveTypography.current.heroWide
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         facts.forEach { (value, label) ->
-            Box(
+            BoxWithConstraints(
                 Modifier
                     .weight(1f)
                     .fillMaxHeight()
@@ -510,7 +517,7 @@ private fun BentoFactTiles(subject: ShareSubject.Media, spec: CardSpec, modifier
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     .padding(horizontal = 16.dp)
             ) {
-                val style = heroWide.style(28.sp, 52.sp, (-1).sp)
+                val style = fittedStyle(value, heroWide.style(28.sp, 52.sp, (-1).sp), maxWidth)
                 Text(
                     text = value,
                     style = style,
@@ -577,7 +584,6 @@ private fun MediaCard(subject: ShareSubject.Media, spec: CardSpec) {
                 )
                 CardFacts(subject)
             }
-            CardCaption(spec, MaterialTheme.typography.bodyMedium, MaterialTheme.colorScheme.onSurface)
             if (spec.shows(CardDetail.PROGRESS)) CardStatus(subject)
             if (size == CardSize.CHAT || story) {
                 if (spec.shows(CardDetail.GENRES) && subject.genres.isNotEmpty()) {
@@ -588,6 +594,7 @@ private fun MediaCard(subject: ShareSubject.Media, spec: CardSpec) {
                     }
                 }
             }
+            CardCaption(spec, cardText(15, 20, FontWeight.SemiBold), MaterialTheme.colorScheme.onSurface)
         }
         Row(
             modifier = Modifier
@@ -610,22 +617,22 @@ private fun MediaCard(subject: ShareSubject.Media, spec: CardSpec) {
 @Composable
 private fun CardHeader(subject: ShareSubject.Media, spec: CardSpec) {
     val story = spec.size == CardSize.STORY
-    val bannerHeight = if (story) 220.dp else 132.dp
+    val bannerHeight = (if (story) 220.dp else 132.dp) - captionReserve(spec)
     val coverWidth = if (story) 112.dp else 88.dp
     val coverHeight = if (story) 158.dp else 124.dp
-    Box(Modifier.fillMaxWidth().height(if (story) 300.dp else 196.dp)) {
+    val coverRise = if (story) 80.dp else 60.dp
+    Box(Modifier.fillMaxWidth().height(bannerHeight + coverHeight - coverRise + 2.dp)) {
         CardPicture(
             url = subject.bannerUrl ?: subject.coverUrl,
             shape = RoundedCornerShape(0.dp),
             modifier = Modifier.fillMaxWidth().height(bannerHeight).fadeToBottom(),
         )
-        CardPicture(
+        PosterCover(
             url = subject.coverUrl,
-            shape = RoundedCornerShape(16.dp),
             modifier = Modifier
-                .padding(start = 20.dp, top = bannerHeight - 60.dp)
-                .size(coverWidth, coverHeight)
-                .border(3.dp, MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(16.dp)),
+                .padding(start = 20.dp, top = bannerHeight - coverRise)
+                .size(coverWidth, coverHeight),
+            shape = RoundedCornerShape(16.dp),
         )
         if (spec.shows(CardDetail.SCORE) && subject.score != null) {
             Row(
@@ -657,7 +664,7 @@ private fun CardHeader(subject: ShareSubject.Media, spec: CardSpec) {
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 20.dp + coverWidth + 14.dp, end = 20.dp, top = bannerHeight + 8.dp),
+            modifier = Modifier.padding(start = 20.dp + coverWidth + 14.dp, end = 20.dp, top = bannerHeight + if (story) 12.dp else 8.dp),
         )
     }
 }
