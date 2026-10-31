@@ -3,6 +3,7 @@ package com.anisync.android.presentation.components
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -61,6 +62,8 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
  *   same offset; ignored when [fillEqually] is true.
  * @param badge Optional mark after an option's label, such as the What's New dot.
  * @param colors The buttons' colors, for a group that has to read as a secondary choice.
+ * @param labelWeight The labels' weight, lighter where a long label has to fit an equal share.
+ * @param contentPadding Space around each label, narrower where four labels share one row.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -76,6 +79,8 @@ fun <T> SegmentedTabGroup(
     scrollState: ScrollState = rememberScrollState(),
     badge: (T) -> (@Composable () -> Unit)? = { null },
     colors: ToggleButtonColors = ToggleButtonDefaults.colors(),
+    labelWeight: FontWeight = FontWeight.Bold,
+    contentPadding: PaddingValues = ToggleButtonDefaults.contentPaddingFor(ToggleButtonDefaults.size),
 ) {
     val haptic = rememberHapticFeedback()
 
@@ -107,6 +112,7 @@ fun <T> SegmentedTabGroup(
                 modifier = if (fillEqually) Modifier.weight(1f) else Modifier,
                 shapes = shapes,
                 colors = colors,
+                contentPadding = contentPadding,
             ) {
                 icon(option)?.let { vector ->
                     Icon(imageVector = vector, contentDescription = null)
@@ -115,7 +121,7 @@ fun <T> SegmentedTabGroup(
                 Text(
                     text = label(option),
                     style = labelStyle,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = labelWeight,
                     // An equal share can be narrower than the word, so it shrinks rather than wraps.
                     maxLines = 1,
                     autoSize = if (fillEqually) {
