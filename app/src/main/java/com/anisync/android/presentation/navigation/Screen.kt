@@ -283,6 +283,25 @@ data class ReviewDetail(
 )
 
 /**
+ * The share studio for one subject, a full page so a notification or a recap story can open it too.
+ * @param subject A [com.anisync.android.presentation.share.studio.ShareStudioSubject] name
+ * @param id The media, character, staff, review or user id
+ * @param userName Whose profile, for stats and favourites
+ * @param mediaType ANIME or MANGA, for stats and favourites
+ * @param coverColor Cover color of the title that opened the studio, so the chrome keeps its palette
+ * @param profileColor Profile color of the user whose profile opened it, for the same reason
+ */
+@Serializable
+data class ShareStudio(
+    val subject: String,
+    val id: Int,
+    val userName: String? = null,
+    val mediaType: String? = null,
+    val coverColor: String? = null,
+    val profileColor: String? = null
+)
+
+/**
  * Recent reviews list — AniList's newest reviews, filterable by media type.
  * Reached from the "Recent Reviews" section on Discover.
  * @param mediaType Initial filter: "ANIME", "MANGA", or "ALL".
