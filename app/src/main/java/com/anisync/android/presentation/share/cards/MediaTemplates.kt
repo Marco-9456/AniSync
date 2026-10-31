@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -116,7 +117,7 @@ private fun PosterChat(subject: ShareSubject.Media, spec: CardSpec) {
                     text = subject.name,
                     style = titleWide.style(20.sp, 34.sp, (-0.5).sp),
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(6.dp))
@@ -178,7 +179,7 @@ private fun PosterBeside(subject: ShareSubject.Media, spec: CardSpec, layout: Po
                     text = subject.name,
                     style = titleWide.style(22.sp, 34.sp, (-0.5).sp),
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(layout.metaGap))
@@ -278,7 +279,8 @@ private fun CoverWithStatus(
                 subject = subject,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = height - pillInset),
+                    .padding(top = height - pillInset)
+                    .wrapContentWidth(unbounded = true),
             )
         }
     }
@@ -424,11 +426,11 @@ private fun BentoProgressTile(subject: ShareSubject.Media, size: CardSize, modif
             text = statusLabel(subject).cardUpper(),
             style = cardEyebrow(1f),
             color = MaterialTheme.colorScheme.primary,
-            maxLines = 1,
+            maxLines = if (size == CardSize.STORY) 2 else 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = if (chat) 12.dp else 16.dp),
         )
-        val value = progressFractionText(subject)
+        val value = progressFractionText(subject) ?: totalText(subject)
         if (value != null) {
             Text(
                 text = value,
@@ -827,6 +829,13 @@ private fun progressFractionText(subject: ShareSubject.Media): String? {
     val progress = formatExactCount(subject.progress ?: 0, locale)
     val total = subject.total?.takeIf { it > 0 } ?: return progress
     return stringResource(R.string.share_progress_fraction, progress, formatExactCount(total, locale))
+}
+
+/** The total for a title the viewer has not added, so its tile still has a figure. */
+@Composable
+private fun totalText(subject: ShareSubject.Media): String? {
+    val total = subject.total?.takeIf { it > 0 } ?: return null
+    return formatExactCount(total, LocalConfiguration.current.locales[0])
 }
 
 /** "3 of 24 episodes" on the list, "24 episodes" for a title the viewer has not added. */
