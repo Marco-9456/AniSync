@@ -63,6 +63,7 @@ private fun RecapMonth(subject: ShareSubject.Recap, spec: CardSpec) {
     val locale = LocalConfiguration.current.locales[0]
     val story = spec.size == CardSize.STORY
     val fixed = spec.size != CardSize.CHAT
+    val tight = captionReserve(spec) > 0.dp
     Box(Modifier.fillMaxWidth().then(if (fixed) Modifier.fillMaxSize() else Modifier)) {
         CardCollage(card.covers.take(3), if (story) MonthCoversStory else MonthCovers, Modifier.fillMaxSize())
         Column(
@@ -92,9 +93,9 @@ private fun RecapMonth(subject: ShareSubject.Recap, spec: CardSpec) {
                 maxLines = 1,
                 modifier = Modifier.padding(top = 0.dp).height(38.dp),
             )
-            Spacer(Modifier.height(if (story) 100.dp else 16.dp))
+            Spacer(Modifier.height(if (story) 100.dp - captionReserve(spec) else if (tight) 4.dp else 16.dp))
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                val hero = heroWide.style(96.sp, 96.sp, (-3).sp)
+                val hero = if (tight && !story) heroWide.style(80.sp, 80.sp, (-3).sp) else heroWide.style(96.sp, 96.sp, (-3).sp)
                 Text(
                     text = formatExactCount(card.episodes, locale),
                     style = hero,
@@ -288,10 +289,10 @@ private fun RecapYear(subject: ShareSubject.Recap, spec: CardSpec) {
                 style = cardText(16, 22, FontWeight.Medium),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                modifier = Modifier.padding(top = 12.dp),
+                modifier = Modifier.padding(top = 6.dp),
             )
-            Spacer(Modifier.height(12.dp))
-            MonthBars(card)
+            Spacer(Modifier.height(if (captionReserve(spec) > 0.dp) 4.dp else 12.dp))
+            MonthBars(card, tall = captionReserve(spec) == 0.dp)
             if (size != CardSize.CHAT && card.busiestMonthName != null) {
                 val busiest = card.months.maxOrNull() ?: 0
                 Text(
@@ -327,17 +328,18 @@ private fun RecapYear(subject: ShareSubject.Recap, spec: CardSpec) {
 }
 
 @Composable
-private fun MonthBars(card: RecapCard) {
+private fun MonthBars(card: RecapCard, tall: Boolean) {
     val max = card.months.maxOrNull()?.coerceAtLeast(1) ?: 1
     val busiest = card.months.indexOf(card.months.maxOrNull())
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         card.months.forEachIndexed { index, episodes ->
             val lit = index == busiest
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.size(20.dp, 66.dp), contentAlignment = Alignment.BottomCenter) {
+                val barMax = if (tall) 64f else 40f
+                Box(Modifier.size(20.dp, (barMax + 2f).dp), contentAlignment = Alignment.BottomCenter) {
                     Box(
                         Modifier
-                            .size(20.dp, (64f * episodes / max).coerceAtLeast(4f).dp)
+                            .size(20.dp, (barMax * episodes / max).coerceAtLeast(4f).dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(if (lit) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer)
                     )

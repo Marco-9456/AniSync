@@ -23,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -80,6 +82,10 @@ private fun FavouritesShelf(subject: ShareSubject.Favourites, spec: CardSpec) {
     val titleWide = LocalExpressiveTypography.current.titleWide
     val fixed = spec.size != CardSize.CHAT
     val entries = subject.entries.take(5)
+    val reserve = captionReserve(spec)
+    val shrink = (layout.first.second - reserve) / layout.first.second
+    val firstSize = layout.first.first * shrink to layout.first.second * shrink
+    val otherSize = if (layout.rowBelow) layout.other else layout.other.first * shrink to layout.other.second * shrink
     Column(
         Modifier
             .fillMaxWidth()
@@ -106,25 +112,25 @@ private fun FavouritesShelf(subject: ShareSubject.Favourites, spec: CardSpec) {
         when {
             layout.rowBelow -> {
                 if (first != null) {
-                    RankedCover(first, 1, layout.first, Modifier.align(Alignment.CenterHorizontally))
+                    RankedCover(first, 1, firstSize, Modifier.align(Alignment.CenterHorizontally))
                 }
                 if (rest.isNotEmpty()) {
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        rest.forEachIndexed { index, entry -> RankedCover(entry, index + 2, layout.other) }
+                        rest.forEachIndexed { index, entry -> RankedCover(entry, index + 2, otherSize) }
                     }
                 }
             }
             layout.rowBeside -> Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (first != null) RankedCover(first, 1, layout.first)
-                rest.forEachIndexed { index, entry -> RankedCover(entry, index + 2, layout.other) }
+                if (first != null) RankedCover(first, 1, firstSize)
+                rest.forEachIndexed { index, entry -> RankedCover(entry, index + 2, otherSize) }
             }
             else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (first != null) RankedCover(first, 1, layout.first)
+                if (first != null) RankedCover(first, 1, firstSize)
                 Column(verticalArrangement = Arrangement.spacedBy(if (spec.size == CardSize.PORTRAIT) 6.dp else 8.dp)) {
                     rest.chunked(2).forEachIndexed { row, pair ->
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            pair.forEachIndexed { index, entry -> RankedCover(entry, row * 2 + index + 2, layout.other) }
+                            pair.forEachIndexed { index, entry -> RankedCover(entry, row * 2 + index + 2, otherSize) }
                         }
                     }
                 }
@@ -138,7 +144,7 @@ private fun FavouritesShelf(subject: ShareSubject.Favourites, spec: CardSpec) {
             spec = spec,
             style = cardText(15, 20, FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 10.dp),
+            modifier = Modifier.padding(top = 8.dp),
         )
         if (fixed) Spacer(Modifier.weight(1f)) else Spacer(Modifier.height(16.dp))
         CardBrand(
@@ -195,6 +201,9 @@ private fun RankedList(entries: List<CardImage>, color: Color, modifier: Modifie
 
 private const val RankSeparator = "   "
 
+/** How much the collage gives up so a caption fits above the brand. */
+private const val CollageShrink = 0.9f
+
 private fun collageSlots(size: CardSize): List<CollageSlot> = when (size) {
     CardSize.CHAT -> listOf(
         CollageSlot(CollageShape.COOKIE, 131.2.dp, 82.dp, 99.5.dp, 98.3.dp),
@@ -225,7 +234,18 @@ private fun FavouritesCollage(subject: ShareSubject.Favourites, spec: CardSpec) 
     val content = MaterialTheme.colorScheme.onPrimaryContainer
     val story = spec.size == CardSize.STORY
     Box(Modifier.fillMaxWidth().then(if (spec.size == CardSize.CHAT) Modifier.height(292.dp) else Modifier.fillMaxSize())) {
-        CardCollage(subject.entries.take(6), collageSlots(spec.size), Modifier.fillMaxSize())
+        val shrink = if (captionReserve(spec) > 0.dp) CollageShrink else 1f
+        CardCollage(
+            covers = subject.entries.take(6),
+            slots = collageSlots(spec.size),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = shrink
+                    scaleY = shrink
+                    transformOrigin = TransformOrigin(0.5f, 0.15f)
+                },
+        )
         Text(
             text = stringResource(if (subject.isManga) R.string.share_fav_heading_manga else R.string.share_fav_heading_anime),
             style = heroWide.style(if (story) 28.sp else 25.sp, 30.sp, (-0.5).sp),

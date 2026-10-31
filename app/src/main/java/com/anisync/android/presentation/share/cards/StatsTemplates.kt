@@ -3,6 +3,7 @@ package com.anisync.android.presentation.share.cards
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +37,7 @@ import com.anisync.android.domain.formatOneDecimal
 import com.anisync.android.domain.splitMinutes
 import com.anisync.android.domain.stats.tasteSpread
 import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.statistics.fittedStyle
 import com.anisync.android.presentation.statistics.labelRes
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalExpressiveTypography
@@ -97,6 +99,7 @@ private fun bigNumberLayout(size: CardSize) = when (size) {
 @Composable
 private fun StatsBigNumber(subject: ShareSubject.Stats, spec: CardSpec) {
     val layout = bigNumberLayout(spec.size)
+    val reserve = captionReserve(spec)
     val heroWide = LocalExpressiveTypography.current.heroWide
     val locale = LocalConfiguration.current.locales[0]
     val fixed = spec.size != CardSize.CHAT
@@ -104,7 +107,7 @@ private fun StatsBigNumber(subject: ShareSubject.Stats, spec: CardSpec) {
         CardPicture(
             url = subject.bannerUrl,
             shape = RoundedCornerShape(0.dp),
-            modifier = Modifier.fillMaxWidth().height(layout.banner + 2.dp).fadeToBottom(topAlpha = 0.9f),
+            modifier = Modifier.fillMaxWidth().height(layout.banner - reserve + 2.dp).fadeToBottom(topAlpha = 0.9f),
         )
         StatsIdentity(
             subject = subject,
@@ -114,9 +117,9 @@ private fun StatsBigNumber(subject: ShareSubject.Stats, spec: CardSpec) {
             eyebrow = stringResource(if (subject.isManga) R.string.share_stats_all_time_manga else R.string.share_stats_all_time_anime),
             nameSize = 22,
             nameLineHeight = 28,
-            modifier = Modifier.padding(start = layout.avatarStart, top = layout.avatarTop),
+            modifier = Modifier.padding(start = layout.avatarStart, top = layout.avatarTop - reserve),
         )
-        Column(Modifier.fillMaxWidth().then(if (fixed) Modifier.fillMaxSize() else Modifier).padding(top = layout.heroTop)) {
+        Column(Modifier.fillMaxWidth().then(if (fixed) Modifier.fillMaxSize() else Modifier).padding(top = layout.heroTop - reserve)) {
             val heroStyle = heroWide.style(layout.heroSize.sp, layout.heroSize.sp, (-3).sp)
             Text(
                 text = formatExactCount(subject.count, locale),
@@ -142,7 +145,7 @@ private fun StatsBigNumber(subject: ShareSubject.Stats, spec: CardSpec) {
                 spec = spec,
                 style = cardText(15, 20, FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 10.dp),
+                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp),
             )
             if (spec.size == CardSize.STORY && spec.shows(CardDetail.FAVOURITES) && subject.favourites.isNotEmpty()) {
                 Text(
@@ -315,11 +318,11 @@ private fun StatsBento(subject: ShareSubject.Stats, spec: CardSpec) {
                 }
             }
             if (size != CardSize.CHAT) {
-                Row(Modifier.height(120.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.height(120.dp - captionReserve(spec)), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val genre = subject.genres.firstOrNull()?.takeIf { spec.shows(CardDetail.GENRES) }
                     if (genre != null) BentoGenreTile(genre, Modifier.weight(if (story) 1f else 160f).fillMaxSize())
                     if (spec.shows(CardDetail.STUDIO) && subject.topStudio != null) {
-                        BentoStudioTile(subject, Modifier.weight(if (story) 1f else 168f).fillMaxSize())
+                        BentoStudioTile(subject, compact = captionReserve(spec) > 0.dp, modifier = Modifier.weight(if (story) 1f else 168f).fillMaxSize())
                     }
                 }
             }
@@ -412,7 +415,7 @@ private fun BentoTotal(subject: ShareSubject.Stats, spec: CardSpec, modifier: Mo
 @Composable
 private fun BentoFigure(value: String, label: String, modifier: Modifier, labelTop: Dp, upper: Boolean = true) {
     val titleWide = LocalExpressiveTypography.current.titleWide
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
@@ -420,7 +423,7 @@ private fun BentoFigure(value: String, label: String, modifier: Modifier, labelT
     ) {
         Text(
             text = value,
-            style = titleWide.style(22.sp, 26.sp),
+            style = fittedStyle(value, titleWide.style(22.sp, 26.sp), maxWidth),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             modifier = Modifier.padding(top = 10.dp),
@@ -467,7 +470,7 @@ private fun BentoGenreTile(genre: GenreCount, modifier: Modifier) {
 }
 
 @Composable
-private fun BentoStudioTile(subject: ShareSubject.Stats, modifier: Modifier) {
+private fun BentoStudioTile(subject: ShareSubject.Stats, compact: Boolean, modifier: Modifier) {
     val titleWide = LocalExpressiveTypography.current.titleWide
     val locale = LocalConfiguration.current.locales[0]
     Column(
@@ -487,9 +490,9 @@ private fun BentoStudioTile(subject: ShareSubject.Stats, modifier: Modifier) {
             text = subject.topStudio.orEmpty(),
             style = titleWide.style(20.sp, 24.sp),
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
+            maxLines = if (compact) 1 else 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.height(48.dp),
+            modifier = Modifier.height(if (compact) 24.dp else 48.dp),
         )
         Spacer(Modifier.height(6.dp))
         Text(
@@ -530,7 +533,7 @@ private fun genresLayout(size: CardSize) = when (size) {
 private fun StatsGenres(subject: ShareSubject.Stats, spec: CardSpec) {
     val layout = genresLayout(spec.size)
     val fixed = spec.size != CardSize.CHAT
-    val genres = subject.genres.take(layout.count)
+    val genres = subject.genres.take(layout.count - if (captionReserve(spec) > 0.dp) 1 else 0)
     val max = genres.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
     Box(Modifier.fillMaxWidth().then(if (fixed) Modifier.fillMaxSize() else Modifier)) {
         Column(Modifier.fillMaxWidth().then(if (fixed) Modifier.fillMaxSize() else Modifier)) {
@@ -557,7 +560,7 @@ private fun StatsGenres(subject: ShareSubject.Stats, spec: CardSpec) {
                 spec = spec,
                 style = cardText(15, 20, FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp),
+                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp),
             )
             if (spec.size != CardSize.SQUARE) {
                 if (fixed) Spacer(Modifier.weight(1f)) else Spacer(Modifier.height(16.dp))

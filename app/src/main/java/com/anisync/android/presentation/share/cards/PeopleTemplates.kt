@@ -73,6 +73,13 @@ private data class PersonLayout(
     val bottom: Dp,
 )
 
+/** The layout with its picture shortened by [reserve], its width kept in proportion. */
+private fun PersonLayout.shrunkBy(reserve: Dp): PersonLayout {
+    if (reserve == 0.dp) return this
+    val height = picture.second - reserve
+    return copy(picture = picture.first * (height / picture.second) to height)
+}
+
 private fun characterLayout(size: CardSize) = when (size) {
     CardSize.CHAT -> PersonLayout(88.dp to 126.dp, 20.dp, false, 22, 1, 2.dp, false, 16.dp, 20.dp)
     CardSize.SQUARE -> PersonLayout(112.dp to 160.dp, 20.dp, false, 24, 1, 4.dp, false, 16.dp, 20.dp)
@@ -89,7 +96,7 @@ private fun staffLayout(size: CardSize) = when (size) {
 
 @Composable
 private fun CharacterCard(subject: ShareSubject.Character, spec: CardSpec) {
-    val layout = characterLayout(spec.size)
+    val layout = characterLayout(spec.size).shrunkBy(captionReserve(spec))
     val fixed = spec.size != CardSize.CHAT
     val shape = RoundedCornerShape(
         topStart = minOf(75.dp, layout.picture.first / 2),
@@ -124,7 +131,7 @@ private fun CharacterCard(subject: ShareSubject.Character, spec: CardSpec) {
             Spacer(Modifier.height(layout.sectionTop))
             KnownForTile(knownFor)
         }
-        CardCaption(spec, cardText(15, 20, FontWeight.SemiBold), MaterialTheme.colorScheme.onSurface, Modifier.padding(top = 10.dp))
+        CardCaption(spec, cardText(15, 20, FontWeight.SemiBold), MaterialTheme.colorScheme.onSurface, Modifier.padding(top = 8.dp))
         if (fixed) Spacer(Modifier.weight(1f)) else Spacer(Modifier.height(16.dp))
         CardBrand(subject.handle, spec, MaterialTheme.colorScheme.surfaceContainerHigh)
         Spacer(Modifier.height(layout.bottom))
@@ -155,7 +162,7 @@ private fun StaffCard(subject: ShareSubject.Staff, spec: CardSpec) {
             )
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                subject.roles.take(3).forEach { role -> RoleTile(role) }
+                subject.roles.take(3).forEach { role -> RoleTile(role, imageSize = 84.dp - captionReserve(spec)) }
             }
         }
         if (layout.facts) {
@@ -184,7 +191,7 @@ private fun StaffCard(subject: ShareSubject.Staff, spec: CardSpec) {
                 }
             }
         }
-        CardCaption(spec, cardText(15, 20, FontWeight.SemiBold), MaterialTheme.colorScheme.onSurface, Modifier.padding(top = 10.dp))
+        CardCaption(spec, cardText(15, 20, FontWeight.SemiBold), MaterialTheme.colorScheme.onSurface, Modifier.padding(top = 8.dp))
         if (fixed) Spacer(Modifier.weight(1f)) else Spacer(Modifier.height(16.dp))
         CardBrand(subject.handle, spec, MaterialTheme.colorScheme.surfaceContainerHigh)
         Spacer(Modifier.height(layout.bottom))
@@ -338,9 +345,9 @@ private fun KnownForTile(knownFor: KnownFor) {
 }
 
 @Composable
-private fun RoleTile(role: CardImage) {
+private fun RoleTile(role: CardImage, imageSize: Dp) {
     Column(Modifier.width(96.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        CardPicture(role.url, RoundedCornerShape(16.dp), Modifier.size(84.dp))
+        CardPicture(role.url, RoundedCornerShape(16.dp), Modifier.size(imageSize))
         Spacer(Modifier.height(6.dp))
         Text(
             text = role.title,
@@ -375,6 +382,7 @@ private fun quoteLayout(size: CardSize) = when (size) {
 @Composable
 private fun ReviewQuote(subject: ShareSubject.Review, spec: CardSpec) {
     val layout = quoteLayout(spec.size)
+    val banner = layout.banner - captionReserve(spec)
     val heroWide = LocalExpressiveTypography.current.heroWide
     val locale = LocalConfiguration.current.locales[0]
     val fixed = spec.size != CardSize.CHAT
@@ -382,7 +390,7 @@ private fun ReviewQuote(subject: ShareSubject.Review, spec: CardSpec) {
         CardPicture(
             url = subject.bannerUrl ?: subject.coverUrl,
             shape = RoundedCornerShape(0.dp),
-            modifier = Modifier.fillMaxWidth().height(layout.banner + 2.dp).fadeToBottom(),
+            modifier = Modifier.fillMaxWidth().height(banner + 2.dp).fadeToBottom(),
         )
         if (spec.shows(CardDetail.SCORE)) {
             ReviewScore(subject.score, Modifier.align(Alignment.TopEnd).padding(top = 14.dp, end = 22.dp))
@@ -391,7 +399,7 @@ private fun ReviewQuote(subject: ShareSubject.Review, spec: CardSpec) {
             Modifier
                 .fillMaxWidth()
                 .then(if (fixed) Modifier.fillMaxSize() else Modifier)
-                .padding(start = 24.dp, end = 24.dp, top = layout.banner - 12.dp)
+                .padding(start = 24.dp, end = 24.dp, top = banner - 12.dp)
         ) {
             Text(
                 text = stringResource(R.string.share_review_eyebrow, subject.mediaTitle).cardUpper(),
@@ -413,7 +421,7 @@ private fun ReviewQuote(subject: ShareSubject.Review, spec: CardSpec) {
                 maxLines = layout.quoteLines,
                 overflow = TextOverflow.Ellipsis,
             )
-            CardCaption(spec, cardText(15, 20, FontWeight.SemiBold), MaterialTheme.colorScheme.onSurface, Modifier.padding(top = 10.dp))
+            CardCaption(spec, cardText(15, 20, FontWeight.SemiBold), MaterialTheme.colorScheme.onSurface, Modifier.padding(top = 8.dp))
             if (spec.shows(CardDetail.AUTHOR)) {
                 Spacer(Modifier.height(26.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -53,7 +53,6 @@ import coil3.request.ImageRequest
 import coil3.request.transformations
 import com.anisync.android.R
 import com.anisync.android.data.CardSize
-import java.util.Locale
 import kotlin.math.pow
 
 /** Every card is laid out 360dp wide and captured at 1080px. */
@@ -268,9 +267,24 @@ fun CardPicture(url: String?, shape: Shape, modifier: Modifier = Modifier) {
     }
 }
 
-/** The caption the viewer typed, set into the card. */
+/**
+ * The room a caption takes on a fixed size. Each template gives it up from its most flexible element,
+ * a cover, a banner or a row, so typing a caption never pushes the brand off the card.
+ */
+fun captionReserve(spec: CardSpec): Dp =
+    if (spec.caption.isBlank() || spec.size == CardSize.CHAT) 0.dp else CaptionReserve
+
+private val CaptionReserve = 28.dp
+
+/** The caption the viewer typed, set into the card. One line on the fixed sizes, two on Card for chats. */
 @Composable
-fun CardCaption(spec: CardSpec, style: TextStyle, color: Color, modifier: Modifier = Modifier, maxLines: Int = 2) {
+fun CardCaption(
+    spec: CardSpec,
+    style: TextStyle,
+    color: Color,
+    modifier: Modifier = Modifier,
+    maxLines: Int = if (spec.size == CardSize.CHAT) 2 else 1,
+) {
     val caption = spec.caption.trim()
     if (caption.isEmpty()) return
     Text(
@@ -302,7 +316,7 @@ fun cardEyebrow(letterSpacing: Float = 1.4f): TextStyle = cardText(11, 16, FontW
 /** Upper case in the app's language, as the frames' eyebrows are set. */
 @Composable
 @ReadOnlyComposable
-fun String.cardUpper(): String = uppercase(LocalConfiguration.current.locales[0] ?: Locale.getDefault())
+fun String.cardUpper(): String = uppercase(LocalConfiguration.current.locales[0])
 
 /** True while the card's scheme is a dark one. */
 @Composable
