@@ -724,8 +724,8 @@
     <string name="details_progress_of">%1$d z %2$d</string>
     <string name="details_trailer">Zwiastun</string>
     <string name="details_duration_minutes">%1$d min</string>
-    <string name="details_score_average">śr.</string>
-    <string name="details_score_average_ranked">śr. · #%1$d ze wszystkich</string>
+    <string name="details_score_average">śr. ważona</string>
+    <string name="details_score_average_ranked">śr. ważona · #%1$d ze wszystkich</string>
     <string name="media_stats_episode_eyebrow">Odcinek %1$d</string>
     <string name="media_stats_score_bucket_eyebrow">Ocena %1$d</string>
     <string name="stat_hashtag">Hashtag</string>
@@ -1324,4 +1324,7 @@
     <string name="discover_reorder_caption">Przeciągnij aby zmienić układ. Ukryj sekcje klikając na oko. Anime i Manga mają niezależne układy.</string>
     <string name="sort_last_added">Dodane</string>
     <string name="sort_start_date">Rozpoczęte</string>
+    <string name="details_score_info_title">Oceny</string>
+    <string name="details_score_info_weighted">Ocena ważona</string>
+    <string name="details_score_info_mean">Średnia ocena</string>
 </resources>
