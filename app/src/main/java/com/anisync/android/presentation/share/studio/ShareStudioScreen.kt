@@ -257,28 +257,39 @@ private fun StudioContent(
                     .imePadding()
             ) {
                 StudioHeader(state.subject?.name, onAction, onClose, closeAtStart = true)
-                StudioStage(
-                    state = state,
-                    cardScheme = cardScheme,
-                    layer = layer,
-                    onAction = onAction,
-                    wide = false,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                )
-                if (subject != null) {
-                    PanelSelector(state.panel, onAction, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
-                    Box(
+                // A short phone or an open keyboard keeps the card readable and scrolls the panels instead.
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+                    val controls = if (subject != null) PhoneControlsHeight else 0.dp
+                    val stage = maxOf(MinStageHeight, maxHeight - controls)
+                    Column(
                         Modifier
-                            .fillMaxWidth()
-                            .height(PhonePanelHeight)
-                            .padding(top = 12.dp)
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp)
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState(), enabled = stage + controls > maxHeight)
                     ) {
-                        StudioPanelContent(state.panel, state, looks, cardScheme, onAction)
+                        StudioStage(
+                            state = state,
+                            cardScheme = cardScheme,
+                            layer = layer,
+                            onAction = onAction,
+                            wide = false,
+                            modifier = Modifier.height(stage).fillMaxWidth(),
+                        )
+                        if (subject != null) {
+                            PanelSelector(state.panel, onAction, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(PhonePanelHeight)
+                                    .padding(top = 12.dp)
+                                    .verticalScroll(rememberScrollState())
+                                    .padding(horizontal = 16.dp)
+                            ) {
+                                StudioPanelContent(state.panel, state, looks, cardScheme, onAction)
+                            }
+                        }
                     }
-                    StudioActionRow(actions, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
                 }
+                if (subject != null) StudioActionRow(actions, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             }
         }
     }
@@ -558,6 +569,12 @@ private fun StudioControlsPane(
 }
 
 private val ControlsPaneWidth = 544.dp
+
+/** The panel selector with its gap above, and the panel area under it. */
+private val PhoneControlsHeight = 56.dp + PhonePanelHeight
+
+/** Below this the card shrinks past reading, so the page scrolls instead. */
+private val MinStageHeight = 300.dp
 
 @Composable
 private fun StudioActionRow(actions: StudioActions, modifier: Modifier = Modifier) {
