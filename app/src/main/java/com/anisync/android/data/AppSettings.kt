@@ -6,6 +6,7 @@ import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.content.edit
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings.Companion.MAX_GRID_COLUMNS
@@ -614,7 +615,7 @@ class AppSettings @Inject constructor(
 
     fun setHideScoresOnCards(hidden: Boolean) {
         _hideScoresOnCards.value = hidden
-        prefs.edit().putBoolean(KEY_HIDE_SCORES_ON_CARDS, hidden).apply()
+        prefs.edit { putBoolean(KEY_HIDE_SCORES_ON_CARDS, hidden) }
     }
 
     private val _defaultCardSize = MutableStateFlow(readDefaultCardSize())
@@ -628,7 +629,7 @@ class AppSettings @Inject constructor(
 
     fun setDefaultCardSize(size: CardSize) {
         _defaultCardSize.value = size
-        prefs.edit().putString(KEY_DEFAULT_CARD_SIZE, size.name).apply()
+        prefs.edit { putString(KEY_DEFAULT_CARD_SIZE, size.name) }
     }
 
     private val _startScreen = MutableStateFlow(readStartScreen())
