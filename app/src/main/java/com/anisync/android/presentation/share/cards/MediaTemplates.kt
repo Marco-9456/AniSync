@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -621,7 +622,7 @@ private fun CardHeader(subject: ShareSubject.Media, spec: CardSpec) {
     val coverWidth = if (story) 112.dp else 88.dp
     val coverHeight = if (story) 158.dp else 124.dp
     val coverRise = if (story) 80.dp else 60.dp
-    Box(Modifier.fillMaxWidth().height(bannerHeight + coverHeight - coverRise + 2.dp)) {
+    Box(Modifier.fillMaxWidth().heightIn(min = bannerHeight + coverHeight - coverRise + 2.dp)) {
         CardPicture(
             url = subject.bannerUrl ?: subject.coverUrl,
             shape = RoundedCornerShape(0.dp),
