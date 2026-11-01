@@ -490,12 +490,14 @@ private fun StagePager(
             Spacer(Modifier.weight(1f))
             PagerDots(count = templates.size, current = pager.currentPage, modifier = Modifier.align(Alignment.CenterHorizontally))
             Spacer(Modifier.height(8.dp))
-            Text(
-                text = stringResource(if (wide) R.string.share_swipe_hint_keys else R.string.share_swipe_hint),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            )
+            if (templates.size > 1) {
+                Text(
+                    text = stringResource(if (wide) R.string.share_swipe_hint_keys else R.string.share_swipe_hint),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+            }
             Spacer(Modifier.height(if (wide) 46.dp else 14.dp))
         }
     }
