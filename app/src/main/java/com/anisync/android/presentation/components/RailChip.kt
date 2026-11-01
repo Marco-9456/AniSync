@@ -30,9 +30,9 @@ import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.rememberHapticFeedback
 
 /**
- * One chip of a [PinnedRail]: a 16dp glyph and its label, with the match count after it where the
- * rail has one. The Library tints the selected chip with the list's own colour, everything else
- * takes secondaryContainer.
+ * One chip of a [PinnedRail]: a 16dp glyph and its label, with a badge and the match count after it
+ * where the rail has them. The Library tints the selected chip with the list's own colour,
+ * everything else takes secondaryContainer.
  */
 @Composable
 fun RailChip(
@@ -42,6 +42,7 @@ fun RailChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     count: Int? = null,
+    badge: (@Composable () -> Unit)? = null,
     selectedContainer: Color = MaterialTheme.colorScheme.secondaryContainer,
     selectedContent: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
@@ -97,6 +98,7 @@ fun RailChip(
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
             )
+            badge?.invoke()
             if (count != null) {
                 Surface(shape = CircleShape, color = content.copy(alpha = 0.16f)) {
                     Text(
