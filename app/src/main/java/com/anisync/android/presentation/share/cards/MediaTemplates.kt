@@ -430,23 +430,25 @@ private fun BentoProgressTile(subject: ShareSubject.Media, size: CardSize, modif
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .padding(horizontal = 16.dp),
     ) {
-        Text(
-            text = statusLabel(subject).cardUpper(),
-            style = cardEyebrow(1f),
-            color = MaterialTheme.colorScheme.primary,
-            maxLines = if (size == CardSize.STORY) 2 else 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = if (chat) 12.dp else 16.dp),
-        )
-        val value = progressFractionText(subject) ?: totalText(subject)
-        if (value != null) {
+        val width = maxWidth
+        Column(Modifier.padding(top = if (chat) 12.dp else 16.dp)) {
             Text(
-                text = value,
-                style = fittedStyle(value, titleWide.style(if (chat) 22.sp else 28.sp, 34.sp), maxWidth),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                modifier = Modifier.padding(top = if (chat) 30.dp else 36.dp),
+                text = statusLabel(subject).cardUpper(),
+                style = cardEyebrow(1f),
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = if (size == CardSize.STORY) 2 else 1,
+                overflow = TextOverflow.Ellipsis,
             )
+            val value = progressFractionText(subject) ?: totalText(subject)
+            if (value != null) {
+                Text(
+                    text = value,
+                    style = fittedStyle(value, titleWide.style(if (chat) 22.sp else 28.sp, 34.sp), width),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    modifier = Modifier.padding(top = if (chat) 2.dp else 4.dp),
+                )
+            }
         }
         val fraction = progressFraction(subject)
         if (fraction != null) {
