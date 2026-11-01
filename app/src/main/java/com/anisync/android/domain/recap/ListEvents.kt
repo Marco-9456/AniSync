@@ -39,6 +39,19 @@ private fun statusKind(status: String?): StatusKind {
     }
 }
 
+/** True for an activity that can add episodes or chapters. Plans, pauses and drops never do. */
+fun isCountable(status: String?): Boolean = statusKind(status) != StatusKind.OTHER
+
+/**
+ * True for an activity that moves where a title's progress stands: a readable range, or a
+ * completion. The last one before a period is all a completion inside it needs to see.
+ */
+internal fun ListActivityRecord.movesProgress(): Boolean = when (statusKind(status)) {
+    StatusKind.PROGRESS, StatusKind.REPEAT_PROGRESS -> parseProgress(progress) != null
+    StatusKind.COMPLETED, StatusKind.REPEAT_COMPLETED -> true
+    StatusKind.OTHER -> false
+}
+
 /**
  * The range a progress string covers. AniList logs one update as "5" and merges consecutive ones
  * into "1 - 3". Anything else is unreadable and returns null.
