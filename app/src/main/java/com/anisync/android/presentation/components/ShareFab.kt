@@ -1,4 +1,4 @@
-package com.anisync.android.presentation.statistics
+package com.anisync.android.presentation.components
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -19,10 +19,9 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 
-/** Shares the statistics, floating over the dashboard on phones and tablets alike. */
+/** Opens the share studio, floating over a profile tab on phones and tablets alike. */
 @Composable
-fun StatsShareFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val description = stringResource(R.string.share_stats_card)
+fun ShareFab(description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     ExtendedFloatingActionButton(
         onClick = onClick,
         icon = { Icon(Icons.Default.Share, contentDescription = null) },
@@ -38,14 +37,14 @@ fun StatsShareFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
  * system navigation bar, or the system navigation bar alone.
  */
 @Composable
-fun statsFabBottomInset(): Dp {
+fun shareFabBottomInset(): Dp {
     val barInset = LocalMainNavBarInset.current
     return if (barInset > 0.dp) barInset else WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 }
 
 /** Bottom padding that lets a list scroll its last card clear of the share button. */
 @Composable
-fun statsFabClearance(): Dp = statsFabBottomInset() + FabClearance
+fun shareFabClearance(): Dp = shareFabBottomInset() + FabClearance
 
 /** The button's 16dp margin, its 56dp height and 16dp between it and the last card. */
 private val FabClearance = 88.dp

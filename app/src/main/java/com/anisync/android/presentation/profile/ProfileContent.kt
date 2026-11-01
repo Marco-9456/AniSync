@@ -67,6 +67,9 @@ import com.anisync.android.R
 import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.SegmentedTabGroup
+import com.anisync.android.presentation.components.ShareFab
+import com.anisync.android.presentation.components.shareFabBottomInset
+import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.WhatsNewDot
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
@@ -75,7 +78,6 @@ import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
-import com.anisync.android.presentation.statistics.statsFabBottomInset
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
@@ -90,8 +92,6 @@ import com.anisync.android.presentation.profile.sections.profileStatsTab
 import com.anisync.android.presentation.statistics.StatsRail
 import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.share.studio.ShareStudioSubject
-import com.anisync.android.presentation.statistics.StatsShareFab
-import com.anisync.android.presentation.statistics.statsFabClearance
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.launch
 import com.anisync.android.util.ShareUtils
@@ -273,7 +273,7 @@ fun ProfileContent(
         state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            bottom = if (showStatsFab) statsFabClearance() else LocalMainNavBarInset.current + 48.dp
+            bottom = if (showStatsFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
         )
     ) {
         item(key = "profile_header", contentType = "header") {
@@ -360,11 +360,12 @@ fun ProfileContent(
     }
 
     if (showStatsFab) {
-        StatsShareFab(
+        ShareFab(
+            description = stringResource(R.string.share_stats_card),
             onClick = shareStats,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 16.dp + statsFabBottomInset())
+                .padding(end = 16.dp, bottom = 16.dp + shareFabBottomInset())
         )
     }
     }

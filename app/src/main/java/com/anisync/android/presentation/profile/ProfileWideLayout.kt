@@ -21,9 +21,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import com.anisync.android.presentation.statistics.StatsShareFab
-import com.anisync.android.presentation.statistics.statsFabBottomInset
-import com.anisync.android.presentation.statistics.statsFabClearance
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -76,6 +73,9 @@ import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.components.ShareFab
+import com.anisync.android.presentation.components.shareFabBottomInset
+import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.profile.components.ProfileActionButtons
 import com.anisync.android.presentation.profile.components.ProfileAvatarHalfSize
@@ -835,7 +835,7 @@ private fun ProfileTabPane(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
-                        bottom = if (showStatsFab) statsFabClearance() else LocalMainNavBarInset.current + 48.dp
+                        bottom = if (showStatsFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
                     )
                 ) {
                     profileSelectedTabContent(
@@ -863,11 +863,12 @@ private fun ProfileTabPane(
                 }
 
                 if (showStatsFab) {
-                    StatsShareFab(
+                    ShareFab(
+                        description = stringResource(R.string.share_stats_card),
                         onClick = onShareStats,
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
-                            .padding(end = 16.dp, bottom = 16.dp + statsFabBottomInset())
+                            .padding(end = 16.dp, bottom = 16.dp + shareFabBottomInset())
                     )
                 }
             }
