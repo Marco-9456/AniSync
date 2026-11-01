@@ -73,8 +73,6 @@ import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.UserAvatar
-import com.anisync.android.presentation.components.ShareFab
-import com.anisync.android.presentation.components.shareFabBottomInset
 import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.profile.components.ProfileActionButtons
@@ -830,12 +828,12 @@ private fun ProfileTabPane(
                     )
                 }
             ) {
-                val showStatsFab = uiState.selectedTab == ProfileTab.STATS && uiState.statsData != null
+                val showShareFab = uiState.showsShareFab(profile)
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
-                        bottom = if (showStatsFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
+                        bottom = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
                     )
                 ) {
                     profileSelectedTabContent(
@@ -856,21 +854,11 @@ private fun ProfileTabPane(
                         onLastReplyClick = onLastReplyClick,
                         portraitColumns = portraitColumns,
                         studioColumns = studioColumns,
-                        statsColumns = statsColumns,
-                        showShareActions = true,
-                        onShareFavourites = onShareFavourites
+                        statsColumns = statsColumns
                     )
                 }
 
-                if (showStatsFab) {
-                    ShareFab(
-                        description = stringResource(R.string.share_stats_card),
-                        onClick = onShareStats,
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(end = 16.dp, bottom = 16.dp + shareFabBottomInset())
-                    )
-                }
+                if (showShareFab) ProfileShareFab(uiState, onShareStats = onShareStats, onShareFavourites = onShareFavourites)
             }
         }
     }

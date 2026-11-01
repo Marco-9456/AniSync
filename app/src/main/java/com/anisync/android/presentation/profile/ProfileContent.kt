@@ -5,22 +5,19 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
@@ -34,14 +31,10 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -268,12 +261,12 @@ fun ProfileContent(
             )
         }
     ) {
-    val showStatsFab = uiState.selectedTab == ProfileTab.STATS && uiState.statsData != null
+    val showShareFab = uiState.showsShareFab(profile)
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            bottom = if (showStatsFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
+            bottom = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
         )
     ) {
         item(key = "profile_header", contentType = "header") {
@@ -340,8 +333,6 @@ fun ProfileContent(
             portraitColumns = portraitColumns,
             studioColumns = studioColumns,
             statsColumns = statsColumns,
-            showShareActions = true,
-            onShareFavourites = shareFavourites,
             onStatsViewSelected = onStatsViewSelected
         )
     }
@@ -359,15 +350,7 @@ fun ProfileContent(
         }
     }
 
-    if (showStatsFab) {
-        ShareFab(
-            description = stringResource(R.string.share_stats_card),
-            onClick = shareStats,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 16.dp + shareFabBottomInset())
-        )
-    }
+    if (showShareFab) ProfileShareFab(uiState, onShareStats = shareStats, onShareFavourites = shareFavourites)
     }
     }
 
@@ -454,8 +437,6 @@ internal fun LazyListScope.profileSelectedTabContent(
     portraitColumns: Int,
     studioColumns: Int,
     statsColumns: Int,
-    showShareActions: Boolean = false,
-    onShareFavourites: () -> Unit = {},
     onStatsViewSelected: (StatsView) -> Unit = { onAction(ProfileAction.SelectStatsView(it)) }
 ) {
     when (uiState.selectedTab) {
@@ -553,19 +534,6 @@ internal fun LazyListScope.profileSelectedTabContent(
         }
 
         ProfileTab.FAVORITES -> {
-            val favShareable = when (uiState.selectedFavoritesFilter) {
-                ProfileFavoritesFilter.ANIME -> profile.favoriteAnime.isNotEmpty()
-                ProfileFavoritesFilter.MANGA -> profile.favoriteMangaOverview.isNotEmpty()
-                else -> false
-            }
-            if (showShareActions && favShareable) {
-                item(key = "favourites_share_action") {
-                    ShareTabAction(
-                        label = stringResource(R.string.share_favourites_card),
-                        onClick = onShareFavourites
-                    )
-                }
-            }
             profileFavoritesTab(
                 profile = profile,
                 selectedFilter = uiState.selectedFavoritesFilter,
@@ -610,29 +578,28 @@ internal fun LazyListScope.profileSelectedTabContent(
     }
 }
 
-/** Right-aligned share affordance rendered above a shareable profile tab's content. */
-@Composable
-private fun ShareTabAction(
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 12.dp),
-        horizontalArrangement = Arrangement.End
-    ) {
-        FilledTonalButton(onClick = onClick) {
-            Icon(
-                imageVector = Icons.Outlined.Image,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(label)
-        }
+/** Statistics once it has loaded and Favorites on a non-empty anime or manga list float the share button. */
+internal fun ProfileUiState.showsShareFab(profile: UserProfile): Boolean = when (selectedTab) {
+    ProfileTab.STATS -> statsData != null
+    ProfileTab.FAVORITES -> when (selectedFavoritesFilter) {
+        ProfileFavoritesFilter.ANIME -> profile.favoriteAnime.isNotEmpty()
+        ProfileFavoritesFilter.MANGA -> profile.favoriteMangaOverview.isNotEmpty()
+        else -> false
     }
+    else -> false
+}
+
+/** The share button of whichever tab is open, in the corner of the profile on phones and tablets alike. */
+@Composable
+internal fun BoxScope.ProfileShareFab(uiState: ProfileUiState, onShareStats: () -> Unit, onShareFavourites: () -> Unit) {
+    val stats = uiState.selectedTab == ProfileTab.STATS
+    ShareFab(
+        description = stringResource(if (stats) R.string.share_stats_card else R.string.share_favourites_card),
+        onClick = if (stats) onShareStats else onShareFavourites,
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 16.dp, bottom = 16.dp + shareFabBottomInset())
+    )
 }
 
 private fun profileTabIcon(tab: ProfileTab): ImageVector {
