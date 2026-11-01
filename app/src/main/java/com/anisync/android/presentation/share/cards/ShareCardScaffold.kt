@@ -232,6 +232,12 @@ fun CardBrand(
     }
 }
 
+/** The pill the brand sits on over artwork: a dark veil on a dark card, a tonal one on a light card. */
+@Composable
+@ReadOnlyComposable
+fun cardBrandVeil(): Color =
+    if (cardIsDark()) Color.Black.copy(alpha = 0.28f) else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f)
+
 /** The flat linear indicator the frames detach from the M3 kit: 4dp, round caps, stop dot. */
 @Composable
 fun CardProgressBar(progress: Float, modifier: Modifier = Modifier) {

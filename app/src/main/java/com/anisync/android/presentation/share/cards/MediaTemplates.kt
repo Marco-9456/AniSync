@@ -141,7 +141,7 @@ private fun PosterChat(subject: ShareSubject.Media, spec: CardSpec) {
         CardBrand(
             handle = subject.handle,
             spec = spec,
-            container = Color.Black.copy(alpha = 0.28f),
+            container = cardBrandVeil(),
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
     }
@@ -202,7 +202,7 @@ private fun PosterBeside(subject: ShareSubject.Media, spec: CardSpec, layout: Po
         CardBrand(
             handle = subject.handle,
             spec = spec,
-            container = Color.Black.copy(alpha = 0.28f),
+            container = cardBrandVeil(),
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
     }
@@ -243,7 +243,7 @@ private fun PosterStory(subject: ShareSubject.Media, spec: CardSpec) {
             PosterProgress(subject)
             Spacer(Modifier.height(16.dp))
         }
-        CardBrand(handle = subject.handle, spec = spec, container = Color.Black.copy(alpha = 0.28f))
+        CardBrand(handle = subject.handle, spec = spec, container = cardBrandVeil())
         Spacer(Modifier.height(14.dp))
     }
 }
@@ -549,7 +549,7 @@ private fun BentoAboutTile(subject: ShareSubject.Media, spec: CardSpec) {
     ) {
         MediaMeta(subject, spec, allStudios = true, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
         Spacer(Modifier.height(4.dp))
-        CardBrand(handle = subject.handle, spec = spec, container = Color.Black.copy(alpha = 0.28f))
+        CardBrand(handle = subject.handle, spec = spec, container = cardBrandVeil())
     }
 }
 
