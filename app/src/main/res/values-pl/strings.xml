@@ -1367,8 +1367,6 @@
     <string name="themes_failed_body">Dane AniList na tej stronie są nienaruszone. Tylko zapytanie do AnimeThemes się nie powiodło.</string>
     <string name="themes_empty">AnimeThemes nie posiada jeszcze tego tytułu.</string>
     <string name="themes_video">Wideo</string>
-    <string name="themes_variant_creditless"></string>
-    <string name="themes_variant_with_credits"></string>
     <string name="themes_performers">Wykonawcy</string>
     <string name="themes_performer_as">jako %1$s</string>
     <string name="themes_attribution">Dane motywu i wideo pochodzą z AnimeThemes.moe</string>
