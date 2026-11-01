@@ -120,9 +120,10 @@ private fun StatsBigNumber(subject: ShareSubject.Stats, spec: CardSpec) {
             modifier = Modifier.padding(start = layout.avatarStart, top = layout.avatarTop - reserve),
         )
         Column(Modifier.fillMaxWidth().then(if (fixed) Modifier.fillMaxSize() else Modifier).padding(top = layout.heroTop - reserve)) {
-            val heroStyle = heroWide.style(layout.heroSize.sp, layout.heroSize.sp, (-3).sp)
+            val heroText = formatExactCount(subject.count, locale)
+            val heroStyle = fittedStyle(heroText, heroWide.style(layout.heroSize.sp, layout.heroSize.sp, (-3).sp), 320.dp)
             Text(
-                text = formatExactCount(subject.count, locale),
+                text = heroText,
                 style = heroStyle,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
@@ -157,7 +158,7 @@ private fun StatsBigNumber(subject: ShareSubject.Stats, spec: CardSpec) {
                 CardCollage(
                     covers = subject.favourites,
                     slots = StripCollage,
-                    modifier = Modifier.padding(start = 24.dp, top = 4.dp).size(312.dp, 96.dp),
+                    modifier = Modifier.padding(start = 24.dp, top = 4.dp).size(312.dp, 92.dp),
                 )
             }
             if (spec.size == CardSize.PORTRAIT || spec.size == CardSize.STORY) {
@@ -178,7 +179,7 @@ private fun StatsBigNumber(subject: ShareSubject.Stats, spec: CardSpec) {
                 container = Color.Transparent,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
             )
-            Spacer(Modifier.height(if (spec.size == CardSize.CHAT) 20.dp else 16.dp))
+            Spacer(Modifier.height(if (spec.size == CardSize.CHAT) 20.dp else if (spec.size == CardSize.STORY) 0.dp else 16.dp))
         }
     }
 }
@@ -209,7 +210,9 @@ private fun StatsFacts(subject: ShareSubject.Stats, spec: CardSpec, modifier: Mo
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     .padding(10.dp)
             ) {
-                Text(value, style = titleWide.style(18.sp, 24.sp), color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                BoxWithConstraints {
+                    Text(value, style = fittedStyle(value, titleWide.style(18.sp, 24.sp), maxWidth), color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                }
                 Text(
                     text = label,
                     style = cardText(11, 16, FontWeight.Medium),
@@ -379,9 +382,10 @@ private fun BentoTotal(subject: ShareSubject.Stats, spec: CardSpec, modifier: Mo
             .clip(RoundedCornerShape(24.dp))
             .background(MaterialTheme.colorScheme.primaryContainer)
     ) {
-        val style = heroWide.style(52.sp, 56.sp, (-1.5).sp)
+        val total = formatExactCount(subject.count, locale)
+        val style = fittedStyle(total, heroWide.style(52.sp, 56.sp, (-1.5).sp), 168.dp)
         Text(
-            text = formatExactCount(subject.count, locale),
+            text = total,
             style = style,
             color = content,
             maxLines = 1,
