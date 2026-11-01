@@ -273,13 +273,15 @@ private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
                 val monthPx = monthRowDp.toPx()
                 val corner = CornerRadius(cellPx * 0.28f, cellPx * 0.28f)
 
+                // A month only a column old has no room for its name, so the label stays on one
+                // line and ends at the grid's edge instead of wrapping down over the cells.
+                var labelsEnd = 0f
                 model.monthLabels.forEach { (weekIndex, label) ->
-                    drawText(
-                        textMeasurer = textMeasurer,
-                        text = label,
-                        topLeft = Offset(weekIndex * stridePx, 0f),
-                        style = monthStyle
-                    )
+                    val layout = textMeasurer.measure(label, monthStyle, softWrap = false, maxLines = 1)
+                    val x = minOf(weekIndex * stridePx, size.width - layout.size.width).coerceAtLeast(0f)
+                    if (x < labelsEnd) return@forEach
+                    drawText(layout, topLeft = Offset(x, 0f))
+                    labelsEnd = x + layout.size.width + gapDp.toPx()
                 }
 
                 for (w in model.weeks.indices) {
