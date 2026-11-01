@@ -10,12 +10,16 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.presentation.components.PinnedRail
 import com.anisync.android.presentation.components.revealChip
 
-/** A profile tab's filters as a rail of chips, sitting under the tabs where the Statistics rail does. */
+/**
+ * A profile tab's filters as a rail of chips, sitting under the tabs where the Statistics rail does.
+ * The list tabs pin the anime and manga toggle at its start.
+ */
 @Composable
 internal fun <T : Enum<T>> ProfileTabRail(
     options: List<T>,
     selected: T,
     modifier: Modifier = Modifier,
+    pinned: (@Composable () -> Unit)? = null,
     chip: @Composable (option: T, selected: Boolean) -> Unit,
 ) {
     val listState = rememberLazyListState()
@@ -24,8 +28,9 @@ internal fun <T : Enum<T>> ProfileTabRail(
         if (index >= 0) listState.revealChip(index)
     }
     PinnedRail(
-        pinned = null,
+        pinned = pinned,
         listState = listState,
+        pinnedInsetEstimate = 120.dp,
         modifier = modifier.padding(top = 4.dp, bottom = 8.dp),
     ) {
         items(options, key = { it.name }) { option -> chip(option, option == selected) }

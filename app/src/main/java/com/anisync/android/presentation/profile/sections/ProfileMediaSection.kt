@@ -22,6 +22,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
+import com.anisync.android.presentation.components.MediaTypeToggle
 import com.anisync.android.presentation.library.LibraryTab
 import com.anisync.android.presentation.library.components.LibraryRailChip
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
@@ -38,13 +39,17 @@ private val mediaStatusTabOrder = listOf(
     LibraryStatus.DROPPED
 )
 
-/** The list tabs' statuses, docked with the profile tabs. */
+/**
+ * The list tabs' statuses, docked with the profile tabs. The type toggle pinned at the start moves
+ * between the Anime and Manga tabs, the way it switches libraries on the Library screen.
+ */
 @Composable
 internal fun MediaStatusRail(
     itemsByStatus: Map<LibraryStatus, List<LibraryEntry>>,
     selectedStatus: LibraryStatus,
     mediaType: MediaType,
-    onStatusSelected: (LibraryStatus) -> Unit
+    onStatusSelected: (LibraryStatus) -> Unit,
+    onMediaTypeSelected: (MediaType) -> Unit
 ) {
     val statuses = buildList {
         addAll(mediaStatusTabOrder)
@@ -53,7 +58,11 @@ internal fun MediaStatusRail(
             add(LibraryStatus.UNKNOWN)
         }
     }
-    ProfileTabRail(options = statuses, selected = selectedStatus) { status, selected ->
+    ProfileTabRail(
+        options = statuses,
+        selected = selectedStatus,
+        pinned = { MediaTypeToggle(selected = mediaType, onSelect = onMediaTypeSelected) }
+    ) { status, selected ->
         LibraryRailChip(
             tab = LibraryTab.Standard(status),
             mediaType = mediaType,

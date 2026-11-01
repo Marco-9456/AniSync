@@ -629,6 +629,9 @@ internal fun ProfileTabStrip(
     onFilterAction: (ProfileAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val selectListTab: (MediaType) -> Unit = {
+        onTabSelected(if (it == MediaType.MANGA) ProfileTab.MANGA else ProfileTab.ANIME)
+    }
     Column(modifier = modifier) {
         ProfileTabsButtonGroup(selectedTab = uiState.selectedTab, onTabSelected = onTabSelected)
         when (uiState.selectedTab) {
@@ -647,13 +650,15 @@ internal fun ProfileTabStrip(
                 itemsByStatus = uiState.userAnimeListByStatus,
                 selectedStatus = uiState.selectedAnimeStatus,
                 mediaType = MediaType.ANIME,
-                onStatusSelected = { onFilterAction(ProfileAction.SelectAnimeStatus(it)) }
+                onStatusSelected = { onFilterAction(ProfileAction.SelectAnimeStatus(it)) },
+                onMediaTypeSelected = selectListTab
             )
             ProfileTab.MANGA -> MediaStatusRail(
                 itemsByStatus = uiState.userMangaListByStatus,
                 selectedStatus = uiState.selectedMangaStatus,
                 mediaType = MediaType.MANGA,
-                onStatusSelected = { onFilterAction(ProfileAction.SelectMangaStatus(it)) }
+                onStatusSelected = { onFilterAction(ProfileAction.SelectMangaStatus(it)) },
+                onMediaTypeSelected = selectListTab
             )
             ProfileTab.FAVORITES -> FavoritesFilterRail(uiState.selectedFavoritesFilter) {
                 onFilterAction(ProfileAction.SelectFavoritesFilter(it))
