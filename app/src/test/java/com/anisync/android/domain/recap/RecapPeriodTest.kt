@@ -46,12 +46,10 @@ class RecapPeriodTest {
     }
 
     @Test
-    fun `a split window keeps every second`() {
+    fun `a narrowed window keeps the second it ends on`() {
         val window = ActivityWindow(1_000, 2_001)
-        val (first, second) = window.split()
-        assertEquals(window.from, first.from)
-        assertEquals(first.to, second.from)
-        assertEquals(window.to, second.to)
+        assertEquals(ActivityWindow(1_000, 1_501), window.endingAt(1_500))
+        assertNull(window.endingAt(2_000))
     }
 
     @Test
