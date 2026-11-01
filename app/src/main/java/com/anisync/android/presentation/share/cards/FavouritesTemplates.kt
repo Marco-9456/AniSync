@@ -25,9 +25,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -186,20 +189,51 @@ private fun RankedCover(entry: CardImage, rank: Int, size: Pair<Dp, Dp>, modifie
 @Composable
 private fun RankedList(entries: List<CardImage>, color: Color, modifier: Modifier = Modifier) {
     val items = entries.mapIndexed { index, entry -> stringResource(R.string.share_fav_rank_item, index + 1, entry.title) }
+    val style = cardText(12, 18, FontWeight.Medium)
     Column(modifier) {
-        items.chunked(3).take(2).forEach { line ->
-            Text(
-                text = line.joinToString(RankSeparator),
-                style = cardText(12, 18, FontWeight.Medium),
-                color = color,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        items.chunked(3).take(2).forEach { line -> RankLine(line, style, color) }
+    }
+}
+
+/** One line of ranks where a long title gives way first, so every rank on the line stays visible. */
+@Composable
+private fun RankLine(items: List<String>, style: TextStyle, color: Color) {
+    Layout(
+        content = {
+            items.forEach { Text(it, style = style, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        },
+    ) { measurables, constraints ->
+        val gap = RankGap.roundToPx()
+        val available = (constraints.maxWidth - gap * (measurables.size - 1)).coerceAtLeast(0)
+        val natural = measurables.map { it.maxIntrinsicWidth(constraints.maxHeight) }
+        val cap = fairShareCap(natural, available)
+        val placeables = measurables.mapIndexed { index, measurable ->
+            measurable.measure(Constraints(maxWidth = minOf(natural[index], cap)))
+        }
+        val width = (placeables.sumOf { it.width } + gap * (placeables.size - 1)).coerceIn(0, constraints.maxWidth)
+        layout(width, placeables.maxOfOrNull { it.height } ?: 0) {
+            var x = 0
+            placeables.forEach {
+                it.placeRelative(x, 0)
+                x += it.width + gap
+            }
         }
     }
 }
 
-private const val RankSeparator = "   "
+/** The widest any item may be so that all of [widths] fit in [available], the narrow ones keeping their full width. */
+internal fun fairShareCap(widths: List<Int>, available: Int): Int {
+    if (widths.sum() <= available) return Int.MAX_VALUE
+    var remaining = available
+    widths.sorted().forEachIndexed { index, width ->
+        val share = remaining / (widths.size - index)
+        if (width > share) return share
+        remaining -= width
+    }
+    return Int.MAX_VALUE
+}
+
+private val RankGap = 10.dp
 
 /** How much the collage gives up so a caption fits above the brand. */
 private const val CollageShrink = 0.9f

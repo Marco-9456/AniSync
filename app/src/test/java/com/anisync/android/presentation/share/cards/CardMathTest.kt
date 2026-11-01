@@ -35,4 +35,21 @@ class CardMathTest {
         assertEquals(255 / 9, red)
         assertEquals(pixels[0], pixels[8])
     }
+
+    @Test
+    fun `ranks that fit keep their full width`() {
+        assertEquals(Int.MAX_VALUE, fairShareCap(listOf(80, 90, 100), 300))
+    }
+
+    @Test
+    fun `a long rank gives way before the short ones`() {
+        val cap = fairShareCap(listOf(60, 400, 400), 300)
+        assertEquals(120, cap)
+        assertEquals(300, listOf(60, 400, 400).sumOf { minOf(it, cap) })
+    }
+
+    @Test
+    fun `a short rank stays whole when only one is long`() {
+        assertEquals(220, fairShareCap(listOf(40, 500, 40), 300))
+    }
 }
