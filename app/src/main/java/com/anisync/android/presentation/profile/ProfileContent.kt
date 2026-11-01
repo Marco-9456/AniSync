@@ -76,6 +76,10 @@ import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
 import com.anisync.android.presentation.util.profileGridColumns
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
+import com.anisync.android.presentation.profile.sections.ActivityFilterRail
+import com.anisync.android.presentation.profile.sections.FavoritesFilterRail
+import com.anisync.android.presentation.profile.sections.MediaStatusRail
+import com.anisync.android.presentation.profile.sections.SocialTabRail
 import com.anisync.android.presentation.profile.sections.profileActivityTab
 import com.anisync.android.presentation.profile.sections.profileFavoritesTab
 import com.anisync.android.presentation.profile.sections.profileMediaTab
@@ -235,12 +239,17 @@ fun ProfileContent(
             onAction(ProfileAction.SelectStatsView(view))
         }
     }
+    val onFilterAction: (ProfileAction) -> Unit = { action ->
+        onAction(action)
+        scope.launch { dockStrip() }
+    }
     val tabStrip: @Composable () -> Unit = {
         ProfileTabStrip(
             uiState = uiState,
             onTabSelected = onTabSelected,
             onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
-            onStatsViewSelected = onStatsViewSelected
+            onStatsViewSelected = onStatsViewSelected,
+            onFilterAction = onFilterAction
         )
     }
 
@@ -467,7 +476,6 @@ internal fun LazyListScope.profileSelectedTabContent(
             profileActivityTab(
                 profile = profile,
                 selectedFilter = uiState.selectedActivityFilter,
-                onFilterSelected = { onAction(ProfileAction.SelectActivityFilter(it)) },
                 onUserClick = onUserClick,
                 onActivityClick = onActivityClick,
                 onMediaClick = onMediaClick,
@@ -486,7 +494,6 @@ internal fun LazyListScope.profileSelectedTabContent(
         ProfileTab.SOCIAL -> {
             profileSocialTab(
                 uiState = uiState,
-                onTabSelected = { onAction(ProfileAction.SelectSocialTab(it)) },
                 onUserClick = onUserClick,
                 onThreadClick = onThreadClick,
                 onCommentClick = onCommentClick,
@@ -504,7 +511,6 @@ internal fun LazyListScope.profileSelectedTabContent(
             profileMediaTab(
                 itemsByStatus = uiState.userAnimeListByStatus,
                 selectedStatus = uiState.selectedAnimeStatus,
-                onStatusSelected = { onAction(ProfileAction.SelectAnimeStatus(it)) },
                 isLoading = uiState.isUserAnimeListLoading,
                 mediaType = MediaType.ANIME,
                 emptyMessageRes = R.string.profile_placeholder_anime,
@@ -521,7 +527,6 @@ internal fun LazyListScope.profileSelectedTabContent(
             profileMediaTab(
                 itemsByStatus = uiState.userMangaListByStatus,
                 selectedStatus = uiState.selectedMangaStatus,
-                onStatusSelected = { onAction(ProfileAction.SelectMangaStatus(it)) },
                 isLoading = uiState.isUserMangaListLoading,
                 mediaType = MediaType.MANGA,
                 emptyMessageRes = R.string.profile_placeholder_manga,
@@ -537,7 +542,6 @@ internal fun LazyListScope.profileSelectedTabContent(
             profileFavoritesTab(
                 profile = profile,
                 selectedFilter = uiState.selectedFavoritesFilter,
-                onFilterSelected = { onAction(ProfileAction.SelectFavoritesFilter(it)) },
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 onMediaClick = onMediaClick,
@@ -615,19 +619,20 @@ private fun profileTabIcon(tab: ProfileTab): ImageVector {
     }
 }
 
-/** The profile tabs, and under them the Statistics rail while Statistics is open. */
+/** The profile tabs, and under them the open tab's rail, so the two dock together. */
 @Composable
 internal fun ProfileTabStrip(
     uiState: ProfileUiState,
     onTabSelected: (ProfileTab) -> Unit,
     onStatsTypeSelected: (ProfileStatsType) -> Unit,
     onStatsViewSelected: (StatsView) -> Unit,
+    onFilterAction: (ProfileAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
         ProfileTabsButtonGroup(selectedTab = uiState.selectedTab, onTabSelected = onTabSelected)
-        if (uiState.selectedTab == ProfileTab.STATS) {
-            StatsRail(
+        when (uiState.selectedTab) {
+            ProfileTab.STATS -> StatsRail(
                 statsType = uiState.selectedStatsType,
                 views = StatsView.entries.filter { it != StatsView.RECAPS },
                 selectedView = uiState.selectedStatsView,
@@ -635,6 +640,26 @@ internal fun ProfileTabStrip(
                 onViewSelected = onStatsViewSelected,
                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
             )
+            ProfileTab.ACTIVITY -> ActivityFilterRail(uiState.selectedActivityFilter) {
+                onFilterAction(ProfileAction.SelectActivityFilter(it))
+            }
+            ProfileTab.ANIME -> MediaStatusRail(
+                itemsByStatus = uiState.userAnimeListByStatus,
+                selectedStatus = uiState.selectedAnimeStatus,
+                mediaType = MediaType.ANIME,
+                onStatusSelected = { onFilterAction(ProfileAction.SelectAnimeStatus(it)) }
+            )
+            ProfileTab.MANGA -> MediaStatusRail(
+                itemsByStatus = uiState.userMangaListByStatus,
+                selectedStatus = uiState.selectedMangaStatus,
+                mediaType = MediaType.MANGA,
+                onStatusSelected = { onFilterAction(ProfileAction.SelectMangaStatus(it)) }
+            )
+            ProfileTab.FAVORITES -> FavoritesFilterRail(uiState.selectedFavoritesFilter) {
+                onFilterAction(ProfileAction.SelectFavoritesFilter(it))
+            }
+            ProfileTab.SOCIAL -> SocialTabRail(uiState) { onFilterAction(ProfileAction.SelectSocialTab(it)) }
+            ProfileTab.OVERVIEW, ProfileTab.REVIEWS -> Unit
         }
     }
 }

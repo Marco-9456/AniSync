@@ -809,6 +809,7 @@ private fun ProfileTabPane(
                 onTabSelected = { onAction(ProfileAction.SelectTab(it)) },
                 onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
                 onStatsViewSelected = { onAction(ProfileAction.SelectStatsView(it)) },
+                onFilterAction = onAction,
                 modifier = Modifier.fillMaxWidth()
             )
 

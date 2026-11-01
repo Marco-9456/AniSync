@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -56,19 +54,19 @@ import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.domain.SocialThreadComment
 import com.anisync.android.domain.SocialUser
-import com.anisync.android.presentation.components.SegmentedTabItem
+import com.anisync.android.presentation.components.RailChip
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.components.shared.StatBadge
 import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
+import com.anisync.android.presentation.profile.components.ProfileTabRail
 import org.jsoup.Jsoup
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun LazyListScope.profileSocialTab(
     uiState: ProfileUiState,
-    onTabSelected: (ProfileSocialTab) -> Unit,
     modifier: Modifier = Modifier,
     onUserClick: (String) -> Unit = {},
     onThreadClick: (threadId: Int, threadTitle: String) -> Unit = { _, _ -> },
@@ -79,40 +77,6 @@ fun LazyListScope.profileSocialTab(
     onRemoveFollower: ((SocialUser) -> Unit)? = null
 ) {
     val selectedTab = uiState.selectedSocialTab
-    val tabs = ProfileSocialTab.entries
-    val selectedIndex = tabs.indexOf(selectedTab).coerceAtLeast(0)
-
-    item(key = "social_tabs") {
-        val whatsNewStore = LocalWhatsNew.current
-        val mutualsNew = WhatsNewItem.PROFILE_MUTUALS in rememberActiveWhatsNew()
-        LaunchedEffect(selectedTab) {
-            if (selectedTab == ProfileSocialTab.MUTUALS) whatsNewStore.markSeen(WhatsNewItem.PROFILE_MUTUALS)
-        }
-        LazyRow(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            itemsIndexed(tabs) { index, tab ->
-                SegmentedTabItem(
-                    index = index,
-                    selectedIndex = selectedIndex,
-                    selected = selectedTab == tab,
-                    onClick = { onTabSelected(tab) },
-                    icon = socialTabIcon(tab),
-                    label = stringResource(tab.labelRes),
-                    count = socialTabCount(uiState, tab),
-                    badge = if (tab == ProfileSocialTab.MUTUALS && mutualsNew) {
-                        { WhatsNewPill(WhatsNewItem.Kind.NEW) }
-                    } else {
-                        null
-                    }
-                )
-            }
-        }
-    }
 
     if (uiState.isSocialLoading) {
         item(key = "social_loading") {
@@ -303,6 +267,31 @@ private fun LazyListScope.renderSocialUsers(
 }
 
 /** Only the user lists carry a total; the forum tabs page without one. */
+/** The Social tab's lists with their counts, docked with the profile tabs. */
+@Composable
+internal fun SocialTabRail(uiState: ProfileUiState, onSelect: (ProfileSocialTab) -> Unit) {
+    val selectedTab = uiState.selectedSocialTab
+    val whatsNewStore = LocalWhatsNew.current
+    val mutualsNew = WhatsNewItem.PROFILE_MUTUALS in rememberActiveWhatsNew()
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == ProfileSocialTab.MUTUALS) whatsNewStore.markSeen(WhatsNewItem.PROFILE_MUTUALS)
+    }
+    ProfileTabRail(ProfileSocialTab.entries, selectedTab) { tab, selected ->
+        RailChip(
+            label = stringResource(tab.labelRes),
+            icon = socialTabIcon(tab),
+            selected = selected,
+            onClick = { onSelect(tab) },
+            count = socialTabCount(uiState, tab),
+            badge = if (tab == ProfileSocialTab.MUTUALS && mutualsNew) {
+                { WhatsNewPill(WhatsNewItem.Kind.NEW) }
+            } else {
+                null
+            }
+        )
+    }
+}
+
 private fun socialTabCount(uiState: ProfileUiState, tab: ProfileSocialTab): Int? = when (tab) {
     ProfileSocialTab.FOLLOWING -> uiState.followingTotal
     ProfileSocialTab.FOLLOWERS -> uiState.followersTotal

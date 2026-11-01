@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,11 +22,11 @@ import com.anisync.android.R
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
-import com.anisync.android.presentation.components.SegmentedTabItem
+import com.anisync.android.presentation.library.LibraryTab
+import com.anisync.android.presentation.library.components.LibraryRailChip
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.profile.components.ProfileMediaListCard
-import com.anisync.android.presentation.util.toIcon
-import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.presentation.profile.components.ProfileTabRail
 import com.anisync.android.type.MediaType
 
 private val mediaStatusTabOrder = listOf(
@@ -39,11 +38,36 @@ private val mediaStatusTabOrder = listOf(
     LibraryStatus.DROPPED
 )
 
+/** The list tabs' statuses, docked with the profile tabs. */
+@Composable
+internal fun MediaStatusRail(
+    itemsByStatus: Map<LibraryStatus, List<LibraryEntry>>,
+    selectedStatus: LibraryStatus,
+    mediaType: MediaType,
+    onStatusSelected: (LibraryStatus) -> Unit
+) {
+    val statuses = buildList {
+        addAll(mediaStatusTabOrder)
+        val hasUnknownEntries = itemsByStatus[LibraryStatus.UNKNOWN].orEmpty().isNotEmpty()
+        if (hasUnknownEntries || selectedStatus == LibraryStatus.UNKNOWN) {
+            add(LibraryStatus.UNKNOWN)
+        }
+    }
+    ProfileTabRail(options = statuses, selected = selectedStatus) { status, selected ->
+        LibraryRailChip(
+            tab = LibraryTab.Standard(status),
+            mediaType = mediaType,
+            count = itemsByStatus[status]?.size,
+            selected = selected,
+            onClick = { onStatusSelected(status) }
+        )
+    }
+}
+
 @OptIn(ExperimentalSharedTransitionApi::class)
 fun LazyListScope.profileMediaTab(
     itemsByStatus: Map<LibraryStatus, List<LibraryEntry>>,
     selectedStatus: LibraryStatus,
-    onStatusSelected: (LibraryStatus) -> Unit,
     isLoading: Boolean,
     mediaType: MediaType,
     @StringRes emptyMessageRes: Int,
@@ -54,35 +78,6 @@ fun LazyListScope.profileMediaTab(
     listColumns: Int = 1,
     modifier: Modifier = Modifier
 ) {
-    val statuses = buildList {
-        addAll(mediaStatusTabOrder)
-        val hasUnknownEntries = itemsByStatus[LibraryStatus.UNKNOWN].orEmpty().isNotEmpty()
-        if (hasUnknownEntries || selectedStatus == LibraryStatus.UNKNOWN) {
-            add(LibraryStatus.UNKNOWN)
-        }
-    }
-
-    item(key = "media_status_filters_$transitionPrefix", contentType = "filters") {
-        val selectedIndex = statuses.indexOf(selectedStatus).coerceAtLeast(0)
-
-        LazyRow(
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(top = 16.dp)
-        ) {
-            itemsIndexed(statuses) { index, status ->
-                SegmentedTabItem(
-                    index = index,
-                    selectedIndex = selectedIndex,
-                    selected = status == selectedStatus,
-                    onClick = { onStatusSelected(status) },
-                    icon = status.toIcon(mediaType),
-                    label = status.toLabel(mediaType)
-                )
-            }
-        }
-    }
-
     val items = itemsByStatus[selectedStatus].orEmpty()
     // A reload keeps the list on screen rather than swapping it for a spinner (#164).
     if (isLoading && items.isEmpty()) {
