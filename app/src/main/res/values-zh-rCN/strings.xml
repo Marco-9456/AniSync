@@ -114,4 +114,22 @@
     <string name="forum_closed_for_replies">已关闭回覆</string>
     <string name="forum_no_replies_yet">暂无回覆</string>
     <string name="forum_locked_badge">已锁定</string>
+    <string name="feed_menu_merge_window_description">AniList 合并你的动态更新之方式</string>
+    <string name="cd_feed_options">动态菜单</string>
+    <string name="forum_comment_unavailable">留言不可用，将从头显示帖子</string>
+    <string name="forum_search_prompt">搜寻讨论，按媒体、类别、作者过滤或排序</string>
+    <string name="forum_reorder_caption">拖曳以排列综览的区块，隐藏的区块将从清单移除</string>
+    <string name="forum_section_release_discussion">新连载讨论</string>
+    <string name="cd_sort_threads">排序帖子</string>
+    <string name="forum_category_release_discussion">新连载讨论</string>
+    <string name="forum_sort_best_match_note">“最佳匹配”只在你有输入搜寻字串时有效</string>
+    <string name="forum_action_subscribe_sub">在有新回覆时通知你</string>
+    <string name="cd_collapse">摺叠</string>
+    <string name="a11y_reply_count">%1$d 条新回覆</string>
+    <string name="a11y_view_count">%1$d 次浏览</string>
+    <string name="a11y_like_count">%1$d 次点讚</string>
+    <string name="forum_empty_browse_title">暂无帖子</string>
+    <string name="forum_empty_start_thread">开个新帖</string>
+    <string name="forum_empty_subscribed_title">暂无订阅</string>
+    <string name="forum_empty_subscribed_desc">订阅个帖子，然后你就能在此收到该帖的任何回覆~</string>
 </resources>
