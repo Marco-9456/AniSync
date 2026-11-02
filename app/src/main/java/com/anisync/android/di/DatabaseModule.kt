@@ -85,4 +85,9 @@ object DatabaseModule {
     fun provideMediaTagsDao(database: AppDatabase): com.anisync.android.data.local.dao.MediaTagsDao {
         return database.mediaTagsDao()
     }
+
+    @Provides
+    fun provideRecapDao(database: AppDatabase): com.anisync.android.data.local.dao.RecapDao {
+        return database.recapDao()
+    }
 }
