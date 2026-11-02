@@ -7,6 +7,7 @@ import com.anisync.android.data.NotificationBadgeStore
 import com.anisync.android.data.local.dao.AiringScheduleDao
 import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.dao.MediaDetailsDao
+import com.anisync.android.data.local.dao.RecapDao
 import com.anisync.android.data.local.dao.SavedForumThreadDao
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.PreferencesRepository
@@ -48,6 +49,7 @@ class AccountManager @Inject constructor(
     private val mediaDetailsDao: MediaDetailsDao,
     private val airingScheduleDao: AiringScheduleDao,
     private val savedForumThreadDao: SavedForumThreadDao,
+    private val recapDao: RecapDao,
     private val preferencesRepository: PreferencesRepository,
     private val appSettings: AppSettings,
     private val notificationBadgeStore: NotificationBadgeStore,
@@ -131,6 +133,8 @@ class AccountManager @Inject constructor(
                 }
                 // Drop the removed account's notification dedup state and cached token client.
                 preferencesRepository.clearForAccount(id)
+                // Recaps hold the account's whole list history, so they leave with it.
+                runCatching { recapDao.deleteOwner(id) }
                 token?.let(tokenedClientFactory::evict)
             }
         }
