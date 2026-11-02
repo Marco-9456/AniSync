@@ -65,6 +65,35 @@ class AnimeThemesApi @Inject constructor() {
         decodeThemes(post(payload.toString()))
     }
 
+    /**
+     * Themes for several AniList titles in one request, keyed by AniList id. A title AnimeThemes
+     * does not list is missing from the map. Results come back in AnimeThemes' order, so each one
+     * is matched to its title through the AniList id it carries.
+     */
+    suspend fun getThemes(anilistIds: List<Int>): Map<Int, MediaThemes> = withContext(Dispatchers.IO) {
+        if (anilistIds.isEmpty()) return@withContext emptyMap()
+        val payload = buildJsonObject {
+            put("query", THEMES_QUERY)
+            putJsonObject("variables") {
+                putJsonArray("id") { anilistIds.forEach { add(it) } }
+            }
+        }
+        decodeThemesById(post(payload.toString()))
+    }
+
+    internal fun decodeThemesById(body: String): Map<Int, MediaThemes> {
+        val response = json.decodeFromString<ThemesResponseDto>(body)
+        if (response.errors.isNotEmpty()) {
+            throw AnimeThemesException.Query(response.errors.mapNotNull { it.message })
+        }
+        val byId = LinkedHashMap<Int, MediaThemes>()
+        response.data?.anime.orEmpty().forEach { anime ->
+            val themes = MediaThemes(animeSlug = anime.slug, themes = anime.themes.mapNotNull { it.toDomain() })
+            anime.resources?.nodes.orEmpty().mapNotNull { it.externalId }.forEach { id -> byId.putIfAbsent(id, themes) }
+        }
+        return byId
+    }
+
     internal fun decodeThemes(body: String): MediaThemes {
         val response = json.decodeFromString<ThemesResponseDto>(body)
         if (response.errors.isNotEmpty()) {
@@ -113,6 +142,7 @@ class AnimeThemesApi @Inject constructor() {
             query(${'$'}id: [Int!]) {
               findAnimeByExternalSite(site: ANILIST, id: ${'$'}id) {
                 slug
+                resources(site: ANILIST) { nodes { externalId } }
                 animethemes {
                   id type sequence slug
                   group { name }
@@ -176,8 +206,15 @@ private data class ThemesDataDto(
 @Serializable
 private data class AnimeDto(
     val slug: String? = null,
+    val resources: ResourceConnectionDto? = null,
     @SerialName("animethemes") val themes: List<ThemeDto> = emptyList()
 )
+
+@Serializable
+private data class ResourceConnectionDto(val nodes: List<ResourceDto> = emptyList())
+
+@Serializable
+private data class ResourceDto(val externalId: Int? = null)
 
 @Serializable
 private data class ThemeDto(
