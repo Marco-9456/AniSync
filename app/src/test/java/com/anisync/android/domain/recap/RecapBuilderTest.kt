@@ -133,8 +133,27 @@ class RecapBuilderTest {
         assertEquals(LocalDate.of(2026, 9, 20), recap.biggestDay.date)
         assertEquals(24, recap.biggestDay.episodes)
         assertEquals(3, recap.biggestDay.leadingMediaId)
+        assertEquals(listOf(3), recap.biggestDay.leaders)
         assertEquals(DayOfWeek.SUNDAY, recap.busiestWeekday)
         assertEquals(31, recap.episodesByWeekday.getValue(DayOfWeek.SUNDAY))
+    }
+
+    @Test
+    fun `titles tied on the biggest day are all named, adult ones only when shown`() {
+        val tie = records + listOf(
+            anime(5, "watched episode", "16 - 39", at(9, 29, 10)),
+            anime(4, "rewatched episode", "1 - 4", at(9, 29, 11)),
+            anime(6, "rewatched episode", "1 - 6", at(9, 29, 12)),
+            anime(9, "watched episode", "383 - 406", at(9, 29, 13)),
+            anime(6, "watched episode", "1 - 24", at(9, 29, 14)),
+        )
+        val hidden = buildRecap(september, tie, media, RecapSettings(), zone)!!.biggestDay
+        assertEquals(LocalDate.of(2026, 9, 29), hidden.date)
+        assertEquals(24, hidden.leadingEpisodes)
+        assertEquals(listOf(5, 9), hidden.leaders)
+        assertEquals(5, hidden.leadingMediaId)
+        val shown = buildRecap(september, tie, media, RecapSettings(showAdult = true), zone)!!.biggestDay
+        assertEquals(listOf(5, 6, 9), shown.leaders)
     }
 
     @Test

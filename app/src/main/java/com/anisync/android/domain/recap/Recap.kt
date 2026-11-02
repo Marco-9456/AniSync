@@ -98,6 +98,8 @@ data class BiggestDay(
     /** The title with the most episodes that day, and how many of them were its. */
     val leadingMediaId: Int?,
     val leadingEpisodes: Int,
+    /** Every title that may be shown with that many episodes, lowest id first ("Animation! and Bananya"). */
+    val leaders: List<Int> = listOfNotNull(leadingMediaId),
 )
 
 data class MangaRecap(

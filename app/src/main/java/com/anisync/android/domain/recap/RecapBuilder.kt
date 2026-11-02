@@ -139,13 +139,15 @@ private fun biggestDay(
 ): BiggestDay {
     val byDay = counted.groupBy(dateOf)
     val (date, events) = byDay.entries.maxWith(compareBy({ it.value.sumOf { event -> event.units } }, { it.key }))
-    val leading = events.groupingBy { it.mediaId }.fold(0) { sum, event -> sum + event.units }
-        .entries.maxWith(compareBy({ it.value }, { -it.key }))
+    val byTitle = events.groupingBy { it.mediaId }.fold(0) { sum, event -> sum + event.units }
+    val most = byTitle.values.max()
+    val tied = byTitle.filterValues { it == most }.keys.sorted()
     return BiggestDay(
         date = date,
         episodes = events.sumOf { it.units },
-        leadingMediaId = leading.key.takeIf(visible),
-        leadingEpisodes = leading.value,
+        leadingMediaId = tied.first().takeIf(visible),
+        leadingEpisodes = most,
+        leaders = tied.filter(visible),
     )
 }
 
