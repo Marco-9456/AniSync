@@ -49,8 +49,9 @@ fun buildRecap(
     fun dateOf(event: CountedEvent): LocalDate = Instant.ofEpochSecond(event.createdAt).atZone(zone).toLocalDate()
     fun visible(mediaId: Int): Boolean = settings.showAdult || media[mediaId]?.isAdult != true
 
-    val events = countEvents(records) { media[it]?.totalUnits }
-        .filter { dateOf(it) in period && (settings.countRepeats || !it.isRepeat) }
+    val inPeriod = countEvents(records) { media[it]?.totalUnits }.filter { dateOf(it) in period }
+    val events = inPeriod
+        .filter { settings.countRepeats || !it.isRepeat }
         .filterNot { it.isCatchUp(media[it.mediaId]) }
     val anime = events.filter { it.type == RecapMediaType.ANIME }
     val counted = anime.filter { it.units > 0 }
@@ -98,6 +99,7 @@ fun buildRecap(
         finished = finishedAt.size,
         started = counted.filter { !it.isRepeat && it.range?.first == 1 }.map { it.mediaId }.toSet().size,
         activeDays = episodesByDay.size,
+        updates = inPeriod.count { it.type == RecapMediaType.ANIME || settings.includeManga },
         ranked = ranked,
         finishedTitles = finishedAt.entries.sortedBy { it.value }.map { it.key }.filter(::visible),
         genres = minutesBy(minutesByTitle, ::visible) { media[it]?.genres.orEmpty() },

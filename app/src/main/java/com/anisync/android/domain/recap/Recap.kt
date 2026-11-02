@@ -56,6 +56,8 @@ data class Recap(
     val finished: Int,
     val started: Int,
     val activeDays: Int,
+    /** List updates logged in the period, counted or not, manga ones only when manga counts. */
+    val updates: Int = 0,
     /** Every title watched, by time, adult ones left out unless they may be shown. */
     val ranked: List<RankedTitle>,
     /** Finished titles in the order they were finished, adult ones left out unless shown. */
