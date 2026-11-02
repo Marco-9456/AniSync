@@ -50,6 +50,7 @@ class AccountManager @Inject constructor(
     private val airingScheduleDao: AiringScheduleDao,
     private val savedForumThreadDao: SavedForumThreadDao,
     private val recapDao: RecapDao,
+    private val recapNotices: com.anisync.android.data.RecapNotices,
     private val preferencesRepository: PreferencesRepository,
     private val appSettings: AppSettings,
     private val notificationBadgeStore: NotificationBadgeStore,
@@ -135,6 +136,7 @@ class AccountManager @Inject constructor(
                 preferencesRepository.clearForAccount(id)
                 // Recaps hold the account's whole list history, so they leave with it.
                 runCatching { recapDao.deleteOwner(id) }
+                recapNotices.clear(id)
                 token?.let(tokenedClientFactory::evict)
             }
         }
