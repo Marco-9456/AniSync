@@ -18,6 +18,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -37,6 +38,7 @@ import com.anisync.android.domain.formatHours
 import com.anisync.android.domain.formatOneDecimal
 import com.anisync.android.domain.recap.RecapPeriod
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
@@ -63,6 +65,11 @@ fun RecapBuilderScreen(
 
 @Composable
 private fun BuilderCard(state: RecapBuilderUiState, onAction: (RecapBuilderAction) -> Unit) {
+    // Last month's and last year's keys, the two shapes the field reads.
+    val examples = remember {
+        val lastMonth = YearMonth.now().minusMonths(1)
+        RecapPeriod.Month(lastMonth).key to RecapPeriod.Year(lastMonth.year - 1).key
+    }
     DevCard(
         title = stringResource(R.string.dev_recap_builder),
         subtitle = stringResource(R.string.dev_recap_builder_subtitle),
@@ -78,7 +85,7 @@ private fun BuilderCard(state: RecapBuilderUiState, onAction: (RecapBuilderActio
         OutlinedTextField(
             value = state.period,
             onValueChange = { onAction(RecapBuilderAction.SetPeriod(it)) },
-            label = { Text(stringResource(R.string.dev_recap_period)) },
+            label = { Text(stringResource(R.string.dev_recap_period, examples.first, examples.second)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth(),
