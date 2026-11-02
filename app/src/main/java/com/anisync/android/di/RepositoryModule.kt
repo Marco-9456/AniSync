@@ -11,6 +11,7 @@ import com.anisync.android.data.LinkPreviewProviderImpl
 import com.anisync.android.data.MediaThemesRepositoryImpl
 import com.anisync.android.data.NotificationRepositoryImpl
 import com.anisync.android.data.ProfileRepositoryImpl
+import com.anisync.android.data.RecapRepositoryImpl
 import com.anisync.android.data.SearchRepositoryImpl
 import com.anisync.android.data.StatisticsRepositoryImpl
 import com.anisync.android.data.UserOptionsRepositoryImpl
@@ -27,6 +28,7 @@ import com.anisync.android.domain.MediaThemesRepository
 import com.anisync.android.domain.NotificationRepository
 import com.anisync.android.domain.PreferencesRepository
 import com.anisync.android.domain.ProfileRepository
+import com.anisync.android.domain.RecapRepository
 import com.anisync.android.domain.SearchRepository
 import com.anisync.android.domain.StatisticsRepository
 import com.anisync.android.domain.UserOptionsRepository
@@ -113,4 +115,9 @@ abstract class RepositoryModule {
     abstract fun bindMediaThemesRepository(
         impl: MediaThemesRepositoryImpl
     ): MediaThemesRepository
+
+    @Binds
+    abstract fun bindRecapRepository(
+        impl: RecapRepositoryImpl
+    ): RecapRepository
 }
