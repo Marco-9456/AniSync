@@ -227,6 +227,62 @@ class MigrationTest {
         }
     }
 
+    /**
+     * v29 to v30 added the `recaps` table.
+     *
+     * Same risk as the v29 table: nothing in the SQL can lose data, but a missing `@AutoMigration`
+     * entry would hand the upgrade to `fallbackToDestructiveMigration` and drop every library.
+     */
+    @Test
+    fun migrate29To30_addsRecapsWithoutLosingEntries() {
+        helper.createDatabase(TEST_DB, 29).apply {
+            execSQL(
+                """
+                INSERT INTO library_entries (
+                    id, mediaId, titleUserPreferred, progress, status, rewatches, lastUpdated
+                ) VALUES (1, 100, 'Test Anime', 5, 'CURRENT', 0, 1700000000)
+                """.trimIndent()
+            )
+            execSQL(
+                """
+                INSERT INTO media_tags (mediaId, tags, fetchedAt)
+                VALUES (100, '[]', 1700000000)
+                """.trimIndent()
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(TEST_DB, 30, true)
+
+        db.query("SELECT progress, titleUserPreferred FROM library_entries WHERE id = 1").use { cursor ->
+            assertEquals(1, cursor.count)
+            cursor.moveToFirst()
+            assertEquals(5, cursor.getInt(0))
+            assertEquals("Test Anime", cursor.getString(1))
+        }
+        db.query("SELECT mediaId FROM media_tags").use { cursor ->
+            assertEquals(1, cursor.count)
+        }
+
+        // Two accounts keep their own recap of the same month.
+        db.execSQL(
+            """
+            INSERT INTO recaps (ownerId, periodKey, kind, builtAt, isFinal, settingsKey, seenAt, payload)
+            VALUES
+                (10, '2026-09', 'MONTH', 1790000000000, 1, 'm1r0a0', NULL, '{"v":1}'),
+                (20, '2026-09', 'MONTH', 1790000000000, 1, 'm1r0a0', 1790000000500, '{"v":1}')
+            """.trimIndent()
+        )
+        db.query("SELECT ownerId, seenAt FROM recaps WHERE periodKey = '2026-09' ORDER BY ownerId").use { cursor ->
+            assertEquals(2, cursor.count)
+            cursor.moveToFirst()
+            assertEquals(10, cursor.getInt(0))
+            assertEquals(true, cursor.isNull(1))
+            cursor.moveToNext()
+            assertEquals(20, cursor.getInt(0))
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════════
     //                         MIGRATION TEST TEMPLATES
     // ═══════════════════════════════════════════════════════════════════════════
