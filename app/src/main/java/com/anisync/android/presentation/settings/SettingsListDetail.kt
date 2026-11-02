@@ -38,6 +38,7 @@ import com.anisync.android.presentation.navigation.SettingsLookAndFeel
 import com.anisync.android.presentation.navigation.SettingsMediaUpload
 import com.anisync.android.presentation.navigation.SettingsNotifications
 import com.anisync.android.presentation.navigation.SettingsOpenSourceLicenses
+import com.anisync.android.presentation.navigation.SettingsRecapBuilder
 import com.anisync.android.presentation.navigation.SettingsSponsors
 import com.anisync.android.presentation.navigation.SettingsStorage
 import com.anisync.android.presentation.navigation.SettingsUpdates
@@ -218,9 +219,11 @@ private fun SettingsDetailPane(
             DeveloperToolsScreen(
                 onBackClick = popOrClose,
                 onFontPlaygroundClick = { paneNav.navigate(SettingsFontPlayground) },
+                onRecapBuilderClick = { paneNav.navigate(SettingsRecapBuilder) },
             )
         }
         composable<SettingsFontPlayground> { FontSettingsScreen(onBackClick = popOrClose) }
+        composable<SettingsRecapBuilder> { RecapBuilderScreen(onBackClick = popOrClose) }
     }
     }
 }

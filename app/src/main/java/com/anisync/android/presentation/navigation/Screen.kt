@@ -457,6 +457,10 @@ object SettingsDeveloperTools
 @Serializable
 object SettingsFontPlayground
 
+/** Developer Tools' recap builder, for checking recap numbers against any public user. */
+@Serializable
+object SettingsRecapBuilder
+
 /**
  * Media upload host configuration (Catbox / Litterbox / custom).
  */

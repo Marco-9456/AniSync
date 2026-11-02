@@ -73,6 +73,7 @@ import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
 import com.anisync.android.presentation.settings.AniListSettingsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
+import com.anisync.android.presentation.settings.RecapBuilderScreen
 import com.anisync.android.presentation.settings.FontSettingsScreen
 import com.anisync.android.presentation.settings.GeneralScreen
 import com.anisync.android.presentation.settings.LanguageScreen
@@ -1508,7 +1509,8 @@ fun AniSyncNavHost(
             ) {
                 DeveloperToolsScreen(
                     onBackClick = { navController.popBackStack() },
-                    onFontPlaygroundClick = { navController.navigate(SettingsFontPlayground) }
+                    onFontPlaygroundClick = { navController.navigate(SettingsFontPlayground) },
+                    onRecapBuilderClick = { navController.navigate(SettingsRecapBuilder) }
                 )
             }
 
@@ -1520,6 +1522,18 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 FontSettingsScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Recap builder (Developer Tools)
+            composable<SettingsRecapBuilder>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                RecapBuilderScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }

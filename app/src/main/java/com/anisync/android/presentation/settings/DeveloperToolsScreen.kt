@@ -42,6 +42,7 @@ import com.anisync.android.presentation.util.LocalAppSettings
 fun DeveloperToolsScreen(
     onBackClick: () -> Unit,
     onFontPlaygroundClick: () -> Unit,
+    onRecapBuilderClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -87,6 +88,11 @@ fun DeveloperToolsScreen(
                 title = stringResource(R.string.settings_font_playground),
                 subtitle = stringResource(R.string.settings_font_playground_subtitle),
                 onClick = onFontPlaygroundClick
+            )
+            SettingsItem(
+                title = stringResource(R.string.dev_recap_builder),
+                subtitle = stringResource(R.string.dev_recap_builder_subtitle),
+                onClick = onRecapBuilderClick
             )
         }
 
