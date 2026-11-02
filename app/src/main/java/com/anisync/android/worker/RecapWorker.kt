@@ -11,6 +11,8 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
+import com.anisync.android.data.account.AccountStore
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.network.RequestPriority
 import com.anisync.android.data.network.withRequestPriority
@@ -43,17 +45,34 @@ class RecapWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val recapRepository: RecapRepository,
     private val appSettings: AppSettings,
+    private val accountStore: AccountStore,
+    private val notifier: RecapNotifier,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
+        if (inputData.getBoolean(KEY_FIRST_BUILD, false)) return firstBuild()
+        val owner = accountStore.activeAccount.value?.id
         val outcome = withRequestPriority(RequestPriority.Background) {
             recapRepository.buildDue(monthly = appSettings.recapMonthly.value, yearly = appSettings.recapYearly.value)
         }
-        if (outcome is DomainResult.Error) {
-            Log.w(TAG, "Recap build failed: ${outcome.message}")
-            if (outcome.isWorthRetrying() && runAttemptCount < MAX_ATTEMPTS) return Result.retry()
+        when (outcome) {
+            is DomainResult.Success -> if (owner != null) notifier.announce(owner, outcome.data)
+            is DomainResult.Error -> {
+                Log.w(TAG, "Recap build failed: ${outcome.message}")
+                if (outcome.isWorthRetrying() && runAttemptCount < MAX_ATTEMPTS) return Result.retry()
+            }
         }
         schedule(applicationContext, appSettings.recapTime.value, ExistingWorkPolicy.APPEND_OR_REPLACE)
+        return Result.success()
+    }
+
+    /** The first build a shelf asks for: everything retention keeps, no notification, no schedule change. */
+    private suspend fun firstBuild(): Result {
+        val outcome = withRequestPriority(RequestPriority.Background) { recapRepository.backfill() }
+        if (outcome is DomainResult.Error) {
+            Log.w(TAG, "First recap build failed: ${outcome.message}")
+            if (outcome.isWorthRetrying() && runAttemptCount < MAX_ATTEMPTS) return Result.retry()
+        }
         return Result.success()
     }
 
@@ -85,6 +104,23 @@ class RecapWorker @AssistedInject constructor(
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
                 .build()
             WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(WORK_NAME, policy, request)
+        }
+
+        const val FIRST_BUILD_NAME = "recap_first_build"
+        private const val KEY_FIRST_BUILD = "first_build"
+
+        /**
+         * Builds every recap retention keeps, for an account with none stored yet. KEEP holds a build
+         * that is already queued or running, so opening the shelf again never starts a second one.
+         */
+        fun firstBuild(context: Context) {
+            val request = OneTimeWorkRequestBuilder<RecapWorker>()
+                .setInputData(workDataOf(KEY_FIRST_BUILD to true))
+                .setConstraints(constraints)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
+                .build()
+            WorkManager.getInstance(context.applicationContext)
+                .enqueueUniqueWork(FIRST_BUILD_NAME, ExistingWorkPolicy.KEEP, request)
         }
 
         /** Developer Tools: runs the job now, as it would run on the 1st, then queues the next one. */

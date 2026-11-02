@@ -22,6 +22,7 @@ object NotificationChannels {
     const val ACTIVITY_LIKE_CHANNEL_ID = "activity_like_notifications"
     const val ACTIVITY_MESSAGE_CHANNEL_ID = "activity_message_notifications"
     const val FOLLOW_CHANNEL_ID = "follow_notifications"
+    const val RECAPS_CHANNEL_ID = "recap_notifications"
 
     private const val GROUP_AIRING_ID = "group_airing"
     private const val GROUP_FORUM_ID = "group_forum"
@@ -62,6 +63,7 @@ object NotificationChannels {
             ChannelSpec(ACTIVITY_LIKE_CHANNEL_ID, R.string.notification_channel_activity_like, R.string.notification_channel_activity_like_desc, GROUP_ACTIVITY_ID),
             ChannelSpec(ACTIVITY_MESSAGE_CHANNEL_ID, R.string.notification_channel_activity_message, R.string.notification_channel_activity_message_desc, GROUP_ACTIVITY_ID),
             ChannelSpec(FOLLOW_CHANNEL_ID, R.string.notification_follows, R.string.notification_follows_desc, GROUP_ACTIVITY_ID),
+            ChannelSpec(RECAPS_CHANNEL_ID, R.string.notification_channel_recaps, R.string.notification_channel_recaps_desc, GROUP_OTHER_ID),
             ChannelSpec(UPDATE_CHANNEL_ID, R.string.update_notification_channel_name, R.string.update_notification_channel_desc, GROUP_OTHER_ID),
         )
 
