@@ -23,6 +23,8 @@ sealed interface RecapPeriod {
         override val firstDay: LocalDate get() = LocalDate.of(year, 1, 1)
         override val lastDay: LocalDate get() = LocalDate.of(year, 12, 31)
         override val previous: RecapPeriod get() = Year(year - 1)
+
+        val months: List<Month> get() = (1..12).map { Month(YearMonth.of(year, it)) }
     }
 
     operator fun contains(date: LocalDate): Boolean = !date.isBefore(firstDay) && !date.isAfter(lastDay)

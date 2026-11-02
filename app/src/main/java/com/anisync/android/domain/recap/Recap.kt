@@ -41,7 +41,12 @@ data class RecapSettings(
     val countRepeats: Boolean = false,
     /** With adult content off, adult titles still count but are never named or shown. */
     val showAdult: Boolean = false,
-)
+) {
+    /** A short stamp of these choices, stored with a recap to say which ones it was counted with. */
+    val key: String get() = "m${includeManga.bit}r${countRepeats.bit}a${showAdult.bit}"
+
+    private val Boolean.bit: Int get() = if (this) 1 else 0
+}
 
 data class Recap(
     val period: RecapPeriod,
