@@ -961,7 +961,7 @@
     <string name="onboarding_sync_widgets_placed">已放置 %1$d</string>
     <string name="onboarding_continue">繼續</string>
     <string name="onboarding_skip">跳過</string>
-    <string name="onboarding_sync_note">在此之後，一切將在背景默然更新</string>
+    <string name="onboarding_sync_note">在此之後，一切將在背景默默更新</string>
     <string name="onboarding_step_of">步驟 %1$d 之 %2$d</string>
     <string name="onboarding_state_on">就緒</string>
     <string name="onboarding_state_off">關閉</string>
@@ -1527,7 +1527,7 @@
     <string name="filter_episodes">集數</string>
     <string name="filter_chapters">章節數</string>
     <string name="filter_adult_content">成人內容</string>
-    <string name="filter_any">任何</string>
+    <string name="filter_any">不限</string>
     <string name="filter_at_least">至少</string>
     <string name="filter_at_most">至多</string>
     <string name="filter_exactly">匹配</string>
@@ -1573,7 +1573,7 @@
     <string name="label_locked">已鎖定</string>
     <string name="pane_close">關閉</string>
     <string name="share_media_tba">待定</string>
-    <string name="forum_last_by">由 %1$s 發布 · %2$s</string>
+    <string name="forum_last_by">由 %1$s 最後回覆 • %2$s</string>
     <string name="show_more">顯示更多</string>
     <string name="show_less">顯示更少</string>
     <string name="alert_offline_body">檢查網路連線後重試</string>
@@ -1603,4 +1603,5 @@
     <string name="details_score_info_body">AniList 會根據評分人數對每部作品的平均分進行加權，於是少數高分將不會使作品的排名超過成千上萬人認可的佳作。隨著越來越多人來評分，加權分數將會逐漸接近平均分，但恆不超越。</string>
     <string name="studio_stat_span">活動期間</string>
     <string name="share_review_byline">心得作者：</string>
+    <string name="library_progress_out">%1$d / %2$d（已播）</string>
 </resources>
