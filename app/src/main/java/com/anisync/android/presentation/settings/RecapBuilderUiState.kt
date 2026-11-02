@@ -15,6 +15,10 @@ data class RecapBuilderUiState(
     /** True when the user id, period or zone cannot be read. */
     val inputError: Boolean = false,
     val preview: RecapPreview? = null,
+    /** The signed-in account's own recap of the period, as the app stores it. */
+    val opened: StoredRecap? = null,
+    /** True when the signed-in account has nothing counted in the period. */
+    val openedNothing: Boolean = false,
     val buildError: String? = null,
     val stored: List<StoredRecap> = emptyList(),
     val includeManga: Boolean = true,
@@ -26,6 +30,7 @@ sealed interface RecapBuilderAction {
     data class SetPeriod(val value: String) : RecapBuilderAction
     data class SetZone(val value: String) : RecapBuilderAction
     data object Build : RecapBuilderAction
+    data object OpenMine : RecapBuilderAction
     data object RunJob : RecapBuilderAction
     data object ClearStored : RecapBuilderAction
     data class SetIncludeManga(val enabled: Boolean) : RecapBuilderAction

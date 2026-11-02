@@ -1889,6 +1889,7 @@
     <string name="dev_recap_period">Month or year, such as 2026-09 or 2025</string>
     <string name="dev_recap_zone">Time zone, such as Asia/Riyadh or UTC+3</string>
     <string name="dev_recap_build">Build</string>
+    <string name="dev_recap_open_mine">Open for my account</string>
     <string name="dev_recap_building">Building…</string>
     <string name="dev_recap_invalid_input">Check the user id, the period and the time zone</string>
     <string name="dev_recap_nothing">Nothing counts in this period</string>

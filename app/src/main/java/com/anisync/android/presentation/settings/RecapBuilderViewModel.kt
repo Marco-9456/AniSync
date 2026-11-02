@@ -51,6 +51,7 @@ class RecapBuilderViewModel @Inject constructor(
             is RecapBuilderAction.SetPeriod -> form.update { it.copy(period = action.value, inputError = false) }
             is RecapBuilderAction.SetZone -> form.update { it.copy(zone = action.value, inputError = false) }
             RecapBuilderAction.Build -> build()
+            RecapBuilderAction.OpenMine -> openMine()
             RecapBuilderAction.RunJob -> RecapWorker.runNow(context)
             RecapBuilderAction.ClearStored -> viewModelScope.launch { recapRepository.clear() }
             is RecapBuilderAction.SetIncludeManga -> appSettings.setRecapIncludeManga(action.enabled)
@@ -68,10 +69,29 @@ class RecapBuilderViewModel @Inject constructor(
             form.update { it.copy(inputError = true) }
             return
         }
-        form.update { it.copy(isBuilding = true, buildError = null, preview = null) }
+        form.update { it.copy(isBuilding = true, buildError = null, preview = null, opened = null, openedNothing = false) }
         viewModelScope.launch {
             when (val result = recapRepository.previewRecap(userId, period, zone)) {
                 is Result.Success -> form.update { it.copy(isBuilding = false, preview = result.data) }
+                is Result.Error -> form.update { it.copy(isBuilding = false, buildError = result.message) }
+            }
+        }
+    }
+
+    /** The same period for the signed-in account, through the stored path a recap screen uses. */
+    private fun openMine() {
+        val current = form.value
+        if (current.isBuilding) return
+        val period = RecapPeriod.fromKey(current.period.trim()) ?: run {
+            form.update { it.copy(inputError = true) }
+            return
+        }
+        form.update { it.copy(isBuilding = true, buildError = null, preview = null, opened = null, openedNothing = false) }
+        viewModelScope.launch {
+            when (val result = recapRepository.getRecap(period)) {
+                is Result.Success -> form.update {
+                    it.copy(isBuilding = false, opened = result.data, openedNothing = result.data == null)
+                }
                 is Result.Error -> form.update { it.copy(isBuilding = false, buildError = result.message) }
             }
         }

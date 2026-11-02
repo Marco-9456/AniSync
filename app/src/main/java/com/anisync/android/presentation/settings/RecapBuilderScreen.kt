@@ -92,17 +92,30 @@ private fun BuilderCard(state: RecapBuilderUiState, onAction: (RecapBuilderActio
             },
             modifier = Modifier.fillMaxWidth(),
         )
-        FilledTonalButton(
-            onClick = { onAction(RecapBuilderAction.Build) },
-            enabled = !state.isBuilding,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(if (state.isBuilding) R.string.dev_recap_building else R.string.dev_recap_build))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            FilledTonalButton(
+                onClick = { onAction(RecapBuilderAction.Build) },
+                enabled = !state.isBuilding,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(if (state.isBuilding) R.string.dev_recap_building else R.string.dev_recap_build))
+            }
+            FilledTonalButton(
+                onClick = { onAction(RecapBuilderAction.OpenMine) },
+                enabled = !state.isBuilding,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.dev_recap_open_mine), textAlign = TextAlign.Center)
+            }
         }
         state.buildError?.let { error ->
             Text(error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
         }
         state.preview?.let { PreviewReadout(it) }
+        state.opened?.let { RecapNumbers(it, LocalConfiguration.current.locales[0]) }
+        if (state.openedNothing) {
+            Text(stringResource(R.string.dev_recap_nothing), style = MaterialTheme.typography.bodyMedium)
+        }
     }
 }
 
