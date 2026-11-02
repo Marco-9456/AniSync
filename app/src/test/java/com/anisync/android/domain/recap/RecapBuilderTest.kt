@@ -185,17 +185,38 @@ class RecapBuilderTest {
 
     @Test
     fun `a year counts its months and the shows kept up with while airing`() {
-        val airing = title(10, "Zenshuu.", "TV", 12, 24, listOf("Comedy"), start = LocalDate.of(2026, 7, 5), end = LocalDate.of(2026, 9, 20))
-        val late = title(11, "Old Show", "TV", 12, 24, listOf("Drama"), start = LocalDate.of(2026, 1, 3), end = LocalDate.of(2026, 3, 28))
+        val zenshuu = title(10, "Zenshuu.", "TV", 12, 24, listOf("Comedy"))
+        val late = title(11, "Old Show", "TV", 12, 24, listOf("Drama"))
         val records = records + anime(10, "watched episode", "10 - 12", at(9, 25)) + anime(11, "watched episode", "1 - 3", at(6, 2))
-        val year = buildRecap(RecapPeriod.Year(2026), records, media + (10 to airing) + (11 to late), RecapSettings(), zone)!!
+        val airing = mapOf(
+            10 to mapOf(10 to at(9, 6), 11 to at(9, 13), 12 to at(9, 20)),
+            11 to mapOf(1 to at(1, 3), 2 to at(1, 10), 3 to at(1, 17)),
+        )
+        val year = buildRecap(RecapPeriod.Year(2026), records, media + (10 to zenshuu) + (11 to late), RecapSettings(), zone, airing)!!
         assertEquals(1, year.episodesByMonth!!.getValue(Month.AUGUST))
-        assertEquals(44, year.episodesByMonth!!.getValue(Month.SEPTEMBER))
+        assertEquals(44, year.episodesByMonth.getValue(Month.SEPTEMBER))
         assertEquals(Month.SEPTEMBER, year.busiestMonth)
         assertEquals(Month.AUGUST, year.quietestMonth)
         assertEquals(1, year.keptUpWhileAiring)
+        assertNull(buildRecap(RecapPeriod.Year(2026), records, media + (10 to zenshuu) + (11 to late), RecapSettings(), zone)!!.keptUpWhileAiring)
         assertNull(build().episodesByMonth)
-        assertNull(build().keptUpWhileAiring)
+        assertNull(buildRecap(september, records, media + (10 to zenshuu) + (11 to late), RecapSettings(), zone, airing)!!.keptUpWhileAiring)
+    }
+
+    @Test
+    fun `keeping up means a new episode within two weeks of airing`() {
+        val show = title(10, "Zenshuu.", "TV", 12, 24, listOf("Comedy"))
+        val year = RecapPeriod.Year(2026)
+        fun keptUp(records: List<ListActivityRecord>, aired: Map<Int, Long>, format: String = "TV") =
+            buildRecap(year, records, media + (10 to show.copy(format = format)), RecapSettings(countRepeats = true), zone, mapOf(10 to aired))!!.keptUpWhileAiring
+        val fortnightLate = listOf(anime(10, "watched episode", "5", at(9, 25)))
+        assertEquals(1, keptUp(fortnightLate, mapOf(5 to at(9, 11))))
+        assertEquals(0, keptUp(fortnightLate, mapOf(5 to at(9, 10))))
+        assertEquals(1, keptUp(listOf(anime(10, "watched episode", "5", at(9, 9, 21))), mapOf(5 to at(9, 10, 20))))
+        assertEquals(0, keptUp(listOf(anime(10, "rewatched episode", "5", at(9, 12))), mapOf(5 to at(9, 11))))
+        assertEquals(0, keptUp(listOf(anime(10, "watched episode", "1", at(9, 12))), mapOf(1 to at(9, 11)), format = "MOVIE"))
+        val lastDecember = LocalDateTime.of(2025, 12, 28, 20, 0).atZone(zone).toEpochSecond()
+        assertEquals(0, keptUp(listOf(anime(10, "watched episode", "12", at(1, 5))), mapOf(12 to lastDecember)))
     }
 
     @Test

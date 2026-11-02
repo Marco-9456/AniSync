@@ -68,7 +68,7 @@ data class Recap(
     val biggestDay: BiggestDay,
     /** Episodes per month, only for a year. */
     val episodesByMonth: Map<Month, Int>?,
-    /** Titles that started in the year and were watched while they aired, only for a year. */
+    /** Series with a new episode watched within two weeks of airing, only for a year built with airing times. */
     val keptUpWhileAiring: Int?,
     val manga: MangaRecap?,
     val franchise: Franchise?,

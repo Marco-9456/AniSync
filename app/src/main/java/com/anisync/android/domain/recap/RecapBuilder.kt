@@ -11,8 +11,11 @@ const val DEFAULT_EPISODE_MINUTES = 24
 
 private val SERIES_FORMATS = setOf("TV", "TV_SHORT", "ONA")
 
-/** Days after a title's last airing date that still count as keeping up with it. */
-private const val AIRING_GRACE_DAYS = 7L
+/** How long after an episode airs that watching it still counts as keeping up. */
+private const val KEPT_UP_SECONDS = 14L * 24 * 60 * 60
+
+/** Streams sometimes go out a little before the broadcast time AniList lists. */
+private const val EARLY_RELEASE_SECONDS = 24L * 60 * 60
 
 /** One update can hold at most a day of watching. More than that is a list catching up. */
 const val CATCH_UP_MINUTES = 24 * 60
@@ -31,6 +34,9 @@ const val MINUTES_PER_CHAPTER = 5
  * An update that would take more than a day to watch or read is a list catching up (a progress
  * set from 0 to 1175 in one go), so it adds nothing. It still moves the title's progress, so the
  * episodes after it count as usual.
+ *
+ * [airing] holds AniList's airing times by title and episode, in epoch seconds. A year counts the
+ * shows kept up with only when it is given, a running year built without it leaves that out.
  */
 fun buildRecap(
     period: RecapPeriod,
@@ -38,6 +44,7 @@ fun buildRecap(
     media: Map<Int, RecapMedia>,
     settings: RecapSettings,
     zone: ZoneId,
+    airing: Map<Int, Map<Int, Long>>? = null,
 ): Recap? {
     fun dateOf(event: CountedEvent): LocalDate = Instant.ofEpochSecond(event.createdAt).atZone(zone).toLocalDate()
     fun visible(mediaId: Int): Boolean = settings.showAdult || media[mediaId]?.isAdult != true
@@ -104,8 +111,10 @@ fun buildRecap(
                 episodesByDay.entries.filter { it.key.month == month }.sumOf { it.value }
             }
         },
-        keptUpWhileAiring = (period as? RecapPeriod.Year)?.let { year ->
-            keptUpWhileAiring(year, counted, media, ::dateOf)
+        keptUpWhileAiring = if (period is RecapPeriod.Year) {
+            airing?.let { keptUpWhileAiring(counted, media, it, period.window(zone)) }
+        } else {
+            null
         },
         manga = if (settings.includeManga) mangaRecap(events, ::visible) else null,
         franchise = largestFranchise(ranked.map { it.mediaId }, media),
@@ -162,19 +171,26 @@ private fun biggestDay(
     )
 }
 
+/**
+ * Series with at least one episode that aired in [year] and was watched within two weeks of
+ * airing. Rewatches, films, OVAs and specials never count.
+ */
 private fun keptUpWhileAiring(
-    year: RecapPeriod.Year,
     counted: List<CountedEvent>,
     media: Map<Int, RecapMedia>,
-    dateOf: (CountedEvent) -> LocalDate,
-): Int = counted.filter { !it.isRepeat }
+    airing: Map<Int, Map<Int, Long>>,
+    year: ActivityWindow,
+): Int = counted.filter { !it.isRepeat && media[it.mediaId]?.format in SERIES_FORMATS }
     .groupBy { it.mediaId }
     .count { (id, events) ->
-        val title = media[id] ?: return@count false
-        val start = title.startDate ?: return@count false
-        if (start.year != year.year || title.format !in SERIES_FORMATS) return@count false
-        val last = (title.endDate ?: year.lastDay).plusDays(AIRING_GRACE_DAYS)
-        events.any { val date = dateOf(it); !date.isBefore(start) && !date.isAfter(last) }
+        val aired = airing[id] ?: return@count false
+        events.any { event ->
+            event.range?.any { episode ->
+                val airedAt = aired[episode] ?: return@any false
+                airedAt >= year.from && airedAt < year.to &&
+                    event.createdAt - airedAt in -EARLY_RELEASE_SECONDS..KEPT_UP_SECONDS
+            } == true
+        }
     }
 
 /** True for an update holding more than a day of watching or reading. */
@@ -185,6 +201,20 @@ private fun CountedEvent.isCatchUp(title: RecapMedia?): Boolean {
         title?.duration?.takeIf { it > 0 } ?: DEFAULT_EPISODE_MINUTES
     }
     return units.toLong() * minutesEach > CATCH_UP_MINUTES
+}
+
+/** The series a year's kept up count needs airing times for: every one watched in it. */
+fun keptUpCandidates(
+    year: RecapPeriod.Year,
+    zone: ZoneId,
+    records: List<ListActivityRecord>,
+    media: Map<Int, RecapMedia>,
+): Set<Int> {
+    val window = year.window(zone)
+    return records.asSequence()
+        .filter { it.type == RecapMediaType.ANIME && it.createdAt >= window.from && it.createdAt < window.to }
+        .filter { isCountable(it.status) && media[it.mediaId]?.format in SERIES_FORMATS }
+        .mapTo(LinkedHashSet()) { it.mediaId }
 }
 
 private fun mangaRecap(events: List<CountedEvent>, visible: (Int) -> Boolean): MangaRecap? {
