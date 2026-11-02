@@ -103,3 +103,15 @@ query GetRecapAiring($ids: [Int!]!, $from: Int!, $to: Int!, $page: Int!) {
     }
   }
 }
+
+"""The name and avatar a Developer Tools preview story carries in its header."""
+query GetRecapUser($userId: Int!) {
+  User(id: $userId) {
+    id
+    name
+    avatar {
+      large
+      medium
+    }
+  }
+}

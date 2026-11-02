@@ -2,6 +2,7 @@ package com.anisync.android.data
 
 import com.anisync.android.GetRecapAiringQuery
 import com.anisync.android.GetRecapMediaQuery
+import com.anisync.android.GetRecapUserQuery
 import com.anisync.android.GetUserListActivitiesQuery
 import com.anisync.android.data.account.AccountStore
 import com.anisync.android.data.local.dao.RecapDao
@@ -122,7 +123,7 @@ class RecapRepositoryImpl @Inject constructor(
             period.firstDay.isAfter(today) -> null
             period is RecapPeriod.Year && !period.isFinishedOn(today) -> yearSoFar(owner, period, today, refresh)
             else -> {
-                val row = buildLock.withLock { currentRow(owner, period, today, refresh) }
+                val row = rowFor(owner, period, today, refresh)
                 val settings = currentSettings()
                 if (row.settingsKey != settings.key) {
                     recapDao.updateSettingsKey(owner, listOf(row.periodKey), settings.key)
@@ -130,6 +131,14 @@ class RecapRepositoryImpl @Inject constructor(
                 withContext(Dispatchers.Default) { count(row, settings) }
             }
         }
+    }
+
+    override suspend fun storedRecap(period: RecapPeriod): StoredRecap? {
+        val owner = owner() ?: return null
+        val row = recapDao.get(owner, period.key)?.takeIf { decode(it) != null }
+            ?: monthOfStoredYear(owner, period, today())
+            ?: return null
+        return withContext(Dispatchers.Default) { count(row, currentSettings()) }
     }
 
     override suspend fun monthInProgress(refresh: Boolean): Result<StoredRecap?> =
@@ -162,6 +171,11 @@ class RecapRepositoryImpl @Inject constructor(
         recapDao.markSeen(owner, period.key, System.currentTimeMillis())
     }
 
+    override suspend fun hasStored(): Boolean {
+        val owner = owner() ?: return false
+        return recapDao.getStamps(owner).isNotEmpty()
+    }
+
     override suspend fun clear() {
         val owner = owner() ?: return
         recapDao.deleteOwner(owner)
@@ -189,17 +203,61 @@ class RecapRepositoryImpl @Inject constructor(
         val window = ActivityWindow(from.atStartOfDay(zone).toEpochSecond(), period.window(zone).to)
         val source = fetch(userId, window, tally)
         val airing = (period as? RecapPeriod.Year)?.let { airingFor(it, source, zone, tally) }
-        val recap = withContext(Dispatchers.Default) {
-            // Through the stored form, so the numbers are what a stored recap would show.
-            val stored = recapPayload(zone, sliceForPeriod(period, zone, source.records), source.media, airing).encode()
-            tally.payloadBytes = stored.length
-            val payload = decodeRecapPayload(stored) ?: return@withContext null
+        // Through the stored form, so the numbers are what a stored recap would show.
+        fun built(of: RecapPeriod, airing: Map<Int, Map<Int, Long>>?): Pair<StoredRecap?, Int> {
+            val stored = recapPayload(zone, sliceForPeriod(of, zone, source.records), source.media, airing).encode()
+            val payload = decodeRecapPayload(stored) ?: return null to stored.length
             val media = payload.mediaById()
-            buildRecap(period, payload.records(media), media, settings, zone, payload.airingByTitle())?.let { recap ->
-                StoredRecap(period, recap, media, period.isFinishedOn(LocalDate.now(zone)), started, seenAt = null)
+            val recap = buildRecap(of, payload.records(media), media, settings, zone, payload.airingByTitle())?.let { recap ->
+                StoredRecap(of, recap, media, of.isFinishedOn(LocalDate.now(zone)), started, seenAt = null)
+            }
+            return recap to stored.length
+        }
+        val (recap, previous) = withContext(Dispatchers.Default) {
+            val (main, bytes) = built(period, airing)
+            tally.payloadBytes = bytes
+            // A month's sweep reaches back past the month before it, so that month comes for free.
+            main to (period as? RecapPeriod.Month)?.let { built(it.previous, null).first }
+        }
+        val user = paced {
+            tally.requests++
+            apolloClient.query(GetRecapUserQuery(userId = userId))
+                .fetchPolicy(FetchPolicy.NetworkOnly)
+                .doNotStore(true)
+                .execute()
+                .dataOrThrow()
+        }.User
+        RecapPreview(
+            recap = recap,
+            previous = previous,
+            activities = tally.activities,
+            requests = tally.requests,
+            millis = System.currentTimeMillis() - started,
+            payloadBytes = tally.payloadBytes,
+            userName = user?.name,
+            avatarUrl = user?.avatar?.large ?: user?.avatar?.medium,
+        )
+    }
+
+    /**
+     * The row a screen shows for [period]. A current stored row needs no lock. When a background
+     * build holds the lock, a stored row is served as it is rather than waiting behind the build.
+     */
+    private suspend fun rowFor(owner: Int, period: RecapPeriod, today: LocalDate, refresh: Boolean): RecapEntity {
+        if (!refresh) {
+            recapDao.get(owner, period.key)
+                ?.takeIf { isCurrent(it, period, today) && decode(it) != null }
+                ?.let { return it }
+        }
+        if (buildLock.tryLock()) {
+            try {
+                return currentRow(owner, period, today, refresh)
+            } finally {
+                buildLock.unlock()
             }
         }
-        RecapPreview(recap, tally.activities, tally.requests, System.currentTimeMillis() - started, tally.payloadBytes)
+        recapDao.get(owner, period.key)?.takeIf { decode(it) != null }?.let { return it }
+        return buildLock.withLock { currentRow(owner, period, today, refresh) }
     }
 
     /** The stored row for [period] while it is still good, otherwise a freshly built one. Call under [buildLock]. */
@@ -256,7 +314,7 @@ class RecapRepositoryImpl @Inject constructor(
     private suspend fun yearSoFar(owner: Int, year: RecapPeriod.Year, today: LocalDate, refresh: Boolean): StoredRecap? {
         val current = RecapPeriod.Month(YearMonth.from(today))
         val months = year.months.filter { !it.firstDay.isAfter(today) }
-        val (source, builtAt) = buildLock.withLock {
+        val (source, builtAt) = storedYearSoFar(owner, months, current, today, refresh) ?: buildLock.withLock {
             val earlier = months.filter { it != current }.map { recapDao.get(owner, it.key)?.takeIf { row -> row.isFinal }?.let(::decode) }
             if (earlier.all { it != null }) {
                 val running = currentRow(owner, current, today, refresh)
@@ -277,6 +335,26 @@ class RecapRepositoryImpl @Inject constructor(
                 StoredRecap(year, recap, source.media.filterKeys { it in titles }, isFinal = false, builtAt, seenAt = null)
             }
         }
+    }
+
+    /**
+     * The running year from stored months alone: when every month is stored and the month in
+     * progress is current, or when a background build holds the lock and any stored copy will do.
+     */
+    private suspend fun storedYearSoFar(
+        owner: Int,
+        months: List<RecapPeriod.Month>,
+        current: RecapPeriod.Month,
+        today: LocalDate,
+        refresh: Boolean,
+    ): Pair<Source, Long>? {
+        if (refresh) return null
+        val earlier = months.filter { it != current }.map { recapDao.get(owner, it.key)?.takeIf { row -> row.isFinal } }
+        val running = recapDao.get(owner, current.key)
+        if (earlier.any { it == null } || running == null) return null
+        if (!isCurrent(running, current, today) && !buildLock.isLocked) return null
+        val parts = (earlier.filterNotNull() + running).map { decode(it) ?: return null }
+        return parts.fold(Source.EMPTY) { sum, month -> sum + month.source } to running.builtAt
     }
 
     /** Call under [buildLock]. */

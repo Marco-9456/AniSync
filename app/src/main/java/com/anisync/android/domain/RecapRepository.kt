@@ -24,12 +24,17 @@ data class StoredRecap(
 /** What a Developer Tools build cost, next to the recap it built. */
 data class RecapPreview(
     val recap: StoredRecap?,
+    /** The month before a previewed month, counted from the same sweep, for the comparison. */
+    val previous: StoredRecap? = null,
     /** Activities read, countable or not. */
     val activities: Int,
     val requests: Int,
     val millis: Long,
     /** Size of the payload a stored recap of the period would keep. */
     val payloadBytes: Int,
+    /** Whose recap it is, for the preview story's header. */
+    val userName: String? = null,
+    val avatarUrl: String? = null,
 )
 
 /**
@@ -54,6 +59,12 @@ interface RecapRepository {
      */
     suspend fun getRecap(period: RecapPeriod, refresh: Boolean = false): Result<StoredRecap?>
 
+    /**
+     * The recap for [period] as the device already holds it, never fetched. A finished month can
+     * still be cut out of its stored year. Null when nothing is stored or nothing counts.
+     */
+    suspend fun storedRecap(period: RecapPeriod): StoredRecap?
+
     /** [getRecap] for the month in progress, the one Overview and Recaps open on. */
     suspend fun monthInProgress(refresh: Boolean = false): Result<StoredRecap?>
 
@@ -70,6 +81,9 @@ interface RecapRepository {
     suspend fun buildDue(monthly: Boolean, yearly: Boolean): Result<List<StoredRecap>>
 
     suspend fun markSeen(period: RecapPeriod)
+
+    /** True once anything is stored for the active account, even periods with nothing counted. */
+    suspend fun hasStored(): Boolean
 
     /** Deletes every stored recap of the active account. */
     suspend fun clear()
