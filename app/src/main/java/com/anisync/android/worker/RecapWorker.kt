@@ -1,0 +1,99 @@
+package com.anisync.android.worker
+
+import android.content.Context
+import android.util.Log
+import androidx.hilt.work.HiltWorker
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import com.anisync.android.data.AppSettings
+import com.anisync.android.data.network.RequestPriority
+import com.anisync.android.data.network.withRequestPriority
+import com.anisync.android.data.util.ApiError
+import com.anisync.android.domain.RecapRepository
+import com.anisync.android.domain.recap.nextRecapRun
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import java.time.Clock
+import java.time.Duration
+import java.time.LocalTime
+import java.time.ZonedDateTime
+import java.util.concurrent.TimeUnit
+import com.anisync.android.domain.Result as DomainResult
+
+/**
+ * Builds the recaps that became due, on the 1st at the time chosen in the Recaps settings, then
+ * queues its own next run.
+ *
+ * One-time work rather than periodic, because periodic work cannot be pinned to a date and would
+ * drift into delivering a month's recap a day late. Each run measures the delay to the next 1st
+ * again, so a changed time or a clock change is picked up by the run after it.
+ *
+ * Only the active account is built. Rows are scoped by account, so another account keeps what it
+ * had and gets its own recaps once it is the active one on a 1st.
+ */
+@HiltWorker
+class RecapWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted params: WorkerParameters,
+    private val recapRepository: RecapRepository,
+    private val appSettings: AppSettings,
+) : CoroutineWorker(appContext, params) {
+
+    override suspend fun doWork(): Result {
+        val outcome = withRequestPriority(RequestPriority.Background) {
+            recapRepository.buildDue(monthly = appSettings.recapMonthly.value, yearly = appSettings.recapYearly.value)
+        }
+        if (outcome is DomainResult.Error) {
+            Log.w(TAG, "Recap build failed: ${outcome.message}")
+            if (outcome.isWorthRetrying() && runAttemptCount < MAX_ATTEMPTS) return Result.retry()
+        }
+        schedule(applicationContext, appSettings.recapTime.value, ExistingWorkPolicy.APPEND_OR_REPLACE)
+        return Result.success()
+    }
+
+    private fun DomainResult.Error.isWorthRetrying(): Boolean = when (exception) {
+        is ApiError.Deferred, is ApiError.RateLimited, is ApiError.ServerError,
+        is ApiError.Offline, is ApiError.Timeout -> true
+        else -> exception is java.io.IOException
+    }
+
+    companion object {
+        private const val TAG = "RecapWorker"
+        private const val WORK_NAME = "recap_job"
+        private const val MAX_ATTEMPTS = 5
+
+        private val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        /**
+         * Queues the run for the coming 1st at [time]. KEEP leaves an already queued run alone, the
+         * worker itself appends the next one after it finishes, and a changed time replaces it.
+         */
+        fun schedule(context: Context, time: LocalTime, policy: ExistingWorkPolicy = ExistingWorkPolicy.KEEP) {
+            val clock = Clock.systemDefaultZone()
+            val delayMs = Duration.between(ZonedDateTime.now(clock), nextRecapRun(clock, time)).toMillis()
+            val request = OneTimeWorkRequestBuilder<RecapWorker>()
+                .setInitialDelay(delayMs.coerceAtLeast(0L), TimeUnit.MILLISECONDS)
+                .setConstraints(constraints)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
+                .build()
+            WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(WORK_NAME, policy, request)
+        }
+
+        /** Developer Tools: runs the job now, as it would run on the 1st, then queues the next one. */
+        fun runNow(context: Context) {
+            val request = OneTimeWorkRequestBuilder<RecapWorker>()
+                .setConstraints(constraints)
+                .build()
+            WorkManager.getInstance(context.applicationContext)
+                .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request)
+        }
+    }
+}

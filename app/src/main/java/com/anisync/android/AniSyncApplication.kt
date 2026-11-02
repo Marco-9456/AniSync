@@ -50,6 +50,9 @@ class AniSyncApplication : Application(), Configuration.Provider,
     @Inject
     lateinit var updateManager: com.anisync.android.data.update.UpdateManager
 
+    @Inject
+    lateinit var appSettings: AppSettings
+
     /**
      * Injected only so it exists before the first API call. It publishes itself as the resolver
      * that turns an ApiError into localised text for `safeApiCall`, which is a free function with
@@ -217,6 +220,9 @@ class AniSyncApplication : Application(), Configuration.Provider,
 
         // Nothing evicts the normalized cache on its own.
         com.anisync.android.worker.CacheMaintenanceWorker.schedule(this@AniSyncApplication)
+
+        // Recaps are built on the 1st. A queued run is kept, the worker queues the one after it.
+        com.anisync.android.worker.RecapWorker.schedule(this@AniSyncApplication, appSettings.recapTime.value)
     }
 
     /**
