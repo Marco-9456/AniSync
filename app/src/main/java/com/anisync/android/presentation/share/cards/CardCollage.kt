@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
@@ -49,12 +48,12 @@ fun CardCollage(covers: List<CardImage>, slots: List<CollageSlot>, modifier: Mod
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun CollageShape.toComposeShape(width: Dp, archBottom: Dp): Shape = when (this) {
-    CollageShape.COOKIE -> MaterialShapes.Cookie9Sided.toShape()
+    CollageShape.COOKIE -> MaterialShapes.Cookie9Sided.fitted()
     CollageShape.CIRCLE -> CircleShape
     CollageShape.PILL -> RoundedCornerShape(percent = 50)
     CollageShape.ARCH -> RoundedCornerShape(topStart = width / 2, topEnd = width / 2, bottomEnd = archBottom, bottomStart = archBottom)
-    CollageShape.CLOVER -> MaterialShapes.Clover8Leaf.toShape()
-    CollageShape.SUNNY -> MaterialShapes.Sunny.toShape()
+    CollageShape.CLOVER -> MaterialShapes.Clover8Leaf.fitted()
+    CollageShape.SUNNY -> MaterialShapes.Sunny.fitted()
 }
 
 /** The arch's bottom corners against its width, 20 on 104 in the frames. */

@@ -17,7 +17,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -172,7 +171,7 @@ private fun RankedCover(entry: CardImage, rank: Int, size: Pair<Dp, Dp>, modifie
             modifier = Modifier
                 .padding(if (first) 10.dp else if (size.first > 60.dp) 6.dp else 4.dp)
                 .size(badge, badge * 0.9875f)
-                .clip(MaterialShapes.Cookie9Sided.toShape())
+                .clip(MaterialShapes.Cookie9Sided.fitted())
                 .background(if (first) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
