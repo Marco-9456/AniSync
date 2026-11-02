@@ -198,6 +198,36 @@ class RecapBuilderTest {
         assertNull(build().keptUpWhileAiring)
     }
 
+    @Test
+    fun `an update worth more than a day of watching is a catch-up`() {
+        val longRunner = title(12, "ONE PIECE", "TV", null, 24, listOf("Action"))
+        val records = records + listOf(
+            anime(12, "watched episode", "1 - 1175", at(9, 26)),
+            anime(12, "watched episode", "1176", at(9, 27)),
+        )
+        val recap = buildRecap(september, records, media + (12 to longRunner), RecapSettings(), zone)!!
+        assertEquals(build().episodes + 1, recap.episodes)
+        assertEquals(1, recap.ranked.single { it.mediaId == 12 }.episodes)
+        assertEquals(1176..1176, recap.ranked.single { it.mediaId == 12 }.watched)
+    }
+
+    @Test
+    fun `a completion worth more than a day adds no finish, and manga reads five minutes a chapter`() {
+        val long = title(13, "Gintama", "TV", 500, 24, listOf("Comedy"))
+        val long2 = RecapMedia(14, RecapMediaType.MANGA, "Kingdom", "MANGA", null, 900, null, listOf("Action"), null, false, null, null)
+        val records = records + listOf(
+            anime(13, "watched episode", "2", at(8, 3)),
+            anime(13, "completed", null, at(9, 26)),
+            manga(14, "read chapter", "1 - 300", at(9, 26)),
+            manga(14, "read chapter", "301 - 580", at(9, 27)),
+        )
+        val recap = buildRecap(september, records, media + (13 to long) + (14 to long2), RecapSettings(), zone)!!
+        assertEquals(build().episodes, recap.episodes)
+        assertEquals(build().finished, recap.finished)
+        assertTrue(recap.ranked.none { it.mediaId == 13 })
+        assertEquals(build().manga!!.chapters + 280, recap.manga!!.chapters)
+    }
+
     private fun at(month: Int, day: Int, hour: Int = 20) =
         LocalDateTime.of(2026, month, day, hour, 0).atZone(zone).toEpochSecond()
 

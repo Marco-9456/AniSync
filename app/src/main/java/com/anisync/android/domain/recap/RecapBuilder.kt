@@ -14,6 +14,12 @@ private val SERIES_FORMATS = setOf("TV", "TV_SHORT", "ONA")
 /** Days after a title's last airing date that still count as keeping up with it. */
 private const val AIRING_GRACE_DAYS = 7L
 
+/** One update can hold at most a day of watching. More than that is a list catching up. */
+const val CATCH_UP_MINUTES = 24 * 60
+
+/** The reading time a chapter is taken to need when telling a catch-up from reading. */
+const val MINUTES_PER_CHAPTER = 5
+
 /**
  * Builds the recap for [period] from list activity, or null when no anime episode counts in it,
  * since a month without activity gets no recap.
@@ -21,6 +27,10 @@ private const val AIRING_GRACE_DAYS = 7L
  * [records] may reach back before the period so completions can see what was logged earlier.
  * Episodes and minutes include adult titles, but unless [RecapSettings.showAdult] is on they are
  * never named, ranked or shown in genres and studios.
+ *
+ * An update that would take more than a day to watch or read is a list catching up (a progress
+ * set from 0 to 1175 in one go), so it adds nothing. It still moves the title's progress, so the
+ * episodes after it count as usual.
  */
 fun buildRecap(
     period: RecapPeriod,
@@ -34,6 +44,7 @@ fun buildRecap(
 
     val events = countEvents(records) { media[it]?.totalUnits }
         .filter { dateOf(it) in period && (settings.countRepeats || !it.isRepeat) }
+        .filterNot { it.isCatchUp(media[it.mediaId]) }
     val anime = events.filter { it.type == RecapMediaType.ANIME }
     val counted = anime.filter { it.units > 0 }
     if (counted.isEmpty()) return null
@@ -165,6 +176,16 @@ private fun keptUpWhileAiring(
         val last = (title.endDate ?: year.lastDay).plusDays(AIRING_GRACE_DAYS)
         events.any { val date = dateOf(it); !date.isBefore(start) && !date.isAfter(last) }
     }
+
+/** True for an update holding more than a day of watching or reading. */
+private fun CountedEvent.isCatchUp(title: RecapMedia?): Boolean {
+    val minutesEach = if (type == RecapMediaType.MANGA) {
+        MINUTES_PER_CHAPTER
+    } else {
+        title?.duration?.takeIf { it > 0 } ?: DEFAULT_EPISODE_MINUTES
+    }
+    return units.toLong() * minutesEach > CATCH_UP_MINUTES
+}
 
 private fun mangaRecap(events: List<CountedEvent>, visible: (Int) -> Boolean): MangaRecap? {
     val chapters = events.filter { it.type == RecapMediaType.MANGA && it.units > 0 }
