@@ -51,6 +51,17 @@ class RecapPayloadTest {
     }
 
     @Test
+    fun `a year keeps the airing times of its own titles, and none fetched reads as unknown`() {
+        val airing = mapOf(1 to mapOf(1 to 1_789_000_000L), 99 to mapOf(1 to 1_789_100_000L))
+        val year = decodeRecapPayload(recapPayload(zone, records, mapOf(1 to film, 8 to manga), airing).encode())!!
+        assertEquals(mapOf(1 to mapOf(1 to 1_789_000_000L)), year.airingByTitle())
+        val noneAired = decodeRecapPayload(recapPayload(zone, records, mapOf(1 to film), emptyMap()).encode())!!
+        assertEquals(emptyMap<Int, Map<Int, Long>>(), noneAired.airingByTitle())
+        val month = decodeRecapPayload(recapPayload(zone, records, mapOf(1 to film)).encode())!!
+        assertNull(month.airingByTitle())
+    }
+
+    @Test
     fun `an activity whose title is missing is dropped`() {
         val payload = recapPayload(zone, records, mapOf(1 to film))
         assertEquals(listOf(10), payload.records().map { it.id })

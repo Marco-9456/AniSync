@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import com.anisync.android.GetRecapAiringQuery
 import com.anisync.android.GetRecapMediaQuery
 import com.anisync.android.GetUserListActivitiesQuery
 import com.anisync.android.data.account.AccountStore
@@ -18,6 +19,7 @@ import com.anisync.android.domain.StoredRecap
 import com.anisync.android.domain.recap.ActivityWindow
 import com.anisync.android.domain.recap.FetchedPage
 import com.anisync.android.domain.recap.ListActivityRecord
+import com.anisync.android.domain.recap.MAX_ACTIVITY_PAGES
 import com.anisync.android.domain.recap.RecapMedia
 import com.anisync.android.domain.recap.RecapPeriod
 import com.anisync.android.domain.recap.RecapSettings
@@ -26,6 +28,7 @@ import com.anisync.android.domain.recap.buildRecap
 import com.anisync.android.domain.recap.expiredPeriods
 import com.anisync.android.domain.recap.isCountable
 import com.anisync.android.domain.recap.isFinishedOn
+import com.anisync.android.domain.recap.keptUpCandidates
 import com.anisync.android.domain.recap.readActivityWindow
 import com.anisync.android.domain.recap.recapBannerCandidates
 import com.anisync.android.domain.recap.recapsDueOn
@@ -185,13 +188,14 @@ class RecapRepositoryImpl @Inject constructor(
         }
         val window = ActivityWindow(from.atStartOfDay(zone).toEpochSecond(), period.window(zone).to)
         val source = fetch(userId, window, tally)
+        val airing = (period as? RecapPeriod.Year)?.let { airingFor(it, source, zone, tally) }
         val recap = withContext(Dispatchers.Default) {
             // Through the stored form, so the numbers are what a stored recap would show.
-            val stored = recapPayload(zone, sliceForPeriod(period, zone, source.records), source.media).encode()
+            val stored = recapPayload(zone, sliceForPeriod(period, zone, source.records), source.media, airing).encode()
             tally.payloadBytes = stored.length
             val payload = decodeRecapPayload(stored) ?: return@withContext null
             val media = payload.mediaById()
-            buildRecap(period, payload.records(media), media, settings, zone)?.let { recap ->
+            buildRecap(period, payload.records(media), media, settings, zone, payload.airingByTitle())?.let { recap ->
                 StoredRecap(period, recap, media, period.isFinishedOn(LocalDate.now(zone)), started, seenAt = null)
             }
         }
@@ -239,16 +243,16 @@ class RecapRepositoryImpl @Inject constructor(
         val months = rows.map { row -> row?.takeIf { it.isFinal }?.let(::decode) }
         if (months.all { it != null }) {
             val source = months.filterNotNull().fold(Source.EMPTY) { sum, month -> sum + month.source }
-            return store(owner, listOf(year), source, today).single()
+            return store(owner, listOf(year), source, today, airing = airingFor(year, source)).single()
         }
         val window = year.window(zone)
         val source = storedBefore(owner, window.from) + fetch(owner, window)
         val expired = expiredPeriods(year.months, today, keptMonths()).toSet()
         val missing = year.months.filterIndexed { index, month -> months[index] == null && month !in expired }
-        return store(owner, listOf(year) + missing, source, today).first()
+        return store(owner, listOf(year) + missing, source, today, airing = airingFor(year, source)).first()
     }
 
-    /** The running year, added up from its months and never stored. */
+    /** The running year, added up from its months and never stored. It skips the kept up count, which needs airing times. */
     private suspend fun yearSoFar(owner: Int, year: RecapPeriod.Year, today: LocalDate, refresh: Boolean): StoredRecap? {
         val current = RecapPeriod.Month(YearMonth.from(today))
         val months = year.months.filter { !it.firstDay.isAfter(today) }
@@ -282,13 +286,15 @@ class RecapRepositoryImpl @Inject constructor(
         val from = periods.minOf { it.firstDay }.atStartOfDay(zone).toEpochSecond()
         val to = RecapPeriod.Month(YearMonth.from(today)).window(zone).to
         val source = storedBefore(owner, from) + fetch(owner, ActivityWindow(from, to))
-        store(owner, periods, source, today)
+        val airing = periods.filterIsInstance<RecapPeriod.Year>().firstOrNull()?.let { airingFor(it, source) }
+        store(owner, periods, source, today, airing = airing)
         retain(owner, today)
     }
 
     /**
-     * Cuts each period out of [source] and stores it. A finished period starts seen unless it is
-     * one the Library banner may still announce this week, and a row that was already seen stays so.
+     * Cuts each period out of [source] and stores it, a year with its [airing] times. A finished
+     * period starts seen unless it is one the Library banner may still announce this week, and a
+     * row that was already seen stays so.
      */
     private suspend fun store(
         owner: Int,
@@ -296,6 +302,7 @@ class RecapRepositoryImpl @Inject constructor(
         source: Source,
         today: LocalDate,
         zone: ZoneId = this.zone,
+        airing: Map<Int, Map<Int, Long>>? = null,
     ): List<RecapEntity> {
         val now = System.currentTimeMillis()
         val settingsKey = currentSettings().key
@@ -304,7 +311,12 @@ class RecapRepositoryImpl @Inject constructor(
         val rows = withContext(Dispatchers.Default) {
             periods.map { period ->
                 val finished = period.isFinishedOn(today)
-                val payload = recapPayload(zone, sliceForPeriod(period, zone, source.records), source.media)
+                val payload = recapPayload(
+                    zone,
+                    sliceForPeriod(period, zone, source.records),
+                    source.media,
+                    airing.takeIf { period is RecapPeriod.Year },
+                )
                 RecapEntity(
                     ownerId = owner,
                     periodKey = period.key,
@@ -389,6 +401,47 @@ class RecapRepositoryImpl @Inject constructor(
         return media
     }
 
+    /** Airing times for the series watched in [year], which only its kept up count needs. */
+    private suspend fun airingFor(
+        year: RecapPeriod.Year,
+        source: Source,
+        zone: ZoneId = this.zone,
+        tally: Tally? = null,
+    ): Map<Int, Map<Int, Long>> {
+        val ids = keptUpCandidates(year, zone, source.records, source.media)
+        return fetchAiring(ids, year.window(zone), tally)
+    }
+
+    private suspend fun fetchAiring(ids: Collection<Int>, window: ActivityWindow, tally: Tally?): Map<Int, Map<Int, Long>> {
+        val airing = HashMap<Int, MutableMap<Int, Long>>()
+        for (batch in ids.chunked(MEDIA_BATCH_SIZE)) {
+            var page = 1
+            while (page <= MAX_ACTIVITY_PAGES) {
+                val data = paced {
+                    tally?.let { it.requests++ }
+                    apolloClient.query(
+                        GetRecapAiringQuery(
+                            ids = batch,
+                            from = window.createdAfter.toInt(),
+                            to = window.createdBefore.toInt(),
+                            page = page,
+                        )
+                    )
+                        .fetchPolicy(FetchPolicy.NetworkOnly)
+                        .doNotStore(true)
+                        .execute()
+                        .dataOrThrow()
+                }
+                data.Page?.airingSchedules.orEmpty().filterNotNull().forEach {
+                    airing.getOrPut(it.mediaId) { HashMap() }[it.episode] = it.airingAt.toLong()
+                }
+                if (data.Page?.pageInfo?.hasNextPage != true) break
+                page++
+            }
+        }
+        return airing
+    }
+
     /**
      * Runs one request, and in the background waits out a deferral instead of failing.
      *
@@ -418,7 +471,7 @@ class RecapRepositoryImpl @Inject constructor(
 
     private fun count(row: RecapEntity, settings: RecapSettings): StoredRecap? {
         val data = decode(row) ?: return null
-        val recap = buildRecap(data.period, data.records, data.media, settings, data.zone) ?: return null
+        val recap = buildRecap(data.period, data.records, data.media, settings, data.zone, data.airing) ?: return null
         return StoredRecap(data.period, recap, data.media, row.isFinal, row.builtAt, row.seenAt)
     }
 
@@ -428,7 +481,7 @@ class RecapRepositoryImpl @Inject constructor(
         val period = RecapPeriod.fromKey(row.periodKey) ?: return null
         val payload = decodeRecapPayload(row.payload) ?: return null
         val media = payload.mediaById()
-        return Decoded(row.builtAt, period, payload.zoneId, payload.records(media), media)
+        return Decoded(row.builtAt, period, payload.zoneId, payload.records(media), media, payload.airingByTitle())
             .also { decoded[cacheKey] = it }
     }
 
@@ -438,6 +491,7 @@ class RecapRepositoryImpl @Inject constructor(
         val zone: ZoneId,
         val records: List<ListActivityRecord>,
         val media: Map<Int, RecapMedia>,
+        val airing: Map<Int, Map<Int, Long>>?,
     ) {
         val source: Source get() = Source(records, media)
     }

@@ -86,3 +86,20 @@ query GetRecapMedia($ids: [Int!]!, $perPage: Int!) {
     }
   }
 }
+
+"""
+Airing times for up to 50 titles inside a window, for the shows a year kept up with. Only the
+yearly recap asks, and only for the series watched that year.
+"""
+query GetRecapAiring($ids: [Int!]!, $from: Int!, $to: Int!, $page: Int!) {
+  Page(page: $page, perPage: 50) {
+    pageInfo {
+      hasNextPage
+    }
+    airingSchedules(mediaId_in: $ids, airingAt_greater: $from, airingAt_lesser: $to, sort: [TIME]) {
+      mediaId
+      episode
+      airingAt
+    }
+  }
+}

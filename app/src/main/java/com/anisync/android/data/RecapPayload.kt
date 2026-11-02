@@ -29,6 +29,17 @@ internal data class RecapPayload(
     @SerialName("z") val zone: String,
     @SerialName("a") val activities: List<StoredActivity>,
     @SerialName("m") val media: List<StoredMedia>,
+    /** True when [airing] was fetched, so an empty list means none of the titles aired. */
+    @SerialName("k") val hasAiring: Boolean = false,
+    @SerialName("s") val airing: List<StoredAiring> = emptyList(),
+)
+
+/** One episode's airing time, epoch seconds. */
+@Serializable
+internal data class StoredAiring(
+    @SerialName("m") val mediaId: Int,
+    @SerialName("e") val episode: Int,
+    @SerialName("t") val airingAt: Long,
 )
 
 @Serializable
@@ -74,16 +85,29 @@ internal fun decodeRecapPayload(json: String): RecapPayload? =
     runCatching { payloadJson.decodeFromString(RecapPayload.serializer(), json) }.getOrNull()
         ?.takeIf { it.version == RECAP_PAYLOAD_VERSION }
 
-/** Packs [records] and the facts about their titles for storage. */
-internal fun recapPayload(zone: ZoneId, records: List<ListActivityRecord>, media: Map<Int, RecapMedia>): RecapPayload {
+/** Packs [records], the facts about their titles and, for a year, their airing times for storage. */
+internal fun recapPayload(
+    zone: ZoneId,
+    records: List<ListActivityRecord>,
+    media: Map<Int, RecapMedia>,
+    airing: Map<Int, Map<Int, Long>>? = null,
+): RecapPayload {
     val titles = records.mapTo(LinkedHashSet()) { it.mediaId }
     return RecapPayload(
         version = RECAP_PAYLOAD_VERSION,
         zone = zone.id,
         activities = records.map { StoredActivity(it.id, it.mediaId, it.status, it.progress, it.createdAt) },
         media = titles.mapNotNull { media[it]?.toStored() },
+        hasAiring = airing != null,
+        airing = airing.orEmpty().filterKeys { it in titles }.flatMap { (mediaId, episodes) ->
+            episodes.map { (episode, airedAt) -> StoredAiring(mediaId, episode, airedAt) }
+        },
     )
 }
+
+/** The stored airing times by title and episode, or null when none were fetched for this period. */
+internal fun RecapPayload.airingByTitle(): Map<Int, Map<Int, Long>>? =
+    if (!hasAiring) null else airing.groupBy { it.mediaId }.mapValues { (_, rows) -> rows.associate { it.episode to it.airingAt } }
 
 internal val RecapPayload.zoneId: ZoneId
     get() = runCatching { ZoneId.of(zone) }.getOrDefault(ZoneId.systemDefault())
