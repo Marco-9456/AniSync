@@ -8,6 +8,7 @@ import java.time.Month
 data class RecapMedia(
     val id: Int,
     val type: RecapMediaType,
+    /** The title as AniList prefers it for the account that asked. Franchise names come from it. */
     val title: String,
     val format: String?,
     val episodes: Int?,
@@ -21,6 +22,14 @@ data class RecapMedia(
     val endDate: LocalDate?,
     /** Related titles, for telling franchises apart. */
     val relationIds: List<Int> = emptyList(),
+    val titleRomaji: String? = null,
+    val titleEnglish: String? = null,
+    val titleNative: String? = null,
+    val coverUrl: String? = null,
+    /** AniList's cover colour as a hex string such as "#e4a15d". */
+    val color: String? = null,
+    val season: String? = null,
+    val seasonYear: Int? = null,
 ) {
     val isFilm: Boolean get() = format == "MOVIE"
     val totalUnits: Int? get() = if (type == RecapMediaType.ANIME) episodes else chapters
