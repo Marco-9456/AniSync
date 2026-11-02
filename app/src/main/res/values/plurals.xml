@@ -270,4 +270,88 @@
         <item quantity="one">manga chapter</item>
         <item quantity="other">manga chapters</item>
     </plurals>
+    <plurals name="recap_opener_franchise">
+        <item quantity="one">%1$s, %2$s and %3$s %4$s entry.</item>
+        <item quantity="other">%1$s, %2$s and %3$s %4$s entries.</item>
+    </plurals>
+    <plurals name="recap_hour_count">
+        <item quantity="one">%1$s hour</item>
+        <item quantity="other">%1$s hours</item>
+    </plurals>
+    <plurals name="recap_minute_count">
+        <item quantity="one">%1$s minute</item>
+        <item quantity="other">%1$s minutes</item>
+    </plurals>
+    <plurals name="recap_day_count">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <plurals name="recap_franchise_took">
+        <item quantity="one">With %1$s, the franchise took %2$s of your %3$s title.</item>
+        <item quantity="other">With %1$s, the franchise took %2$s of your %3$s titles.</item>
+    </plurals>
+    <plurals name="recap_franchise_named_took">
+        <item quantity="one">%1$s took %2$s of your %3$s title.</item>
+        <item quantity="other">%1$s took %2$s of your %3$s titles.</item>
+    </plurals>
+    <plurals name="recap_note_shorts_film">
+        <item quantity="one">Ranked by time, so %1$s %2$s-minute short never outranks a feature film.</item>
+        <item quantity="other">Ranked by time, so %1$s %2$s-minute shorts never outrank a feature film.</item>
+    </plurals>
+    <plurals name="recap_note_shorts">
+        <item quantity="one">Ranked by time, so %1$s %2$s-minute short never outranks a full episode.</item>
+        <item quantity="other">Ranked by time, so %1$s %2$s-minute shorts never outrank full episodes.</item>
+    </plurals>
+    <plurals name="recap_started_count">
+        <item quantity="one">and started %1$s</item>
+        <item quantity="other">and started %1$s</item>
+    </plurals>
+    <plurals name="recap_more_finished">
+        <item quantity="one">And %1$s more, %2$s</item>
+        <item quantity="other">And %1$s more, from %2$s to %3$s</item>
+    </plurals>
+    <plurals name="recap_days_with_anime">
+        <item quantity="one">%1$s day with anime</item>
+        <item quantity="other">%1$s days with anime</item>
+    </plurals>
+    <plurals name="recap_days_in_a_row">
+        <item quantity="one">%1$s day in a row</item>
+        <item quantity="other">%1$s days in a row</item>
+    </plurals>
+    <plurals name="recap_of_your_episodes">
+        <item quantity="one">%1$s of your %2$s episode</item>
+        <item quantity="other">%1$s of your %2$s episodes</item>
+    </plurals>
+    <plurals name="recap_kept_up">
+        <item quantity="one">Kept up with %1$s show as it aired</item>
+        <item quantity="other">Kept up with %1$s shows as they aired</item>
+    </plurals>
+    <plurals name="recap_manga_chapter_count">
+        <item quantity="one">%1$s manga chapter</item>
+        <item quantity="other">%1$s manga chapters</item>
+    </plurals>
+    <plurals name="recap_quietest_month">
+        <item quantity="one">%1$s was the quietest month, with %2$s episode.</item>
+        <item quantity="other">%1$s was the quietest month, with %2$s episodes.</item>
+    </plurals>
+    <plurals name="recap_episodes_so_far">
+        <item quantity="one">%1$s episode so far.</item>
+        <item quantity="other">%1$s episodes so far.</item>
+    </plurals>
+    <plurals name="recap_episodes_so_far_short">
+        <item quantity="one">%1$s episode so far</item>
+        <item quantity="other">%1$s episodes so far</item>
+    </plurals>
+    <plurals name="recap_finished_so_far">
+        <item quantity="one">%1$s title finished so far.</item>
+        <item quantity="other">%1$s titles finished so far.</item>
+    </plurals>
+    <plurals name="recap_finished_chip">
+        <item quantity="one">%1$s finished</item>
+        <item quantity="other">%1$s finished</item>
+    </plurals>
+    <plurals name="recap_updates_chip">
+        <item quantity="one">%1$s update</item>
+        <item quantity="other">%1$s updates</item>
+    </plurals>
 </resources>
