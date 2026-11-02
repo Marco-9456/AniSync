@@ -8,17 +8,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -92,6 +96,23 @@ private fun BuilderCard(state: RecapBuilderUiState, onAction: (RecapBuilderActio
             },
             modifier = Modifier.fillMaxWidth(),
         )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = state.previewAdult,
+                    role = Role.Switch,
+                    onValueChange = { onAction(RecapBuilderAction.SetPreviewAdult(it)) },
+                ),
+        ) {
+            Text(
+                stringResource(R.string.dev_recap_show_adult),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            Switch(checked = state.previewAdult, onCheckedChange = null, colors = appSwitchColors())
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             FilledTonalButton(
                 onClick = { onAction(RecapBuilderAction.Build) },
@@ -157,6 +178,10 @@ private fun RecapNumbers(stored: StoredRecap, locale: Locale) {
     )
     Readout(stringResource(R.string.dev_recap_titles), count(recap.titles))
     Readout(stringResource(R.string.dev_recap_finished), count(recap.finished))
+    Readout(
+        stringResource(R.string.dev_recap_finished_titles),
+        recap.finishedTitles.map { title(it) }.joinToString(NEW_LINE),
+    )
     Readout(stringResource(R.string.dev_recap_started), count(recap.started))
     Readout(stringResource(R.string.dev_recap_active_days), count(recap.activeDays))
     Readout(stringResource(R.string.dev_recap_streak), count(recap.streak.days))
@@ -178,7 +203,11 @@ private fun RecapNumbers(stored: StoredRecap, locale: Locale) {
     )
     Readout(
         stringResource(R.string.dev_recap_biggest_day_lead),
-        stringResource(valueCount, title(recap.biggestDay.leadingMediaId), count(recap.biggestDay.leadingEpisodes)),
+        stringResource(
+            valueCount,
+            recap.biggestDay.leaders.map { title(it) }.ifEmpty { listOf(hidden) }.joinToString(NEW_LINE),
+            count(recap.biggestDay.leadingEpisodes),
+        ),
     )
     Readout(
         stringResource(R.string.dev_recap_top_titles),
@@ -189,19 +218,19 @@ private fun RecapNumbers(stored: StoredRecap, locale: Locale) {
                 stringResource(R.string.share_recap_hours_minutes, count(ranked.minutes / 60), count(ranked.minutes % 60)),
                 count(ranked.episodes),
             )
-        }.joinToString("\n"),
+        }.joinToString(NEW_LINE),
     )
     Readout(
         stringResource(R.string.dev_recap_genres),
         recap.genres.take(6).map {
             stringResource(R.string.dev_recap_name_hours, it.name, formatHours(it.minutes, locale))
-        }.joinToString("\n"),
+        }.joinToString(NEW_LINE),
     )
     Readout(
         stringResource(R.string.dev_recap_studios),
         recap.studios.take(3).map {
             stringResource(R.string.dev_recap_name_hours, it.name, formatHours(it.minutes, locale))
-        }.joinToString("\n"),
+        }.joinToString(NEW_LINE),
     )
     recap.franchise?.let { franchise ->
         Readout(
@@ -219,7 +248,7 @@ private fun RecapNumbers(stored: StoredRecap, locale: Locale) {
             stringResource(R.string.dev_recap_months),
             months.entries.map { (month, episodes) ->
                 stringResource(valueCount, month.getDisplayName(TextStyle.FULL, locale), count(episodes))
-            }.joinToString("\n"),
+            }.joinToString(NEW_LINE),
         )
         recap.busiestMonth?.let { month ->
             Readout(
@@ -310,6 +339,8 @@ private fun DevCard(title: String, subtitle: String, content: @Composable () -> 
         }
     }
 }
+
+private const val NEW_LINE = "\n"
 
 /** One label and its value, the value wrapping under the label when it runs long. */
 @Composable

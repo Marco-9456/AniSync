@@ -170,7 +170,12 @@ class RecapRepositoryImpl @Inject constructor(
         retain(owner, today())
     }
 
-    override suspend fun previewRecap(userId: Int, period: RecapPeriod, zone: ZoneId): Result<RecapPreview> = safeApiCall {
+    override suspend fun previewRecap(
+        userId: Int,
+        period: RecapPeriod,
+        zone: ZoneId,
+        settings: RecapSettings,
+    ): Result<RecapPreview> = safeApiCall {
         val started = System.currentTimeMillis()
         val tally = Tally()
         // The sweep a first build makes at the end of the period, so completions see as far back.
@@ -186,7 +191,7 @@ class RecapRepositoryImpl @Inject constructor(
             tally.payloadBytes = stored.length
             val payload = decodeRecapPayload(stored) ?: return@withContext null
             val media = payload.mediaById()
-            buildRecap(period, payload.records(media), media, currentSettings(), zone)?.let { recap ->
+            buildRecap(period, payload.records(media), media, settings, zone)?.let { recap ->
                 StoredRecap(period, recap, media, period.isFinishedOn(LocalDate.now(zone)), started, seenAt = null)
             }
         }

@@ -1888,6 +1888,7 @@
     <string name="dev_recap_user_id">AniList user id</string>
     <string name="dev_recap_period">Month or year, such as 2026-09 or 2025</string>
     <string name="dev_recap_zone">Time zone, such as Asia/Riyadh or UTC+3</string>
+    <string name="dev_recap_show_adult">Name adult titles</string>
     <string name="dev_recap_build">Build</string>
     <string name="dev_recap_open_mine">Open for my account</string>
     <string name="dev_recap_building">Building…</string>
@@ -1903,6 +1904,7 @@
     <string name="dev_recap_time">Time</string>
     <string name="dev_recap_titles">Titles</string>
     <string name="dev_recap_finished">Finished</string>
+    <string name="dev_recap_finished_titles">Finished, in order</string>
     <string name="dev_recap_started">Started</string>
     <string name="dev_recap_active_days">Active days</string>
     <string name="dev_recap_streak">Longest streak</string>

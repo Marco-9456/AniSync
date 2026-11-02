@@ -11,6 +11,8 @@ data class RecapBuilderUiState(
     val userId: String = "",
     val period: String = "",
     val zone: String = "",
+    /** Whether the preview names adult titles. The frames were drawn with adult content off. */
+    val previewAdult: Boolean = false,
     val isBuilding: Boolean = false,
     /** True when the user id, period or zone cannot be read. */
     val inputError: Boolean = false,
@@ -29,6 +31,7 @@ sealed interface RecapBuilderAction {
     data class SetUserId(val value: String) : RecapBuilderAction
     data class SetPeriod(val value: String) : RecapBuilderAction
     data class SetZone(val value: String) : RecapBuilderAction
+    data class SetPreviewAdult(val enabled: Boolean) : RecapBuilderAction
     data object Build : RecapBuilderAction
     data object OpenMine : RecapBuilderAction
     data object RunJob : RecapBuilderAction

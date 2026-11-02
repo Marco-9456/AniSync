@@ -3,6 +3,7 @@ package com.anisync.android.domain
 import com.anisync.android.domain.recap.Recap
 import com.anisync.android.domain.recap.RecapMedia
 import com.anisync.android.domain.recap.RecapPeriod
+import com.anisync.android.domain.recap.RecapSettings
 import kotlinx.coroutines.flow.Flow
 import java.time.ZoneId
 
@@ -77,8 +78,8 @@ interface RecapRepository {
     suspend fun applyRetention()
 
     /**
-     * Developer Tools: builds [period] for any public user exactly as a first build would, without
-     * storing anything or touching the active account's recaps.
+     * Developer Tools: builds [period] for any public user exactly as a first build would, counted
+     * with [settings], without storing anything or touching the active account's recaps.
      */
-    suspend fun previewRecap(userId: Int, period: RecapPeriod, zone: ZoneId): Result<RecapPreview>
+    suspend fun previewRecap(userId: Int, period: RecapPeriod, zone: ZoneId, settings: RecapSettings): Result<RecapPreview>
 }

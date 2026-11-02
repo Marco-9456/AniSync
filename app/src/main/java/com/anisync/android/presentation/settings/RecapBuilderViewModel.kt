@@ -7,6 +7,7 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.RecapRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.recap.RecapPeriod
+import com.anisync.android.domain.recap.RecapSettings
 import com.anisync.android.worker.RecapWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -33,6 +34,7 @@ class RecapBuilderViewModel @Inject constructor(
             userId = DEFAULT_USER_ID,
             period = YearMonth.now().minusMonths(1).toString(),
             zone = ZoneId.systemDefault().id,
+            previewAdult = appSettings.showAdultContent.value,
         )
     )
 
@@ -50,6 +52,7 @@ class RecapBuilderViewModel @Inject constructor(
             is RecapBuilderAction.SetUserId -> form.update { it.copy(userId = action.value, inputError = false) }
             is RecapBuilderAction.SetPeriod -> form.update { it.copy(period = action.value, inputError = false) }
             is RecapBuilderAction.SetZone -> form.update { it.copy(zone = action.value, inputError = false) }
+            is RecapBuilderAction.SetPreviewAdult -> form.update { it.copy(previewAdult = action.enabled) }
             RecapBuilderAction.Build -> build()
             RecapBuilderAction.OpenMine -> openMine()
             RecapBuilderAction.RunJob -> RecapWorker.runNow(context)
@@ -71,7 +74,12 @@ class RecapBuilderViewModel @Inject constructor(
         }
         form.update { it.copy(isBuilding = true, buildError = null, preview = null, opened = null, openedNothing = false) }
         viewModelScope.launch {
-            when (val result = recapRepository.previewRecap(userId, period, zone)) {
+            val settings = RecapSettings(
+                includeManga = appSettings.recapIncludeManga.value,
+                countRepeats = appSettings.recapCountRepeats.value,
+                showAdult = current.previewAdult,
+            )
+            when (val result = recapRepository.previewRecap(userId, period, zone, settings)) {
                 is Result.Success -> form.update { it.copy(isBuilding = false, preview = result.data) }
                 is Result.Error -> form.update { it.copy(isBuilding = false, buildError = result.message) }
             }
