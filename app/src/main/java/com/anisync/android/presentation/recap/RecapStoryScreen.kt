@@ -48,8 +48,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -171,28 +172,29 @@ private val LocalAppScheme = staticCompositionLocalOf<ColorScheme?> { null }
 
 @Composable
 private fun StoryPlaceholder(state: RecapStoryUiState, onAction: (RecapStoryAction) -> Unit, onClose: () -> Unit) {
-    run {
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-            when {
-                state.loading -> AppCircularProgressIndicator(Modifier.align(Alignment.Center))
-                state.failed -> EmptyState(
-                    icon = Icons.Default.WifiOff,
-                    title = stringResource(R.string.forum_empty_failed_title),
-                    description = stringResource(R.string.recap_failed_body),
-                    actionLabel = stringResource(R.string.retry),
-                    onAction = { onAction(RecapStoryAction.Retry) },
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                else -> EmptyState(
-                    icon = Icons.Default.AutoAwesomeMotion,
-                    title = stringResource(R.string.recap_missing_title),
-                    description = stringResource(R.string.recap_missing_body),
-                    modifier = Modifier.align(Alignment.Center),
-                )
-            }
-            IconButton(onClick = onClose, modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(8.dp)) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_recap_close), tint = MaterialTheme.colorScheme.onSurface)
-            }
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        when {
+            state.loading -> AppCircularProgressIndicator(Modifier.align(Alignment.Center))
+            state.failed -> EmptyState(
+                icon = Icons.Default.Public,
+                title = stringResource(R.string.forum_empty_failed_title),
+                description = stringResource(if (state.rateLimited) R.string.profile_rate_limited_error else R.string.recap_failed_body),
+                actionLabel = stringResource(R.string.retry),
+                actionIcon = Icons.Default.Refresh,
+                onAction = { onAction(RecapStoryAction.Retry) },
+                emblemShape = RoundedCornerShape(22.dp),
+                modifier = Modifier.align(Alignment.Center),
+            )
+            else -> EmptyState(
+                icon = Icons.Default.AutoAwesomeMotion,
+                title = stringResource(R.string.recap_missing_title),
+                description = stringResource(R.string.recap_missing_body),
+                emblemShape = RoundedCornerShape(22.dp),
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
+        IconButton(onClick = onClose, modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(8.dp)) {
+            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_recap_close), tint = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

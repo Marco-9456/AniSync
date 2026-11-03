@@ -117,7 +117,7 @@ class RecapStoryViewModel @Inject constructor(
             _uiState.update { it.copy(loading = false, empty = true) }
             return
         }
-        _uiState.update { it.copy(loading = true, failed = false, empty = false) }
+        _uiState.update { it.copy(loading = true, failed = false, rateLimited = false, empty = false) }
         viewModelScope.launch {
             val loaded = if (route.preview) preview(period) else own(period) ?: return@launch
             val stored = loaded.recap
@@ -163,7 +163,7 @@ class RecapStoryViewModel @Inject constructor(
                         waits++
                         delay((countdown + 1) * 1000L)
                     } else {
-                        _uiState.update { it.copy(loading = false, failed = true) }
+                        _uiState.update { it.copy(loading = false, failed = true, rateLimited = countdown != null) }
                         return null
                     }
                 }

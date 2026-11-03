@@ -86,6 +86,8 @@ data class RecapStoryUiState(
     val loading: Boolean = true,
     /** Nothing could be loaded and a retry may help. */
     val failed: Boolean = false,
+    /** The failure was AniList's rate limit outlasting every wait, not the connection. */
+    val rateLimited: Boolean = false,
     /** Nothing counts in the period, so there is no story to tell. */
     val empty: Boolean = false,
     val story: StoryModel? = null,
