@@ -174,7 +174,7 @@ fun ProfileScreen(
                 ?: profile.about.orEmpty(),
             isSubmitting = false,
             submitLabel = stringResource(R.string.save),
-            minLength = 1,
+            minLength = 0,
             maxLength = 65_000,
             onSubmit = { about ->
                 viewModel.onAction(ProfileAction.UpdateAbout(about))
