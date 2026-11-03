@@ -22,13 +22,10 @@ import com.anisync.android.R
 fun InfoNotice(
     modifier: Modifier = Modifier,
     text: String = stringResource(R.string.settings_oss_footer),
-    onDismiss: (() -> Unit)? = null
+    onDismiss: (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        shape = MaterialTheme.shapes.medium,
-        modifier = modifier.fillMaxWidth()
-    ) {
+    val content: @Composable () -> Unit = {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -55,5 +52,21 @@ fun InfoNotice(
                 }
             }
         }
+    }
+    if (onClick != null) {
+        Surface(
+            onClick = onClick,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            shape = MaterialTheme.shapes.medium,
+            modifier = modifier.fillMaxWidth(),
+            content = content
+        )
+    } else {
+        Surface(
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            shape = MaterialTheme.shapes.medium,
+            modifier = modifier.fillMaxWidth(),
+            content = content
+        )
     }
 }
