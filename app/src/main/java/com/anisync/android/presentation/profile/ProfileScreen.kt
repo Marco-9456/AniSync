@@ -58,10 +58,12 @@ fun ProfileScreen(
     onNavigateToNotifications: () -> Unit = {},
     isOwnProfile: Boolean = true,
     onShareCard: (ShareStudio) -> Unit = {},
+    onOpenRecap: (String) -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollToTopRequest by viewModel.scrollToTopRequest.collectAsStateWithLifecycle()
+    val dockRequest by viewModel.dockRequest.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val activeAccountId by viewModel.activeAccountId.collectAsStateWithLifecycle()
@@ -122,6 +124,7 @@ fun ProfileScreen(
                         profile = profile,
                         uiState = uiState,
                         scrollToTopRequest = scrollToTopRequest,
+                        dockRequest = dockRequest,
                         isOwnProfile = isOwnProfile,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope,
@@ -147,7 +150,8 @@ fun ProfileScreen(
                         },
                         showAccountSwitcher = isOwnProfile && accounts.size > 1,
                         onAccountSwitchClick = { showAccountSwitcherSheet = true },
-                        onShareCard = onShareCard
+                        onShareCard = onShareCard,
+                        onOpenRecap = onOpenRecap
                     )
                 }
 

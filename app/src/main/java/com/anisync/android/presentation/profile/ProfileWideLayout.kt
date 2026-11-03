@@ -289,6 +289,7 @@ fun ProfileWideLayout(
     onShareStats: () -> Unit,
     onShareFavourites: () -> Unit,
     statsColumns: Int,
+    onOpenRecap: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -363,6 +364,7 @@ fun ProfileWideLayout(
                 onShareStats = onShareStats,
                 onShareFavourites = onShareFavourites,
                 statsColumns = statsColumns,
+                onOpenRecap = onOpenRecap,
                 collapse = collapse,
                 modifier = Modifier.weight(1f)
             )
@@ -493,6 +495,7 @@ private fun ProfileTwoPane(
     onShareStats: () -> Unit,
     onShareFavourites: () -> Unit,
     statsColumns: Int,
+    onOpenRecap: (String) -> Unit,
     collapse: BioCollapseState,
     modifier: Modifier = Modifier
 ) {
@@ -574,7 +577,8 @@ private fun ProfileTwoPane(
                 onLastReplyClick = onLastReplyClick,
                 onShareStats = onShareStats,
                 onShareFavourites = onShareFavourites,
-                statsColumns = statsColumns
+                statsColumns = statsColumns,
+                onOpenRecap = onOpenRecap
             )
         }
     )
@@ -788,6 +792,7 @@ private fun ProfileTabPane(
     onShareStats: () -> Unit,
     onShareFavourites: () -> Unit,
     statsColumns: Int,
+    onOpenRecap: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Column counts come from the pane, not the window: this pane is a fraction of the window wide,
@@ -864,7 +869,8 @@ private fun ProfileTabPane(
                         onLastReplyClick = onLastReplyClick,
                         portraitColumns = portraitColumns,
                         studioColumns = studioColumns,
-                        statsColumns = statsColumns
+                        statsColumns = statsColumns,
+                        onOpenRecap = onOpenRecap
                     )
                 }
 

@@ -61,6 +61,7 @@ import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.components.ShareFab
+import com.anisync.android.presentation.components.TabRequestEffect
 import com.anisync.android.presentation.components.shareFabBottomInset
 import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
@@ -90,6 +91,7 @@ import com.anisync.android.presentation.statistics.StatsRail
 import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.type.MediaType
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.anisync.android.util.ShareUtils
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -107,6 +109,8 @@ fun ProfileContent(
     uiState: ProfileUiState,
     /** See ProfileViewModel.scrollToTopRequest: the tab was reselected. */
     scrollToTopRequest: Long = 0L,
+    /** See ProfileViewModel.dockRequest: a recap opened Statistics. */
+    dockRequest: Long = 0L,
     isOwnProfile: Boolean,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
@@ -127,6 +131,7 @@ fun ProfileContent(
     showAccountSwitcher: Boolean = false,
     onAccountSwitchClick: () -> Unit = {},
     onShareCard: (ShareStudio) -> Unit = {},
+    onOpenRecap: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -184,6 +189,7 @@ fun ProfileContent(
             onShareStats = shareStats,
             onShareFavourites = shareFavourites,
             statsColumns = statsColumns,
+            onOpenRecap = onOpenRecap,
             modifier = modifier
         )
     } else {
@@ -215,6 +221,14 @@ fun ProfileContent(
     val dockStrip: suspend () -> Unit = {
         listState.scrollToItem(PROFILE_TABS_INDEX)
         listState.scrollBy(-dockPx)
+    }
+    TabRequestEffect(dockRequest) {
+        // The header is still settling from the navigation that asked for Statistics.
+        repeat(3) {
+            dockStrip()
+            delay(250)
+            if (tabsDocked) return@TabRequestEffect
+        }
     }
     val statsScroll = remember { mutableMapOf<StatsView, Pair<Int, Int>>() }
     var restoreStatsView by remember { mutableStateOf<StatsView?>(null) }
@@ -342,6 +356,7 @@ fun ProfileContent(
             portraitColumns = portraitColumns,
             studioColumns = studioColumns,
             statsColumns = statsColumns,
+            onOpenRecap = onOpenRecap,
             onStatsViewSelected = onStatsViewSelected
         )
     }
@@ -446,6 +461,7 @@ internal fun LazyListScope.profileSelectedTabContent(
     portraitColumns: Int,
     studioColumns: Int,
     statsColumns: Int,
+    onOpenRecap: (String) -> Unit = {},
     onStatsViewSelected: (StatsView) -> Unit = { onAction(ProfileAction.SelectStatsView(it)) }
 ) {
     when (uiState.selectedTab) {
@@ -576,7 +592,8 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onStudioClick = onStudioClick,
                 onMediaClick = onMediaClick,
                 onActivityClick = onActivityClick,
-                statsColumns = statsColumns
+                statsColumns = statsColumns,
+                onOpenRecap = onOpenRecap
             )
         }
     }
@@ -637,7 +654,11 @@ internal fun ProfileTabStrip(
         when (uiState.selectedTab) {
             ProfileTab.STATS -> StatsRail(
                 statsType = uiState.selectedStatsType,
-                views = StatsView.entries.filter { it != StatsView.RECAPS },
+                views = if (uiState.viewerId != null && uiState.viewerId == uiState.profile?.id) {
+                    StatsView.entries
+                } else {
+                    StatsView.entries.filter { it != StatsView.RECAPS }
+                },
                 selectedView = uiState.selectedStatsView,
                 onTypeSelected = onStatsTypeSelected,
                 onViewSelected = onStatsViewSelected,

@@ -111,8 +111,18 @@ fun LazyListScope.profileStatsTab(
     onStudioClick: (Int) -> Unit = {},
     onMediaClick: (Int) -> Unit = {},
     onActivityClick: (Int) -> Unit = {},
+    onOpenRecap: (String) -> Unit = {},
     statsColumns: Int = 1,
 ) {
+    val ownProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
+    // Recaps come from the device, not from AniList's statistics, so they never wait on them.
+    if (uiState.selectedStatsView == StatsView.RECAPS && ownProfile) {
+        statsRecaps(uiState.recaps, statsColumns, onOpenRecap)
+        return
+    }
+    if (uiState.selectedStatsView == StatsView.OVERVIEW && ownProfile) {
+        recapShelf(uiState.recaps, statsColumns, onOpenRecap)
+    }
     // A reload keeps the stats on screen. Swapping them for a spinner, or for the error of a failed
     // reload, sent the reader back to the top of the tab (#164).
     if (uiState.isStatsLoading && uiState.statsData == null) {

@@ -86,6 +86,8 @@ class ProfileViewModel @Inject constructor(
     private val appSettings: AppSettings,
     private val notificationBadgeStore: NotificationBadgeStore,
     private val toastManager: ToastManager,
+    private val recapEntries: com.anisync.android.presentation.recap.RecapEntries,
+    private val statsLauncher: com.anisync.android.domain.ProfileStatsLauncher,
     @ApplicationContext private val context: Context,
     tabReselectBus: TabReselectBus,
     savedStateHandle: SavedStateHandle
@@ -402,6 +404,11 @@ class ProfileViewModel @Inject constructor(
      */
     val scrollToTopRequest: StateFlow<Long> = _scrollToTopRequest.asStateFlow()
 
+    private val _dockRequest = MutableStateFlow(0L)
+
+    /** Bumped when a recap asks for Statistics, so the page opens docked as a tab pick does. */
+    val dockRequest: StateFlow<Long> = _dockRequest.asStateFlow()
+
     init {
         tabReselectBus.observeTab(
             tab = MainTab.PROFILE,
@@ -412,6 +419,20 @@ class ProfileViewModel @Inject constructor(
 
     private val adultActivityOptions =
         combine(appSettings.showAdultContent, appSettings.othersAdultActivity, ::Pair)
+
+    private val recapProgress = MutableStateFlow<com.anisync.android.presentation.recap.RecapProgress?>(null)
+    private val recapYear = MutableStateFlow<com.anisync.android.presentation.recap.RecapRunningYear?>(null)
+    private var recapsLoaded = false
+
+    /** Recaps belong to the viewer, so another member's profile never shows any. */
+    private val recapsState: kotlinx.coroutines.flow.Flow<com.anisync.android.presentation.recap.RecapsUiModel> =
+        if (targetUsername.isNullOrBlank()) {
+            combine(recapEntries.entries(), recapProgress, recapYear, recapEntries.firstBuildRunning()) { entries, progress, year, building ->
+                com.anisync.android.presentation.recap.RecapsUiModel(entries, progress, year, building = building && entries.isEmpty())
+            }
+        } else {
+            kotlinx.coroutines.flow.flowOf(com.anisync.android.presentation.recap.RecapsUiModel())
+        }
 
     val uiState: StateFlow<ProfileUiState> = combine(
         profileState,
@@ -428,7 +449,8 @@ class ProfileViewModel @Inject constructor(
         favoritesState,
         activityPaginationState,
         adultActivityOptions,
-        editedActivities
+        editedActivities,
+        recapsState
     ) { params ->
         val remote = params[0] as ProfileUiState
         val local = params[1] as ProfileUiLocalState
@@ -450,6 +472,7 @@ class ProfileViewModel @Inject constructor(
         val (showAdultContent, showOthersAdultActivity) = params[13] as Pair<Boolean, Boolean>
         @Suppress("UNCHECKED_CAST")
         val edited = params[14] as Map<Int, com.anisync.android.domain.UserActivity>
+        val recaps = params[15] as com.anisync.android.presentation.recap.RecapsUiModel
 
         // Fold lazily-loaded older activity pages into the profile's initial feed
         // (deduped, newest-first) before overlays apply, so a like/subscribe/delete
@@ -573,6 +596,7 @@ class ProfileViewModel @Inject constructor(
             isUserMangaListLoading = mediaLists.isUserMangaListLoading,
             viewerId = viewerId,
             unreadNotificationCount = unreadCount,
+            recaps = recaps,
             activitiesHasNextPage = pagination.hasNextPage,
             isActivitiesPaginating = pagination.isPaginating
         )
@@ -584,6 +608,28 @@ class ProfileViewModel @Inject constructor(
 
     init {
         observeTargetProfileForFollowState()
+
+        if (targetUsername.isNullOrBlank()) {
+            // A recap story's last page asks for Statistics through the launcher.
+            viewModelScope.launch {
+                statsLauncher.pending.collect { pending ->
+                    if (!pending) return@collect
+                    statsLauncher.consume()
+                    localState.update { it.copy(selectedTab = ProfileTab.STATS, selectedStatsView = StatsView.OVERVIEW) }
+                    _dockRequest.update { it + 1 }
+                    if (!statsState.value.hasFetchedStats) fetchStats()
+                    loadRecaps(refresh = false)
+                }
+            }
+            // The month in progress and the year so far come from what the first build stores.
+            viewModelScope.launch {
+                var wasBuilding = false
+                recapEntries.firstBuildRunning().collect { building ->
+                    if (wasBuilding && !building) loadRecaps(refresh = false, force = true)
+                    wasBuilding = building
+                }
+            }
+        }
 
         viewModelScope.launch {
             viewerIdFlow.value = activityRepository.getViewerId()
@@ -620,6 +666,7 @@ class ProfileViewModel @Inject constructor(
                 localState.update {
                     it.copy(selectedTab = action.tab)
                 }
+                if (action.tab == ProfileTab.STATS) loadRecaps(refresh = false)
                 if (action.tab == ProfileTab.SOCIAL && !socialState.value.hasFetchedSocialData) {
                     fetchSocialData()
                 } else if (action.tab == ProfileTab.REVIEWS && !reviewsState.value.hasFetchedReviews) {
@@ -897,7 +944,23 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The month in progress and the running year for the viewer's own Statistics, and the first
+     * build when nothing is stored yet. Loaded once when Statistics opens, again on a pull.
+     */
+    private fun loadRecaps(refresh: Boolean, force: Boolean = false) {
+        if (!targetUsername.isNullOrBlank()) return
+        if (recapsLoaded && !refresh && !force) return
+        recapsLoaded = true
+        viewModelScope.launch {
+            recapEntries.buildIfEmpty()
+            recapProgress.value = recapEntries.inProgress(refresh)
+            recapYear.value = recapEntries.runningYear(refresh)
+        }
+    }
+
     private fun refresh(forceNetwork: Boolean = true) {
+        if (forceNetwork && localState.value.selectedTab == ProfileTab.STATS) loadRecaps(refresh = true)
         // Synchronous early-return so a second pull-to-refresh while the first
         // is still in flight is dropped, not stacked. The 429 toast gate only
         // fires AFTER a rate limit happens; this prevents the burst from

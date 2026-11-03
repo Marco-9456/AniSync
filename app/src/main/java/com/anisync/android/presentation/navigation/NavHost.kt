@@ -513,6 +513,7 @@ fun AniSyncNavHost(
                     onNavigateToSettings = onNavigateToSettings,
                     onNavigateToNotifications = onNavigateToNotifications,
                     onShareCard = { navController.navigate(it) },
+                    onOpenRecap = { navController.navigate(RecapStory(it)) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )

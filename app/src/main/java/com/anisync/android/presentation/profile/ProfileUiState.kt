@@ -103,7 +103,9 @@ data class ProfileUiState(
     val editingActivity: com.anisync.android.domain.UserActivity? = null,
     val isSavingActivityEdit: Boolean = false,
     /** The follower the viewer asked to remove, awaiting the confirm dialog. */
-    val followerToRemove: SocialUser? = null
+    val followerToRemove: SocialUser? = null,
+    /** The viewer's recaps for Statistics, empty on anyone else's profile. */
+    val recaps: com.anisync.android.presentation.recap.RecapsUiModel = com.anisync.android.presentation.recap.RecapsUiModel()
 )
 
 data class StatisticsUiModel(
