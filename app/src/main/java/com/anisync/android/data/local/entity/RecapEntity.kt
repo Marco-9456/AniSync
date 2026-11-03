@@ -42,3 +42,9 @@ data class RecapStamp(
     val builtAt: Long,
     val seenAt: Long?,
 )
+
+/** When a stored recap was first opened. */
+data class RecapSeen(
+    val periodKey: String,
+    val seenAt: Long?,
+)
