@@ -32,7 +32,8 @@ import javax.inject.Inject
 
 /**
  * Announces recaps the job built, once each: a big picture notification on the Recaps channel with
- * Watch and Share card, when the delivery setting asks for one and the system lets the app post.
+ * Watch and Share card, when the delivery setting asks for one, Allow Notifications is on and the
+ * system lets the app post. The Library banner still shows when it is off.
  */
 class RecapNotifier @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -47,6 +48,7 @@ class RecapNotifier @Inject constructor(
 
     suspend fun announce(ownerId: Int, recaps: List<StoredRecap>) {
         if (appSettings.recapDelivery.value != RecapDelivery.NOTIFICATION_AND_BANNER) return
+        if (!appSettings.notificationsEnabled.value) return
         if (!canPost()) return
         val fresh = recaps.filterNot { notices.wasNotified(ownerId, it.period) }
         if (fresh.isEmpty()) return
