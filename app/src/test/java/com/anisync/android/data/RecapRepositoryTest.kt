@@ -1,0 +1,196 @@
+package com.anisync.android.data
+
+import com.anisync.android.data.local.dao.RecapDao
+import com.anisync.android.data.local.entity.RecapEntity
+import com.anisync.android.data.local.entity.RecapSeen
+import com.anisync.android.data.local.entity.RecapStamp
+import com.anisync.android.domain.Result
+import com.anisync.android.domain.recap.ActivityWindow
+import com.anisync.android.domain.recap.FetchedActivity
+import com.anisync.android.domain.recap.FetchedPage
+import com.anisync.android.domain.recap.RecapMedia
+import com.anisync.android.domain.recap.RecapMediaType
+import com.anisync.android.domain.recap.RecapPeriod
+import com.anisync.android.domain.recap.RecapSettings
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.time.LocalDateTime
+import java.time.YearMonth
+import java.time.ZoneId
+import java.time.ZoneOffset
+
+class RecapRepositoryTest {
+
+    private val zone = ZoneOffset.ofHours(3)
+    private val dao = FakeRecapDao()
+    private val remote = FakeRecapRemote()
+    private val env = FakeRecapEnvironment(zone, nowMillis = at(2026, 11, 7, 12) * 1000)
+    private val repository = RecapRepositoryImpl(remote, dao, env)
+
+    private val october = RecapPeriod.Month(YearMonth.of(2026, 10))
+    private val september = RecapPeriod.Month(YearMonth.of(2026, 9))
+
+    init {
+        remote.media += title(10, "Frieren", episodes = 12)
+        remote.media += title(20, "Dandadan", episodes = 12)
+        remote.activities += listOf(
+            activity(1, 10, "watched episode", "1 - 4", at(2025, 6, 3)),
+            activity(2, 10, "watched episode", "5 - 6", at(2026, 9, 10)),
+            activity(3, 20, "watched episode", "1 - 3", at(2026, 9, 20)),
+            activity(4, 10, "completed", null, at(2026, 10, 5)),
+            activity(5, 20, "watched episode", "4", at(2026, 10, 9)),
+        )
+    }
+
+    @Test
+    fun `a first build stores last year and the kept months, new only where the banner may point`() = runTest {
+        assertTrue(repository.backfill() is Result.Success)
+        val rows = dao.rows.values.associateBy { it.periodKey }
+        assertEquals(setOf("2025") + (0..13).map { YearMonth.of(2025, 10).plusMonths(it.toLong()).toString() }, rows.keys)
+        assertNull("the banner's month starts new", rows.getValue("2026-10").seenAt)
+        assertNotNull("an older month starts seen", rows.getValue("2026-09").seenAt)
+        assertNotNull("last year starts seen", rows.getValue("2025").seenAt)
+        assertNull("the month in progress is not seen", rows.getValue("2026-11").seenAt)
+    }
+
+    @Test
+    fun `a completion counts the episodes after the last one logged months before`() = runTest {
+        repository.backfill()
+        val recap = (repository.getRecap(october) as Result.Success).data!!.recap
+        assertEquals("episodes 7 to 12 of Frieren, then one of Dandadan", 7, recap.episodes)
+        assertEquals(1, recap.finished)
+    }
+
+    private fun at(year: Int, month: Int, day: Int, hour: Int = 20): Long =
+        LocalDateTime.of(year, month, day, hour, 0).atZone(zone).toEpochSecond()
+
+    private fun activity(id: Int, mediaId: Int, status: String, progress: String?, createdAt: Long) =
+        FetchedActivity(id, mediaId, status, progress, createdAt)
+
+    private fun title(id: Int, name: String, episodes: Int) = RecapMedia(
+        id = id,
+        type = RecapMediaType.ANIME,
+        title = name,
+        format = "TV",
+        episodes = episodes,
+        chapters = null,
+        duration = 24,
+        genres = listOf("Adventure"),
+        mainStudio = null,
+        isAdult = false,
+        startDate = null,
+        endDate = null,
+    )
+}
+
+/** Room's recaps table in memory, keyed by owner and period. */
+internal class FakeRecapDao : RecapDao() {
+    val rows = LinkedHashMap<Pair<Int, String>, RecapEntity>()
+    private val changes = MutableStateFlow(0)
+
+    /** Runs once at the start of the next write, as something landing mid-build would. */
+    var duringWrite: (() -> Unit)? = null
+
+    fun markSeenNow(owner: Int, periodKey: String, at: Long) {
+        rows[owner to periodKey]?.takeIf { it.seenAt == null }?.let { rows[owner to periodKey] = it.copy(seenAt = at) }
+    }
+
+    private fun changed() {
+        changes.value++
+    }
+
+    override fun observeAll(ownerId: Int): Flow<List<RecapEntity>> = changes.map { rows.values.filter { it.ownerId == ownerId } }
+
+    override suspend fun getAll(ownerId: Int): List<RecapEntity> = rows.values.filter { it.ownerId == ownerId }
+
+    override suspend fun get(ownerId: Int, periodKey: String): RecapEntity? = rows[ownerId to periodKey]
+
+    override suspend fun getStamps(ownerId: Int): List<RecapStamp> =
+        rows.values.filter { it.ownerId == ownerId }.map { RecapStamp(it.periodKey, it.isFinal, it.builtAt, it.seenAt) }
+
+    override suspend fun getSeen(ownerId: Int, periodKeys: List<String>): List<RecapSeen> {
+        duringWrite?.also { duringWrite = null }?.invoke()
+        return periodKeys.mapNotNull { key -> rows[ownerId to key]?.let { RecapSeen(key, it.seenAt) } }
+    }
+
+    override fun observePayloadBytes(ownerId: Int): Flow<Long> =
+        changes.map { rows.values.filter { it.ownerId == ownerId }.sumOf { it.payload.length.toLong() } }
+
+    override suspend fun upsertAll(rows: List<RecapEntity>) {
+        rows.forEach { this.rows[it.ownerId to it.periodKey] = it }
+        changed()
+    }
+
+    override suspend fun markSeen(ownerId: Int, periodKey: String, seenAt: Long) {
+        markSeenNow(ownerId, periodKey, seenAt)
+        changed()
+    }
+
+    override suspend fun updateSettingsKey(ownerId: Int, periodKeys: List<String>, settingsKey: String) {
+        periodKeys.forEach { key -> rows[ownerId to key]?.let { rows[ownerId to key] = it.copy(settingsKey = settingsKey) } }
+        changed()
+    }
+
+    override suspend fun delete(ownerId: Int, periodKeys: List<String>) {
+        periodKeys.forEach { rows.remove(ownerId to it) }
+        changed()
+    }
+
+    override suspend fun deleteOwner(ownerId: Int) {
+        rows.keys.removeAll { it.first == ownerId }
+        changed()
+    }
+}
+
+/** AniList's activities and titles, served the way the real queries page them. */
+internal class FakeRecapRemote : RecapRemote {
+    val activities = ArrayList<FetchedActivity>()
+    val media = ArrayList<RecapMedia>()
+    var requests = 0
+
+    override suspend fun activityPage(userId: Int, window: ActivityWindow, page: Int): FetchedPage {
+        requests++
+        val inside = activities
+            .filter { it.createdAt > window.createdAfter && it.createdAt < window.createdBefore }
+            .sortedByDescending { it.id }
+        val slice = inside.drop((page - 1) * 50).take(50)
+        return FetchedPage(slice, hasNextPage = inside.size > page * 50)
+    }
+
+    override suspend fun media(ids: List<Int>): List<RecapMedia> {
+        requests++
+        return media.filter { it.id in ids }
+    }
+
+    override suspend fun airingPage(ids: List<Int>, window: ActivityWindow, page: Int): AiringPage {
+        requests++
+        return AiringPage(emptyList(), hasNextPage = false)
+    }
+
+    override suspend fun user(userId: Int): RecapUser? = null
+}
+
+internal class FakeRecapEnvironment(
+    private val zone: ZoneId,
+    var nowMillis: Long,
+    owner: Int? = 1,
+) : RecapEnvironment {
+    val ownerFlow = MutableStateFlow(owner)
+    val settingsFlow = MutableStateFlow(RecapSettings())
+    var kept = 13
+
+    override fun owner(): Int? = ownerFlow.value
+    override val owners: Flow<Int?> = ownerFlow
+    override fun currentSettings(): RecapSettings = settingsFlow.value
+    override val settings: Flow<RecapSettings> = settingsFlow
+    override fun keptMonths(): Int = kept
+    override fun zone(): ZoneId = zone
+    override fun nowMillis(): Long = nowMillis
+}
