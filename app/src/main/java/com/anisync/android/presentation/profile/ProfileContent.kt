@@ -65,7 +65,9 @@ import com.anisync.android.presentation.components.TabRequestEffect
 import com.anisync.android.presentation.components.shareFabBottomInset
 import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.WhatsNewDot
+import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
@@ -699,7 +701,13 @@ internal fun ProfileTabsButtonGroup(
     onTabSelected: (ProfileTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val mutualsNew = WhatsNewItem.PROFILE_MUTUALS in rememberActiveWhatsNew()
+    val whatsNew = rememberActiveWhatsNew()
+    val mutualsNew = WhatsNewItem.PROFILE_MUTUALS in whatsNew
+    val statsMoved = WhatsNewItem.PROFILE_STATS_MOVED in whatsNew
+    val whatsNewStore = LocalWhatsNew.current
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == ProfileTab.STATS) whatsNewStore.markSeen(WhatsNewItem.PROFILE_STATS_MOVED)
+    }
     SegmentedTabGroup(
         options = ProfileTab.entries,
         selected = selectedTab,
@@ -708,6 +716,12 @@ internal fun ProfileTabsButtonGroup(
         // 6 rather than 8: each 44dp tab sits in a 48dp touch box.
         modifier = modifier.padding(vertical = 6.dp),
         icon = ::profileTabIcon,
-        badge = { tab -> if (tab == ProfileTab.SOCIAL && mutualsNew) ({ WhatsNewDot() }) else null }
+        badge = { tab ->
+            when {
+                tab == ProfileTab.SOCIAL && mutualsNew -> ({ WhatsNewDot() })
+                tab == ProfileTab.STATS && statsMoved -> ({ WhatsNewPill(WhatsNewItem.Kind.MOVED) })
+                else -> null
+            }
+        }
     )
 }
