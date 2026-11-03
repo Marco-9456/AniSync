@@ -21,6 +21,9 @@ interface RecapDao {
     @Query("SELECT periodKey, isFinal, builtAt, seenAt FROM recaps WHERE ownerId = :ownerId")
     suspend fun getStamps(ownerId: Int): List<RecapStamp>
 
+    @Query("SELECT COALESCE(SUM(LENGTH(CAST(payload AS BLOB))), 0) FROM recaps WHERE ownerId = :ownerId")
+    fun observePayloadBytes(ownerId: Int): Flow<Long>
+
     @Upsert
     suspend fun upsertAll(rows: List<RecapEntity>)
 

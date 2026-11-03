@@ -177,6 +177,13 @@ class RecapRepositoryImpl @Inject constructor(
         return recapDao.getStamps(owner).isNotEmpty()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeStoredBytes(): Flow<Long> =
+        accountStore.activeAccount
+            .map { account -> account?.id?.takeIf { it > 0 } }
+            .distinctUntilChanged()
+            .flatMapLatest { owner -> if (owner == null) flowOf(0L) else recapDao.observePayloadBytes(owner) }
+
     override suspend fun clear() {
         val owner = owner() ?: return
         recapDao.deleteOwner(owner)

@@ -85,6 +85,9 @@ interface RecapRepository {
     /** True once anything is stored for the active account, even periods with nothing counted. */
     suspend fun hasStored(): Boolean
 
+    /** How many bytes the active account's stored recaps take, periods with nothing counted included. */
+    fun observeStoredBytes(): Flow<Long>
+
     /** Deletes every stored recap of the active account. */
     suspend fun clear()
 
