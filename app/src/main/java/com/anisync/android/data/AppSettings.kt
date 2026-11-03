@@ -679,6 +679,15 @@ class AppSettings @Inject constructor(
         prefs.edit { putBoolean(KEY_RECAP_COUNT_REPEATS, enabled) }
     }
 
+    /** Lets recaps name adult titles while the account's adult content setting is off. */
+    private val _recapShowAdult = MutableStateFlow(prefs.getBoolean(KEY_RECAP_SHOW_ADULT, false))
+    val recapShowAdult: StateFlow<Boolean> = _recapShowAdult.asStateFlow()
+
+    fun setRecapShowAdult(enabled: Boolean) {
+        _recapShowAdult.value = enabled
+        prefs.edit { putBoolean(KEY_RECAP_SHOW_ADULT, enabled) }
+    }
+
     private val _recapThemeSong = MutableStateFlow(prefs.getBoolean(KEY_RECAP_THEME_SONG, true))
     val recapThemeSong: StateFlow<Boolean> = _recapThemeSong.asStateFlow()
 
@@ -1672,6 +1681,7 @@ companion object {
         private const val KEY_RECAP_YEARLY = "recap_yearly"
         private const val KEY_RECAP_INCLUDE_MANGA = "recap_include_manga"
         private const val KEY_RECAP_COUNT_REPEATS = "recap_count_repeats"
+        private const val KEY_RECAP_SHOW_ADULT = "recap_show_adult"
         private const val KEY_RECAP_THEME_SONG = "recap_theme_song"
         private const val KEY_RECAP_SONGS_ON_MOBILE_DATA = "recap_songs_on_mobile_data"
         private const val KEY_RECAP_DELIVERY = "recap_delivery"

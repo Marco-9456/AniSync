@@ -91,14 +91,15 @@ class RecapRepositoryImpl @Inject constructor(
     private fun currentSettings() = RecapSettings(
         includeManga = appSettings.recapIncludeManga.value,
         countRepeats = appSettings.recapCountRepeats.value,
-        showAdult = appSettings.showAdultContent.value,
+        showAdult = appSettings.showAdultContent.value || appSettings.recapShowAdult.value,
     )
 
     private val settings: Flow<RecapSettings> = combine(
         appSettings.recapIncludeManga,
         appSettings.recapCountRepeats,
         appSettings.showAdultContent,
-    ) { manga, repeats, adult -> RecapSettings(manga, repeats, adult) }
+        appSettings.recapShowAdult,
+    ) { manga, repeats, adult, recapAdult -> RecapSettings(manga, repeats, adult || recapAdult) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeRecaps(): Flow<List<StoredRecap>> =

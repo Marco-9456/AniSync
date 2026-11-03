@@ -39,7 +39,7 @@ data class RecapMedia(
 data class RecapSettings(
     val includeManga: Boolean = true,
     val countRepeats: Boolean = false,
-    /** With adult content off, adult titles still count but are never named or shown. */
+    /** Adult titles always count, but are only named or shown with adult content or the recap switch on. */
     val showAdult: Boolean = false,
 ) {
     /** A short stamp of these choices, stored with a recap to say which ones it was counted with. */
