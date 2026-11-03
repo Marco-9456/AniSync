@@ -622,6 +622,7 @@
     <string name="clip_label_external_link">External link (%1$s)</string>
     <string name="control_log_out">Log Out</string>
     <string name="profile_level">Level %1$d</string>
+    <string name="profile_joined">Joined %1$s</string>
     <string name="profile_active">Active %1$s</string>
     <string name="notifications_title">Notifications</string>
     <string name="notifications_filter_all">All</string>
