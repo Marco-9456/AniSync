@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import android.util.Log
 import com.anisync.android.data.local.dao.MediaThemesDao
 import com.anisync.android.data.local.entity.MediaThemesEntity
 import com.anisync.android.data.network.AnimeThemesApi
@@ -9,6 +10,11 @@ import com.anisync.android.domain.MediaThemes
 import com.anisync.android.domain.MediaThemesRepository
 import com.anisync.android.domain.Result
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
@@ -27,6 +33,8 @@ class MediaThemesRepositoryImpl @Inject constructor(
     private val api: AnimeThemesApi,
     private val dao: MediaThemesDao
 ) : MediaThemesRepository {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun observeThemes(mediaId: Int): Flow<MediaThemes?> =
         dao.observe(mediaId).map { entity ->
@@ -82,60 +90,8 @@ class MediaThemesRepositoryImpl @Inject constructor(
             if (cached != null && !isStale(id)) found[id] = cached.themes.inShowOrder() else missing += id
         }
         if (missing.isEmpty()) return found
-        val looked = try {
-            api.getThemes(missing)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            return found
-        }
-        val now = System.currentTimeMillis()
-        for (id in missing) {
-            val lookup = looked[id] ?: MediaThemes()
-            val themes = lookup.themes.inShowOrder()
-            dao.upsert(MediaThemesEntity(mediaId = id, animeSlug = lookup.animeSlug, themes = themes, fetchedAt = now))
-            found[id] = themes
-        }
-        return found
-    }
-
-    /**
-     * Openings first, then endings, each by their own number. AnimeThemes returns them in the
-     * order they were added, which interleaves the two once a show gets a second cour, and the
-     * rail has no group headings to explain that away. Applied on read as well as on write so a
-     * row cached before this stops being wrong without a refetch.
-     */
-    private fun List<MediaTheme>.inShowOrder(): List<MediaTheme> =
-        sortedWith(compareBy({ it.type.ordinal }, { it.sequence ?: Int.MAX_VALUE }, { it.slug }))
-
-    override suspend fun isStale(mediaId: Int): Boolean {
-        val cached = dao.get(mediaId) ?: return true
-        if (cached.fetchedAt < FORMAT_SINCE_MS) return true
-        return System.currentTimeMillis() - cached.fetchedAt > CACHE_TTL_MS
-    }
-
-    override suspend fun themesFor(mediaIds: List<Int>): Map<Int, List<MediaTheme>> {
-        val found = LinkedHashMap<Int, List<MediaTheme>>()
-        val missing = ArrayList<Int>()
-        for (id in mediaIds.distinct()) {
-            val cached = dao.get(id)
-            if (cached != null && !isStale(id)) found[id] = cached.themes.inShowOrder() else missing += id
-        }
-        if (missing.isEmpty()) return found
-        val looked = try {
-            api.getThemes(missing)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            return found
-        }
-        val now = System.currentTimeMillis()
-        for (id in missing) {
-            val lookup = looked[id] ?: MediaThemes()
-            val themes = lookup.themes.inShowOrder()
-            dao.upsert(MediaThemesEntity(mediaId = id, animeSlug = lookup.animeSlug, themes = themes, fetchedAt = now))
-            found[id] = themes
-        }
+        // Outlives a story closed before AnimeThemes answers, so its next open plays at once.
+        scope.async { lookUp(missing) }.await()?.let(found::putAll)
         return found
     }
 
@@ -167,6 +123,10 @@ class MediaThemesRepositoryImpl @Inject constructor(
     }
 
     private companion object {
+        const val TAG = "MediaThemes"
+        const val LOOKUP_ATTEMPTS = 2
+        const val RETRY_DELAY_MS = 2_000L
+        const val MAX_RETRY_DELAY_MS = 10_000L
         val CACHE_TTL_MS = TimeUnit.DAYS.toMillis(7)
 
         /**
