@@ -440,6 +440,7 @@
     <string name="settings_notifications">Notifications</string>
     <string name="settings_notifications_desc">Episode alerts, forum activity</string>
     <string name="settings_recaps">Recaps</string>
+    <string name="settings_recaps_desc">Monthly and yearly recaps, their theme song, and how they reach you</string>
     <string name="settings_storage">Storage</string>
     <string name="settings_storage_subtitle">Cache: %1$s</string>
     <string name="settings_app_links">Open App Links</string>
