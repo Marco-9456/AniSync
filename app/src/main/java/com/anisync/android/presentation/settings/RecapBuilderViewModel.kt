@@ -18,6 +18,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.anisync.android.presentation.navigation.RecapStory
+import com.anisync.android.presentation.recap.PreviewRecap
+import com.anisync.android.presentation.recap.RecapPreviewStore
 import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
@@ -26,8 +29,14 @@ import javax.inject.Inject
 class RecapBuilderViewModel @Inject constructor(
     private val recapRepository: RecapRepository,
     private val appSettings: AppSettings,
+    private val previewStore: RecapPreviewStore,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
+
+    private val _openStory = MutableStateFlow<RecapStory?>(null)
+
+    /** The story route to open once, set when a preview is handed to its story. */
+    val openStory: StateFlow<RecapStory?> = _openStory
 
     private val form = MutableStateFlow(
         RecapBuilderUiState(
@@ -59,6 +68,8 @@ class RecapBuilderViewModel @Inject constructor(
             RecapBuilderAction.ClearStored -> viewModelScope.launch { recapRepository.clear() }
             is RecapBuilderAction.SetIncludeManga -> appSettings.setRecapIncludeManga(action.enabled)
             is RecapBuilderAction.SetCountRepeats -> appSettings.setRecapCountRepeats(action.enabled)
+            RecapBuilderAction.OpenPreviewStory -> openPreviewStory()
+            RecapBuilderAction.StoryOpened -> _openStory.value = null
         }
     }
 
@@ -84,6 +95,18 @@ class RecapBuilderViewModel @Inject constructor(
                 is Result.Error -> form.update { it.copy(isBuilding = false, buildError = result.message) }
             }
         }
+    }
+
+    private fun openPreviewStory() {
+        val preview = form.value.preview ?: return
+        val recap = preview.recap ?: return
+        previewStore.preview = PreviewRecap(
+            recap = recap,
+            previous = preview.previous,
+            userName = preview.userName ?: form.value.userId,
+            avatarUrl = preview.avatarUrl,
+        )
+        _openStory.value = RecapStory(periodKey = recap.period.key, preview = true)
     }
 
     /** The same period for the signed-in account, through the stored path a recap screen uses. */

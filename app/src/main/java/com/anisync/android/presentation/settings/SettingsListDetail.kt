@@ -223,7 +223,9 @@ private fun SettingsDetailPane(
             )
         }
         composable<SettingsFontPlayground> { FontSettingsScreen(onBackClick = popOrClose) }
-        composable<SettingsRecapBuilder> { RecapBuilderScreen(onBackClick = popOrClose) }
+        composable<SettingsRecapBuilder> {
+            RecapBuilderScreen(onBackClick = popOrClose, onOpenStory = { navController.navigate(it) })
+        }
     }
     }
 }

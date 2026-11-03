@@ -1561,7 +1561,8 @@ fun AniSyncNavHost(
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
                 RecapBuilderScreen(
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onOpenStory = { navController.navigate(it) }
                 )
             }
 

@@ -37,6 +37,8 @@ import com.anisync.android.domain.formatExactCount
 import com.anisync.android.domain.formatHours
 import com.anisync.android.domain.formatOneDecimal
 import com.anisync.android.domain.recap.RecapPeriod
+import com.anisync.android.presentation.navigation.RecapStory
+import androidx.compose.runtime.LaunchedEffect
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -48,10 +50,18 @@ import java.util.Locale
 @Composable
 fun RecapBuilderScreen(
     onBackClick: () -> Unit,
+    onOpenStory: (RecapStory) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RecapBuilderViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val opening by viewModel.openStory.collectAsStateWithLifecycle()
+    LaunchedEffect(opening) {
+        opening?.let {
+            onOpenStory(it)
+            viewModel.onAction(RecapBuilderAction.StoryOpened)
+        }
+    }
     SettingsScreenScaffold(
         title = stringResource(R.string.dev_recap_builder),
         onBackClick = onBackClick,
@@ -139,7 +149,14 @@ private fun BuilderCard(state: RecapBuilderUiState, onAction: (RecapBuilderActio
         state.buildError?.let { error ->
             Text(error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
         }
-        state.preview?.let { PreviewReadout(it) }
+        state.preview?.let { preview ->
+            if (preview.recap != null) {
+                FilledTonalButton(onClick = { onAction(RecapBuilderAction.OpenPreviewStory) }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.dev_recap_open_story))
+                }
+            }
+            PreviewReadout(preview)
+        }
         state.opened?.let { RecapNumbers(it, LocalConfiguration.current.locales[0]) }
         if (state.openedNothing) {
             Text(stringResource(R.string.dev_recap_nothing), style = MaterialTheme.typography.bodyMedium)

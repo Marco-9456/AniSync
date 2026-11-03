@@ -38,4 +38,8 @@ sealed interface RecapBuilderAction {
     data object ClearStored : RecapBuilderAction
     data class SetIncludeManga(val enabled: Boolean) : RecapBuilderAction
     data class SetCountRepeats(val enabled: Boolean) : RecapBuilderAction
+
+    /** Opens the built preview as a story, kept in memory and never stored. */
+    data object OpenPreviewStory : RecapBuilderAction
+    data object StoryOpened : RecapBuilderAction
 }
