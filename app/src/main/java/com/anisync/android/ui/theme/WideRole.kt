@@ -1,5 +1,6 @@
 package com.anisync.android.ui.theme
 
+import android.os.Build
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.AlignmentLine
@@ -26,6 +27,7 @@ import kotlin.math.roundToInt
 class WideRole internal constructor(
     private val preset: FontAxes,
     private val overrides: FontAxisOverrides,
+    private val drawsWidth: Boolean = WidthAxisDrawn,
 ) {
     private val families = ConcurrentHashMap<Int, FontFamily>()
 
@@ -39,9 +41,9 @@ class WideRole internal constructor(
         val opticalSize = fontSize.value.roundToInt().coerceIn(MinOpticalSize, MaxOpticalSize)
         val family = families.getOrPut(opticalSize) {
             roleFamily(
-                preset = preset.copy(opticalSize = opticalSize.toFloat()),
+                preset = preset.copy(opticalSize = opticalSize.toFloat(), width = preset.width.takeIf { drawsWidth }),
                 weights = listOf(weight.weight),
-                overrides = overrides,
+                overrides = if (drawsWidth) overrides else overrides.copy(width = null),
             )
         }
         return TextStyle(
@@ -79,6 +81,12 @@ fun Modifier.lineBox(style: TextStyle): Modifier = layout { measurable, constrai
     val height = (last - first + lineHeight).roundToInt()
     layout(placeable.width, height) { placeable.place(0, (baseline - first).roundToInt()) }
 }
+
+/**
+ * Android 8.0 and 8.1 space glyphs by the width axis but draw them without it, so wide lines
+ * spread their letters apart and get clipped. Those releases keep the regular width.
+ */
+private val WidthAxisDrawn = Build.VERSION.SDK_INT !in Build.VERSION_CODES.O..Build.VERSION_CODES.O_MR1
 
 /** Google Sans Flex's hhea ascent and descent, 1932 and 572 on a 2000 unit em. */
 private const val FontAscent = 0.966f

@@ -6,6 +6,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.ResourceFont
 import androidx.compose.ui.unit.sp
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -66,6 +67,16 @@ class WideRoleTest {
         val style = overridden.heroWide.style(80.sp, 84.sp)
         assertEquals(FontWeight.W500, style.fontWeight)
         assertEquals(500f, axes(style).getValue("wght"))
+    }
+
+    @Test
+    fun `where the width axis is not drawn the wide roles keep the regular width`() {
+        val role = WideRole(TypographyAxisConfig.heroWide, FontAxisOverrides(width = 150f), drawsWidth = false)
+        val axes = axes(role.style(80.sp, 84.sp))
+        assertFalse("wdth" in axes)
+        assertEquals(900f, axes.getValue("wght"))
+        assertEquals(100f, axes.getValue("ROND"))
+        assertEquals(80f, axes.getValue("opsz"))
     }
 
     private fun axes(style: TextStyle): Map<String, Float> {
