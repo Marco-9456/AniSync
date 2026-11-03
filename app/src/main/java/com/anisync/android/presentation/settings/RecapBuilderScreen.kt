@@ -124,7 +124,7 @@ private fun BuilderCard(state: RecapBuilderUiState, onAction: (RecapBuilderActio
                 ),
         ) {
             Text(
-                stringResource(R.string.dev_recap_show_adult),
+                stringResource(R.string.recap_settings_show_adult),
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f),
             )
@@ -302,7 +302,7 @@ private fun StoredCard(state: RecapBuilderUiState, onAction: (RecapBuilderAction
                 Text(stringResource(R.string.dev_recap_run_job), textAlign = TextAlign.Center)
             }
             FilledTonalButton(onClick = { onAction(RecapBuilderAction.ClearStored) }) {
-                Text(stringResource(R.string.dev_recap_clear))
+                Text(stringResource(R.string.clear))
             }
         }
         if (state.stored.isEmpty()) {
@@ -328,12 +328,12 @@ private fun StoredCard(state: RecapBuilderUiState, onAction: (RecapBuilderAction
     }
     SettingsGroup {
         SwitchSettingsItem(
-            title = stringResource(R.string.dev_recap_include_manga),
+            title = stringResource(R.string.recap_settings_include_manga),
             checked = state.includeManga,
             onCheckedChange = { onAction(RecapBuilderAction.SetIncludeManga(it)) },
         )
         SwitchSettingsItem(
-            title = stringResource(R.string.dev_recap_count_repeats),
+            title = stringResource(R.string.recap_settings_count_repeats),
             checked = state.countRepeats,
             onCheckedChange = { onAction(RecapBuilderAction.SetCountRepeats(it)) },
         )
