@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.recap
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -66,6 +65,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,7 +78,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.toArgb
@@ -117,11 +116,10 @@ import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.presentation.share.toShareBitmap
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.data.CardSize
-import com.anisync.android.ui.theme.applySystemBarAppearance
+import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.rememberSeededColorScheme
-import com.anisync.android.ui.theme.shareCardColorScheme
+import com.anisync.android.ui.theme.resolveDarkTheme
 import com.anisync.android.util.ShareUtils
-import com.materialkolor.PaletteStyle
 import kotlinx.coroutines.launch
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -147,7 +145,6 @@ fun RecapStoryScreen(
     val onAction = viewModel::onAction
     LifecycleEventEffect(Lifecycle.Event.ON_START) { onAction(RecapStoryAction.Visible(true)) }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { onAction(RecapStoryAction.Visible(false)) }
-    DarkSystemBars()
     // Silenced before the exit animation, or a story opened right after would hear it and start muted.
     val close = {
         onAction(RecapStoryAction.Visible(false))
@@ -160,27 +157,20 @@ fun RecapStoryScreen(
         StoryPlaceholder(state, onAction, close)
         return
     }
-    StoryStage(state, story, onAction, close, onOpenStudio) {
-        onAction(RecapStoryAction.SeeStatistics)
-        onOpenStatistics()
+    CompositionLocalProvider(LocalAppScheme provides MaterialTheme.colorScheme) {
+        StoryStage(state, story, onAction, close, onOpenStudio) {
+            onAction(RecapStoryAction.SeeStatistics)
+            onOpenStatistics()
+        }
     }
 }
 
-/** Stories are always dark, so the status bar wears light icons while one is open. */
-@Composable
-private fun DarkSystemBars() {
-    val context = LocalContext.current
-    val appDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    DisposableEffect(appDark) {
-        val window = (context as? Activity)?.window
-        window?.let { applySystemBarAppearance(it, darkTheme = true) }
-        onDispose { window?.let { applySystemBarAppearance(it, darkTheme = appDark) } }
-    }
-}
+/** The app's own scheme, which pages without a seed wear while every other page wears its own. */
+private val LocalAppScheme = staticCompositionLocalOf<ColorScheme?> { null }
 
 @Composable
 private fun StoryPlaceholder(state: RecapStoryUiState, onAction: (RecapStoryAction) -> Unit, onClose: () -> Unit) {
-    MaterialTheme(colorScheme = shareCardColorScheme(dark = true)) {
+    run {
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             when {
                 state.loading -> AppCircularProgressIndicator(Modifier.align(Alignment.Center))
@@ -206,10 +196,19 @@ private fun StoryPlaceholder(state: RecapStoryUiState, onAction: (RecapStoryActi
     }
 }
 
-/** A page's scheme: its seed's dark TonalSpot scheme, or the app's own palette in dark. */
+/**
+ * A page's scheme: its seed in the app's own theme, light or dark, AMOLED and palette style as the
+ * viewer set them, the way a title's page wears its cover. A page without a seed wears the app's.
+ */
 @Composable
-private fun pageScheme(seed: Color?): ColorScheme =
-    if (seed == null) shareCardColorScheme(dark = true) else rememberSeededColorScheme(seed, darkTheme = true, amoled = false, paletteStyle = PaletteStyle.TonalSpot)
+private fun pageScheme(seed: Color?): ColorScheme {
+    val appSettings = LocalAppSettings.current
+    val themeMode by appSettings.themeMode.collectAsStateWithLifecycle()
+    val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
+    val amoled by appSettings.amoledEnabled.collectAsStateWithLifecycle()
+    val appScheme = LocalAppScheme.current ?: MaterialTheme.colorScheme
+    return if (seed == null) appScheme else rememberSeededColorScheme(seed, themeMode.resolveDarkTheme(), amoled, paletteStyle)
+}
 
 @Composable
 private fun StoryStage(

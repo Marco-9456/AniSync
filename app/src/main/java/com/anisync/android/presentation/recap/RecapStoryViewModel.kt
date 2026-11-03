@@ -22,9 +22,9 @@ import com.anisync.android.domain.recap.recapPages
 import com.anisync.android.domain.recap.seed
 import com.anisync.android.presentation.navigation.RecapStory
 import com.anisync.android.ui.theme.genreSeed
+import com.anisync.android.ui.theme.resolveDarkTheme
 import com.anisync.android.ui.theme.seededColorScheme
 import com.anisync.android.worker.RecapNotifier
-import com.materialkolor.PaletteStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -232,8 +232,10 @@ class RecapStoryViewModel @Inject constructor(
         syncPlayback()
     }
 
+    /** Built from the settings the pages read, so their first frame finds it cached. */
     private fun prepareScheme(seed: Color) {
-        seededColorScheme(seed, darkTheme = true, amoled = false, paletteStyle = PaletteStyle.TonalSpot)
+        val dark = appSettings.themeMode.value.resolveDarkTheme(context.resources.configuration)
+        seededColorScheme(seed, darkTheme = dark, amoled = appSettings.amoledEnabled.value, paletteStyle = appSettings.paletteStyle.value)
     }
 
     override fun onCleared() {

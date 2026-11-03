@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.recap.RecapPeriod
 import com.anisync.android.presentation.share.cards.CardPicture
@@ -46,18 +48,21 @@ import com.anisync.android.presentation.share.cards.cardText
 import com.anisync.android.presentation.share.cards.cardUpper
 import com.anisync.android.presentation.share.cards.fitted
 import com.anisync.android.presentation.statistics.fittedStyle
+import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.lineBox
 import com.anisync.android.ui.theme.rememberSeededColorScheme
-import com.materialkolor.PaletteStyle
 import java.time.YearMonth
 
-/** An entry's colours: its top cover's TonalSpot scheme in the app's light or dark, or the app's own. */
+/** An entry's colours: its top cover's scheme in the app's light or dark, AMOLED and palette style, or the app's own. */
 @Composable
 internal fun entryScheme(seed: Color?): ColorScheme {
+    val appSettings = LocalAppSettings.current
+    val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
+    val amoled by appSettings.amoledEnabled.collectAsStateWithLifecycle()
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    return if (seed == null) MaterialTheme.colorScheme else rememberSeededColorScheme(seed, darkTheme = dark, amoled = false, paletteStyle = PaletteStyle.TonalSpot)
+    return if (seed == null) MaterialTheme.colorScheme else rememberSeededColorScheme(seed, darkTheme = dark, amoled = amoled, paletteStyle = paletteStyle)
 }
 
 /** The name a card prints for its period, "September" or "2025". */
