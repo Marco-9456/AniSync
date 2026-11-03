@@ -82,6 +82,7 @@ import com.anisync.android.presentation.settings.LinksScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
+import com.anisync.android.presentation.settings.RecapsScreen
 import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
 import com.anisync.android.presentation.settings.SettingsListDetail
 import com.anisync.android.presentation.settings.SponsorsScreen
@@ -1439,6 +1440,18 @@ fun AniSyncNavHost(
             ) {
                 NotificationsScreen(
                     onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            composable<SettingsRecaps>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                RecapsScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onOpenNotifications = { navController.navigate(SettingsNotifications) }
                 )
             }
 

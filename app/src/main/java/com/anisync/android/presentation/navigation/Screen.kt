@@ -417,6 +417,10 @@ object SettingsAniList
 @Serializable
 object SettingsNotifications
 
+/** Recaps: which ones get built, what they count, their song, how they arrive and what is stored. */
+@Serializable
+object SettingsRecaps
+
 /**
  * Storage management (cache size, clear cache).
  */
