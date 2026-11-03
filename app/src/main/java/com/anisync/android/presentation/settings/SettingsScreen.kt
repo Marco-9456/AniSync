@@ -420,6 +420,7 @@ private fun categoryBadge(key: String, active: Set<WhatsNewItem>): (@Composable 
     val leaf = when (key) {
         "general" -> WhatsNewItem.SETTINGS_GENERAL
         "lookandfeel" -> WhatsNewItem.SETTINGS_LOOK_AND_FEEL
+        "recaps" -> WhatsNewItem.SETTINGS_RECAPS
         else -> null
     }
     if (leaf != null && leaf in active) return { WhatsNewPill(leaf.kind) }

@@ -28,6 +28,7 @@ import androidx.compose.material3.TimePickerDialogDefaults
 import androidx.compose.material3.TimePickerDisplayMode
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -45,6 +46,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.data.CardSize
 import com.anisync.android.data.RecapDelivery
+import com.anisync.android.data.WhatsNewItem
+import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.settings.components.InfoNotice
 import com.anisync.android.presentation.settings.components.SettingsPickerSheet
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
@@ -63,6 +66,8 @@ fun RecapsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onAction = viewModel::onAction
+    val whatsNewStore = LocalWhatsNew.current
+    LaunchedEffect(Unit) { whatsNewStore.markSeen(WhatsNewItem.SETTINGS_RECAPS) }
 
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
     var showCardSizeSheet by rememberSaveable { mutableStateOf(false) }
