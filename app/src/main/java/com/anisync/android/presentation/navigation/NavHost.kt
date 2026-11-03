@@ -29,6 +29,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.anisync.android.presentation.share.studio.ShareStudioScreen
+import com.anisync.android.presentation.recap.RecapStoryScreen
 import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.presentation.activity.ActivityDetailScreen
 import com.anisync.android.presentation.activity.EditActivityScreen
@@ -776,7 +777,33 @@ fun AniSyncNavHost(
                 )
             }
 
+            composable<RecapStory>(
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "anisync://recap/{periodKey}" }
+                ),
+                enterTransition = { fadeIn(animationSpec = effectsSpec) + scaleIn(animationSpec = scaleSpec, initialScale = 0.94f) },
+                exitTransition = { fadeOut(animationSpec = effectsSpec) },
+                popEnterTransition = { fadeIn(animationSpec = effectsSpec) },
+                popExitTransition = { fadeOut(animationSpec = effectsSpec) + scaleOut(animationSpec = scaleSpec, targetScale = 0.94f) }
+            ) {
+                RecapStoryScreen(
+                    onClose = { navController.popBackStack() },
+                    onOpenStudio = { navController.navigate(it) },
+                    onOpenStatistics = {
+                        navController.navigate(Profile) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+            }
+
             composable<ShareStudio>(
+                // A recap notification's Share card opens the studio straight on its card.
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "anisync://studio/{subject}/{id}?periodKey={periodKey}" }
+                ),
                 enterTransition = { sharedAxisZEnter() },
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },

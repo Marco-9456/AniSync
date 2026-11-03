@@ -13,6 +13,12 @@ import com.anisync.android.domain.ADULT_GENRES
 import com.anisync.android.domain.CachePolicy
 import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.DetailsRepository
+import com.anisync.android.domain.RecapRepository
+import com.anisync.android.domain.recap.RecapPeriod
+import com.anisync.android.data.account.AccountStore
+import com.anisync.android.presentation.recap.PREVIEW_STUDIO_ID
+import com.anisync.android.presentation.recap.RecapCardFactory
+import com.anisync.android.presentation.recap.RecapPreviewStore
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
@@ -45,7 +51,7 @@ import java.util.Locale
 import javax.inject.Inject
 
 /** What a studio route can open. */
-enum class ShareStudioSubject { MEDIA, CHARACTER, STAFF, REVIEW, STATS, FAVOURITES }
+enum class ShareStudioSubject { MEDIA, CHARACTER, STAFF, REVIEW, STATS, FAVOURITES, RECAP }
 
 /**
  * Builds the subject a studio route names from what the app already holds, going to the network
@@ -57,6 +63,10 @@ class ShareSubjectLoader @Inject constructor(
     private val statisticsRepository: StatisticsRepository,
     private val apolloClient: ApolloClient,
     private val appSettings: AppSettings,
+    private val recapRepository: RecapRepository,
+    private val recapCards: RecapCardFactory,
+    private val recapPreviews: RecapPreviewStore,
+    private val accountStore: AccountStore,
     @ApplicationContext private val context: Context,
 ) {
     private val resources get() = AppLocale.wrap(context).resources
@@ -72,7 +82,22 @@ class ShareSubjectLoader @Inject constructor(
             ShareStudioSubject.REVIEW -> review(route.id, viewer?.name)
             ShareStudioSubject.STATS -> stats(route, viewer)
             ShareStudioSubject.FAVOURITES -> favourites(route, viewer)
+            ShareStudioSubject.RECAP -> recap(route, viewer)
         }
+    }
+
+    /** The active account's recap for the route's period, or the Developer Tools preview it names. */
+    private suspend fun recap(route: ShareStudio, viewer: UserProfile?): ShareSubject.Recap? {
+        val period = route.periodKey?.let(RecapPeriod::fromKey) ?: return null
+        if (route.id == PREVIEW_STUDIO_ID) {
+            val preview = recapPreviews.preview?.takeIf { it.recap.period == period } ?: return null
+            return recapCards.card(preview.recap, preview.userName)
+        }
+        val stored = recapRepository.storedRecap(period)
+            ?: (recapRepository.getRecap(period) as? Result.Success)?.data
+            ?: return null
+        val name = accountStore.activeAccount.value?.name ?: viewer?.name.orEmpty()
+        return recapCards.card(stored, name)
     }
 
     private suspend fun media(id: Int, handle: String?): ShareSubject.Media? {

@@ -290,6 +290,7 @@ data class ReviewDetail(
  * @param mediaType ANIME or MANGA, for stats and favourites
  * @param coverColor Cover color of the title that opened the studio, so the chrome keeps its palette
  * @param profileColor Profile color of the user whose profile opened it, for the same reason
+ * @param periodKey The recap's period, for a recap
  */
 @Serializable
 data class ShareStudio(
@@ -298,7 +299,20 @@ data class ShareStudio(
     val userName: String? = null,
     val mediaType: String? = null,
     val coverColor: String? = null,
-    val profileColor: String? = null
+    val profileColor: String? = null,
+    val periodKey: String? = null
+)
+
+/**
+ * A monthly or yearly recap told as a story.
+ * @param periodKey "2026-09" for a month, "2025" for a year
+ * @param preview True when Developer Tools built it for another user and left it in
+ *                [com.anisync.android.presentation.recap.RecapPreviewStore]
+ */
+@Serializable
+data class RecapStory(
+    val periodKey: String,
+    val preview: Boolean = false
 )
 
 /**

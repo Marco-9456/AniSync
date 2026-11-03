@@ -98,6 +98,8 @@
                 <data
                     android:scheme="anisync"
                     android:host="calendar" />
+                <data android:host="recap" />
+                <data android:host="studio" />
             </intent-filter>
             <!-- AniList URL deep links for sharing -->
             <intent-filter>
