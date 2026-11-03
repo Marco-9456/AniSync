@@ -53,7 +53,7 @@ internal fun LazyListScope.recapShelf(recaps: RecapsUiModel, columns: Int, onOpe
                 AppCircularProgressIndicator()
             }
             shelf.isNotEmpty() && wide -> Row(
-                Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 shelf.take(2).forEach { entry ->
@@ -69,7 +69,7 @@ internal fun LazyListScope.recapShelf(recaps: RecapsUiModel, columns: Int, onOpe
                     RecapShelfCard(entry, onClick = { onOpenRecap(entry.key) }, modifier = Modifier.width(300.dp))
                 }
             }
-            progress != null -> RecapInProgressCard(progress, Modifier.padding(start = 16.dp, end = 16.dp, top = if (wide) 8.dp else 0.dp))
+            progress != null -> RecapInProgressCard(progress, Modifier.padding(horizontal = 16.dp))
         }
     }
     // ST1 and ST3 leave 24 between the recaps and the hero, ST4's pane 16.
