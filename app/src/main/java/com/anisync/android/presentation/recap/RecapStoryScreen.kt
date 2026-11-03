@@ -159,6 +159,7 @@ fun RecapStoryScreen(
     }
     CompositionLocalProvider(LocalAppScheme provides MaterialTheme.colorScheme) {
         StoryStage(state, story, onAction, close, onOpenStudio) {
+            onAction(RecapStoryAction.Visible(false))
             onAction(RecapStoryAction.SeeStatistics)
             onOpenStatistics()
         }

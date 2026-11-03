@@ -793,11 +793,15 @@ fun AniSyncNavHost(
                     onClose = { navController.popBackStack() },
                     onOpenStudio = { navController.navigate(it) },
                     onOpenStatistics = {
+                        // Popped without saving, or the tab switch keeps the story and its player
+                        // in the saved stack, and from the profile's shelf restores it on top again.
+                        navController.popBackStack()
                         navController.navigate(Profile) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
                         }
+                        navController.popBackStack(route = Profile, inclusive = false)
                     }
                 )
             }
