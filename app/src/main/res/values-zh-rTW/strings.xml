@@ -258,7 +258,7 @@
     <string name="discover_section_error_title">無法加載</string>
     <string name="recent_reviews_title">近期回顧</string>
     <string name="recent_reviews_empty">暫無回顧</string>
-    <string name="airing_episode_in">第 %1$d / %2$s 集</string>
+    <string name="airing_episode_in">第 %1$d 集， %2$s 後</string>
     <string name="progress_format">%1$d / %2$s</string>
     <string name="progress_unknown">？</string>
     <string name="empty_watching">你還沒新增觀看動畫…</string>
@@ -278,7 +278,7 @@
     <string name="stat_status">狀態</string>
     <string name="stat_source">原作</string>
     <string name="stat_next_episode">下一集</string>
-    <string name="airing_countdown_value">第 %1$d / %2$s 集</string>
+    <string name="airing_countdown_value">第 %1$d 集， %2$s 後</string>
     <string name="source_original">原創</string>
     <string name="source_manga">漫畫</string>
     <string name="source_light_novel">輕小說</string>
@@ -332,7 +332,7 @@
     <string name="sort_release_date">發行日</string>
     <string name="sort_default">預設</string>
     <string name="sort_popularity">人氣</string>
-    <string name="sort_average_score">平均分</string>
+    <string name="sort_average_score">加權評分</string>
     <string name="sort_favorites">最愛</string>
     <string name="sort_newest">最新</string>
     <string name="sort_oldest">最舊</string>
@@ -483,7 +483,7 @@
     <string name="debug_clear_all">清除全部</string>
     <string name="settings_developer_tools">開發者工具</string>
     <string name="settings_developer_tools_desc">除錯套裝與測試工具</string>
-    <string name="settings_font_playground">字體樂園</string>
+    <string name="settings_font_playground">字體遊樂場</string>
     <string name="dev_tools_unlocked">開發者工具已解鎖</string>
     <string name="dev_tools_already_unlocked">開發者工具已經解鎖</string>
     <string name="dev_tools_taps_remaining">點擊 %1$d 次後解鎖開發者工具</string>
@@ -566,7 +566,7 @@
     <string name="details_progress_watched">已看了 %1$d</string>
     <string name="details_progress_read">已閱了 %1$d</string>
     <string name="details_duration_minutes">%1$d 分鐘</string>
-    <string name="details_score_average">平均分</string>
+    <string name="details_score_average">加權分</string>
     <string name="cd_change_list_status">變更清單狀態</string>
     <string name="media_stats_rankings">排名</string>
     <string name="media_stats_activity_per_day">近期每日活動</string>
@@ -612,7 +612,7 @@
     <string name="details_no_chapter_total">AniList 上暫不可知章節數</string>
     <string name="details_next_episode_in">第 %1$d 集 將在 %2$s 後放送</string>
     <string name="details_trailer">預告片</string>
-    <string name="details_score_average_ranked">歷史平均分第 %1$d 名</string>
+    <string name="details_score_average_ranked">歷史加權分第 %1$d 名</string>
     <string name="media_stats_status_distribution">狀態分佈</string>
     <string name="media_stats_score_progression">放送時分數趨勢</string>
     <string name="media_stats_watchers_progression">放送時觀看人數趨勢</string>
@@ -961,7 +961,7 @@
     <string name="onboarding_sync_widgets_placed">已放置 %1$d</string>
     <string name="onboarding_continue">繼續</string>
     <string name="onboarding_skip">跳過</string>
-    <string name="onboarding_sync_note">在此之後，一切將在背景默然更新</string>
+    <string name="onboarding_sync_note">在此之後，一切將在背景默默更新</string>
     <string name="onboarding_step_of">步驟 %1$d 之 %2$d</string>
     <string name="onboarding_state_on">就緒</string>
     <string name="onboarding_state_off">關閉</string>
@@ -1290,9 +1290,9 @@
     <string name="widget_time_in_days">還有 %1$d天 %2$d小時</string>
     <string name="widget_time_in_hours">還有 %1$d小時 %2$d分鐘</string>
     <string name="widget_time_in_minutes">還有 %1$d分鐘</string>
-    <string name="widget_time_short_days">%1$d天</string>
-    <string name="widget_time_short_hours">%1$d小時</string>
-    <string name="widget_time_short_minutes">%1$d分鐘</string>
+    <string name="widget_time_short_days">%1$d 天</string>
+    <string name="widget_time_short_hours">%1$d 小時</string>
+    <string name="widget_time_short_minutes">%1$d 分鐘</string>
     <string name="widget_airing_at">於 %1$s 放送</string>
     <string name="widget_wp_left_manga">還剩 %1$d 章</string>
     <string name="activity_open_on_anilist">從 AniList 打開</string>
@@ -1341,7 +1341,7 @@
     <string name="review_delete">刪除心得</string>
     <string name="review_delete_confirm_title">確認刪除心得？</string>
     <string name="review_delete_confirm_body">這將永久刪除你的心得，本操作不可撤銷</string>
-    <string name="review_body_error">心得字數必須至少要 %1$d，不要為了加字數而加字數~</string>
+    <string name="review_body_error">心得字數必須至少要 %1$d （不含格式化用字元），不要為了加字數而加字數~</string>
     <string name="review_summary_error">總結的字數必須落在 %1$d ~ %2$d 上</string>
     <string name="review_publish">發布</string>
     <string name="media_attach">插入媒體</string>
@@ -1379,7 +1379,7 @@
     <string name="widget_wp_left">還剩 %1$d 集</string>
     <string name="widget_wp_syncing_manga">打開 AniSync 來同步你的漫畫</string>
     <string name="widget_wp_current_ep">第 %1$d 集</string>
-    <string name="widget_wp_next_ep">第 %1$d / %2$s 集</string>
+    <string name="widget_wp_next_ep">第 %1$d 集， %2$s 後</string>
     <string name="widget_wp_empty_title">暫無現在進行</string>
     <string name="widget_wp_empty_body">此處顯示你正在觀看的系列，鄰近完結的至上排序</string>
     <string name="widget_wp_empty_body_manga">此處顯示你正在閱讀的系列，鄰近完結的至上排序</string>
@@ -1523,11 +1523,11 @@
     <string name="filter_year_and_season">年份與季度</string>
     <string name="filter_source">原作來源</string>
     <string name="filter_country">國家/地區</string>
-    <string name="filter_mean_score">平均分數</string>
+    <string name="filter_mean_score">加權評分</string>
     <string name="filter_episodes">集數</string>
     <string name="filter_chapters">章節數</string>
     <string name="filter_adult_content">成人內容</string>
-    <string name="filter_any">任何</string>
+    <string name="filter_any">不限</string>
     <string name="filter_at_least">至少</string>
     <string name="filter_at_most">至多</string>
     <string name="filter_exactly">匹配</string>
@@ -1573,7 +1573,7 @@
     <string name="label_locked">已鎖定</string>
     <string name="pane_close">關閉</string>
     <string name="share_media_tba">待定</string>
-    <string name="forum_last_by">由 %1$s 發布 · %2$s</string>
+    <string name="forum_last_by">由 %1$s 最後回覆 • %2$s</string>
     <string name="show_more">顯示更多</string>
     <string name="show_less">顯示更少</string>
     <string name="alert_offline_body">檢查網路連線後重試</string>
@@ -1587,4 +1587,21 @@
     <string name="hex_code">十六進制色碼</string>
     <string name="dismiss">暫不</string>
     <string name="whats_new_library_filters">篩選器已從排序按鈕中移出至此，現在你還能按標籤與排除的風格篩選</string>
+    <string name="settings_back_trail">長按返回跳轉</string>
+    <string name="settings_back_trail_desc">長按返回箭頭後能看到當前的上級頁面，可以直接點擊跳轉</string>
+    <string name="back_trail_tip">長按後跳轉回任意上級頁面</string>
+    <string name="back_trail_tip_tab">長按後直接跳至 %1$s</string>
+    <string name="forum_sort_least_recently_replied">最新回覆</string>
+    <string name="forum_sort_fewest_replies">最少回覆</string>
+    <string name="forum_sort_least_viewed">最少瀏覽</string>
+    <string name="forum_sort_title_az">標題（A→Z）</string>
+    <string name="forum_sort_title_za">標題（Z→A）</string>
+    <string name="details_score_info_mean">平均評分</string>
+    <string name="details_score_info_weighted">加權評分</string>
+    <string name="a11y_score_info">關於加權評分</string>
+    <string name="details_score_info_threshold">少於 50 人評分的項目將不會有加權評分，輕小說與短篇則是 35 人</string>
+    <string name="details_score_info_body">AniList 會根據評分人數對每部作品的平均分進行加權，於是少數高分將不會使作品的排名超過成千上萬人認可的佳作。隨著越來越多人來評分，加權分數將會逐漸接近平均分，但恆不超越。</string>
+    <string name="studio_stat_span">活動期間</string>
+    <string name="share_review_byline">心得作者：</string>
+    <string name="library_progress_out">%1$d / %2$d（已播）</string>
 </resources>
