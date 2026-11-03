@@ -379,6 +379,7 @@ fun AniSyncNavHost(
                             restoreState = true
                         }
                     },
+                    onOpenRecap = { navController.navigate(RecapStory(it)) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )

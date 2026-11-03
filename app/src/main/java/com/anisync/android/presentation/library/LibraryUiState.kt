@@ -9,6 +9,7 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.Tag
 import com.anisync.android.presentation.components.filtersheet.TriState
+import com.anisync.android.presentation.recap.RecapEntry
 import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
 import com.anisync.android.type.MediaFormat
 import com.anisync.android.type.MediaType
@@ -154,6 +155,8 @@ data class LibraryUiState(
     val selectionTabId: String? = null,
     val bulkOperation: BulkOperation? = null,
     val initialTabId: String? = null,
+    /** A new recap the anime library points at for its first week, until it is opened or closed. */
+    val recapBanner: RecapEntry? = null,
     val isLoading: Boolean = true,
     val errorMessage: String? = null
 ) {
@@ -228,4 +231,7 @@ sealed interface LibraryAction {
     data class BulkAddToCustomList(val listName: String) : LibraryAction
     data object BulkRemove : LibraryAction
     data object CancelBulkOperation : LibraryAction
+
+    /** Hides the recap banner until next month. */
+    data object CloseRecapBanner : LibraryAction
 }
