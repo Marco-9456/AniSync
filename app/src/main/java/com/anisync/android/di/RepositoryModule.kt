@@ -120,4 +120,14 @@ abstract class RepositoryModule {
     abstract fun bindRecapRepository(
         impl: RecapRepositoryImpl
     ): RecapRepository
+
+    @Binds
+    abstract fun bindRecapRemote(
+        impl: com.anisync.android.data.ApolloRecapRemote
+    ): com.anisync.android.data.RecapRemote
+
+    @Binds
+    abstract fun bindRecapEnvironment(
+        impl: com.anisync.android.data.AppRecapEnvironment
+    ): com.anisync.android.data.RecapEnvironment
 }

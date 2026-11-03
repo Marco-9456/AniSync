@@ -1,17 +1,11 @@
 package com.anisync.android.data
 
-import com.anisync.android.GetRecapAiringQuery
-import com.anisync.android.GetRecapMediaQuery
-import com.anisync.android.GetRecapUserQuery
-import com.anisync.android.GetUserListActivitiesQuery
-import com.anisync.android.data.account.AccountStore
 import com.anisync.android.data.local.dao.RecapDao
 import com.anisync.android.data.local.entity.RecapEntity
 import com.anisync.android.data.network.RequestPriority
 import com.anisync.android.data.network.findApiError
 import com.anisync.android.data.network.resolveRequestPriority
 import com.anisync.android.data.util.ApiError
-import com.anisync.android.data.util.dataOrThrow
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.RecapPreview
 import com.anisync.android.domain.RecapRepository
@@ -34,24 +28,19 @@ import com.anisync.android.domain.recap.readActivityWindow
 import com.anisync.android.domain.recap.recapBannerCandidates
 import com.anisync.android.domain.recap.recapsDueOn
 import com.anisync.android.domain.recap.sliceForPeriod
-import com.apollographql.apollo.ApolloClient
-import com.apollographql.cache.normalized.FetchPolicy
-import com.apollographql.cache.normalized.doNotStore
-import com.apollographql.cache.normalized.fetchPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -70,10 +59,9 @@ private const val MAX_BUDGET_WAITS = 5
 
 @Singleton
 class RecapRepositoryImpl @Inject constructor(
-    private val apolloClient: ApolloClient,
+    private val remote: RecapRemote,
     private val recapDao: RecapDao,
-    private val accountStore: AccountStore,
-    private val appSettings: AppSettings,
+    private val env: RecapEnvironment,
 ) : RecapRepository {
 
     /** One build at a time, so the worker and an open screen never fetch the same period twice. */
@@ -82,35 +70,22 @@ class RecapRepositoryImpl @Inject constructor(
     /** Decoded payloads by owner and period, reused until the row is rebuilt. */
     private val decoded = ConcurrentHashMap<String, Decoded>()
 
-    private val zone: ZoneId get() = ZoneId.systemDefault()
+    private val zone: ZoneId get() = env.zone()
 
-    private fun owner(): Int? = accountStore.activeAccount.value?.id?.takeIf { it > 0 }
+    private fun owner(): Int? = env.owner()
 
-    private fun today(): LocalDate = LocalDate.now(zone)
+    private fun today(): LocalDate = Instant.ofEpochMilli(env.nowMillis()).atZone(zone).toLocalDate()
 
-    private fun currentSettings() = RecapSettings(
-        includeManga = appSettings.recapIncludeManga.value,
-        countRepeats = appSettings.recapCountRepeats.value,
-        showAdult = appSettings.showAdultContent.value || appSettings.recapShowAdult.value,
-    )
-
-    private val settings: Flow<RecapSettings> = combine(
-        appSettings.recapIncludeManga,
-        appSettings.recapCountRepeats,
-        appSettings.showAdultContent,
-        appSettings.recapShowAdult,
-    ) { manga, repeats, adult, recapAdult -> RecapSettings(manga, repeats, adult || recapAdult) }
+    private fun currentSettings() = env.currentSettings()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeRecaps(): Flow<List<StoredRecap>> =
-        accountStore.activeAccount
-            .map { account -> account?.id?.takeIf { it > 0 } }
-            .distinctUntilChanged()
+        env.owners
             .flatMapLatest { owner ->
                 if (owner == null) {
                     flowOf(emptyList())
                 } else {
-                    combine(recapDao.observeAll(owner), settings) { rows, settings ->
+                    combine(recapDao.observeAll(owner), env.settings) { rows, settings ->
                         rows.mapNotNull { count(it, settings) }.sortedWith(newestFirst)
                     }
                 }
@@ -143,7 +118,7 @@ class RecapRepositoryImpl @Inject constructor(
     }
 
     override suspend fun monthInProgress(refresh: Boolean): Result<StoredRecap?> =
-        getRecap(RecapPeriod.Month(YearMonth.now(zone)), refresh)
+        getRecap(RecapPeriod.Month(YearMonth.from(today())), refresh)
 
     override suspend fun backfill(): Result<Unit> = safeApiCall {
         val owner = owner() ?: return@safeApiCall
@@ -169,7 +144,7 @@ class RecapRepositoryImpl @Inject constructor(
 
     override suspend fun markSeen(period: RecapPeriod) {
         val owner = owner() ?: return
-        recapDao.markSeen(owner, period.key, System.currentTimeMillis())
+        recapDao.markSeen(owner, period.key, env.nowMillis())
     }
 
     override suspend fun hasStored(): Boolean {
@@ -179,10 +154,7 @@ class RecapRepositoryImpl @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeStoredBytes(): Flow<Long> =
-        accountStore.activeAccount
-            .map { account -> account?.id?.takeIf { it > 0 } }
-            .distinctUntilChanged()
-            .flatMapLatest { owner -> if (owner == null) flowOf(0L) else recapDao.observePayloadBytes(owner) }
+        env.owners.flatMapLatest { owner -> if (owner == null) flowOf(0L) else recapDao.observePayloadBytes(owner) }
 
     override suspend fun clear() {
         val owner = owner() ?: return
@@ -201,7 +173,7 @@ class RecapRepositoryImpl @Inject constructor(
         zone: ZoneId,
         settings: RecapSettings,
     ): Result<RecapPreview> = safeApiCall {
-        val started = System.currentTimeMillis()
+        val started = env.nowMillis()
         val tally = Tally()
         // The sweep a first build makes at the end of the period, so completions see as far back.
         val from = when (period) {
@@ -211,13 +183,14 @@ class RecapRepositoryImpl @Inject constructor(
         val window = ActivityWindow(from.atStartOfDay(zone).toEpochSecond(), period.window(zone).to)
         val source = fetch(userId, window, tally)
         val airing = (period as? RecapPeriod.Year)?.let { airingFor(it, source, zone, tally) }
+        val today = Instant.ofEpochMilli(started).atZone(zone).toLocalDate()
         // Through the stored form, so the numbers are what a stored recap would show.
         fun built(of: RecapPeriod, airing: Map<Int, Map<Int, Long>>?): Pair<StoredRecap?, Int> {
             val stored = recapPayload(zone, sliceForPeriod(of, zone, source.records), source.media, airing).encode()
             val payload = decodeRecapPayload(stored) ?: return null to stored.length
             val media = payload.mediaById()
             val recap = buildRecap(of, payload.records(media), media, settings, zone, payload.airingByTitle())?.let { recap ->
-                StoredRecap(of, recap, media, of.isFinishedOn(LocalDate.now(zone)), started, seenAt = null)
+                StoredRecap(of, recap, media, of.isFinishedOn(today), started, seenAt = null)
             }
             return recap to stored.length
         }
@@ -229,21 +202,17 @@ class RecapRepositoryImpl @Inject constructor(
         }
         val user = paced {
             tally.requests++
-            apolloClient.query(GetRecapUserQuery(userId = userId))
-                .fetchPolicy(FetchPolicy.NetworkOnly)
-                .doNotStore(true)
-                .execute()
-                .dataOrThrow()
-        }.User
+            remote.user(userId)
+        }
         RecapPreview(
             recap = recap,
             previous = previous,
             activities = tally.activities,
             requests = tally.requests,
-            millis = System.currentTimeMillis() - started,
+            millis = env.nowMillis() - started,
             payloadBytes = tally.payloadBytes,
             userName = user?.name,
-            avatarUrl = user?.avatar?.large ?: user?.avatar?.medium,
+            avatarUrl = user?.avatarUrl,
         )
     }
 
@@ -283,7 +252,7 @@ class RecapRepositoryImpl @Inject constructor(
         if (period.isFinishedOn(today)) {
             row.isFinal
         } else {
-            System.currentTimeMillis() - row.builtAt in 0 until IN_PROGRESS_MAX_AGE_MS
+            env.nowMillis() - row.builtAt in 0 until IN_PROGRESS_MAX_AGE_MS
         }
 
     /** A finished month cut out of its stored year, which already holds every activity it needs. */
@@ -313,7 +282,7 @@ class RecapRepositoryImpl @Inject constructor(
         }
         val window = year.window(zone)
         val source = storedBefore(owner, window.from) + fetch(owner, window)
-        val expired = expiredPeriods(year.months, today, keptMonths()).toSet()
+        val expired = expiredPeriods(year.months, today, env.keptMonths()).toSet()
         val missing = year.months.filterIndexed { index, month -> months[index] == null && month !in expired }
         return store(owner, listOf(year) + missing, source, today, airing = airingFor(year, source)).first()
     }
@@ -331,9 +300,9 @@ class RecapRepositoryImpl @Inject constructor(
             } else {
                 val window = ActivityWindow(year.window(zone).from, current.window(zone).to)
                 val swept = storedBefore(owner, window.from) + fetch(owner, window)
-                val expired = expiredPeriods(months, today, keptMonths()).toSet()
+                val expired = expiredPeriods(months, today, env.keptMonths()).toSet()
                 val stored = store(owner, months.filterNot { it in expired }, swept, today)
-                swept to (stored.maxOfOrNull { it.builtAt } ?: System.currentTimeMillis())
+                swept to (stored.maxOfOrNull { it.builtAt } ?: env.nowMillis())
             }
         }
         return withContext(Dispatchers.Default) {
@@ -367,7 +336,7 @@ class RecapRepositoryImpl @Inject constructor(
 
     /** Call under [buildLock]. */
     private suspend fun backfillLocked(owner: Int, today: LocalDate) {
-        val periods = backfillPeriods(today, keptMonths())
+        val periods = backfillPeriods(today, env.keptMonths())
         if (periods.isEmpty()) return
         val from = periods.minOf { it.firstDay }.atStartOfDay(zone).toEpochSecond()
         val to = RecapPeriod.Month(YearMonth.from(today)).window(zone).to
@@ -390,7 +359,7 @@ class RecapRepositoryImpl @Inject constructor(
         zone: ZoneId = this.zone,
         airing: Map<Int, Map<Int, Long>>? = null,
     ): List<RecapEntity> {
-        val now = System.currentTimeMillis()
+        val now = env.nowMillis()
         val settingsKey = currentSettings().key
         val announced = recapBannerCandidates(today).toSet()
         val seen = recapDao.getStamps(owner).associate { it.periodKey to it.seenAt }
@@ -421,11 +390,9 @@ class RecapRepositoryImpl @Inject constructor(
 
     private suspend fun retain(owner: Int, today: LocalDate) {
         val periods = recapDao.getStamps(owner).mapNotNull { RecapPeriod.fromKey(it.periodKey) }
-        val expired = expiredPeriods(periods, today, keptMonths())
+        val expired = expiredPeriods(periods, today, env.keptMonths())
         if (expired.isNotEmpty()) recapDao.delete(owner, expired.map { it.key })
     }
-
-    private fun keptMonths(): Int = appSettings.recapKeptMonths.value
 
     /** What the stored recaps hold from before [before], so a completion after it sees earlier episodes. */
     private suspend fun storedBefore(owner: Int, before: Long): Source {
@@ -451,38 +418,22 @@ class RecapRepositoryImpl @Inject constructor(
     }
 
     private suspend fun fetchActivityPage(userId: Int, window: ActivityWindow, page: Int, tally: Tally?): FetchedPage {
-        val data = paced {
+        val result = paced {
             tally?.let { it.requests++ }
-            apolloClient.query(
-                GetUserListActivitiesQuery(
-                    userId = userId,
-                    from = window.createdAfter.toInt(),
-                    to = window.createdBefore.toInt(),
-                    page = page,
-                )
-            )
-                .fetchPolicy(FetchPolicy.NetworkOnly)
-                .doNotStore(true)
-                .execute()
-                .dataOrThrow()
+            remote.activityPage(userId, window, page)
         }
-        val activities = data.Page?.activities.orEmpty().mapNotNull { it?.onListActivity?.toFetched() }
-        tally?.let { it.activities += activities.size }
-        return FetchedPage(activities, hasNextPage = data.Page?.pageInfo?.hasNextPage == true)
+        tally?.let { it.activities += result.activities.size }
+        return result
     }
 
     private suspend fun fetchMedia(ids: Collection<Int>, tally: Tally?): Map<Int, RecapMedia> {
         val media = HashMap<Int, RecapMedia>(ids.size)
         for (batch in ids.chunked(MEDIA_BATCH_SIZE)) {
-            val data = paced {
+            val titles = paced {
                 tally?.let { it.requests++ }
-                apolloClient.query(GetRecapMediaQuery(ids = batch, perPage = batch.size))
-                    .fetchPolicy(FetchPolicy.NetworkOnly)
-                    .doNotStore(true)
-                    .execute()
-                    .dataOrThrow()
+                remote.media(batch)
             }
-            data.Page?.media.orEmpty().forEach { item -> item?.toRecapMedia()?.let { media[it.id] = it } }
+            titles.forEach { media[it.id] = it }
         }
         return media
     }
@@ -503,25 +454,12 @@ class RecapRepositoryImpl @Inject constructor(
         for (batch in ids.chunked(MEDIA_BATCH_SIZE)) {
             var page = 1
             while (page <= MAX_ACTIVITY_PAGES) {
-                val data = paced {
+                val result = paced {
                     tally?.let { it.requests++ }
-                    apolloClient.query(
-                        GetRecapAiringQuery(
-                            ids = batch,
-                            from = window.createdAfter.toInt(),
-                            to = window.createdBefore.toInt(),
-                            page = page,
-                        )
-                    )
-                        .fetchPolicy(FetchPolicy.NetworkOnly)
-                        .doNotStore(true)
-                        .execute()
-                        .dataOrThrow()
+                    remote.airingPage(batch, window, page)
                 }
-                data.Page?.airingSchedules.orEmpty().filterNotNull().forEach {
-                    airing.getOrPut(it.mediaId) { HashMap() }[it.episode] = it.airingAt.toLong()
-                }
-                if (data.Page?.pageInfo?.hasNextPage != true) break
+                result.rows.forEach { airing.getOrPut(it.mediaId) { HashMap() }[it.episode] = it.airingAt }
+                if (!result.hasNextPage) break
                 page++
             }
         }
