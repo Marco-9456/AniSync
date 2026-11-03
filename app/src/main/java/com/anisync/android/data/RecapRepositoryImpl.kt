@@ -384,8 +384,7 @@ class RecapRepositoryImpl @Inject constructor(
                 )
             }
         }
-        recapDao.upsertAll(rows)
-        return rows
+        return recapDao.upsertKeepingSeen(rows)
     }
 
     private suspend fun retain(owner: Int, today: LocalDate) {

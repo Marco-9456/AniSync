@@ -68,6 +68,16 @@ class RecapRepositoryTest {
         assertEquals(1, recap.finished)
     }
 
+    @Test
+    fun `opening a recap while a build stores it keeps it seen`() = runTest {
+        repository.backfill()
+        assertNull(dao.rows.getValue(1 to "2026-10").seenAt)
+        // The story opens October while a rebuild of it is between reading the stamps and writing.
+        dao.duringWrite = { dao.markSeenNow(1, "2026-10", env.nowMillis) }
+        repository.getRecap(october, refresh = true)
+        assertNotNull(dao.rows.getValue(1 to "2026-10").seenAt)
+    }
+
     private fun at(year: Int, month: Int, day: Int, hour: Int = 20): Long =
         LocalDateTime.of(year, month, day, hour, 0).atZone(zone).toEpochSecond()
 
