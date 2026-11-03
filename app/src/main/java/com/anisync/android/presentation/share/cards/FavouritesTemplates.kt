@@ -294,7 +294,8 @@ private fun FavouritesCollage(subject: ShareSubject.Favourites, spec: CardSpec) 
                 },
             ),
         )
-        Column(Modifier.align(Alignment.BottomStart).padding(start = 20.dp, end = 20.dp, bottom = 16.dp)) {
+        val brandBottom = if (spec.size == CardSize.SQUARE) 4.dp else 16.dp
+        Column(Modifier.align(Alignment.BottomStart).padding(start = 20.dp, end = 20.dp, bottom = brandBottom)) {
             if (story && spec.shows(CardDetail.RANKING) && subject.entries.isNotEmpty()) {
                 RankedList(subject.entries.take(5), content.copy(alpha = 0.85f))
                 Spacer(Modifier.height(28.dp))
