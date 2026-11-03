@@ -40,7 +40,9 @@ class RecapRepositoryTest {
     init {
         remote.media += title(10, "Frieren", episodes = 12)
         remote.media += title(20, "Dandadan", episodes = 12)
+        remote.media += title(30, "Pluto", episodes = 8)
         remote.activities += listOf(
+            activity(6, 30, "watched episode", "1 - 2", at(2025, 3, 15)),
             activity(1, 10, "watched episode", "1 - 4", at(2025, 6, 3)),
             activity(2, 10, "watched episode", "5 - 6", at(2026, 9, 10)),
             activity(3, 20, "watched episode", "1 - 3", at(2026, 9, 20)),
@@ -76,6 +78,15 @@ class RecapRepositoryTest {
         dao.duringWrite = { dao.markSeenNow(1, "2026-10", env.nowMillis) }
         repository.getRecap(october, refresh = true)
         assertNotNull(dao.rows.getValue(1 to "2026-10").seenAt)
+    }
+
+    @Test
+    fun `a month retention dropped is cut from its year without coming back to Room`() = runTest {
+        repository.backfill()
+        val march = RecapPeriod.Month(YearMonth.of(2025, 3))
+        val recap = repository.storedRecap(march)
+        assertEquals(2, recap?.recap?.episodes)
+        assertNull(dao.rows[1 to "2025-03"])
     }
 
     private fun at(year: Int, month: Int, day: Int, hour: Int = 20): Long =

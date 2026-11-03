@@ -255,12 +255,17 @@ class RecapRepositoryImpl @Inject constructor(
             env.nowMillis() - row.builtAt in 0 until IN_PROGRESS_MAX_AGE_MS
         }
 
-    /** A finished month cut out of its stored year, which already holds every activity it needs. */
+    /**
+     * A finished month cut out of its stored year, which already holds every activity it needs.
+     * A month retention no longer keeps is cut for this read only, so it never comes back to Room.
+     */
     private suspend fun monthOfStoredYear(owner: Int, period: RecapPeriod, today: LocalDate): RecapEntity? {
         if (period !is RecapPeriod.Month || !period.isFinishedOn(today)) return null
         val yearRow = recapDao.get(owner, period.month.year.toString())?.takeIf { it.isFinal } ?: return null
         val year = decode(yearRow) ?: return null
-        return store(owner, listOf(period), year.source, today, year.zone).single()
+        val rows = rowsFor(owner, listOf(period), year.source, today, year.zone)
+        val expired = expiredPeriods(listOf(period), today, env.keptMonths()).isNotEmpty()
+        return if (expired) rows.single() else recapDao.upsertKeepingSeen(rows).single()
     }
 
     private suspend fun buildMonth(owner: Int, month: RecapPeriod.Month, today: LocalDate): RecapEntity {
@@ -358,6 +363,16 @@ class RecapRepositoryImpl @Inject constructor(
         today: LocalDate,
         zone: ZoneId = this.zone,
         airing: Map<Int, Map<Int, Long>>? = null,
+    ): List<RecapEntity> = recapDao.upsertKeepingSeen(rowsFor(owner, periods, source, today, zone, airing))
+
+    /** The rows [store] would write. */
+    private suspend fun rowsFor(
+        owner: Int,
+        periods: List<RecapPeriod>,
+        source: Source,
+        today: LocalDate,
+        zone: ZoneId = this.zone,
+        airing: Map<Int, Map<Int, Long>>? = null,
     ): List<RecapEntity> {
         val now = env.nowMillis()
         val settingsKey = currentSettings().key
@@ -384,7 +399,7 @@ class RecapRepositoryImpl @Inject constructor(
                 )
             }
         }
-        return recapDao.upsertKeepingSeen(rows)
+        return rows
     }
 
     private suspend fun retain(owner: Int, today: LocalDate) {
