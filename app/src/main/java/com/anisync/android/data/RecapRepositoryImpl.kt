@@ -165,6 +165,12 @@ class RecapRepositoryImpl @Inject constructor(
         }
     }
 
+    // No lock: a build for an account that is gone stops at its owner check before storing.
+    override suspend fun clearOwner(ownerId: Int) {
+        recapDao.deleteOwner(ownerId)
+        decoded.keys.removeAll { it.startsWith("$ownerId/") }
+    }
+
     override suspend fun applyRetention() {
         val owner = owner() ?: return
         retain(owner, today())

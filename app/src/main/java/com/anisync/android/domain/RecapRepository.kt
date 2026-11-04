@@ -91,6 +91,9 @@ interface RecapRepository {
     /** Deletes every stored recap of the active account. */
     suspend fun clear()
 
+    /** Deletes every stored recap of [ownerId], an account that was removed. */
+    suspend fun clearOwner(ownerId: Int)
+
     /** Deletes the recaps older than the kept months. */
     suspend fun applyRetention()
 
