@@ -3,7 +3,6 @@ package com.anisync.android.presentation.settings
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.ExistingWorkPolicy
 import com.anisync.android.data.AppSettings
 import com.anisync.android.domain.RecapRepository
 import com.anisync.android.domain.recap.RecapPeriod
@@ -52,17 +51,12 @@ class RecapsSettingsViewModel @Inject constructor(
 
     fun onAction(action: RecapsSettingsAction) {
         when (action) {
-            is RecapsSettingsAction.SetMonthly -> {
-                appSettings.setRecapMonthly(action.enabled)
-                reschedule()
-            }
-            is RecapsSettingsAction.SetYearly -> {
-                appSettings.setRecapYearly(action.enabled)
-                reschedule()
-            }
+            // The job reads these two when it runs, so the queued run stays as it is.
+            is RecapsSettingsAction.SetMonthly -> appSettings.setRecapMonthly(action.enabled)
+            is RecapsSettingsAction.SetYearly -> appSettings.setRecapYearly(action.enabled)
             is RecapsSettingsAction.SetTime -> {
                 appSettings.setRecapTime(action.time)
-                reschedule()
+                viewModelScope.launch { RecapWorker.reschedule(context, action.time) }
             }
             is RecapsSettingsAction.SetIncludeManga -> appSettings.setRecapIncludeManga(action.enabled)
             is RecapsSettingsAction.SetCountRepeats -> appSettings.setRecapCountRepeats(action.enabled)
@@ -77,11 +71,6 @@ class RecapsSettingsViewModel @Inject constructor(
                 recapRepository.clear()
             }
         }
-    }
-
-    /** The queued run was measured from the old time, and the job reads the switches when it runs. */
-    private fun reschedule() {
-        RecapWorker.schedule(context, appSettings.recapTime.value, ExistingWorkPolicy.REPLACE)
     }
 
     private fun current() = RecapsSettingsUiState(

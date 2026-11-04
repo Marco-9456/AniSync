@@ -9,6 +9,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -21,6 +22,7 @@ import com.anisync.android.domain.RecapRepository
 import com.anisync.android.domain.recap.nextRecapRun
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalTime
@@ -104,6 +106,23 @@ class RecapWorker @AssistedInject constructor(
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
                 .build()
             WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(WORK_NAME, policy, request)
+        }
+
+        /**
+         * Moves the queued run to a new [time]. A run that is going or waiting to retry is left alone,
+         * since it builds what is due and then queues the one after it at the new time itself.
+         */
+        suspend fun reschedule(context: Context, time: LocalTime) {
+            val infos = WorkManager.getInstance(context.applicationContext).getWorkInfosForUniqueWorkFlow(WORK_NAME).first()
+            if (queuedRunMayMove(infos.map { it.state to it.runAttemptCount })) {
+                schedule(context, time, ExistingWorkPolicy.REPLACE)
+            }
+        }
+
+        /** True when nothing is under way or waiting to retry, so replacing the queued run loses nothing. */
+        internal fun queuedRunMayMove(runs: List<Pair<WorkInfo.State, Int>>): Boolean = runs.none { (state, attempts) ->
+            state == WorkInfo.State.RUNNING || state == WorkInfo.State.BLOCKED ||
+                (state == WorkInfo.State.ENQUEUED && attempts > 0)
         }
 
         const val FIRST_BUILD_NAME = "recap_first_build"
