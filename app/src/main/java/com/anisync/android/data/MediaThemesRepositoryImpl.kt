@@ -85,13 +85,22 @@ class MediaThemesRepositoryImpl @Inject constructor(
     override suspend fun themesFor(mediaIds: List<Int>): Map<Int, List<MediaTheme>> {
         val found = LinkedHashMap<Int, List<MediaTheme>>()
         val missing = ArrayList<Int>()
+        val aging = ArrayList<Int>()
+        val now = System.currentTimeMillis()
         for (id in mediaIds.distinct()) {
             val cached = dao.get(id)
-            if (cached != null && !isStale(id)) found[id] = cached.themes.inShowOrder() else missing += id
+            if (cached == null || cached.fetchedAt < FORMAT_SINCE_MS) {
+                missing += id
+            } else {
+                found[id] = cached.themes.inShowOrder()
+                if (now - cached.fetchedAt > CACHE_TTL_MS) aging += id
+            }
         }
-        if (missing.isEmpty()) return found
-        // Outlives a story closed before AnimeThemes answers, so its next open plays at once.
-        scope.async { lookUp(missing) }.await()?.let(found::putAll)
+        if (missing.isEmpty() && aging.isEmpty()) return found
+        // Outlives a story closed before AnimeThemes answers, so its next open plays at once. An old
+        // answer plays now and is only refreshed behind it, the story waits for titles it has none for.
+        val lookup = scope.async { lookUp(missing + aging) }
+        if (missing.isNotEmpty()) lookup.await()?.let(found::putAll)
         return found
     }
 
