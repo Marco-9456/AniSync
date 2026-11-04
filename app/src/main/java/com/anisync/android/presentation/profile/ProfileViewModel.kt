@@ -972,7 +972,10 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun refresh(forceNetwork: Boolean = true) {
-        if (forceNetwork && localState.value.selectedTab == ProfileTab.STATS) loadRecaps(refresh = true)
+        if (forceNetwork && localState.value.selectedTab == ProfileTab.STATS) {
+            loadRecaps(refresh = true)
+            refreshPeople()
+        }
         // Synchronous early-return so a second pull-to-refresh while the first
         // is still in flight is dropped, not stacked. The 429 toast gate only
         // fires AFTER a rate limit happens; this prevents the burst from
@@ -1557,22 +1560,39 @@ class ProfileViewModel @Inject constructor(
         )
     }
 
+    /** People lists asked for and not answered yet, so a second tap does not ask again. */
+    private val peopleInFlight = HashSet<Pair<PeopleList, PeopleSort>>()
+
     /**
-     * Loads one People list in one order, up to AniList's hundred entries, once per list and order.
-     * The rows already shown stay until it lands, and stay if it fails.
+     * Loads one People list in one order, up to AniList's hundred entries, once per list and order
+     * unless [force]d. The rows already shown stay until it lands, and stay if it fails.
      */
-    private fun fetchPeople(list: PeopleList, sort: PeopleSort) {
-        if (localState.value.peopleFetched[list]?.containsKey(sort) == true) return
+    private fun fetchPeople(list: PeopleList, sort: PeopleSort, force: Boolean = false) {
+        if (!force && localState.value.peopleFetched[list]?.containsKey(sort) == true) return
         val userId = uiState.value.profile?.id ?: return
+        if (!peopleInFlight.add(list to sort)) return
         viewModelScope.launch {
-            val result = statisticsRepository.getPeopleStatistics(userId, list, sort)
-            if (result is Result.Success) {
+            try {
+                var result = statisticsRepository.getPeopleStatistics(userId, list, sort)
+                repeat(MAX_RATE_LIMIT_WAITS) {
+                    val countdown = (result as? Result.Error)?.countdownSeconds ?: return@repeat
+                    delay((countdown + 1) * 1_000L)
+                    result = statisticsRepository.getPeopleStatistics(userId, list, sort)
+                }
+                val people = (result as? Result.Success)?.data ?: return@launch
                 localState.update { state ->
-                    val forList = state.peopleFetched[list].orEmpty() + (sort to result.data)
+                    val forList = state.peopleFetched[list].orEmpty() + (sort to people)
                     state.copy(peopleFetched = state.peopleFetched + (list to forList))
                 }
+            } finally {
+                peopleInFlight.remove(list to sort)
             }
         }
+    }
+
+    /** Asks again for every People list already loaded, keeping their rows until the answers land. */
+    private fun refreshPeople() {
+        localState.value.peopleFetched.forEach { (list, sorts) -> sorts.keys.forEach { fetchPeople(list, it, force = true) } }
     }
 
     /**
