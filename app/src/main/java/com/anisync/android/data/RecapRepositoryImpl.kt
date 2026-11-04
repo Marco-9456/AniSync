@@ -380,7 +380,14 @@ class RecapRepositoryImpl @Inject constructor(
         today: LocalDate,
         zone: ZoneId = this.zone,
         airing: Map<Int, Map<Int, Long>>? = null,
-    ): List<RecapEntity> = recapDao.upsertKeepingSeen(rowsFor(owner, periods, source, today, zone, airing))
+    ): List<RecapEntity> {
+        val rows = rowsFor(owner, periods, source, today, zone, airing)
+        // After a switch the rest was fetched as another viewer, who may not see a private list.
+        if (env.owner() != owner) throw AccountChanged()
+        return recapDao.upsertKeepingSeen(rows)
+    }
+
+    private class AccountChanged : Exception("The active account changed during a recap build")
 
     /** The rows [store] would write. */
     private suspend fun rowsFor(

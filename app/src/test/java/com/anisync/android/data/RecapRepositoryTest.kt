@@ -97,6 +97,13 @@ class RecapRepositoryTest {
     }
 
     @Test
+    fun `a build that outlives an account switch stores nothing`() = runTest {
+        remote.beforeFirstPage = { env.ownerFlow.value = 2 }
+        assertTrue(repository.backfill() is Result.Error)
+        assertTrue(dao.rows.isEmpty())
+    }
+
+    @Test
     fun `a year added up from its months is cut where the months were`() = runTest {
         env.nowMillis = at(2026, 1, 2, 12) * 1000
         remote.activities += activity(7, 30, "watched episode", "3 - 4", at(2025, 1, 1, 1))
@@ -195,7 +202,11 @@ internal class FakeRecapRemote : RecapRemote {
     val media = ArrayList<RecapMedia>()
     var requests = 0
 
+    /** Runs once before the first page is served. */
+    var beforeFirstPage: (() -> Unit)? = null
+
     override suspend fun activityPage(userId: Int, window: ActivityWindow, page: Int): FetchedPage {
+        beforeFirstPage?.also { beforeFirstPage = null }?.invoke()
         requests++
         val inside = activities
             .filter { it.createdAt > window.createdAfter && it.createdAt < window.createdBefore }
