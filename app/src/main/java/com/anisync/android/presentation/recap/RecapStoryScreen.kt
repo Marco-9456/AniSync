@@ -65,7 +65,9 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -121,6 +123,7 @@ import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.rememberSeededColorScheme
 import com.anisync.android.ui.theme.resolveDarkTheme
 import com.anisync.android.util.ShareUtils
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -230,9 +233,11 @@ private fun StoryStage(
     val page = story.pages[state.page]
     val scheme = pageScheme(story.seeds[state.page])
 
+    val songPending by rememberUpdatedState(state.songPending)
     val progress = remember(state.page, state.replays) { Animatable(0f) }
     LaunchedEffect(state.page, state.replays, state.isStopped, autoAdvance) {
         if (!autoAdvance || page.isCard || state.isStopped) return@LaunchedEffect
+        if (state.page == 0) snapshotFlow { songPending }.first { !it }
         val remaining = ((1f - progress.value) * PAGE_MILLIS).roundToInt().coerceAtLeast(1)
         progress.animateTo(1f, tween(remaining, easing = LinearEasing))
         onAction(RecapStoryAction.Next)

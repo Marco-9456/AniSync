@@ -97,6 +97,8 @@ data class RecapStoryUiState(
     /** Paused while a finger rests on the page. */
     val held: Boolean = false,
     val song: StorySong? = null,
+    /** A song is on its way and has not played yet, so the opener waits for it. */
+    val songPending: Boolean = false,
     /** Bumped by Replay, so the page timer starts over even on the same page. */
     val replays: Int = 0,
 ) {

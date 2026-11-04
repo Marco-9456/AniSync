@@ -5,6 +5,8 @@ import android.media.AudioManager
 import android.net.ConnectivityManager
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.anisync.android.presentation.components.buildVideoExoPlayer
 
@@ -13,12 +15,21 @@ import com.anisync.android.presentation.components.buildVideoExoPlayer
  *
  * Muted, it neither asks for audio focus nor pauses whatever else is playing. Turning the sound on
  * asks for focus like any music player, so another app pauses or ducks and a call pauses the song.
+ *
+ * [onSettled] hears when the song starts playing or fails, so a story waiting for it can go on.
  */
-class ThemeSongPlayer(context: Context, url: String, muted: Boolean) {
+class ThemeSongPlayer(context: Context, url: String, muted: Boolean, onSettled: () -> Unit) {
 
     private val player: ExoPlayer = buildVideoExoPlayer(context, url, muted = muted, loop = true, autoPlay = false).apply {
         setAudioAttributes(MusicAttributes, !muted)
         setHandleAudioBecomingNoisy(true)
+        addListener(object : Player.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (isPlaying) onSettled()
+            }
+
+            override fun onPlayerError(error: PlaybackException) = onSettled()
+        })
     }
 
     var muted: Boolean = muted

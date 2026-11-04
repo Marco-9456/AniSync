@@ -42,6 +42,9 @@ import javax.inject.Inject
 /** How many rate limit windows a story waits out before it gives up. */
 private const val MAX_RATE_LIMIT_WAITS = 3
 
+/** How long the opener waits for its song before it moves on without it. */
+private const val SONG_WAIT_MILLIS = 2_500L
+
 @HiltViewModel
 class RecapStoryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -128,12 +131,20 @@ class RecapStoryViewModel @Inject constructor(
             }
             val song = async { prepareSong(stored) }
             val story = withContext(Dispatchers.Default) { story(stored, loaded) }
-            _uiState.update { it.copy(loading = false, story = story, page = 0) }
+            val waitForSong = songWanted(stored)
+            _uiState.update { it.copy(loading = false, story = story, page = 0, songPending = waitForSong) }
+            if (waitForSong) {
+                launch {
+                    delay(SONG_WAIT_MILLIS)
+                    songSettled()
+                }
+            }
             if (!route.preview) {
                 recapRepository.markSeen(period)
                 accountStore.activeAccount.value?.id?.let { notifier.dismiss(it, period) }
             }
-            song.await()?.let { showSong(story, it) }
+            val prepared = song.await()
+            if (prepared == null) songSettled() else showSong(story, prepared)
         }
     }
 
@@ -221,8 +232,12 @@ class RecapStoryViewModel @Inject constructor(
         val themes = themesRepository.themesFor(candidates.map { it.mediaId })
         val choice = withContext(Dispatchers.Default) { pickThemeSong(candidates) { themes[it] } } ?: return null
         val muted = ThemeSongPlayer.otherAudioPlaying(context)
-        player = ThemeSongPlayer(context, choice.audio.url, muted)
+        player = ThemeSongPlayer(context, choice.audio.url, muted, onSettled = ::songSettled)
         return PreparedSong(choice, candidates.indexOfFirst { it.mediaId == choice.mediaId }, muted)
+    }
+
+    private fun songSettled() {
+        _uiState.update { it.copy(songPending = false) }
     }
 
     private fun showSong(story: StoryModel, song: PreparedSong) {
