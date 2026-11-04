@@ -10,13 +10,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -112,6 +115,7 @@ fun LazyListScope.profileStatsTab(
     onMediaClick: (Int) -> Unit = {},
     onActivityClick: (Int) -> Unit = {},
     onOpenRecap: (String) -> Unit = {},
+    onRetryStats: () -> Unit = {},
     statsColumns: Int = 1,
 ) {
     val ownProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
@@ -141,18 +145,16 @@ fun LazyListScope.profileStatsTab(
 
     if (uiState.statsErrorMessage != null && uiState.statsData == null) {
         item(key = "stats_error") {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = uiState.statsErrorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center
-                )
-            }
+            EmptyState(
+                icon = Icons.Outlined.CloudOff,
+                title = stringResource(R.string.forum_empty_failed_title),
+                description = stringResource(if (uiState.statsRateLimited) R.string.profile_rate_limited_error else R.string.forum_empty_failed_desc),
+                actionLabel = stringResource(R.string.retry),
+                actionIcon = Icons.Default.Refresh,
+                onAction = onRetryStats,
+                emblemShape = RoundedCornerShape(22.dp),
+                animationKey = uiState.statsErrorMessage,
+            )
         }
         return
     }

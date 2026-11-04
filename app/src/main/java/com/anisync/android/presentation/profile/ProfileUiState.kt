@@ -93,6 +93,8 @@ data class ProfileUiState(
     val uncountedManga: Int = 0,
     val isStatsLoading: Boolean = false,
     val statsErrorMessage: String? = null,
+    /** The failure was AniList's rate limit outlasting every wait, not the connection. */
+    val statsRateLimited: Boolean = false,
     val viewerId: Int? = null,
     val unreadNotificationCount: Int = 0,
     /** Whether older activities remain to be loaded into the Activity tab. */
@@ -254,6 +256,9 @@ sealed interface ProfileAction {
      * is used by the screen's auto-refresh on entry so cold opens render instantly.
      */
     data class Refresh(val forceNetwork: Boolean = true) : ProfileAction
+
+    /** Statistics failed to load, try them again on their own. */
+    data object RetryStats : ProfileAction
     data object ToggleFollow : ProfileAction
     data class UpdateAbout(val about: String) : ProfileAction
     data class SelectTab(val tab: ProfileTab) : ProfileAction

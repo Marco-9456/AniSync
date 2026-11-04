@@ -224,6 +224,7 @@ class ProfileViewModel @Inject constructor(
         val isStatsLoading: Boolean = false,
         val statsData: StatisticsUiModel? = null,
         val statsErrorMessage: String? = null,
+        val statsRateLimited: Boolean = false,
         val hasFetchedStats: Boolean = false,
         val uncountedAnime: Int = 0,
         val uncountedManga: Int = 0
@@ -595,6 +596,7 @@ class ProfileViewModel @Inject constructor(
             uncountedManga = stats.uncountedManga,
             isStatsLoading = stats.isStatsLoading,
             statsErrorMessage = stats.statsErrorMessage,
+            statsRateLimited = stats.statsRateLimited,
             userAnimeList = mediaLists.userAnimeList,
             userAnimeListByStatus = mediaLists.userAnimeListByStatus,
             isUserAnimeListLoading = mediaLists.isUserAnimeListLoading,
@@ -667,6 +669,7 @@ class ProfileViewModel @Inject constructor(
     fun onAction(action: ProfileAction) {
         when (action) {
             is ProfileAction.Refresh -> refresh(forceNetwork = action.forceNetwork)
+            ProfileAction.RetryStats -> fetchStats(forceRefresh = true)
             is ProfileAction.ToggleFollow -> toggleFollow()
             is ProfileAction.UpdateAbout -> updateAbout(action.about)
             is ProfileAction.SelectTab -> {
@@ -1437,6 +1440,7 @@ class ProfileViewModel @Inject constructor(
                         it.copy(
                             isStatsLoading = false,
                             statsData = processedData,
+                            statsRateLimited = false,
                             hasFetchedStats = true,
                             uncountedAnime = uncounted.first,
                             uncountedManga = uncounted.second
@@ -1447,7 +1451,8 @@ class ProfileViewModel @Inject constructor(
                     statsState.update {
                         it.copy(
                             isStatsLoading = false,
-                            statsErrorMessage = result.message
+                            statsErrorMessage = result.message,
+                            statsRateLimited = result.countdownSeconds != null
                         )
                     }
                 }
