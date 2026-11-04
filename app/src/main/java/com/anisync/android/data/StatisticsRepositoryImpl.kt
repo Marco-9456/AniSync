@@ -7,6 +7,7 @@ import com.anisync.android.domain.PeopleSort
 import com.anisync.android.domain.PersonStat
 import com.anisync.android.type.UserStatisticsSort
 import com.anisync.android.GetUserStatisticsQuery
+import com.anisync.android.data.util.dataOrThrow
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.domain.AnimeStatistics
@@ -47,7 +48,7 @@ class StatisticsRepositoryImpl @Inject constructor(
                 GetUserStatisticsQuery(userId = Optional.present(userId))
             ).fetchPolicy(policy.toFetchPolicy()).execute()
 
-            val user = response.data?.User
+            val user = response.dataOrThrow().User
                 ?: throw Exception("User not found")
 
             val animeApi = user.statistics?.anime
@@ -100,7 +101,7 @@ class StatisticsRepositoryImpl @Inject constructor(
                 mangaStaff = list == PeopleList.MANGA_STAFF
             )
         ).fetchPolicy(FetchPolicy.NetworkFirst).execute()
-        val statistics = response.data?.User?.statistics ?: throw Exception("No statistics available")
+        val statistics = response.dataOrThrow().User?.statistics ?: throw Exception("No statistics available")
         when (list) {
             PeopleList.ANIME_VOICE_ACTORS -> statistics.anime?.voiceActors.orEmpty().mapNotNull { entry ->
                 entry?.voiceActor?.let {
