@@ -429,6 +429,10 @@ class ProfileViewModel @Inject constructor(
         if (targetUsername.isNullOrBlank()) {
             combine(recapEntries.entries(), recapProgress, recapYear, recapEntries.firstBuildRunning()) { entries, progress, year, building ->
                 com.anisync.android.presentation.recap.RecapsUiModel(entries, progress, year, building = building && entries.isEmpty())
+            }.catch { e ->
+                // A recap row Room cannot read must not take the whole profile down with it.
+                android.util.Log.w("ProfileViewModel", "Recaps could not be read", e)
+                emit(com.anisync.android.presentation.recap.RecapsUiModel())
             }
         } else {
             kotlinx.coroutines.flow.flowOf(com.anisync.android.presentation.recap.RecapsUiModel())
