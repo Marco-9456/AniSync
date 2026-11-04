@@ -10,6 +10,8 @@ import androidx.media3.common.Player
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.exoplayer.ExoPlayer
 import com.anisync.android.presentation.components.buildVideoExoPlayer
+import java.util.concurrent.atomic.AtomicInteger
+import android.media.AudioAttributes as PlatformAudioAttributes
 
 /**
  * The recap's song, looped behind the story.
@@ -21,11 +23,15 @@ import com.anisync.android.presentation.components.buildVideoExoPlayer
  */
 class ThemeSongPlayer(context: Context, url: String, muted: Boolean, cache: Cache, onSettled: () -> Unit) {
 
+    /** True while this player is in [Playing]. */
+    private var counted = false
+
     private val player: ExoPlayer = buildVideoExoPlayer(context, url, muted = muted, loop = true, autoPlay = false, cache = cache).apply {
         setAudioAttributes(MusicAttributes, !muted)
         setHandleAudioBecomingNoisy(true)
         addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
+                count(isPlaying)
                 if (isPlaying) onSettled()
             }
 
@@ -55,7 +61,14 @@ class ThemeSongPlayer(context: Context, url: String, muted: Boolean, cache: Cach
     }
 
     fun release() {
+        count(false)
         player.release()
+    }
+
+    private fun count(playing: Boolean) {
+        if (playing == counted) return
+        counted = playing
+        if (playing) Playing.incrementAndGet() else Playing.decrementAndGet()
     }
 
     companion object {
@@ -64,9 +77,24 @@ class ThemeSongPlayer(context: Context, url: String, muted: Boolean, cache: Cach
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .build()
 
-        /** True while another app is playing music, when a story starts muted rather than talk over it. */
-        fun otherAudioPlaying(context: Context): Boolean =
-            (context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager)?.isMusicActive == true
+        /** The app's own songs playing right now. The system counts a muted one as music too. */
+        private val Playing = AtomicInteger()
+
+        private val MusicUsages = setOf(
+            PlatformAudioAttributes.USAGE_MEDIA,
+            PlatformAudioAttributes.USAGE_GAME,
+            PlatformAudioAttributes.USAGE_UNKNOWN,
+        )
+
+        /**
+         * True while another app is playing music, when a story starts muted rather than talk over
+         * it. The system lists every player that is playing, so the app's own songs are taken off.
+         */
+        fun otherAudioPlaying(context: Context): Boolean {
+            val audio = context.getSystemService(AudioManager::class.java) ?: return false
+            val music = audio.activePlaybackConfigurations.count { it.audioAttributes.usage in MusicUsages }
+            return music > Playing.get()
+        }
 
         /** True on a metered connection, where songs wait for the "Use mobile data for songs" setting. */
         fun onMeteredNetwork(context: Context): Boolean =

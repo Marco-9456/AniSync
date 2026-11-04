@@ -149,7 +149,6 @@ fun RecapStoryScreen(
     val onAction = viewModel::onAction
     LifecycleEventEffect(Lifecycle.Event.ON_START) { onAction(RecapStoryAction.Visible(true)) }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { onAction(RecapStoryAction.Visible(false)) }
-    // Silenced before the exit animation, or a story opened right after would hear it and start muted.
     val close = {
         onAction(RecapStoryAction.Visible(false))
         onClose()
