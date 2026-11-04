@@ -15,6 +15,7 @@ import com.anisync.android.domain.Result
 import com.anisync.android.domain.StoredRecap
 import com.anisync.android.domain.recap.PageSeed
 import com.anisync.android.domain.recap.RecapPeriod
+import com.anisync.android.domain.recap.ThemeSongChoice
 import com.anisync.android.domain.recap.pickThemeSong
 import com.anisync.android.domain.recap.rankNote
 import com.anisync.android.domain.recap.recapPages
@@ -28,6 +29,7 @@ import com.anisync.android.worker.RecapNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -104,9 +106,11 @@ class RecapStoryViewModel @Inject constructor(
         _uiState.update { it.copy(page = page.coerceIn(0, pages.lastIndex), held = false) }
     }
 
+    /** The player may be buffering before the story shows, it only plays once its song is on screen. */
     private fun syncPlayback() {
         val player = player ?: return
-        if (visible && !_uiState.value.isStopped) player.play() else player.pause()
+        val state = _uiState.value
+        if (visible && state.song != null && !state.isStopped) player.play() else player.pause()
     }
 
     private fun load() {
@@ -122,13 +126,14 @@ class RecapStoryViewModel @Inject constructor(
                 _uiState.update { it.copy(loading = false, empty = true) }
                 return@launch
             }
+            val song = async { prepareSong(stored) }
             val story = withContext(Dispatchers.Default) { story(stored, loaded) }
             _uiState.update { it.copy(loading = false, story = story, page = 0) }
             if (!route.preview) {
                 recapRepository.markSeen(period)
                 accountStore.activeAccount.value?.id?.let { notifier.dismiss(it, period) }
             }
-            startSong(story, stored)
+            song.await()?.let { showSong(story, it) }
         }
     }
 
@@ -198,29 +203,39 @@ class RecapStoryViewModel @Inject constructor(
         )
     }
 
+    /** True when the story tries for a song: songs are on, the connection allows one and a title can lend it. */
+    private fun songWanted(stored: StoredRecap): Boolean =
+        appSettings.recapThemeSong.value &&
+            (!ThemeSongPlayer.onMeteredNetwork(context) || appSettings.recapSongsOnMobileData.value) &&
+            stored.recap.ranked.isNotEmpty()
+
+    private class PreparedSong(val choice: ThemeSongChoice, val rank: Int, val muted: Boolean)
+
     /**
-     * Plays the song the period picks, when songs are on and the connection allows one. Stored
-     * themes are reused, the rest of the top five go out in one AnimeThemes request.
+     * Picks the period's song and starts buffering it, while the pages are still being prepared.
+     * Stored themes are reused, the rest of the top five go out in one AnimeThemes request.
      */
-    private suspend fun startSong(story: StoryModel, stored: StoredRecap) {
-        if (!appSettings.recapThemeSong.value) return
-        if (ThemeSongPlayer.onMeteredNetwork(context) && !appSettings.recapSongsOnMobileData.value) return
+    private suspend fun prepareSong(stored: StoredRecap): PreparedSong? {
+        if (!songWanted(stored)) return null
         val candidates = stored.songCandidates()
-        if (candidates.isEmpty()) return
         val themes = themesRepository.themesFor(candidates.map { it.mediaId })
-        val choice = withContext(Dispatchers.Default) { pickThemeSong(candidates) { themes[it] } } ?: return
+        val choice = withContext(Dispatchers.Default) { pickThemeSong(candidates) { themes[it] } } ?: return null
         val muted = ThemeSongPlayer.otherAudioPlaying(context)
-        val rank = candidates.indexOfFirst { it.mediaId == choice.mediaId }
         player = ThemeSongPlayer(context, choice.audio.url, muted)
+        return PreparedSong(choice, candidates.indexOfFirst { it.mediaId == choice.mediaId }, muted)
+    }
+
+    private fun showSong(story: StoryModel, song: PreparedSong) {
+        val theme = song.choice.theme
         _uiState.update {
             it.copy(
                 song = StorySong(
-                    title = choice.theme.songTitle ?: choice.theme.slug,
-                    artist = choice.theme.artists.firstOrNull(),
-                    type = choice.theme.type,
-                    sourceRank = rank,
-                    sourceTitle = story.title(choice.mediaId)?.title.orEmpty(),
-                    muted = muted,
+                    title = theme.songTitle ?: theme.slug,
+                    artist = theme.artists.firstOrNull(),
+                    type = theme.type,
+                    sourceRank = song.rank,
+                    sourceTitle = story.title(song.choice.mediaId)?.title.orEmpty(),
+                    muted = song.muted,
                 )
             )
         }
