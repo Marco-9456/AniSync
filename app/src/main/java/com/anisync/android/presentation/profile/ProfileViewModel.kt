@@ -102,6 +102,9 @@ class ProfileViewModel @Inject constructor(
         /** Minimum gap between user-initiated refreshes (pull-to-refresh). */
         private const val GESTURE_REFRESH_COOLDOWN_MS = 5_000L
 
+        /** How many rate limit windows Statistics waits out with its loader up before it gives up. */
+        private const val MAX_RATE_LIMIT_WAITS = 3
+
         private const val ADULT_GENRE = "Hentai"
     }
 
@@ -1405,7 +1408,14 @@ class ProfileViewModel @Inject constructor(
             // froze the activity-history heatmap at first fetch — the normalized cache
             // never revalidates on its own, so new activity never showed (#88).
             val policy = if (forceRefresh) CachePolicy.NetworkOnly else CachePolicy.NetworkFirst
-            when (val result = statisticsRepository.getUserStatistics(userId, policy)) {
+            // A rate limit keeps the loader up and asks again once it is over, as the media page does.
+            var fetched = statisticsRepository.getUserStatistics(userId, policy)
+            repeat(MAX_RATE_LIMIT_WAITS) {
+                val countdown = (fetched as? Result.Error)?.countdownSeconds ?: return@repeat
+                delay((countdown + 1) * 1_000L)
+                fetched = statisticsRepository.getUserStatistics(userId, policy)
+            }
+            when (val result = fetched) {
                 is Result.Success -> {
                     // Process data on default dispatcher
                     val processedData = kotlinx.coroutines.withContext(Dispatchers.Default) {
