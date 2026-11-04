@@ -107,6 +107,7 @@ class LibraryViewModel @Inject constructor(
             .catch { emit(null) }
             .onEach { banner -> _uiState.update { it.copy(recapBanner = banner) } }
             .launchIn(viewModelScope)
+        viewModelScope.launch { recapEntries.prefetchSongs() }
     }
 
     private val _actions = MutableSharedFlow<LibraryAction>()

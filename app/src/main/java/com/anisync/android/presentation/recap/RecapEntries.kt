@@ -7,6 +7,7 @@ import androidx.work.WorkManager
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.RecapDelivery
 import com.anisync.android.data.RecapNotices
+import com.anisync.android.data.RecapSongs
 import com.anisync.android.data.account.AccountStore
 import com.anisync.android.domain.RecapRepository
 import com.anisync.android.domain.Result
@@ -96,6 +97,7 @@ class RecapEntries @Inject constructor(
     private val notices: RecapNotices,
     private val accountStore: AccountStore,
     private val appSettings: AppSettings,
+    private val songs: RecapSongs,
     @ApplicationContext private val context: Context,
 ) {
     /** Every finished recap, newest first. */
@@ -119,6 +121,9 @@ class RecapEntries @Inject constructor(
         if (closed[owner] == YearMonth.from(today)) return@combine null
         recapBannerCandidates(today).firstNotNullOfOrNull { period -> entries.firstOrNull { it.period == period && it.isNew } }
     }
+
+    /** Looks up the songs of the recaps waiting to be opened, so opening one only streams its song. */
+    suspend fun prefetchSongs() = songs.prefetchUnopened()
 
     fun closeBanner() {
         val owner = accountStore.activeAccount.value?.id ?: return

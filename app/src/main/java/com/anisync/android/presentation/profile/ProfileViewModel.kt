@@ -959,6 +959,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             // The first build stores the month and the year too, building them here would fetch them twice.
             if (recapEntries.buildIfEmpty()) return@launch
+            launch { recapEntries.prefetchSongs() }
             recapProgress.value = recapEntries.inProgress(refresh)
             recapYear.value = recapEntries.runningYear(refresh)
         }

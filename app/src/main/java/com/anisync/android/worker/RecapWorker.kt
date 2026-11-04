@@ -15,17 +15,20 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.anisync.android.data.account.AccountStore
 import com.anisync.android.data.AppSettings
+import com.anisync.android.data.RecapSongs
 import com.anisync.android.data.network.RequestPriority
 import com.anisync.android.data.network.withRequestPriority
 import com.anisync.android.data.util.ApiError
 import com.anisync.android.domain.RecapRepository
 import com.anisync.android.domain.recap.nextRecapRun
+import com.anisync.android.domain.recap.recapBannerCandidates
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
@@ -50,6 +53,7 @@ class RecapWorker @AssistedInject constructor(
     private val appSettings: AppSettings,
     private val accountStore: AccountStore,
     private val notifier: RecapNotifier,
+    private val songs: RecapSongs,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
@@ -60,6 +64,7 @@ class RecapWorker @AssistedInject constructor(
         }
         when (outcome) {
             is DomainResult.Success -> if (owner != null && owner == accountStore.activeAccount.value?.id) {
+                songs.prefetch(outcome.data.map { it.period })
                 // A notification that cannot be posted must not cost next month's run.
                 try {
                     notifier.announce(owner, outcome.data)
@@ -84,6 +89,8 @@ class RecapWorker @AssistedInject constructor(
         if (outcome is DomainResult.Error) {
             Log.w(TAG, "First recap build failed: ${outcome.message}")
             if (outcome.isWorthRetrying() && runAttemptCount < MAX_ATTEMPTS) return Result.retry()
+        } else {
+            songs.prefetch(recapBannerCandidates(LocalDate.now()))
         }
         return Result.success()
     }
