@@ -62,6 +62,8 @@ private const val IN_PROGRESS_MAX_AGE_MS = 6 * 60 * 60 * 1000L
 /** How often one background request waits out the budget before the build gives up. */
 private const val MAX_BUDGET_WAITS = 5
 
+/** Up to this many missing months are built one by one, more cost less as one sweep of the year. */
+private const val MONTHS_BUILT_ALONE = 2
 
 @Singleton
 class RecapRepositoryImpl @Inject constructor(
@@ -137,7 +139,7 @@ class RecapRepositoryImpl @Inject constructor(
 
     override suspend fun backfill(): Result<Unit> = safeApiCall {
         val owner = owner() ?: return@safeApiCall
-        buildLock.withLock { backfillLocked(owner, today()) }
+        buildLock.withLock { backfillIfEmpty(owner, today()) }
     }
 
     override suspend fun buildDue(monthly: Boolean, yearly: Boolean): Result<List<StoredRecap>> = safeApiCall {
@@ -309,14 +311,14 @@ class RecapRepositoryImpl @Inject constructor(
 
     /**
      * A finished year, added up from its twelve stored months when they are all final, otherwise
-     * from one sweep of the year that also stores the months retention keeps.
+     * from one sweep of the year that also stores the months retention keeps. One or two missing
+     * months are built alone first, which costs less than sweeping the whole year again.
      */
     private suspend fun buildYear(owner: Int, year: RecapPeriod.Year, today: LocalDate): RecapEntity {
-        val rows = year.months.map { recapDao.get(owner, it.key) }
-        val months = rows.map { row -> row?.takeIf { it.isFinal }?.let { decode(it) } }
+        val months = finalMonths(owner, year.months, today)
         if (months.all { it != null }) {
             val parts = months.filterNotNull()
-            val source = parts.fold(Source.EMPTY) { sum, month -> sum + month.source }
+            val source = Source.of(parts.map { it.source })
             // Cut where the months were cut, or a zone change since would move the year's edges.
             val zone = parts.first().zone
             return store(owner, listOf(year), source, today, zone, airing = airingFor(year, source, zone)).single()
@@ -334,11 +336,11 @@ class RecapRepositoryImpl @Inject constructor(
         val months = year.months.filter { !it.firstDay.isAfter(today) }
         val (source, builtAt, partsZone) = storedYearSoFar(owner, months, current, today, refresh) ?: buildLock.withLock {
             backfillIfEmpty(owner, today)
-            val earlier = months.filter { it != current }.map { recapDao.get(owner, it.key)?.takeIf { row -> row.isFinal }?.let { decode(it) } }
+            val earlier = finalMonths(owner, months.filter { it != current }, today)
             if (earlier.all { it != null }) {
                 val running = currentRow(owner, current, today, refresh)
                 val parts = earlier.filterNotNull() + listOfNotNull(decode(running))
-                YearParts(parts.fold(Source.EMPTY) { sum, month -> sum + month.source }, running.builtAt, parts.firstOrNull()?.zone)
+                YearParts(Source.of(parts.map { it.source }), running.builtAt, parts.firstOrNull()?.zone)
             } else {
                 val window = ActivityWindow(year.window(zone).from, current.window(zone).to)
                 val swept = storedBefore(owner, window.from) + fetch(owner, window)
@@ -358,6 +360,17 @@ class RecapRepositoryImpl @Inject constructor(
     }
 
     /**
+     * Each of [months] decoded from its final row, null where none is stored. When only a month or
+     * two are missing they are built here, one by one. Call under [buildLock].
+     */
+    private suspend fun finalMonths(owner: Int, months: List<RecapPeriod.Month>, today: LocalDate): List<Decoded?> {
+        val stored = months.map { month -> recapDao.get(owner, month.key)?.takeIf { it.isFinal }?.let { decode(it) } }
+        val missing = stored.count { it == null }
+        if (missing == 0 || missing > MONTHS_BUILT_ALONE) return stored
+        return months.mapIndexed { index, month -> stored[index] ?: decode(currentRow(owner, month, today, refresh = false)) }
+    }
+
+    /**
      * The running year from stored months alone: when every month is stored and the month in
      * progress is current, or when a background build holds the lock and any stored copy will do.
      */
@@ -374,7 +387,7 @@ class RecapRepositoryImpl @Inject constructor(
         if (earlier.any { it == null } || running == null) return null
         if (!isCurrent(running, current, today) && !buildLock.isLocked) return null
         val parts = (earlier.filterNotNull() + running).map { decode(it) ?: return null }
-        return YearParts(parts.fold(Source.EMPTY) { sum, month -> sum + month.source }, running.builtAt, parts.first().zone)
+        return YearParts(Source.of(parts.map { it.source }), running.builtAt, parts.first().zone)
     }
 
     /** The running year's activities, when they were fetched, and the zone their months were cut in. */
@@ -471,9 +484,7 @@ class RecapRepositoryImpl @Inject constructor(
     private suspend fun storedBefore(owner: Int, before: Long): Source {
         val rows = recapDao.getAll(owner)
         return withContext(Dispatchers.Default) {
-            rows.mapNotNull(::decodeNow).fold(Source.EMPTY) { sum, row ->
-                sum + Source(row.records.filter { it.createdAt < before }, row.media)
-            }
+            Source.of(rows.mapNotNull(::decodeNow).map { row -> Source(row.records.filter { it.createdAt < before }, row.media) })
         }
     }
 
@@ -609,10 +620,15 @@ class RecapRepositoryImpl @Inject constructor(
     }
 
     private data class Source(val records: List<ListActivityRecord>, val media: Map<Int, RecapMedia>) {
-        operator fun plus(other: Source) = Source((records + other.records).distinctBy { it.id }, media + other.media)
+        operator fun plus(other: Source) = of(listOf(this, other))
 
         companion object {
-            val EMPTY = Source(emptyList(), emptyMap())
+            /** Every part's activities, each kept once, and their titles, in one pass. */
+            fun of(parts: List<Source>): Source {
+                val media = HashMap<Int, RecapMedia>()
+                parts.forEach { media.putAll(it.media) }
+                return Source(parts.flatMap { it.records }.distinctBy { it.id }, media)
+            }
         }
     }
 

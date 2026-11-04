@@ -130,6 +130,27 @@ class RecapRepositoryTest {
         assertEquals("the two rewatched episodes now count", 9, recounted.recap.episodes)
     }
 
+    @Test
+    fun `a second first build fetches nothing`() = runTest {
+        repository.backfill()
+        remote.requests = 0
+        assertTrue(repository.backfill() is Result.Success)
+        assertEquals(0, remote.requests)
+    }
+
+    @Test
+    fun `one missing month is built alone instead of sweeping its year again`() = runTest {
+        env.nowMillis = at(2026, 1, 2, 12) * 1000
+        repository.backfill()
+        dao.rows.remove(1 to "2025")
+        dao.rows.remove(1 to "2025-03")
+        remote.windows.clear()
+        val year = (repository.getRecap(RecapPeriod.Year(2025)) as Result.Success).data!!.recap
+        assertEquals(6, year.episodes)
+        assertTrue("only March was fetched", remote.windows.all { it.to - it.from <= 31L * 24 * 60 * 60 })
+        assertNotNull(dao.rows[1 to "2025-03"])
+    }
+
     private fun at(year: Int, month: Int, day: Int, hour: Int = 20): Long =
         LocalDateTime.of(year, month, day, hour, 0).atZone(zone).toEpochSecond()
 
@@ -220,9 +241,13 @@ internal class FakeRecapRemote : RecapRemote {
     /** Runs once before the first page is served. */
     var beforeFirstPage: (() -> Unit)? = null
 
+    /** Every window a page was asked for. */
+    val windows = ArrayList<ActivityWindow>()
+
     override suspend fun activityPage(userId: Int, window: ActivityWindow, page: Int): FetchedPage {
         beforeFirstPage?.also { beforeFirstPage = null }?.invoke()
         requests++
+        windows += window
         val inside = activities
             .filter { it.createdAt > window.createdAfter && it.createdAt < window.createdBefore }
             .sortedByDescending { it.id }
