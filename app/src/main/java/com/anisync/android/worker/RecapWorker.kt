@@ -22,6 +22,7 @@ import com.anisync.android.domain.RecapRepository
 import com.anisync.android.domain.recap.nextRecapRun
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.Duration
@@ -58,7 +59,16 @@ class RecapWorker @AssistedInject constructor(
             recapRepository.buildDue(monthly = appSettings.recapMonthly.value, yearly = appSettings.recapYearly.value)
         }
         when (outcome) {
-            is DomainResult.Success -> if (owner != null) notifier.announce(owner, outcome.data)
+            is DomainResult.Success -> if (owner != null && owner == accountStore.activeAccount.value?.id) {
+                // A notification that cannot be posted must not cost next month's run.
+                try {
+                    notifier.announce(owner, outcome.data)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Recap notification failed", e)
+                }
+            }
             is DomainResult.Error -> {
                 Log.w(TAG, "Recap build failed: ${outcome.message}")
                 if (outcome.isWorthRetrying() && runAttemptCount < MAX_ATTEMPTS) return Result.retry()
