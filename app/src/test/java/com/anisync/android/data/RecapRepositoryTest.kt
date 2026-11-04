@@ -5,6 +5,7 @@ import com.anisync.android.data.local.entity.RecapEntity
 import com.anisync.android.data.local.entity.RecapSeen
 import com.anisync.android.data.local.entity.RecapStamp
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.StoredRecap
 import com.anisync.android.domain.recap.ActivityWindow
 import com.anisync.android.domain.recap.FetchedActivity
 import com.anisync.android.domain.recap.FetchedPage
@@ -13,6 +14,7 @@ import com.anisync.android.domain.recap.RecapMediaType
 import com.anisync.android.domain.recap.RecapPeriod
 import com.anisync.android.domain.recap.RecapSettings
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
@@ -48,6 +50,7 @@ class RecapRepositoryTest {
             activity(3, 20, "watched episode", "1 - 3", at(2026, 9, 20)),
             activity(4, 10, "completed", null, at(2026, 10, 5)),
             activity(5, 20, "watched episode", "4", at(2026, 10, 9)),
+            activity(8, 20, "rewatched episode", "1 - 2", at(2026, 10, 20)),
         )
     }
 
@@ -113,6 +116,18 @@ class RecapRepositoryTest {
         env.zone = ZoneOffset.ofHours(-5)
         val year = (repository.getRecap(RecapPeriod.Year(2025)) as Result.Success).data!!.recap
         assertEquals("four episodes of Pluto and four of Frieren", 8, year.episodes)
+    }
+
+    @Test
+    fun `every screen's recaps follow an open and a settings change`() = runTest {
+        repository.backfill()
+        fun List<StoredRecap>.october() = single { it.period == october }
+        assertNull(repository.observeRecaps().first { list -> list.any { it.period == october } }.october().seenAt)
+        repository.markSeen(october)
+        assertNotNull(repository.observeRecaps().first { it.october().seenAt != null }.october().seenAt)
+        env.settingsFlow.value = RecapSettings(countRepeats = true)
+        val recounted = repository.observeRecaps().first { it.october().recap.episodes != 7 }.october()
+        assertEquals("the two rewatched episodes now count", 9, recounted.recap.episodes)
     }
 
     private fun at(year: Int, month: Int, day: Int, hour: Int = 20): Long =

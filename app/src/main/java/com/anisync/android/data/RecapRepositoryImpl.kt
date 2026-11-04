@@ -14,6 +14,7 @@ import com.anisync.android.domain.StoredRecap
 import com.anisync.android.domain.recap.ActivityWindow
 import com.anisync.android.domain.recap.FetchedPage
 import com.anisync.android.domain.recap.ListActivityRecord
+import com.anisync.android.domain.recap.Recap
 import com.anisync.android.domain.recap.MAX_ACTIVITY_PAGES
 import com.anisync.android.domain.recap.RecapMedia
 import com.anisync.android.domain.recap.RecapPeriod
@@ -29,14 +30,18 @@ import com.anisync.android.domain.recap.recapBannerCandidates
 import com.anisync.android.domain.recap.recapsDueOn
 import com.anisync.android.domain.recap.sliceForPeriod
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -57,6 +62,7 @@ private const val IN_PROGRESS_MAX_AGE_MS = 6 * 60 * 60 * 1000L
 /** How often one background request waits out the budget before the build gives up. */
 private const val MAX_BUDGET_WAITS = 5
 
+
 @Singleton
 class RecapRepositoryImpl @Inject constructor(
     private val remote: RecapRemote,
@@ -70,6 +76,11 @@ class RecapRepositoryImpl @Inject constructor(
     /** Decoded payloads by owner and period, reused until the row is rebuilt. */
     private val decoded = ConcurrentHashMap<String, Decoded>()
 
+    /** Counted recaps by owner and period, reused until the row is rebuilt or the settings change. */
+    private val counted = ConcurrentHashMap<String, Counted>()
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     private val zone: ZoneId get() = env.zone()
 
     private fun owner(): Int? = env.owner()
@@ -78,8 +89,9 @@ class RecapRepositoryImpl @Inject constructor(
 
     private fun currentSettings() = env.currentSettings()
 
+    /** One stream for every screen, so Library, Statistics and Settings never count the rows twice. */
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeRecaps(): Flow<List<StoredRecap>> =
+    private val recaps: Flow<List<StoredRecap>> =
         env.owners
             .flatMapLatest { owner ->
                 if (owner == null) {
@@ -91,6 +103,9 @@ class RecapRepositoryImpl @Inject constructor(
                 }
             }
             .flowOn(Dispatchers.Default)
+            .shareIn(scope, SharingStarted.WhileSubscribed(5_000), replay = 1)
+
+    override fun observeRecaps(): Flow<List<StoredRecap>> = recaps
 
     override suspend fun getRecap(period: RecapPeriod, refresh: Boolean): Result<StoredRecap?> = safeApiCall {
         val owner = owner() ?: return@safeApiCall null
@@ -161,14 +176,22 @@ class RecapRepositoryImpl @Inject constructor(
         // Behind a running build, or the rows it is about to store would come straight back.
         buildLock.withLock {
             recapDao.deleteOwner(owner)
-            decoded.keys.removeAll { it.startsWith("$owner/") }
+            forget(owner)
         }
     }
 
     // No lock: a build for an account that is gone stops at its owner check before storing.
     override suspend fun clearOwner(ownerId: Int) {
         recapDao.deleteOwner(ownerId)
-        decoded.keys.removeAll { it.startsWith("$ownerId/") }
+        forget(ownerId)
+    }
+
+    /** Drops what memory holds for [owner], or only for [periodKeys] of it. */
+    private fun forget(owner: Int, periodKeys: Collection<String>? = null) {
+        val keys = periodKeys?.map { "$owner/$it" }?.toSet()
+        val match: (String) -> Boolean = { key -> if (keys != null) key in keys else key.startsWith("$owner/") }
+        decoded.keys.removeAll(match)
+        counted.keys.removeAll(match)
     }
 
     override suspend fun applyRetention() {
@@ -290,7 +313,7 @@ class RecapRepositoryImpl @Inject constructor(
      */
     private suspend fun buildYear(owner: Int, year: RecapPeriod.Year, today: LocalDate): RecapEntity {
         val rows = year.months.map { recapDao.get(owner, it.key) }
-        val months = rows.map { row -> row?.takeIf { it.isFinal }?.let(::decode) }
+        val months = rows.map { row -> row?.takeIf { it.isFinal }?.let { decode(it) } }
         if (months.all { it != null }) {
             val parts = months.filterNotNull()
             val source = parts.fold(Source.EMPTY) { sum, month -> sum + month.source }
@@ -311,7 +334,7 @@ class RecapRepositoryImpl @Inject constructor(
         val months = year.months.filter { !it.firstDay.isAfter(today) }
         val (source, builtAt, partsZone) = storedYearSoFar(owner, months, current, today, refresh) ?: buildLock.withLock {
             backfillIfEmpty(owner, today)
-            val earlier = months.filter { it != current }.map { recapDao.get(owner, it.key)?.takeIf { row -> row.isFinal }?.let(::decode) }
+            val earlier = months.filter { it != current }.map { recapDao.get(owner, it.key)?.takeIf { row -> row.isFinal }?.let { decode(it) } }
             if (earlier.all { it != null }) {
                 val running = currentRow(owner, current, today, refresh)
                 val parts = earlier.filterNotNull() + listOfNotNull(decode(running))
@@ -438,14 +461,17 @@ class RecapRepositoryImpl @Inject constructor(
     private suspend fun retain(owner: Int, today: LocalDate) {
         val periods = recapDao.getStamps(owner).mapNotNull { RecapPeriod.fromKey(it.periodKey) }
         val expired = expiredPeriods(periods, today, env.keptMonths())
-        if (expired.isNotEmpty()) recapDao.delete(owner, expired.map { it.key })
+        if (expired.isNotEmpty()) {
+            recapDao.delete(owner, expired.map { it.key })
+            forget(owner, expired.map { it.key })
+        }
     }
 
     /** What the stored recaps hold from before [before], so a completion after it sees earlier episodes. */
     private suspend fun storedBefore(owner: Int, before: Long): Source {
         val rows = recapDao.getAll(owner)
         return withContext(Dispatchers.Default) {
-            rows.mapNotNull(::decode).fold(Source.EMPTY) { sum, row ->
+            rows.mapNotNull(::decodeNow).fold(Source.EMPTY) { sum, row ->
                 sum + Source(row.records.filter { it.createdAt < before }, row.media)
             }
         }
@@ -541,12 +567,27 @@ class RecapRepositoryImpl @Inject constructor(
     }
 
     private fun count(row: RecapEntity, settings: RecapSettings): StoredRecap? {
-        val data = decode(row) ?: return null
-        val recap = buildRecap(data.period, data.records, data.media, settings, data.zone, data.airing) ?: return null
+        val data = decodeNow(row) ?: return null
+        val key = "${row.ownerId}/${row.periodKey}"
+        val memo = counted[key]?.takeIf { it.builtAt == row.builtAt && it.settingsKey == settings.key }
+        val recap = if (memo != null) {
+            memo.recap
+        } else {
+            buildRecap(data.period, data.records, data.media, settings, data.zone, data.airing)
+                .also { counted[key] = Counted(row.builtAt, settings.key, it) }
+        } ?: return null
         return StoredRecap(data.period, recap, data.media, row.isFinal, row.builtAt, row.seenAt)
     }
 
-    private fun decode(row: RecapEntity): Decoded? {
+    /** What the row built at [builtAt] counts to with the settings [settingsKey] names, null when nothing counts. */
+    private class Counted(val builtAt: Long, val settingsKey: String, val recap: Recap?)
+
+    /** The payload decoded off the main thread, which a story or a screen may be calling from. */
+    private suspend fun decode(row: RecapEntity): Decoded? =
+        decoded["${row.ownerId}/${row.periodKey}"]?.takeIf { it.builtAt == row.builtAt }
+            ?: withContext(Dispatchers.Default) { decodeNow(row) }
+
+    private fun decodeNow(row: RecapEntity): Decoded? {
         val cacheKey = "${row.ownerId}/${row.periodKey}"
         decoded[cacheKey]?.takeIf { it.builtAt == row.builtAt }?.let { return it }
         val period = RecapPeriod.fromKey(row.periodKey) ?: return null
