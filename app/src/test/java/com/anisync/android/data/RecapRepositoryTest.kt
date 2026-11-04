@@ -96,6 +96,18 @@ class RecapRepositoryTest {
         assertTrue("the first build ran", dao.rows.containsKey(1 to "2025"))
     }
 
+    @Test
+    fun `a year added up from its months is cut where the months were`() = runTest {
+        env.nowMillis = at(2026, 1, 2, 12) * 1000
+        remote.activities += activity(7, 30, "watched episode", "3 - 4", at(2025, 1, 1, 1))
+        repository.backfill()
+        dao.rows.remove(1 to "2025")
+        // The phone moves to UTC-5, where 01:00 on 1 January at UTC+3 is still 2024.
+        env.zone = ZoneOffset.ofHours(-5)
+        val year = (repository.getRecap(RecapPeriod.Year(2025)) as Result.Success).data!!.recap
+        assertEquals("four episodes of Pluto and four of Frieren", 8, year.episodes)
+    }
+
     private fun at(year: Int, month: Int, day: Int, hour: Int = 20): Long =
         LocalDateTime.of(year, month, day, hour, 0).atZone(zone).toEpochSecond()
 
@@ -206,7 +218,7 @@ internal class FakeRecapRemote : RecapRemote {
 }
 
 internal class FakeRecapEnvironment(
-    private val zone: ZoneId,
+    var zone: ZoneId,
     var nowMillis: Long,
     owner: Int? = 1,
 ) : RecapEnvironment {

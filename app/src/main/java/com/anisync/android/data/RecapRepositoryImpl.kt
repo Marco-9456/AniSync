@@ -283,8 +283,11 @@ class RecapRepositoryImpl @Inject constructor(
         val rows = year.months.map { recapDao.get(owner, it.key) }
         val months = rows.map { row -> row?.takeIf { it.isFinal }?.let(::decode) }
         if (months.all { it != null }) {
-            val source = months.filterNotNull().fold(Source.EMPTY) { sum, month -> sum + month.source }
-            return store(owner, listOf(year), source, today, airing = airingFor(year, source)).single()
+            val parts = months.filterNotNull()
+            val source = parts.fold(Source.EMPTY) { sum, month -> sum + month.source }
+            // Cut where the months were cut, or a zone change since would move the year's edges.
+            val zone = parts.first().zone
+            return store(owner, listOf(year), source, today, zone, airing = airingFor(year, source, zone)).single()
         }
         val window = year.window(zone)
         val source = storedBefore(owner, window.from) + fetch(owner, window)
@@ -297,24 +300,25 @@ class RecapRepositoryImpl @Inject constructor(
     private suspend fun yearSoFar(owner: Int, year: RecapPeriod.Year, today: LocalDate, refresh: Boolean): StoredRecap? {
         val current = RecapPeriod.Month(YearMonth.from(today))
         val months = year.months.filter { !it.firstDay.isAfter(today) }
-        val (source, builtAt) = storedYearSoFar(owner, months, current, today, refresh) ?: buildLock.withLock {
+        val (source, builtAt, partsZone) = storedYearSoFar(owner, months, current, today, refresh) ?: buildLock.withLock {
             backfillIfEmpty(owner, today)
             val earlier = months.filter { it != current }.map { recapDao.get(owner, it.key)?.takeIf { row -> row.isFinal }?.let(::decode) }
             if (earlier.all { it != null }) {
                 val running = currentRow(owner, current, today, refresh)
                 val parts = earlier.filterNotNull() + listOfNotNull(decode(running))
-                parts.fold(Source.EMPTY) { sum, month -> sum + month.source } to running.builtAt
+                YearParts(parts.fold(Source.EMPTY) { sum, month -> sum + month.source }, running.builtAt, parts.firstOrNull()?.zone)
             } else {
                 val window = ActivityWindow(year.window(zone).from, current.window(zone).to)
                 val swept = storedBefore(owner, window.from) + fetch(owner, window)
                 val expired = expiredPeriods(months, today, env.keptMonths()).toSet()
                 val stored = store(owner, months.filterNot { it in expired }, swept, today)
-                swept to (stored.maxOfOrNull { it.builtAt } ?: env.nowMillis())
+                YearParts(swept, stored.maxOfOrNull { it.builtAt } ?: env.nowMillis(), zone)
             }
         }
+        val yearZone = partsZone ?: zone
         return withContext(Dispatchers.Default) {
-            buildRecap(year, source.records, source.media, currentSettings(), zone)?.let { recap ->
-                val from = year.window(zone).from
+            buildRecap(year, source.records, source.media, currentSettings(), yearZone)?.let { recap ->
+                val from = year.window(yearZone).from
                 val titles = source.records.filter { it.createdAt >= from }.mapTo(HashSet()) { it.mediaId }
                 StoredRecap(year, recap, source.media.filterKeys { it in titles }, isFinal = false, builtAt, seenAt = null)
             }
@@ -331,15 +335,18 @@ class RecapRepositoryImpl @Inject constructor(
         current: RecapPeriod.Month,
         today: LocalDate,
         refresh: Boolean,
-    ): Pair<Source, Long>? {
+    ): YearParts? {
         if (refresh) return null
         val earlier = months.filter { it != current }.map { recapDao.get(owner, it.key)?.takeIf { row -> row.isFinal } }
         val running = recapDao.get(owner, current.key)
         if (earlier.any { it == null } || running == null) return null
         if (!isCurrent(running, current, today) && !buildLock.isLocked) return null
         val parts = (earlier.filterNotNull() + running).map { decode(it) ?: return null }
-        return parts.fold(Source.EMPTY) { sum, month -> sum + month.source } to running.builtAt
+        return YearParts(parts.fold(Source.EMPTY) { sum, month -> sum + month.source }, running.builtAt, parts.first().zone)
     }
+
+    /** The running year's activities, when they were fetched, and the zone their months were cut in. */
+    private data class YearParts(val source: Source, val builtAt: Long, val zone: ZoneId?)
 
     /**
      * Runs the first build before anything else is built from nothing. A period built alone has no
