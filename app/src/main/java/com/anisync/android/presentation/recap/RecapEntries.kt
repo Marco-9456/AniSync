@@ -130,9 +130,11 @@ class RecapEntries @Inject constructor(
         WorkManager.getInstance(context).getWorkInfosForUniqueWorkFlow(RecapWorker.FIRST_BUILD_NAME)
             .map { infos -> infos.any { !it.state.isFinished } }
 
-    /** Starts the first build when nothing is stored for the account yet. */
-    suspend fun buildIfEmpty() {
-        if (!repository.hasStored()) RecapWorker.firstBuild(context)
+    /** Starts the first build when nothing is stored for the account yet, true when it did. */
+    suspend fun buildIfEmpty(): Boolean {
+        if (repository.hasStored()) return false
+        RecapWorker.firstBuild(context)
+        return true
     }
 
     suspend fun inProgress(refresh: Boolean): RecapProgress? {
