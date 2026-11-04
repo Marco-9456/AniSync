@@ -65,7 +65,10 @@ class RecapBuilderViewModel @Inject constructor(
             RecapBuilderAction.Build -> build()
             RecapBuilderAction.OpenMine -> openMine()
             RecapBuilderAction.RunJob -> RecapWorker.runNow(context)
-            RecapBuilderAction.ClearStored -> viewModelScope.launch { recapRepository.clear() }
+            RecapBuilderAction.ClearStored -> viewModelScope.launch {
+                RecapWorker.cancelFirstBuild(context)
+                recapRepository.clear()
+            }
             is RecapBuilderAction.SetIncludeManga -> appSettings.setRecapIncludeManga(action.enabled)
             is RecapBuilderAction.SetCountRepeats -> appSettings.setRecapCountRepeats(action.enabled)
             RecapBuilderAction.OpenPreviewStory -> openPreviewStory()

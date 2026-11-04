@@ -72,7 +72,10 @@ class RecapsSettingsViewModel @Inject constructor(
             is RecapsSettingsAction.SetDelivery -> appSettings.setRecapDelivery(action.delivery)
             is RecapsSettingsAction.SetHideScoresOnCards -> appSettings.setHideScoresOnCards(action.hidden)
             is RecapsSettingsAction.SetDefaultCardSize -> appSettings.setDefaultCardSize(action.size)
-            RecapsSettingsAction.ClearStored -> viewModelScope.launch { recapRepository.clear() }
+            RecapsSettingsAction.ClearStored -> viewModelScope.launch {
+                RecapWorker.cancelFirstBuild(context)
+                recapRepository.clear()
+            }
         }
     }
 

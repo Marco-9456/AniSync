@@ -123,6 +123,11 @@ class RecapWorker @AssistedInject constructor(
                 .enqueueUniqueWork(FIRST_BUILD_NAME, ExistingWorkPolicy.KEEP, request)
         }
 
+        /** Stops a first build that is queued or running, so it cannot store again what was just cleared. */
+        fun cancelFirstBuild(context: Context) {
+            WorkManager.getInstance(context.applicationContext).cancelUniqueWork(FIRST_BUILD_NAME)
+        }
+
         /** Developer Tools: runs the job now, as it would run on the 1st, then queues the next one. */
         fun runNow(context: Context) {
             val request = OneTimeWorkRequestBuilder<RecapWorker>()

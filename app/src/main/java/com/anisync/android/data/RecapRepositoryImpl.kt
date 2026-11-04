@@ -158,8 +158,11 @@ class RecapRepositoryImpl @Inject constructor(
 
     override suspend fun clear() {
         val owner = owner() ?: return
-        recapDao.deleteOwner(owner)
-        decoded.keys.removeAll { it.startsWith("$owner/") }
+        // Behind a running build, or the rows it is about to store would come straight back.
+        buildLock.withLock {
+            recapDao.deleteOwner(owner)
+            decoded.keys.removeAll { it.startsWith("$owner/") }
+        }
     }
 
     override suspend fun applyRetention() {
