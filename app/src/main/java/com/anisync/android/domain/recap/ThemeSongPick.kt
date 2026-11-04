@@ -1,6 +1,7 @@
 package com.anisync.android.domain.recap
 
 import com.anisync.android.domain.MediaTheme
+import com.anisync.android.domain.StoredRecap
 import com.anisync.android.domain.ThemeAudio
 import com.anisync.android.domain.ThemeType
 import com.anisync.android.domain.ThemeVersion
@@ -19,6 +20,15 @@ data class ThemeSongChoice(
     val version: ThemeVersion,
     val audio: ThemeAudio,
 )
+
+/** How many of the period's top titles the song is picked from. */
+private const val SONG_CANDIDATES = 5
+
+/** The titles a recap's song is picked from: its top five, in ranked order. */
+fun StoredRecap.songCandidates(): List<ThemeSongCandidate> =
+    recap.ranked.take(SONG_CANDIDATES).map { ranked ->
+        ThemeSongCandidate(ranked.mediaId, media[ranked.mediaId]?.isFilm == true, ranked.watched)
+    }
 
 /**
  * The song a recap plays: the top title's opening that covers the episodes watched (BLEACH plays

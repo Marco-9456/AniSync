@@ -15,11 +15,11 @@ import com.anisync.android.domain.Result
 import com.anisync.android.domain.StoredRecap
 import com.anisync.android.domain.recap.PageSeed
 import com.anisync.android.domain.recap.RecapPeriod
-import com.anisync.android.domain.recap.ThemeSongCandidate
 import com.anisync.android.domain.recap.pickThemeSong
 import com.anisync.android.domain.recap.rankNote
 import com.anisync.android.domain.recap.recapPages
 import com.anisync.android.domain.recap.seed
+import com.anisync.android.domain.recap.songCandidates
 import com.anisync.android.presentation.navigation.RecapStory
 import com.anisync.android.ui.theme.genreSeed
 import com.anisync.android.ui.theme.resolveDarkTheme
@@ -39,9 +39,6 @@ import javax.inject.Inject
 
 /** How many rate limit windows a story waits out before it gives up. */
 private const val MAX_RATE_LIMIT_WAITS = 3
-
-/** The candidates the song is picked from, the top five. */
-private const val SONG_CANDIDATES = 5
 
 @HiltViewModel
 class RecapStoryViewModel @Inject constructor(
@@ -208,9 +205,7 @@ class RecapStoryViewModel @Inject constructor(
     private suspend fun startSong(story: StoryModel, stored: StoredRecap) {
         if (!appSettings.recapThemeSong.value) return
         if (ThemeSongPlayer.onMeteredNetwork(context) && !appSettings.recapSongsOnMobileData.value) return
-        val candidates = stored.recap.ranked.take(SONG_CANDIDATES).map { ranked ->
-            ThemeSongCandidate(ranked.mediaId, stored.media[ranked.mediaId]?.isFilm == true, ranked.watched)
-        }
+        val candidates = stored.songCandidates()
         if (candidates.isEmpty()) return
         val themes = themesRepository.themesFor(candidates.map { it.mediaId })
         val choice = withContext(Dispatchers.Default) { pickThemeSong(candidates) { themes[it] } } ?: return
