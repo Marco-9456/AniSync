@@ -88,12 +88,15 @@ class ThemeSongPlayer(context: Context, url: String, muted: Boolean, cache: Cach
 
         /**
          * True while another app is playing music, when a story starts muted rather than talk over
-         * it. The system lists every player that is playing, so the app's own songs are taken off.
+         * it. Music playing while none of the app's own songs do is someone else's. Otherwise the
+         * system's list of playing players is counted with the app's own songs taken off.
          */
         fun otherAudioPlaying(context: Context): Boolean {
             val audio = context.getSystemService(AudioManager::class.java) ?: return false
-            val music = audio.activePlaybackConfigurations.count { it.audioAttributes.usage in MusicUsages }
-            return music > Playing.get()
+            if (!audio.isMusicActive) return false
+            val own = Playing.get()
+            if (own == 0) return true
+            return audio.activePlaybackConfigurations.count { it.audioAttributes.usage in MusicUsages } > own
         }
 
         /** True on a metered connection, where songs wait for the "Use mobile data for songs" setting. */
