@@ -239,6 +239,7 @@ class RecapRepositoryImpl @Inject constructor(
 
     /** The stored row for [period] while it is still good, otherwise a freshly built one. Call under [buildLock]. */
     private suspend fun currentRow(owner: Int, period: RecapPeriod, today: LocalDate, refresh: Boolean): RecapEntity {
+        backfillIfEmpty(owner, today)
         val row = recapDao.get(owner, period.key)
         if (row != null && !refresh && isCurrent(row, period, today) && decode(row) != null) return row
         if (!refresh) monthOfStoredYear(owner, period, today)?.let { return it }
@@ -297,6 +298,7 @@ class RecapRepositoryImpl @Inject constructor(
         val current = RecapPeriod.Month(YearMonth.from(today))
         val months = year.months.filter { !it.firstDay.isAfter(today) }
         val (source, builtAt) = storedYearSoFar(owner, months, current, today, refresh) ?: buildLock.withLock {
+            backfillIfEmpty(owner, today)
             val earlier = months.filter { it != current }.map { recapDao.get(owner, it.key)?.takeIf { row -> row.isFinal }?.let(::decode) }
             if (earlier.all { it != null }) {
                 val running = currentRow(owner, current, today, refresh)
@@ -337,6 +339,14 @@ class RecapRepositoryImpl @Inject constructor(
         if (!isCurrent(running, current, today) && !buildLock.isLocked) return null
         val parts = (earlier.filterNotNull() + running).map { decode(it) ?: return null }
         return parts.fold(Source.EMPTY) { sum, month -> sum + month.source } to running.builtAt
+    }
+
+    /**
+     * Runs the first build before anything else is built from nothing. A period built alone has no
+     * lookback, so a completion in it could not see the episodes logged before it. Call under [buildLock].
+     */
+    private suspend fun backfillIfEmpty(owner: Int, today: LocalDate) {
+        if (recapDao.getStamps(owner).isEmpty()) backfillLocked(owner, today)
     }
 
     /** Call under [buildLock]. */

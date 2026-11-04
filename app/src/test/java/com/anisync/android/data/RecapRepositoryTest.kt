@@ -89,6 +89,13 @@ class RecapRepositoryTest {
         assertNull(dao.rows[1 to "2025-03"])
     }
 
+    @Test
+    fun `a recap opened before any first build still sees the earlier episodes`() = runTest {
+        val recap = (repository.getRecap(october) as Result.Success).data!!.recap
+        assertEquals(7, recap.episodes)
+        assertTrue("the first build ran", dao.rows.containsKey(1 to "2025"))
+    }
+
     private fun at(year: Int, month: Int, day: Int, hour: Int = 20): Long =
         LocalDateTime.of(year, month, day, hour, 0).atZone(zone).toEpochSecond()
 
