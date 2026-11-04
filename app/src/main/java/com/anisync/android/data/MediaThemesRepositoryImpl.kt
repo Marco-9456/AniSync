@@ -99,10 +99,10 @@ class MediaThemesRepositoryImpl @Inject constructor(
     private suspend fun lookUp(ids: List<Int>): Map<Int, List<MediaTheme>>? {
         repeat(LOOKUP_ATTEMPTS) { attempt ->
             try {
-                val looked = api.getThemes(ids)
+                val batch = api.getThemes(ids)
                 val now = System.currentTimeMillis()
-                return ids.associateWith { id ->
-                    val lookup = looked[id] ?: MediaThemes()
+                return batch.answered(ids).associateWith { id ->
+                    val lookup = batch.byId[id] ?: MediaThemes()
                     val themes = lookup.themes.inShowOrder()
                     dao.upsert(MediaThemesEntity(mediaId = id, animeSlug = lookup.animeSlug, themes = themes, fetchedAt = now))
                     themes

@@ -227,7 +227,7 @@ class AnimeThemesApiTest {
             ]}}
         """.trimIndent()
 
-        val themes = api.decodeThemesById(body)
+        val themes = api.decodeThemesById(body).byId
 
         assertEquals(setOf(21, 5), themes.keys)
         assertEquals("bang_dream", themes.getValue(21).animeSlug)
@@ -245,16 +245,22 @@ class AnimeThemesApiTest {
             ]}}
         """.trimIndent()
 
-        val themes = api.decodeThemesById(body)
+        val batch = api.decodeThemesById(body)
+        val themes = batch.byId
 
         assertEquals(setOf(7, 8), themes.keys)
         assertEquals("shared", themes.getValue(7).animeSlug)
         assertEquals("shared", themes.getValue(8).animeSlug)
+        assertEquals(1, batch.unplaced)
+        assertEquals("an id without an answer may be the unplaced entry", listOf(7, 8), batch.answered(listOf(7, 8, 9)))
+        assertEquals(listOf(7, 9), ThemesBatch(themes, unplaced = 0).answered(listOf(7, 9)))
     }
 
     @Test
     fun `a batch AnimeThemes lists nothing for is empty, and a rejected one fails`() {
-        assertTrue(api.decodeThemesById("""{"data":{"findAnimeByExternalSite":[]}}""").isEmpty())
+        val empty = api.decodeThemesById("""{"data":{"findAnimeByExternalSite":[]}}""")
+        assertTrue(empty.byId.isEmpty())
+        assertEquals(0, empty.unplaced)
         assertThrows(AnimeThemesException.Query::class.java) {
             api.decodeThemesById("""{"errors":[{"message":"Max query depth"}]}""")
         }
