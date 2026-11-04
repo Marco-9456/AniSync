@@ -26,6 +26,7 @@ import com.anisync.android.domain.recap.RecapPeriod
 import com.anisync.android.presentation.recap.RecapCardFactory
 import com.anisync.android.util.getQuantityStringOrDefault
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import java.time.format.TextStyle
 import java.util.Locale
 import javax.inject.Inject
@@ -87,24 +88,35 @@ class RecapNotifier @Inject constructor(
         } else {
             resources.getString(R.string.recap_notification_text_plain, episodes, titleCount)
         }
-        val art = RecapNotificationArt.render(
-            context,
-            imageLoader,
-            RecapArtSpec(
-                headline = name,
-                subline = (period as? RecapPeriod.Month)?.month?.year?.toString(),
-                seed = top?.color,
-                coverUrl = top?.coverUrl,
-                secondCoverUrl = recap.ranked.getOrNull(1)?.let { titles[it.mediaId]?.coverUrl },
-            ),
+        val spec = RecapArtSpec(
+            headline = name,
+            subline = (period as? RecapPeriod.Month)?.month?.year?.toString(),
+            seed = top?.color,
+            coverUrl = top?.coverUrl,
+            secondCoverUrl = recap.ranked.getOrNull(1)?.let { titles[it.mediaId]?.coverUrl },
         )
+        val art = try {
+            RecapNotificationArt.render(context, imageLoader, spec)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Without its picture the recap is still worth announcing.
+            Log.w(TAG, "Recap notification art failed", e)
+            null
+        }
         val watch = deepLink("anisync://recap/${period.key}", ownerId, requestCode(period, 0))
         val share = deepLink("anisync://studio/RECAP/0?periodKey=${period.key}", ownerId, requestCode(period, 1))
         val builder = NotificationCompat.Builder(context, NotificationChannels.RECAPS_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(resources.getString(R.string.recap_notification_title, name))
             .setContentText(text)
-            .setStyle(NotificationCompat.BigPictureStyle().bigPicture(art).setSummaryText(text))
+            .setStyle(
+                if (art != null) {
+                    NotificationCompat.BigPictureStyle().bigPicture(art).setSummaryText(text)
+                } else {
+                    NotificationCompat.BigTextStyle().bigText(text)
+                }
+            )
             .setAutoCancel(true)
             .setContentIntent(watch)
             .addAction(0, resources.getString(R.string.recap_watch), watch)
