@@ -7,6 +7,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.datasource.cache.Cache
 import androidx.media3.exoplayer.ExoPlayer
 import com.anisync.android.presentation.components.buildVideoExoPlayer
 
@@ -18,9 +19,9 @@ import com.anisync.android.presentation.components.buildVideoExoPlayer
  *
  * [onSettled] hears when the song starts playing or fails, so a story waiting for it can go on.
  */
-class ThemeSongPlayer(context: Context, url: String, muted: Boolean, onSettled: () -> Unit) {
+class ThemeSongPlayer(context: Context, url: String, muted: Boolean, cache: Cache, onSettled: () -> Unit) {
 
-    private val player: ExoPlayer = buildVideoExoPlayer(context, url, muted = muted, loop = true, autoPlay = false).apply {
+    private val player: ExoPlayer = buildVideoExoPlayer(context, url, muted = muted, loop = true, autoPlay = false, cache = cache).apply {
         setAudioAttributes(MusicAttributes, !muted)
         setHandleAudioBecomingNoisy(true)
         addListener(object : Player.Listener {

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.account.AccountStore
+import com.anisync.android.data.media.ThemeAudioCache
 import com.anisync.android.domain.MediaThemesRepository
 import com.anisync.android.domain.ProfileStatsLauncher
 import com.anisync.android.domain.RecapRepository
@@ -56,6 +57,7 @@ class RecapStoryViewModel @Inject constructor(
     private val cardFactory: RecapCardFactory,
     private val statsLauncher: ProfileStatsLauncher,
     private val notifier: RecapNotifier,
+    private val audioCache: ThemeAudioCache,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -232,7 +234,7 @@ class RecapStoryViewModel @Inject constructor(
         val themes = themesRepository.themesFor(candidates.map { it.mediaId })
         val choice = withContext(Dispatchers.Default) { pickThemeSong(candidates) { themes[it] } } ?: return null
         val muted = ThemeSongPlayer.otherAudioPlaying(context)
-        player = ThemeSongPlayer(context, choice.audio.url, muted, onSettled = ::songSettled)
+        player = ThemeSongPlayer(context, choice.audio.url, muted, audioCache.cache, onSettled = ::songSettled)
         return PreparedSong(choice, candidates.indexOfFirst { it.mediaId == choice.mediaId }, muted)
     }
 
