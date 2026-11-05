@@ -35,7 +35,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -401,10 +403,21 @@ private fun StudioStage(
     ) {
         when {
             subject != null -> StagePager(subject, state, cardScheme, layer, onAction, wide)
-            state.failed -> EmptyState(
+            state.failure == StudioFailure.NOTHING -> EmptyState(
                 icon = Icons.Outlined.ErrorOutline,
                 title = stringResource(R.string.empty_generic_title),
                 description = stringResource(R.string.error_failed_to_load),
+            )
+            state.failure != null -> EmptyState(
+                icon = Icons.Outlined.CloudOff,
+                title = stringResource(R.string.forum_empty_failed_title),
+                description = stringResource(
+                    if (state.failure == StudioFailure.RATE_LIMITED) R.string.profile_rate_limited_error else R.string.forum_empty_failed_desc
+                ),
+                actionLabel = stringResource(R.string.retry),
+                actionIcon = Icons.Default.Refresh,
+                onAction = { onAction(ShareStudioAction.Retry) },
+                emblemShape = RoundedCornerShape(22.dp),
             )
             else -> AppCircularProgressIndicator()
         }

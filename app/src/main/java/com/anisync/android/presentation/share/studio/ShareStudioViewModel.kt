@@ -26,6 +26,7 @@ import com.anisync.android.presentation.share.cards.templatesFor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -88,6 +89,10 @@ class ShareStudioViewModel @Inject constructor(
                 appTone = action.tone
                 _uiState.update { if (it.toneChosen) it else it.copy(spec = it.spec.copy(tone = action.tone)) }
             }
+            ShareStudioAction.Retry -> {
+                _uiState.update { it.copy(failure = null) }
+                viewModelScope.launch { load() }
+            }
             ShareStudioAction.Reset -> {
                 swatchChosen = false
                 _uiState.update { state ->
@@ -103,11 +108,25 @@ class ShareStudioViewModel @Inject constructor(
         }
     }
 
+    /** The subject, with a rate limit waited out like a recap story waits it out, up to three windows. */
     private suspend fun load() {
-        val subject = (loader.load(route) as? Result.Success)?.data
-        if (subject == null) {
-            _uiState.update { it.copy(failed = true) }
-            return
+        var loaded = loader.load(route)
+        repeat(MAX_RATE_LIMIT_WAITS) {
+            val countdown = (loaded as? Result.Error)?.countdownSeconds ?: return@repeat
+            delay((countdown + 1) * 1_000L)
+            loaded = loader.load(route)
+        }
+        val subject = when (val result = loaded) {
+            is Result.Success -> result.data
+            is Result.Error -> {
+                val failure = when {
+                    result == ShareSubjectLoader.NOTHING -> StudioFailure.NOTHING
+                    result.countdownSeconds != null -> StudioFailure.RATE_LIMITED
+                    else -> StudioFailure.FAILED
+                }
+                _uiState.update { it.copy(failure = failure) }
+                return
+            }
         }
         val aniList = subject.aniListColor?.let { listOf(StudioSwatch(aniListLabel(subject), it, it)) }.orEmpty()
         _uiState.update {
@@ -166,6 +185,8 @@ class ShareStudioViewModel @Inject constructor(
     }
 
     private companion object {
+        /** How many rate limit windows the studio waits out before it gives up. */
+        const val MAX_RATE_LIMIT_WAITS = 3
         const val SwatchSampleSize = 128
         val AppSwatch = StudioSwatch(R.string.share_swatch_app, Color.Unspecified, null)
     }

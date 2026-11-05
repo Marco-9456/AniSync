@@ -15,6 +15,18 @@ import com.anisync.android.presentation.share.cards.templatesFor
 /** The studio's four panels, one at a time on a phone and stacked on a tablet. */
 enum class StudioPanel { LAYOUT, COLOR, BACKGROUND, DETAILS }
 
+/** Why the studio has no card to show. */
+enum class StudioFailure {
+    /** The route names nothing there is to share. */
+    NOTHING,
+
+    /** A request failed, trying again may help. */
+    FAILED,
+
+    /** AniList's rate limit outlasted every wait. */
+    RATE_LIMITED,
+}
+
 /** A palette the card can wear. A null [seed] is the app's own palette, which only the screen can build. */
 @Immutable
 data class StudioSwatch(
@@ -27,7 +39,7 @@ data class StudioSwatch(
 @Immutable
 data class ShareStudioUiState(
     val subject: ShareSubject? = null,
-    val failed: Boolean = false,
+    val failure: StudioFailure? = null,
     val templateIndex: Int = 0,
     val spec: CardSpec = CardSpec(size = CardSize.STORY),
     /** Until the viewer picks one, the card follows the app's light or dark tone. */
@@ -61,4 +73,5 @@ sealed interface ShareStudioAction {
     /** The tone the app is in right now, which the card starts in. */
     data class FollowAppTone(val tone: CardTone) : ShareStudioAction
     data object Reset : ShareStudioAction
+    data object Retry : ShareStudioAction
 }
