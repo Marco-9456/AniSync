@@ -25,6 +25,7 @@ import com.anisync.android.presentation.share.cards.ShareTemplate
 import com.anisync.android.presentation.share.cards.templatesFor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -136,7 +137,15 @@ class ShareStudioViewModel @Inject constructor(
                 swatches = aniList + AppSwatch,
             )
         }
-        val cover = subject.artworkUrl?.let { runCatching { coverSwatchesOf(it) }.getOrNull() }.orEmpty()
+        val cover = subject.artworkUrl?.let { url ->
+            try {
+                coverSwatchesOf(url)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+        }.orEmpty()
         if (cover.isEmpty()) return
         _uiState.update { state ->
             val current = state.swatch
