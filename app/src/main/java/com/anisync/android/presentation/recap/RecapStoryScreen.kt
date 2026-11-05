@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -72,8 +71,11 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -130,6 +132,9 @@ import kotlin.math.roundToInt
 
 /** How long a page stays before the story moves on. */
 private const val PAGE_MILLIS = 8_000
+
+/** The progress of a page that does not run on a timer. */
+private val FullProgress: () -> Float = { 1f }
 
 /** The frame every page is drawn at. */
 private val FrameWidth = 448.dp
@@ -299,7 +304,7 @@ private fun StoryStage(
             state = state,
             story = story,
             page = page,
-            progress = if (!autoAdvance || page.isCard) 1f else progress.value,
+            progress = if (!autoAdvance || page.isCard) FullProgress else { { progress.value } },
             pageLayer = pageLayer,
             cardLayer = cardLayer,
             actions = actions,
@@ -391,7 +396,7 @@ private fun StoryCanvas(
     state: RecapStoryUiState,
     story: StoryModel,
     page: RecapPage,
-    progress: Float,
+    progress: () -> Float,
     pageLayer: GraphicsLayer,
     cardLayer: GraphicsLayer,
     actions: PageActions,
@@ -498,7 +503,7 @@ private fun StoryChrome(
     state: RecapStoryUiState,
     story: StoryModel,
     page: RecapPage,
-    progress: Float,
+    progress: () -> Float,
     onAction: (RecapStoryAction) -> Unit,
     onClose: () -> Unit,
     onSharePage: () -> Unit,
@@ -507,15 +512,19 @@ private fun StoryChrome(
     val ink = scheme.onSurface
     Box(Modifier.fillMaxSize()) {
         Row(Modifier.offset(16.dp, 60.dp).width(416.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            val bar = ink.copy(alpha = 0.95f)
             story.pages.indices.forEach { index ->
-                val fill = when {
-                    index < state.page -> 1f
-                    index == state.page -> progress
-                    else -> 0f
-                }
-                Box(Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp)).background(ink.copy(alpha = 0.28f))) {
-                    Box(Modifier.fillMaxWidth(fill).height(4.dp).clip(RoundedCornerShape(2.dp)).background(ink.copy(alpha = 0.95f)))
-                }
+                // Read while drawing, so the running page redraws its bar without recomposing the story.
+                Box(
+                    Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp)).background(ink.copy(alpha = 0.28f)).drawBehind {
+                        val fill = when {
+                            index < state.page -> 1f
+                            index == state.page -> progress()
+                            else -> 0f
+                        }
+                        if (fill > 0f) drawRoundRect(bar, size = Size(size.width * fill, size.height), cornerRadius = CornerRadius(2.dp.toPx()))
+                    }
+                )
             }
         }
         Row(
