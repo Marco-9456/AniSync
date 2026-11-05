@@ -67,6 +67,7 @@ import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.adaptiveReadingWidth
 import com.anisync.android.ui.theme.emphasis
+import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -104,7 +105,7 @@ fun ReviewDetailScreen(
                 IconButton(
                     onClick = {
                         if (uiState.review != null) onShareCard(reviewId, uiState.mediaCoverColor ?: coverColor)
-                        else ShareUtils.shareText(context, "https://anilist.co/review/$reviewId")
+                        else ShareUtils.shareText(context, AniListUrls.reviewUrl(reviewId))
                     }
                 ) {
                     Icon(

@@ -205,7 +205,7 @@ class ShareSubjectLoader @Inject constructor(
             createdAt = data.createdAt.toLong(),
             helpful = data.rating ?: 0,
             handle = handle,
-            link = "https://anilist.co/review/${data.id}",
+            link = AniListUrls.reviewUrl(data.id),
         ))
     }
 
@@ -353,7 +353,7 @@ class ShareSubjectLoader @Inject constructor(
     private fun LibraryEntry.toCardImage(language: TitleLanguage) =
         CardImage(getTitle(language), cover?.preferred(CoverQuality.LARGE) ?: coverUrl)
 
-    private fun profileLink(name: String) = "https://anilist.co/user/$name"
+    private fun profileLink(name: String) = AniListUrls.userUrl(name)
 
     companion object {
         /** No request failed, there is simply nothing on the route to share. */

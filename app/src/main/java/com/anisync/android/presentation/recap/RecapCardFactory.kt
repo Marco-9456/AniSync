@@ -11,6 +11,7 @@ import com.anisync.android.presentation.share.cards.RecapCard
 import com.anisync.android.presentation.share.cards.RecapTitle
 import com.anisync.android.presentation.share.cards.ShareSubject
 import com.anisync.android.ui.theme.mediaArtworkSeedColor
+import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.TitleUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Month
@@ -76,7 +77,7 @@ class RecapCardFactory @Inject constructor(
             covers = recap.ranked.take(3).mapNotNull { titles[it.mediaId] }.map { CardImage(it.title, it.coverUrl) },
             coverColor = recap.ranked.firstOrNull()?.let { titles[it.mediaId]?.color },
         )
-        return ShareSubject.Recap(card = card, handle = userName, link = "https://anilist.co/user/$userName")
+        return ShareSubject.Recap(card = card, handle = userName, link = AniListUrls.userUrl(userName))
     }
 
     /** The top title's AniList colour as AniList writes it, for routes that carry a cover colour. */
