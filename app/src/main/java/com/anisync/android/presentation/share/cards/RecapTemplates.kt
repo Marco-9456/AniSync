@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.share.cards
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -72,7 +73,7 @@ private fun RecapMonth(subject: ShareSubject.Recap, spec: CardSpec) {
                 .padding(start = 20.dp, end = 20.dp, top = if (story) 40.dp else 24.dp)
         ) {
             Text(
-                text = stringResource(R.string.share_recap_owner, card.userName).cardUpper(),
+                text = recapOwner(spec, R.string.share_recap_owner, R.string.recap_monthly, card.userName).cardUpper(),
                 style = cardEyebrow(),
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 4.dp),
@@ -261,7 +262,7 @@ private fun RecapYear(subject: ShareSubject.Recap, spec: CardSpec) {
                 .padding(start = 20.dp, end = 20.dp, top = if (story) 28.dp else if (size == CardSize.CHAT) 20.dp else 24.dp)
         ) {
             Text(
-                text = stringResource(R.string.share_recap_year_owner, card.userName).cardUpper(),
+                text = recapOwner(spec, R.string.share_recap_year_owner, R.string.recap_yearly, card.userName).cardUpper(),
                 style = cardEyebrow(),
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
@@ -400,6 +401,11 @@ private fun YearTiles(card: RecapCard, spec: CardSpec) {
         }
     }
 }
+
+/** Whose recap it is while the Handle detail is on, otherwise only which kind of recap. */
+@Composable
+private fun recapOwner(spec: CardSpec, @StringRes owned: Int, @StringRes plain: Int, userName: String): String =
+    if (spec.shows(CardDetail.HANDLE)) stringResource(owned, userName) else stringResource(plain)
 
 @Composable
 private fun recapDuration(minutes: Int): String {
