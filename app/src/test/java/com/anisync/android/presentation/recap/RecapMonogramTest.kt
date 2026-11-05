@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.recap
 
+import com.anisync.android.presentation.statistics.monogram
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

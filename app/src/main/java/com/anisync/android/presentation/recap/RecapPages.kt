@@ -84,6 +84,7 @@ import com.anisync.android.presentation.share.cards.cardUpper
 import com.anisync.android.presentation.share.cards.fitted
 import com.anisync.android.presentation.share.cards.formatLabel
 import com.anisync.android.presentation.statistics.fittedStyle
+import com.anisync.android.presentation.statistics.monogram
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.genreColor
@@ -1275,16 +1276,6 @@ private fun YearTaste(story: StoryModel) {
 }
 
 /** "GoHands" reads GH, "MAPPA" MA, "Kyoto Animation" KA. */
-internal fun monogram(name: String): String {
-    val words = name.split(' ', '-').filter { it.isNotBlank() }
-    val capitals = name.filter { it.isUpperCase() }
-    return when {
-        words.size >= 2 -> "${words[0].first()}${words[1].first()}".uppercase()
-        capitals.length >= 2 && capitals.length < name.length -> capitals.take(2)
-        else -> name.take(2).uppercase()
-    }
-}
-
 // --- WY5 ---
 
 @Composable

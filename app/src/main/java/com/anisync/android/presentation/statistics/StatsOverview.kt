@@ -694,8 +694,15 @@ internal fun StudioMonogram(name: String, size: Dp, textSize: Float, modifier: M
 }
 
 /** The first letters of a studio's first two words, "Kyoto Animation" reading KA. */
-internal fun monogram(name: String): String =
-    name.split(' ', '-').filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }
+internal fun monogram(name: String): String {
+    val words = name.split(' ', '-').filter { it.isNotBlank() }
+    val capitals = name.filter { it.isUpperCase() }
+    return when {
+        words.size >= 2 -> "${words[0].first()}${words[1].first()}".uppercase()
+        capitals.length >= 2 && capitals.length < name.length -> capitals.take(2)
+        else -> name.take(2).uppercase()
+    }
+}
 
 @Composable
 internal fun shortFormatName(format: String): String = when (format) {
