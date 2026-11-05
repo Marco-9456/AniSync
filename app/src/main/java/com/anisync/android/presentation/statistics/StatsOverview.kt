@@ -339,7 +339,7 @@ private fun MiniHeatmap(history: List<ActivityHistoryDay>) {
                             .clip(RoundedCornerShape(2.5.dp))
                             .background(
                                 if (level <= 0 || date.isAfter(last)) empty
-                                else active.copy(alpha = 0.36f + 0.16f * ((level.coerceIn(1, 10) - 1) * 4 / 10))
+                                else active.copy(alpha = heatAlpha(level))
                             )
                     )
                 }
