@@ -1466,18 +1466,6 @@ class ProfileViewModel @Inject constructor(
     private fun processAnimeStats(stats: AnimeStatistics, showAdult: Boolean): AnimeStatisticsUi {
         val buckets = scoreBuckets(stats.scoreDistribution)
 
-        val sortedReleaseYears = stats.releaseYearDistribution.sortedBy { it.year }.takeLast(12)
-        val maxReleaseYearCount = sortedReleaseYears.maxOfOrNull { it.count } ?: 1
-        val releaseYearsUi = sortedReleaseYears.map {
-            YearUiModel(it.year, it.count, it.count.toFloat() / maxReleaseYearCount.coerceAtLeast(1))
-        }
-
-        val sortedStartYears = stats.startYearDistribution.sortedBy { it.year }.takeLast(12)
-        val maxStartYearCount = sortedStartYears.maxOfOrNull { it.count } ?: 1
-        val startYearsUi = sortedStartYears.map {
-            YearUiModel(it.year, it.count, it.count.toFloat() / maxStartYearCount.coerceAtLeast(1))
-        }
-
         val maxLengthCount = stats.lengthDistribution.maxOfOrNull { it.count } ?: 1
         val lengthsUi = stats.lengthDistribution.map {
             LengthUiModel(it.length, it.count, it.count.toFloat() / maxLengthCount.coerceAtLeast(1), it.meanScore)
@@ -1497,8 +1485,6 @@ class ProfileViewModel @Inject constructor(
             genreDistribution = stats.genreDistribution.filterAdultGenres(showAdult).take(20),
             tagDistribution = stats.tagDistribution.filter { showAdult || !it.isAdult }.take(25),
             formatDistribution = stats.formatDistribution,
-            releaseYearDistribution = releaseYearsUi,
-            startYearDistribution = startYearsUi,
             lengthDistribution = lengthsUi,
             studioDistribution = stats.studioDistribution.take(20),
             voiceActorDistribution = stats.voiceActorDistribution.take(10),
@@ -1515,18 +1501,6 @@ class ProfileViewModel @Inject constructor(
 
     private fun processMangaStats(stats: MangaStatistics, showAdult: Boolean): MangaStatisticsUi {
         val buckets = scoreBuckets(stats.scoreDistribution)
-
-        val sortedReleaseYears = stats.releaseYearDistribution.sortedBy { it.year }.takeLast(12)
-        val maxReleaseYearCount = sortedReleaseYears.maxOfOrNull { it.count } ?: 1
-        val releaseYearsUi = sortedReleaseYears.map {
-            YearUiModel(it.year, it.count, it.count.toFloat() / maxReleaseYearCount.coerceAtLeast(1))
-        }
-
-        val sortedStartYears = stats.startYearDistribution.sortedBy { it.year }.takeLast(12)
-        val maxStartYearCount = sortedStartYears.maxOfOrNull { it.count } ?: 1
-        val startYearsUi = sortedStartYears.map {
-            YearUiModel(it.year, it.count, it.count.toFloat() / maxStartYearCount.coerceAtLeast(1))
-        }
 
         val maxLengthCount = stats.lengthDistribution.maxOfOrNull { it.count } ?: 1
         val lengthsUi = stats.lengthDistribution.map {
@@ -1546,8 +1520,6 @@ class ProfileViewModel @Inject constructor(
             genreDistribution = stats.genreDistribution.filterAdultGenres(showAdult).take(20),
             tagDistribution = stats.tagDistribution.filter { showAdult || !it.isAdult }.take(25),
             formatDistribution = stats.formatDistribution,
-            releaseYearDistribution = releaseYearsUi,
-            startYearDistribution = startYearsUi,
             lengthDistribution = lengthsUi,
             staffDistribution = stats.staffDistribution.take(10),
             countryDistribution = stats.countryDistribution,

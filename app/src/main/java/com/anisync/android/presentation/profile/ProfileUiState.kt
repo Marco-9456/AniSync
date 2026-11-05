@@ -129,8 +129,6 @@ data class AnimeStatisticsUi(
     val genreDistribution: List<GenreStat>,
     val tagDistribution: List<TagStat>,
     val formatDistribution: List<FormatStat>,
-    val releaseYearDistribution: List<YearUiModel>,
-    val startYearDistribution: List<YearUiModel>,
     val lengthDistribution: List<LengthUiModel>,
     val studioDistribution: List<StudioStat>,
     val voiceActorDistribution: List<VoiceActorStat>,
@@ -151,8 +149,6 @@ data class MangaStatisticsUi(
     val genreDistribution: List<GenreStat>,
     val tagDistribution: List<TagStat>,
     val formatDistribution: List<FormatStat>,
-    val releaseYearDistribution: List<YearUiModel>,
-    val startYearDistribution: List<YearUiModel>,
     val lengthDistribution: List<LengthUiModel>,
     val staffDistribution: List<StaffStat>,
     val countryDistribution: List<CountryStat>,
@@ -164,12 +160,6 @@ data class ScoreUiModel(
     val score: Int,
     val label: String,
     val normalizedScore: Float,
-    val count: Int,
-    val heightFraction: Float
-)
-
-data class YearUiModel(
-    val year: Int,
     val count: Int,
     val heightFraction: Float
 )
