@@ -68,6 +68,7 @@ import com.anisync.android.domain.stats.TasteSpread
 import com.anisync.android.domain.stats.tasteSpread
 import com.anisync.android.presentation.profile.ScoreUiModel
 import com.anisync.android.presentation.profile.StatsView
+import com.anisync.android.presentation.recap.joinedNames
 import com.anisync.android.presentation.recap.spelled
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.ListIndicatorKind
@@ -387,7 +388,7 @@ private fun TasteTeaserCard(teaser: TasteTeaser, isOwnProfile: Boolean, onClick:
         } else {
             if (teaser.nextGenres.isNotEmpty()) {
                 Text(
-                    text = stringResource(R.string.stats_teaser_then, joinWithAnd(teaser.nextGenres.map { "${it.first} ${it.second}" })),
+                    text = stringResource(R.string.stats_teaser_then, joinedNames(teaser.nextGenres.map { "${it.first} ${it.second}" })),
                     style = statsBodySmall(),
                     color = content.copy(alpha = 0.8f)
                 )
@@ -723,13 +724,6 @@ private fun percent(part: Int, total: Int): String = "${(part * 100.0 / total).r
 internal fun countryName(code: String): String {
     val locale = LocalConfiguration.current.locales[0]
     return Locale("", code).getDisplayCountry(locale).ifBlank { code }
-}
-
-@Composable
-internal fun joinWithAnd(items: List<String>): String = when (items.size) {
-    0 -> ""
-    1 -> items.first()
-    else -> stringResource(R.string.notification_actors_two, items.dropLast(1).joinToString(", "), items.last())
 }
 
 internal fun weekdayPluralRes(day: DayOfWeek): Int = when (day) {
