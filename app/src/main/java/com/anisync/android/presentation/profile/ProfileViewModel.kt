@@ -28,6 +28,7 @@ import com.anisync.android.domain.PeopleList
 import com.anisync.android.domain.PeopleSort
 import com.anisync.android.domain.PersonStat
 import com.anisync.android.domain.GetProfileUseCase
+import com.anisync.android.domain.ADULT_GENRES
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MangaStatistics
@@ -104,8 +105,6 @@ class ProfileViewModel @Inject constructor(
 
         /** How many rate limit windows Statistics waits out with its loader up before it gives up. */
         private const val MAX_RATE_LIMIT_WAITS = 3
-
-        private const val ADULT_GENRE = "Hentai"
     }
 
     /**
@@ -1596,7 +1595,7 @@ class ProfileViewModel @Inject constructor(
 
     /** Hentai is AniList's one adult genre, and it follows the adult content setting. */
     private fun List<GenreStat>.filterAdultGenres(showAdult: Boolean): List<GenreStat> =
-        if (showAdult) this else filterNot { it.genre == ADULT_GENRE }
+        if (showAdult) this else filterNot { it.genre in ADULT_GENRES }
 
     private fun List<com.anisync.android.domain.StatusStat>.toStatusUi(): List<StatusUiModel> {
         val total = sumOf { it.count }.coerceAtLeast(1)
