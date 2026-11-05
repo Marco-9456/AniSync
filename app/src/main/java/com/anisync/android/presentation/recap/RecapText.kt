@@ -23,6 +23,7 @@ import java.time.Month
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 /** Counts a sentence spells out rather than prints, "three of your 17 titles". */
 private const val SPELLED_UP_TO = 20
@@ -44,9 +45,18 @@ internal fun count(value: Int): String = formatExactCount(value, recapLocale())
 internal fun spelled(value: Int): String {
     val locale = recapLocale()
     if (value !in 0..SPELLED_UP_TO) return formatExactCount(value, locale)
-    // ICU's MessageFormat reaches the spellout rules the SDK does not expose directly.
-    return runCatching { MessageFormat("{0,spellout}", locale).format(arrayOf<Any>(value)) }
-        .getOrElse { formatExactCount(value, locale) }
+    return spelledCounts.getOrPut(locale) { spellOut(locale) }[value]
+}
+
+/** Each language's counts spelled out, kept, since building the ICU formatter is the costly part. */
+private val spelledCounts = ConcurrentHashMap<Locale, List<String>>()
+
+/** ICU's MessageFormat reaches the spellout rules the SDK does not expose directly. */
+private fun spellOut(locale: Locale): List<String> {
+    val format = runCatching { MessageFormat("{0,spellout}", locale) }.getOrNull()
+    return (0..SPELLED_UP_TO).map { value ->
+        format?.let { runCatching { it.format(arrayOf<Any>(value)) }.getOrNull() } ?: formatExactCount(value, locale)
+    }
 }
 
 internal fun String.capitalized(locale: Locale): String = replaceFirstChar { it.titlecase(locale) }
