@@ -121,7 +121,7 @@ class ShareStudioViewModel @Inject constructor(
             is Result.Success -> result.data
             is Result.Error -> {
                 val failure = when {
-                    result == ShareSubjectLoader.NOTHING -> StudioFailure.NOTHING
+                    result == ShareSubjectLoader.NOTHING || result.code == NOT_FOUND -> StudioFailure.NOTHING
                     result.countdownSeconds != null -> StudioFailure.RATE_LIMITED
                     else -> StudioFailure.FAILED
                 }
@@ -196,6 +196,9 @@ class ShareStudioViewModel @Inject constructor(
     private companion object {
         /** How many rate limit windows the studio waits out before it gives up. */
         const val MAX_RATE_LIMIT_WAITS = 3
+
+        /** AniList's answer for a deleted or never existing review, title or person, where Retry cannot help. */
+        const val NOT_FOUND = 404
         const val SwatchSampleSize = 128
         val AppSwatch = StudioSwatch(R.string.share_swatch_app, Color.Unspecified, null)
     }
