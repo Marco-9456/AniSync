@@ -117,44 +117,59 @@ data class StatisticsUiModel(
     val activityInsights: ActivityInsights? = null
 )
 
+/** What anime and manga statistics share, so a view built from either is written once. */
+interface ListStatisticsUi {
+    val totalCount: Int
+    val meanScore: Double
+    val standardDeviation: Double
+    val statusDistribution: List<StatusUiModel>
+    val scoreDistribution: List<ScoreUiModel>
+    val genreDistribution: List<GenreStat>
+    val tagDistribution: List<TagStat>
+    val formatDistribution: List<FormatStat>
+    val countryDistribution: List<CountryStat>
+    val scoreSummary: ScoreSummary
+    val eras: Eras?
+}
+
 data class AnimeStatisticsUi(
-    val totalCount: Int,
+    override val totalCount: Int,
     val daysWatched: Double,
-    val meanScore: Double,
-    val standardDeviation: Double,
+    override val meanScore: Double,
+    override val standardDeviation: Double,
     val episodesWatched: Int,
     val minutesWatched: Int,
-    val statusDistribution: List<StatusUiModel>,
-    val scoreDistribution: List<ScoreUiModel>,
-    val genreDistribution: List<GenreStat>,
-    val tagDistribution: List<TagStat>,
-    val formatDistribution: List<FormatStat>,
+    override val statusDistribution: List<StatusUiModel>,
+    override val scoreDistribution: List<ScoreUiModel>,
+    override val genreDistribution: List<GenreStat>,
+    override val tagDistribution: List<TagStat>,
+    override val formatDistribution: List<FormatStat>,
     val lengthDistribution: List<LengthUiModel>,
     val studioDistribution: List<StudioStat>,
     val voiceActorDistribution: List<VoiceActorStat>,
     val staffDistribution: List<StaffStat>,
-    val countryDistribution: List<CountryStat>,
-    val scoreSummary: ScoreSummary = summarizeScores(emptyMap()),
-    val eras: Eras? = null
-)
+    override val countryDistribution: List<CountryStat>,
+    override val scoreSummary: ScoreSummary = summarizeScores(emptyMap()),
+    override val eras: Eras? = null
+) : ListStatisticsUi
 
 data class MangaStatisticsUi(
-    val totalCount: Int,
+    override val totalCount: Int,
     val chaptersRead: Int,
     val volumesRead: Int,
-    val meanScore: Double,
-    val standardDeviation: Double,
-    val statusDistribution: List<StatusUiModel>,
-    val scoreDistribution: List<ScoreUiModel>,
-    val genreDistribution: List<GenreStat>,
-    val tagDistribution: List<TagStat>,
-    val formatDistribution: List<FormatStat>,
+    override val meanScore: Double,
+    override val standardDeviation: Double,
+    override val statusDistribution: List<StatusUiModel>,
+    override val scoreDistribution: List<ScoreUiModel>,
+    override val genreDistribution: List<GenreStat>,
+    override val tagDistribution: List<TagStat>,
+    override val formatDistribution: List<FormatStat>,
     val lengthDistribution: List<LengthUiModel>,
     val staffDistribution: List<StaffStat>,
-    val countryDistribution: List<CountryStat>,
-    val scoreSummary: ScoreSummary = summarizeScores(emptyMap()),
-    val eras: Eras? = null
-)
+    override val countryDistribution: List<CountryStat>,
+    override val scoreSummary: ScoreSummary = summarizeScores(emptyMap()),
+    override val eras: Eras? = null
+) : ListStatisticsUi
 
 data class ScoreUiModel(
     val score: Int,

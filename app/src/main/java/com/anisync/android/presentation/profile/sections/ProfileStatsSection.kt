@@ -51,6 +51,7 @@ import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.profile.AnimeStatisticsUi
 import com.anisync.android.presentation.profile.GenreSort
 import com.anisync.android.presentation.profile.LengthUiModel
+import com.anisync.android.presentation.profile.ListStatisticsUi
 import com.anisync.android.presentation.profile.MangaStatisticsUi
 import com.anisync.android.presentation.profile.ProfileStatsType
 import com.anisync.android.presentation.profile.ProfileUiState
@@ -189,7 +190,7 @@ fun LazyListScope.profileStatsTab(
         statsActivity(statsData, uiState.profile?.id ?: 0, isOwnProfile, statsColumns, onMediaClick, onActivityClick)
         return
     }
-    val taste = if (isManga) statsData.mangaStats?.let(::tasteModel) else tasteModel(statsData.animeStats)
+    val taste = if (isManga) statsData.mangaStats?.let { tasteModel(it, isManga = true) } else tasteModel(statsData.animeStats, isManga = false)
     if (view == StatsView.TASTE && taste != null) {
         statsTaste(taste, uiState.genreSort, onGenreSortSelected, isOwnProfile, statsColumns)
         return
@@ -460,7 +461,7 @@ private class TasteModel(
     val isManga: Boolean,
 )
 
-private fun tasteModel(stats: AnimeStatisticsUi) = TasteModel(
+private fun tasteModel(stats: ListStatisticsUi, isManga: Boolean) = TasteModel(
     scores = stats.scoreDistribution,
     summary = stats.scoreSummary,
     meanScore = stats.meanScore,
@@ -468,18 +469,7 @@ private fun tasteModel(stats: AnimeStatisticsUi) = TasteModel(
     totalCount = stats.totalCount,
     genres = stats.genreDistribution,
     tags = stats.tagDistribution,
-    isManga = false,
-)
-
-private fun tasteModel(stats: MangaStatisticsUi) = TasteModel(
-    scores = stats.scoreDistribution,
-    summary = stats.scoreSummary,
-    meanScore = stats.meanScore,
-    standardDeviation = stats.standardDeviation,
-    totalCount = stats.totalCount,
-    genres = stats.genreDistribution,
-    tags = stats.tagDistribution,
-    isManga = true,
+    isManga = isManga,
 )
 
 /** The Taste view: scores and how far they spread, genres, then tags. */
