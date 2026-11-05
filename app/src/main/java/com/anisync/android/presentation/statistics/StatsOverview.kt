@@ -320,7 +320,7 @@ private fun activeDays(history: List<ActivityHistoryDay>): Int = history.count {
 /** The last ten weeks of activity, a column per week. */
 @Composable
 private fun MiniHeatmap(history: List<ActivityHistoryDay>) {
-    val byDate = bucketActivityDays(history)
+    val byDate = remember(history) { bucketActivityDays(history) }
     val last = byDate.keys.maxOrNull() ?: LocalDate.now()
     val firstColumnStart = last.minusWeeks(MINI_WEEKS - 1L).minusDays(last.dayOfWeek.value % 7L)
     val active = MaterialTheme.colorScheme.primary
