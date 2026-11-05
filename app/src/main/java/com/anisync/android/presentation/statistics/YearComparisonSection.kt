@@ -69,12 +69,7 @@ fun YearComparisonSection(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.Bottom
                 ) {
-                    val maxLen = maxOf(release.size, start.size)
-                    val releasePadded = release.padTo(maxLen)
-                    val startPadded = start.padTo(maxLen)
-                    for (i in 0 until maxLen) {
-                        val s = startPadded.getOrNull(i)
-                        val r = releasePadded.getOrNull(i)
+                    for ((r, s) in alignDataSeries(release, start)) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.weight(1f)
@@ -117,8 +112,34 @@ fun YearComparisonSection(
     }
 }
 
-private fun <T> List<T>.padTo(size: Int): List<T?> =
-    (0 until size).map { i -> getOrNull(i) }
+private fun alignDataSeries(
+    release: List<YearUiModel>,
+    start: List<YearUiModel>
+) = object : Iterator<Pair<YearUiModel?, YearUiModel?>> {
+    private var i = 0
+    private var j = 0
+
+    override fun next(): Pair<YearUiModel?, YearUiModel?> {
+        val r = release.getOrNull(i)
+        val s = start.getOrNull(j)
+
+        if (s?.year == r?.year) {
+            i++
+            j++
+            return Pair(r, s)
+        } else if(s == null || (r != null && r.year < s.year)) {
+            i++
+            return Pair(r, null)
+        } else {
+            j++
+            return Pair(null, s)
+        }
+    }
+
+    override fun hasNext(): Boolean {
+        return i < release.size || j < start.size
+    }
+}
 
 @Composable
 private fun LegendDot(color: Color, label: String) {
