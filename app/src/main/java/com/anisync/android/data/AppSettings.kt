@@ -736,11 +736,6 @@ class AppSettings @Inject constructor(
     )
     val recapKeptMonths: StateFlow<Int> = _recapKeptMonths.asStateFlow()
 
-    fun setRecapKeptMonths(months: Int) {
-        _recapKeptMonths.value = months.coerceAtLeast(1)
-        prefs.edit { putInt(KEY_RECAP_KEPT_MONTHS, months.coerceAtLeast(1)) }
-    }
-
     private val _startScreen = MutableStateFlow(readStartScreen())
     val startScreen: StateFlow<StartScreen> = _startScreen.asStateFlow()
 

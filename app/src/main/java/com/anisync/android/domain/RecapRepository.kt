@@ -94,9 +94,6 @@ interface RecapRepository {
     /** Deletes every stored recap of [ownerId], an account that was removed. */
     suspend fun clearOwner(ownerId: Int)
 
-    /** Deletes the recaps older than the kept months. */
-    suspend fun applyRetention()
-
     /**
      * Developer Tools: builds [period] for any public user exactly as a first build would, counted
      * with [settings], without storing anything or touching the active account's recaps.

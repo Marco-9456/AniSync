@@ -196,11 +196,6 @@ class RecapRepositoryImpl @Inject constructor(
         counted.keys.removeAll(match)
     }
 
-    override suspend fun applyRetention() {
-        val owner = owner() ?: return
-        retain(owner, today())
-    }
-
     override suspend fun previewRecap(
         userId: Int,
         period: RecapPeriod,
