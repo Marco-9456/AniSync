@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Rect
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
@@ -100,7 +101,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.scale
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -617,12 +617,15 @@ private fun touchExploration(context: Context): Boolean =
  * scaled to 1080 by 1920 with the AniSync mark in its corner.
  */
 private fun storyCrop(context: Context, page: ImageBitmap, scheme: ColorScheme): ImageBitmap {
-    val source = page.asAndroidBitmap().let { if (it.config == Bitmap.Config.HARDWARE) it.copy(Bitmap.Config.ARGB_8888, false) else it }
+    val bitmap = page.asAndroidBitmap()
+    // A software canvas cannot read a hardware bitmap, so that one is copied once.
+    val source = if (bitmap.config == Bitmap.Config.HARDWARE) bitmap.copy(Bitmap.Config.ARGB_8888, false) else bitmap
     val cropHeight = (source.width * 16f / 9f).roundToInt().coerceAtMost(source.height)
     val top = ((source.height - cropHeight) / 2).coerceAtLeast(0)
-    val cropped = Bitmap.createBitmap(source, 0, top, source.width, cropHeight)
-    val out = cropped.scale(STORY_WIDTH, STORY_HEIGHT).copy(Bitmap.Config.ARGB_8888, true)
+    val out = Bitmap.createBitmap(STORY_WIDTH, STORY_HEIGHT, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(out)
+    canvas.drawBitmap(source, Rect(0, top, source.width, top + cropHeight), Rect(0, 0, STORY_WIDTH, STORY_HEIGHT), Paint(Paint.FILTER_BITMAP_FLAG))
+    if (source !== bitmap) source.recycle()
     val mark = STORY_WIDTH / 15
     val left = STORY_WIDTH - mark - STORY_WIDTH / 18
     val markTop = STORY_HEIGHT - mark - STORY_WIDTH / 18
