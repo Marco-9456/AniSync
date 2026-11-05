@@ -1572,10 +1572,10 @@ class ProfileViewModel @Inject constructor(
      * yet, read from the library rows in Room.
      */
     private suspend fun uncountedOnLists(stats: StatisticsUiModel): Pair<Int, Int> {
-        fun List<LibraryEntry>.byStatus() = filter { it.status != LibraryStatus.UNKNOWN }.groupingBy { it.status.name }.eachCount()
+        fun Map<LibraryStatus, Int>.byStatus() = filterKeys { it != LibraryStatus.UNKNOWN }.mapKeys { it.key.name }
         fun List<StatusUiModel>.byStatus() = associate { it.status to it.count }
-        val anime = libraryRepository.observeLibrary("", com.anisync.android.type.MediaType.ANIME).first()
-        val manga = libraryRepository.observeLibrary("", com.anisync.android.type.MediaType.MANGA).first()
+        val anime = libraryRepository.countByStatus(com.anisync.android.type.MediaType.ANIME)
+        val manga = libraryRepository.countByStatus(com.anisync.android.type.MediaType.MANGA)
         return uncountedChanges(anime.byStatus(), stats.animeStats.statusDistribution.byStatus()) to
             (stats.mangaStats?.let { uncountedChanges(manga.byStatus(), it.statusDistribution.byStatus()) } ?: 0)
     }
