@@ -132,7 +132,6 @@ class RecapBuilderTest {
         assertEquals(Streak(5, LocalDate.of(2026, 9, 2), LocalDate.of(2026, 9, 6)), recap.streak)
         assertEquals(LocalDate.of(2026, 9, 20), recap.biggestDay.date)
         assertEquals(24, recap.biggestDay.episodes)
-        assertEquals(3, recap.biggestDay.leadingMediaId)
         assertEquals(listOf(3), recap.biggestDay.leaders)
         assertEquals(DayOfWeek.SUNDAY, recap.busiestWeekday)
         assertEquals(31, recap.episodesByWeekday.getValue(DayOfWeek.SUNDAY))
@@ -151,7 +150,6 @@ class RecapBuilderTest {
         assertEquals(LocalDate.of(2026, 9, 29), hidden.date)
         assertEquals(24, hidden.leadingEpisodes)
         assertEquals(listOf(5, 9), hidden.leaders)
-        assertEquals(5, hidden.leadingMediaId)
         val shown = buildRecap(september, tie, media, RecapSettings(showAdult = true), zone)!!.biggestDay
         assertEquals(listOf(5, 6, 9), shown.leaders)
     }

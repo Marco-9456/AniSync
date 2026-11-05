@@ -167,7 +167,6 @@ private fun biggestDay(
     return BiggestDay(
         date = date,
         episodes = events.sumOf { it.units },
-        leadingMediaId = tied.first().takeIf(visible),
         leadingEpisodes = most,
         leaders = tied.filter(visible),
     )

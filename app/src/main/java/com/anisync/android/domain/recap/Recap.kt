@@ -97,11 +97,10 @@ data class Streak(val days: Int, val start: LocalDate, val end: LocalDate)
 data class BiggestDay(
     val date: LocalDate,
     val episodes: Int,
-    /** The title with the most episodes that day, and how many of them were its. */
-    val leadingMediaId: Int?,
+    /** How many episodes the day's leading title had, each of them when several tie. */
     val leadingEpisodes: Int,
     /** Every title that may be shown with that many episodes, lowest id first ("Animation! and Bananya"). */
-    val leaders: List<Int> = listOfNotNull(leadingMediaId),
+    val leaders: List<Int>,
 )
 
 data class MangaRecap(

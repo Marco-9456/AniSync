@@ -192,7 +192,7 @@ class RecapStoryTest {
             episodesByDay = mapOf(day to 25),
             episodesByWeekday = mapOf(DayOfWeek.SUNDAY to 32),
             streak = Streak(6, day, day.plusDays(5)),
-            biggestDay = BiggestDay(day, 25, 1, 24),
+            biggestDay = BiggestDay(day, 25, leadingEpisodes = 24, leaders = listOf(1)),
             episodesByMonth = episodesByMonth,
             keptUpWhileAiring = null,
             manga = null,
