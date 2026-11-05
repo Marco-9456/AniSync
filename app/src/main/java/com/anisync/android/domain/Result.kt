@@ -37,6 +37,15 @@ fun <T> Result<T>.getOrNull(): T? = when (this) {
 }
 
 /**
+ * Returns the data if successful, otherwise what [onError] makes of the failure. [onError] may also
+ * return from the caller, which hands the failure on as it is.
+ */
+inline fun <T> Result<T>.getOrElse(onError: (Result.Error) -> T): T = when (this) {
+    is Result.Success -> data
+    is Result.Error -> onError(this)
+}
+
+/**
  * Returns the data if successful, or the default value if error.
  */
 fun <T> Result<T>.getOrDefault(default: T): T = when (this) {
