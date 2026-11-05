@@ -543,7 +543,7 @@ private fun StoryChrome(
                 state.song?.let { song ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Icon(Icons.Default.MusicNote, contentDescription = null, tint = ink.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
-                        val playing = song.artist?.let { stringResource(R.string.recap_now_playing, song.title, it) } ?: song.title
+                        val playing = song.artist?.let { stringResource(R.string.filter_chip_value, song.title, it) } ?: song.title
                         Text(
                             text = if (song.muted) stringResource(R.string.recap_now_playing_muted, playing) else playing,
                             style = cardText(12, 16, FontWeight.Medium),

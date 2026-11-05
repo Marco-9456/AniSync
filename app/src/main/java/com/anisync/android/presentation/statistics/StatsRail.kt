@@ -68,7 +68,7 @@ fun StatsRail(
 @StringRes
 internal fun StatsView.labelRes(statsType: ProfileStatsType): Int = when (this) {
     StatsView.OVERVIEW -> R.string.profile_tab_overview
-    StatsView.RECAPS -> R.string.stats_view_recaps
+    StatsView.RECAPS -> R.string.settings_recaps
     StatsView.ACTIVITY -> R.string.profile_tab_activity
     StatsView.TASTE -> R.string.stats_view_taste
     StatsView.HOW_YOU_WATCH ->

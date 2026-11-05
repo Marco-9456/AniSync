@@ -676,8 +676,8 @@ private fun CardHeader(subject: ShareSubject.Media, spec: CardSpec) {
 private fun CardFacts(subject: ShareSubject.Media) {
     val locale = LocalConfiguration.current.locales[0]
     val facts = buildList {
-        subject.popularity?.let { add(formatCommunityCount(it, locale) to R.string.share_detail_popularity) }
-        subject.favourites?.let { add(formatCommunityCount(it, locale) to R.string.share_detail_favourites) }
+        subject.popularity?.let { add(formatCommunityCount(it, locale) to R.string.sort_popularity) }
+        subject.favourites?.let { add(formatCommunityCount(it, locale) to R.string.share_fav_eyebrow) }
         subject.total?.takeIf { it > 0 }?.let {
             add(formatExactCount(it, locale) to if (subject.isManga) R.string.share_stats_chapters else R.string.share_stats_episodes)
         }

@@ -130,7 +130,7 @@ private fun PlayDisc(size: Dp, modifier: Modifier) {
 /** "62 episodes · 22 h" under a month, "339 episodes · 68 titles" under a year. */
 @Composable
 private fun entrySummary(entry: RecapEntry): String = stringResource(
-    R.string.recap_meta,
+    R.string.filter_chip_value,
     episodesText(entry.episodes),
     if (entry.isYear) titlesText(entry.titles) else wholeHours(entry.minutes),
 )

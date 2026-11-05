@@ -115,9 +115,9 @@ private fun CharacterCard(subject: ShareSubject.Character, spec: CardSpec) {
         )
         if (layout.facts) {
             val facts = buildList {
-                if (spec.shows(CardDetail.BIRTHDAY)) subject.birthday?.let { add(it to R.string.share_detail_birthday) }
-                if (spec.shows(CardDetail.GENDER)) subject.gender?.let { add(it to R.string.share_detail_gender) }
-                if (spec.shows(CardDetail.AGE)) subject.age?.let { add(it to R.string.share_detail_age) }
+                if (spec.shows(CardDetail.BIRTHDAY)) subject.birthday?.let { add(it to R.string.person_attr_birthday) }
+                if (spec.shows(CardDetail.GENDER)) subject.gender?.let { add(it to R.string.person_attr_gender) }
+                if (spec.shows(CardDetail.AGE)) subject.age?.let { add(it to R.string.person_attr_age) }
             }
             if (facts.isNotEmpty()) {
                 Spacer(Modifier.height(layout.sectionTop))

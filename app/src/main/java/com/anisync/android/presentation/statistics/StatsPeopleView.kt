@@ -192,7 +192,7 @@ fun PeopleListCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = stringResource(R.string.stats_people_line, countLabel(row.count), amountLabel(row.amount.roundToInt())),
+                        text = stringResource(R.string.filter_chip_value, countLabel(row.count), amountLabel(row.amount.roundToInt())),
                         style = statsBodySmall(),
                         color = scheme.onSurfaceVariant,
                         maxLines = 1
@@ -225,7 +225,7 @@ fun PeopleListCard(
         }
         if (showMore != null) {
             ShowMoreRow(
-                text = stringResource(if (showMore == ShowMore.MORE) R.string.stats_people_show_more else R.string.stats_tags_show_fewer),
+                text = stringResource(if (showMore == ShowMore.MORE) R.string.show_more else R.string.stats_tags_show_fewer),
                 expanded = showMore == ShowMore.FEWER,
                 onClick = onToggleMore,
                 inset = 4.dp

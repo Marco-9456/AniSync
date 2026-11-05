@@ -729,7 +729,7 @@ internal fun countryName(code: String): String {
 internal fun joinWithAnd(items: List<String>): String = when (items.size) {
     0 -> ""
     1 -> items.first()
-    else -> stringResource(R.string.stats_list_and, items.dropLast(1).joinToString(", "), items.last())
+    else -> stringResource(R.string.notification_actors_two, items.dropLast(1).joinToString(", "), items.last())
 }
 
 internal fun weekdayPluralRes(day: DayOfWeek): Int = when (day) {
@@ -761,7 +761,7 @@ fun overviewTiles(
             value = stringResource(spread.labelRes()),
             label = stringResource(
                 R.string.stats_tile_taste,
-                stringResource(R.string.stats_tile_taste_word).uppercase(locale),
+                stringResource(R.string.stats_view_taste).uppercase(locale),
                 stringResource(R.string.stats_sigma),
                 formatScoreNumber(standardDeviation)
             ),

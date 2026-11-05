@@ -303,7 +303,7 @@ private fun BackgroundPanel(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.share_dim), style = MaterialTheme.typography.labelLarge, color = scheme.onSurface)
                 Text(
-                    text = stringResource(R.string.share_dim_value, (state.spec.dim * 100).roundToInt()),
+                    text = stringResource(R.string.tags_rank_percent, (state.spec.dim * 100).roundToInt()),
                     style = MaterialTheme.typography.labelMedium,
                     color = scheme.onSurfaceVariant,
                 )

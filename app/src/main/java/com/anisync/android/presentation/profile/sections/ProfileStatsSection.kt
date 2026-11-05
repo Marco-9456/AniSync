@@ -398,7 +398,7 @@ private fun LazyListScope.statsActivity(
         item(key = "activity_empty") {
             EmptyState(
                 icon = Icons.Default.CalendarMonth,
-                title = stringResource(R.string.stats_activity_empty_title),
+                title = stringResource(R.string.feed_empty_global_title),
                 description = stringResource(R.string.stats_activity_empty_body)
             )
         }
@@ -522,11 +522,11 @@ private fun LazyListScope.statsTaste(
         item(key = "taste_scores") { scores(Modifier.padding(horizontal = 16.dp)) }
         item(key = "taste_spread") { spread(Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp)) }
         if (taste.genres.isNotEmpty()) {
-            item(key = "taste_genres_header") { StatsSectionHeader(stringResource(R.string.stats_header_genres)) }
+            item(key = "taste_genres_header") { StatsSectionHeader(stringResource(R.string.label_genres)) }
             item(key = "taste_genres") { genres(Modifier.padding(horizontal = 16.dp)) }
         }
         if (taste.tags.isNotEmpty()) {
-            item(key = "taste_tags_header") { StatsSectionHeader(stringResource(R.string.stats_header_tags)) }
+            item(key = "taste_tags_header") { StatsSectionHeader(stringResource(R.string.label_tags)) }
             item(key = "taste_tags") { TagBoard(taste.tags, Modifier.padding(horizontal = 16.dp)) }
         }
         item(key = "taste_adult_note") { note() }
@@ -541,7 +541,7 @@ private fun LazyListScope.statsTaste(
                         scores(Modifier)
                         spread(Modifier)
                         if (taste.tags.isNotEmpty()) {
-                            StatsSectionHeader(stringResource(R.string.stats_header_tags), inset = 8.dp, top = 12.dp)
+                            StatsSectionHeader(stringResource(R.string.label_tags), inset = 8.dp, top = 12.dp)
                             TagBoard(taste.tags)
                         }
                     }
@@ -716,9 +716,9 @@ private fun LazyListScope.statsPeople(
         StatsSectionHeader(
             title = stringResource(
                 when (model.list) {
-                    PeopleList.ANIME_VOICE_ACTORS -> R.string.stats_header_voice_actors
-                    PeopleList.ANIME_STUDIOS -> R.string.stats_header_studios
-                    PeopleList.ANIME_STAFF, PeopleList.MANGA_STAFF -> R.string.stats_header_staff
+                    PeopleList.ANIME_VOICE_ACTORS -> R.string.person_tab_voice_actors
+                    PeopleList.ANIME_STUDIOS -> R.string.search_header_studios
+                    PeopleList.ANIME_STAFF, PeopleList.MANGA_STAFF -> R.string.search_header_staff
                 }
             ),
             inset = inset,
@@ -729,15 +729,15 @@ private fun LazyListScope.statsPeople(
             sorts = listOf(
                 PeopleSortOption(
                     PeopleSort.COUNT,
-                    stringResource(if (isVoice) R.string.stats_people_sort_roles else R.string.stats_genre_sort_titles),
+                    stringResource(if (isVoice) R.string.stats_people_sort_roles else R.string.details_label_titles),
                     if (isVoice) Icons.Default.Person else Icons.Default.Tv
                 ),
                 PeopleSortOption(
                     PeopleSort.PROGRESS,
-                    stringResource(if (isManga) R.string.stats_genre_sort_chapters else R.string.stats_genre_sort_hours),
+                    stringResource(if (isManga) R.string.search_sort_chapters else R.string.stats_genre_sort_hours),
                     if (isManga) Icons.AutoMirrored.Filled.MenuBook else Icons.Default.Schedule
                 ),
-                PeopleSortOption(PeopleSort.SCORE, stringResource(R.string.stats_genre_sort_score), Icons.Default.Star),
+                PeopleSortOption(PeopleSort.SCORE, stringResource(R.string.sort_score), Icons.Default.Star),
             ),
             selectedSort = model.sort,
             onSortChange = { onSortSelected(model.list, it) },
@@ -805,7 +805,7 @@ private fun LazyListScope.statsHowYouWatch(
     val lists: @Composable (Modifier) -> Unit = { modifier ->
         ListTilesCard(tiles, statuses.countOf(LibraryStatus.COMPLETED), total, mediaType, isOwnProfile, modifier)
     }
-    val listsTitle = if (isOwnProfile) R.string.stats_header_your_lists else R.string.stats_header_their_lists
+    val listsTitle = if (isOwnProfile) R.string.library_lists_title else R.string.stats_header_their_lists
     val lengthsTitle = if (isManga) R.string.stats_header_chapter_length else R.string.stats_header_episode_length
     if (columns <= 1) {
         item(key = "watch_hero") { Box(Modifier.padding(horizontal = 16.dp)) { hero() } }
@@ -889,7 +889,7 @@ private fun AnimeTimeHero(stats: AnimeStatisticsUi, joinedAt: Long?, isOwnProfil
         val perDayText = when {
             perDay >= 60 && perDay % 60 > 0 -> stringResource(R.string.stats_per_day_hm, perDay / 60, perDay % 60)
             perDay >= 60 -> stringResource(R.string.stats_per_day_h, perDay / 60)
-            else -> stringResource(R.string.stats_per_day_m, perDay.coerceAtLeast(1))
+            else -> stringResource(R.string.details_duration_minutes, perDay.coerceAtLeast(1))
         }
         val totalHours = stats.minutesWatched / 60
         stringResource(

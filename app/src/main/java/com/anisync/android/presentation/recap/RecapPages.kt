@@ -659,7 +659,7 @@ private fun MonthTopFive(story: StoryModel) {
 /** "2 h 35 min · movie", "2 h 16 min · 4 episodes". */
 @Composable
 private fun rankMeta(minutes: Int, episodes: Int, isFilm: Boolean): String = stringResource(
-    R.string.recap_meta,
+    R.string.filter_chip_value,
     shortDuration(minutes),
     if (isFilm) stringResource(R.string.recap_meta_movie) else episodesText(episodes),
 )
@@ -1168,7 +1168,7 @@ private fun MonthsChart(story: StoryModel, panel: Color, content: Color, modifie
                 BoxWithConstraints(Modifier.fillMaxWidth()) {
                     val pitch = (maxWidth - 24.dp) / 11
                     FrameText(
-                        text = stringResource(R.string.recap_meta, monthName(busiest), count(months[busiest] ?: 0)),
+                        text = stringResource(R.string.filter_chip_value, monthName(busiest), count(months[busiest] ?: 0)),
                         style = cardText(13, 18, FontWeight.Bold),
                         color = scheme.onPrimary,
                         maxLines = 1,

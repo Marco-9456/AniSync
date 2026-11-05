@@ -369,7 +369,7 @@ private fun PanelSelector(panel: StudioPanel, onAction: (ShareStudioAction) -> U
             stringResource(
                 when (option) {
                     StudioPanel.LAYOUT -> R.string.share_panel_layout
-                    StudioPanel.COLOR -> R.string.share_panel_color
+                    StudioPanel.COLOR -> R.string.settings_section_color
                     StudioPanel.BACKGROUND -> R.string.share_panel_background
                     StudioPanel.DETAILS -> R.string.share_panel_details
                 }
@@ -595,7 +595,7 @@ private val MinStageHeight = 300.dp
 private fun StudioActionRow(actions: StudioActions, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StudioAction(Icons.Filled.Download, stringResource(R.string.share_action_save), actions.busy, primary = false, onClick = actions.onSave)
-        StudioAction(Icons.Filled.ContentCopy, stringResource(R.string.share_action_copy_link), busy = false, primary = false, onClick = actions.onCopy)
+        StudioAction(Icons.Filled.ContentCopy, stringResource(R.string.forum_action_copy_link), busy = false, primary = false, onClick = actions.onCopy)
         StudioAction(Icons.Filled.Share, stringResource(R.string.share_action_share), actions.busy, primary = true, onClick = actions.onShare)
     }
 }

@@ -295,7 +295,7 @@ class ShareSubjectLoader @Inject constructor(
     private fun cardScore(score: Int?): String? {
         val value = score?.takeIf { it > 0 } ?: return null
         return when (val format = appSettings.userScoreFormat.value) {
-            ScoreFormat.POINT_5, ScoreFormat.POINT_3 -> resources.getString(R.string.share_score_percent, value)
+            ScoreFormat.POINT_5, ScoreFormat.POINT_3 -> resources.getString(R.string.tags_rank_percent, value)
             else -> formatCommunityScore(value, format)
         }
     }
@@ -337,7 +337,7 @@ class ShareSubjectLoader @Inject constructor(
         val trimmed = value.trim().trimEnd('+').takeIf { it.isNotEmpty() } ?: return null
         val range = trimmed.split('-').map { it.trim() }
         return if (range.size == 2 && range.all { it.isNotEmpty() }) {
-            resources.getString(R.string.share_age_range, range[0], range[1])
+            resources.getString(R.string.stats_length_range, range[0], range[1])
         } else {
             value.trim()
         }

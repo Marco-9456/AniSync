@@ -65,7 +65,7 @@ object StatsBentoTemplate : ShareTemplate<ShareSubject.Stats> {
 }
 
 object StatsGenresTemplate : ShareTemplate<ShareSubject.Stats> {
-    override val label: Int = R.string.share_template_genres
+    override val label: Int = R.string.label_genres
     override val defaultBackground: CardBackground = CardBackground.SOLID
 
     @Composable
@@ -114,7 +114,7 @@ private fun StatsBigNumber(subject: ShareSubject.Stats, spec: CardSpec) {
             avatar = layout.avatar,
             nameGap = layout.nameGap,
             nameTop = if (spec.size == CardSize.STORY) 15.dp else 10.dp,
-            eyebrow = stringResource(if (subject.isManga) R.string.share_stats_all_time_manga else R.string.share_stats_all_time_anime),
+            eyebrow = stringResource(if (subject.isManga) R.string.stats_hero_eyebrow_manga else R.string.stats_hero_eyebrow_anime),
             nameSize = 22,
             nameLineHeight = 28,
             modifier = Modifier.padding(start = layout.avatarStart, top = layout.avatarTop - reserve),
@@ -337,7 +337,7 @@ private fun StatsBento(subject: ShareSubject.Stats, spec: CardSpec) {
                             value = stringResource(taste.labelRes()),
                             label = stringResource(
                                 R.string.stats_tile_taste,
-                                stringResource(R.string.stats_tile_taste_word).cardUpper(),
+                                stringResource(R.string.stats_view_taste).cardUpper(),
                                 stringResource(R.string.stats_sigma),
                                 formatOneDecimal(subject.standardDeviation.toDouble(), locale),
                             ),
@@ -668,7 +668,7 @@ private fun statsSentence(subject: ShareSubject.Stats, spec: CardSpec): String {
     }
     val minutes = subject.minutes
     return if (spec.shows(CardDetail.TIME) && minutes != null && minutes > 0) {
-        stringResource(R.string.share_stats_sentence_anime, statsDuration(minutes, R.string.share_duration_and))
+        stringResource(R.string.share_stats_sentence_anime, statsDuration(minutes, R.string.notification_actors_two))
     } else {
         pluralStringResourceOrDefault(R.plurals.stats_unit_anime, subject.count)
     }

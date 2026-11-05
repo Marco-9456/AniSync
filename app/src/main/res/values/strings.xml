@@ -1412,7 +1412,6 @@
     <string name="cd_thread_depth">Thread depth: %d levels deep. Tap to go back.</string>
     <string name="statistics_status_breakdown">Status Breakdown</string>
     <!-- Statistics views -->
-    <string name="stats_view_recaps">Recaps</string>
     <string name="stats_view_taste">Taste</string>
     <string name="stats_view_how_you_watch">How you watch</string>
     <string name="stats_view_how_you_read">How you read</string>
@@ -1424,7 +1423,6 @@
     <string name="stats_hero_watch_time_single">%1$s of watching</string>
     <string name="stats_hero_lists_note_own">%1$s on your lists. Planning stays on the list but is not counted in the %2$s.</string>
     <string name="stats_hero_lists_note_other">%1$s on their lists. Planning stays on the list but is not counted in the %2$s.</string>
-    <string name="stats_tile_taste_word">Taste</string>
     <string name="stats_tile_taste">%1$s · %2$s %3$s</string>
     <string name="stats_tile_top_genre">Top genre</string>
     <string name="stats_taste_focused">Focused</string>
@@ -1445,7 +1443,6 @@
     <string name="stats_teaser_people_locked_other">Voice actors, staff and studios show up once someone appears in two of their titles.</string>
     <string name="stats_year_range">%1$d to %2$d</string>
     <string name="stats_short_year">\'%1$02d</string>
-    <string name="stats_list_and">%1$s and %2$s</string>
     <string name="stats_weekdays_monday">Mondays</string>
     <string name="stats_weekdays_tuesday">Tuesdays</string>
     <string name="stats_weekdays_wednesday">Wednesdays</string>
@@ -1467,9 +1464,7 @@
     <string name="stats_months_partial_first">%1$s starts on the %2$s, so it is partial.</string>
     <string name="stats_months_partial_last">%1$s ends on the %2$s, so it is partial.</string>
     <string name="stats_months_partial_single">%1$s runs from the %2$s to the %3$s, so it is partial.</string>
-    <string name="stats_activity_empty_title">No activity yet</string>
     <string name="stats_activity_empty_body">AniList keeps about six months of activity. Anything logged in that time shows up here once it is counted.</string>
-    <string name="stats_scores_title">Scores</string>
     <string name="stats_scores_scored">%1$s of %2$s scored</string>
     <string name="stats_scores_mean_pill">mean %1$s</string>
     <string name="stats_score_mean">mean</string>
@@ -1478,12 +1473,7 @@
     <string name="stats_sigma" translatable="false">σ</string>
     <string name="stats_spread_eclectic_body">Your scores spread wide, from %1$s to %2$s.</string>
     <string name="stats_spread_eclectic_body_other">Their scores spread wide, from %1$s to %2$s.</string>
-    <string name="stats_header_genres">Genres</string>
-    <string name="stats_header_tags">Tags</string>
-    <string name="stats_genre_sort_titles">Titles</string>
     <string name="stats_genre_sort_hours">Hours</string>
-    <string name="stats_genre_sort_chapters">Chapters</string>
-    <string name="stats_genre_sort_score">Score</string>
     <string name="stats_genre_hours">%1$s h</string>
     <string name="stats_genre_mean">★ %1$s</string>
     <string name="stats_tags_title">Most common tags</string>
@@ -1501,8 +1491,6 @@
     <string name="stats_read_detail_other">About %1$s chapters a day since they joined AniList in %2$s.</string>
     <string name="stats_per_day_hm">%1$d h %2$d min</string>
     <string name="stats_per_day_h">%1$d h</string>
-    <string name="stats_per_day_m">%1$d min</string>
-    <string name="stats_header_your_lists">Your lists</string>
     <string name="stats_header_their_lists">Their lists</string>
     <string name="stats_header_formats">Formats</string>
     <string name="stats_header_episode_length">Episode length</string>
@@ -1579,12 +1567,7 @@
     <string name="stats_eras_started_most_other">They started the most titles in %1$d, %2$s of them.</string>
     <string name="stats_people_favourite_own">Also in your favourites</string>
     <string name="stats_people_favourite_other">Also in their favourites</string>
-    <string name="stats_people_line">%1$s · %2$s</string>
     <string name="stats_people_sort_roles">Roles</string>
-    <string name="stats_people_show_more">Show more</string>
-    <string name="stats_header_voice_actors">Voice actors</string>
-    <string name="stats_header_staff">Staff</string>
-    <string name="stats_header_studios">Studios</string>
     <string name="stats_spotlight_voice_own">The voice you hear most</string>
     <string name="stats_spotlight_voice_other">The voice they hear most</string>
     <string name="stats_spotlight_staff_own">The name you see most</string>
@@ -1705,38 +1688,24 @@
     <string name="share_card_handle" translatable="false">@%1$s</string>
     <string name="share_template_bento">Bento</string>
     <string name="share_template_big_number">Big number</string>
-    <string name="share_template_genres">Genres</string>
     <string name="share_template_shelf">Shelf</string>
     <string name="share_template_collage">Collage</string>
     <string name="share_template_portrait">Portrait</string>
     <string name="share_template_quote">Quote</string>
     <string name="share_template_summary">Summary</string>
     <string name="share_media_score">score</string>
-    <string name="share_score_percent">%1$d%%</string>
     <string name="share_media_community_score">Community score</string>
     <string name="share_progress_episode_of">Episode %1$s of %2$s</string>
     <string name="share_progress_episode">Episode %1$s</string>
     <string name="share_progress_chapter_of">Chapter %1$s of %2$s</string>
     <string name="share_progress_chapter">Chapter %1$s</string>
     <string name="share_progress_fraction">%1$s / %2$s</string>
-    <string name="share_detail_popularity">Popularity</string>
-    <string name="share_detail_favourites">Favourites</string>
-    <string name="share_detail_studio">Studio</string>
-    <string name="share_detail_genres">Genres</string>
     <string name="share_detail_time">Time</string>
-    <string name="share_detail_taste">Taste</string>
     <string name="share_detail_ranking">Ranking</string>
-    <string name="share_detail_birthday">Birthday</string>
-    <string name="share_detail_age">Age</string>
-    <string name="share_detail_gender">Gender</string>
-    <string name="share_detail_roles">Roles</string>
-    <string name="share_detail_active_since">Active since</string>
     <string name="share_detail_home_town">Home town</string>
     <string name="share_detail_author">Author</string>
     <string name="share_detail_top_titles">Top titles</string>
     <string name="share_detail_handle">Your handle</string>
-    <string name="share_stats_all_time_anime">Anime · all time</string>
-    <string name="share_stats_all_time_manga">Manga · all time</string>
     <string name="share_stats_sentence_anime">anime, %1$s of them</string>
     <string name="share_stats_mean_score">mean score</string>
     <string name="share_stats_taste">taste</string>
@@ -1746,10 +1715,8 @@
     <string name="share_stats_genres_title">%1$s\'s genres</string>
     <string name="share_stats_by_titles_watched">By titles watched</string>
     <string name="share_stats_by_titles_read">By titles read</string>
-    <string name="share_duration_and">%1$s and %2$s</string>
     <string name="share_duration_list">%1$s, %2$s</string>
     <string name="share_fav_rank_item">%1$d. %2$s</string>
-    <string name="share_age_range">%1$s to %2$s</string>
     <string name="share_known_for_main">Main role in %1$s</string>
     <string name="share_known_for_supporting">Supporting role in %1$s</string>
     <string name="share_known_for_title">Appears in %1$s</string>
@@ -1764,7 +1731,6 @@
     <string name="share_recap_hours_minutes">%1$s h %2$s min</string>
     <string name="share_recap_minutes">%1$s min</string>
     <string name="share_panel_layout">Layout</string>
-    <string name="share_panel_color">Color</string>
     <string name="share_panel_background">Background</string>
     <string name="share_panel_details">Details</string>
     <string name="share_section_size">Size</string>
@@ -1784,7 +1750,6 @@
     <string name="share_background_clear">Clear</string>
     <string name="share_background_clear_note">Clear keeps the corners transparent, so it switches to the Card size.</string>
     <string name="share_dim">Dim</string>
-    <string name="share_dim_value">%1$d%%</string>
     <string name="share_swatch_app">App</string>
     <string name="share_swatch_profile">Profile</string>
     <string name="share_swatch_wine">Wine</string>
@@ -1807,7 +1772,6 @@
     <string name="share_caption_counter" translatable="false">%1$d/%2$d</string>
     <string name="share_swipe_hint">Swipe for another template</string>
     <string name="share_swipe_hint_keys">Swipe or use the arrow keys for another template</string>
-    <string name="share_action_copy_link">Copy link</string>
     <string name="cd_share_close">Close the studio</string>
     <string name="a11y_share_card_page">%1$s, template %2$d of %3$d</string>
     <string name="a11y_share_swatch_selected">%1$s, selected</string>
@@ -1901,24 +1865,15 @@
     <string name="dev_recap_duration_ms">%1$s ms</string>
     <string name="dev_recap_stored_size">Stored size</string>
     <string name="dev_recap_kilobytes">%1$s KB</string>
-    <string name="dev_recap_episodes">Episodes</string>
-    <string name="dev_recap_time">Time</string>
-    <string name="dev_recap_titles">Titles</string>
     <string name="dev_recap_finished">Finished</string>
     <string name="dev_recap_finished_titles">Finished, in order</string>
-    <string name="dev_recap_started">Started</string>
-    <string name="dev_recap_active_days">Active days</string>
     <string name="dev_recap_streak">Longest streak</string>
     <string name="dev_recap_streak_dates">Streak dates</string>
-    <string name="dev_recap_date_range">%1$s to %2$s</string>
     <string name="dev_recap_weekday">Busiest weekday</string>
     <string name="dev_recap_biggest_day">Biggest day</string>
     <string name="dev_recap_biggest_day_lead">Most that day</string>
     <string name="dev_recap_value_count">%1$s (%2$s)</string>
-    <string name="dev_recap_top_titles">Top five</string>
     <string name="dev_recap_title_line">%1$s, %2$s (%3$s)</string>
-    <string name="dev_recap_genres">Genres</string>
-    <string name="dev_recap_studios">Studios</string>
     <string name="dev_recap_name_hours">%1$s, %2$s h</string>
     <string name="dev_recap_franchise">Franchise</string>
     <string name="dev_recap_manga_chapters">Manga chapters</string>
@@ -2378,7 +2333,6 @@
     <!-- Recap stories, entry points and notification -->
     <string name="recap_story_month_title">%1$s recap</string>
     <string name="recap_story_year_title">Your %1$s</string>
-    <string name="recap_now_playing">%1$s · %2$s</string>
     <string name="recap_now_playing_muted">Muted · %1$s</string>
     <string name="recap_share_page">Share this page</string>
     <string name="recap_start">Start</string>
@@ -2395,7 +2349,6 @@
     <string name="recap_opener_across">%1$s across %2$s.</string>
     <string name="recap_opener_year_busy">%1$s, %2$s, and one very busy %3$s.</string>
     <string name="recap_time_eyebrow">In %1$s you watched</string>
-    <string name="recap_duration_and">%1$s and %2$s</string>
     <string name="recap_duration_pair">%1$s %2$s</string>
     <string name="recap_time_across">Across %1$s on %2$s of the month.</string>
     <string name="recap_compare_almost_twice">Almost twice %1$s</string>
@@ -2408,20 +2361,16 @@
     <string name="recap_compare_same">About the same as %1$s</string>
     <string name="recap_compare_fewer">Fewer than %1$s</string>
     <string name="recap_compare_under_half">Less than half of %1$s</string>
-    <string name="recap_list_two">%1$s and %2$s</string>
-    <string name="recap_list_more">%1$s, %2$s</string>
     <string name="recap_most_watched_eyebrow">Your most watched</string>
     <string name="recap_top_five_eyebrow">Your top five</string>
     <string name="recap_top_five_year_eyebrow">Your top five of %1$s</string>
     <string name="recap_by_time">By time watched</string>
-    <string name="recap_meta">%1$s · %2$s</string>
     <string name="recap_meta_movie">movie</string>
     <string name="recap_note_tie_both">%1$s and %2$s tied on time and both were finished. The tie goes to the one you finished first.</string>
     <string name="recap_note_tie_finished">%1$s and %2$s tied on time. The tie goes to %1$s, which you finished.</string>
     <string name="recap_note_tie">%1$s and %2$s tied on time.</string>
     <string name="recap_note_by_time">Ranked by time watched, not by episodes.</string>
     <string name="recap_mood_eyebrow">Your mood</string>
-    <string name="recap_hours_decimal">%1$s h</string>
     <string name="recap_mood_note">Hours overlap, since most titles carry more than one genre.</string>
     <string name="recap_finished_eyebrow">You finished</string>
     <string name="recap_rhythm_eyebrow">Your rhythm</string>
@@ -2477,7 +2426,6 @@
     <string name="recap_view_note">Every month with list activity gets a recap.</string>
     <string name="recap_none_title">No recaps yet</string>
     <string name="recap_none_body">A month with list activity gets its recap on the 1st of the next one.</string>
-    <string name="notification_channel_recaps">Recaps</string>
     <string name="notification_channel_recaps_desc">Your monthly and yearly recaps, the day they are ready</string>
     <string name="recap_notification_title">Your %1$s recap is ready</string>
     <string name="recap_notification_text">%1$s across %2$s, with %3$s on top. Tap to watch it.</string>

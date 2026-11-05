@@ -86,7 +86,7 @@ fun TasteScoresCard(
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = stringResource(R.string.stats_scores_title),
+                text = stringResource(R.string.details_score_info_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = scheme.onSurface,
                 modifier = Modifier.weight(1f)
@@ -408,9 +408,9 @@ fun GenreBoard(
             label = { option ->
                 stringResource(
                     when (option) {
-                        GenreSort.TITLES -> R.string.stats_genre_sort_titles
-                        GenreSort.HOURS -> if (isManga) R.string.stats_genre_sort_chapters else R.string.stats_genre_sort_hours
-                        GenreSort.SCORE -> R.string.stats_genre_sort_score
+                        GenreSort.TITLES -> R.string.details_label_titles
+                        GenreSort.HOURS -> if (isManga) R.string.search_sort_chapters else R.string.stats_genre_sort_hours
+                        GenreSort.SCORE -> R.string.sort_score
                     }
                 )
             },

@@ -195,23 +195,23 @@ private fun RecapNumbers(stored: StoredRecap, locale: Locale) {
     fun count(value: Int) = formatExactCount(value, locale)
     val valueCount = R.string.dev_recap_value_count
 
-    Readout(stringResource(R.string.dev_recap_episodes), count(recap.episodes))
+    Readout(stringResource(R.string.stat_episodes), count(recap.episodes))
     Readout(
-        stringResource(R.string.dev_recap_time),
+        stringResource(R.string.share_detail_time),
         stringResource(R.string.share_recap_hours_minutes, count(recap.minutes / 60), count(recap.minutes % 60)),
     )
-    Readout(stringResource(R.string.dev_recap_titles), count(recap.titles))
+    Readout(stringResource(R.string.details_label_titles), count(recap.titles))
     Readout(stringResource(R.string.dev_recap_finished), count(recap.finished))
     Readout(
         stringResource(R.string.dev_recap_finished_titles),
         recap.finishedTitles.map { title(it) }.joinToString(NEW_LINE),
     )
-    Readout(stringResource(R.string.dev_recap_started), count(recap.started))
-    Readout(stringResource(R.string.dev_recap_active_days), count(recap.activeDays))
+    Readout(stringResource(R.string.stats_header_started), count(recap.started))
+    Readout(stringResource(R.string.statistics_activity_active_days), count(recap.activeDays))
     Readout(stringResource(R.string.dev_recap_streak), count(recap.streak.days))
     Readout(
         stringResource(R.string.dev_recap_streak_dates),
-        stringResource(R.string.dev_recap_date_range, recap.streak.start.format(dates), recap.streak.end.format(dates)),
+        stringResource(R.string.recap_date_range, recap.streak.start.format(dates), recap.streak.end.format(dates)),
     )
     Readout(
         stringResource(R.string.dev_recap_weekday),
@@ -234,7 +234,7 @@ private fun RecapNumbers(stored: StoredRecap, locale: Locale) {
         ),
     )
     Readout(
-        stringResource(R.string.dev_recap_top_titles),
+        stringResource(R.string.share_recap_top_five),
         recap.ranked.take(5).map { ranked ->
             stringResource(
                 R.string.dev_recap_title_line,
@@ -245,13 +245,13 @@ private fun RecapNumbers(stored: StoredRecap, locale: Locale) {
         }.joinToString(NEW_LINE),
     )
     Readout(
-        stringResource(R.string.dev_recap_genres),
+        stringResource(R.string.label_genres),
         recap.genres.take(6).map {
             stringResource(R.string.dev_recap_name_hours, it.name, formatHours(it.minutes, locale))
         }.joinToString(NEW_LINE),
     )
     Readout(
-        stringResource(R.string.dev_recap_studios),
+        stringResource(R.string.search_header_studios),
         recap.studios.take(3).map {
             stringResource(R.string.dev_recap_name_hours, it.name, formatHours(it.minutes, locale))
         }.joinToString(NEW_LINE),

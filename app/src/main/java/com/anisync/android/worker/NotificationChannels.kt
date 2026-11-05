@@ -63,7 +63,7 @@ object NotificationChannels {
             ChannelSpec(ACTIVITY_LIKE_CHANNEL_ID, R.string.notification_channel_activity_like, R.string.notification_channel_activity_like_desc, GROUP_ACTIVITY_ID),
             ChannelSpec(ACTIVITY_MESSAGE_CHANNEL_ID, R.string.notification_channel_activity_message, R.string.notification_channel_activity_message_desc, GROUP_ACTIVITY_ID),
             ChannelSpec(FOLLOW_CHANNEL_ID, R.string.notification_follows, R.string.notification_follows_desc, GROUP_ACTIVITY_ID),
-            ChannelSpec(RECAPS_CHANNEL_ID, R.string.notification_channel_recaps, R.string.notification_channel_recaps_desc, GROUP_OTHER_ID),
+            ChannelSpec(RECAPS_CHANNEL_ID, R.string.settings_recaps, R.string.notification_channel_recaps_desc, GROUP_OTHER_ID),
             ChannelSpec(UPDATE_CHANNEL_ID, R.string.update_notification_channel_name, R.string.update_notification_channel_desc, GROUP_OTHER_ID),
         )
 

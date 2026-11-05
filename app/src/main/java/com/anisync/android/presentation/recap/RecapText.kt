@@ -95,7 +95,7 @@ internal fun longDuration(minutes: Int, withAnd: Boolean): String {
     return when {
         hours == 0 -> minuteText
         parts.minutes == 0 -> hourText
-        withAnd -> stringResource(R.string.recap_duration_and, hourText, minuteText)
+        withAnd -> stringResource(R.string.notification_actors_two, hourText, minuteText)
         else -> stringResource(R.string.recap_duration_pair, hourText, minuteText)
     }
 }
@@ -103,12 +103,12 @@ internal fun longDuration(minutes: Int, withAnd: Boolean): String {
 /** Hours to one decimal, "16.6 h". */
 @Composable
 @ReadOnlyComposable
-internal fun decimalHours(minutes: Int): String = stringResource(R.string.recap_hours_decimal, formatHours(minutes, recapLocale()))
+internal fun decimalHours(minutes: Int): String = stringResource(R.string.stats_genre_hours, formatHours(minutes, recapLocale()))
 
 /** Whole hours, "79 h". */
 @Composable
 @ReadOnlyComposable
-internal fun wholeHours(minutes: Int): String = stringResource(R.string.recap_hours_decimal, count(minutes / 60))
+internal fun wholeHours(minutes: Int): String = stringResource(R.string.stats_genre_hours, count(minutes / 60))
 
 /** "A", "A and B", "A, B and C". */
 @Composable
@@ -118,8 +118,8 @@ internal fun joinedNames(names: List<String>): String = when (names.size) {
     1 -> names.first()
     else -> {
         var head = names.first()
-        names.subList(1, names.lastIndex).forEach { head = stringResource(R.string.recap_list_more, head, it) }
-        stringResource(R.string.recap_list_two, head, names.last())
+        names.subList(1, names.lastIndex).forEach { head = stringResource(R.string.share_duration_list, head, it) }
+        stringResource(R.string.notification_actors_two, head, names.last())
     }
 }
 
