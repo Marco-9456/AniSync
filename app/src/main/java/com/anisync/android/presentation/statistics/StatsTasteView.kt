@@ -1,6 +1,5 @@
 package com.anisync.android.presentation.statistics
 
-import android.icu.text.MessageFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,6 +56,7 @@ import com.anisync.android.domain.stats.tasteSpread
 import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.profile.GenreSort
 import com.anisync.android.presentation.profile.ScoreUiModel
+import com.anisync.android.presentation.recap.spelled
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.genreColor
@@ -350,8 +350,6 @@ private fun spreadSentence(
             if (low == null || high == null || low.score == high.score) {
                 pluralStringResourceOrDefault(balanced, points, points, mean)
             } else {
-                val spellOut = remember(locale) { MessageFormat("{0,spellout}", locale) }
-                fun spelled(count: Int): String = spellOut.format(arrayOf(count))
                 val lowPart = pluralStringResourceOrDefault(R.plurals.stats_spread_count, low.count, spelled(low.count), low.label)
                 val highPart = if (high.score == PERFECT) {
                     pluralStringResourceOrDefault(R.plurals.stats_spread_perfect, high.count, spelled(high.count))

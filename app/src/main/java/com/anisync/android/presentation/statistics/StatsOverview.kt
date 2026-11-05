@@ -68,6 +68,7 @@ import com.anisync.android.domain.stats.TasteSpread
 import com.anisync.android.domain.stats.tasteSpread
 import com.anisync.android.presentation.profile.ScoreUiModel
 import com.anisync.android.presentation.profile.StatsView
+import com.anisync.android.presentation.recap.spelled
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.ListIndicatorKind
 import com.anisync.android.ui.theme.LocalAvatarShape
@@ -549,12 +550,12 @@ private fun ErasTeaserCard(teaser: ErasTeaser, onClick: () -> Unit) {
         )
         Text(
             text = if (span >= CENTURY) {
-                pluralStringResourceOrDefault(R.plurals.stats_teaser_century, decades, spelledOut(decades))
+                pluralStringResourceOrDefault(R.plurals.stats_teaser_century, decades, spelled(decades))
             } else {
                 pluralStringResourceOrDefault(
                     R.plurals.stats_teaser_decades_peak,
                     decades,
-                    spelledOut(decades),
+                    spelled(decades),
                     eras.peakReleaseYear.year.toString()
                 )
             },
@@ -710,14 +711,6 @@ private fun formatScoreNumber(value: Double): String {
 }
 
 private fun percent(part: Int, total: Int): String = "${(part * 100.0 / total).roundToInt()}%"
-
-/** [count] in words, "ten", in the reader's language, as the frames write small counts. */
-@Composable
-internal fun spelledOut(count: Int): String {
-    val locale = LocalConfiguration.current.locales[0]
-    val format = remember(locale) { android.icu.text.MessageFormat("{0,spellout}", locale) }
-    return format.format(arrayOf(count))
-}
 
 @Composable
 internal fun countryName(code: String): String {

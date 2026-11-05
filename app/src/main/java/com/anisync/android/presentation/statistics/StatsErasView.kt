@@ -36,6 +36,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.formatExactCount
 import com.anisync.android.domain.formatOneDecimal
 import com.anisync.android.domain.stats.Eras
+import com.anisync.android.presentation.recap.spelled
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.lineBox
@@ -95,7 +96,7 @@ private fun spanSentence(eras: Eras, isManga: Boolean, isOwnProfile: Boolean): S
         decades >= 2 -> pluralStringResourceOrDefault(
             if (isManga) R.plurals.stats_eras_decades_manga else R.plurals.stats_eras_decades_anime,
             decades,
-            spelledOut(decades).replaceFirstChar { it.titlecase() }
+            spelled(decades).replaceFirstChar { it.titlecase() }
         )
         else -> null
     }
