@@ -18,6 +18,9 @@ interface LibraryRepository {
      */
     fun observeListStatuses(): Flow<Map<Int, LibraryStatus>>
 
+    /** How many of the active account's [type] entries sit in each status, from the local cache. */
+    suspend fun countByStatus(type: MediaType): Map<LibraryStatus, Int>
+
     /**
      * Trigger a network refresh.
      * Fetches from API and updates local cache.

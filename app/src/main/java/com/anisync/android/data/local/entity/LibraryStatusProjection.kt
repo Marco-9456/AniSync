@@ -11,3 +11,9 @@ data class LibraryStatusProjection(
     val mediaId: Int,
     val status: LibraryStatus
 )
+
+/** How many entries one status holds, counted in SQL. */
+data class LibraryStatusCount(
+    val status: LibraryStatus,
+    val count: Int
+)

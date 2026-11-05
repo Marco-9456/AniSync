@@ -394,6 +394,9 @@ class LibraryRepositoryImpl @Inject constructor(
     override suspend fun getEntry(mediaId: Int): LibraryEntry? =
         libraryDao.getEntry(currentOwnerId(), mediaId)?.toDomain()
 
+    override suspend fun countByStatus(type: MediaType): Map<LibraryStatus, Int> =
+        libraryDao.countByStatus(currentOwnerId(), type).associate { it.status to it.count }
+
     override suspend fun updateEntry(entry: LibraryEntry): Result<Unit> {
         val owner = currentOwnerId()
         // Get original entry to detect status changes
