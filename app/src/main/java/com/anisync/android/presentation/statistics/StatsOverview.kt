@@ -44,10 +44,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -77,6 +79,7 @@ import java.text.NumberFormat
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.Locale
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 /**
@@ -124,16 +127,38 @@ fun StatsTiles(tiles: List<StatTileModel>, modifier: Modifier = Modifier) {
     }
 }
 
-/** [base] shrunk a point at a time until [text] fits [maxWidth] on one line, never below 14. */
+/**
+ * [base] shrunk by whole points until [text] fits [maxWidth] on one line, never below 14. The size
+ * is found by halving the range, so a long way down costs a handful of layouts, not one per point.
+ */
 @Composable
 internal fun fittedStyle(text: String, base: TextStyle, maxWidth: Dp): TextStyle {
-    var style = base
-    var width = measuredWidth(text, style)
-    while (width > maxWidth && style.fontSize.value > 14f) {
-        style = style.copy(fontSize = (style.fontSize.value - 1f).sp)
-        width = measuredWidth(text, style)
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    return remember(text, base, maxWidth, density, measurer) {
+        val largest = base.fontSize.value
+        val points = pointsToShrink(ceil(largest - MIN_FITTED_SP).toInt()) { points ->
+            with(density) { measurer.measure(text, base.copy(fontSize = (largest - points).sp)).size.width.toDp() } <= maxWidth
+        }
+        if (points == 0) base else base.copy(fontSize = (largest - points).sp)
     }
-    return style
+}
+
+private const val MIN_FITTED_SP = 14f
+
+/**
+ * The fewest whole points to take off for [fits] to hold, never more than [floor], which counts as
+ * fitting whatever the text does. Halves the range each try, so [fits] runs a handful of times.
+ */
+internal fun pointsToShrink(floor: Int, fits: (points: Int) -> Boolean): Int {
+    if (floor <= 0 || fits(0)) return 0
+    var low = 1
+    var high = floor
+    while (low < high) {
+        val mid = (low + high) / 2
+        if (fits(mid)) high = mid else low = mid + 1
+    }
+    return low
 }
 
 /** The view a teaser opens, with everything it shows already worked out. */
