@@ -14,6 +14,7 @@ import coil3.toBitmap
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.CardSize
+import com.anisync.android.domain.Result
 import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.share.cards.CardBackground
 import com.anisync.android.presentation.share.cards.CardDetail
@@ -103,7 +104,7 @@ class ShareStudioViewModel @Inject constructor(
     }
 
     private suspend fun load() {
-        val subject = runCatching { loader.load(route) }.getOrNull()
+        val subject = (loader.load(route) as? Result.Success)?.data
         if (subject == null) {
             _uiState.update { it.copy(failed = true) }
             return

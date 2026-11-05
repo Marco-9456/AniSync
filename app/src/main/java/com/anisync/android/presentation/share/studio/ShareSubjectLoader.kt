@@ -9,6 +9,8 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.data.CoverQuality
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.data.util.AppLocale
+import com.anisync.android.data.util.dataOrThrow
+import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.ADULT_GENRES
 import com.anisync.android.domain.CachePolicy
 import com.anisync.android.domain.CharacterDetails
@@ -27,6 +29,7 @@ import com.anisync.android.domain.StaffDetails
 import com.anisync.android.domain.StatisticsRepository
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.domain.formatCommunityScore
+import com.anisync.android.domain.getOrElse
 import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.share.cards.CardImage
 import com.anisync.android.presentation.share.cards.GenreCount
@@ -72,8 +75,12 @@ class ShareSubjectLoader @Inject constructor(
     private val resources get() = AppLocale.wrap(context).resources
     private val locale: Locale get() = resources.configuration.locales[0] ?: Locale.getDefault()
 
-    suspend fun load(route: ShareStudio): ShareSubject? {
-        val kind = runCatching { ShareStudioSubject.valueOf(route.subject) }.getOrNull() ?: return null
+    /**
+     * The route's subject, or why there is none. A failed request comes back as it failed, with the
+     * countdown of a rate limit, and [NOTHING] means there is nothing to share.
+     */
+    suspend fun load(route: ShareStudio): Result<ShareSubject> {
+        val kind = runCatching { ShareStudioSubject.valueOf(route.subject) }.getOrNull() ?: return NOTHING
         val viewer = profileRepository.observeProfile().firstOrNull()
         return when (kind) {
             ShareStudioSubject.MEDIA -> media(route.id, viewer?.name)
@@ -87,29 +94,29 @@ class ShareSubjectLoader @Inject constructor(
     }
 
     /** The active account's recap for the route's period, or the Developer Tools preview it names. */
-    private suspend fun recap(route: ShareStudio, viewer: UserProfile?): ShareSubject.Recap? {
-        val period = route.periodKey?.let(RecapPeriod::fromKey) ?: return null
+    private suspend fun recap(route: ShareStudio, viewer: UserProfile?): Result<ShareSubject.Recap> {
+        val period = route.periodKey?.let(RecapPeriod::fromKey) ?: return NOTHING
         if (route.id == PREVIEW_STUDIO_ID) {
-            val preview = recapPreviews.preview?.takeIf { it.recap.period == period } ?: return null
-            return recapCards.card(preview.recap, preview.userName)
+            val preview = recapPreviews.preview?.takeIf { it.recap.period == period } ?: return NOTHING
+            return Result.Success(recapCards.card(preview.recap, preview.userName))
         }
         val stored = recapRepository.storedRecap(period)
-            ?: (recapRepository.getRecap(period) as? Result.Success)?.data
-            ?: return null
+            ?: recapRepository.getRecap(period).getOrElse { return it }
+            ?: return NOTHING
         val name = accountStore.activeAccount.value?.name ?: viewer?.name.orEmpty()
-        return recapCards.card(stored, name)
+        return Result.Success(recapCards.card(stored, name))
     }
 
-    private suspend fun media(id: Int, handle: String?): ShareSubject.Media? {
+    private suspend fun media(id: Int, handle: String?): Result<ShareSubject.Media> {
         val details = detailsRepository.observeMediaDetails(id).firstOrNull()
             ?: run {
-                detailsRepository.refreshMediaDetails(id)
+                detailsRepository.refreshMediaDetails(id).getOrElse { return it }
                 detailsRepository.observeMediaDetails(id).firstOrNull()
             }
-            ?: return null
+            ?: return NOTHING
         val isManga = details.type == MediaType.MANGA
         val studios = details.studios.map { it.name }.ifEmpty { listOfNotNull(details.studio?.name) }
-        return ShareSubject.Media(
+        return Result.Success(ShareSubject.Media(
             id = details.id,
             isManga = isManga,
             name = details.getTitle(appSettings.titleLanguage.value),
@@ -129,13 +136,13 @@ class ShareSubjectLoader @Inject constructor(
             releaseStatus = details.status,
             handle = handle,
             link = AniListUrls.mediaUrl(details.id, details.type),
-        )
+        ))
     }
 
-    private suspend fun character(id: Int, handle: String?): ShareSubject.Character? {
-        val details = (detailsRepository.getCharacterDetails(id) as? Result.Success)?.data ?: return null
+    private suspend fun character(id: Int, handle: String?): Result<ShareSubject.Character> {
+        val details = detailsRepository.getCharacterDetails(id).getOrElse { return it }
         val language = appSettings.titleLanguage.value
-        return ShareSubject.Character(
+        return Result.Success(ShareSubject.Character(
             id = details.id,
             name = details.getName(language),
             nativeName = details.nativeName?.takeIf { it != details.getName(language) },
@@ -147,11 +154,11 @@ class ShareSubjectLoader @Inject constructor(
             knownFor = knownFor(details),
             handle = handle,
             link = AniListUrls.characterUrl(details.id),
-        )
+        ))
     }
 
-    private suspend fun staff(id: Int, handle: String?): ShareSubject.Staff? {
-        val details = (detailsRepository.getStaffDetails(id) as? Result.Success)?.data ?: return null
+    private suspend fun staff(id: Int, handle: String?): Result<ShareSubject.Staff> {
+        val details = detailsRepository.getStaffDetails(id).getOrElse { return it }
         val language = appSettings.titleLanguage.value
         val voiced = details.voicedCharacters.take(ROLES).map { CardImage(it.getName(language), it.characterImageUrl) }
         val roles = voiced.ifEmpty {
@@ -161,7 +168,7 @@ class ShareSubjectLoader @Inject constructor(
                 .take(ROLES)
                 .map { CardImage(it.titleUserPreferred, it.cover?.preferred(CoverQuality.LARGE) ?: it.coverUrl) }
         }
-        return ShareSubject.Staff(
+        return Result.Success(ShareSubject.Staff(
             id = details.id,
             name = details.getName(language),
             nativeName = details.nativeName?.takeIf { it != details.getName(language) },
@@ -174,18 +181,18 @@ class ShareSubjectLoader @Inject constructor(
             homeTown = details.homeTown?.takeIf { it.isNotBlank() },
             handle = handle,
             link = AniListUrls.staffUrl(details.id),
-        )
+        ))
     }
 
-    private suspend fun review(id: Int, handle: String?): ShareSubject.Review? {
-        val data = runCatching {
+    private suspend fun review(id: Int, handle: String?): Result<ShareSubject.Review> {
+        val data = safeApiCall {
             apolloClient.query(ReviewDetailsQuery(id = Optional.present(id)))
                 .fetchPolicy(FetchPolicy.CacheFirst)
                 .execute()
-                .data
-                ?.Review
-        }.getOrNull() ?: return null
-        return ShareSubject.Review(
+                .dataOrThrow()
+                .Review
+        }.getOrElse { return it } ?: return NOTHING
+        return Result.Success(ShareSubject.Review(
             id = data.id,
             mediaTitle = data.media?.title?.userPreferred.orEmpty(),
             bannerUrl = data.media?.bannerImage,
@@ -199,18 +206,17 @@ class ShareSubjectLoader @Inject constructor(
             helpful = data.rating ?: 0,
             handle = handle,
             link = "https://anilist.co/review/${data.id}",
-        )
+        ))
     }
 
-    private suspend fun stats(route: ShareStudio, viewer: UserProfile?): ShareSubject.Stats? {
-        val profile = profile(route, viewer) ?: return null
-        val statistics = (statisticsRepository.getUserStatistics(profile.id, CachePolicy.CacheFirst) as? Result.Success)?.data
-            ?: return null
+    private suspend fun stats(route: ShareStudio, viewer: UserProfile?): Result<ShareSubject.Stats> {
+        val profile = profile(route, viewer).getOrElse { return it }
+        val statistics = statisticsRepository.getUserStatistics(profile.id, CachePolicy.CacheFirst).getOrElse { return it }
         val isManga = route.mediaType == MediaType.MANGA.rawValue
         val language = appSettings.titleLanguage.value
         val favourites = (if (isManga) profile.favoriteMangaOverview else profile.favoriteAnime).take(FAVOURITES).map { it.toCardImage(language) }
-        return if (isManga) {
-            val manga = statistics.mangaStats ?: return null
+        return Result.Success(if (isManga) {
+            val manga = statistics.mangaStats ?: return NOTHING
             ShareSubject.Stats(
                 name = profile.name,
                 avatarUrl = profile.avatarUrl,
@@ -254,16 +260,16 @@ class ShareSubjectLoader @Inject constructor(
                 isOwnProfile = profile.id == viewer?.id,
                 link = profileLink(profile.name),
             )
-        }
+        })
     }
 
-    private suspend fun favourites(route: ShareStudio, viewer: UserProfile?): ShareSubject.Favourites? {
-        val profile = profile(route, viewer) ?: return null
+    private suspend fun favourites(route: ShareStudio, viewer: UserProfile?): Result<ShareSubject.Favourites> {
+        val profile = profile(route, viewer).getOrElse { return it }
         val isManga = route.mediaType == MediaType.MANGA.rawValue
         val language = appSettings.titleLanguage.value
         val entries = (if (isManga) profile.favoriteMangaOverview else profile.favoriteAnime).map { it.toCardImage(language) }
-        if (entries.isEmpty()) return null
-        return ShareSubject.Favourites(
+        if (entries.isEmpty()) return NOTHING
+        return Result.Success(ShareSubject.Favourites(
             name = profile.name,
             avatarUrl = profile.avatarUrl,
             bannerUrl = profile.bannerUrl,
@@ -271,15 +277,15 @@ class ShareSubjectLoader @Inject constructor(
             isManga = isManga,
             entries = entries,
             link = profileLink(profile.name),
-        )
+        ))
     }
 
-    private suspend fun profile(route: ShareStudio, viewer: UserProfile?): UserProfile? {
+    private suspend fun profile(route: ShareStudio, viewer: UserProfile?): Result<UserProfile> {
         if (viewer != null && (viewer.id == route.id || viewer.name == route.userName)) {
-            return profileRepository.observeProfile().first() ?: viewer
+            return Result.Success(profileRepository.observeProfile().first() ?: viewer)
         }
-        val name = route.userName ?: return null
-        return (profileRepository.fetchUserProfile(name, forceNetwork = false) as? Result.Success)?.data
+        val name = route.userName ?: return NOTHING
+        return profileRepository.fetchUserProfile(name, forceNetwork = false)
     }
 
     /**
@@ -354,14 +360,17 @@ class ShareSubjectLoader @Inject constructor(
         return Color(0xFF000000 or value)
     }
 
-    private companion object {
-        const val ROLES = 3
-        const val FAVOURITES = 5
-        const val COMPLETED = "COMPLETED"
-        const val MAIN = "MAIN"
-        const val SUPPORTING = "SUPPORTING"
+    companion object {
+        /** No request failed, there is simply nothing on the route to share. */
+        val NOTHING = Result.Error("Nothing to share")
+
+        private const val ROLES = 3
+        private const val FAVOURITES = 5
+        private const val COMPLETED = "COMPLETED"
+        private const val MAIN = "MAIN"
+        private const val SUPPORTING = "SUPPORTING"
 
         /** A leap year, so 29 February still formats. */
-        const val LEAP_YEAR = 2000
+        private const val LEAP_YEAR = 2000
     }
 }
