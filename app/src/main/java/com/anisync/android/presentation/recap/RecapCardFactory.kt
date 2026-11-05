@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.recap
 
 import android.content.Context
-import androidx.compose.ui.graphics.Color
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.util.AppLocale
 import com.anisync.android.domain.StoredRecap
@@ -11,6 +10,7 @@ import com.anisync.android.presentation.share.cards.CardImage
 import com.anisync.android.presentation.share.cards.RecapCard
 import com.anisync.android.presentation.share.cards.RecapTitle
 import com.anisync.android.presentation.share.cards.ShareSubject
+import com.anisync.android.ui.theme.mediaArtworkSeedColor
 import com.anisync.android.util.TitleUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Month
@@ -34,7 +34,7 @@ class RecapCardFactory @Inject constructor(
                 id = media.id,
                 title = TitleUtils.getTitle(language, media.titleRomaji, media.titleEnglish, media.titleNative, media.title),
                 coverUrl = media.coverUrl,
-                color = parseHex(media.color),
+                color = mediaArtworkSeedColor(media.color),
                 format = media.format,
                 year = media.seasonYear ?: media.startDate?.year,
                 studio = media.mainStudio,
@@ -82,11 +82,4 @@ class RecapCardFactory @Inject constructor(
     /** The top title's AniList colour as AniList writes it, for routes that carry a cover colour. */
     fun coverColorHex(stored: StoredRecap): String? =
         stored.recap.ranked.firstOrNull()?.let { stored.media[it.mediaId]?.color }
-
-    companion object {
-        fun parseHex(hex: String?): Color? {
-            val value = hex?.trim()?.removePrefix("#")?.takeIf { it.length == 6 }?.toLongOrNull(16) ?: return null
-            return Color(0xFF000000 or value)
-        }
-    }
 }

@@ -2,7 +2,6 @@ package com.anisync.android.presentation.share.studio
 
 import android.content.Context
 import android.text.format.DateFormat
-import androidx.compose.ui.graphics.Color
 import com.anisync.android.R
 import com.anisync.android.ReviewDetailsQuery
 import com.anisync.android.data.AppSettings
@@ -38,6 +37,7 @@ import com.anisync.android.presentation.share.cards.KnownForRole
 import com.anisync.android.presentation.share.cards.ShareSubject
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.aniListProfileSeedColor
+import com.anisync.android.ui.theme.mediaArtworkSeedColor
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.getName
 import com.anisync.android.util.getTitle
@@ -122,7 +122,7 @@ class ShareSubjectLoader @Inject constructor(
             name = details.getTitle(appSettings.titleLanguage.value),
             coverUrl = details.cover?.preferred(CoverQuality.EXTRA_LARGE) ?: details.coverUrl,
             bannerUrl = details.bannerUrl,
-            aniListColor = parseHex(details.coverColor),
+            aniListColor = mediaArtworkSeedColor(details.coverColor),
             format = details.format,
             year = details.seasonYear ?: details.year,
             studios = studios,
@@ -197,7 +197,7 @@ class ShareSubjectLoader @Inject constructor(
             mediaTitle = data.media?.title?.userPreferred.orEmpty(),
             bannerUrl = data.media?.bannerImage,
             coverUrl = data.media?.coverImage?.large,
-            aniListColor = parseHex(data.media?.coverImage?.color),
+            aniListColor = mediaArtworkSeedColor(data.media?.coverImage?.color),
             summary = data.summary.orEmpty(),
             score = data.score ?: 0,
             authorName = data.user?.name.orEmpty(),
@@ -354,11 +354,6 @@ class ShareSubjectLoader @Inject constructor(
         CardImage(getTitle(language), cover?.preferred(CoverQuality.LARGE) ?: coverUrl)
 
     private fun profileLink(name: String) = "https://anilist.co/user/$name"
-
-    private fun parseHex(hex: String?): Color? {
-        val value = hex?.trim()?.removePrefix("#")?.takeIf { it.length == 6 }?.toLongOrNull(16) ?: return null
-        return Color(0xFF000000 or value)
-    }
 
     companion object {
         /** No request failed, there is simply nothing on the route to share. */
