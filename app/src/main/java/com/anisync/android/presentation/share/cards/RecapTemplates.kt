@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -412,63 +411,4 @@ private fun recapDuration(minutes: Int): String {
     } else {
         stringResource(R.string.share_recap_minutes, formatExactCount(parts.minutes, locale))
     }
-}
-
-/** Goldiizz's September 2026 and 2025 as the frames draw them, until Phase 5 builds real recaps. */
-internal object RecapPreviews {
-    val september = RecapCard(
-        userName = "Goldiizz",
-        isYear = false,
-        periodTitle = "September 2026",
-        monthName = "September",
-        year = 2026,
-        episodes = 62,
-        minutes = 1340,
-        titles = 17,
-        finished = 15,
-        activeDays = 17,
-        top = listOf(
-            RecapTitle("Shin Evangelion Movie:||", null, 155),
-            RecapTitle("Armitage III", null, 136),
-            RecapTitle("Ao no 6-gou", null, 128),
-        ),
-        genres = listOf("Action", "Mecha", "Sci-Fi"),
-        months = emptyList(),
-        monthInitials = emptyList(),
-        busiestMonthName = null,
-        topGenre = "Action",
-        topStudio = null,
-        mangaChapters = null,
-        covers = List(3) { CardImage("", null) },
-        coverColor = Color(0xFF3B5364),
-    )
-
-    val year2025 = RecapCard(
-        userName = "Goldiizz",
-        isYear = true,
-        periodTitle = "2025",
-        monthName = null,
-        year = 2025,
-        episodes = 339,
-        minutes = 79 * 60,
-        titles = 68,
-        finished = 0,
-        activeDays = 122,
-        top = listOf(
-            RecapTitle("BanG Dream!", null, 312),
-            RecapTitle("Momentary Lily", null, 312),
-            RecapTitle("SHOW BY ROCK!!", null, 288),
-            RecapTitle("Okinawa de Suki ni Natta Ko ga Hougen Sugite Tsura Sugiru", null, 288),
-            RecapTitle("Zenshuu.", null, 288),
-        ),
-        genres = listOf("Comedy"),
-        months = listOf(112, 18, 37, 44, 7, 10, 27, 37, 10, 27, 7, 7),
-        monthInitials = listOf("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"),
-        busiestMonthName = "January",
-        topGenre = "Comedy",
-        topStudio = "GoHands",
-        mangaChapters = 209,
-        covers = emptyList(),
-        coverColor = Color(0xFFCFC88B),
-    )
 }

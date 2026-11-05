@@ -255,7 +255,7 @@ enum class KnownForRole { MAIN, SUPPORTING, BACKGROUND }
 @Immutable
 data class KnownFor(val title: String, val coverUrl: String?, val role: KnownForRole, val more: Int)
 
-/** A recap as its share cards print it. Built from a real recap in Phase 5, from preview data until then. */
+/** A recap as its share cards print it. */
 @Immutable
 data class RecapCard(
     val userName: String,
