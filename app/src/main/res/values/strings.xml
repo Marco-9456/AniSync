@@ -1864,7 +1864,6 @@
     <string name="dev_recap_took">Took</string>
     <string name="dev_recap_duration_ms">%1$s ms</string>
     <string name="dev_recap_stored_size">Stored size</string>
-    <string name="dev_recap_kilobytes">%1$s KB</string>
     <string name="dev_recap_finished">Finished</string>
     <string name="dev_recap_finished_titles">Finished, in order</string>
     <string name="dev_recap_streak">Longest streak</string>

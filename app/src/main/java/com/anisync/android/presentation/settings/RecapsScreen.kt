@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.settings
 
 import android.text.format.DateFormat
-import android.text.format.Formatter
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
@@ -52,6 +51,7 @@ import com.anisync.android.presentation.settings.components.InfoNotice
 import com.anisync.android.presentation.settings.components.SettingsPickerSheet
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.ProvideDisplaySize
+import com.anisync.android.util.formatFileSize
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -256,7 +256,7 @@ private fun StoredRecapsItem(months: Int?, bytes: Long, onClear: () -> Unit) {
                 R.plurals.recap_settings_stored_desc,
                 months,
                 months.toString(),
-                Formatter.formatShortFileSize(context, bytes),
+                formatFileSize(context, bytes),
             )
         },
         enabled = hasStored,

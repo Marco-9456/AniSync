@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
@@ -35,10 +36,10 @@ import com.anisync.android.domain.RecapPreview
 import com.anisync.android.domain.StoredRecap
 import com.anisync.android.domain.formatExactCount
 import com.anisync.android.domain.formatHours
-import com.anisync.android.domain.formatOneDecimal
 import com.anisync.android.domain.recap.RecapPeriod
 import com.anisync.android.presentation.navigation.RecapStory
 import androidx.compose.runtime.LaunchedEffect
+import com.anisync.android.util.formatFileSize
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -175,7 +176,7 @@ private fun PreviewReadout(preview: RecapPreview) {
     )
     Readout(
         stringResource(R.string.dev_recap_stored_size),
-        stringResource(R.string.dev_recap_kilobytes, formatOneDecimal(preview.payloadBytes / 1024.0, locale)),
+        formatFileSize(LocalContext.current, preview.payloadBytes.toLong()),
     )
     val recap = preview.recap
     if (recap == null) {

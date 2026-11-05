@@ -25,6 +25,7 @@ import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
 import com.anisync.android.presentation.security.AppLockAuthenticator.isAppLockSupported
 import com.anisync.android.ui.theme.FontAxisOverrides
+import com.anisync.android.util.formatFileSize
 import com.anisync.android.worker.NotificationDebugService
 import com.anisync.android.worker.NotificationScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -573,7 +574,7 @@ class SettingsViewModel @Inject constructor(
             _isCacheClearing.value = true
             try {
                 cacheInventory.clearAll()
-                _cacheSize.value = formatFileSize(cacheInventory.totalBytes())
+                _cacheSize.value = formatFileSize(context, cacheInventory.totalBytes())
                 _isCacheCleared.value = true
                 toastManager.showToast(ToastType.SUCCESS, R.string.settings_cache_cleared)
             } catch (e: Exception) {
@@ -585,16 +586,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     private suspend fun calculateCacheSizeAsync(): String =
-        formatFileSize(cacheInventory.totalBytes())
-
-    private fun formatFileSize(bytes: Long): String {
-        return when {
-            bytes < 1024 -> "$bytes B"
-            bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-            bytes < 1024 * 1024 * 1024 -> "${bytes / (1024 * 1024)} MB"
-            else -> String.format("%.1f GB", bytes / (1024.0 * 1024.0 * 1024.0))
-        }
-    }
+        formatFileSize(context, cacheInventory.totalBytes())
 
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
