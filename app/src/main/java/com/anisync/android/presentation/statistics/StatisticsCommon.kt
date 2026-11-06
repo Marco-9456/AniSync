@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,6 +66,7 @@ fun RatingBadge(meanScore: Float, size: RatingBadgeSize = RatingBadgeSize.Defaul
 }
 
 @Composable
+@ReadOnlyComposable
 fun formatDisplayName(format: String): String = when (format) {
     "TV" -> stringResource(R.string.format_tv_series)
     "TV_SHORT" -> stringResource(R.string.format_tv_short)

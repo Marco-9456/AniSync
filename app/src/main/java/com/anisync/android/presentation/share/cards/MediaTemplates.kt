@@ -54,6 +54,7 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.formatCommunityCount
 import com.anisync.android.domain.formatExactCount
 import com.anisync.android.presentation.statistics.fittedStyle
+import com.anisync.android.presentation.statistics.formatDisplayName
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.lineBox
@@ -909,16 +910,5 @@ private fun statusIcon(status: LibraryStatus?): ImageVector = when (status) {
 /** AniList's format enum in the app's words, short enough for a meta line. */
 @Composable
 @ReadOnlyComposable
-internal fun formatLabel(format: String): String = when (format) {
-    "TV" -> stringResource(R.string.format_tv)
-    "TV_SHORT" -> stringResource(R.string.format_tv_short)
-    "MOVIE" -> stringResource(R.string.format_movie)
-    "SPECIAL" -> stringResource(R.string.format_special)
-    "OVA" -> stringResource(R.string.format_ova)
-    "ONA" -> stringResource(R.string.format_ona)
-    "MUSIC" -> stringResource(R.string.format_music)
-    "MANGA" -> stringResource(R.string.media_type_manga)
-    "NOVEL" -> stringResource(R.string.format_novel)
-    "ONE_SHOT" -> stringResource(R.string.format_one_shot)
-    else -> format.replace('_', ' ').lowercase().replaceFirstChar { it.titlecase() }
-}
+internal fun formatLabel(format: String): String =
+    if (format == "TV") stringResource(R.string.format_tv) else formatDisplayName(format)
