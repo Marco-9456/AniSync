@@ -122,7 +122,6 @@ import com.anisync.android.presentation.share.toShareBitmap
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.data.CardSize
 import com.anisync.android.presentation.util.LocalAppSettings
-import com.anisync.android.ui.theme.rememberSeededColorScheme
 import com.anisync.android.ui.theme.resolveDarkTheme
 import com.anisync.android.util.ShareUtils
 import kotlinx.coroutines.flow.first
@@ -215,12 +214,8 @@ private fun StoryPlaceholder(state: RecapStoryUiState, onAction: (RecapStoryActi
  */
 @Composable
 private fun pageScheme(seed: Color?): ColorScheme {
-    val appSettings = LocalAppSettings.current
-    val themeMode by appSettings.themeMode.collectAsStateWithLifecycle()
-    val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
-    val amoled by appSettings.amoledEnabled.collectAsStateWithLifecycle()
-    val appScheme = LocalAppScheme.current ?: MaterialTheme.colorScheme
-    return if (seed == null) appScheme else rememberSeededColorScheme(seed, themeMode.resolveDarkTheme(), amoled, paletteStyle)
+    val themeMode by LocalAppSettings.current.themeMode.collectAsStateWithLifecycle()
+    return recapScheme(seed, LocalAppScheme.current ?: MaterialTheme.colorScheme, themeMode.resolveDarkTheme())
 }
 
 @Composable

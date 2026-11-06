@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,16 +54,29 @@ import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.lineBox
 import com.anisync.android.ui.theme.rememberSeededColorScheme
+import com.anisync.android.ui.theme.shareCardColorScheme
+import com.anisync.android.ui.theme.withBlackBackground
 import java.time.YearMonth
 
-/** An entry's colours: its top cover's scheme in the app's light or dark, AMOLED and palette style, or the app's own. */
+/** An entry's colours: its top cover's scheme in the app's light or dark and palette style, or the app's own. */
 @Composable
-internal fun entryScheme(seed: Color?): ColorScheme {
+internal fun entryScheme(seed: Color?): ColorScheme =
+    recapScheme(seed, MaterialTheme.colorScheme, dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f)
+
+/**
+ * A recap's colours, [seed]'s scheme or [appScheme] without one. Pure black keeps the regular dark
+ * containers under a black background, so the pages' boxes and rows keep their edges.
+ */
+@Composable
+internal fun recapScheme(seed: Color?, appScheme: ColorScheme, dark: Boolean): ColorScheme {
     val appSettings = LocalAppSettings.current
     val paletteStyle by appSettings.paletteStyle.collectAsStateWithLifecycle()
     val amoled by appSettings.amoledEnabled.collectAsStateWithLifecycle()
-    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    return if (seed == null) MaterialTheme.colorScheme else rememberSeededColorScheme(seed, darkTheme = dark, amoled = amoled, paletteStyle = paletteStyle)
+    if (!(amoled && dark)) {
+        return if (seed == null) appScheme else rememberSeededColorScheme(seed, darkTheme = dark, amoled = false, paletteStyle = paletteStyle)
+    }
+    val base = if (seed == null) shareCardColorScheme(dark = true) else rememberSeededColorScheme(seed, darkTheme = true, amoled = false, paletteStyle = paletteStyle)
+    return remember(base) { base.withBlackBackground() }
 }
 
 /** The name a card prints for its period, "September" or "2025". */

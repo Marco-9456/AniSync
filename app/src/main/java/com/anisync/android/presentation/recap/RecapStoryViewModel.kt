@@ -259,10 +259,10 @@ class RecapStoryViewModel @Inject constructor(
         syncPlayback()
     }
 
-    /** Built from the settings the pages read, so their first frame finds it cached. */
+    /** Built from the settings the pages read, so their first frame finds it cached. Pure black reuses the dark one. */
     private fun prepareScheme(seed: Color) {
         val dark = appSettings.themeMode.value.resolveDarkTheme(context.resources.configuration)
-        seededColorScheme(seed, darkTheme = dark, amoled = appSettings.amoledEnabled.value, paletteStyle = appSettings.paletteStyle.value)
+        seededColorScheme(seed, darkTheme = dark, amoled = false, paletteStyle = appSettings.paletteStyle.value)
     }
 
     override fun onCleared() {
