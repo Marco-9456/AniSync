@@ -4,12 +4,17 @@ import android.content.Context
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.util.AppLocale
 import com.anisync.android.domain.StoredRecap
+import com.anisync.android.domain.recap.PageSeed
 import com.anisync.android.domain.recap.RecapPeriod
 import com.anisync.android.domain.recap.isShort
+import com.anisync.android.domain.recap.rankNote
+import com.anisync.android.domain.recap.recapPages
+import com.anisync.android.domain.recap.seed
 import com.anisync.android.presentation.share.cards.CardImage
 import com.anisync.android.presentation.share.cards.RecapCard
 import com.anisync.android.presentation.share.cards.RecapTitle
 import com.anisync.android.presentation.share.cards.ShareSubject
+import com.anisync.android.ui.theme.genreSeed
 import com.anisync.android.ui.theme.mediaArtworkSeedColor
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.TitleUtils
@@ -43,6 +48,38 @@ class RecapCardFactory @Inject constructor(
                 isShort = media.isShort(),
             )
         }
+    }
+
+    /**
+     * The story's model, every page's seed worked out with it. [previous] is last month's recap, for
+     * the comparison on the time page.
+     */
+    fun story(stored: StoredRecap, previous: StoredRecap?, userName: String, avatarUrl: String?, isPreview: Boolean): StoryModel {
+        val recap = stored.recap
+        val titles = titles(stored)
+        val pages = recapPages(recap)
+        val topColor = recap.ranked.firstOrNull()?.let { titles[it.mediaId]?.color }
+        val seeds = pages.map { page ->
+            when (val seed = page.seed) {
+                is PageSeed.Title -> recap.ranked.getOrNull(seed.rank)?.let { titles[it.mediaId]?.color } ?: topColor
+                PageSeed.TopGenre -> recap.genres.firstOrNull()?.let { genreSeed(it.name) } ?: topColor
+                PageSeed.App -> null
+            }
+        }
+        return StoryModel(
+            period = stored.period,
+            recap = recap,
+            userName = userName,
+            avatarUrl = avatarUrl,
+            titles = titles,
+            pages = pages,
+            seeds = seeds,
+            previousEpisodes = previous?.recap?.episodes?.takeIf { it > 0 },
+            rankNote = rankNote(recap, stored.media),
+            card = card(stored, userName, titles),
+            coverColor = coverColorHex(stored),
+            isPreview = isPreview,
+        )
     }
 
     fun card(stored: StoredRecap, userName: String, titles: Map<Int, StoryTitle> = titles(stored)): ShareSubject.Recap {

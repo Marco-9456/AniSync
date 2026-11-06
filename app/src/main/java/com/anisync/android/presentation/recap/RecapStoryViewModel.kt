@@ -14,16 +14,11 @@ import com.anisync.android.domain.ProfileStatsLauncher
 import com.anisync.android.domain.RecapRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.StoredRecap
-import com.anisync.android.domain.recap.PageSeed
 import com.anisync.android.domain.recap.RecapPeriod
 import com.anisync.android.domain.recap.ThemeSongChoice
 import com.anisync.android.domain.recap.pickThemeSong
-import com.anisync.android.domain.recap.rankNote
-import com.anisync.android.domain.recap.recapPages
-import com.anisync.android.domain.recap.seed
 import com.anisync.android.domain.recap.songCandidates
 import com.anisync.android.presentation.navigation.RecapStory
-import com.anisync.android.ui.theme.genreSeed
 import com.anisync.android.ui.theme.resolveDarkTheme
 import com.anisync.android.ui.theme.seededColorScheme
 import com.anisync.android.worker.RecapNotifier
@@ -187,34 +182,10 @@ class RecapStoryViewModel @Inject constructor(
     }
 
     /** The story's model, with every page's scheme built here so no page waits on one. */
-    private fun story(stored: StoredRecap, loaded: Loaded): StoryModel {
-        val recap = stored.recap
-        val titles = cardFactory.titles(stored)
-        val pages = recapPages(recap)
-        val topColor = recap.ranked.firstOrNull()?.let { titles[it.mediaId]?.color }
-        val seeds = pages.map { page ->
-            when (val seed = page.seed) {
-                is PageSeed.Title -> recap.ranked.getOrNull(seed.rank)?.let { titles[it.mediaId]?.color } ?: topColor
-                PageSeed.TopGenre -> recap.genres.firstOrNull()?.let { genreSeed(it.name) } ?: topColor
-                PageSeed.App -> null
-            }
+    private fun story(stored: StoredRecap, loaded: Loaded): StoryModel =
+        cardFactory.story(stored, loaded.previous, loaded.userName, loaded.avatarUrl, route.preview).also { story ->
+            story.seeds.filterNotNull().distinct().forEach { prepareScheme(it) }
         }
-        seeds.filterNotNull().distinct().forEach { prepareScheme(it) }
-        return StoryModel(
-            period = stored.period,
-            recap = recap,
-            userName = loaded.userName,
-            avatarUrl = loaded.avatarUrl,
-            titles = titles,
-            pages = pages,
-            seeds = seeds,
-            previousEpisodes = loaded.previous?.recap?.episodes?.takeIf { it > 0 },
-            rankNote = rankNote(recap, stored.media),
-            card = cardFactory.card(stored, loaded.userName, titles),
-            coverColor = cardFactory.coverColorHex(stored),
-            isPreview = route.preview,
-        )
-    }
 
     /** True when the story tries for a song: songs are on, the connection allows one and a title can lend it. */
     private fun songWanted(stored: StoredRecap): Boolean =
