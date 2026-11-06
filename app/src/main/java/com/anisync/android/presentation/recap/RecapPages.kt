@@ -145,6 +145,18 @@ internal fun RecapPageBackground(page: RecapPage, story: StoryModel) {
 }
 
 /** Where the blurred artwork sits: behind all of WM3, behind WY3's top, or behind WT1's whole stage. */
+/** What shows beside a frame narrower than the screen: the page's own colour, or its artwork across the stage. */
+@Composable
+internal fun RecapStageBackdrop(page: RecapPage, story: StoryModel) {
+    val scheme = MaterialTheme.colorScheme
+    when (page) {
+        RecapPage.TIME, RecapPage.YEAR_NUMBERS -> Box(Modifier.fillMaxSize().background(scheme.primaryContainer))
+        RecapPage.MOST_WATCHED, RecapPage.YEAR_TOP_FIVE ->
+            ArtworkBackdrop(story.rankedCovers.firstOrNull(), Modifier.fillMaxSize(), Backdrop.STAGE)
+        else -> Unit
+    }
+}
+
 internal enum class Backdrop { PAGE, TOP, STAGE }
 
 /** The top cover blurred behind a page, bleeding past its edges and fading into the background. */

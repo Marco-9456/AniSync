@@ -98,6 +98,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -317,9 +318,10 @@ private fun StoryStage(
             if (LocalAdaptiveInfo.current.isExpandedOrWider) {
                 TabletStage(story, state, onAction, maxHeightDp = maxHeight.value, canvas = canvas)
             } else {
-                val scale = min(maxWidth / FrameWidth, maxHeight / FrameHeight)
+                val scale = frameScale(maxWidth, maxHeight)
                 val bar = (maxWidth - FrameWidth * scale) / 2
                 if (bar > 0.dp) {
+                    RecapStageBackdrop(page, story)
                     // The bars beside a frame narrower than the screen turn pages like its own sides.
                     Box(
                         Modifier.fillMaxSize().pointerInput(bar) {
@@ -333,13 +335,28 @@ private fun StoryStage(
                         }
                     )
                 }
-                Box(Modifier.align(Alignment.Center).size(FrameWidth * scale, FrameHeight * scale)) {
+                Box(Modifier.align(Alignment.Center).requiredSize(FrameWidth * scale, FrameHeight * scale)) {
                     ScaledFrame(scale, canvas)
                 }
             }
         }
     }
 }
+
+/**
+ * How far the frame scales on a phone. It fits the screen, except that a screen a little wider than
+ * the frame gets the frame at its full width, losing a sliver of the top and bottom edges, which hold
+ * only background, rather than thin bars down both sides.
+ */
+private fun frameScale(width: Dp, height: Dp): Float {
+    val fit = min(width / FrameWidth, height / FrameHeight)
+    val byWidth = width / FrameWidth
+    val overflow = FrameHeight * byWidth - height
+    return if (overflow > 0.dp && overflow <= height * MAX_EDGE_CROP) byWidth else fit
+}
+
+/** The most of the frame's height a wide screen may crop, split between its top and bottom. */
+private const val MAX_EDGE_CROP = 0.04f
 
 /**
  * Draws [content] on the 448 by 997 frame, scaled by [scale] so it fits the space it is given. The
