@@ -180,7 +180,6 @@ fun RecapBanner(entry: RecapEntry, onWatch: () -> Unit, onClose: () -> Unit, mod
                     tracking = 1.4f,
                 )
             }
-            // WE1 sets its two lines 30dp apart, on the baselines a 32dp line would give them.
             val title = heroWide.style(23.sp, 30.sp, (-0.5).sp)
             Text(
                 text = stringResource(R.string.recap_banner_title, periodName(entry.period)),

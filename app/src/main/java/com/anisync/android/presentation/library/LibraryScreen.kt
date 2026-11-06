@@ -947,7 +947,6 @@ private fun LibraryTabContent(
                     entry = recapBanner,
                     onWatch = { onWatchRecap(recapBanner.key) },
                     onClose = onCloseRecap,
-                    // WE1 sets the banner 16dp from the screen edge and the rail, inside the list's 24 and 20.
                     modifier = Modifier
                         .animateItem()
                         .offset(y = (-4).dp)

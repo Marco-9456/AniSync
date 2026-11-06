@@ -390,8 +390,6 @@ fun GenreBoard(
     val rows = genres.sortedByDescending(metric).take(GENRE_ROWS)
     val max = rows.maxOfOrNull(metric)?.takeIf { it > 0f } ?: 1f
 
-    // The sort buttons draw 44dp inside a 48dp touch row, so the padding above and the gap below
-    // are 2dp short of the 16 and 12 the frame draws.
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -571,7 +569,6 @@ fun TagBoard(tags: List<TagStat>, modifier: Modifier = Modifier) {
     val shown = if (expanded) tags else tags.take(TAGS_FIRST)
     val max = tags.maxOf { it.count }.coerceAtLeast(1)
     val hasMore = tags.size > TAGS_FIRST
-    // Show more draws its line in a 40dp touch row, so the card keeps less padding under it.
     Column(
         modifier = modifier
             .fillMaxWidth()

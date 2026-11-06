@@ -140,8 +140,6 @@ fun ActivityHistoryCard(
     val byDate = remember(days) { bucketActivityDays(days) }
     var period by rememberSaveable { mutableStateOf(ActivityPeriod.Month) }
 
-    // The toggle's 44dp shape sits in a 48dp touch box, so the padding above it and the gap
-    // below it are 2dp short of the 16 and 12 the shape is drawn with.
     Column(
         modifier = modifier
             .fillMaxWidth()

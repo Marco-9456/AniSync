@@ -135,8 +135,6 @@ fun PeopleListCard(
     val locale = LocalConfiguration.current.locales[0]
     val scheme = MaterialTheme.colorScheme
     val rankStyle = LocalExpressiveTypography.current.titleWide.style(16.sp, 22.sp)
-    // The sort group draws 44dp in a 48dp touch row and Show more draws its line in a 40dp one,
-    // so the paddings around them are what is left of the frame's 8dp gaps.
     Column(
         modifier = modifier
             .fillMaxWidth()

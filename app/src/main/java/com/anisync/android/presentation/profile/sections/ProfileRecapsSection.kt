@@ -72,7 +72,6 @@ internal fun LazyListScope.recapShelf(recaps: RecapsUiModel, columns: Int, onOpe
             progress != null -> RecapInProgressCard(progress, Modifier.padding(horizontal = 16.dp))
         }
     }
-    // ST1 and ST3 leave 24 between the recaps and the hero, ST4's pane 16.
     item(key = "recap_shelf_gap") { Spacer(Modifier.height(if (wide) 16.dp else 24.dp)) }
 }
 
