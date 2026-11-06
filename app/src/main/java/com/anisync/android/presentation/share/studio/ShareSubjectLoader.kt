@@ -98,13 +98,17 @@ class ShareSubjectLoader @Inject constructor(
         val period = route.periodKey?.let(RecapPeriod::fromKey) ?: return NOTHING
         if (route.id == PREVIEW_STUDIO_ID) {
             val preview = recapPreviews.preview?.takeIf { it.recap.period == period } ?: return NOTHING
-            return Result.Success(recapCards.card(preview.recap, preview.userName))
+            val story = recapCards.story(preview.recap, preview.previous, preview.userName, preview.avatarUrl, isPreview = true)
+            return Result.Success(story.card.copy(story = story))
         }
         val stored = recapRepository.storedRecap(period)
             ?: recapRepository.getRecap(period).getOrElse { return it }
             ?: return NOTHING
-        val name = accountStore.activeAccount.value?.name ?: viewer?.name.orEmpty()
-        return Result.Success(recapCards.card(stored, name))
+        val account = accountStore.activeAccount.value
+        val name = account?.name ?: viewer?.name.orEmpty()
+        val previous = (period as? RecapPeriod.Month)?.let { recapRepository.storedRecap(it.previous) }
+        val story = recapCards.story(stored, previous, name, account?.avatarUrl ?: viewer?.avatarUrl, isPreview = false)
+        return Result.Success(story.card.copy(story = story))
     }
 
     private suspend fun media(id: Int, handle: String?): Result<ShareSubject.Media> {

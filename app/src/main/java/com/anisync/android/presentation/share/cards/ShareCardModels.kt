@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import com.anisync.android.R
 import com.anisync.android.data.CardSize
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.presentation.recap.StoryModel
 
 /** The polarity a card's scheme is built in. */
 enum class CardTone { DARK, LIGHT, PURE_BLACK }
@@ -239,6 +240,8 @@ sealed interface ShareSubject {
         val card: RecapCard,
         override val handle: String?,
         override val link: String,
+        /** The story the card closes, whose other slides the studio can share too. */
+        val story: StoryModel? = null,
     ) : ShareSubject {
         override val name: String get() = card.periodTitle
         override val artworkUrl: String? get() = card.covers.firstOrNull()?.url
@@ -293,6 +296,9 @@ interface ShareTemplate<in S : ShareSubject> {
 
     /** The background the frames draw this template on. */
     val defaultBackground: CardBackground
+
+    /** The sizes this template draws. Most draw all four. */
+    val sizes: Set<CardSize> get() = CardSize.entries.toSet()
 
     @Composable
     fun Card(subject: S, spec: CardSpec)
