@@ -398,7 +398,7 @@ private fun StudioStage(
 ) {
     val subject = state.subject
     Box(
-        modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = modifier.background(MaterialTheme.colorScheme.surface),
         contentAlignment = Alignment.Center,
     ) {
         when {
