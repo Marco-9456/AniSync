@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -648,6 +649,7 @@ private fun PeopleTeaserCard(teaser: PeopleTeaser, isOwnProfile: Boolean, onClic
                 AsyncImage(
                     model = teaser.personImage,
                     contentDescription = null,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(56.dp)
                         .clip(LocalAvatarShape.current)
