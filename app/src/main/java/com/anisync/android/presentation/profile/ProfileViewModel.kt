@@ -441,45 +441,66 @@ class ProfileViewModel @Inject constructor(
             kotlinx.coroutines.flow.flowOf(com.anisync.android.presentation.recap.RecapsUiModel())
         }
 
-    val uiState: StateFlow<ProfileUiState> = combine(
-        profileState,
-        localState,
-        socialState,
-        reviewsState,
-        statsState,
-        mediaListState,
+    /** The tabs' own states, below the header. */
+    private class Sections(
+        val social: SocialState,
+        val reviews: ReviewsState,
+        val stats: StatsState,
+        val mediaLists: MediaListState,
+        val favorites: FavoritesState,
+    )
+
+    /** Edits made here, laid over AniList's activity feed until the server agrees. */
+    private class FeedOverlays(
+        val subscriptions: Map<Int, Boolean>,
+        val likes: Map<Int, Pair<Boolean, Int>>,
+        val deleted: Set<Int>,
+        val edited: Map<Int, com.anisync.android.domain.UserActivity>,
+        val pagination: ActivityPaginationState,
+    )
+
+    /** What depends on who is looking rather than on whose profile it is. */
+    private class ViewerParts(
+        val viewerId: Int?,
+        val unreadCount: Int,
+        val adultOptions: Pair<Boolean, Boolean>,
+        val recaps: com.anisync.android.presentation.recap.RecapsUiModel,
+    )
+
+    private val sections = combine(socialState, reviewsState, statsState, mediaListState, favoritesState, ::Sections)
+
+    private val feedOverlays = combine(
         activitySubscriptionOverrides,
         activityLikeOverrides,
         deletedActivityIds,
-        viewerIdFlow,
-        notificationBadgeStore.unreadCount,
-        favoritesState,
-        activityPaginationState,
-        adultActivityOptions,
         editedActivities,
-        recapsState
-    ) { params ->
-        val remote = params[0] as ProfileUiState
-        val local = params[1] as ProfileUiLocalState
-        val social = params[2] as SocialState
-        val reviews = params[3] as ReviewsState
-        val stats = params[4] as StatsState
-        val mediaLists = params[5] as MediaListState
-        @Suppress("UNCHECKED_CAST")
-        val subOverrides = params[6] as Map<Int, Boolean>
-        @Suppress("UNCHECKED_CAST")
-        val likeOverrides = params[7] as Map<Int, Pair<Boolean, Int>>
-        @Suppress("UNCHECKED_CAST")
-        val deletedIds = params[8] as Set<Int>
-        val viewerId = params[9] as Int?
-        val unreadCount = params[10] as Int
-        val favoritesOverlay = params[11] as FavoritesState
-        val pagination = params[12] as ActivityPaginationState
-        @Suppress("UNCHECKED_CAST")
-        val (showAdultContent, showOthersAdultActivity) = params[13] as Pair<Boolean, Boolean>
-        @Suppress("UNCHECKED_CAST")
-        val edited = params[14] as Map<Int, com.anisync.android.domain.UserActivity>
-        val recaps = params[15] as com.anisync.android.presentation.recap.RecapsUiModel
+        activityPaginationState,
+        ::FeedOverlays,
+    )
+
+    private val viewerParts = combine(viewerIdFlow, notificationBadgeStore.unreadCount, adultActivityOptions, recapsState, ::ViewerParts)
+
+    val uiState: StateFlow<ProfileUiState> = combine(
+        profileState,
+        localState,
+        sections,
+        feedOverlays,
+        viewerParts,
+    ) { remote, local, parts, overlays, viewer ->
+        val social = parts.social
+        val reviews = parts.reviews
+        val stats = parts.stats
+        val mediaLists = parts.mediaLists
+        val favoritesOverlay = parts.favorites
+        val subOverrides = overlays.subscriptions
+        val likeOverrides = overlays.likes
+        val deletedIds = overlays.deleted
+        val edited = overlays.edited
+        val pagination = overlays.pagination
+        val viewerId = viewer.viewerId
+        val unreadCount = viewer.unreadCount
+        val (showAdultContent, showOthersAdultActivity) = viewer.adultOptions
+        val recaps = viewer.recaps
 
         // Fold lazily-loaded older activity pages into the profile's initial feed
         // (deduped, newest-first) before overlays apply, so a like/subscribe/delete
