@@ -121,8 +121,9 @@ fun StatsTiles(tiles: List<StatTileModel>, modifier: Modifier = Modifier) {
                     text = tile.label,
                     style = LocalExpressiveTypography.current.statLabel.copy(letterSpacing = 1.2.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 1,
+                    // A third of a narrow phone cannot hold MEAN SCORE, so the label shrinks rather than wraps.
+                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 11.sp),
                 )
             }
         }
