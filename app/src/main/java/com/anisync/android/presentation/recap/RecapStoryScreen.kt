@@ -318,6 +318,21 @@ private fun StoryStage(
                 TabletStage(story, state, onAction, maxHeightDp = maxHeight.value, canvas = canvas)
             } else {
                 val scale = min(maxWidth / FrameWidth, maxHeight / FrameHeight)
+                val bar = (maxWidth - FrameWidth * scale) / 2
+                if (bar > 0.dp) {
+                    // The bars beside a frame narrower than the screen turn pages like its own sides.
+                    Box(
+                        Modifier.fillMaxSize().pointerInput(bar) {
+                            val barPx = bar.toPx()
+                            detectTapGestures { offset ->
+                                when {
+                                    offset.x < barPx -> onAction(RecapStoryAction.Previous)
+                                    offset.x > size.width - barPx -> onAction(RecapStoryAction.Next)
+                                }
+                            }
+                        }
+                    )
+                }
                 Box(Modifier.align(Alignment.Center).size(FrameWidth * scale, FrameHeight * scale)) {
                     ScaledFrame(scale, canvas)
                 }
