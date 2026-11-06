@@ -72,6 +72,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.drawWithContent
@@ -113,6 +114,7 @@ import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.navigation.ShareStudio
+import com.anisync.android.presentation.share.cards.CardMark
 import com.anisync.android.presentation.share.cards.CardSpec
 import com.anisync.android.presentation.share.cards.RecapMonthTemplate
 import com.anisync.android.presentation.share.cards.RecapYearTemplate
@@ -124,6 +126,7 @@ import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.data.CardSize
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.ui.theme.resolveDarkTheme
+import com.anisync.android.ui.theme.shareCardColorScheme
 import com.anisync.android.util.ShareUtils
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -369,6 +372,33 @@ private fun ScaledFrame(scale: Float, content: @Composable () -> Unit) {
         Box(Modifier.requiredSize(FrameWidth, FrameHeight)) { content() }
     }
 }
+
+/**
+ * One story page as a Story share card: the page at [width], in the colours it wears in the story,
+ * centred and cropped to [height] and marked the way Share this page crops and marks it.
+ */
+@Composable
+fun RecapSlide(story: StoryModel, page: RecapPage, width: Dp, height: Dp) {
+    val themeMode by LocalAppSettings.current.themeMode.collectAsStateWithLifecycle()
+    val dark = themeMode.resolveDarkTheme()
+    val scheme = recapScheme(story.seeds.getOrNull(story.pages.indexOf(page)), shareCardColorScheme(dark), dark)
+    val density = LocalDensity.current
+    val scale = width / FrameWidth
+    MaterialTheme(colorScheme = scheme) {
+        Box(Modifier.size(width, height).clipToBounds(), contentAlignment = Alignment.Center) {
+            CompositionLocalProvider(LocalDensity provides Density(density.density * scale, density.fontScale.coerceAtMost(MAX_FONT_SCALE))) {
+                Box(Modifier.requiredSize(FrameWidth, FrameHeight)) {
+                    RecapPageBackground(page, story)
+                    RecapPageContent(page, story, song = null, actions = StillPageActions) {}
+                }
+            }
+            CardMark(Modifier.align(Alignment.BottomEnd).padding(width / 18), size = width / 15)
+        }
+    }
+}
+
+/** A slide in the share studio is a picture, so its buttons do nothing. */
+private val StillPageActions = PageActions({}, {}, {}, {}, {}, {})
 
 /** WT1: the page centred over its blurred artwork, with arrows beside it. */
 @Composable

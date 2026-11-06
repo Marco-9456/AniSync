@@ -1693,6 +1693,8 @@
     <string name="share_template_portrait">Portrait</string>
     <string name="share_template_quote">Quote</string>
     <string name="share_template_summary">Summary</string>
+    <string name="share_template_slide">Story slide</string>
+    <string name="share_slide_keeps_look">A story slide keeps the colours and details it has in the story.</string>
     <string name="share_media_score">score</string>
     <string name="share_media_community_score">Community score</string>
     <string name="share_progress_episode_of">Episode %1$s of %2$s</string>

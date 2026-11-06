@@ -30,7 +30,10 @@ import androidx.compose.ui.unit.sp
 import com.anisync.android.R
 import com.anisync.android.data.CardSize
 import com.anisync.android.domain.formatExactCount
+import com.anisync.android.domain.recap.RecapPage
+import com.anisync.android.domain.recap.isCard
 import com.anisync.android.domain.splitMinutes
+import com.anisync.android.presentation.recap.RecapSlide
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.genreColor
@@ -44,6 +47,26 @@ object RecapMonthTemplate : ShareTemplate<ShareSubject.Recap> {
     override fun Card(subject: ShareSubject.Recap, spec: CardSpec) {
         ShareCardScaffold(spec, subject.artworkUrl) { RecapMonth(subject, spec) }
     }
+}
+
+/** One slide of the recap's story, drawn as the story draws it, so only at Story size. */
+data class RecapSlideTemplate(val page: RecapPage) : ShareTemplate<ShareSubject.Recap> {
+    override val label: Int get() = R.string.share_template_slide
+    override val defaultBackground: CardBackground get() = CardBackground.SOLID
+    override val sizes: Set<CardSize> get() = setOf(CardSize.STORY)
+
+    @Composable
+    override fun Card(subject: ShareSubject.Recap, spec: CardSpec) {
+        val story = subject.story ?: return
+        RecapSlide(story, page, CardWidth, CardSize.STORY.fixedHeight ?: return)
+    }
+}
+
+/** The card, and with its story every other slide too, in story order with the card where the story ends. */
+fun recapTemplates(subject: ShareSubject.Recap): List<ShareTemplate<*>> {
+    val card = if (subject.card.isYear) RecapYearTemplate else RecapMonthTemplate
+    val pages = subject.story?.pages ?: return listOf(card)
+    return pages.map { if (it.isCard) card else RecapSlideTemplate(it) }
 }
 
 object RecapYearTemplate : ShareTemplate<ShareSubject.Recap> {

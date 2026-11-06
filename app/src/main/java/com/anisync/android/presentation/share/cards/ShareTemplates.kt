@@ -17,5 +17,9 @@ fun templatesFor(subject: ShareSubject): List<ShareTemplate<*>> = when (subject)
     is ShareSubject.Character -> listOf(CharacterTemplate)
     is ShareSubject.Staff -> listOf(StaffTemplate)
     is ShareSubject.Review -> listOf(ReviewQuoteTemplate)
-    is ShareSubject.Recap -> listOf(if (subject.card.isYear) RecapYearTemplate else RecapMonthTemplate)
+    is ShareSubject.Recap -> recapTemplates(subject)
 }
+
+/** The template the studio opens on: a recap's own card, the first one otherwise. */
+fun defaultTemplateIndex(subject: ShareSubject): Int =
+    templatesFor(subject).indexOfFirst { it == RecapMonthTemplate || it == RecapYearTemplate }.coerceAtLeast(0)
