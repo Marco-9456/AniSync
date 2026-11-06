@@ -49,6 +49,8 @@ import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.settings.components.InfoNotice
 import com.anisync.android.presentation.settings.components.SettingsPickerSheet
+import com.anisync.android.presentation.share.studio.hintRes
+import com.anisync.android.presentation.share.studio.labelRes
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.ProvideDisplaySize
 import com.anisync.android.util.formatFileSize
@@ -318,18 +320,4 @@ private fun formatTime(time: LocalTime): String {
     val context = LocalContext.current
     val instant = time.atDate(LocalDate.now()).atZone(ZoneId.systemDefault()).toInstant()
     return DateFormat.getTimeFormat(context).format(Date.from(instant))
-}
-
-private fun CardSize.labelRes(): Int = when (this) {
-    CardSize.CHAT -> R.string.share_template_standard
-    CardSize.SQUARE -> R.string.share_format_square
-    CardSize.PORTRAIT -> R.string.share_size_portrait
-    CardSize.STORY -> R.string.share_format_story
-}
-
-private fun CardSize.hintRes(): Int = when (this) {
-    CardSize.CHAT -> R.string.share_size_chat_hint
-    CardSize.SQUARE -> R.string.share_size_ratio_square
-    CardSize.PORTRAIT -> R.string.share_size_ratio_portrait
-    CardSize.STORY -> R.string.share_size_ratio_story
 }

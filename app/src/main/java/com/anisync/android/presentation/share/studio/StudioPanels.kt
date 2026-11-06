@@ -103,17 +103,29 @@ private fun LayoutPanel(state: ShareStudioUiState, onAction: (ShareStudioAction)
     }
 }
 
+/** A card size's name, as the studio's tiles and the Recaps settings both print it. */
+internal fun CardSize.labelRes(): Int = when (this) {
+    CardSize.CHAT -> R.string.share_template_standard
+    CardSize.SQUARE -> R.string.share_format_square
+    CardSize.PORTRAIT -> R.string.share_size_portrait
+    CardSize.STORY -> R.string.share_format_story
+}
+
+/** What a card size is for, or its proportions. */
+internal fun CardSize.hintRes(): Int = when (this) {
+    CardSize.CHAT -> R.string.share_size_chat_hint
+    CardSize.SQUARE -> R.string.share_size_ratio_square
+    CardSize.PORTRAIT -> R.string.share_size_ratio_portrait
+    CardSize.STORY -> R.string.share_size_ratio_story
+}
+
 @Composable
 private fun SizeTile(size: CardSize, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
     val scheme = MaterialTheme.colorScheme
     val content = if (selected) scheme.onPrimaryContainer else scheme.onSurface
     val hint = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant
-    val (label, sub) = when (size) {
-        CardSize.CHAT -> R.string.share_template_standard to R.string.share_size_chat_hint
-        CardSize.SQUARE -> R.string.share_format_square to R.string.share_size_ratio_square
-        CardSize.PORTRAIT -> R.string.share_size_portrait to R.string.share_size_ratio_portrait
-        CardSize.STORY -> R.string.share_format_story to R.string.share_size_ratio_story
-    }
+    val label = size.labelRes()
+    val sub = size.hintRes()
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
