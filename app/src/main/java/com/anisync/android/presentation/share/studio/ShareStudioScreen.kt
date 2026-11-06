@@ -64,6 +64,7 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -491,7 +492,7 @@ private fun StagePager(
                                 if (state.spec.background == CardBackground.CLEAR) {
                                     Modifier
                                 } else {
-                                    Modifier.dropShadow(shape, Shadow(radius = 33.dp, color = Color.Black.copy(alpha = 0.55f * fade), offset = DpOffset(0.dp, 14.dp)))
+                                    Modifier.cardShadow(shape, fade)
                                 }
                             )
                             .clip(shape)
@@ -517,6 +518,20 @@ private fun StagePager(
             Spacer(Modifier.height(if (wide) 46.dp else 14.dp))
         }
     }
+}
+
+/**
+ * The preview's lift off the studio: a soft key shadow under a tight ambient one, as a raised card
+ * casts, stronger on a dark surface where a light one would not show. [fade] dims a neighbour's.
+ */
+@Composable
+private fun Modifier.cardShadow(shape: Shape, fade: Float): Modifier {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val key = if (dark) 0.45f else 0.14f
+    val ambient = if (dark) 0.3f else 0.08f
+    return this
+        .dropShadow(shape, Shadow(radius = 24.dp, color = Color.Black.copy(alpha = key * fade), offset = DpOffset(0.dp, 10.dp)))
+        .dropShadow(shape, Shadow(radius = 4.dp, color = Color.Black.copy(alpha = ambient * fade), offset = DpOffset(0.dp, 1.dp)))
 }
 
 private val CardPreviewWidth = 360.dp
