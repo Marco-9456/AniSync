@@ -15,14 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -195,7 +191,7 @@ fun FormatsCard(formats: List<FormatStat>, isManga: Boolean, isOwnProfile: Boole
                         .background(pairs[index].first),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(formatIcon(format.format), contentDescription = null, tint = pairs[index].second, modifier = Modifier.size(18.dp))
+                    Icon(getFormatIcon(format.format), contentDescription = null, tint = pairs[index].second, modifier = Modifier.size(18.dp))
                 }
                 Column(Modifier.weight(1f)) {
                     Text(text = shortFormatName(format.format), style = MaterialTheme.typography.labelLarge, color = scheme.onSurface, maxLines = 1)
@@ -267,15 +263,6 @@ private fun formatColorPairs(): List<Pair<Color, Color>> {
         scheme.surface,
     )
     return colors.zip(on)
-}
-
-private fun formatIcon(format: String): ImageVector = when (format) {
-    "TV", "TV_SHORT" -> Icons.Default.Tv
-    "MOVIE" -> Icons.Default.Movie
-    "MUSIC" -> Icons.Default.MusicNote
-    "MANGA", "ONE_SHOT" -> Icons.AutoMirrored.Filled.MenuBook
-    "NOVEL" -> Icons.Default.AutoStories
-    else -> Icons.Default.Videocam
 }
 
 private fun bestFormatRes(format: String): Int = when (format) {
