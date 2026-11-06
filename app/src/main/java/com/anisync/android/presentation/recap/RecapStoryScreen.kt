@@ -140,6 +140,9 @@ private val FullProgress: () -> Float = { 1f }
 private val FrameWidth = 448.dp
 private val FrameHeight = 997.dp
 
+/** The largest font scale the story's fixed frame takes. */
+private const val MAX_FONT_SCALE = 1.15f
+
 /** How far down a swipe has to travel to close the story. */
 private val CloseDistance = 120.dp
 
@@ -328,11 +331,14 @@ private fun StoryStage(
     }
 }
 
-/** Draws [content] on the 448 by 997 frame, scaled by [scale] so it fits the space it is given. */
+/**
+ * Draws [content] on the 448 by 997 frame, scaled by [scale] so it fits the space it is given. The
+ * frame's boxes have fixed sizes, so a large system font scale is capped where the text still fits.
+ */
 @Composable
 private fun ScaledFrame(scale: Float, content: @Composable () -> Unit) {
     val density = LocalDensity.current
-    CompositionLocalProvider(LocalDensity provides Density(density.density * scale, density.fontScale)) {
+    CompositionLocalProvider(LocalDensity provides Density(density.density * scale, density.fontScale.coerceAtMost(MAX_FONT_SCALE))) {
         Box(Modifier.requiredSize(FrameWidth, FrameHeight)) { content() }
     }
 }
