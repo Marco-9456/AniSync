@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
@@ -368,12 +369,16 @@ fun RecapThisMonthCard(progress: RecapProgress, modifier: Modifier = Modifier) {
                 val name = monthName(progress.month.month)
                 FrameText(name, style = fittedStyle(name, heroWide.style(29.sp, 38.sp, (-0.5).sp), maxWidth), color = ink, maxLines = 1)
             }
-            FrameText(
+            val body = MaterialTheme.typography.bodyMedium
+            Text(
                 text = pluralStringResourceOrDefault(R.plurals.recap_episodes_so_far, progress.episodes, count(progress.episodes)) + "\n" +
                     stringResource(R.string.recap_opens_on, dayAndMonth(progress.month.plusMonths(1).atDay(1))),
-                style = MaterialTheme.typography.bodyMedium,
+                style = body,
                 color = ink.copy(alpha = 0.9f),
-                modifier = Modifier.padding(start = 140.dp, top = 72.dp, end = 110.dp),
+                // A sentence a line, both shrinking together rather than wrapping into the pill on a narrow card.
+                maxLines = 2,
+                autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = body.fontSize),
+                modifier = Modifier.padding(start = 140.dp, top = 72.dp, end = 110.dp).lineBox(body),
             )
             if (progress.topTitle != null) {
                 Text(
