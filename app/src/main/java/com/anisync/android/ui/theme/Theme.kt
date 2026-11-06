@@ -292,6 +292,13 @@ internal fun ColorScheme.toAmoled(): ColorScheme = copy(
 )
 
 /**
+ * Pure black for pages that draw their own boxes, the recap story and its cards: the background
+ * goes black and the containers stay as the regular dark scheme has them, where [toAmoled] would
+ * shift them down until the boxes vanish into the black.
+ */
+fun ColorScheme.withBlackBackground(): ColorScheme = copy(background = Color.Black, surface = Color.Black)
+
+/**
  * Whether the *system* is in dark theme. Not [isSystemInDarkTheme]: AppCompatDelegate overrides
  * the activity's uiMode to the persisted night mode, and an activity created under a forced mode
  * never receives uiMode config dispatches again — so both the value and the change signal must
