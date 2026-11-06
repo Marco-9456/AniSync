@@ -93,6 +93,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -617,17 +619,19 @@ private fun StoryChrome(
                     }
                 }
             }
-            state.song?.let { song ->
+            Row(Modifier.offset(x = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                state.song?.let { song ->
+                    ChromeButton(
+                        icon = if (song.muted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                        description = stringResource(if (song.muted) R.string.cd_recap_unmute else R.string.cd_recap_mute),
+                    ) { onAction(RecapStoryAction.ToggleMute) }
+                }
                 ChromeButton(
-                    icon = if (song.muted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                    description = stringResource(if (song.muted) R.string.cd_recap_unmute else R.string.cd_recap_mute),
-                ) { onAction(RecapStoryAction.ToggleMute) }
+                    icon = if (state.paused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                    description = stringResource(if (state.paused) R.string.cd_recap_play else R.string.cd_recap_pause),
+                ) { onAction(RecapStoryAction.TogglePause) }
+                ChromeButton(Icons.Default.Close, stringResource(R.string.cd_recap_close), onClose)
             }
-            ChromeButton(
-                icon = if (state.paused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                description = stringResource(if (state.paused) R.string.cd_recap_play else R.string.cd_recap_pause),
-            ) { onAction(RecapStoryAction.TogglePause) }
-            ChromeButton(Icons.Default.Close, stringResource(R.string.cd_recap_close), onClose)
         }
         if (!page.isCard) {
             Row(
@@ -650,8 +654,11 @@ private fun StoryChrome(
 
 @Composable
 private fun ChromeButton(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, onClick: () -> Unit) {
-    Box(Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Icon(icon, contentDescription = description, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(24.dp))
+    Box(
+        Modifier.size(48.dp).clip(CircleShape).clickable(role = Role.Button, onClick = onClick).semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(24.dp))
     }
 }
 

@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -155,6 +157,7 @@ private fun entrySummary(entry: RecapEntry): String = stringResource(
 /** The Library banner: a new recap, a week long, until it is opened or closed. */
 @Composable
 fun RecapBanner(entry: RecapEntry, onWatch: () -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
+    val closeLabel = stringResource(R.string.cd_recap_banner_close)
     MaterialTheme(colorScheme = entryScheme(entry.seed)) {
         val scheme = MaterialTheme.colorScheme
         val ink = scheme.onPrimaryContainer
@@ -211,13 +214,14 @@ fun RecapBanner(entry: RecapEntry, onWatch: () -> Unit, onClose: () -> Unit, mod
             Box(
                 Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 8.dp, end = 8.dp)
-                    .size(24.dp)
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .size(48.dp)
                     .clip(CircleShape)
-                    .clickable(role = Role.Button, onClick = onClose),
+                    .clickable(role = Role.Button, onClick = onClose)
+                    .semantics { contentDescription = closeLabel },
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_recap_banner_close), tint = ink, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Close, contentDescription = null, tint = ink, modifier = Modifier.size(18.dp))
             }
         }
     }
