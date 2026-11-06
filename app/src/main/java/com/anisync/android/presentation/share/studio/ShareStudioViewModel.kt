@@ -22,6 +22,7 @@ import com.anisync.android.presentation.share.cards.CardSpec
 import com.anisync.android.presentation.share.cards.CardTone
 import com.anisync.android.presentation.share.cards.ShareSubject
 import com.anisync.android.presentation.share.cards.ShareTemplate
+import com.anisync.android.presentation.share.cards.defaultTemplateIndex
 import com.anisync.android.presentation.share.cards.templatesFor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -59,10 +60,16 @@ class ShareStudioViewModel @Inject constructor(
     fun onAction(action: ShareStudioAction) {
         when (action) {
             is ShareStudioAction.SelectTemplate -> _uiState.update { state ->
-                if (action.index !in state.templates.indices) return@update state
-                state.copy(templateIndex = action.index)
+                val template = state.templates.getOrNull(action.index) ?: return@update state
+                // A story slide only comes at Story size, so picking one takes the card there.
+                val size = if (state.spec.size in template.sizes) state.spec.size else template.sizes.first()
+                state.copy(
+                    templateIndex = action.index,
+                    spec = state.spec.copy(size = size, background = state.spec.background.allowedAt(size, template)),
+                )
             }
             is ShareStudioAction.SelectSize -> _uiState.update { state ->
+                if (state.template?.sizes?.contains(action.size) == false) return@update state
                 state.copy(spec = state.spec.copy(size = action.size, background = state.spec.background.allowedAt(action.size, state.template)))
             }
             is ShareStudioAction.SelectSwatch -> {
@@ -75,6 +82,7 @@ class ShareStudioViewModel @Inject constructor(
             is ShareStudioAction.SelectBackground -> _uiState.update { state ->
                 // Clear only exists at Card for chats, so picking it takes the card there.
                 val size = if (action.background == CardBackground.CLEAR) CardSize.CHAT else state.spec.size
+                if (state.template?.sizes?.contains(size) == false) return@update state
                 state.copy(spec = state.spec.copy(size = size, background = action.background))
             }
             is ShareStudioAction.SetDim -> _uiState.update { it.copy(spec = it.spec.copy(dim = action.dim.coerceIn(0f, 1f))) }
@@ -98,9 +106,10 @@ class ShareStudioViewModel @Inject constructor(
                 swatchChosen = false
                 _uiState.update { state ->
                     val subject = state.subject ?: return@update state
+                    val index = defaultTemplateIndex(subject)
                     state.copy(
-                        templateIndex = 0,
-                        spec = defaultSpec(subject, templatesFor(subject).first()),
+                        templateIndex = index,
+                        spec = defaultSpec(subject, templatesFor(subject)[index]),
                         toneChosen = false,
                         swatchIndex = 0,
                     )
@@ -131,9 +140,11 @@ class ShareStudioViewModel @Inject constructor(
         }
         val aniList = subject.aniListColor?.let { listOf(StudioSwatch(aniListLabel(subject), it, it)) }.orEmpty()
         _uiState.update {
+            val index = defaultTemplateIndex(subject)
             it.copy(
                 subject = subject,
-                spec = defaultSpec(subject, templatesFor(subject).first()),
+                templateIndex = index,
+                spec = defaultSpec(subject, templatesFor(subject)[index]),
                 swatches = aniList + AppSwatch,
             )
         }
@@ -158,7 +169,7 @@ class ShareStudioViewModel @Inject constructor(
     private fun defaultSpec(subject: ShareSubject, template: ShareTemplate<*>): CardSpec {
         val details = subject.details.toMutableSet()
         if (appSettings.hideScoresOnCards.value) details -= CardDetail.SCORE
-        val size = appSettings.defaultCardSize.value
+        val size = appSettings.defaultCardSize.value.takeIf { it in template.sizes } ?: template.sizes.first()
         return CardSpec(
             size = size,
             tone = appTone,

@@ -59,6 +59,7 @@ import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.share.cards.CardBackground
 import com.anisync.android.presentation.share.cards.CardSpec
 import com.anisync.android.presentation.share.cards.CardTone
+import com.anisync.android.presentation.share.cards.RecapSlideTemplate
 import com.anisync.android.presentation.share.cards.ShareSubject
 import kotlin.math.roundToInt
 
@@ -74,6 +75,15 @@ fun StudioPanelContent(
     onAction: (ShareStudioAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (panel != StudioPanel.LAYOUT && state.template is RecapSlideTemplate) {
+        Text(
+            text = stringResource(R.string.share_slide_keeps_look),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = modifier,
+        )
+        return
+    }
     when (panel) {
         StudioPanel.LAYOUT -> LayoutPanel(state, onAction, modifier)
         StudioPanel.COLOR -> ColorPanel(state, looks, onAction, modifier)
@@ -96,8 +106,15 @@ private fun LayoutPanel(state: ShareStudioUiState, onAction: (ShareStudioAction)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionLabel(stringResource(R.string.share_section_size))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val sizes = state.template?.sizes ?: CardSize.entries.toSet()
             CardSize.entries.forEach { size ->
-                SizeTile(size, selected = state.spec.size == size, onClick = { onAction(ShareStudioAction.SelectSize(size)) }, modifier = Modifier.weight(1f))
+                SizeTile(
+                    size,
+                    selected = state.spec.size == size,
+                    enabled = size in sizes,
+                    onClick = { onAction(ShareStudioAction.SelectSize(size)) },
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
@@ -120,7 +137,7 @@ internal fun CardSize.hintRes(): Int = when (this) {
 }
 
 @Composable
-private fun SizeTile(size: CardSize, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+private fun SizeTile(size: CardSize, selected: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier) {
     val scheme = MaterialTheme.colorScheme
     val content = if (selected) scheme.onPrimaryContainer else scheme.onSurface
     val hint = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant
@@ -128,9 +145,10 @@ private fun SizeTile(size: CardSize, selected: Boolean, onClick: () -> Unit, mod
     val sub = size.hintRes()
     Surface(
         onClick = onClick,
+        enabled = enabled,
         shape = RoundedCornerShape(20.dp),
         color = if (selected) scheme.primaryContainer else scheme.surfaceContainer,
-        modifier = modifier.semantics { this.selected = selected },
+        modifier = modifier.alpha(if (enabled) 1f else DisabledAlpha).semantics { this.selected = selected },
     ) {
         Column(
             Modifier.padding(start = 4.dp, end = 4.dp, top = 12.dp, bottom = 10.dp),
