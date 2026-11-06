@@ -474,10 +474,12 @@ private fun StagePager(
             ) { page ->
                 val template = templates[page]
                 val description = stringResource(R.string.a11y_share_card_page, stringResource(template.label), page + 1, templates.size)
+                // Neighbours fade inside their own clip, with their shadow faded apart: a faded layer
+                // around the whole page cut the shadow off at the page edge into dark square corners.
+                val fade = if (page == pager.currentPage) 1f else NeighbourAlpha
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .graphicsLayer { alpha = if (page == pager.currentPage) 1f else NeighbourAlpha }
                         .clearAndSetSemantics { contentDescription = description },
                     contentAlignment = if (wide) Alignment.TopCenter else Alignment.Center,
                 ) {
@@ -489,10 +491,11 @@ private fun StagePager(
                                 if (state.spec.background == CardBackground.CLEAR) {
                                     Modifier
                                 } else {
-                                    Modifier.dropShadow(shape, Shadow(radius = 33.dp, color = Color.Black.copy(alpha = 0.55f), offset = DpOffset(0.dp, 14.dp)))
+                                    Modifier.dropShadow(shape, Shadow(radius = 33.dp, color = Color.Black.copy(alpha = 0.55f * fade), offset = DpOffset(0.dp, 14.dp)))
                                 }
                             )
-                            .clip(shape),
+                            .clip(shape)
+                            .graphicsLayer { alpha = fade },
                     ) {
                         MaterialTheme(colorScheme = cardScheme) {
                             template.Render(subject, state.spec)
