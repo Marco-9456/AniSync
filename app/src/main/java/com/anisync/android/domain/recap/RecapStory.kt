@@ -21,9 +21,8 @@ enum class RecapPage {
 }
 
 /**
- * The pages [recap] has something to show on. A page about titles goes when every title is one
- * that may not be shown, the finished page goes when nothing was finished, and the card closes
- * every story.
+ * The pages [recap] has something to show on. A page about titles, the finished page among them,
+ * goes when every title is one that may not be shown, and the card closes every story.
  */
 fun recapPages(recap: Recap): List<RecapPage> = if (recap.period is RecapPeriod.Year) {
     buildList {
@@ -41,7 +40,7 @@ fun recapPages(recap: Recap): List<RecapPage> = if (recap.period is RecapPeriod.
         if (recap.ranked.isNotEmpty()) add(RecapPage.MOST_WATCHED)
         if (recap.ranked.size >= 2) add(RecapPage.TOP_FIVE)
         if (recap.genres.isNotEmpty()) add(RecapPage.MOOD)
-        if (recap.finished > 0) add(RecapPage.FINISHED)
+        if (recap.finishedTitles.isNotEmpty()) add(RecapPage.FINISHED)
         add(RecapPage.RHYTHM)
         add(RecapPage.MONTH_CARD)
     }

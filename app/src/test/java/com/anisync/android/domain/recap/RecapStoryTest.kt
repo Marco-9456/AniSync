@@ -28,7 +28,7 @@ class RecapStoryTest {
 
     @Test
     fun `a month drops the pages it has nothing for`() {
-        val one = recap(september, ranked = listOf(ranked(1, minutes = 60)), finished = 0, genres = emptyList())
+        val one = recap(september, ranked = listOf(ranked(1, minutes = 60)), finished = 0, finishedTitles = emptyList(), genres = emptyList())
         assertEquals(
             listOf(RecapPage.OPENER, RecapPage.TIME, RecapPage.MOST_WATCHED, RecapPage.RHYTHM, RecapPage.MONTH_CARD),
             recapPages(one),
@@ -37,6 +37,12 @@ class RecapStoryTest {
         val hidden = recap(september, ranked = emptyList())
         assertFalse(RecapPage.MOST_WATCHED in recapPages(hidden))
         assertFalse(RecapPage.TOP_FIVE in recapPages(hidden))
+    }
+
+    @Test
+    fun `a month whose finished titles may not be shown drops the finished page`() {
+        val hidden = recap(september, finished = 2, finishedTitles = emptyList())
+        assertFalse(RecapPage.FINISHED in recapPages(hidden))
     }
 
     @Test
