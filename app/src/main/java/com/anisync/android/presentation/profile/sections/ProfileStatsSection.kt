@@ -131,12 +131,14 @@ fun LazyListScope.profileStatsTab(
     // A reload keeps the stats on screen. Swapping them for a spinner, or for the error of a failed
     // reload, sent the reader back to the top of the tab (#164).
     if (uiState.isStatsLoading && uiState.statsData == null) {
+        // As tall as the list, so the tabs can dock while Statistics loads.
         item(key = "stats_loading") {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .fillParentMaxHeight()
                     .padding(32.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.TopCenter
             ) {
                 AppCircularProgressIndicator()
             }
