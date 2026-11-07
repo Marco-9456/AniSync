@@ -96,6 +96,7 @@ import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.anisync.android.presentation.components.ScrollToTopOnRequest
@@ -317,7 +318,7 @@ fun ProfileContent(
                     } else {
                         ShareUtils.shareText(
                             context = context,
-                            text = "${profile.name}\nhttps://anilist.co/user/${profile.name}"
+                            text = "${profile.name}\n${AniListUrls.userUrl(profile.name)}"
                         )
                     }
                 },

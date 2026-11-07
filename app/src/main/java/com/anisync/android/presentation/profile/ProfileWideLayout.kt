@@ -87,6 +87,7 @@ import com.anisync.android.presentation.util.PaneDragHandle
 import com.anisync.android.presentation.util.profileGridColumns
 import com.anisync.android.presentation.util.TwoPaneDefaults
 import com.anisync.android.presentation.util.TwoPaneRow
+import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -322,7 +323,7 @@ fun ProfileWideLayout(
                     } else {
                         ShareUtils.shareText(
                             context = context,
-                            text = "${profile.name}\nhttps://anilist.co/user/${profile.name}"
+                            text = "${profile.name}\n${AniListUrls.userUrl(profile.name)}"
                         )
                     }
                 },
