@@ -474,7 +474,7 @@ private fun StoryCanvas(
     val closeAt = with(density) { CloseDistance.toPx() }
     val nextLabel = stringResource(R.string.cd_recap_next)
     val previousLabel = stringResource(R.string.cd_recap_previous)
-    val pageLabel = stringResource(R.string.a11y_recap_page, (state.page + 1).toString(), story.pages.size.toString())
+    val pageLabel = stringResource(R.string.a11y_recap_page, count(state.page + 1), count(story.pages.size))
     Box(
         Modifier
             .fillMaxSize()

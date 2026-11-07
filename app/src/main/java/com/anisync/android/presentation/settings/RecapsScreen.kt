@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -46,6 +47,7 @@ import com.anisync.android.R
 import com.anisync.android.data.CardSize
 import com.anisync.android.data.RecapDelivery
 import com.anisync.android.data.WhatsNewItem
+import com.anisync.android.domain.formatExactCount
 import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.settings.components.InfoNotice
 import com.anisync.android.presentation.settings.components.SettingsPickerSheet
@@ -247,6 +249,7 @@ private fun DeliveryChoice(
 @Composable
 private fun StoredRecapsItem(months: Int?, bytes: Long, onClear: () -> Unit) {
     val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
     val hasStored = bytes > 0
     SettingsItem(
         icon = Icons.Outlined.Storage,
@@ -257,7 +260,7 @@ private fun StoredRecapsItem(months: Int?, bytes: Long, onClear: () -> Unit) {
             else -> pluralStringResourceOrDefault(
                 R.plurals.recap_settings_stored_desc,
                 months,
-                months.toString(),
+                formatExactCount(months, locale),
                 formatFileSize(context, bytes),
             )
         },
