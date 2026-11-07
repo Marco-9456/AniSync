@@ -3,10 +3,12 @@ package com.anisync.android.presentation.recap
 import android.content.Context
 import android.media.AudioManager
 import android.net.ConnectivityManager
+import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.exoplayer.ExoPlayer
 import com.anisync.android.presentation.components.buildVideoExoPlayer
@@ -21,6 +23,7 @@ import android.media.AudioAttributes as PlatformAudioAttributes
  *
  * [onSettled] hears when the song starts playing or fails, so a story waiting for it can go on.
  */
+@OptIn(UnstableApi::class)
 class ThemeSongPlayer(context: Context, url: String, muted: Boolean, cache: Cache, onSettled: () -> Unit) {
 
     /** True while this player is in [Playing]. */
