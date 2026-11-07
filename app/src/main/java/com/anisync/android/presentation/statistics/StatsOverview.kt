@@ -355,6 +355,7 @@ private const val MINI_WEEKS = 10
 
 @Composable
 private fun TasteTeaserCard(teaser: TasteTeaser, isOwnProfile: Boolean, onClick: () -> Unit) {
+    val locale = LocalConfiguration.current.locales[0]
     val colors = genreColor(teaser.genre)
     val container = colors?.container ?: MaterialTheme.colorScheme.secondaryContainer
     val content = colors?.content ?: MaterialTheme.colorScheme.onSecondaryContainer
@@ -391,7 +392,10 @@ private fun TasteTeaserCard(teaser: TasteTeaser, isOwnProfile: Boolean, onClick:
         } else {
             if (teaser.nextGenres.isNotEmpty()) {
                 Text(
-                    text = stringResource(R.string.stats_teaser_then, joinedNames(teaser.nextGenres.map { "${it.first} ${it.second}" })),
+                    text = stringResource(
+                        R.string.stats_teaser_then,
+                        joinedNames(teaser.nextGenres.map { stringResource(R.string.stats_teaser_genre_count, it.first, formatExactCount(it.second, locale)) })
+                    ),
                     style = statsBodySmall(),
                     color = content.copy(alpha = 0.8f)
                 )

@@ -1433,6 +1433,8 @@
     <string name="stats_busiest_on_rate">Busiest on %1$s, %2$s a day</string>
     <string name="stats_teaser_mean_mode">mean %1$s · most given %2$s</string>
     <string name="stats_teaser_then">then %1$s</string>
+    <!-- A genre and how many titles carry it, as in "Comedy 120" -->
+    <string name="stats_teaser_genre_count">%1$s %2$s</string>
     <string name="stats_teaser_score_prompt">Score five titles to see your spread</string>
     <string name="stats_teaser_score_prompt_other">Their spread shows once they score five titles</string>
     <string name="stats_teaser_format_share">first, %1$s</string>
