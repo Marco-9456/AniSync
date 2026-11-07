@@ -24,6 +24,10 @@ fun formatOneDecimal(value: Double, locale: Locale): String =
 /** A personal total, always exact: 13,170 episodes stays 13,170. */
 fun formatExactCount(value: Int, locale: Locale): String = NumberFormat.getIntegerInstance(locale).format(value)
 
+/** [part] of [total] as a whole percentage in the locale's own form, rounded half up: 42% or 42 %. */
+fun formatPercent(part: Int, total: Int, locale: Locale): String =
+    NumberFormat.getPercentInstance(locale).apply { roundingMode = RoundingMode.HALF_UP }.format(part.toDouble() / total)
+
 /**
  * A community count such as popularity or favourites: exact up to 9,999, then cut to thousands or
  * millions without rounding up, so 28,410 reads 28K and 1,668 is never 1.7K. [thousands] and

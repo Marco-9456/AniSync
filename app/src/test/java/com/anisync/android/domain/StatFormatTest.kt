@@ -55,5 +55,11 @@ class StatFormatTest {
         assertEquals("1,2 Mio.", formatCommunityCount(1_299_999, Locale.GERMANY, "%1\$s Tsd.", "%1\$s Mio."))
     }
 
+    @Test
+    fun `percentages round half up in the locale's own form`() {
+        assertEquals("13%", formatPercent(1, 8, Locale.US))
+        assertEquals("42\u00A0%", formatPercent(42, 100, Locale.GERMANY))
+    }
+
     private fun community(value: Int) = formatCommunityCount(value, Locale.US, "%1\$sK", "%1\$sM")
 }

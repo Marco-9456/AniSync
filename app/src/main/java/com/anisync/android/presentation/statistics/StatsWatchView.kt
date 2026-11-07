@@ -40,6 +40,7 @@ import com.anisync.android.domain.FormatStat
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.formatExactCount
 import com.anisync.android.domain.formatOneDecimal
+import com.anisync.android.domain.formatPercent
 import com.anisync.android.presentation.components.toIndicatorKind
 import com.anisync.android.presentation.profile.LengthUiModel
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
@@ -128,7 +129,7 @@ fun ListTilesCard(
                 Text(
                     text = stringResource(
                         if (ownProfile) R.string.stats_finish_line else R.string.stats_finish_line_other,
-                        "${(completed * 100.0 / total).roundToInt()}%",
+                        formatPercent(completed, total, locale),
                         formatExactCount(completed, locale),
                         formatExactCount(total, locale)
                     ),
@@ -196,7 +197,7 @@ fun FormatsCard(formats: List<FormatStat>, isManga: Boolean, isOwnProfile: Boole
                 Column(Modifier.weight(1f)) {
                     Text(text = shortFormatName(format.format), style = MaterialTheme.typography.labelLarge, color = scheme.onSurface, maxLines = 1)
                     val titles = pluralStringResourceOrDefault(R.plurals.stats_titles, format.count, formatExactCount(format.count, locale))
-                    val share = "${(format.count * 100.0 / total).roundToInt()}%"
+                    val share = formatPercent(format.count, total, locale)
                     val amount = if (isManga) {
                         pluralStringResourceOrDefault(
                             R.plurals.stats_chapters_short,

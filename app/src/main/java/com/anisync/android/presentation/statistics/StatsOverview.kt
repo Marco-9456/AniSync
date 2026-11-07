@@ -62,6 +62,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.domain.formatExactCount
 import com.anisync.android.domain.formatOneDecimal
+import com.anisync.android.domain.formatPercent
 import com.anisync.android.domain.stats.ActivityInsights
 import com.anisync.android.domain.stats.Eras
 import com.anisync.android.domain.stats.ScoreSummary
@@ -436,6 +437,7 @@ private val MiniBarsWidth = 169.5.dp
 
 @Composable
 private fun FormatTeaserCard(teaser: FormatTeaser, isOwnProfile: Boolean, onClick: () -> Unit) {
+    val locale = LocalConfiguration.current.locales[0]
     val total = teaser.shares.sumOf { it.second }.coerceAtLeast(1)
     val first = teaser.shares.firstOrNull()
     val title = if (teaser.isManga) R.string.stats_view_how_you_read else R.string.stats_view_how_you_watch
@@ -458,7 +460,7 @@ private fun FormatTeaserCard(teaser: FormatTeaser, isOwnProfile: Boolean, onClic
                     modifier = Modifier.lineBox(formatStyle)
                 )
                 Text(
-                    text = stringResource(R.string.stats_teaser_format_share, percent(first.second, total)),
+                    text = stringResource(R.string.stats_teaser_format_share, formatPercent(first.second, total, locale)),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 4.dp)
@@ -470,7 +472,7 @@ private fun FormatTeaserCard(teaser: FormatTeaser, isOwnProfile: Boolean, onClic
         val line = when {
             teaser.completedShare != null -> stringResource(
                 if (isOwnProfile) R.string.stats_teaser_finish_rate else R.string.stats_teaser_finish_rate_other,
-                "${teaser.completedShare}%"
+                formatPercent(teaser.completedShare, 100, locale)
             )
             teaser.onlyCountry != null -> stringResource(R.string.stats_teaser_one_country, countryName(teaser.onlyCountry))
             else -> null
@@ -720,8 +722,6 @@ private fun formatScoreNumber(value: Double): String {
     val locale = LocalConfiguration.current.locales[0]
     return NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 1 }.format(value)
 }
-
-private fun percent(part: Int, total: Int): String = "${(part * 100.0 / total).roundToInt()}%"
 
 @Composable
 internal fun countryName(code: String): String {
