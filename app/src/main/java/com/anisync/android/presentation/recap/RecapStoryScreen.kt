@@ -105,6 +105,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -692,7 +693,7 @@ private fun storyCrop(context: Context, page: ImageBitmap, scheme: ColorScheme):
     val source = if (bitmap.config == Bitmap.Config.HARDWARE) bitmap.copy(Bitmap.Config.ARGB_8888, false) else bitmap
     val cropHeight = (source.width * 16f / 9f).roundToInt().coerceAtMost(source.height)
     val top = ((source.height - cropHeight) / 2).coerceAtLeast(0)
-    val out = Bitmap.createBitmap(STORY_WIDTH, STORY_HEIGHT, Bitmap.Config.ARGB_8888)
+    val out = createBitmap(STORY_WIDTH, STORY_HEIGHT)
     val canvas = Canvas(out)
     canvas.drawBitmap(source, Rect(0, top, source.width, top + cropHeight), Rect(0, 0, STORY_WIDTH, STORY_HEIGHT), Paint(Paint.FILTER_BITMAP_FLAG))
     if (source !== bitmap) source.recycle()
