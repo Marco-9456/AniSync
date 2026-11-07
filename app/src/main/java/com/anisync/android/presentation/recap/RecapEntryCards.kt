@@ -300,7 +300,7 @@ fun RecapInProgressCard(progress: RecapProgress, modifier: Modifier = Modifier) 
                 null
             }
             Text(
-                text = listOfNotNull(opens, finished).joinToString(" "),
+                text = finished?.let { stringResource(R.string.stats_two_sentences, opens, it) } ?: opens,
                 style = MaterialTheme.typography.bodyMedium,
                 color = ink.copy(alpha = 0.85f),
             )

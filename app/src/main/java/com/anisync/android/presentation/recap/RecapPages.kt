@@ -1144,7 +1144,7 @@ private fun YearNumbers(story: StoryModel) {
                 pluralStringResourceOrDefault(R.plurals.recap_quietest_month, episodes, monthName(it), spelled(episodes))
             }
             FrameText(
-                text = listOfNotNull(first, second).joinToString(" "),
+                text = second?.let { stringResource(R.string.stats_two_sentences, first, it) } ?: first,
                 style = cardText(17, 24, FontWeight.Normal),
                 color = content.copy(alpha = 0.9f),
                 modifier = Modifier.padding(start = 24.dp, top = 20.dp).width(390.dp),
