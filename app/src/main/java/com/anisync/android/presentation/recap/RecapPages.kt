@@ -830,11 +830,13 @@ private fun Finished(story: StoryModel) {
             FrameText(count(recap.finished), style = style, color = scheme.primary, maxLines = 1)
             Column(Modifier.padding(bottom = 22.dp)) {
                 FrameText(pluralStringResourceOrDefault(R.plurals.share_recap_titles_word, recap.finished), style = titleWide.style(30.sp, 36.sp), color = scheme.onSurface)
-                FrameText(
-                    text = pluralStringResourceOrDefault(R.plurals.recap_started_count, recap.started, count(recap.started)),
-                    style = cardText(16, 22, FontWeight.Normal),
-                    color = scheme.onSurfaceVariant,
-                )
+                if (recap.started > 0) {
+                    FrameText(
+                        text = pluralStringResourceOrDefault(R.plurals.recap_started_count, recap.started, count(recap.started)),
+                        style = cardText(16, 22, FontWeight.Normal),
+                        color = scheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         if (shown.isNotEmpty()) {
