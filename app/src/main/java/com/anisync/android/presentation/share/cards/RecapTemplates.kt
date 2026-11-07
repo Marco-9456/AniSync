@@ -217,11 +217,12 @@ private fun RecapTop(
     coverCorner: Dp,
 ) {
     val heroWide = LocalExpressiveTypography.current.heroWide
+    val locale = LocalConfiguration.current.locales[0]
     Column(verticalArrangement = Arrangement.spacedBy(gap)) {
         titles.forEachIndexed { index, title ->
             Row(Modifier.fillMaxWidth().height(rowHeight), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = (index + 1).toString(),
+                    text = formatExactCount(index + 1, locale),
                     style = heroWide.style(rankSize.sp, (rankSize + 4).sp),
                     color = if (index == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.width(if (rankSize > 16) 16.dp else 14.dp),

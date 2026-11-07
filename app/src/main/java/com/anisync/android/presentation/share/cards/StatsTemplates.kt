@@ -593,7 +593,7 @@ private fun GenreBar(rank: Int, genre: GenreCount, fraction: Float) {
         content = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.size(26.dp).clip(CircleShape).background(content), contentAlignment = Alignment.Center) {
-                    Text(rank.toString(), style = cardText(13, 18, FontWeight.ExtraBold), color = container)
+                    Text(formatExactCount(rank, locale), style = cardText(13, 18, FontWeight.ExtraBold), color = container)
                 }
                 Text(genre.genre, style = cardText(14, 20, FontWeight.Bold), color = content, maxLines = 1)
             }

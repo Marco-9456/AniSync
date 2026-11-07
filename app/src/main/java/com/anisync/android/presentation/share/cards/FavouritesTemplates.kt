@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anisync.android.R
 import com.anisync.android.data.CardSize
+import com.anisync.android.domain.formatExactCount
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 
 object FavouritesShelfTemplate : ShareTemplate<ShareSubject.Favourites> {
@@ -164,6 +166,7 @@ private fun FavouritesShelf(subject: ShareSubject.Favourites, spec: CardSpec) {
 @Composable
 private fun RankedCover(entry: CardImage, rank: Int, size: Pair<Dp, Dp>, modifier: Modifier = Modifier) {
     val first = rank == 1
+    val locale = LocalConfiguration.current.locales[0]
     Box(modifier.size(size.first, size.second)) {
         CardPicture(entry.url, RoundedCornerShape(if (first) 24.dp else 16.dp), Modifier.fillMaxSize())
         val badge = if (first) 31.6.dp else 21.7.dp
@@ -176,7 +179,7 @@ private fun RankedCover(entry: CardImage, rank: Int, size: Pair<Dp, Dp>, modifie
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = rank.toString(),
+                text = formatExactCount(rank, locale),
                 style = if (first) cardText(15, 19, FontWeight.ExtraBold) else cardText(10, 13, FontWeight.ExtraBold),
                 color = if (first) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
             )
