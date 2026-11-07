@@ -14,6 +14,7 @@ import com.anisync.android.presentation.share.cards.CardImage
 import com.anisync.android.presentation.share.cards.RecapCard
 import com.anisync.android.presentation.share.cards.RecapTitle
 import com.anisync.android.presentation.share.cards.ShareSubject
+import com.anisync.android.presentation.util.formatMonthYear
 import com.anisync.android.ui.theme.genreSeed
 import com.anisync.android.ui.theme.mediaArtworkSeedColor
 import com.anisync.android.util.AniListUrls
@@ -95,7 +96,7 @@ class RecapCardFactory @Inject constructor(
         val card = RecapCard(
             userName = userName,
             isYear = month == null,
-            periodTitle = month?.let { "${it.month.getDisplayName(TextStyle.FULL_STANDALONE, locale)} ${it.year}" } ?: year.toString(),
+            periodTitle = month?.let { formatMonthYear(it, locale) } ?: year.toString(),
             monthName = month?.month?.getDisplayName(TextStyle.FULL_STANDALONE, locale),
             year = year,
             episodes = recap.episodes,

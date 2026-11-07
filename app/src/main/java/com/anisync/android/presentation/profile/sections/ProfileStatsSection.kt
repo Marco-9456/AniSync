@@ -92,12 +92,13 @@ import com.anisync.android.presentation.statistics.buildAtAGlance
 import com.anisync.android.presentation.statistics.countOf
 import com.anisync.android.presentation.statistics.heroLists
 import com.anisync.android.presentation.statistics.overviewTiles
+import com.anisync.android.presentation.util.formatMonthYear
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.type.MediaType
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
 import com.anisync.android.presentation.statistics.HeroDashboard
@@ -889,7 +890,7 @@ private fun AnimeTimeHero(stats: AnimeStatisticsUi, joinedAt: Long?, isOwnProfil
             pluralStringResourceOrDefault(R.plurals.stats_hours_total, totalHours, formatExactCount(totalHours, locale)),
             pluralStringResourceOrDefault(R.plurals.stats_episodes_total, stats.episodesWatched, formatExactCount(stats.episodesWatched, locale)),
             perDayText,
-            monthYear(joined, locale)
+            formatMonthYear(YearMonth.from(joined), locale)
         )
     }
     HeroDashboard(
@@ -915,7 +916,7 @@ private fun MangaReadHero(stats: MangaStatisticsUi, joinedAt: Long?, isOwnProfil
         stringResource(
             if (isOwnProfile) R.string.stats_read_detail_own else R.string.stats_read_detail_other,
             formatOneDecimal(stats.chaptersRead.toDouble() / days, locale),
-            monthYear(joined, locale)
+            formatMonthYear(YearMonth.from(joined), locale)
         )
     }
     HeroDashboard(
@@ -931,12 +932,6 @@ private fun MangaReadHero(stats: MangaStatisticsUi, joinedAt: Long?, isOwnProfil
         staleNote = null,
         detail = detail
     )
-}
-
-/** "June 2019", in the locale's own order and month form. */
-private fun monthYear(date: LocalDate, locale: java.util.Locale): String {
-    val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, "MMMMyyyy")
-    return date.format(DateTimeFormatter.ofPattern(pattern, locale))
 }
 
 @Composable
