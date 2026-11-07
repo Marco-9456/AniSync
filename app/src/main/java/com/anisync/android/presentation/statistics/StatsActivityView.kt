@@ -107,7 +107,7 @@ fun ActivityInsightTiles(
             value = if (insights.streakIsOpenEnded) {
                 stringResource(R.string.stats_count_open_ended, insights.longestStreak)
             } else {
-                insights.longestStreak.toString()
+                formatExactCount(insights.longestStreak, locale)
             },
             valueSize = NumberSize,
             label = pluralStringResourceOrDefault(R.plurals.stats_day_streak, insights.longestStreak),
@@ -329,6 +329,7 @@ private fun BarChartCard(
     note: String? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val locale = LocalConfiguration.current.locales[0]
     val max = bars.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
     val countStyle = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp)
     Column(
@@ -353,7 +354,7 @@ private fun BarChartCard(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.clearAndSetSemantics { contentDescription = description }
                 ) {
-                    Text(text = bar.count.toString(), style = countStyle, color = accent, maxLines = 1)
+                    Text(text = formatExactCount(bar.count, locale), style = countStyle, color = accent, maxLines = 1)
                     Spacer(Modifier.height(4.dp))
                     Box(
                         Modifier

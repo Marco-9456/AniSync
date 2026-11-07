@@ -162,7 +162,7 @@ fun PeopleListCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = (index + 1).toString(),
+                    text = formatExactCount(index + 1, locale),
                     style = rankStyle,
                     color = if (index == 0) scheme.primary else scheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

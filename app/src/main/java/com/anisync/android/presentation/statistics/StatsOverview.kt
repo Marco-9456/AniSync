@@ -281,9 +281,9 @@ private fun ActivityTeaserCard(teaser: ActivityTeaser, onClick: () -> Unit) {
             MiniHeatmap(teaser.history)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 val value = when {
-                    !showStreak -> activeDays(teaser.history).toString()
+                    !showStreak -> formatExactCount(activeDays(teaser.history), locale)
                     insights.streakIsOpenEnded -> stringResource(R.string.stats_count_open_ended, insights.longestStreak)
-                    else -> insights.longestStreak.toString()
+                    else -> formatExactCount(insights.longestStreak, locale)
                 }
                 val valueStyle = LocalExpressiveTypography.current.heroWide.style(44.sp, 48.sp, (-1.5).sp)
                 Text(
@@ -384,7 +384,7 @@ private fun TasteTeaserCard(teaser: TasteTeaser, isOwnProfile: Boolean, onClick:
                 text = stringResource(
                     R.string.stats_teaser_mean_mode,
                     formatScoreNumber(teaser.meanScore),
-                    teaser.summary.mostGiven.toString()
+                    teaser.summary.mostGiven?.let { formatExactCount(it, locale) }.orEmpty()
                 ),
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
                 color = content.copy(alpha = 0.85f)

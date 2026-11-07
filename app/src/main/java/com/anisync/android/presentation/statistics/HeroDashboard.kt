@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.formatExactCount
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.ListIndicatorKind
@@ -66,6 +68,7 @@ fun HeroDashboard(
 ) {
     val expressive = LocalExpressiveTypography.current
     val content = MaterialTheme.colorScheme.onPrimaryContainer
+    val locale = LocalConfiguration.current.locales[0]
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
@@ -114,7 +117,7 @@ fun HeroDashboard(
                             )
                             Text(text = list.status.toLabel(mediaType), style = MaterialTheme.typography.labelLarge, color = content)
                             Text(
-                                text = list.count.toString(),
+                                text = formatExactCount(list.count, locale),
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
                                 color = content.copy(alpha = 0.75f)
                             )

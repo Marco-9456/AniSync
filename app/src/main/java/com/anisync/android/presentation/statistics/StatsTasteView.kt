@@ -112,7 +112,7 @@ fun TasteScoresCard(
                 modifier = Modifier.weight(1f)
             )
             ScoreCapsule(
-                value = summary.median?.toString().orEmpty(),
+                value = summary.median?.let { formatExactCount(it, locale) }.orEmpty(),
                 label = stringResource(R.string.stats_score_median),
                 container = scheme.surfaceContainerHigh,
                 content = scheme.onSurface,
@@ -120,7 +120,7 @@ fun TasteScoresCard(
                 modifier = Modifier.weight(1f)
             )
             ScoreCapsule(
-                value = summary.mostGiven?.toString().orEmpty(),
+                value = summary.mostGiven?.let { formatExactCount(it, locale) }.orEmpty(),
                 label = stringResource(R.string.stats_score_most_given),
                 container = scheme.primaryContainer,
                 content = scheme.onPrimaryContainer,
@@ -448,6 +448,7 @@ private const val GENRE_ROWS = 13
 @Composable
 private fun GenreRow(rank: Int, genre: GenreStat, value: String, fraction: Float, mean: String) {
     val scheme = MaterialTheme.colorScheme
+    val locale = LocalConfiguration.current.locales[0]
     val colors = genreColor(genre.genre)
     val container = colors?.container ?: scheme.secondaryContainer
     val content = colors?.content ?: scheme.onSecondaryContainer
@@ -455,7 +456,7 @@ private fun GenreRow(rank: Int, genre: GenreStat, value: String, fraction: Float
     val valueStyle = genreValueStyle()
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
-            text = rank.toString(),
+            text = formatExactCount(rank, locale),
             style = valueStyle,
             color = scheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
