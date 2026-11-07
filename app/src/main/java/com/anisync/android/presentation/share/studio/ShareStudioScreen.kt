@@ -98,6 +98,7 @@ import com.anisync.android.presentation.components.ProfileColorThemeOverride
 import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.share.cards.CardBackground
 import com.anisync.android.presentation.share.cards.CardTone
+import com.anisync.android.presentation.share.cards.RecapSlideTemplate
 import com.anisync.android.presentation.share.cards.Render
 import com.anisync.android.presentation.share.cards.fixedHeight
 import com.anisync.android.presentation.share.cards.ShareSubject
@@ -582,7 +583,9 @@ private fun StudioControlsPane(
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 if (state.subject != null) {
-                    StudioPanel.entries.forEach { panel -> StudioPanelContent(panel, state, looks, cardScheme, onAction) }
+                    // A story slide ignores every panel but its size, and those share one note.
+                    val panels = if (state.template is RecapSlideTemplate) listOf(StudioPanel.LAYOUT, StudioPanel.COLOR) else StudioPanel.entries
+                    panels.forEach { panel -> StudioPanelContent(panel, state, looks, cardScheme, onAction) }
                 }
             }
         }
