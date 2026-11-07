@@ -11,11 +11,24 @@ import org.junit.Test
 class StatsViewHelpersTest {
 
     @Test
-    fun `a monogram takes the first letters of the first two words`() {
+    fun `a monogram of two words takes their first letters`() {
         assertEquals("KA", monogram("Kyoto Animation"))
+        assertEquals("SK", monogram("Studio Khara"))
         assertEquals("A1", monogram("A-1 Pictures"))
         assertEquals("TE", monogram("TMS Entertainment"))
-        assertEquals("M", monogram("MAPPA"))
+    }
+
+    @Test
+    fun `a monogram of one word in mixed case takes its capitals`() {
+        assertEquals("GH", monogram("GoHands"))
+        assertEquals("JC", monogram("J.C.Staff"))
+    }
+
+    @Test
+    fun `a monogram of one word in one case takes its first two letters`() {
+        assertEquals("MA", monogram("MAPPA"))
+        assertEquals("XE", monogram("Xebec"))
+        assertEquals("UF", monogram("ufotable"))
     }
 
     @Test
