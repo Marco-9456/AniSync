@@ -77,6 +77,15 @@ class RecapBuilderTest {
     }
 
     @Test
+    fun `a lone completion of an unknown length is neither a start nor a watched range`() {
+        val recap = buildRecap(september, listOf(anime(9, "completed", null, at(9, 5))), media, RecapSettings(), zone)!!
+        assertEquals(1, recap.episodes)
+        assertEquals(1, recap.finished)
+        assertEquals(0, recap.started)
+        assertNull(recap.ranked.single().watched)
+    }
+
+    @Test
     fun `titles rank by time, a tie going to the finished one`() {
         val ranked = build().ranked
         assertEquals(listOf(1, 4, 2, 5, 3, 9), ranked.map { it.mediaId })

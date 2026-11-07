@@ -70,7 +70,9 @@ fun parseProgress(progress: String?): IntRange? {
  *
  * AniList logs the last episode of a series as a completion with no progress, so a completion adds
  * the units after the last one logged for that title, or one when nothing was logged before it
- * (the final episode, or a one-episode title). [totalUnits] is the title's episode or chapter count.
+ * (the final episode, or a one-episode title). Without a known count that one has no range, so it
+ * is neither a start nor an episode a theme song can be matched to. [totalUnits] is the title's
+ * episode or chapter count.
  * Pass every activity known before the period too, so a completion can see what came before it.
  */
 fun countEvents(
@@ -102,10 +104,7 @@ fun countEvents(
                     range = if (units > 0) (previous + 1)..total else null
                 } else {
                     units = 1
-                    range = when {
-                        total == null || total == 1 -> 1..1
-                        else -> total..total
-                    }
+                    range = total?.let { it..it }
                 }
                 total?.let { lastLogged[record.mediaId] = it }
                 events += record.toEvent(

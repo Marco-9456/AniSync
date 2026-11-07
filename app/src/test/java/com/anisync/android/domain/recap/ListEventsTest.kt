@@ -56,8 +56,10 @@ class ListEventsTest {
     }
 
     @Test
-    fun `a completion of an unknown length counts one episode`() {
-        assertEquals(1, countEvents(listOf(anime(1, "completed", null, at = 10))) { null }.single().units)
+    fun `a completion of an unknown length counts one episode with no range`() {
+        val event = countEvents(listOf(anime(1, "completed", null, at = 10))) { null }.single()
+        assertEquals(1, event.units)
+        assertNull(event.range)
     }
 
     @Test
