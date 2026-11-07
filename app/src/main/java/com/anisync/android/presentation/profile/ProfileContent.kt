@@ -46,6 +46,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInWindow
@@ -93,7 +94,7 @@ import com.anisync.android.presentation.statistics.StatsRail
 import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.type.MediaType
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.anisync.android.util.ShareUtils
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -225,12 +226,9 @@ fun ProfileContent(
         listState.scrollBy(-dockPx)
     }
     TabRequestEffect(dockRequest) {
-        // The header is still settling from the navigation that asked for Statistics.
-        repeat(3) {
-            dockStrip()
-            delay(250)
-            if (tabsDocked) return@TabRequestEffect
-        }
+        // The list ignores the scroll back by the status bar until it has been laid out once.
+        snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > PROFILE_TABS_INDEX }
+        dockStrip()
     }
     val statsScroll = remember { mutableMapOf<StatsView, Pair<Int, Int>>() }
     var restoreStatsView by remember { mutableStateOf<StatsView?>(null) }
