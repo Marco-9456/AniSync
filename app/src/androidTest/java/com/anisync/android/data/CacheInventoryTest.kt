@@ -5,6 +5,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import coil3.ImageLoader
 import coil3.annotation.ExperimentalCoilApi
 import com.anisync.android.cache.Cache.cache
+import com.anisync.android.data.media.ThemeAudioCache
 import com.anisync.android.di.ImageLoaderModule
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.cache.normalized.memory.MemoryCacheFactory
@@ -48,7 +49,7 @@ class CacheInventoryTest {
             .serverUrl("https://graphql.anilist.co")
             .cache(MemoryCacheFactory())
             .build()
-        return CacheInventory(context, loader, apollo)
+        return CacheInventory(context, loader, apollo, themeAudio)
     }
 
     @Test
@@ -98,5 +99,10 @@ class CacheInventoryTest {
                 "journal is what corrupts the cache",
             diskCache.directory.toFile().exists()
         )
+    }
+
+    private companion object {
+        /** One for the whole run, since Media3 refuses a second cache on the same folder. */
+        val themeAudio by lazy { ThemeAudioCache(InstrumentationRegistry.getInstrumentation().targetContext) }
     }
 }
