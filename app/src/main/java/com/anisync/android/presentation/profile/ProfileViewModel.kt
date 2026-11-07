@@ -400,11 +400,7 @@ class ProfileViewModel @Inject constructor(
 
     private val _scrollToTopRequest = MutableStateFlow(0L)
 
-    /**
-     * Bumped when the Profile tab is reselected, asking the page to scroll back to the top.
-     * Kept beside [uiState] rather than inside it: that state is assembled by a wide combine
-     * whose arguments are read back by index, and one more flow buys nothing here.
-     */
+    /** Bumped when the Profile tab is reselected, asking the page to scroll back to the top. */
     val scrollToTopRequest: StateFlow<Long> = _scrollToTopRequest.asStateFlow()
 
     private val _dockRequest = MutableStateFlow(0L)
