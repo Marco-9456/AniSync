@@ -115,6 +115,7 @@ class RecapRepositoryImpl @Inject constructor(
         when {
             period.firstDay.isAfter(today) -> null
             period is RecapPeriod.Year && !period.isFinishedOn(today) -> yearSoFar(owner, period, today, refresh)
+            expiredPeriods(listOf(period), today, env.keptMonths()).isNotEmpty() -> storedRecap(period)
             else -> {
                 val row = rowFor(owner, period, today, refresh)
                 val settings = currentSettings()

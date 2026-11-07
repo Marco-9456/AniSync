@@ -93,6 +93,18 @@ class RecapRepositoryTest {
     }
 
     @Test
+    fun `a period retention dropped is read from what is stored and never fetched`() = runTest {
+        repository.backfill()
+        remote.requests = 0
+        val march = RecapPeriod.Month(YearMonth.of(2025, 3))
+        assertEquals(2, (repository.getRecap(march) as Result.Success).data?.recap?.episodes)
+        assertNull((repository.getRecap(RecapPeriod.Year(2024)) as Result.Success).data)
+        assertNull((repository.getRecap(RecapPeriod.Month(YearMonth.of(2024, 5)), refresh = true) as Result.Success).data)
+        assertEquals(0, remote.requests)
+        assertNull(dao.rows[1 to "2025-03"])
+    }
+
+    @Test
     fun `a recap opened before any first build still sees the earlier episodes`() = runTest {
         val recap = (repository.getRecap(october) as Result.Success).data!!.recap
         assertEquals(7, recap.episodes)

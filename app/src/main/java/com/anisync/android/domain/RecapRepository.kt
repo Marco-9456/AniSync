@@ -55,7 +55,8 @@ interface RecapRepository {
     /**
      * The recap for [period], from Room when it is stored and current, otherwise built from AniList
      * and stored. The month in progress is fetched again once it is six hours old, a running year is
-     * added up from its months and never stored. Null when nothing in the period counts.
+     * added up from its months and never stored, and a period retention no longer keeps is only read
+     * from what is stored. Null when nothing in the period counts.
      */
     suspend fun getRecap(period: RecapPeriod, refresh: Boolean = false): Result<StoredRecap?>
 
