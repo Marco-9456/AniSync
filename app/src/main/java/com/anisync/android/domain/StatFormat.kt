@@ -26,13 +26,14 @@ fun formatExactCount(value: Int, locale: Locale): String = NumberFormat.getInteg
 
 /**
  * A community count such as popularity or favourites: exact up to 9,999, then cut to thousands or
- * millions without rounding up, so 28,410 reads 28K and 1,668 is never 1.7K.
+ * millions without rounding up, so 28,410 reads 28K and 1,668 is never 1.7K. [thousands] and
+ * [millions] are the language's patterns for the cut number, "%1$sK" and "%1$sM" in English.
  */
-fun formatCommunityCount(value: Int, locale: Locale): String = when {
+fun formatCommunityCount(value: Int, locale: Locale, thousands: String, millions: String): String = when {
     value < 10_000 -> formatExactCount(value, locale)
-    value < 1_000_000 -> formatExactCount(value / 1_000, locale) + "K"
-    value < 10_000_000 -> oneDecimal(BigDecimal(value).divide(BigDecimal(1_000_000), 1, RoundingMode.DOWN), locale) + "M"
-    else -> formatExactCount(value / 1_000_000, locale) + "M"
+    value < 1_000_000 -> thousands.format(locale, formatExactCount(value / 1_000, locale))
+    value < 10_000_000 -> millions.format(locale, oneDecimal(BigDecimal(value).divide(BigDecimal(1_000_000), 1, RoundingMode.DOWN), locale))
+    else -> millions.format(locale, formatExactCount(value / 1_000_000, locale))
 }
 
 private fun oneDecimal(value: BigDecimal, locale: Locale): String =

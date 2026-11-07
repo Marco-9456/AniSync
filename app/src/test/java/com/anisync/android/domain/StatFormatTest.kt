@@ -36,16 +36,24 @@ class StatFormatTest {
 
     @Test
     fun `community counts are exact up to 9,999`() {
-        assertEquals("1,668", formatCommunityCount(1_668, Locale.US))
-        assertEquals("9,999", formatCommunityCount(9_999, Locale.US))
+        assertEquals("1,668", community(1_668))
+        assertEquals("9,999", community(9_999))
     }
 
     @Test
     fun `larger community counts cut down without rounding up`() {
-        assertEquals("10K", formatCommunityCount(10_000, Locale.US))
-        assertEquals("28K", formatCommunityCount(28_410, Locale.US))
-        assertEquals("339K", formatCommunityCount(339_876, Locale.US))
-        assertEquals("1.2M", formatCommunityCount(1_299_999, Locale.US))
-        assertEquals("12M", formatCommunityCount(12_345_678, Locale.US))
+        assertEquals("10K", community(10_000))
+        assertEquals("28K", community(28_410))
+        assertEquals("339K", community(339_876))
+        assertEquals("1.2M", community(1_299_999))
+        assertEquals("12M", community(12_345_678))
     }
+
+    @Test
+    fun `community counts take the language's own abbreviations`() {
+        assertEquals("28 Tsd.", formatCommunityCount(28_410, Locale.GERMANY, "%1\$s Tsd.", "%1\$s Mio."))
+        assertEquals("1,2 Mio.", formatCommunityCount(1_299_999, Locale.GERMANY, "%1\$s Tsd.", "%1\$s Mio."))
+    }
+
+    private fun community(value: Int) = formatCommunityCount(value, Locale.US, "%1\$sK", "%1\$sM")
 }

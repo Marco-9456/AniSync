@@ -1641,6 +1641,10 @@
     <string name="share_media_chapters">chapters</string>
     <string name="share_media_popularity">popularity</string>
     <string name="share_media_favourites">favourites</string>
+    <!-- A popularity or favourites count cut to thousands, 28,410 reads 28K -->
+    <string name="share_count_thousands">%1$sK</string>
+    <!-- The same count cut to millions, 1,299,999 reads 1.2M -->
+    <string name="share_count_millions">%1$sM</string>
     <string name="share_media_ep_number">Ep %1$d</string>
     <string name="share_media_tba">TBA</string>
     <!-- Release status shown ONLY when the title is not on the viewer's list; worded to read as

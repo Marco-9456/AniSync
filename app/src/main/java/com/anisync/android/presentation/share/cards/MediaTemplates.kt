@@ -58,6 +58,7 @@ import com.anisync.android.presentation.statistics.formatDisplayName
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.lineBox
+import java.util.Locale
 
 object MediaPosterTemplate : ShareTemplate<ShareSubject.Media> {
     override val label: Int = R.string.share_template_hero
@@ -291,16 +292,22 @@ private fun CoverWithStatus(
     }
 }
 
+/** [formatCommunityCount] with the language's own thousands and millions. */
+@Composable
+@ReadOnlyComposable
+private fun communityCount(value: Int, locale: Locale): String =
+    formatCommunityCount(value, locale, stringResource(R.string.share_count_thousands), stringResource(R.string.share_count_millions))
+
 @Composable
 private fun PosterFacts(subject: ShareSubject.Media, spec: CardSpec, modifier: Modifier = Modifier) {
     val locale = LocalConfiguration.current.locales[0]
     val facts = buildList {
         if (spec.shows(CardDetail.SCORE)) subject.score?.let { add(it to R.string.share_media_score) }
         if (spec.shows(CardDetail.POPULARITY)) {
-            subject.popularity?.let { add(formatCommunityCount(it, locale) to R.string.share_media_popularity) }
+            subject.popularity?.let { add(communityCount(it, locale) to R.string.share_media_popularity) }
         }
         if (spec.shows(CardDetail.FAVOURITES)) {
-            subject.favourites?.let { add(formatCommunityCount(it, locale) to R.string.share_media_favourites) }
+            subject.favourites?.let { add(communityCount(it, locale) to R.string.share_media_favourites) }
         }
     }
     if (facts.isEmpty()) return
@@ -503,10 +510,10 @@ private fun BentoFactTiles(subject: ShareSubject.Media, spec: CardSpec, modifier
     val locale = LocalConfiguration.current.locales[0]
     val facts = buildList {
         if (spec.shows(CardDetail.POPULARITY)) {
-            subject.popularity?.let { add(formatCommunityCount(it, locale) to R.string.share_media_popularity) }
+            subject.popularity?.let { add(communityCount(it, locale) to R.string.share_media_popularity) }
         }
         if (spec.shows(CardDetail.FAVOURITES)) {
-            subject.favourites?.let { add(formatCommunityCount(it, locale) to R.string.share_media_favourites) }
+            subject.favourites?.let { add(communityCount(it, locale) to R.string.share_media_favourites) }
         }
     }
     if (facts.isEmpty()) return
@@ -677,8 +684,8 @@ private fun CardHeader(subject: ShareSubject.Media, spec: CardSpec) {
 private fun CardFacts(subject: ShareSubject.Media) {
     val locale = LocalConfiguration.current.locales[0]
     val facts = buildList {
-        subject.popularity?.let { add(formatCommunityCount(it, locale) to R.string.sort_popularity) }
-        subject.favourites?.let { add(formatCommunityCount(it, locale) to R.string.share_fav_eyebrow) }
+        subject.popularity?.let { add(communityCount(it, locale) to R.string.sort_popularity) }
+        subject.favourites?.let { add(communityCount(it, locale) to R.string.share_fav_eyebrow) }
         subject.total?.takeIf { it > 0 }?.let {
             add(formatExactCount(it, locale) to if (subject.isManga) R.string.share_stats_chapters else R.string.share_stats_episodes)
         }
