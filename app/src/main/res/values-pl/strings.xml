@@ -1699,4 +1699,14 @@
     <string name="widget_weekly_calendar_description">Zobacz swój 7-dniowy harmonogram anime</string>
     <string name="widget_up_next_title">Kolejny odcinek</string>
     <string name="widget_trending_score">ocena %1$d%%</string>
+    <string name="share_count_thousands">%1$sK</string>
+    <string name="share_count_millions">%1$sM</string>
+    <string name="share_progress_episode">Odcinek %1$s</string>
+    <string name="share_progress_chapter">Rozdział %1$s</string>
+    <string name="share_progress_episode_of">Odcinek %1$s z %2$s</string>
+    <string name="share_progress_chapter_of">Rozdział %1$s z %2$s</string>
+    <string name="share_progress_fraction">%1$s / %2$s</string>
+    <string name="share_detail_time">Czas</string>
+    <string name="share_detail_ranking">Ranking</string>
+    <string name="share_detail_author">Autor</string>
 </resources>
