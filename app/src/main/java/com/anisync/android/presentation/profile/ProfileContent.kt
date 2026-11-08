@@ -266,15 +266,16 @@ fun ProfileContent(
         )
     }
 
+    val showShareFab = uiState.showsShareFab(profile)
+    Box(modifier = modifier.fillMaxSize()) {
     AppPullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
         onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .onGloballyPositioned { contentTopWindow = it.boundsInWindow().top },
         topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
     ) {
-    val showShareFab = uiState.showsShareFab(profile)
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
@@ -364,6 +365,8 @@ fun ProfileContent(
         }
     }
 
+    }
+    // Kept out of the pull box, which carries everything inside it down with the finger.
     if (showShareFab) ProfileShareFab(uiState, onShareStats = shareStats, onShareFavourites = shareFavourites)
     }
     }

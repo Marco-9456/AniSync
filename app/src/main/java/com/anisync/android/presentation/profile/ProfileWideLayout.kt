@@ -816,6 +816,7 @@ private fun ProfileTabPane(
             availableWidth = maxWidth
         )
 
+        val showShareFab = uiState.showsShareFab(profile)
         Column(modifier = Modifier.fillMaxSize()) {
             ProfileTabStrip(
                 uiState = uiState,
@@ -831,7 +832,6 @@ private fun ProfileTabPane(
                 onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
                 modifier = Modifier.fillMaxSize()
             ) {
-                val showShareFab = uiState.showsShareFab(profile)
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
@@ -861,9 +861,9 @@ private fun ProfileTabPane(
                         onOpenRecap = onOpenRecap
                     )
                 }
-
-                if (showShareFab) ProfileShareFab(uiState, onShareStats = onShareStats, onShareFavourites = onShareFavourites)
             }
         }
+        // Kept out of the pull box, which carries everything inside it down with the finger.
+        if (showShareFab) ProfileShareFab(uiState, onShareStats = onShareStats, onShareFavourites = onShareFavourites)
     }
 }
