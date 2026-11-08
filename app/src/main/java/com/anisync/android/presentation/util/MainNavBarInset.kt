@@ -4,6 +4,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,17 @@ class MainNavBarSuppressor {
     val isSuppressed: Boolean get() = count > 0
     fun acquire() { count++ }
     fun release() { if (count > 0) count-- }
+
+    private val hiddenEntries = mutableStateSetOf<String>()
+
+    /**
+     * Keeps the bottom bar off one back stack entry until [showOn], including while the entry is
+     * off screen. Coming back to it, the bar then stays hidden from the first frame rather than
+     * showing until the entry's screen has composed and asked again.
+     */
+    fun hideOn(entryId: String) { hiddenEntries += entryId }
+    fun showOn(entryId: String) { hiddenEntries -= entryId }
+    fun hidesOn(entryId: String?): Boolean = entryId != null && entryId in hiddenEntries
 }
 
 val LocalMainNavBarSuppressor = compositionLocalOf<MainNavBarSuppressor?> { null }

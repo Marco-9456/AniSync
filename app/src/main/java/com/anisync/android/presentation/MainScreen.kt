@@ -544,13 +544,15 @@ private fun MainBottomBar(
 
     val isBottomBarVisible by remember(navBarSuppressor) {
         derivedStateOf {
-            val dest = navBackStackEntryState.value?.destination
+            val entry = navBackStackEntryState.value
+            val dest = entry?.destination
             val onWhitelistedRoute = dest?.hasRoute<Library>() == true ||
                     dest?.hasRoute<Discover>() == true ||
                     dest?.hasRoute<Feed>() == true ||
                     dest?.hasRoute<Forum>() == true ||
                     dest?.hasRoute<Profile>() == true
-            onWhitelistedRoute && navBarSuppressor?.isSuppressed != true
+            onWhitelistedRoute && navBarSuppressor?.isSuppressed != true &&
+                navBarSuppressor?.hidesOn(entry.id) != true
         }
     }
 
