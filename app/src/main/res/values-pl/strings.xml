@@ -1709,4 +1709,10 @@
     <string name="share_detail_time">Czas</string>
     <string name="share_detail_ranking">Ranking</string>
     <string name="share_detail_author">Autor</string>
+    <string name="forum_sort_field_last_reply">Ostatnia odpowiedź</string>
+    <string name="forum_sort_least_recently_replied">Najstarsza odpowiedź</string>
+    <string name="discover_section_releasing_now">Wychodzą teraz</string>
+    <string name="sort_airing_soon">Wychodzi wkrótce</string>
+    <string name="stat_aired">Premiera</string>
+    <string name="media_status_upcoming">Nadchodzi</string>
 </resources>
