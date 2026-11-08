@@ -1598,7 +1598,7 @@
     <string name="debug_trigger_crash">Wywołaj awarię</string>
     <string name="debug_crash_section">Raportowanie awarii</string>
     <string name="profile_no_activity_for_filter">Brak aktywności w %1$s.</string>
-    <string name="section_recent_updates">Ostatnie aktualizacji</string>
+    <string name="section_recent_updates">Ostatnie aktualizacje</string>
     <string name="themes_filter_inserts">Motywy muzyczne</string>
     <string name="cd_add_recommendation">Zaproponuj podobny tytuł</string>
     <string name="recommend_media_title">Zaproponuj podobne</string>
