@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -65,8 +66,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -125,7 +124,7 @@ import com.anisync.android.domain.coverageEpisodeCount
 import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
-import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.bannerChromeColors
 import com.anisync.android.presentation.components.bannerChromeContainer
 import com.anisync.android.presentation.components.bannerChromeTint
@@ -233,7 +232,6 @@ fun MediaDetailsScreen(
     val cast by viewModel.cast.collectAsStateWithLifecycle()
     val staff by viewModel.staff.collectAsStateWithLifecycle()
     val mediaStats by viewModel.stats.collectAsStateWithLifecycle()
-    val pullToRefreshState = rememberPullToRefreshState()
 
     // AnimeThemes only carries anime, so the lookup waits until the page says which it is.
     val isAnime = (uiState as? DetailsUiState.Success)?.details?.type == com.anisync.android.type.MediaType.ANIME
@@ -491,20 +489,13 @@ fun MediaDetailsScreen(
                         }
                     }
                 ) { paddingValues ->
-                    PullToRefreshBox(
+                    AppPullToRefreshBox(
                         isRefreshing = isRefreshing,
-                        state = pullToRefreshState,
                         onRefresh = rememberRateLimitedRefresh { viewModel.refresh() },
-                        indicator = {
-                            CustomPullToRefreshIndicator(
-                                isRefreshing = isRefreshing,
-                                state = pullToRefreshState,
-                                modifier = Modifier.align(Alignment.TopCenter)
-                            )
-                        },
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(bottom = paddingValues.calculateBottomPadding())
+                            .padding(bottom = paddingValues.calculateBottomPadding()),
+                        topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
                     ) {
                         // Note: We intentionally IGNORE top padding here to let the content
                         // (specifically the header image) draw behind the transparent status bar.

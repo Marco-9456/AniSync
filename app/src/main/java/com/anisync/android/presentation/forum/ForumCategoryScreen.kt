@@ -14,8 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,7 +26,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
-import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.ErrorState
@@ -50,7 +48,6 @@ fun ForumCategoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
-    val pullToRefreshState = rememberPullToRefreshState()
 
     LaunchedEffect(categoryId) {
         viewModel.onAction(ForumCategoryAction.Load(categoryId, categoryName))
@@ -74,20 +71,11 @@ fun ForumCategoryScreen(
         onBackClick = onBackClick,
         scrollableState = listState
     ) { topContentPadding ->
-        PullToRefreshBox(
+        AppPullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
-            state = pullToRefreshState,
             onRefresh = rememberRateLimitedRefresh { viewModel.onAction(ForumCategoryAction.Refresh) },
-            indicator = {
-                CustomPullToRefreshIndicator(
-                    isRefreshing = uiState.isRefreshing,
-                    state = pullToRefreshState,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = topContentPadding)
-                )
-            },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            topInset = topContentPadding
         ) {
             when {
                 uiState.isLoading -> LazyColumn(

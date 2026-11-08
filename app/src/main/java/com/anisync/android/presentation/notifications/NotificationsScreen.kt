@@ -28,8 +28,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -51,7 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.NotificationFilter
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
-import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.EmptyStateConfigs
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.ErrorState
@@ -75,7 +73,6 @@ fun NotificationsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
-    val pullState = rememberPullToRefreshState()
 
     val newEntries = uiState.newEntries
     val earlierEntries = uiState.earlierEntries
@@ -133,20 +130,11 @@ fun NotificationsScreen(
             )
         }
     ) { topContentPadding ->
-        PullToRefreshBox(
+        AppPullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = rememberRateLimitedRefresh { viewModel.onAction(NotificationsAction.Refresh) },
-            state = pullState,
             modifier = Modifier.fillMaxSize(),
-            indicator = {
-                CustomPullToRefreshIndicator(
-                    isRefreshing = uiState.isRefreshing,
-                    state = pullState,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = topContentPadding)
-                )
-            }
+            topInset = topContentPadding
         ) {
             when {
                 uiState.isLoading && uiState.entries.isEmpty() -> {

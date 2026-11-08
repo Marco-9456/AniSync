@@ -45,9 +45,6 @@ import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshState
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -82,7 +79,7 @@ import androidx.navigation.NavHostController
 import com.anisync.android.R
 import com.anisync.android.domain.DiscoverSection
 import com.anisync.android.domain.LibraryEntry
-import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.EmbeddedFullScreenSearchBar
 import com.anisync.android.presentation.components.HideKeyboardOnCollapse
 import com.anisync.android.presentation.components.SearchBarAnchor
@@ -174,8 +171,6 @@ fun DiscoverScreen(
 
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
-
-    val pullToRefreshState = rememberPullToRefreshState()
 
     val currentMediaType = uiState.mediaType
 
@@ -340,7 +335,6 @@ fun DiscoverScreen(
             state = uiState,
             titleLanguage = titleLanguage,
             mainListState = mainListState,
-            pullToRefreshState = pullToRefreshState,
             paddingValues = PaddingValues(top = paddingValues.calculateTopPadding()),
             onRefresh = onRefresh,
             onMediaClick = navigateToMediaDetails,
@@ -617,7 +611,6 @@ private fun DiscoverContent(
     state: DiscoverUiState,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     mainListState: LazyListState,
-    pullToRefreshState: PullToRefreshState,
     paddingValues: PaddingValues,
     onRefresh: () -> Unit,
     onMediaClick: (mediaId: Int, sourceSection: String) -> Unit,
@@ -631,22 +624,12 @@ private fun DiscoverContent(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
 ) {
-    PullToRefreshBox(
+    AppPullToRefreshBox(
         isRefreshing = state.isRefreshing,
         onRefresh = onRefresh,
-        state = pullToRefreshState,
         modifier = Modifier
             .fillMaxSize()
-            .padding(paddingValues),
-        indicator = {
-            CustomPullToRefreshIndicator(
-                isRefreshing = state.isRefreshing,
-                state = pullToRefreshState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 16.dp)
-            )
-        }
+            .padding(paddingValues)
     ) {
         LazyColumn(
             state = mainListState,

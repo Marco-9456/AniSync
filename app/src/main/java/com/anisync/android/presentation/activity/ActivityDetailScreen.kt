@@ -40,8 +40,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -68,7 +66,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
-import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
@@ -103,7 +101,6 @@ fun ActivityDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
-    val pullToRefreshState = rememberPullToRefreshState()
     val context = LocalContext.current
 
     var collapsedIds by rememberSaveable(
@@ -331,20 +328,11 @@ fun ActivityDetailScreen(
             }
         }
     ) { topContentPadding ->
-        PullToRefreshBox(
+        AppPullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
-            state = pullToRefreshState,
             onRefresh = rememberRateLimitedRefresh { viewModel.onAction(ActivityDetailAction.Refresh) },
-            indicator = {
-                CustomPullToRefreshIndicator(
-                    isRefreshing = uiState.isRefreshing,
-                    state = pullToRefreshState,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = topContentPadding)
-                )
-            },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            topInset = topContentPadding
         ) {
             when {
                 uiState.isLoading && uiState.activity == null -> {

@@ -53,8 +53,6 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -94,7 +92,7 @@ import com.anisync.android.presentation.library.components.SortIcon
 import com.anisync.android.domain.ForumCategory
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
-import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.EmbeddedFullScreenSearchBar
 import com.anisync.android.presentation.components.HideKeyboardOnCollapse
@@ -151,7 +149,6 @@ fun ForumScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
-    val pullToRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
     val showScrollToTop by remember { derivedStateOf { listState.firstVisibleItemIndex > 3 } }
 
@@ -434,19 +431,9 @@ fun ForumScreen(
             }
         }
     ) { innerPadding ->
-        PullToRefreshBox(
+        AppPullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
-            state = pullToRefreshState,
             onRefresh = rememberRateLimitedRefresh { viewModel.onAction(ForumAction.Refresh) },
-            indicator = {
-                CustomPullToRefreshIndicator(
-                    isRefreshing = uiState.isRefreshing,
-                    state = pullToRefreshState,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 16.dp)
-                )
-            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)

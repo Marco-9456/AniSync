@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,8 +36,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -65,7 +64,7 @@ import com.anisync.android.presentation.components.ShareFab
 import com.anisync.android.presentation.components.TabRequestEffect
 import com.anisync.android.presentation.components.shareFabBottomInset
 import com.anisync.android.presentation.components.shareFabClearance
-import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.WhatsNewDot
 import com.anisync.android.presentation.components.WhatsNewPill
@@ -139,7 +138,6 @@ fun ProfileContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val pullToRefreshState = rememberPullToRefreshState()
     val statsColumns = dashboardColumns()
 
     // Someone else's profile keeps its colours in the studio, the viewer's own follows the app.
@@ -268,22 +266,13 @@ fun ProfileContent(
         )
     }
 
-    PullToRefreshBox(
+    AppPullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
         onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
-        state = pullToRefreshState,
         modifier = modifier
             .fillMaxSize()
             .onGloballyPositioned { contentTopWindow = it.boundsInWindow().top },
-        indicator = {
-            CustomPullToRefreshIndicator(
-                isRefreshing = uiState.isRefreshing,
-                state = pullToRefreshState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 16.dp)
-            )
-        }
+        topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
     ) {
     val showShareFab = uiState.showsShareFab(profile)
     LazyColumn(

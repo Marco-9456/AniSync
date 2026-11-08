@@ -60,8 +60,6 @@ import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -100,7 +98,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryPriority
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.result.ResultGroupHeader
-import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.EmbeddedFullScreenSearchBar
 import com.anisync.android.presentation.components.HideKeyboardOnCollapse
 import com.anisync.android.presentation.components.SearchBarAnchor
@@ -520,24 +518,14 @@ fun LibraryScreen(
                     val motionScheme = MaterialTheme.motionScheme
                     val spatialSpec = remember(motionScheme) { motionScheme.defaultSpatialSpec<IntOffset>() }
                     val effectsSpec = remember(motionScheme) { motionScheme.defaultEffectsSpec<Float>() }
-                    val pullToRefreshState = rememberPullToRefreshState()
-
-                    PullToRefreshBox(
+                    AppPullToRefreshBox(
                         isRefreshing = uiState.isRefreshing,
                         onRefresh = rememberRateLimitedRefresh {
                             viewModel.onAction(LibraryAction.Refresh)
                         },
-                        state = pullToRefreshState,
                         // Pulling while ticking rows would fight the selection gesture.
                         enabled = !uiState.isSelectionMode,
-                        modifier = Modifier.fillMaxSize(),
-                        indicator = {
-                            CustomPullToRefreshIndicator(
-                                isRefreshing = uiState.isRefreshing,
-                                state = pullToRefreshState,
-                                modifier = Modifier.align(Alignment.TopCenter).padding(top = 16.dp)
-                            )
-                        }
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         HorizontalPager(
                             state = pagerState,

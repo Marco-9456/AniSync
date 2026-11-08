@@ -28,8 +28,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -50,7 +48,7 @@ import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.ContentLimits
 import com.anisync.android.domain.FeedFilter
 import com.anisync.android.domain.FeedScope
-import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.richtext.RichTextInputSheet
 import com.anisync.android.presentation.feed.components.FeedDayHeader
@@ -85,7 +83,6 @@ fun FeedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
-    val pullToRefreshState = rememberPullToRefreshState()
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
     val coroutineScope = rememberCoroutineScope()
     val atTop by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
@@ -158,19 +155,9 @@ fun FeedScreen(
             }
         }
     ) { innerPadding ->
-        PullToRefreshBox(
+        AppPullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
-            state = pullToRefreshState,
             onRefresh = rememberRateLimitedRefresh { viewModel.onAction(FeedAction.Refresh) },
-            indicator = {
-                CustomPullToRefreshIndicator(
-                    isRefreshing = uiState.isRefreshing,
-                    state = pullToRefreshState,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 16.dp)
-                )
-            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)

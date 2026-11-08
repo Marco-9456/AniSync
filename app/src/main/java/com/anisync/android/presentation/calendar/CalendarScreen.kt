@@ -49,8 +49,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -83,7 +81,7 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.calendar.components.AiringEpisodeCard
 import com.anisync.android.presentation.calendar.components.CalendarDaySkeleton
-import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.EmptyStateWithAction
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
@@ -262,21 +260,10 @@ fun CalendarScreen(
                         onRetry = { viewModel.onAction(CalendarAction.Retry) }
                     )
                 } else {
-                    val pullState = rememberPullToRefreshState()
-                    PullToRefreshBox(
+                    AppPullToRefreshBox(
                         isRefreshing = uiState.isRefreshing,
                         onRefresh = rememberRateLimitedRefresh { viewModel.onAction(CalendarAction.Refresh) },
-                        state = pullState,
-                        modifier = Modifier.fillMaxSize(),
-                        indicator = {
-                            CustomPullToRefreshIndicator(
-                                isRefreshing = uiState.isRefreshing,
-                                state = pullState,
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .padding(top = 8.dp)
-                            )
-                        }
+                        modifier = Modifier.fillMaxSize()
                     ) {
                         HorizontalPager(
                             state = pagerState,
@@ -683,21 +670,10 @@ private fun DayDetailPane(
             modifier = Modifier.padding(horizontal = 16.dp)
         )
 
-        val pullState = rememberPullToRefreshState()
-        PullToRefreshBox(
+        AppPullToRefreshBox(
             isRefreshing = month.isRefreshing,
             onRefresh = onRefresh,
-            state = pullState,
-            modifier = Modifier.fillMaxSize(),
-            indicator = {
-                CustomPullToRefreshIndicator(
-                    isRefreshing = month.isRefreshing,
-                    state = pullState,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 8.dp)
-                )
-            }
+            modifier = Modifier.fillMaxSize()
         ) {
             // Cross-fade the day's list as the selection changes; keying on the date also gives each
             // day a fresh LazyColumn (so the scroll position resets to the top per day).
