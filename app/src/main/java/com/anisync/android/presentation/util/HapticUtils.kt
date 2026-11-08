@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.core.view.HapticFeedbackConstantsCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
@@ -59,6 +60,7 @@ class AppHapticFeedback(
      * | Low freq, medium importance (score ticks) | [HapticFeedbackType.SegmentTick] |
      * | Low freq, high importance (favorite) | [HapticFeedbackType.LongPress] |
      * | Low freq, high importance (save/submit) | [HapticFeedbackType.Confirm] |
+     * | Drag crossing a threshold (pull to refresh) | [HapticFeedbackType.GestureThresholdActivate], [GestureThresholdDeactivate] |
      */
     fun performHapticFeedback(type: HapticFeedbackType) {
         if (!isEnabledProvider()) return
@@ -105,6 +107,8 @@ class AppHapticFeedback(
         HapticFeedbackType.Confirm -> HapticFeedbackConstants.CONFIRM
         HapticFeedbackType.SegmentTick -> HapticFeedbackConstants.SEGMENT_TICK
         HapticFeedbackType.SegmentFrequentTick -> HapticFeedbackConstants.SEGMENT_FREQUENT_TICK
+        HapticFeedbackType.GestureThresholdActivate -> HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE
+        GestureThresholdDeactivate -> HapticFeedbackConstants.GESTURE_THRESHOLD_DEACTIVATE
         else -> HapticFeedbackConstants.LONG_PRESS
     }
 
@@ -117,6 +121,8 @@ class AppHapticFeedback(
         HapticFeedbackType.SegmentTick -> HapticFeedbackConstants.CLOCK_TICK
         HapticFeedbackType.Confirm -> HapticFeedbackConstants.CONTEXT_CLICK
         HapticFeedbackType.TextHandleMove -> HapticFeedbackConstants.CLOCK_TICK
+        HapticFeedbackType.GestureThresholdActivate -> HapticFeedbackConstants.CLOCK_TICK
+        GestureThresholdDeactivate -> HapticFeedbackConstants.CLOCK_TICK
         else -> null
     }
 
@@ -154,6 +160,10 @@ class AppHapticFeedback(
         }
     }
 }
+
+/** Compose only ships the activate half of the platform's threshold pair. */
+val GestureThresholdDeactivate =
+    HapticFeedbackType(HapticFeedbackConstantsCompat.GESTURE_THRESHOLD_DEACTIVATE)
 
 /**
  * Remembers an [AppHapticFeedback] that uses the current [View] and
