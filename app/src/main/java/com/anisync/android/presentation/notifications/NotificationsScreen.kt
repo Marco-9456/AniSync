@@ -175,7 +175,9 @@ fun NotificationsScreen(
                             .fillMaxSize()
                             .padding(top = topContentPadding)
                     ) {
-                        EmptyStateConfigs.NoNotifications()
+                        EmptyStateConfigs.NoNotifications(
+                            modifier = Modifier.align(Alignment.Center)
+                        )
                     }
                 }
                 else -> {
