@@ -735,7 +735,6 @@
     <string name="settings_notifications_desc">新集通知、論壇動態</string>
     <string name="notification_planning_desc">在計畫觀看的動畫發布第一集時通知你</string>
     <string name="label_tags">標籤</string>
-    <string name="statistics_top_tags">偏好標籤</string>
     <string name="tags_expand">展開</string>
     <plurals name="tags_more">
         <item quantity="other">顯示 +%1$d</item>
@@ -752,9 +751,6 @@
     <string name="font_category_headline">大標題</string>
     <string name="forum_remove_media_category">移除媒體</string>
     <string name="statistics_top_genres">偏好風格</string>
-    <string name="statistics_top_studios">偏好工作室</string>
-    <string name="statistics_top_voice_actors">偏好聲優</string>
-    <string name="statistics_top_staff">偏好工作人員</string>
     <string name="share_stats_top_genres">偏好風格</string>
     <string name="share_recap_top_studio">看過最多的工作室</string>
     <string name="share_recap_top_staff">讀過最多的作者</string>
@@ -767,7 +763,6 @@
     <string name="format_music">音樂</string>
     <string name="format_novel">小說</string>
     <string name="format_one_shot">短篇</string>
-    <string name="statistics_formats">媒體類型</string>
     <string name="richtext_format_bold">粗體</string>
     <string name="richtext_format_italic">斜體</string>
     <string name="richtext_format_strikethrough">刪除線</string>
@@ -1093,17 +1088,13 @@
     <string name="library_empty_completed_desc">完成項將伴隨你的評分出現在這~</string>
     <string name="library_empty_all_desc">任何你在 AniList 追蹤的，都會出現在這</string>
     <string name="statistics_title">統計</string>
-    <string name="statistics_total_anime">動畫統整</string>
     <string name="statistics_episodes">集</string>
     <string name="statistics_mean_score">平均評分</string>
-    <string name="statistics_score_distribution">評分分佈</string>
-    <string name="statistics_total_manga">漫畫統整</string>
     <string name="statistics_chapters">章節</string>
     <string name="statistics_activity_history">活動歷史</string>
     <string name="statistics_activity_summary">%2$d 天中裡的 %1$d 次活動</string>
     <string name="statistics_activity_less">少</string>
     <string name="statistics_activity_more">多</string>
-    <string name="statistics_activity_update_info">AniList 會在每48小時後自動刷新一次你的活動紀錄</string>
     <plurals name="statistics_activity_count">
         <item quantity="other">%d 次活動</item>
     </plurals>
@@ -1117,29 +1108,19 @@
     <plurals name="statistics_activity_days">
         <item quantity="other">%d 天</item>
     </plurals>
-    <string name="statistics_days_of_your_life">約為你生命中的 %1$s 天</string>
     <string name="share_template_recap">回顧</string>
     <string name="share_recap_eyebrow">歷史回顧</string>
     <string name="share_recap_completed">已完成</string>
     <string name="share_template_grid">網格</string>
     <string name="share_template_ranked">排名</string>
-    <string name="statistics_length_distribution">集數長度</string>
-    <string name="statistics_country_distribution">國家/地區</string>
-    <string name="statistics_chapter_length_distribution">章節長度</string>
     <string name="statistics_manga">漫畫</string>
     <string name="statistics_no_manga_stats">暫無漫畫分析可用</string>
-    <string name="statistics_by_year">發行年</string>
     <string name="statistics_activity_today_pending">今日 · 暫無計數</string>
     <string name="statistics_activity_vs_previous">與上週比較</string>
     <string name="statistics_activity_days_counted">日期計數</string>
     <string name="statistics_activity_awaiting">待統計</string>
     <string name="statistics_activity_awaiting_inline">待 AniList 統計</string>
     <string name="statistics_activity_day_ratio">%1$d / %2$d</string>
-    <string name="statistics_std_dev">標準差</string>
-    <string name="statistics_start_year">開始觀看</string>
-    <string name="statistics_taste_focused">你的品味專一</string>
-    <string name="statistics_taste_balanced">均衡的品味</string>
-    <string name="statistics_taste_eclectic">廣泛而雜食的品味</string>
     <string name="statistics_status_breakdown">狀態細分</string>
     <string name="profile_social_placeholder">%1$s將在此顯示</string>
     <string name="filter_genres">風格</string>
@@ -1163,10 +1144,8 @@
     <string name="cd_author_avatar">作者頭像</string>
     <string name="cd_comments">留言</string>
     <string name="cd_expand">展開</string>
-    <string name="statistics_time_breakdown">總時長</string>
     <string name="library_removing_title">移除 %1$d 項</string>
     <string name="library_adding_title">往 %2$s 加入 %1$d 項</string>
-    <string name="statistics_peak_year">你的高峰年</string>
     <string name="library_new_list">新清單</string>
     <string name="new_list_name">新清單名</string>
     <string name="library_sort_by_label">排序方式</string>

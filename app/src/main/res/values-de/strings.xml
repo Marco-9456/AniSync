@@ -686,18 +686,12 @@
     <string name="a11y_wp_card_unknown_manga">%1$s, %2$d Kapitel gelesen, Gesamtzahl unbekannt</string>
     <!-- Statistics Screen -->
     <string name="statistics_title">Statistiken</string>
-    <string name="statistics_total_anime">Anime gesamt</string>
     <string name="statistics_episodes">Episoden</string>
     <string name="statistics_mean_score">Durchschnittsbewertung</string>
-    <string name="statistics_score_distribution">Bewertungsverteilung</string>
     <string name="statistics_top_genres">Top-Genres</string>
-    <string name="statistics_formats">Formate</string>
-    <string name="statistics_top_studios">Top-Studios</string>
     <string name="profile_favorites_studios">Studios</string>
-    <string name="statistics_by_year">Nach Erscheinungsjahr</string>
     <string name="statistics_anime">Anime</string>
     <string name="statistics_manga">Manga</string>
-    <string name="statistics_total_manga">Manga gesamt</string>
     <string name="statistics_chapters">Kapitel</string>
     <string name="statistics_no_manga_stats">Keine Manga-Statistiken verfügbar</string>
     <!-- Activity heatmap -->
@@ -706,7 +700,6 @@
     <string name="statistics_activity_less">Weniger</string>
     <string name="statistics_activity_more">Mehr</string>
     <string name="statistics_activity_a11y">Aktivitäts-Heatmap mit %1$d Aktivitäten im letzten Jahr</string>
-    <string name="statistics_activity_update_info">AniList aktualisiert deine Statistiken automatisch alle 48 Stunden</string>
     <plurals name="statistics_activity_count">
         <item quantity="one">%d Aktivität</item>
         <item quantity="other">%d Aktivitäten</item>
@@ -1027,21 +1020,7 @@
     <string name="locked">Gesperrt</string>
     <string name="cd_go_back_one_level">Eine Ebene zurück</string>
     <string name="cd_thread_depth">Thread-Tiefe: %d Ebenen. Zum Zurückgehen tippen.</string>
-    <string name="statistics_std_dev">Standardabweichung</string>
-    <string name="statistics_days_of_your_life">≈ %1$s Tage deines Lebens</string>
-    <string name="statistics_top_tags">Top-Tags</string>
-    <string name="statistics_top_voice_actors">Top-Synchronsprecher</string>
-    <string name="statistics_top_staff">Top-Mitarbeiter</string>
-    <string name="statistics_length_distribution">Episodenlänge</string>
-    <string name="statistics_chapter_length_distribution">Kapitelzahl</string>
-    <string name="statistics_start_year">Begonnen am</string>
     <string name="statistics_status_breakdown">Status-Aufschlüsselung</string>
-    <string name="statistics_country_distribution">Länder</string>
-    <string name="statistics_peak_year">Dein Spitzenjahr</string>
-    <string name="statistics_time_breakdown">Aufgewendete Zeit</string>
-    <string name="statistics_taste_focused">Dein Geschmack ist fokussiert</string>
-    <string name="statistics_taste_balanced">Ausgewogener Geschmack</string>
-    <string name="statistics_taste_eclectic">Breit gefächerter Geschmack</string>
     <!-- Airing calendar -->
     <string name="calendar_title">Ausstrahlungskalender</string>
     <string name="calendar_open">Ausstrahlungskalender</string>
