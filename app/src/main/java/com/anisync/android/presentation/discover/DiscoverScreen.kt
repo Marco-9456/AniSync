@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.discover
 
 import android.util.Log
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -27,7 +26,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -35,7 +33,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AppBarWithSearch
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
-import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -51,7 +48,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -87,7 +83,10 @@ import com.anisync.android.R
 import com.anisync.android.domain.DiscoverSection
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.EmbeddedFullScreenSearchBar
 import com.anisync.android.presentation.components.HideKeyboardOnCollapse
+import com.anisync.android.presentation.components.SearchBarAnchor
+import com.anisync.android.presentation.components.searchBarAnchor
 import com.anisync.android.presentation.components.rememberSearchFieldCollapse
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.discover.components.AiringTimeline
@@ -115,7 +114,6 @@ import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaSeason
 import com.anisync.android.type.MediaType
-import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -145,22 +143,20 @@ private const val TAG = "DiscoverScreen"
 )
 @Composable
 fun DiscoverScreen(
+    // The expanded search is drawn by DiscoverListDetail, over both panes on expanded widths. The
+    // feed keeps the collapsed bar it grows from.
+    searchBarState: SearchBarState,
+    textFieldState: TextFieldState,
+    searchAnchor: SearchBarAnchor,
     // sourceSection = TransitionKeys.DISCOVER_* prefix of the section the tap came from; must
     // reach MediaDetails.sourceScreen so the return morph targets the exact card tapped (the
     // same media can sit in several Discover sections at once).
     onMediaClick: (mediaId: Int, sourceSection: String) -> Unit,
-    onCharacterClick: (Int) -> Unit = {},
-    onStaffClick: (Int) -> Unit = {},
-    onStudioClick: (Int) -> Unit = {},
-    onUserClick: (String) -> Unit = {},
     onSectionSeeAllClick: (title: String, sectionType: String, mediaType: MediaType) -> Unit,
     onReviewClick: (Int) -> Unit = {},
     onRecentReviewsSeeAllClick: (MediaType) -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
-    // App nav controller, threaded only so the wide (expanded) search overlay can host its results in a
-    // two-pane list-detail. Null on compact/medium (and previews), where search push-navigates instead.
-    navController: NavHostController? = null,
     viewModel: DiscoverViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -175,14 +171,6 @@ fun DiscoverScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
-
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val focusManager = LocalFocusManager.current
-
-    val searchBarState = rememberSearchBarState()
-
-    val initialQuery = rememberSaveable { uiState.searchQuery }
-    val textFieldState = rememberTextFieldState(initialText = initialQuery)
 
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
@@ -229,10 +217,13 @@ fun DiscoverScreen(
     val isSharedTransitionRunning by remember {
         derivedStateOf { sharedTransitionScope.isTransitionActive }
     }
+    // Never while the search is open: the overlay layer would draw the bar over the results.
     val shouldRenderTopBarInOverlay by remember {
         derivedStateOf {
             shouldKeepTopBarOverlayForReturn &&
                 isDiscoverTargetingVisible &&
+                searchBarState.currentValue == SearchBarValue.Collapsed &&
+                searchBarState.targetValue == SearchBarValue.Collapsed &&
                 (
                     isDiscoverEnteringFromBackStack ||
                         (hasObservedDiscoverReEnter && isSharedTransitionRunning)
@@ -299,29 +290,8 @@ fun DiscoverScreen(
         }
     }
 
-    val onSearchItemClick: (Int) -> Unit = remember(navigateToMediaDetails, searchBarState, coroutineScope, keyboardController) {
-        { id ->
-            keyboardController?.hide()
-            // Collapse the full-screen search overlay before navigating; the overlay
-            // is a Popup window that otherwise persists over MediaDetails and lets
-            // tap/back events keep firing onto a stale list, repeatedly re-pushing
-            // the detail destination (observed on Android 16 with predictive back).
-            coroutineScope.launch { searchBarState.animateToCollapsed() }
-            navigateToMediaDetails(id, TransitionKeys.DISCOVER)
-        }
-    }
-
     val onRefresh: () -> Unit =
         rememberRateLimitedRefresh { viewModel.onAction(DiscoverAction.Refresh) }
-
-    BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
-        // Clear focus up front: the M3 expressive InputField re-expands while it stays
-        // focused during the collapse animation, so the bar reopens itself on some
-        // devices (observed on API 26 / EMUI 8, issue #51) unless focus is dropped first.
-        focusManager.clearFocus()
-        keyboardController?.hide()
-        coroutineScope.launch { searchBarState.animateToCollapsed() }
-    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -344,6 +314,7 @@ fun DiscoverScreen(
                     DiscoverTopBar(
                         scrollBehavior = scrollBehavior,
                         searchBarState = searchBarState,
+                        searchAnchor = searchAnchor,
                         textFieldState = textFieldState,
                         mediaType = currentMediaType,
                         coroutineScope = coroutineScope,
@@ -398,42 +369,43 @@ fun DiscoverScreen(
         },
         onReset = { viewModel.onAction(DiscoverAction.ResetSectionOrder) }
     )
+}
 
-    val onCharacterItemClick: (Int) -> Unit = remember(onCharacterClick, searchBarState, coroutineScope, keyboardController) {
-        { id ->
-            keyboardController?.hide()
-            coroutineScope.launch { searchBarState.animateToCollapsed() }
-            onCharacterClick(id)
-        }
-    }
-    val onStaffItemClick: (Int) -> Unit = remember(onStaffClick, searchBarState, coroutineScope, keyboardController) {
-        { id ->
-            keyboardController?.hide()
-            coroutineScope.launch { searchBarState.animateToCollapsed() }
-            onStaffClick(id)
-        }
-    }
-    val onStudioItemClick: (Int) -> Unit = remember(onStudioClick, searchBarState, coroutineScope, keyboardController) {
-        { id ->
-            keyboardController?.hide()
-            coroutineScope.launch { searchBarState.animateToCollapsed() }
-            onStudioClick(id)
-        }
-    }
-    val onUserItemClick: (String) -> Unit = remember(onUserClick, searchBarState, coroutineScope, keyboardController) {
-        { name ->
-            keyboardController?.hide()
-            coroutineScope.launch { searchBarState.animateToCollapsed() }
-            onUserClick(name)
-        }
-    }
-
+/**
+ * The expanded search, kept open while a result is on screen so back returns to it. A result opens
+ * over it the way any page opens over the screen it came from.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun DiscoverSearch(
+    viewModel: DiscoverViewModel,
+    searchBarState: SearchBarState,
+    textFieldState: TextFieldState,
+    searchAnchor: SearchBarAnchor,
+    navController: NavHostController,
+    onMediaClick: (Int) -> Unit,
+    onCharacterClick: (Int) -> Unit,
+    onStaffClick: (Int) -> Unit,
+    onStudioClick: (Int) -> Unit,
+    onUserClick: (String) -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
     val taxonomy by viewModel.taxonomy.collectAsStateWithLifecycle()
     val showAdultContent by viewModel.showAdultContent.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+
+    // Dropping focus first keeps the keyboard closed when the search comes back.
+    val open: (() -> Unit) -> Unit = { navigate ->
+        focusManager.clearFocus()
+        navigate()
+    }
 
     DiscoverSearchOverlay(
         state = uiState,
         searchBarState = searchBarState,
+        searchAnchor = searchAnchor,
         textFieldState = textFieldState,
         titleLanguage = titleLanguage,
         taxonomy = taxonomy,
@@ -442,12 +414,12 @@ fun DiscoverScreen(
         navController = navController,
         onAction = viewModel::onAction,
         actions = SearchResultActions(
-            onMedia = onSearchItemClick,
+            onMedia = { id -> open { onMediaClick(id) } },
             onAddToList = { viewModel.onAction(DiscoverAction.AddToPlanning(it)) },
-            onCharacter = onCharacterItemClick,
-            onStaff = onStaffItemClick,
-            onStudio = onStudioItemClick,
-            onUser = onUserItemClick
+            onCharacter = { id -> open { onCharacterClick(id) } },
+            onStaff = { id -> open { onStaffClick(id) } },
+            onStudio = { id -> open { onStudioClick(id) } },
+            onUser = { name -> open { onUserClick(name) } }
         )
     )
 }
@@ -457,6 +429,7 @@ fun DiscoverScreen(
 private fun DiscoverTopBar(
     scrollBehavior: SearchBarScrollBehavior?,
     searchBarState: SearchBarState,
+    searchAnchor: SearchBarAnchor,
     textFieldState: TextFieldState,
     mediaType: MediaType,
     coroutineScope: CoroutineScope,
@@ -477,11 +450,10 @@ private fun DiscoverTopBar(
     ) {
         // Keep the collapsed search field unfocusable in touch mode: M3 expands the bar
         // whenever the field gains focus, and old devices (API 26 / EMUI 8, issue #51)
-        // spuriously re-focus it as the expanded search dialog tears down — popping the
-        // bar back open (and again on tab switches while the stale focus lingers).
-        // Tap-to-open still works via the press path, and the expanded field lives in
-        // its own dialog window, unaffected. Keyboard-mode focus stays allowed;
-        // expansion there is key-driven, not focus-driven.
+        // spuriously re-focus it as the expanded search closes, popping the bar back open
+        // (and again on tab switches while the stale focus lingers). Tap-to-open still
+        // works via the press path, and the expanded field is a separate node, unaffected.
+        // Keyboard-mode focus stays allowed, since expansion there is key-driven, not focus-driven.
         AppBarWithSearch(
             modifier = Modifier.focusProperties {
                 canFocus = inputModeManager.inputMode == InputMode.Keyboard
@@ -489,32 +461,37 @@ private fun DiscoverTopBar(
             scrollBehavior = scrollBehavior,
             state = searchBarState,
             inputField = {
-                SearchInputField(
-                    searchBarState = searchBarState,
-                    textFieldState = textFieldState,
-                    mediaType = mediaType,
-                    coroutineScope = coroutineScope,
-                    onSearch = onSearch,
-                    collapsedTrailing = {
-                        Box {
-                            IconButton(onClick = onOverflowClick) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = stringResource(R.string.more)
+                Box(
+                    modifier = Modifier.searchBarAnchor(searchAnchor),
+                    propagateMinConstraints = true
+                ) {
+                    SearchInputField(
+                        searchBarState = searchBarState,
+                        textFieldState = textFieldState,
+                        mediaType = mediaType,
+                        coroutineScope = coroutineScope,
+                        onSearch = onSearch,
+                        collapsedTrailing = {
+                            Box {
+                                IconButton(onClick = onOverflowClick) {
+                                    Icon(
+                                        imageVector = Icons.Default.MoreVert,
+                                        contentDescription = stringResource(R.string.more)
+                                    )
+                                }
+                                DiscoverOverflowMenu(
+                                    expanded = overflowExpanded,
+                                    mediaType = mediaType,
+                                    onDismiss = onOverflowDismiss,
+                                    onReorderSections = onReorderSections,
+                                    onOpenCalendar = onOpenCalendar,
+                                    onRefresh = onRefresh,
+                                    onOpenSettings = onOpenSettings
                                 )
                             }
-                            DiscoverOverflowMenu(
-                                expanded = overflowExpanded,
-                                mediaType = mediaType,
-                                onDismiss = onOverflowDismiss,
-                                onReorderSections = onReorderSections,
-                                onOpenCalendar = onOpenCalendar,
-                                onRefresh = onRefresh,
-                                onOpenSettings = onOpenSettings
-                            )
                         }
-                    }
-                )
+                    )
+                }
             },
             colors = SearchBarDefaults.appBarWithSearchColors(
                 appBarContainerColor = Color.Transparent,
@@ -546,8 +523,6 @@ private fun SearchInputField(
 ) {
     val isExpanded = searchBarState.currentValue == SearchBarValue.Expanded
     val hasText by remember { derivedStateOf { textFieldState.text.isNotEmpty() } }
-    // Read here, not passed in. The expanded field sits in the search dialog's own window, and
-    // only that window's controller can close the keyboard it opened.
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -960,6 +935,7 @@ private fun LibraryEntry.catalogueMarker(): String? {
 private fun DiscoverSearchOverlay(
     state: DiscoverUiState,
     searchBarState: SearchBarState,
+    searchAnchor: SearchBarAnchor,
     textFieldState: TextFieldState,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     taxonomy: SearchTaxonomy,
@@ -980,67 +956,63 @@ private fun DiscoverSearchOverlay(
         if (!hasResultList) fieldCollapse.expand()
     }
 
-    ExpandedFullScreenSearchBar(
+    EmbeddedFullScreenSearchBar(
         state = searchBarState,
+        anchor = searchAnchor,
         // On background rather than surfaceContainerHigh, so the result cards keep their contrast.
         colors = SearchBarDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
         inputField = {
-            ProvideDisplaySize {
-                SearchInputField(
-                    searchBarState = searchBarState,
-                    textFieldState = textFieldState,
-                    mediaType = state.mediaType,
-                    coroutineScope = coroutineScope,
-                    onSearch = { onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
-                    modifier = fieldCollapse.field
-                )
-            }
+            SearchInputField(
+                searchBarState = searchBarState,
+                textFieldState = textFieldState,
+                mediaType = state.mediaType,
+                coroutineScope = coroutineScope,
+                onSearch = { onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
+                modifier = fieldCollapse.field
+            )
         }
     ) {
-        ProvideDisplaySize {
-            HideKeyboardOnCollapse(fieldCollapse)
-            val topInset = WindowInsets.safeDrawing.getTop(LocalDensity.current)
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(fieldCollapse.content(topInset, MaterialTheme.colorScheme.background))
-            ) {
-                // Characters, staff, users and studios are found by name alone, so the media
-                // filters would have nothing to narrow there.
-                if (category.hasMediaFilters()) {
-                    SearchFilterChipBar(
-                        filters = state.searchFilters,
-                        category = category,
-                        onChipTap = { filterId ->
-                            onAction(DiscoverAction.LoadTaxonomy)
-                            openedFilter = filterId
-                        },
-                        onClear = { onAction(DiscoverAction.ClearFilters) }
-                    )
-                }
-                if (WhatsNewItem.DISCOVER_SEARCH_FILTERS in rememberActiveWhatsNew()) {
-                    val whatsNewStore = LocalWhatsNew.current
-                    InfoNotice(
-                        text = stringResource(R.string.whats_new_discover_filters),
-                        onDismiss = { whatsNewStore.markSeen(WhatsNewItem.DISCOVER_SEARCH_FILTERS) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                }
-                SearchResultsContent(
-                    state = state,
-                    navController = navController,
-                    titleLanguage = titleLanguage,
-                    onAction = onAction,
-                    actions = actions,
-                    resultsModifier = Modifier.nestedScroll(fieldCollapse.nestedScrollConnection)
+        HideKeyboardOnCollapse(fieldCollapse)
+        val topInset = WindowInsets.safeDrawing.getTop(LocalDensity.current)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(fieldCollapse.content(topInset, MaterialTheme.colorScheme.background))
+        ) {
+            // Characters, staff, users and studios are found by name alone, so the media
+            // filters would have nothing to narrow there.
+            if (category.hasMediaFilters()) {
+                SearchFilterChipBar(
+                    filters = state.searchFilters,
+                    category = category,
+                    onChipTap = { filterId ->
+                        onAction(DiscoverAction.LoadTaxonomy)
+                        openedFilter = filterId
+                    },
+                    onClear = { onAction(DiscoverAction.ClearFilters) }
                 )
             }
+            if (WhatsNewItem.DISCOVER_SEARCH_FILTERS in rememberActiveWhatsNew()) {
+                val whatsNewStore = LocalWhatsNew.current
+                InfoNotice(
+                    text = stringResource(R.string.whats_new_discover_filters),
+                    onDismiss = { whatsNewStore.markSeen(WhatsNewItem.DISCOVER_SEARCH_FILTERS) },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+            }
+            SearchResultsContent(
+                state = state,
+                navController = navController,
+                titleLanguage = titleLanguage,
+                onAction = onAction,
+                actions = actions,
+                resultsModifier = Modifier.nestedScroll(fieldCollapse.nestedScrollConnection)
+            )
         }
     }
 
-    // The filter sheets scope to the whole search overlay (which covers both panes on expanded
-    // widths), and this host sits OUTSIDE the overlay popup — never anchor them to the feed pane
-    // hidden behind it.
+    // The filter sheets scope to the whole search overlay, which covers both panes on expanded
+    // widths. Never anchor them to the feed pane hidden behind it.
     com.anisync.android.presentation.util.WindowModalSheetScope {
         SearchFilterSheetHost(
             openedFilter = openedFilter,

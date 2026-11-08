@@ -3,14 +3,26 @@ package com.anisync.android.presentation.discover
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.anisync.android.R
+import com.anisync.android.presentation.components.KeepBackFromCovered
+import com.anisync.android.presentation.components.SearchBarAnchor
+import com.anisync.android.presentation.components.coveredBySearch
 import com.anisync.android.presentation.navigation.Calendar
 import com.anisync.android.presentation.navigation.CharacterDetails
 import com.anisync.android.presentation.navigation.LIST_DETAIL_PANE_SOURCE
@@ -27,6 +39,7 @@ import com.anisync.android.presentation.navigation.UserProfile
 import com.anisync.android.presentation.navigation.navigateSafely
 import com.anisync.android.presentation.review.ReviewDetailScreen
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
+import com.anisync.android.presentation.util.TransitionKeys
 
 /**
  * What a tapped Discover feed item opens in the wide detail pane. The feed carries two selectable
@@ -67,7 +80,7 @@ private val DiscoverTargetSaver = listSaver<DiscoverTarget?, Any>(
  * detail. Expanded widths use the shared two-pane [TwoPaneListDetailScaffold] — the discover feed as
  * the permanent list pane, the selected media's or review's detail in the on-demand resizable pane.
  */
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun DiscoverListDetail(
     navController: NavHostController,
@@ -76,18 +89,23 @@ fun DiscoverListDetail(
     onMediaClickFullScreen: (mediaId: Int, sourceSection: String) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    viewModel: DiscoverViewModel = hiltViewModel(),
 ) {
+    // Held here rather than in the feed: on expanded widths the search covers both panes.
+    val searchBarState = rememberSearchBarState()
+    val searchAnchor = remember { SearchBarAnchor() }
+    val initialQuery = rememberSaveable { viewModel.uiState.value.searchQuery }
+    val textFieldState = rememberTextFieldState(initialText = initialQuery)
+
     val feed: @Composable (
         onMediaClick: (Int, String) -> Unit,
         onReviewClick: (Int) -> Unit,
     ) -> Unit = { onMediaClick, onReviewClick ->
         DiscoverScreen(
-            navController = navController,
+            searchBarState = searchBarState,
+            textFieldState = textFieldState,
+            searchAnchor = searchAnchor,
             onMediaClick = onMediaClick,
-            onCharacterClick = { navController.navigate(CharacterDetails(it)) },
-            onStaffClick = { navController.navigate(StaffDetails(it)) },
-            onStudioClick = { navController.navigate(StudioDetails(it)) },
-            onUserClick = { navController.navigateSafely(UserProfile(it)) },
             onSectionSeeAllClick = { title, sectionType, mediaType ->
                 navController.navigate(SectionGrid(title, sectionType, mediaType.name))
             },
@@ -97,19 +115,47 @@ fun DiscoverListDetail(
             },
             onNavigateToCalendar = { navController.navigate(Calendar) },
             onNavigateToSettings = { navController.navigate(Settings) },
+            viewModel = viewModel,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )
     }
 
-    if (!LocalAdaptiveInfo.current.supportsTwoPane) {
-        feed(
-            onMediaClickFullScreen,
-            { navController.navigate(ReviewDetail(it, sourceScreen = "discover")) },
-        )
-        return
-    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().coveredBySearch(searchBarState)) {
+            KeepBackFromCovered(searchBarState) {
+                if (LocalAdaptiveInfo.current.supportsTwoPane) {
+                    DiscoverTwoPane(navController = navController, feed = feed)
+                } else {
+                    feed(
+                        onMediaClickFullScreen,
+                        { navController.navigate(ReviewDetail(it, sourceScreen = "discover")) },
+                    )
+                }
+            }
+        }
 
+        DiscoverSearch(
+            viewModel = viewModel,
+            searchBarState = searchBarState,
+            textFieldState = textFieldState,
+            searchAnchor = searchAnchor,
+            navController = navController,
+            onMediaClick = { onMediaClickFullScreen(it, TransitionKeys.DISCOVER) },
+            onCharacterClick = { navController.navigate(CharacterDetails(it)) },
+            onStaffClick = { navController.navigate(StaffDetails(it)) },
+            onStudioClick = { navController.navigate(StudioDetails(it)) },
+            onUserClick = { navController.navigateSafely(UserProfile(it)) },
+        )
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun DiscoverTwoPane(
+    navController: NavHostController,
+    feed: @Composable (onMediaClick: (Int, String) -> Unit, onReviewClick: (Int) -> Unit) -> Unit,
+) {
     // Discover section items don't show a selected state, so the pane's selected id is ignored here.
     // The pane detail uses its own LIST_DETAIL_PANE_SOURCE prefix (no cross-pane morph), so the
     // tapped section is dropped.
