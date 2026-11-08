@@ -36,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -161,6 +162,15 @@ fun <T : Any> TwoPaneListDetailScaffold(
     var selected by rememberSaveable(stateSaver = selectionSaver) { mutableStateOf<T?>(null) }
     val detail = selected
 
+    // Moved rather than recomposed when the first detail opens or the last one closes, so the list
+    // keeps its scroll position and an open search instead of starting over.
+    val currentListPane by rememberUpdatedState(listPane)
+    val list = remember {
+        movableContentOf { selection: T?, onItemClick: (T) -> Unit ->
+            currentListPane(selection, onItemClick)
+        }
+    }
+
     // List pane fraction. rememberSaveable survives config change; the initial value is seeded from
     // (and resized splits are written back to) AppSettings so the chosen split also survives app close.
     val appSettings = LocalAppSettings.current
@@ -249,13 +259,13 @@ fun <T : Any> TwoPaneListDetailScaffold(
                 // instead of reflowing its search bar + tab switcher into a squashed column.
                 PaneSheetHost {
                     Box(modifier = Modifier.requiredWidthIn(min = listMinWidth).fillMaxSize()) {
-                        listPane(selected) { item -> selected = item }
+                        list(selected) { item -> selected = item }
                     }
                 }
             }
         } else {
             Box(modifier = listModifier.clipToBounds()) {
-                listPane(selected) { item -> selected = item }
+                list(selected) { item -> selected = item }
             }
         }
 
