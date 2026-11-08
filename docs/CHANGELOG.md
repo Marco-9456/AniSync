@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Emoji** - Emoji in statuses, messages, replies, forum posts, reviews, bios and notes go to AniList as they are, now that it stores them, and every limit counts an emoji as one character, as AniList does. That makes a lone emoji too short for a reply or a message, as it is on the website.
 - **Keeping Up** - Your lists refresh in the background when AniSync comes back after ten minutes or more, and a title's page checks your entry with AniList each time it opens, so episodes and chapters logged on the website or in another app show up without a pull to refresh. (#165)
 - **Search Field** - Discover, Library and Forum search move the search field out of the way as the results scroll down and bring it back on the first scroll up, as the bar over Discover does. The filters and the rail stay on screen, and the keyboard closes as the field leaves.
+- **Back To Search Results** - Opening a result from Discover, Library or Forum search leaves the search open behind it, so back returns to the results as you left them, scrolled to the same place and with the keyboard closed. On a tablet, Library and Forum search stay in the list pane and open what you pick in the pane beside them. (#175)
 
 ### Fixed
 
@@ -57,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Coming Back To A Profile** - Going back to a profile keeps your place in its activity, social, reviews, stats and list tabs. After a minute on the page, coming back cut the paged lists to their first page and swapped the others for a spinner. Saving an edited status or message, in the feed or on a profile, updates it where it is instead of reloading the list, and a page you come back to below its tabs keeps them pinned at the top. (#164)
 - **Muted Notifications** - Notifications muted in the phone's settings stay silent when they stack. Once two or more were showing, the stack took the sound and settings of activity replies, whatever type they were. (#170)
 - **Search Rail** - Results in Discover and Library search stop a little short of the rail above them as they scroll, as they do under the rail on Discover, instead of running right up against it.
+- **Lists On A Tablet** - Opening the first title beside the Library or Discover list no longer starts the list over, so it keeps its place and anything open on it.
 
 ## [3.3.0] - 2026-10-20
 
