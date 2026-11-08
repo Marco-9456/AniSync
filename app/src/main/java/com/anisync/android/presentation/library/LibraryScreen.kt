@@ -49,7 +49,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.AppBarWithSearch
-import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -102,7 +101,11 @@ import com.anisync.android.domain.LibraryPriority
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.result.ResultGroupHeader
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.EmbeddedFullScreenSearchBar
 import com.anisync.android.presentation.components.HideKeyboardOnCollapse
+import com.anisync.android.presentation.components.SearchBarAnchor
+import com.anisync.android.presentation.components.coveredBySearch
+import com.anisync.android.presentation.components.searchBarAnchor
 import com.anisync.android.presentation.components.rememberSearchFieldCollapse
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.LocalWhatsNew
@@ -142,13 +145,11 @@ import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalGridColumnCount
 import com.anisync.android.presentation.util.LocalGridColumnsAuto
 import com.anisync.android.presentation.util.LocalMainNavBarInset
-import com.anisync.android.presentation.util.WindowModalSheetScope
 import com.anisync.android.presentation.util.posterGridColumns
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.presentation.recap.RecapBanner
 import com.anisync.android.presentation.recap.RecapEntry
 import com.anisync.android.type.MediaType
-import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
@@ -267,6 +268,7 @@ fun LibraryScreen(
     }
 
     val searchBarState = rememberSearchBarState()
+    val searchAnchor = remember { SearchBarAnchor() }
     val textFieldState = rememberTextFieldState()
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
@@ -289,19 +291,18 @@ fun LibraryScreen(
             .collect { viewModel.onAction(LibraryAction.OnSearchQueryChange(it)) }
     }
 
+    // Seeded once per opening. Back from a result brings the search back open, and seeding it again
+    // there would drop the category the user had picked.
+    var searchSeeded by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(searchBarState.currentValue) {
-        if (searchBarState.currentValue == SearchBarValue.Expanded) {
+        val expanded = searchBarState.currentValue == SearchBarValue.Expanded
+        if (expanded && !searchSeeded) {
             viewModel.onAction(LibraryAction.OnSearchOpened(currentTabId))
         }
+        searchSeeded = expanded
     }
 
     ExpandSearchOnRequest(uiState.searchOverlayRequest, searchBarState)
-
-    BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) {
-        focusManager.clearFocus()
-        keyboardController?.hide()
-        coroutineScope.launch { searchBarState.animateToCollapsed() }
-    }
 
     // Back leaves the selection before it leaves the screen.
     BackHandler(enabled = uiState.isSelectionMode) {
@@ -319,16 +320,14 @@ fun LibraryScreen(
         }
     }
 
-    val onSearchResultClick: (Int) -> Unit =
-        remember(navigateToMediaDetails, searchBarState, coroutineScope) {
-            { id ->
-                keyboardController?.hide()
-                // The overlay is a Popup that otherwise persists over MediaDetails and keeps
-                // firing taps onto a stale list.
-                coroutineScope.launch { searchBarState.animateToCollapsed() }
-                navigateToMediaDetails(id)
-            }
+    // The result opens over the search, which stays open for back to return to. Dropping focus
+    // keeps the keyboard closed when it does.
+    val onSearchResultClick: (Int) -> Unit = remember(onMediaClick, focusManager) {
+        { id ->
+            focusManager.clearFocus()
+            onMediaClick(id)
         }
+    }
 
     val isGridView = uiState.isGridView
 
@@ -388,10 +387,13 @@ fun LibraryScreen(
     val isSharedTransitionRunning by remember {
         derivedStateOf { sharedTransitionScope.isTransitionActive }
     }
+    // Never while the search is open: the overlay layer would draw the bar over the results.
     val shouldRenderTopBarInOverlay by remember {
         derivedStateOf {
             shouldKeepTopBarOverlayForReturn &&
                 isLibraryTargetingVisible &&
+                searchBarState.currentValue == SearchBarValue.Collapsed &&
+                searchBarState.targetValue == SearchBarValue.Collapsed &&
                 (isLibraryEnteringFromBackStack || (hasObservedLibraryReEnter && isSharedTransitionRunning))
         }
     }
@@ -423,7 +425,9 @@ fun LibraryScreen(
     }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
+            .coveredBySearch(searchBarState),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
@@ -459,8 +463,8 @@ fun LibraryScreen(
                         } else {
                             // Keep the collapsed search field unfocusable in touch mode: M3 expands
                             // the bar whenever the field gains focus, and old devices (API 26 /
-                            // EMUI 8, issue #51) spuriously re-focus it as the expanded dialog
-                            // tears down.
+                            // EMUI 8, issue #51) spuriously re-focus it as the expanded search
+                            // closes.
                             AppBarWithSearch(
                                 modifier = Modifier.focusProperties {
                                     canFocus = !showListManagement &&
@@ -468,7 +472,12 @@ fun LibraryScreen(
                                 },
                                 scrollBehavior = scrollBehavior,
                                 state = searchBarState,
-                                inputField = inputField,
+                                inputField = {
+                                    Box(
+                                        modifier = Modifier.searchBarAnchor(searchAnchor),
+                                        propagateMinConstraints = true
+                                    ) { inputField() }
+                                },
                                 colors = SearchBarDefaults.appBarWithSearchColors(
                                     appBarContainerColor = Color.Transparent,
                                     scrolledAppBarContainerColor = Color.Transparent
@@ -676,60 +685,54 @@ fun LibraryScreen(
         if (!hasSearchResults) fieldCollapse.expand()
     }
 
-    ExpandedFullScreenSearchBar(
+    // On expanded widths this sits in the list pane, and a result opens in the pane beside it.
+    EmbeddedFullScreenSearchBar(
         state = searchBarState,
+        anchor = searchAnchor,
         // On background rather than surfaceContainerHigh, so the cards keep their contrast.
         colors = SearchBarDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
         inputField = {
-            ProvideDisplaySize {
-                Box(modifier = fieldCollapse.field, propagateMinConstraints = true) { inputField() }
-            }
+            Box(modifier = fieldCollapse.field, propagateMinConstraints = true) { inputField() }
         }
     ) {
-        ProvideDisplaySize {
-            HideKeyboardOnCollapse(fieldCollapse)
-            LibrarySearchOverlay(
-                modifier = fieldCollapse.content(
-                    topInset = WindowInsets.safeDrawing.getTop(LocalDensity.current),
-                    background = MaterialTheme.colorScheme.background
-                ),
-                resultsModifier = Modifier.nestedScroll(fieldCollapse.nestedScrollConnection),
-                uiState = uiState,
-                view = searchView,
-                isSearchQueryEmpty = isSearchQueryEmpty,
-                onFilterChipTap = { openedFilter = it },
-                onClearFilters = { viewModel.onAction(LibraryAction.ClearFilters) },
-                onCategoryChange = { viewModel.onAction(LibraryAction.OnSearchCategoryChange(it)) },
-                onGridChange = { viewModel.onAction(LibraryAction.SetGridView(it)) },
-                onResultClick = onSearchResultClick,
-                onIncrement = handleIncrement,
-                onEdit = handleEdit
-            )
-        }
-    }
-
-    // The search overlay is a popup over both panes on expanded widths, so its sheets scope to the
-    // window rather than anchoring to the list pane hidden behind it.
-    WindowModalSheetScope {
-        LibraryFilterSheetHost(
-            openedFilter = openedFilter,
-            sort = sortOption,
-            isAscending = isAscending,
-            filters = uiState.filters,
-            mediaType = mediaType,
-            matchingTitles = searchView.entries.size,
-            availableGenres = uiState.availableGenres,
-            availableTags = uiState.availableTags,
-            availableFormats = uiState.availableFormats,
-            availableAiringStatuses = uiState.availableAiringStatuses,
-            showAdultContent = uiState.showAdultContent,
-            onSortChange = { sort, ascending ->
-                viewModel.onAction(LibraryAction.OnSortOptionChange(sort, ascending))
-            },
-            onFiltersChange = { viewModel.onAction(LibraryAction.SetFilters(it)) },
-            onDismiss = { openedFilter = null }
+        HideKeyboardOnCollapse(fieldCollapse)
+        LibrarySearchOverlay(
+            modifier = fieldCollapse.content(
+                topInset = WindowInsets.safeDrawing.getTop(LocalDensity.current),
+                background = MaterialTheme.colorScheme.background
+            ),
+            resultsModifier = Modifier.nestedScroll(fieldCollapse.nestedScrollConnection),
+            uiState = uiState,
+            view = searchView,
+            isSearchQueryEmpty = isSearchQueryEmpty,
+            onFilterChipTap = { openedFilter = it },
+            onClearFilters = { viewModel.onAction(LibraryAction.ClearFilters) },
+            onCategoryChange = { viewModel.onAction(LibraryAction.OnSearchCategoryChange(it)) },
+            onGridChange = { viewModel.onAction(LibraryAction.SetGridView(it)) },
+            onResultClick = onSearchResultClick,
+            onIncrement = handleIncrement,
+            onEdit = handleEdit
         )
     }
+
+    LibraryFilterSheetHost(
+        openedFilter = openedFilter,
+        sort = sortOption,
+        isAscending = isAscending,
+        filters = uiState.filters,
+        mediaType = mediaType,
+        matchingTitles = searchView.entries.size,
+        availableGenres = uiState.availableGenres,
+        availableTags = uiState.availableTags,
+        availableFormats = uiState.availableFormats,
+        availableAiringStatuses = uiState.availableAiringStatuses,
+        showAdultContent = uiState.showAdultContent,
+        onSortChange = { sort, ascending ->
+            viewModel.onAction(LibraryAction.OnSortOptionChange(sort, ascending))
+        },
+        onFiltersChange = { viewModel.onAction(LibraryAction.SetFilters(it)) },
+        onDismiss = { openedFilter = null }
+    )
 
     LibrarySortSheet(
         visible = showSortSheet,
@@ -823,27 +826,22 @@ fun LibraryScreen(
     )
 
     uiState.editingEntry?.let { entry ->
-        val sheet = @Composable {
-            EditLibraryEntrySheet(
-                entry = entry,
-                titleLanguage = titleLanguage,
-                scoreFormat = uiState.userScoreFormat,
-                availableCustomLists = uiState.customListNames,
-                advancedScoringCategories = uiState.advancedScoringCategories,
-                onDismiss = { viewModel.onAction(LibraryAction.DismissEditor) },
-                onSave = { updatedEntry ->
-                    viewModel.onAction(LibraryAction.UpdateEntry(updatedEntry))
-                    viewModel.onAction(LibraryAction.DismissEditor)
-                },
-                onDelete = {
-                    viewModel.onAction(LibraryAction.DeleteEntry(entry.id, entry.mediaId))
-                    viewModel.onAction(LibraryAction.DismissEditor)
-                }
-            )
-        }
-        // From search the sheet opens over the overlay, which covers both panes, so the results
-        // are still there when it closes. From the list it stays on the list's own pane.
-        if (searchBarState.currentValue == SearchBarValue.Expanded) WindowModalSheetScope(sheet) else sheet()
+        EditLibraryEntrySheet(
+            entry = entry,
+            titleLanguage = titleLanguage,
+            scoreFormat = uiState.userScoreFormat,
+            availableCustomLists = uiState.customListNames,
+            advancedScoringCategories = uiState.advancedScoringCategories,
+            onDismiss = { viewModel.onAction(LibraryAction.DismissEditor) },
+            onSave = { updatedEntry ->
+                viewModel.onAction(LibraryAction.UpdateEntry(updatedEntry))
+                viewModel.onAction(LibraryAction.DismissEditor)
+            },
+            onDelete = {
+                viewModel.onAction(LibraryAction.DeleteEntry(entry.id, entry.mediaId))
+                viewModel.onAction(LibraryAction.DismissEditor)
+            }
+        )
     }
 
     uiState.scorePromptEntry?.let { entry ->
@@ -1118,8 +1116,6 @@ private fun LibrarySearchBarInputField(
     onOverflow: () -> Unit,
     overflowMenu: @Composable () -> Unit
 ) {
-    // Read here, not taken from the screen. The expanded field sits in the search dialog's own
-    // window, and only that window's controller can close the keyboard it opened.
     val keyboardController = LocalSoftwareKeyboardController.current
     SearchBarDefaults.InputField(
         // Matches Discover: a collapsed bar sized by its content differs screen to screen.
