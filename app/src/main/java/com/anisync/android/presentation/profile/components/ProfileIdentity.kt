@@ -33,8 +33,6 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -61,10 +59,10 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.data.WhatsNewItem
-import com.anisync.android.presentation.components.rememberActiveWhatsNew
+import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.bannerScrimBrush
 import com.anisync.android.presentation.components.bannerScrimHeight
-import com.anisync.android.domain.UserProfile
+import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.emphasis
@@ -237,7 +235,7 @@ fun ProfileIdentityDetails(
     val joinedDate = remember(profile.createdAt) {
         profile.createdAt?.let {
             val sdf = SimpleDateFormat("MMM yyyy", Locale.getDefault())
-            "Joined ${sdf.format(Date(it))}"
+            sdf.format(Date(it))
         }
     }
 
@@ -323,7 +321,7 @@ fun ProfileIdentityDetails(
                 )
                 if (joinedDate != null) {
                     Text(
-                        text = joinedDate,
+                        text = stringResource(R.string.profile_joined, joinedDate),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -332,7 +330,7 @@ fun ProfileIdentityDetails(
         } else if (joinedDate != null) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = joinedDate,
+                text = stringResource(R.string.profile_joined, joinedDate),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
