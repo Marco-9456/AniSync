@@ -1,6 +1,5 @@
 package com.anisync.android.presentation.forum
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +42,6 @@ import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.AppBarWithSearch
-import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
@@ -98,7 +96,11 @@ import com.anisync.android.domain.ForumThread
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.EmptyState
+import com.anisync.android.presentation.components.EmbeddedFullScreenSearchBar
 import com.anisync.android.presentation.components.HideKeyboardOnCollapse
+import com.anisync.android.presentation.components.SearchBarAnchor
+import com.anisync.android.presentation.components.coveredBySearch
+import com.anisync.android.presentation.components.searchBarAnchor
 import com.anisync.android.presentation.components.rememberSearchFieldCollapse
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.ScrollToTopFab
@@ -122,7 +124,6 @@ import com.anisync.android.domain.MainTab
 import com.anisync.android.presentation.util.LocalRailFabState
 import com.anisync.android.presentation.util.SetRailFab
 import com.anisync.android.presentation.util.bouncyClickable
-import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -170,6 +171,7 @@ fun ForumScreen(
     val systemBarsPadding = WindowInsets.systemBars.asPaddingValues()
 
     val searchBarState = rememberSearchBarState()
+    val searchAnchor = remember { SearchBarAnchor() }
     val textFieldState = rememberTextFieldState(initialText = uiState.searchFilters.query)
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
     val inputModeManager = LocalInputModeManager.current
@@ -190,21 +192,35 @@ fun ForumScreen(
             Unit
         }
     }
+    // What a result opens goes over the search, which stays open for back to return to. Dropping
+    // focus keeps the keyboard closed when it does.
     val onSearchThreadClick: (Int, String) -> Unit =
-        remember(onThreadClick, collapseSearch) {
-            { threadId, threadTitle -> collapseSearch(); onThreadClick(threadId, threadTitle) }
+        remember(onThreadClick, focusManager) {
+            { threadId, threadTitle ->
+                focusManager.clearFocus()
+                onThreadClick(threadId, threadTitle)
+            }
         }
     val onSearchCommentClick: (Int, Int) -> Unit =
-        remember(onThreadCommentClick, collapseSearch) {
-            { threadId, commentId -> collapseSearch(); onThreadCommentClick(threadId, commentId) }
+        remember(onThreadCommentClick, focusManager) {
+            { threadId, commentId ->
+                focusManager.clearFocus()
+                onThreadCommentClick(threadId, commentId)
+            }
         }
     val onSearchUserClick: (String) -> Unit =
-        remember(onUserClick, collapseSearch) {
-            { userName -> collapseSearch(); onUserClick(userName) }
+        remember(onUserClick, focusManager) {
+            { userName ->
+                focusManager.clearFocus()
+                onUserClick(userName)
+            }
         }
     val onSearchCreateForMedia: (Int, String, String?) -> Unit =
-        remember(onCreateThreadForMedia, collapseSearch) {
-            { mediaId, title, cover -> collapseSearch(); onCreateThreadForMedia(mediaId, title, cover) }
+        remember(onCreateThreadForMedia, focusManager) {
+            { mediaId, title, cover ->
+                focusManager.clearFocus()
+                onCreateThreadForMedia(mediaId, title, cover)
+            }
         }
 
     LaunchedEffect(Unit) { viewModel.onScreenVisible() }
@@ -227,16 +243,12 @@ fun ForumScreen(
 
     ExpandSearchOnRequest(uiState.searchOverlayRequest, searchBarState)
 
-    BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Expanded) { collapseSearch() }
-
     val sharedItemModifier = remember { Modifier.fillMaxWidth() }
 
     val inputField = remember {
         @Composable {
             val expanded = searchBarState.currentValue == SearchBarValue.Expanded
             val isSearchEmpty = textFieldState.text.isEmpty()
-            // The expanded field sits in the search dialog's own window, and only that window's
-            // controller can close the keyboard it opened.
             val keyboardController = LocalSoftwareKeyboardController.current
 
             SearchBarDefaults.InputField(
@@ -347,7 +359,9 @@ fun ForumScreen(
     }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
+            .coveredBySearch(searchBarState),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
@@ -383,14 +397,19 @@ fun ForumScreen(
             Column(modifier = Modifier.statusBarsPadding()) {
                 // Keep the collapsed search field unfocusable in touch mode: M3 expands the bar
                 // whenever the field gains focus, and old devices spuriously re-focus it as the
-                // expanded dialog tears down, popping the bar back open (issue #51).
+                // expanded search closes, popping the bar back open (issue #51).
                 AppBarWithSearch(
                     modifier = Modifier.focusProperties {
                         canFocus = inputModeManager.inputMode == InputMode.Keyboard
                     },
                     scrollBehavior = scrollBehavior,
                     state = searchBarState,
-                    inputField = inputField,
+                    inputField = {
+                        Box(
+                            modifier = Modifier.searchBarAnchor(searchAnchor),
+                            propagateMinConstraints = true
+                        ) { inputField() }
+                    },
                     colors = SearchBarDefaults.appBarWithSearchColors(
                         appBarContainerColor = Color.Transparent,
                         scrolledAppBarContainerColor = Color.Transparent
@@ -584,131 +603,129 @@ fun ForumScreen(
     LaunchedEffect(fieldCollapse, hasSearchResults) {
         if (!hasSearchResults) fieldCollapse.expand()
     }
-    ExpandedFullScreenSearchBar(
+    // On expanded widths this sits in the list pane, and a thread opens in the pane beside it.
+    EmbeddedFullScreenSearchBar(
         state = searchBarState,
+        anchor = searchAnchor,
         inputField = {
-            ProvideDisplaySize {
-                Box(modifier = fieldCollapse.field, propagateMinConstraints = true) { inputField() }
-            }
+            Box(modifier = fieldCollapse.field, propagateMinConstraints = true) { inputField() }
         }
     ) {
-        ProvideDisplaySize {
-            HideKeyboardOnCollapse(fieldCollapse)
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        fieldCollapse.content(
-                            topInset = WindowInsets.safeDrawing.getTop(LocalDensity.current),
-                            background = SearchBarDefaults.colors().containerColor
-                        )
+        HideKeyboardOnCollapse(fieldCollapse)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    fieldCollapse.content(
+                        topInset = WindowInsets.safeDrawing.getTop(LocalDensity.current),
+                        background = SearchBarDefaults.colors().containerColor
                     )
-            ) {
-                ForumSearchFilterChipBar(
-                    filters = searchFilters,
-                    onChipTap = { openedFilter = it },
-                    onToggleSubscribed = { viewModel.onAction(ForumAction.ToggleSubscribedOnly) }
+                )
+        ) {
+            ForumSearchFilterChipBar(
+                filters = searchFilters,
+                onChipTap = { openedFilter = it },
+                onToggleSubscribed = { viewModel.onAction(ForumAction.ToggleSubscribedOnly) }
+            )
+
+            searchFilters.media?.let { media ->
+                ForumMediaFilterHeader(
+                    media = media,
+                    onCreateThread = {
+                        onSearchCreateForMedia(
+                            media.mediaId,
+                            media.titleUserPreferred,
+                            media.coverUrl
+                        )
+                    },
+                    onClear = { viewModel.onAction(ForumAction.ClearMediaFilter) }
+                )
+            }
+
+            when {
+                uiState.isSearching && uiState.searchResults.isEmpty() -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { AppCircularProgressIndicator() }
+
+                uiState.searchError != null && uiState.searchResults.isEmpty() -> EmptyState(
+                    icon = Icons.Outlined.CloudOff,
+                    title = stringResource(R.string.forum_empty_failed_title),
+                    description = stringResource(R.string.forum_empty_failed_desc),
+                    animationKey = uiState.searchError
                 )
 
-                searchFilters.media?.let { media ->
-                    ForumMediaFilterHeader(
-                        media = media,
-                        onCreateThread = {
-                            onSearchCreateForMedia(
-                                media.mediaId,
-                                media.titleUserPreferred,
-                                media.coverUrl
-                            )
-                        },
-                        onClear = { viewModel.onAction(ForumAction.ClearMediaFilter) }
+                !searchActive -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.forum_search_prompt),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp)
                     )
                 }
 
-                when {
-                    uiState.isSearching && uiState.searchResults.isEmpty() -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) { AppCircularProgressIndicator() }
+                uiState.searchResults.isEmpty() -> EmptyState(
+                    icon = Icons.Default.Tune,
+                    title = stringResource(R.string.forum_empty_filtered_title),
+                    description = stringResource(
+                        R.string.forum_empty_filtered_desc,
+                        searchFilters.activeCount
+                    ),
+                    actionLabel = stringResource(R.string.forum_empty_clear_filters),
+                    actionIcon = Icons.Default.Close,
+                    onAction = { viewModel.onAction(ForumAction.ClearSearchFilters) },
+                    // The viewer caused this and can undo it in one tap.
+                    actionEmphasised = true,
+                    animationKey = searchFilters
+                )
 
-                    uiState.searchError != null && uiState.searchResults.isEmpty() -> EmptyState(
-                        icon = Icons.Outlined.CloudOff,
-                        title = stringResource(R.string.forum_empty_failed_title),
-                        description = stringResource(R.string.forum_empty_failed_desc),
-                        animationKey = uiState.searchError
-                    )
+                else -> LazyColumn(
+                    contentPadding = PaddingValues(
+                        top = 8.dp,
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = systemBarsPadding.calculateBottomPadding() + 16.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .nestedScroll(fieldCollapse.nestedScrollConnection)
+                        .fillMaxSize()
+                ) {
+                    itemsIndexed(
+                        items = uiState.searchResults,
+                        key = { _, thread -> "search_${thread.id}" },
+                        contentType = { _, _ -> "ForumThread" }
+                    ) { index, thread ->
+                        if (index >= uiState.searchResults.size - 4 && uiState.searchHasNextPage &&
+                            !uiState.isSearching && !uiState.searchIsPaginating
+                        ) {
+                            LaunchedEffect(index) { viewModel.onAction(ForumAction.LoadMoreSearch) }
+                        }
 
-                    !searchActive -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = stringResource(R.string.forum_search_prompt),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 32.dp)
+                        ForumThreadCard(
+                            thread = thread,
+                            onClick = { onSearchThreadClick(thread.id, thread.title) },
+                            onUserClick = onSearchUserClick,
+                            isSaved = thread.id in uiState.savedThreadIds,
+                            onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
+                            onOverflowClick = {
+                                viewModel.onAction(ForumAction.OpenThreadActions(thread))
+                            },
+                            onLastReplyClick = onSearchCommentClick,
+                            modifier = sharedItemModifier
                         )
                     }
 
-                    uiState.searchResults.isEmpty() -> EmptyState(
-                        icon = Icons.Default.Tune,
-                        title = stringResource(R.string.forum_empty_filtered_title),
-                        description = stringResource(
-                            R.string.forum_empty_filtered_desc,
-                            searchFilters.activeCount
-                        ),
-                        actionLabel = stringResource(R.string.forum_empty_clear_filters),
-                        actionIcon = Icons.Default.Close,
-                        onAction = { viewModel.onAction(ForumAction.ClearSearchFilters) },
-                        // The viewer caused this and can undo it in one tap.
-                        actionEmphasised = true,
-                        animationKey = searchFilters
-                    )
-
-                    else -> LazyColumn(
-                        contentPadding = PaddingValues(
-                            top = 8.dp,
-                            start = 16.dp,
-                            end = 16.dp,
-                            bottom = systemBarsPadding.calculateBottomPadding() + 16.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier
-                            .nestedScroll(fieldCollapse.nestedScrollConnection)
-                            .fillMaxSize()
-                    ) {
-                        itemsIndexed(
-                            items = uiState.searchResults,
-                            key = { _, thread -> "search_${thread.id}" },
-                            contentType = { _, _ -> "ForumThread" }
-                        ) { index, thread ->
-                            if (index >= uiState.searchResults.size - 4 && uiState.searchHasNextPage &&
-                                !uiState.isSearching && !uiState.searchIsPaginating
-                            ) {
-                                LaunchedEffect(index) { viewModel.onAction(ForumAction.LoadMoreSearch) }
-                            }
-
-                            ForumThreadCard(
-                                thread = thread,
-                                onClick = { onSearchThreadClick(thread.id, thread.title) },
-                                onUserClick = onSearchUserClick,
-                                isSaved = thread.id in uiState.savedThreadIds,
-                                onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
-                                onOverflowClick = {
-                                    viewModel.onAction(ForumAction.OpenThreadActions(thread))
-                                },
-                                onLastReplyClick = onSearchCommentClick,
-                                modifier = sharedItemModifier
-                            )
-                        }
-
-                        if (uiState.searchIsPaginating) {
-                            item(key = "search_paginating_indicator") {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) { AppCircularProgressIndicator() }
-                            }
+                    if (uiState.searchIsPaginating) {
+                        item(key = "search_paginating_indicator") {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) { AppCircularProgressIndicator() }
                         }
                     }
                 }

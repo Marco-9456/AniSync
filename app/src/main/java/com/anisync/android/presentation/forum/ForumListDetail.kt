@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.forum
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.runtime.Composable
@@ -60,6 +61,9 @@ fun ForumListDetail(
             forum(selectedThreadId) { threadId, _ -> onItemClick(threadId) }
         },
         detailPane = { threadId, onClose ->
+            // Registered after the list pane's search, so back closes a thread opened from the
+            // results before it closes the search.
+            BackHandler(onBack = onClose)
             // Single-screen pane (no in-pane drilling) → always the root: the detail shows the trailing
             // close (✕) via LocalPaneIsRoot.
             CompositionLocalProvider(LocalPaneIsRoot provides true) {
