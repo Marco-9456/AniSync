@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Keeping Up** - Your lists refresh in the background when AniSync comes back after ten minutes or more, and a title's page checks your entry with AniList each time it opens, so episodes and chapters logged on the website or in another app show up without a pull to refresh. (#165)
 - **Search Field** - Discover, Library and Forum search move the search field out of the way as the results scroll down and bring it back on the first scroll up, as the bar over Discover does. The filters and the rail stay on screen, and the keyboard closes as the field leaves.
 - **Back To Search Results** - Opening a result from Discover, Library or Forum search leaves the search open behind it, so back returns to the results as you left them, scrolled to the same place and with the keyboard closed. On a tablet, Library and Forum search stay in the list pane and open what you pick in the pane beside them. (#175)
+- **Pull To Refresh** - A pull only starts when your finger lands with the page already at the top, so scrolling back up never refreshes by accident. The page follows your finger and the loading indicator grows in the space it opens, turning from a circle into a burst as it fills, with a tick once letting go will refresh. Pushing back above that point calls it off. While the refresh runs the page springs back and the indicator stays at the top, cycling through its shapes until the new data is in. (#182)
 
 ### Fixed
 
