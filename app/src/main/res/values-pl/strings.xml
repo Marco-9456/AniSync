@@ -1715,4 +1715,23 @@
     <string name="sort_airing_soon">Wychodzi wkrótce</string>
     <string name="stat_aired">Premiera</string>
     <string name="media_status_upcoming">Nadchodzi</string>
+    <string name="notification_group_airing">Premiery</string>
+    <string name="notification_inbox_read_tracking">Śledź przeczytane powiadomienia</string>
+    <string name="notification_inbox_read_tracking_desc">Utrzymuj powiadomienia oznaczone do momentu gdy je przeczytasz. Wyłączone, otwarcie skrzynki zeruje licznik nieprzeczytanych powiadomień tak samo jak na stronie</string>
+    <string name="notification_inbox_mark_read_on_open">Ustaw jako przeczytane</string>
+    <string name="notification_inbox_mark_read_on_open_desc">Traktuj otwarcie skrzynki jako przeczytanie wszystkiego</string>
+    <string name="settings_recaps">Podsumowania</string>
+    <string name="settings_recaps_desc">Miesięczne i roczne podsumowania, ich motyw muzyczny oraz ich miejsce</string>
+    <string name="a11y_settings_notification_warning">Ostrzeżenie ustawień powiadomień</string>
+    <string name="profile_joined">Dołączono %1$s</string>
+    <string name="notifications_filter_airing">Premiery</string>
+    <string name="details_no_episode_total">AniList nie podaje całkowitej liczby odcinków</string>
+    <string name="details_no_chapter_total">AniList nie podaje całkowitej liczby rozdziałów</string>
+    <string name="details_next_episode_in">Odcinek %1$d wychodzi za %2$s</string>
+    <string name="media_stats_score_progression">Oceny w trakcie emisji</string>
+    <string name="media_stats_watchers_progression">Oglądalność w trakcie emisji</string>
+    <string name="media_status_airing">Wychodzi</string>
+    <string name="widget_airing_today_description">Pokazuje odcinki anime emitowane dzisiaj</string>
+    <string name="widget_airing_today_title">Wychodzą dzisiaj</string>
+    <string name="widget_time_airing_now">Wychodzi teraz</string>
 </resources>
