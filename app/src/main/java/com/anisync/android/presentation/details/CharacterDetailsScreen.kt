@@ -4,10 +4,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,9 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bloodtype
 import androidx.compose.material.icons.filled.Cake
@@ -61,9 +59,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -77,14 +72,12 @@ import com.anisync.android.domain.CharacterDetails
 import com.anisync.android.domain.CharacterMedia
 import com.anisync.android.domain.VoiceActor
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
+import com.anisync.android.presentation.components.AppModalBottomSheet
+import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.bannerChromeColors
 import com.anisync.android.presentation.components.bannerChromeContainer
 import com.anisync.android.presentation.components.bannerChromeTint
-import com.anisync.android.presentation.components.AppModalBottomSheet
-import com.anisync.android.presentation.components.ImageViewerDialog
 import com.anisync.android.presentation.components.navigation.BackTrailButton
-import com.anisync.android.presentation.navigation.TrailKind
-import com.anisync.android.presentation.navigation.TrailLabel
 import com.anisync.android.presentation.details.components.AppearanceRow
 import com.anisync.android.presentation.details.components.CharacterSkeletonContent
 import com.anisync.android.presentation.details.components.ExpandableBiography
@@ -93,23 +86,25 @@ import com.anisync.android.presentation.details.components.PersonEmptyState
 import com.anisync.android.presentation.details.components.PersonFact
 import com.anisync.android.presentation.details.components.PersonFactsCard
 import com.anisync.android.presentation.details.components.PersonHero
+import com.anisync.android.presentation.details.components.PersonListFooter
 import com.anisync.android.presentation.details.components.PersonNamesRow
 import com.anisync.android.presentation.details.components.PersonNamesSheetContent
-import com.anisync.android.presentation.details.components.PersonListFooter
 import com.anisync.android.presentation.details.components.PersonTab
 import com.anisync.android.presentation.details.components.PersonTabs
 import com.anisync.android.presentation.details.components.PersonToggleChip
 import com.anisync.android.presentation.details.components.VoiceActorRow
 import com.anisync.android.presentation.details.components.formatPersonBirthday
 import com.anisync.android.presentation.details.components.personGridItems
+import com.anisync.android.presentation.navigation.TrailKind
+import com.anisync.android.presentation.navigation.TrailLabel
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.rememberCopyToClipboard
+import com.anisync.android.type.MediaType
 import com.anisync.android.util.getName
 import com.anisync.android.util.getTitle
-import com.anisync.android.type.MediaType
 
 /** How many rows a tab previews before handing off to the full grid. */
 private const val PreviewCount = 6
@@ -444,6 +439,7 @@ private fun CharacterDetailsContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .then(gutter)
+                            .horizontalScroll(rememberScrollState())
                     ) {
                         PersonToggleChip(
                             label = stringResource(R.string.person_filter_main_roles),
@@ -510,28 +506,29 @@ private fun CharacterDetailsContent(
 
             CharacterTab.VoiceActors -> {
                 item(key = "actor_filters") {
-                    Column(modifier = gutter) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            PersonDropdownChip(
-                                label = languages[languageIndex],
-                                options = languages,
-                                selectedIndex = languageIndex,
-                                onSelect = { languageIndex = it }
-                            )
-                            PersonDropdownChip(
-                                label = actorSortOptions[actorSortIndex],
-                                options = actorSortOptions,
-                                selectedIndex = actorSortIndex,
-                                onSelect = { actorSortIndex = it },
-                                leadingIcon = Icons.Default.SwapVert,
-                                appliedWhenNotDefault = false
-                            )
-                        }
-                        Spacer(Modifier.height(12.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(gutter)
+                            .horizontalScroll(rememberScrollState())
+                    ) {
+                        PersonDropdownChip(
+                            label = languages[languageIndex],
+                            options = languages,
+                            selectedIndex = languageIndex,
+                            onSelect = { languageIndex = it }
+                        )
+                        PersonDropdownChip(
+                            label = actorSortOptions[actorSortIndex],
+                            options = actorSortOptions,
+                            selectedIndex = actorSortIndex,
+                            onSelect = { actorSortIndex = it },
+                            leadingIcon = Icons.Default.SwapVert,
+                            appliedWhenNotDefault = false
+                        )
                     }
+                    Spacer(Modifier.height(12.dp))
                 }
 
                 if (actors.isEmpty()) {
