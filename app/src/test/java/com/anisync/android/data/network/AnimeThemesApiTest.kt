@@ -209,4 +209,60 @@ class AnimeThemesApiTest {
         assertEquals(VideoOverlap.Transition, version.videos.first { it.id == 10 }.overlap)
         assertEquals(11, version.preferredVideo?.id)
     }
+
+    @Test
+    fun `a batch is matched to its titles through their AniList ids, not the order`() {
+        val body = """
+            {"data":{"findAnimeByExternalSite":[
+              {"slug":"bang_dream","resources":{"nodes":[{"externalId":21}]},"animethemes":[
+                {"id":1,"type":"OP","sequence":1,"slug":"OP1",
+                 "song":{"title":{"romaji":"Tokimeki Experience!"}},
+                 "animethemeentries":[{"id":2,"version":1,"spoiler":false,"nsfw":false,
+                   "videos":{"nodes":[{"id":3,"link":"https://v.animethemes.moe/b.webm"}]}}]}]},
+              {"slug":"evangelion_3_0_1_0","resources":{"nodes":[{"externalId":5}]},"animethemes":[
+                {"id":4,"type":"ED","sequence":1,"slug":"ED1",
+                 "song":{"title":{"romaji":"One Last Kiss"}},
+                 "animethemeentries":[{"id":5,"version":1,"spoiler":true,"nsfw":false,
+                   "videos":{"nodes":[{"id":6,"link":"https://v.animethemes.moe/e.webm"}]}}]}]}
+            ]}}
+        """.trimIndent()
+
+        val themes = api.decodeThemesById(body).byId
+
+        assertEquals(setOf(21, 5), themes.keys)
+        assertEquals("bang_dream", themes.getValue(21).animeSlug)
+        assertEquals("Tokimeki Experience!", themes.getValue(21).themes.single().songTitle)
+        assertEquals("One Last Kiss", themes.getValue(5).themes.single().songTitle)
+    }
+
+    @Test
+    fun `an entry listed under two AniList ids answers both, and one without ids is dropped`() {
+        val body = """
+            {"data":{"findAnimeByExternalSite":[
+              {"slug":"shared","resources":{"nodes":[{"externalId":7},{"externalId":8},{"externalId":null}]},"animethemes":[]},
+              {"slug":"unmatched","resources":{"nodes":[]},"animethemes":[]},
+              {"slug":"second","resources":{"nodes":[{"externalId":7}]},"animethemes":[]}
+            ]}}
+        """.trimIndent()
+
+        val batch = api.decodeThemesById(body)
+        val themes = batch.byId
+
+        assertEquals(setOf(7, 8), themes.keys)
+        assertEquals("shared", themes.getValue(7).animeSlug)
+        assertEquals("shared", themes.getValue(8).animeSlug)
+        assertEquals(1, batch.unplaced)
+        assertEquals("an id without an answer may be the unplaced entry", listOf(7, 8), batch.answered(listOf(7, 8, 9)))
+        assertEquals(listOf(7, 9), ThemesBatch(themes, unplaced = 0).answered(listOf(7, 9)))
+    }
+
+    @Test
+    fun `a batch AnimeThemes lists nothing for is empty, and a rejected one fails`() {
+        val empty = api.decodeThemesById("""{"data":{"findAnimeByExternalSite":[]}}""")
+        assertTrue(empty.byId.isEmpty())
+        assertEquals(0, empty.unplaced)
+        assertThrows(AnimeThemesException.Query::class.java) {
+            api.decodeThemesById("""{"errors":[{"message":"Max query depth"}]}""")
+        }
+    }
 }

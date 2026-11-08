@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -86,7 +87,10 @@ import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -141,6 +145,8 @@ import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.WindowModalSheetScope
 import com.anisync.android.presentation.util.posterGridColumns
 import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.presentation.recap.RecapBanner
+import com.anisync.android.presentation.recap.RecapEntry
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.ProvideDisplaySize
 import kotlinx.coroutines.flow.debounce
@@ -207,6 +213,7 @@ fun LibraryScreen(
     onNavigateToCalendar: () -> Unit,
     onNavigateToNotes: () -> Unit,
     onBrowseDiscover: () -> Unit,
+    onOpenRecap: (String) -> Unit,
     viewModel: LibraryViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -598,6 +605,9 @@ fun LibraryScreen(
                                     onIncrement = handleIncrement,
                                     onEdit = handleEdit,
                                     onBrowseDiscover = onBrowseDiscover,
+                                    recapBanner = uiState.recapBanner.takeIf { mediaType == MediaType.ANIME },
+                                    onWatchRecap = onOpenRecap,
+                                    onCloseRecap = { viewModel.onAction(LibraryAction.CloseRecapBanner) },
                                     onGoToTab = { targetId ->
                                         val index = tabs.indexOfFirst { it.toId() == targetId }
                                         if (index >= 0) {
@@ -881,6 +891,9 @@ private fun LibraryTabContent(
     onIncrement: (Int) -> Unit,
     onEdit: (LibraryEntry) -> Unit,
     onBrowseDiscover: () -> Unit,
+    recapBanner: RecapEntry?,
+    onWatchRecap: (String) -> Unit,
+    onCloseRecap: () -> Unit,
     onGoToTab: (String) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -928,6 +941,19 @@ private fun LibraryTabContent(
         verticalArrangement = Arrangement.spacedBy(if (isGrid) 20.dp else 12.dp),
         modifier = Modifier.fillMaxSize()
     ) {
+        if (recapBanner != null) {
+            item(span = { GridItemSpan(maxLineSpan) }, key = "recap_banner", contentType = "recapBanner") {
+                RecapBanner(
+                    entry = recapBanner,
+                    onWatch = { onWatchRecap(recapBanner.key) },
+                    onClose = onCloseRecap,
+                    modifier = Modifier
+                        .animateItem()
+                        .offset(y = (-4).dp)
+                        .bleedHorizontally(8.dp)
+                )
+            }
+        }
         groups.forEach { group ->
             if (group.title != null) {
                 item(
@@ -1000,6 +1026,14 @@ private fun LibraryTabContent(
             }
         }
     }
+}
+
+/** Lays the content out [amount] wider on each side than the slot it was given. */
+private fun Modifier.bleedHorizontally(amount: Dp): Modifier = layout { measurable, constraints ->
+    val bleed = amount.roundToPx()
+    val placeable = measurable.measure(constraints.offset(horizontal = 2 * bleed))
+    val width = (placeable.width - 2 * bleed).coerceIn(constraints.minWidth, constraints.maxWidth)
+    layout(width, placeable.height) { placeable.place(-bleed, 0) }
 }
 
 /** A run of entries under an optional header. */

@@ -1,8 +1,12 @@
 package com.anisync.android.presentation.statistics
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,195 +16,197 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.formatExactCount
+import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.type.MediaType
+import com.anisync.android.ui.theme.ListIndicatorKind
 import com.anisync.android.ui.theme.LocalExpressiveTypography
+import com.anisync.android.ui.theme.lineBox
+import com.anisync.android.ui.theme.listIndicatorArtColor
+
+/** One list on the hero's bar and legend. */
+@Immutable
+data class HeroList(val status: LibraryStatus, val count: Int)
 
 /**
- * MD3 Expressive HeroDashboard.
- *
- * Editorial layout (per m3.material.io/styles/typography/editorial-treatments):
- *  - eyebrow label (caps, wide tracking, low size)
- *  - mixed-weight baseline-aligned row: huge W900 numeric + W400 unit
- *  - optional editorial-lead sentence ("≈ 42 days of your life")
- *  - divider
- *  - up to three sub-stats using tabular figures
- *
- * Every number and label is sized against the width it actually gets, so a five-digit episode count
- * keeps all of its digits and a long translated label keeps all of its letters.
+ * The dashboard's lead card: what is counted, the count on the wide axis, the time behind it, and
+ * where the lists stand. [staleNote] says when AniList has not counted the latest changes yet.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HeroDashboard(
-    primaryValue: String,
-    primaryUnit: String,
-    primaryLabel: String,
-    secondaryRow: List<EditorialStat>,
-    accentText: String? = null,
-    modifier: Modifier = Modifier
+    eyebrow: String,
+    value: String,
+    unit: String,
+    lead: String?,
+    lists: List<HeroList>,
+    mediaType: MediaType,
+    note: String?,
+    staleNote: String?,
+    modifier: Modifier = Modifier,
+    detail: String? = null,
 ) {
     val expressive = LocalExpressiveTypography.current
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ),
-        shape = RoundedCornerShape(28.dp),
+    val content = MaterialTheme.colorScheme.onPrimaryContainer
+    val locale = LocalConfiguration.current.locales[0]
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .padding(24.dp)
     ) {
-        BoxWithConstraints(
-            modifier = Modifier.padding(
-                start = 24.dp,
-                end = 24.dp,
-                top = 28.dp,
-                bottom = 24.dp
-            )
-        ) {
-            val contentWidth = maxWidth
-            Column {
+        val unitStyle = MaterialTheme.typography.headlineSmall
+        val heroStyle = fittedHeroStyle(value, maxWidth - measuredWidth(unit, unitStyle) - 10.dp)
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(text = eyebrow.uppercase(), style = expressive.statLabel, color = content.copy(alpha = 0.7f))
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(text = value, style = heroStyle, color = content, maxLines = 1, modifier = Modifier.lineBox(heroStyle))
                 Text(
-                    text = primaryLabel.uppercase(),
-                    style = expressive.statLabel,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
-                Spacer(Modifier.height(4.dp))
-                // The unit takes at most 40% of the row, and what is left is what the hero number
-                // has to fit into.
-                val unitStyle = MaterialTheme.typography.headlineSmall
-                val unitWidth = measuredWidth(primaryUnit, unitStyle).coerceAtMost(contentWidth * 0.4f)
-                val heroStyle = fittedTextStyle(
-                    base = expressive.heroNumeric,
-                    values = listOf(primaryValue),
-                    maxWidth = contentWidth - unitWidth - 8.dp,
+                    text = unit,
+                    style = unitStyle,
+                    color = content.copy(alpha = 0.7f),
                     maxLines = 1,
-                    minFontSize = 40.sp
+                    modifier = Modifier.padding(bottom = 14.dp)
                 )
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = primaryValue,
-                        style = heroStyle,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = primaryUnit,
-                        style = unitStyle,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                        softWrap = true,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .weight(1f, fill = false)
-                            .padding(bottom = 14.dp)
-                    )
-                }
-                accentText?.let {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = it,
-                        style = expressive.editorialLead,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
-                    )
-                }
-                if (secondaryRow.isNotEmpty()) {
-                    Spacer(Modifier.height(24.dp))
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
-                    )
-                    Spacer(Modifier.height(20.dp))
-                    val spacing = 20.dp
-                    val columnWidth = (contentWidth - spacing * (secondaryRow.size - 1)) / secondaryRow.size
-                    // One size for the whole row, taken from the longest value, so the columns keep
-                    // an even editorial rhythm instead of each number shrinking on its own. Labels
-                    // are fitted the same way: German turns "mean score" into a 22-letter word that
-                    // a fixed size cuts in half.
-                    val valueStyle = fittedTextStyle(
-                        base = expressive.statNumericMedium,
-                        values = secondaryRow.map { it.value },
-                        maxWidth = columnWidth,
-                        maxLines = 1,
-                        minFontSize = 20.sp
-                    )
-                    val labelStyle = fittedTextStyle(
-                        base = expressive.statLabel,
-                        values = secondaryRow.map { it.label.uppercase() },
-                        maxWidth = columnWidth,
-                        maxLines = LABEL_MAX_LINES,
-                        minFontSize = 8.sp
-                    )
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(spacing)
-                    ) {
-                        secondaryRow.forEach { stat ->
-                            EditorialStatBlock(stat, valueStyle, labelStyle, Modifier.weight(1f))
+            }
+            if (lead != null) {
+                Text(text = lead, style = expressive.editorialLead, color = content.copy(alpha = 0.85f))
+            }
+            if (detail != null) {
+                Spacer(Modifier.height(10.dp))
+                Text(text = detail, style = MaterialTheme.typography.bodyMedium, color = content.copy(alpha = 0.85f))
+            }
+            if (lists.isNotEmpty()) {
+                Spacer(Modifier.height(14.dp))
+                ListStatusBar(lists)
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    lists.sortedBy { LegendOrder.indexOf(it.status) }.forEach { list ->
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Box(
+                                Modifier
+                                    .size(10.dp)
+                                    .clip(RoundedCornerShape(5.dp))
+                                    .background(list.status.barColor())
+                            )
+                            Text(text = list.status.toLabel(mediaType), style = MaterialTheme.typography.labelLarge, color = content)
+                            Text(
+                                text = formatExactCount(list.count, locale),
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+                                color = content.copy(alpha = 0.75f)
+                            )
                         }
                     }
+                }
+            }
+            if (note != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(text = note, style = statsBodySmall(), color = content.copy(alpha = 0.7f))
+            }
+            if (staleNote != null) {
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = content.copy(alpha = 0.75f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(text = staleNote, style = statsBodySmall(), color = content.copy(alpha = 0.75f))
                 }
             }
         }
     }
 }
 
+/** The bar orders lists by size, each at least [MinSegment] wide so a small list stays visible. */
 @Composable
-private fun EditorialStatBlock(
-    stat: EditorialStat,
-    valueStyle: TextStyle,
-    labelStyle: TextStyle,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier) {
-        if (stat.icon != null) {
-            Icon(
-                imageVector = stat.icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.height(4.dp))
+private fun ListStatusBar(lists: List<HeroList>) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val sorted = lists.filter { it.count > 0 }.sortedByDescending { it.count }
+        val widths = segmentWidths(sorted.map { it.count }, maxWidth - SegmentGap * (sorted.size - 1).coerceAtLeast(0))
+        Row(horizontalArrangement = Arrangement.spacedBy(SegmentGap)) {
+            sorted.forEachIndexed { index, list ->
+                Box(
+                    Modifier
+                        .width(widths[index])
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(list.status.barColor())
+                )
+            }
         }
-        Text(
-            text = stat.value,
-            style = valueStyle,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = stat.label.uppercase(),
-            style = labelStyle,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-            maxLines = LABEL_MAX_LINES,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }
 
+/** Shares of [available] by count, lifting small ones to [MinSegment] at the expense of the rest. */
+internal fun segmentWidths(counts: List<Int>, available: Dp): List<Dp> {
+    val total = counts.sum().coerceAtLeast(1)
+    val raw = counts.map { available * (it.toFloat() / total) }
+    val lifted = raw.map { maxOf(it, MinSegment) }
+    val surplus = lifted.zip(raw).sumOf { (lift, share) -> (lift - share).value.toDouble() }.toFloat()
+    val roomy = raw.filter { it > MinSegment }
+    val roomyTotal = roomy.sumOf { it.value.toDouble() }.toFloat().coerceAtLeast(1f)
+    return raw.map { share ->
+        if (share > MinSegment) share - Dp(surplus * share.value / roomyTotal) else MinSegment
+    }
+}
+
+private val SegmentGap = 3.dp
+private val MinSegment = 8.dp
+
+private val LegendOrder = listOf(
+    LibraryStatus.COMPLETED,
+    LibraryStatus.PLANNING,
+    LibraryStatus.CURRENT,
+    LibraryStatus.PAUSED,
+    LibraryStatus.DROPPED,
+    LibraryStatus.REPEATING,
+    LibraryStatus.UNKNOWN,
+)
+
+/** The pale tint of each list, the same in both themes, as the frames draw the bar. */
+private fun LibraryStatus.barColor() = listIndicatorArtColor(
+    when (this) {
+        LibraryStatus.CURRENT -> ListIndicatorKind.WATCHING
+        LibraryStatus.REPEATING -> ListIndicatorKind.REPEATING
+        LibraryStatus.PLANNING -> ListIndicatorKind.PLANNING
+        LibraryStatus.PAUSED -> ListIndicatorKind.PAUSED
+        LibraryStatus.COMPLETED -> ListIndicatorKind.COMPLETED
+        LibraryStatus.DROPPED -> ListIndicatorKind.DROPPED
+        LibraryStatus.UNKNOWN -> ListIndicatorKind.CUSTOM
+    }
+).container
+
 /** Width [text] needs on one line in [style]. */
 @Composable
-private fun measuredWidth(text: String, style: TextStyle): Dp {
+internal fun measuredWidth(text: String, style: TextStyle): Dp {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     return remember(text, style, density, measurer) {
@@ -208,154 +214,67 @@ private fun measuredWidth(text: String, style: TextStyle): Dp {
     }
 }
 
-/**
- * [base] stepped down until every one of [values] fits [maxWidth] within [maxLines], never below
- * [minFontSize]. Line height and tracking keep the ratios the base style declares.
- */
+/** heroWide at 80/84, stepped down until [value] fits [maxWidth], never below 40. */
 @Composable
-private fun fittedTextStyle(
-    base: TextStyle,
-    values: List<String>,
-    maxWidth: Dp,
-    maxLines: Int,
-    minFontSize: TextUnit
-): TextStyle {
+private fun fittedHeroStyle(value: String, maxWidth: Dp): TextStyle {
+    val role = LocalExpressiveTypography.current.heroWide
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    return remember(base, values, maxWidth, maxLines, minFontSize, density, measurer) {
-        val constraints = Constraints(maxWidth = with(density) { maxWidth.roundToPx() }.coerceAtLeast(0))
-        var size = base.fontSize.value
-        var style = base
-        while (true) {
-            val overflows = values.any { value ->
-                measurer.measure(
-                    text = value,
-                    style = style,
-                    maxLines = maxLines,
-                    constraints = constraints
-                ).hasVisualOverflow
-            }
-            if (!overflows || size <= minFontSize.value) break
-            size = (size - 1f).coerceAtLeast(minFontSize.value)
-            style = base.scaledTo(size)
+    return remember(value, maxWidth, role, density, measurer) {
+        var size = HeroSize
+        var style = role.style(HeroSize.sp, HeroLineHeight.sp, HeroTracking.sp)
+        while (size > HeroMinSize && with(density) { measurer.measure(value, style).size.width.toDp() } > maxWidth) {
+            size -= 2f
+            val scale = size / HeroSize
+            style = role.style(size.sp, (HeroLineHeight * scale).sp, (HeroTracking * scale).sp)
         }
         style
     }
 }
 
-/** [base] at [fontSize], with line height and tracking scaled by the same factor. */
-private fun TextStyle.scaledTo(fontSize: Float): TextStyle {
-    val scale = if (this.fontSize.isSp && this.fontSize.value > 0f) fontSize / this.fontSize.value else 1f
-    return copy(
-        fontSize = fontSize.sp,
-        lineHeight = if (lineHeight.isSp) (lineHeight.value * scale).sp else lineHeight,
-        letterSpacing = if (letterSpacing.isSp) (letterSpacing.value * scale).sp else letterSpacing
-    )
-}
-
-/** A label longer than this in the narrowest column is shrunk rather than cut. */
-private const val LABEL_MAX_LINES = 3
+private const val HeroSize = 80f
+private const val HeroLineHeight = 84f
+private const val HeroTracking = -2f
+private const val HeroMinSize = 40f
 
 // region Previews
 
-@Preview(showBackground = true, name = "HeroDashboard — typical anime", widthDp = 360)
+@Preview(showBackground = true, name = "HeroDashboard, a large list", widthDp = 416)
 @Composable
-private fun HeroDashboardTypicalPreview() {
-    StatPreviewSurface(isDark = false) {
-        HeroDashboard(
-            primaryValue = "1,248",
-            primaryUnit = "episodes",
-            primaryLabel = "Watched",
-            accentText = "≈ 42 days of your life",
-            secondaryRow = listOf(
-                EditorialStat("128", "Total", Icons.Default.PlayArrow),
-                EditorialStat("8.1", "Mean", Icons.Default.Star),
-                EditorialStat("1.4", "σ")
-            )
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "HeroDashboard — five-digit sub-stats", widthDp = 360)
-@Composable
-private fun HeroDashboardLongValuesPreview() {
-    StatPreviewSurface(isDark = false) {
-        HeroDashboard(
-            primaryValue = "1005",
-            primaryUnit = "anime",
-            primaryLabel = "Total anime",
-            accentText = "≈ 420.0 days of your life",
-            secondaryRow = listOf(
-                EditorialStat("25204", "Episodes", Icons.Default.PlayArrow),
-                EditorialStat("72.87", "Mean score", Icons.Default.Star),
-                EditorialStat("15.14", "Standard deviation")
-            )
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "HeroDashboard — long translated labels", widthDp = 360)
-@Composable
-private fun HeroDashboardLongLabelsPreview() {
-    StatPreviewSurface(isDark = false) {
-        HeroDashboard(
-            primaryValue = "242",
-            primaryUnit = "anime",
-            primaryLabel = "Anime gesamt",
-            accentText = "≈ 120,8 Tage deines Lebens",
-            secondaryRow = listOf(
-                EditorialStat("7760", "Episoden", Icons.Default.PlayArrow),
-                EditorialStat("85,9", "Durchschnittsbewertung", Icons.Default.Star),
-                EditorialStat("9,8", "Standardabweichung")
-            )
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "HeroDashboard — no accent + long unit", widthDp = 360)
-@Composable
-private fun HeroDashboardNoAccentLongUnitPreview() {
-    StatPreviewSurface(isDark = false) {
-        HeroDashboard(
-            primaryValue = "42",
-            primaryUnit = "ridiculously-long-unit-name",
-            primaryLabel = "Read",
-            accentText = null,
-            secondaryRow = listOf(
-                EditorialStat("12", "Volumes"),
-                EditorialStat("7.9", "Mean")
-            )
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "HeroDashboard — empty secondary row", widthDp = 360)
-@Composable
-private fun HeroDashboardEmptySecondaryPreview() {
-    StatPreviewSurface(isDark = false) {
-        HeroDashboard(
-            primaryValue = "0",
-            primaryUnit = "entries",
-            primaryLabel = "Library",
-            secondaryRow = emptyList()
-        )
-    }
-}
-
-@Preview(showBackground = true, name = "HeroDashboard — dark", widthDp = 360, heightDp = 320)
-@Composable
-private fun HeroDashboardDarkPreview() {
+private fun HeroDashboardLargePreview() {
     StatPreviewSurface(isDark = true) {
         HeroDashboard(
-            primaryValue = "1,248",
-            primaryUnit = "episodes",
-            primaryLabel = "Watched",
-            accentText = "≈ 42 days of your life",
-            secondaryRow = listOf(
-                EditorialStat("128", "Total", Icons.Default.PlayArrow),
-                EditorialStat("8.1", "Mean", Icons.Default.Star),
-                EditorialStat("1.4", "σ")
-            )
+            eyebrow = "Anime · all time",
+            value = "1,668",
+            unit = "anime",
+            lead = "168 days and 9 hours of watching",
+            lists = listOf(
+                HeroList(LibraryStatus.COMPLETED, 1616),
+                HeroList(LibraryStatus.PLANNING, 1143),
+                HeroList(LibraryStatus.CURRENT, 11),
+                HeroList(LibraryStatus.PAUSED, 17),
+                HeroList(LibraryStatus.DROPPED, 24),
+            ),
+            mediaType = MediaType.ANIME,
+            note = "2,811 on your lists. Planning stays on the list but is not counted in the 1,668.",
+            staleNote = null
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "HeroDashboard, a new list", widthDp = 416)
+@Composable
+private fun HeroDashboardSmallPreview() {
+    StatPreviewSurface(isDark = false) {
+        HeroDashboard(
+            eyebrow = "Anime · all time",
+            value = "8",
+            unit = "anime",
+            lead = "21 days and 2 hours of watching",
+            lists = listOf(HeroList(LibraryStatus.CURRENT, 6)),
+            mediaType = MediaType.ANIME,
+            note = null,
+            staleNote = "AniList recounts these about every two days, so 2 changes from this week are not in yet."
         )
     }
 }

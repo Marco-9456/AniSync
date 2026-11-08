@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.anisync.android.data.local.entity.LibraryEntryEntity
+import com.anisync.android.data.local.entity.LibraryStatusCount
 import com.anisync.android.data.local.entity.LibraryStatusProjection
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.type.MediaType
@@ -83,6 +84,10 @@ interface LibraryDao {
      */
     @Query("SELECT mediaId, status FROM library_entries WHERE ownerId = :ownerId")
     fun observeListStatuses(ownerId: Int): Flow<List<LibraryStatusProjection>>
+
+    /** How many of the account's [type] entries sit in each status, without reading the rows. */
+    @Query("SELECT status, COUNT(*) AS count FROM library_entries WHERE ownerId = :ownerId AND mediaType = :type GROUP BY status")
+    suspend fun countByStatus(ownerId: Int, type: MediaType): List<LibraryStatusCount>
 
     /**
      * Insert or replace entries. The entities carry their own [LibraryEntryEntity.ownerId].

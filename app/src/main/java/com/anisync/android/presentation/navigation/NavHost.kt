@@ -19,6 +19,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
@@ -27,6 +28,9 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
+import com.anisync.android.presentation.share.studio.ShareStudioScreen
+import com.anisync.android.presentation.recap.RecapStoryScreen
+import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.presentation.activity.ActivityDetailScreen
 import com.anisync.android.presentation.activity.EditActivityScreen
 import com.anisync.android.presentation.calendar.CalendarScreen
@@ -70,6 +74,7 @@ import com.anisync.android.presentation.settings.AboutScreen
 import com.anisync.android.presentation.settings.AcknowledgmentsScreen
 import com.anisync.android.presentation.settings.AniListSettingsScreen
 import com.anisync.android.presentation.settings.DeveloperToolsScreen
+import com.anisync.android.presentation.settings.RecapBuilderScreen
 import com.anisync.android.presentation.settings.FontSettingsScreen
 import com.anisync.android.presentation.settings.GeneralScreen
 import com.anisync.android.presentation.settings.LanguageScreen
@@ -77,6 +82,7 @@ import com.anisync.android.presentation.settings.LinksScreen
 import com.anisync.android.presentation.settings.LookAndFeelScreen
 import com.anisync.android.presentation.settings.MediaUploadSettingsScreen
 import com.anisync.android.presentation.settings.NotificationsScreen
+import com.anisync.android.presentation.settings.RecapsScreen
 import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
 import com.anisync.android.presentation.settings.SettingsListDetail
 import com.anisync.android.presentation.settings.SponsorsScreen
@@ -84,6 +90,7 @@ import com.anisync.android.presentation.settings.StorageScreen
 import com.anisync.android.presentation.settings.UpdatesScreen
 import com.anisync.android.presentation.util.AniLinkCallbacks
 import com.anisync.android.presentation.util.LocalAniLinkCallbacks
+import com.anisync.android.presentation.util.LocalMainNavBarInset
 
 // =============================================================================
 // TAB ORDER HELPER
@@ -373,6 +380,7 @@ fun AniSyncNavHost(
                             restoreState = true
                         }
                     },
+                    onOpenRecap = { navController.navigate(RecapStory(it)) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -506,6 +514,8 @@ fun AniSyncNavHost(
                     onLogoutClick = onLogout,
                     onNavigateToSettings = onNavigateToSettings,
                     onNavigateToNotifications = onNavigateToNotifications,
+                    onShareCard = { navController.navigate(it) },
+                    onOpenRecap = { navController.navigate(RecapStory(it)) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 )
@@ -527,39 +537,43 @@ fun AniSyncNavHost(
                     { mediaId: Int -> onMediaClick(mediaId, "user_profile") } 
                 }
                 
-                ProfileScreen(
-                    onMediaClick = onProfileMediaClick,
-                    onCharacterClick = { characterId ->
-                        navController.navigate(CharacterDetails(characterId))
-                    },
-                    onStaffClick = { staffId ->
-                        navController.navigate(StaffDetails(staffId))
-                    },
-                    onVoiceActorClick = { staffId ->
-                        navController.navigate(StaffDetails(staffId))
-                    },
-                    onStudioClick = { studioId ->
-                        navController.navigate(StudioDetails(studioId))
-                    },
-                    onUserClick = navigateToUserProfile,
-                    onThreadClick = { threadId, threadTitle, profileColor ->
-                        navController.navigate(
-                            ForumThreadDetail(threadId, threadTitle, profileColor = profileColor)
-                        )
-                    },
-                    onCommentClick = { threadId, commentId, threadTitle, profileColor ->
-                        navController.navigate(
-                            ForumThreadDetail(threadId, threadTitle, commentId, profileColor = profileColor)
-                        )
-                    },
-                    onActivityClick = navigateToProfileActivity,
-                    onLastReplyClick = navigateToProfileActivityReply,
-                    onLogoutClick = { }, // Not used for other users
-                    onNavigateToSettings = { }, // Not used for other users
-                    isOwnProfile = false,
-                    sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedVisibilityScope = this
-                )
+                // Someone else's profile hides the main bar, so nothing on it has a bar to clear.
+                CompositionLocalProvider(LocalMainNavBarInset provides 0.dp) {
+                    ProfileScreen(
+                        onMediaClick = onProfileMediaClick,
+                        onCharacterClick = { characterId ->
+                            navController.navigate(CharacterDetails(characterId))
+                        },
+                        onStaffClick = { staffId ->
+                            navController.navigate(StaffDetails(staffId))
+                        },
+                        onVoiceActorClick = { staffId ->
+                            navController.navigate(StaffDetails(staffId))
+                        },
+                        onStudioClick = { studioId ->
+                            navController.navigate(StudioDetails(studioId))
+                        },
+                        onUserClick = navigateToUserProfile,
+                        onThreadClick = { threadId, threadTitle, profileColor ->
+                            navController.navigate(
+                                ForumThreadDetail(threadId, threadTitle, profileColor = profileColor)
+                            )
+                        },
+                        onCommentClick = { threadId, commentId, threadTitle, profileColor ->
+                            navController.navigate(
+                                ForumThreadDetail(threadId, threadTitle, commentId, profileColor = profileColor)
+                            )
+                        },
+                        onActivityClick = navigateToProfileActivity,
+                        onLastReplyClick = navigateToProfileActivityReply,
+                        onLogoutClick = { }, // Not used for other users
+                        onNavigateToSettings = { }, // Not used for other users
+                        isOwnProfile = false,
+                        onShareCard = { navController.navigate(it) },
+                        sharedTransitionScope = this@SharedTransitionLayout,
+                        animatedVisibilityScope = this
+                    )
+                }
             }
 
             // =================================================================
@@ -681,6 +695,9 @@ fun AniSyncNavHost(
                         )
                     },
                     onUserClick = navigateToUserProfile,
+                    onShareCard = { id, coverColor ->
+                        navController.navigate(ShareStudio(ShareStudioSubject.MEDIA.name, id, coverColor = coverColor))
+                    },
                     onTrailLabel = backStackEntry::recordTrailLabel,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
@@ -755,8 +772,55 @@ fun AniSyncNavHost(
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, "review"))
                     },
+                    onShareCard = { id, coverColor ->
+                        navController.navigate(ShareStudio(ShareStudioSubject.REVIEW.name, id, coverColor = coverColor))
+                    },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
+                )
+            }
+
+            composable<RecapStory>(
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "anisync://recap/{periodKey}" }
+                ),
+                enterTransition = { fadeIn(animationSpec = effectsSpec) + scaleIn(animationSpec = scaleSpec, initialScale = 0.94f) },
+                exitTransition = { fadeOut(animationSpec = effectsSpec) },
+                popEnterTransition = { fadeIn(animationSpec = effectsSpec) },
+                popExitTransition = { fadeOut(animationSpec = effectsSpec) + scaleOut(animationSpec = scaleSpec, targetScale = 0.94f) }
+            ) {
+                RecapStoryScreen(
+                    onClose = { navController.popBackStack() },
+                    onOpenStudio = { navController.navigate(it) },
+                    onOpenStatistics = {
+                        // Popped without saving, or the tab switch keeps the story and its player
+                        // in the saved stack, and from the profile's shelf restores it on top again.
+                        navController.popBackStack()
+                        navController.navigate(Profile) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                        navController.popBackStack(route = Profile, inclusive = false)
+                    }
+                )
+            }
+
+            composable<ShareStudio>(
+                // A recap notification's Share card opens the studio straight on its card.
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "anisync://studio/{subject}/{id}?periodKey={periodKey}" }
+                ),
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val route: ShareStudio = backStackEntry.toRoute()
+                ShareStudioScreen(
+                    coverColor = route.coverColor,
+                    profileColor = route.profileColor,
+                    onClose = { navController.popBackStack() }
                 )
             }
 
@@ -801,6 +865,7 @@ fun AniSyncNavHost(
                 CharacterDetailsScreen(
                     characterId = character.characterId,
                     onBackClick = { navController.popBackStack() },
+                    onShareCard = { id -> navController.navigate(ShareStudio(ShareStudioSubject.CHARACTER.name, id)) },
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, com.anisync.android.presentation.util.TransitionKeys.CHARACTER))
                     },
@@ -832,6 +897,7 @@ fun AniSyncNavHost(
                 StaffDetailsScreen(
                     staffId = staff.staffId,
                     onBackClick = { navController.popBackStack() },
+                    onShareCard = { id -> navController.navigate(ShareStudio(ShareStudioSubject.STAFF.name, id)) },
                     onMediaClick = { mediaId ->
                         navController.navigate(MediaDetails(mediaId, "staff"))
                     },
@@ -1381,6 +1447,18 @@ fun AniSyncNavHost(
                 )
             }
 
+            composable<SettingsRecaps>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                RecapsScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onOpenNotifications = { navController.navigate(SettingsNotifications) }
+                )
+            }
+
             // Storage Settings
             composable<SettingsStorage>(
                 enterTransition = { sharedAxisZEnter() },
@@ -1477,7 +1555,8 @@ fun AniSyncNavHost(
             ) {
                 DeveloperToolsScreen(
                     onBackClick = { navController.popBackStack() },
-                    onFontPlaygroundClick = { navController.navigate(SettingsFontPlayground) }
+                    onFontPlaygroundClick = { navController.navigate(SettingsFontPlayground) },
+                    onRecapBuilderClick = { navController.navigate(SettingsRecapBuilder) }
                 )
             }
 
@@ -1490,6 +1569,19 @@ fun AniSyncNavHost(
             ) {
                 FontSettingsScreen(
                     onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            // Recap builder (Developer Tools)
+            composable<SettingsRecapBuilder>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) {
+                RecapBuilderScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onOpenStory = { navController.navigate(it) }
                 )
             }
 

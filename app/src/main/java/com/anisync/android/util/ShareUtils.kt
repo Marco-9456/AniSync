@@ -76,6 +76,12 @@ object AniListUrls {
     fun studioUrl(studioId: Int): String {
         return "$BASE_URL/studio/$studioId"
     }
+
+    /** Builds the AniList URL for a member's profile. */
+    fun userUrl(userName: String): String = "$BASE_URL/user/$userName"
+
+    /** Builds the AniList URL for a review. */
+    fun reviewUrl(reviewId: Int): String = "$BASE_URL/review/$reviewId"
 }
 
 /**

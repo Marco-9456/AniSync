@@ -1,0 +1,117 @@
+"""
+One page of a user's anime and manga list activity inside a window, newest first, for recaps.
+
+Only what counting needs: when it was logged, the status and the episode or chapter range. Whether
+a title is anime or manga comes from GetRecapMedia, which every counted title goes through anyway.
+
+AniList refuses any page past its 5000 entry depth limit, page 100 at 50 a page, and its pageInfo
+reports lastPage 100 and total 5000 on every page before the last one. So a window is read until
+hasNextPage turns false and narrowed at page 100 instead of being sized up front, see
+readActivityWindow.
+"""
+query GetUserListActivities($userId: Int!, $from: Int!, $to: Int!, $page: Int!) {
+  Page(page: $page, perPage: 50) {
+    pageInfo {
+      hasNextPage
+    }
+    activities(
+      userId: $userId,
+      createdAt_greater: $from,
+      createdAt_lesser: $to,
+      sort: [ID_DESC],
+      type_in: [ANIME_LIST, MANGA_LIST]
+    ) {
+      ... on ListActivity {
+        id
+        status
+        progress
+        createdAt
+        media {
+          id
+        }
+      }
+    }
+  }
+}
+
+"""
+What a recap needs to know about up to 50 titles, in one request.
+
+Relations stay in the batch: 50 titles with them were accepted in 413ms at 37 KB when probed on
+2026-11-04. Page.media(id_in:) returns adult titles too and sorts by id, not in the order asked.
+"""
+query GetRecapMedia($ids: [Int!]!, $perPage: Int!) {
+  Page(page: 1, perPage: $perPage) {
+    media(id_in: $ids) {
+      id
+      type
+      format
+      episodes
+      chapters
+      duration
+      genres
+      isAdult
+      season
+      seasonYear
+      title {
+        romaji
+        english
+        native
+        userPreferred
+      }
+      startDate {
+        year
+        month
+        day
+      }
+      endDate {
+        year
+        month
+        day
+      }
+      coverImage {
+        extraLarge
+        color
+      }
+      studios(isMain: true) {
+        nodes {
+          name
+        }
+      }
+      relations {
+        nodes {
+          id
+        }
+      }
+    }
+  }
+}
+
+"""
+Airing times for up to 50 titles inside a window, for the shows a year kept up with. Only the
+yearly recap asks, and only for the series watched that year.
+"""
+query GetRecapAiring($ids: [Int!]!, $from: Int!, $to: Int!, $page: Int!) {
+  Page(page: $page, perPage: 50) {
+    pageInfo {
+      hasNextPage
+    }
+    airingSchedules(mediaId_in: $ids, airingAt_greater: $from, airingAt_lesser: $to, sort: [TIME]) {
+      mediaId
+      episode
+      airingAt
+    }
+  }
+}
+
+"""The name and avatar a Developer Tools preview story carries in its header."""
+query GetRecapUser($userId: Int!) {
+  User(id: $userId) {
+    id
+    name
+    avatar {
+      large
+      medium
+    }
+  }
+}

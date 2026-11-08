@@ -262,14 +262,15 @@ fun MainScreen(
     val navBarCornerRadius by viewModel.navBarCornerRadius.collectAsStateWithLifecycle()
     val navBarSuppressor = remember { MainNavBarSuppressor() }
 
-    // Cold-launch restore: open on the tab the user last visited (Library/Discover/
-    // Feed/Forum). Compose Navigation restores its own back stack across process
-    // death, so this only governs a genuinely fresh start.
+    // Cold-launch restore: open on the tab pinned under Open on, or else the tab the user
+    // last visited (Library/Discover/Feed/Forum). Compose Navigation restores its own back
+    // stack across process death, so this only governs a genuinely fresh start.
     val startDestination: Any = remember(viewModel.startTabKey) {
         when (viewModel.startTabKey) {
             "discover" -> Discover
             "feed" -> Feed
             "forum" -> Forum
+            "profile" -> Profile
             else -> Library
         }
     }
@@ -375,6 +376,7 @@ private fun CompactNavLayout(
     supportPrompt: @Composable () -> Unit,
     toastHost: @Composable () -> Unit
 ) {
+    var barHeightPx by remember { mutableIntStateOf(0) }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
@@ -387,7 +389,8 @@ private fun CompactNavLayout(
                     cornerRadius = navBarCornerRadius,
                     onTabSelected = onTabSelected,
                     onTabTapped = onTabTapped,
-                    onTabSearch = onTabSearch
+                    onTabSearch = onTabSearch,
+                    onHeightChanged = { barHeightPx = it }
                 )
             }
         }
@@ -398,9 +401,10 @@ private fun CompactNavLayout(
         // Measured rather than assumed. The two constants this replaces were tuned against gesture
         // navigation, where the system inset is small; under three-button navigation the bar sits
         // roughly 24dp lower and content ran right into it (issue #127). Measuring also keeps the
-        // reserve honest as the label setting, corner radius and font scale change.
+        // reserve honest as the label setting, corner radius and font scale change. Both styles
+        // report the bar's full height from inside its show and hide animation, so the reserve
+        // holds still while the bar slides and keeps its last height on pages that hide it.
         val density = LocalDensity.current
-        var barHeightPx by remember { mutableIntStateOf(0) }
         val fallbackInset = if (navBarShowLabels) 96.dp else 76.dp
         val barInset = if (barHeightPx > 0) {
             with(density) { barHeightPx.toDp() }
@@ -424,7 +428,6 @@ private fun CompactNavLayout(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .onSizeChanged { barHeightPx = it.height }
                 ) {
                     MainBottomBar(
                         navController = navController,
@@ -434,7 +437,8 @@ private fun CompactNavLayout(
                         cornerRadius = navBarCornerRadius,
                         onTabSelected = onTabSelected,
                         onTabTapped = onTabTapped,
-                        onTabSearch = onTabSearch
+                        onTabSearch = onTabSearch,
+                        onHeightChanged = { barHeightPx = it }
                     )
                 }
             }
@@ -530,7 +534,8 @@ private fun MainBottomBar(
     cornerRadius: Float,
     onTabSelected: (String) -> Unit,
     onTabTapped: (MainTab, Boolean) -> Unit,
-    onTabSearch: (MainTab) -> Unit
+    onTabSearch: (MainTab) -> Unit,
+    onHeightChanged: (Int) -> Unit
 ) {
     val navItems = rememberMainNavItems()
 
@@ -576,7 +581,13 @@ private fun MainBottomBar(
         enter = enterAnim,
         exit = exitAnim
     ) {
-        CompactNavBar(style = style, cornerRadius = cornerRadius) {
+        // Measured inside the animation, which grows and clips the container but lays the bar
+        // out at its full height throughout.
+        CompactNavBar(
+            style = style,
+            cornerRadius = cornerRadius,
+            modifier = Modifier.onSizeChanged { onHeightChanged(it.height) }
+        ) {
             val currentDestination = navBackStackEntryState.value?.destination
 
             navItems.forEach { item ->

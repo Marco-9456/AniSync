@@ -1,6 +1,13 @@
 package com.anisync.android.data
 
+import com.anisync.android.GetUserPeopleStatisticsQuery
+import com.anisync.android.domain.PEOPLE_LIMIT
+import com.anisync.android.domain.PeopleList
+import com.anisync.android.domain.PeopleSort
+import com.anisync.android.domain.PersonStat
+import com.anisync.android.type.UserStatisticsSort
 import com.anisync.android.GetUserStatisticsQuery
+import com.anisync.android.data.util.dataOrThrow
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.domain.AnimeStatistics
@@ -41,7 +48,7 @@ class StatisticsRepositoryImpl @Inject constructor(
                 GetUserStatisticsQuery(userId = Optional.present(userId))
             ).fetchPolicy(policy.toFetchPolicy()).execute()
 
-            val user = response.data?.User
+            val user = response.dataOrThrow().User
                 ?: throw Exception("User not found")
 
             val animeApi = user.statistics?.anime
@@ -76,6 +83,53 @@ class StatisticsRepositoryImpl @Inject constructor(
                 }
             )
         }
+    }
+
+    override suspend fun getPeopleStatistics(
+        userId: Int,
+        list: PeopleList,
+        sort: PeopleSort
+    ): Result<List<PersonStat>> = safeApiCall {
+        val response = apolloClient.query(
+            GetUserPeopleStatisticsQuery(
+                userId = userId,
+                sort = Optional.present(listOf(sort.toApi())),
+                limit = Optional.present(PEOPLE_LIMIT),
+                animeVoiceActors = list == PeopleList.ANIME_VOICE_ACTORS,
+                animeStaff = list == PeopleList.ANIME_STAFF,
+                animeStudios = list == PeopleList.ANIME_STUDIOS,
+                mangaStaff = list == PeopleList.MANGA_STAFF
+            )
+        ).fetchPolicy(FetchPolicy.NetworkFirst).execute()
+        val statistics = response.dataOrThrow().User?.statistics ?: throw Exception("No statistics available")
+        when (list) {
+            PeopleList.ANIME_VOICE_ACTORS -> statistics.anime?.voiceActors.orEmpty().mapNotNull { entry ->
+                entry?.voiceActor?.let {
+                    PersonStat(it.id, it.name?.full ?: "Unknown", it.image?.medium, entry.count, (entry.meanScore ?: 0.0).toFloat(), (entry.minutesWatched ?: 0) / 60f)
+                }
+            }
+            PeopleList.ANIME_STAFF -> statistics.anime?.staff.orEmpty().mapNotNull { entry ->
+                entry?.staff?.let {
+                    PersonStat(it.id, it.name?.full ?: "Unknown", it.image?.medium, entry.count, (entry.meanScore ?: 0.0).toFloat(), (entry.minutesWatched ?: 0) / 60f)
+                }
+            }
+            PeopleList.ANIME_STUDIOS -> statistics.anime?.studios.orEmpty().mapNotNull { entry ->
+                entry?.studio?.let {
+                    PersonStat(it.id, it.name, null, entry.count, (entry.meanScore ?: 0.0).toFloat(), (entry.minutesWatched ?: 0) / 60f)
+                }
+            }
+            PeopleList.MANGA_STAFF -> statistics.manga?.staff.orEmpty().mapNotNull { entry ->
+                entry?.staff?.let {
+                    PersonStat(it.id, it.name?.full ?: "Unknown", it.image?.medium, entry.count, (entry.meanScore ?: 0.0).toFloat(), (entry.chaptersRead ?: 0).toFloat())
+                }
+            }
+        }
+    }
+
+    private fun PeopleSort.toApi(): UserStatisticsSort = when (this) {
+        PeopleSort.COUNT -> UserStatisticsSort.COUNT_DESC
+        PeopleSort.PROGRESS -> UserStatisticsSort.PROGRESS_DESC
+        PeopleSort.SCORE -> UserStatisticsSort.MEAN_SCORE_DESC
     }
 
     private fun CachePolicy.toFetchPolicy(): FetchPolicy = when (this) {
@@ -113,7 +167,8 @@ class StatisticsRepositoryImpl @Inject constructor(
                         name = it.name,
                         count = t.count,
                         meanScore = (t.meanScore ?: 0.0).toFloat(),
-                        hoursWatched = (t.minutesWatched ?: 0) / 60f
+                        hoursWatched = (t.minutesWatched ?: 0) / 60f,
+                        isAdult = it.isAdult == true
                     )
                 }
             } ?: emptyList(),
@@ -159,7 +214,7 @@ class StatisticsRepositoryImpl @Inject constructor(
             }?.filter { it.year > 0 }?.sortedByDescending { it.year } ?: emptyList(),
             lengthDistribution = lengths?.mapNotNull { l ->
                 l?.let {
-                    val label = it.length ?: return@let null
+                    val label = it.length.orEmpty()
                     LengthStat(
                         length = label,
                         count = it.count,
@@ -243,7 +298,8 @@ class StatisticsRepositoryImpl @Inject constructor(
                         name = it.name,
                         count = t.count,
                         meanScore = (t.meanScore ?: 0.0).toFloat(),
-                        hoursWatched = (t.chaptersRead ?: 0).toFloat()
+                        hoursWatched = (t.chaptersRead ?: 0).toFloat(),
+                        isAdult = it.isAdult == true
                     )
                 }
             } ?: emptyList(),
@@ -289,7 +345,7 @@ class StatisticsRepositoryImpl @Inject constructor(
             }?.filter { it.year > 0 }?.sortedByDescending { it.year } ?: emptyList(),
             lengthDistribution = lengths?.mapNotNull { l ->
                 l?.let {
-                    val label = it.length ?: return@let null
+                    val label = it.length.orEmpty()
                     LengthStat(
                         length = label,
                         count = it.count,

@@ -4,20 +4,20 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
@@ -31,23 +31,22 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInWindow
@@ -62,8 +61,14 @@ import com.anisync.android.R
 import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.SegmentedTabGroup
+import com.anisync.android.presentation.components.ShareFab
+import com.anisync.android.presentation.components.TabRequestEffect
+import com.anisync.android.presentation.components.shareFabBottomInset
+import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
+import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.WhatsNewDot
+import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
@@ -75,17 +80,23 @@ import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
 import com.anisync.android.presentation.util.profileGridColumns
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
+import com.anisync.android.presentation.profile.sections.ActivityFilterRail
+import com.anisync.android.presentation.profile.sections.FavoritesFilterRail
+import com.anisync.android.presentation.profile.sections.MediaStatusRail
+import com.anisync.android.presentation.profile.sections.SocialTabRail
 import com.anisync.android.presentation.profile.sections.profileActivityTab
 import com.anisync.android.presentation.profile.sections.profileFavoritesTab
 import com.anisync.android.presentation.profile.sections.profileMediaTab
 import com.anisync.android.presentation.profile.sections.profileReviewsTab
 import com.anisync.android.presentation.profile.sections.profileSocialTab
 import com.anisync.android.presentation.profile.sections.profileStatsTab
-import com.anisync.android.presentation.share.FavouritesShareCard
-import com.anisync.android.presentation.share.ProfileStatsShareCard
-import com.anisync.android.presentation.share.ShareCardTemplate
-import com.anisync.android.presentation.share.ShareImageSheet
+import com.anisync.android.presentation.statistics.StatsRail
+import com.anisync.android.presentation.navigation.ShareStudio
+import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.type.MediaType
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.anisync.android.presentation.components.ScrollToTopOnRequest
@@ -102,6 +113,8 @@ fun ProfileContent(
     uiState: ProfileUiState,
     /** See ProfileViewModel.scrollToTopRequest: the tab was reselected. */
     scrollToTopRequest: Long = 0L,
+    /** See ProfileViewModel.dockRequest: a recap opened Statistics. */
+    dockRequest: Long = 0L,
     isOwnProfile: Boolean,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
@@ -121,15 +134,38 @@ fun ProfileContent(
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
     showAccountSwitcher: Boolean = false,
     onAccountSwitchClick: () -> Unit = {},
+    onShareCard: (ShareStudio) -> Unit = {},
+    onOpenRecap: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val pullToRefreshState = rememberPullToRefreshState()
     val statsColumns = dashboardColumns()
 
-    // Share-as-image sheets for the Stats and Favourites tabs, hosted at screen scope below.
-    var statsShareVisible by remember { mutableStateOf(false) }
-    var favouritesShareVisible by remember { mutableStateOf(false) }
+    // Someone else's profile keeps its colours in the studio, the viewer's own follows the app.
+    val shareProfileColor = if (isOwnProfile) null else profile.profileColor
+    val shareStats = {
+        onShareCard(
+            ShareStudio(
+                subject = ShareStudioSubject.STATS.name,
+                id = profile.id,
+                userName = profile.name,
+                mediaType = if (uiState.selectedStatsType == ProfileStatsType.MANGA) MediaType.MANGA.rawValue else MediaType.ANIME.rawValue,
+                profileColor = shareProfileColor,
+            )
+        )
+    }
+    val shareFavourites = {
+        onShareCard(
+            ShareStudio(
+                subject = ShareStudioSubject.FAVOURITES.name,
+                id = profile.id,
+                userName = profile.name,
+                mediaType = if (uiState.selectedFavoritesFilter == ProfileFavoritesFilter.MANGA) MediaType.MANGA.rawValue else MediaType.ANIME.rawValue,
+                profileColor = shareProfileColor,
+            )
+        )
+    }
 
     if (LocalAdaptiveInfo.current.supportsTwoPane) {
         ProfileWideLayout(
@@ -154,7 +190,10 @@ fun ProfileContent(
             onLastReplyClick = onLastReplyClick,
             showAccountSwitcher = showAccountSwitcher,
             onAccountSwitchClick = onAccountSwitchClick,
+            onShareStats = shareStats,
+            onShareFavourites = shareFavourites,
             statsColumns = statsColumns,
+            onOpenRecap = onOpenRecap,
             modifier = modifier
         )
     } else {
@@ -180,6 +219,55 @@ fun ProfileContent(
         }
     }
 
+    // Picking a tab or a Statistics view docks the strip, so the page starts at the top of the
+    // screen. Each view comes back where it was left.
+    val scope = rememberCoroutineScope()
+    val dockStrip: suspend () -> Unit = {
+        listState.scrollToItem(PROFILE_TABS_INDEX)
+        listState.scrollBy(-dockPx)
+    }
+    TabRequestEffect(dockRequest) {
+        // The list ignores the scroll back by the status bar until it has been laid out once.
+        snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > PROFILE_TABS_INDEX }
+        dockStrip()
+    }
+    val statsScroll = remember { mutableMapOf<StatsView, Pair<Int, Int>>() }
+    var restoreStatsView by remember { mutableStateOf<StatsView?>(null) }
+    LaunchedEffect(uiState.selectedStatsView, restoreStatsView) {
+        val view = restoreStatsView
+        if (view == null || view != uiState.selectedStatsView) return@LaunchedEffect
+        restoreStatsView = null
+        val saved = statsScroll[view]
+        if (saved != null) listState.scrollToItem(saved.first, saved.second) else dockStrip()
+    }
+    val onTabSelected: (ProfileTab) -> Unit = { tab ->
+        onAction(ProfileAction.SelectTab(tab))
+        scope.launch { dockStrip() }
+    }
+    val onStatsViewSelected: (StatsView) -> Unit = { view ->
+        if (view != uiState.selectedStatsView) {
+            if (tabsDocked) {
+                statsScroll[uiState.selectedStatsView] =
+                    listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+            }
+            restoreStatsView = view
+            onAction(ProfileAction.SelectStatsView(view))
+        }
+    }
+    val onFilterAction: (ProfileAction) -> Unit = { action ->
+        onAction(action)
+        scope.launch { dockStrip() }
+    }
+    val tabStrip: @Composable () -> Unit = {
+        ProfileTabStrip(
+            uiState = uiState,
+            onTabSelected = onTabSelected,
+            onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
+            onStatsViewSelected = onStatsViewSelected,
+            onFilterAction = onFilterAction
+        )
+    }
+
     PullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
         onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
@@ -197,10 +285,13 @@ fun ProfileContent(
             )
         }
     ) {
+    val showShareFab = uiState.showsShareFab(profile)
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 48.dp + LocalMainNavBarInset.current)
+        contentPadding = PaddingValues(
+            bottom = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
+        )
     ) {
         item(key = "profile_header", contentType = "header") {
             ProfileTopSection(
@@ -227,7 +318,7 @@ fun ProfileContent(
                     } else {
                         ShareUtils.shareText(
                             context = context,
-                            text = "${profile.name}\nhttps://anilist.co/user/${profile.name}"
+                            text = "${profile.name}\n${AniListUrls.userUrl(profile.name)}"
                         )
                     }
                 },
@@ -243,10 +334,7 @@ fun ProfileContent(
                     .fillMaxWidth()
                     .onGloballyPositioned { inlineTabsTopWindow = it.boundsInWindow().top }
             ) {
-                ProfileTabsButtonGroup(
-                    selectedTab = uiState.selectedTab,
-                    onTabSelected = { onAction(ProfileAction.SelectTab(it)) }
-                )
+                tabStrip()
             }
         }
 
@@ -269,9 +357,8 @@ fun ProfileContent(
             portraitColumns = portraitColumns,
             studioColumns = studioColumns,
             statsColumns = statsColumns,
-            showShareActions = true,
-            onShareStats = { statsShareVisible = true },
-            onShareFavourites = { favouritesShareVisible = true }
+            onOpenRecap = onOpenRecap,
+            onStatsViewSelected = onStatsViewSelected
         )
     }
 
@@ -283,13 +370,12 @@ fun ProfileContent(
                 .fillMaxWidth()
         ) {
             Box(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-                ProfileTabsButtonGroup(
-                    selectedTab = uiState.selectedTab,
-                    onTabSelected = { onAction(ProfileAction.SelectTab(it)) }
-                )
+                tabStrip()
             }
         }
     }
+
+    if (showShareFab) ProfileShareFab(uiState, onShareStats = shareStats, onShareFavourites = shareFavourites)
     }
     }
 
@@ -300,59 +386,6 @@ fun ProfileContent(
                 onAction(ProfileAction.SetBiographySheetVisible(false))
             }
         )
-    }
-
-    val profileUrl = "https://anilist.co/user/${profile.name}"
-
-    if (statsShareVisible) {
-        uiState.statsData?.let { stats ->
-            ShareImageSheet(
-                onDismiss = { statsShareVisible = false },
-                link = profileUrl,
-                templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
-                templateLabel = { tmpl ->
-                    stringResource(
-                        if (tmpl == ShareCardTemplate.STANDARD) R.string.share_template_stats
-                        else R.string.share_template_recap
-                    )
-                }
-            ) {
-                ProfileStatsShareCard(
-                    profile = profile,
-                    stats = stats,
-                    type = uiState.selectedStatsType
-                )
-            }
-        }
-    }
-
-    if (favouritesShareVisible) {
-        val isAnime = uiState.selectedFavoritesFilter == ProfileFavoritesFilter.ANIME
-        val entries = if (isAnime) profile.favoriteAnime else profile.favoriteMangaOverview
-        if (entries.isNotEmpty()) {
-            ShareImageSheet(
-                onDismiss = { favouritesShareVisible = false },
-                link = profileUrl,
-                templates = listOf(ShareCardTemplate.STANDARD, ShareCardTemplate.HERO),
-                templateLabel = { tmpl ->
-                    stringResource(
-                        if (tmpl == ShareCardTemplate.STANDARD) R.string.share_template_grid
-                        else R.string.share_template_ranked
-                    )
-                }
-            ) {
-                FavouritesShareCard(
-                    heading = stringResource(
-                        if (isAnime) R.string.share_fav_heading_anime
-                        else R.string.share_fav_heading_manga
-                    ),
-                    eyebrow = stringResource(R.string.share_fav_eyebrow),
-                    entries = entries,
-                    bannerUrl = profile.bannerUrl,
-                    handle = profile.name
-                )
-            }
-        }
     }
 
     uiState.selectedReview?.let { review ->
@@ -429,9 +462,8 @@ internal fun LazyListScope.profileSelectedTabContent(
     portraitColumns: Int,
     studioColumns: Int,
     statsColumns: Int,
-    showShareActions: Boolean = false,
-    onShareStats: () -> Unit = {},
-    onShareFavourites: () -> Unit = {}
+    onOpenRecap: (String) -> Unit = {},
+    onStatsViewSelected: (StatsView) -> Unit = { onAction(ProfileAction.SelectStatsView(it)) }
 ) {
     when (uiState.selectedTab) {
         ProfileTab.OVERVIEW -> {
@@ -461,7 +493,6 @@ internal fun LazyListScope.profileSelectedTabContent(
             profileActivityTab(
                 profile = profile,
                 selectedFilter = uiState.selectedActivityFilter,
-                onFilterSelected = { onAction(ProfileAction.SelectActivityFilter(it)) },
                 onUserClick = onUserClick,
                 onActivityClick = onActivityClick,
                 onMediaClick = onMediaClick,
@@ -480,7 +511,6 @@ internal fun LazyListScope.profileSelectedTabContent(
         ProfileTab.SOCIAL -> {
             profileSocialTab(
                 uiState = uiState,
-                onTabSelected = { onAction(ProfileAction.SelectSocialTab(it)) },
                 onUserClick = onUserClick,
                 onThreadClick = onThreadClick,
                 onCommentClick = onCommentClick,
@@ -498,7 +528,6 @@ internal fun LazyListScope.profileSelectedTabContent(
             profileMediaTab(
                 itemsByStatus = uiState.userAnimeListByStatus,
                 selectedStatus = uiState.selectedAnimeStatus,
-                onStatusSelected = { onAction(ProfileAction.SelectAnimeStatus(it)) },
                 isLoading = uiState.isUserAnimeListLoading,
                 mediaType = MediaType.ANIME,
                 emptyMessageRes = R.string.profile_placeholder_anime,
@@ -515,7 +544,6 @@ internal fun LazyListScope.profileSelectedTabContent(
             profileMediaTab(
                 itemsByStatus = uiState.userMangaListByStatus,
                 selectedStatus = uiState.selectedMangaStatus,
-                onStatusSelected = { onAction(ProfileAction.SelectMangaStatus(it)) },
                 isLoading = uiState.isUserMangaListLoading,
                 mediaType = MediaType.MANGA,
                 emptyMessageRes = R.string.profile_placeholder_manga,
@@ -528,23 +556,9 @@ internal fun LazyListScope.profileSelectedTabContent(
         }
 
         ProfileTab.FAVORITES -> {
-            val favShareable = when (uiState.selectedFavoritesFilter) {
-                ProfileFavoritesFilter.ANIME -> profile.favoriteAnime.isNotEmpty()
-                ProfileFavoritesFilter.MANGA -> profile.favoriteMangaOverview.isNotEmpty()
-                else -> false
-            }
-            if (showShareActions && favShareable) {
-                item(key = "favourites_share_action") {
-                    ShareTabAction(
-                        label = stringResource(R.string.share_favourites_card),
-                        onClick = onShareFavourites
-                    )
-                }
-            }
             profileFavoritesTab(
                 profile = profile,
                 selectedFilter = uiState.selectedFavoritesFilter,
-                onFilterSelected = { onAction(ProfileAction.SelectFavoritesFilter(it)) },
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 onMediaClick = onMediaClick,
@@ -567,51 +581,48 @@ internal fun LazyListScope.profileSelectedTabContent(
         }
 
         ProfileTab.STATS -> {
-            if (showShareActions && uiState.statsData != null) {
-                item(key = "stats_share_action") {
-                    ShareTabAction(
-                        label = stringResource(R.string.share_stats_card),
-                        onClick = onShareStats
-                    )
-                }
-            }
+            item(key = "stats_top_gap") { Spacer(Modifier.height(8.dp)) }
             profileStatsTab(
                 uiState = uiState,
-                onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
+                onOpenView = onStatsViewSelected,
+                onGenreSortSelected = { onAction(ProfileAction.SelectGenreSort(it)) },
+                onPeopleSortSelected = { list, sort -> onAction(ProfileAction.SelectPeopleSort(list, sort)) },
+                onPeopleExpandToggled = { onAction(ProfileAction.TogglePeopleExpanded(it)) },
                 onVoiceActorClick = onVoiceActorClick,
                 onStaffClick = onStaffClick,
                 onStudioClick = onStudioClick,
                 onMediaClick = onMediaClick,
                 onActivityClick = onActivityClick,
-                statsColumns = statsColumns
+                statsColumns = statsColumns,
+                onOpenRecap = onOpenRecap,
+                onRetryStats = { onAction(ProfileAction.RetryStats) }
             )
         }
     }
 }
 
-/** Right-aligned share affordance rendered above a shareable profile tab's content. */
-@Composable
-private fun ShareTabAction(
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 12.dp),
-        horizontalArrangement = Arrangement.End
-    ) {
-        FilledTonalButton(onClick = onClick) {
-            Icon(
-                imageVector = Icons.Outlined.Image,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(label)
-        }
+/** Statistics once it has loaded and Favorites on a non-empty anime or manga list float the share button. */
+internal fun ProfileUiState.showsShareFab(profile: UserProfile): Boolean = when (selectedTab) {
+    ProfileTab.STATS -> statsData != null
+    ProfileTab.FAVORITES -> when (selectedFavoritesFilter) {
+        ProfileFavoritesFilter.ANIME -> profile.favoriteAnime.isNotEmpty()
+        ProfileFavoritesFilter.MANGA -> profile.favoriteMangaOverview.isNotEmpty()
+        else -> false
     }
+    else -> false
+}
+
+/** The share button of whichever tab is open, in the corner of the profile on phones and tablets alike. */
+@Composable
+internal fun BoxScope.ProfileShareFab(uiState: ProfileUiState, onShareStats: () -> Unit, onShareFavourites: () -> Unit) {
+    val stats = uiState.selectedTab == ProfileTab.STATS
+    ShareFab(
+        description = stringResource(if (stats) R.string.share_stats_card else R.string.share_favourites_card),
+        onClick = if (stats) onShareStats else onShareFavourites,
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 16.dp, bottom = 16.dp + shareFabBottomInset())
+    )
 }
 
 private fun profileTabIcon(tab: ProfileTab): ImageVector {
@@ -627,20 +638,89 @@ private fun profileTabIcon(tab: ProfileTab): ImageVector {
     }
 }
 
+/** The profile tabs, and under them the open tab's rail, so the two dock together. */
+@Composable
+internal fun ProfileTabStrip(
+    uiState: ProfileUiState,
+    onTabSelected: (ProfileTab) -> Unit,
+    onStatsTypeSelected: (ProfileStatsType) -> Unit,
+    onStatsViewSelected: (StatsView) -> Unit,
+    onFilterAction: (ProfileAction) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val selectListTab: (MediaType) -> Unit = {
+        onTabSelected(if (it == MediaType.MANGA) ProfileTab.MANGA else ProfileTab.ANIME)
+    }
+    Column(modifier = modifier) {
+        ProfileTabsButtonGroup(selectedTab = uiState.selectedTab, onTabSelected = onTabSelected)
+        when (uiState.selectedTab) {
+            ProfileTab.STATS -> StatsRail(
+                statsType = uiState.selectedStatsType,
+                views = if (uiState.viewerId != null && uiState.viewerId == uiState.profile?.id) {
+                    StatsView.entries
+                } else {
+                    StatsView.entries.filter { it != StatsView.RECAPS }
+                },
+                selectedView = uiState.selectedStatsView,
+                onTypeSelected = onStatsTypeSelected,
+                onViewSelected = onStatsViewSelected,
+                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+            )
+            ProfileTab.ACTIVITY -> ActivityFilterRail(uiState.selectedActivityFilter) {
+                onFilterAction(ProfileAction.SelectActivityFilter(it))
+            }
+            ProfileTab.ANIME -> MediaStatusRail(
+                itemsByStatus = uiState.userAnimeListByStatus,
+                selectedStatus = uiState.selectedAnimeStatus,
+                mediaType = MediaType.ANIME,
+                onStatusSelected = { onFilterAction(ProfileAction.SelectAnimeStatus(it)) },
+                onMediaTypeSelected = selectListTab
+            )
+            ProfileTab.MANGA -> MediaStatusRail(
+                itemsByStatus = uiState.userMangaListByStatus,
+                selectedStatus = uiState.selectedMangaStatus,
+                mediaType = MediaType.MANGA,
+                onStatusSelected = { onFilterAction(ProfileAction.SelectMangaStatus(it)) },
+                onMediaTypeSelected = selectListTab
+            )
+            ProfileTab.FAVORITES -> FavoritesFilterRail(uiState.selectedFavoritesFilter) {
+                onFilterAction(ProfileAction.SelectFavoritesFilter(it))
+            }
+            ProfileTab.SOCIAL -> SocialTabRail(uiState) { onFilterAction(ProfileAction.SelectSocialTab(it)) }
+            ProfileTab.OVERVIEW, ProfileTab.REVIEWS -> Unit
+        }
+    }
+}
+
+/** The in-list strip sits right after the profile header. */
+private const val PROFILE_TABS_INDEX = 1
+
 @Composable
 internal fun ProfileTabsButtonGroup(
     selectedTab: ProfileTab,
     onTabSelected: (ProfileTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val mutualsNew = WhatsNewItem.PROFILE_MUTUALS in rememberActiveWhatsNew()
+    val whatsNew = rememberActiveWhatsNew()
+    val mutualsNew = WhatsNewItem.PROFILE_MUTUALS in whatsNew
+    val statsMoved = WhatsNewItem.PROFILE_STATS_MOVED in whatsNew
+    val whatsNewStore = LocalWhatsNew.current
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == ProfileTab.STATS) whatsNewStore.markSeen(WhatsNewItem.PROFILE_STATS_MOVED)
+    }
     SegmentedTabGroup(
         options = ProfileTab.entries,
         selected = selectedTab,
         onSelect = onTabSelected,
         label = { stringResource(it.titleRes) },
-        modifier = modifier.padding(vertical = 8.dp),
+        modifier = modifier.padding(vertical = 6.dp),
         icon = ::profileTabIcon,
-        badge = { tab -> if (tab == ProfileTab.SOCIAL && mutualsNew) ({ WhatsNewDot() }) else null }
+        badge = { tab ->
+            when {
+                tab == ProfileTab.SOCIAL && mutualsNew -> ({ WhatsNewDot() })
+                tab == ProfileTab.STATS && statsMoved -> ({ WhatsNewPill(WhatsNewItem.Kind.MOVED) })
+                else -> null
+            }
+        }
     )
 }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesomeMotion
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -195,6 +196,13 @@ fun SettingsScreen(
                 onClick = { onCategorySelected(SettingsCategory.Notifications) }
             ),
             CategoryData(
+                key = "recaps",
+                title = stringResource(R.string.settings_recaps),
+                subtitle = stringResource(R.string.settings_recaps_desc),
+                icon = Icons.Filled.AutoAwesomeMotion,
+                onClick = { onCategorySelected(SettingsCategory.Recaps) }
+            ),
+            CategoryData(
                 key = "storage",
                 title = stringResource(R.string.settings_storage),
                 subtitle = stringResource(R.string.settings_storage_subtitle, uiState.cacheSize),
@@ -339,7 +347,7 @@ fun ExpressiveCategoryItem(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
                 .fillMaxSize()
         ) {
             Box(
@@ -395,6 +403,7 @@ private fun SettingsCategory.cardKey(): String = when (this) {
     SettingsCategory.LookAndFeel -> "lookandfeel"
     SettingsCategory.AniList -> "anilist"
     SettingsCategory.Notifications -> "notifications"
+    SettingsCategory.Recaps -> "recaps"
     SettingsCategory.Storage -> "storage"
     SettingsCategory.MediaUpload -> "media_upload"
     SettingsCategory.Updates -> "updates"
@@ -411,6 +420,7 @@ private fun categoryBadge(key: String, active: Set<WhatsNewItem>): (@Composable 
     val leaf = when (key) {
         "general" -> WhatsNewItem.SETTINGS_GENERAL
         "lookandfeel" -> WhatsNewItem.SETTINGS_LOOK_AND_FEEL
+        "recaps" -> WhatsNewItem.SETTINGS_RECAPS
         else -> null
     }
     if (leaf != null && leaf in active) return { WhatsNewPill(leaf.kind) }
@@ -429,7 +439,7 @@ private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> 
             "general" -> Color(0xFF5F4100) to Color(0xFFFFDDB3)
             "lookandfeel" -> Color(0xFF7D5260) to Color(0xFFFFD8E4)
             "anilist" -> Color(0xFF2E4B5F) to Color(0xFFB8E6FF)
-            "notifications" -> Color(0xFF3E4C63) to Color(0xFFD7E3FF)
+            "notifications", "recaps" -> Color(0xFF3E4C63) to Color(0xFFD7E3FF)
             "storage" -> Color(0xFF3B4869) to Color(0xFFD9E2FF)
             "media_upload" -> Color(0xFF004F58) to Color(0xFF88FAFF)
             "account" -> Color(0xFF37474F) to Color(0xFFBBD9E8)
@@ -444,7 +454,7 @@ private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> 
             "general" -> Color(0xFFFFDDB3) to Color(0xFF2A1800)
             "lookandfeel" -> Color(0xFFFFD8E4) to Color(0xFF631835)
             "anilist" -> Color(0xFFB8E6FF) to Color(0xFF0E3346)
-            "notifications" -> Color(0xFFD7E3FF) to Color(0xFF253347)
+            "notifications", "recaps" -> Color(0xFFD7E3FF) to Color(0xFF253347)
             "storage" -> Color(0xFFD9E2FF) to Color(0xFF27304E)
             "media_upload" -> Color(0xFFCCE8EA) to Color(0xFF004F58)
             "account" -> Color(0xFFD6EAF5) to Color(0xFF103548)

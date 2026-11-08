@@ -283,6 +283,39 @@ data class ReviewDetail(
 )
 
 /**
+ * The share studio for one subject, a full page so a notification or a recap story can open it too.
+ * @param subject A [com.anisync.android.presentation.share.studio.ShareStudioSubject] name
+ * @param id The media, character, staff, review or user id
+ * @param userName Whose profile, for stats and favourites
+ * @param mediaType ANIME or MANGA, for stats and favourites
+ * @param coverColor Cover color of the title that opened the studio, so the chrome keeps its palette
+ * @param profileColor Profile color of the user whose profile opened it, for the same reason
+ * @param periodKey The recap's period, for a recap
+ */
+@Serializable
+data class ShareStudio(
+    val subject: String,
+    val id: Int,
+    val userName: String? = null,
+    val mediaType: String? = null,
+    val coverColor: String? = null,
+    val profileColor: String? = null,
+    val periodKey: String? = null
+)
+
+/**
+ * A monthly or yearly recap told as a story.
+ * @param periodKey "2026-09" for a month, "2025" for a year
+ * @param preview True when Developer Tools built it for another user and left it in
+ *                [com.anisync.android.presentation.recap.RecapPreviewStore]
+ */
+@Serializable
+data class RecapStory(
+    val periodKey: String,
+    val preview: Boolean = false
+)
+
+/**
  * Recent reviews list — AniList's newest reviews, filterable by media type.
  * Reached from the "Recent Reviews" section on Discover.
  * @param mediaType Initial filter: "ANIME", "MANGA", or "ALL".
@@ -384,6 +417,10 @@ object SettingsAniList
 @Serializable
 object SettingsNotifications
 
+/** Recaps: which ones get built, what they count, their song, how they arrive and what is stored. */
+@Serializable
+object SettingsRecaps
+
 /**
  * Storage management (cache size, clear cache).
  */
@@ -437,6 +474,10 @@ object SettingsDeveloperTools
  */
 @Serializable
 object SettingsFontPlayground
+
+/** Developer Tools' recap builder, for checking recap numbers against any public user. */
+@Serializable
+object SettingsRecapBuilder
 
 /**
  * Media upload host configuration (Catbox / Litterbox / custom).

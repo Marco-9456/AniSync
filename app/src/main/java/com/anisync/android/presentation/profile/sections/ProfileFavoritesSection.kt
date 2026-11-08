@@ -7,15 +7,12 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,7 +24,6 @@ import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -41,12 +37,13 @@ import com.anisync.android.domain.StaffDetails
 import com.anisync.android.domain.StaffInfo
 import com.anisync.android.domain.StudioInfo
 import com.anisync.android.domain.UserProfile
-import com.anisync.android.presentation.components.SegmentedTabItem
+import com.anisync.android.presentation.components.RailChip
 import com.anisync.android.presentation.details.CastListCard
 import com.anisync.android.presentation.details.StaffListCard
 import com.anisync.android.presentation.profile.ProfileFavoritesFilter
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.profile.components.ProfileMediaListCard
+import com.anisync.android.presentation.profile.components.ProfileTabRail
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.type.MediaType
 
@@ -54,7 +51,6 @@ import com.anisync.android.type.MediaType
 fun LazyListScope.profileFavoritesTab(
     profile: UserProfile,
     selectedFilter: ProfileFavoritesFilter,
-    onFilterSelected: (ProfileFavoritesFilter) -> Unit,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onMediaClick: (Int) -> Unit = {},
@@ -65,33 +61,6 @@ fun LazyListScope.profileFavoritesTab(
     studioColumns: Int = 2,
     modifier: Modifier = Modifier
 ) {
-    item(key = "favorites_filters", contentType = "filters") {
-        val filters = remember { ProfileFavoritesFilter.entries }
-        val selectedIndex = remember(selectedFilter) { filters.indexOf(selectedFilter).coerceAtLeast(0) }
-
-        Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp)
-        ) {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                itemsIndexed(filters) { index, filter ->
-                    SegmentedTabItem(
-                        index = index,
-                        selectedIndex = selectedIndex,
-                        selected = selectedFilter == filter,
-                        onClick = { onFilterSelected(filter) },
-                        icon = favoritesFilterIcon(filter),
-                        label = stringResource(filter.labelRes)
-                    )
-                }
-            }
-        }
-    }
-
     when (selectedFilter) {
         ProfileFavoritesFilter.ANIME -> {
             profileFavoritesMediaList(
@@ -200,6 +169,19 @@ fun LazyListScope.profileFavoritesTab(
                 }
             }
         }
+    }
+}
+
+/** The Favorites tab's categories, docked with the profile tabs. */
+@Composable
+internal fun FavoritesFilterRail(selected: ProfileFavoritesFilter, onSelect: (ProfileFavoritesFilter) -> Unit) {
+    ProfileTabRail(ProfileFavoritesFilter.entries, selected) { filter, isSelected ->
+        RailChip(
+            label = stringResource(filter.labelRes),
+            icon = favoritesFilterIcon(filter),
+            selected = isSelected,
+            onClick = { onSelect(filter) }
+        )
     }
 }
 

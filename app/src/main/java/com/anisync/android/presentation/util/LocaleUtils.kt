@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.util
 
+import android.text.format.DateFormat
 import androidx.annotation.PluralsRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -10,6 +11,15 @@ import androidx.compose.ui.platform.LocalResources
 import com.anisync.android.R
 import com.anisync.android.util.getQuantityStringOrDefault
 import java.text.NumberFormat
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+/** "June 2019", in the locale's own order and month form. */
+fun formatMonthYear(month: YearMonth, locale: Locale): String {
+    val pattern = DateFormat.getBestDateTimePattern(locale, "MMMMyyyy")
+    return month.format(DateTimeFormatter.ofPattern(pattern, locale))
+}
 
 /** `pluralStringResource` with the fallback of [getQuantityStringOrDefault]. */
 @Composable

@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import android.util.Log
 import com.anisync.android.data.local.dao.MediaThemesDao
 import com.anisync.android.data.local.entity.MediaThemesEntity
 import com.anisync.android.data.network.AnimeThemesApi
@@ -8,6 +9,12 @@ import com.anisync.android.domain.MediaTheme
 import com.anisync.android.domain.MediaThemes
 import com.anisync.android.domain.MediaThemesRepository
 import com.anisync.android.domain.Result
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
@@ -26,6 +33,8 @@ class MediaThemesRepositoryImpl @Inject constructor(
     private val api: AnimeThemesApi,
     private val dao: MediaThemesDao
 ) : MediaThemesRepository {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun observeThemes(mediaId: Int): Flow<MediaThemes?> =
         dao.observe(mediaId).map { entity ->
@@ -73,7 +82,60 @@ class MediaThemesRepositoryImpl @Inject constructor(
         return System.currentTimeMillis() - cached.fetchedAt > CACHE_TTL_MS
     }
 
+    override suspend fun themesFor(mediaIds: List<Int>): Map<Int, List<MediaTheme>> {
+        val found = LinkedHashMap<Int, List<MediaTheme>>()
+        val missing = ArrayList<Int>()
+        val aging = ArrayList<Int>()
+        val now = System.currentTimeMillis()
+        for (id in mediaIds.distinct()) {
+            val cached = dao.get(id)
+            if (cached == null || cached.fetchedAt < FORMAT_SINCE_MS) {
+                missing += id
+            } else {
+                found[id] = cached.themes.inShowOrder()
+                if (now - cached.fetchedAt > CACHE_TTL_MS) aging += id
+            }
+        }
+        if (missing.isEmpty() && aging.isEmpty()) return found
+        // Outlives a story closed before AnimeThemes answers, so its next open plays at once. An old
+        // answer plays now and is only refreshed behind it, the story waits for titles it has none for.
+        val lookup = scope.async { lookUp(missing + aging) }
+        if (missing.isNotEmpty()) lookup.await()?.let(found::putAll)
+        return found
+    }
+
+    /** One batch for [ids], stored as it lands. A failure is tried once more, a rejected query is not. */
+    private suspend fun lookUp(ids: List<Int>): Map<Int, List<MediaTheme>>? {
+        repeat(LOOKUP_ATTEMPTS) { attempt ->
+            try {
+                val batch = api.getThemes(ids)
+                val now = System.currentTimeMillis()
+                return batch.answered(ids).associateWith { id ->
+                    val lookup = batch.byId[id] ?: MediaThemes()
+                    val themes = lookup.themes.inShowOrder()
+                    dao.upsert(MediaThemesEntity(mediaId = id, animeSlug = lookup.animeSlug, themes = themes, fetchedAt = now))
+                    themes
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: AnimeThemesException.Query) {
+                Log.w(TAG, "AnimeThemes refused the batch", e)
+                return null
+            } catch (e: Exception) {
+                Log.w(TAG, "AnimeThemes batch failed", e)
+                if (attempt == LOOKUP_ATTEMPTS - 1) return null
+                val wait = (e as? AnimeThemesException.RateLimited)?.retryAfterSeconds?.times(1000L) ?: RETRY_DELAY_MS
+                delay(wait.coerceAtMost(MAX_RETRY_DELAY_MS))
+            }
+        }
+        return null
+    }
+
     private companion object {
+        const val TAG = "MediaThemes"
+        const val LOOKUP_ATTEMPTS = 2
+        const val RETRY_DELAY_MS = 2_000L
+        const val MAX_RETRY_DELAY_MS = 10_000L
         val CACHE_TTL_MS = TimeUnit.DAYS.toMillis(7)
 
         /**

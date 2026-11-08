@@ -5,7 +5,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -21,31 +20,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.ViewWeek
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -62,21 +51,17 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.anisync.android.R
 import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
-import com.anisync.android.ui.theme.ProvideDisplaySize
-import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -94,13 +79,15 @@ internal const val DAYS_IN_WEEK = 7
 private const val SECONDS_PER_DAY = 86_400L
 
 /** Phone-sized heatmap metrics. Everything else in the grid scales off [BASE_CELL]. */
-private val BASE_CELL = 13.dp
-private val BASE_GAP = 4.dp
-private val BASE_MONTH_ROW = 16.dp
-private val BASE_MONTH_LABEL_SP = 10.sp
+private val BASE_CELL = 11.dp
+private val BASE_GAP = 3.dp
+private val BASE_MONTH_ROW = 18.dp
 
 /** Cap growth on very wide windows: past this a cell reads as a tile, not a day. */
 private val MAX_CELL = 26.dp
+
+/** Cells only grow once the card is this much wider than the grid. */
+private const val GROW_FROM = 1.25f
 
 /** The two breakdowns the Activity History card can show. */
 private enum class ActivityPeriod(val labelRes: Int, val icon: ImageVector) {
@@ -129,79 +116,77 @@ fun ActivityHistorySection(
 ) {
     if (days.isEmpty()) return
 
-    val byDate = remember(days) { bucketActivityDays(days) }
-    var period by rememberSaveable { mutableStateOf(ActivityPeriod.Month) }
-
     Column(modifier = modifier) {
         SectionHeader(
             title = stringResource(R.string.statistics_activity_history),
             level = HeaderLevel.Section,
             padding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
         )
-
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-            ),
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp)
-        ) {
-            Column(Modifier.padding(20.dp)) {
-                SegmentedTabGroup(
-                    options = ActivityPeriod.entries,
-                    selected = period,
-                    onSelect = { period = it },
-                    label = { stringResource(it.labelRes) },
-                    icon = { it.icon },
-                    fillEqually = true
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                when (period) {
-                    ActivityPeriod.Month -> ActivityHeatmap(byDate)
-                    ActivityPeriod.Week -> ActivityWeekBreakdown(
-                        byDate = byDate,
-                        userId = userId,
-                        onMediaClick = onMediaClick,
-                        onActivityClick = onActivityClick
-                    )
-                }
-            }
-        }
+        ActivityHistoryCard(days, userId, onMediaClick, onActivityClick, Modifier.padding(horizontal = 16.dp))
     }
 }
 
-/** The 48-hour-lag note. Both breakdowns carry it, because both render the same lagging data. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** The history card alone, as the Statistics Activity view leads with it. */
 @Composable
-internal fun ActivityUpdateInfo(tint: Color) {
-    val tooltipState = rememberTooltipState()
-    val scope = rememberCoroutineScope()
-    TooltipBox(
-        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-            TooltipAnchorPosition.Above
-        ),
-        tooltip = {
-            ProvideDisplaySize {
-                PlainTooltip {
-                    Text(stringResource(R.string.statistics_activity_update_info))
-                }
-            }
-        },
-        state = tooltipState
+fun ActivityHistoryCard(
+    days: List<ActivityHistoryDay>,
+    userId: Int,
+    onMediaClick: (Int) -> Unit,
+    onActivityClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (days.isEmpty()) return
+
+    val byDate = remember(days) { bucketActivityDays(days) }
+    var period by rememberSaveable { mutableStateOf(ActivityPeriod.Month) }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 16.dp)
     ) {
+        SegmentedTabGroup(
+            options = ActivityPeriod.entries,
+            selected = period,
+            onSelect = { period = it },
+            label = { stringResource(it.labelRes) },
+            icon = { it.icon },
+            fillEqually = true
+        )
+        Spacer(Modifier.height(10.dp))
+        when (period) {
+            ActivityPeriod.Month -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ActivityHeatmap(byDate)
+            }
+            ActivityPeriod.Week -> ActivityWeekBreakdown(
+                byDate = byDate,
+                userId = userId,
+                onMediaClick = onMediaClick,
+                onActivityClick = onActivityClick
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        RecountNote()
+    }
+}
+
+/** The 48-hour lag. Both breakdowns carry it, because both render the same lagging data. */
+@Composable
+private fun RecountNote() {
+    val color = MaterialTheme.colorScheme.onSurfaceVariant
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Icon(
-            imageVector = Icons.Outlined.Info,
-            contentDescription = stringResource(R.string.statistics_activity_update_info),
-            tint = tint,
-            modifier = Modifier
-                .clip(CircleShape)
-                .clickable { scope.launch { tooltipState.show() } }
-                .padding(2.dp)
-                .size(16.dp)
+            imageVector = Icons.Default.Schedule,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = stringResource(R.string.stats_activity_recount_note),
+            style = statsBodySmall(),
+            color = color
         )
     }
 }
@@ -212,10 +197,11 @@ private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
     var selected by remember(byDate) { mutableStateOf<HeatmapCell?>(null) }
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
 
-    val emptyColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    val emptyColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val activeColor = MaterialTheme.colorScheme.primary
     val ringColor = MaterialTheme.colorScheme.onSurface
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val labelStyle = MaterialTheme.typography.labelSmall
     val textMeasurer = rememberTextMeasurer()
 
     val sel = selected
@@ -230,17 +216,11 @@ private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
             model.activeDays
         )
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = headline,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        ActivityUpdateInfo(tint = labelColor)
-    }
-
-    Spacer(Modifier.height(16.dp))
+    Text(
+        text = headline,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurface
+    )
 
     val scrollState = rememberScrollState()
     // Start scrolled to the most recent week (right edge), like GitHub.
@@ -256,11 +236,11 @@ private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
         // tablet the whole grid fits with room to spare, so grow the cells to claim that width
         // instead of leaving the card mostly empty.
         val (cellDp, gapDp) = heatmapCellSize(maxWidth, model.weeks.size)
-        val scale = cellDp / BASE_CELL
-        val monthRowDp = BASE_MONTH_ROW * scale
-        val monthStyle = TextStyle(color = labelColor, fontSize = BASE_MONTH_LABEL_SP * scale)
-        val gridWidth = (cellDp + gapDp) * model.weeks.size
-        val gridHeight = monthRowDp + (cellDp + gapDp) * DAYS_IN_WEEK
+        // Grown cells keep the labels at their size, only the gap under them follows the grid.
+        val monthRowDp = BASE_MONTH_ROW + (gapDp - BASE_GAP)
+        val monthStyle = labelStyle.copy(color = labelColor)
+        val gridWidth = (cellDp + gapDp) * model.weeks.size - gapDp
+        val gridHeight = monthRowDp + (cellDp + gapDp) * DAYS_IN_WEEK - gapDp
         val fadeColor = MaterialTheme.colorScheme.surfaceContainerLow
         Box(
             modifier = Modifier
@@ -291,13 +271,15 @@ private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
                 val monthPx = monthRowDp.toPx()
                 val corner = CornerRadius(cellPx * 0.28f, cellPx * 0.28f)
 
+                // A month only a column old has no room for its name, so the label stays on one
+                // line and ends at the grid's edge instead of wrapping down over the cells.
+                var labelsEnd = 0f
                 model.monthLabels.forEach { (weekIndex, label) ->
-                    drawText(
-                        textMeasurer = textMeasurer,
-                        text = label,
-                        topLeft = Offset(weekIndex * stridePx, 0f),
-                        style = monthStyle
-                    )
+                    val layout = textMeasurer.measure(label, monthStyle, softWrap = false, maxLines = 1)
+                    val x = minOf(weekIndex * stridePx, size.width - layout.size.width).coerceAtLeast(0f)
+                    if (x < labelsEnd) return@forEach
+                    drawText(layout, topLeft = Offset(x, 0f))
+                    labelsEnd = x + layout.size.width + gapDp.toPx()
                 }
 
                 for (w in model.weeks.indices) {
@@ -342,33 +324,39 @@ private fun ActivityHeatmap(byDate: Map<LocalDate, ActivityHistoryDay>) {
         )
     }
 
-    Spacer(Modifier.height(16.dp))
-
     Row(
-        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
             text = stringResource(R.string.statistics_activity_less),
-            style = MaterialTheme.typography.labelSmall,
+            style = labelStyle,
             color = labelColor
         )
-        listOf(0, 3, 6, 8, 10).forEach { level ->
+        Box(
+            Modifier
+                .size(11.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(emptyColor)
+        )
+        LegendAlphas.forEach { alpha ->
             Box(
                 Modifier
-                    .size(12.dp)
+                    .size(11.dp)
                     .clip(RoundedCornerShape(3.dp))
-                    .background(heatCellColor(level, emptyColor, activeColor))
+                    .background(activeColor.copy(alpha = alpha))
             )
         }
         Text(
             text = stringResource(R.string.statistics_activity_more),
-            style = MaterialTheme.typography.labelSmall,
+            style = labelStyle,
             color = labelColor
         )
     }
 }
+
+/** The legend samples four of the five shades a counted day can take. */
+private val LegendAlphas = listOf(0.35f, 0.55f, 0.75f, 1f)
 
 /**
  * A gradient + chevron overlay hinting that the heatmap scrolls. Shown at an edge only
@@ -414,13 +402,14 @@ private fun ScrollEdgeFade(
 /**
  * Cell and gap size for a grid of [weeks] columns given [available] width.
  *
- * Below the natural size the grid keeps [BASE_CELL] and scrolls, which is the phone case. Once it
- * fits, cells grow together with the gap (so the ratio stays put) until either the width is used up
- * or [MAX_CELL] is reached.
+ * Below the natural size the grid keeps [BASE_CELL] and scrolls. A phone fits it with a few dp to
+ * spare and keeps [BASE_CELL] too. Once the card is [GROW_FROM] times wider, cells grow together
+ * with the gap (so the ratio stays put) until either the width is used up or [MAX_CELL] is reached.
  */
 private fun heatmapCellSize(available: Dp, weeks: Int): Pair<Dp, Dp> {
     if (weeks <= 0) return BASE_CELL to BASE_GAP
     val naturalStride = BASE_CELL + BASE_GAP
+    if (available < naturalStride * weeks * GROW_FROM) return BASE_CELL to BASE_GAP
     val stride = (available / weeks).coerceAtLeast(naturalStride)
     val cell = (stride * (BASE_CELL / naturalStride)).coerceAtMost(MAX_CELL)
     val gap = cell * (BASE_GAP / BASE_CELL)
@@ -429,8 +418,10 @@ private fun heatmapCellSize(available: Dp, weeks: Int): Pair<Dp, Dp> {
 
 /** Maps an AniList activity [level] (1-10, or 0 = no activity) to a heatmap cell color. */
 private fun heatCellColor(level: Int, empty: Color, active: Color): Color =
-    if (level <= 0) empty
-    else active.copy(alpha = 0.30f + 0.70f * ((level.coerceIn(1, 10) - 1) / 9f))
+    if (level <= 0) empty else active.copy(alpha = heatAlpha(level))
+
+/** AniList's ten levels folded into five shades, two levels to a shade. */
+internal fun heatAlpha(level: Int): Float = 0.36f + 0.16f * ((level.coerceIn(1, 10) - 1) / 2)
 
 private data class HeatmapCell(
     val date: LocalDate,
@@ -488,11 +479,14 @@ private fun buildHeatmapModel(byDate: Map<LocalDate, ActivityHistoryDay>): Heatm
 
     for (w in 0 until spanWeeks) {
         val weekStart = startSunday.plusWeeks(w.toLong())
-        if (weekStart.monthValue != lastMonth) {
-            monthLabels += w to weekStart.month.getDisplayName(
+        // A column takes the month its Saturday falls in, so a first week that starts at the end
+        // of a month never puts two labels side by side.
+        val weekEnd = weekStart.plusDays(DAYS_IN_WEEK - 1L)
+        if (weekEnd.monthValue != lastMonth) {
+            monthLabels += w to weekEnd.month.getDisplayName(
                 java.time.format.TextStyle.SHORT, Locale.getDefault()
             )
-            lastMonth = weekStart.monthValue
+            lastMonth = weekEnd.monthValue
         }
         val column = ArrayList<HeatmapCell>(DAYS_IN_WEEK)
         for (dow in 0 until DAYS_IN_WEEK) {

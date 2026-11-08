@@ -1,0 +1,70 @@
+query GetUserPeopleStatistics(
+  $userId: Int!
+  $sort: [UserStatisticsSort]
+  $limit: Int
+  $animeVoiceActors: Boolean!
+  $animeStaff: Boolean!
+  $animeStudios: Boolean!
+  $mangaStaff: Boolean!
+) {
+  User(id: $userId) {
+    id
+    statistics {
+      anime {
+        voiceActors(limit: $limit, sort: $sort) @include(if: $animeVoiceActors) {
+          voiceActor {
+            id
+            name {
+              full
+            }
+            image {
+              medium
+            }
+          }
+          count
+          meanScore
+          minutesWatched
+        }
+        staff(limit: $limit, sort: $sort) @include(if: $animeStaff) {
+          staff {
+            id
+            name {
+              full
+            }
+            image {
+              medium
+            }
+          }
+          count
+          meanScore
+          minutesWatched
+        }
+        studios(limit: $limit, sort: $sort) @include(if: $animeStudios) {
+          studio {
+            id
+            name
+          }
+          count
+          meanScore
+          minutesWatched
+        }
+      }
+      manga {
+        staff(limit: $limit, sort: $sort) @include(if: $mangaStaff) {
+          staff {
+            id
+            name {
+              full
+            }
+            image {
+              medium
+            }
+          }
+          count
+          meanScore
+          chaptersRead
+        }
+      }
+    }
+  }
+}

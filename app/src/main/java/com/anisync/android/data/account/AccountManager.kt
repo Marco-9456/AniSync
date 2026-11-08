@@ -1,5 +1,6 @@
 package com.anisync.android.data.account
 
+import android.app.NotificationManager
 import android.content.Context
 import com.anisync.android.GetViewerQuery
 import com.anisync.android.data.AppSettings
@@ -48,6 +49,8 @@ class AccountManager @Inject constructor(
     private val mediaDetailsDao: MediaDetailsDao,
     private val airingScheduleDao: AiringScheduleDao,
     private val savedForumThreadDao: SavedForumThreadDao,
+    private val recapRepository: com.anisync.android.domain.RecapRepository,
+    private val recapNotices: com.anisync.android.data.RecapNotices,
     private val preferencesRepository: PreferencesRepository,
     private val appSettings: AppSettings,
     private val notificationBadgeStore: NotificationBadgeStore,
@@ -131,8 +134,21 @@ class AccountManager @Inject constructor(
                 }
                 // Drop the removed account's notification dedup state and cached token client.
                 preferencesRepository.clearForAccount(id)
+                // Recaps hold the account's whole list history, so they leave with it.
+                runCatching { recapRepository.clearOwner(id) }
+                recapNotices.clear(id)
+                cancelNotifications(id)
                 token?.let(tokenedClientFactory::evict)
             }
+        }
+    }
+
+    /** Takes down an account's notifications, whose links would open another account's pages once it is gone. */
+    private fun cancelNotifications(accountId: Int) {
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        val prefix = "acct_${accountId}_"
+        runCatching {
+            manager.activeNotifications.filter { it.tag?.startsWith(prefix) == true }.forEach { manager.cancel(it.tag, it.id) }
         }
     }
 

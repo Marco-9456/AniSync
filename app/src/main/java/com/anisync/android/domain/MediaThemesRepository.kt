@@ -21,4 +21,12 @@ interface MediaThemesRepository {
 
     /** True when the stored answer is missing or old enough to be worth refetching. */
     suspend fun isStale(mediaId: Int): Boolean
+
+    /**
+     * Themes for several titles at once, the rest looked up in one request and stored. A stored
+     * answer is returned at once, and refreshed behind the caller once it is old. A title
+     * AnimeThemes does not list maps to an empty list. When the lookup fails the titles it was
+     * for are missing from the map.
+     */
+    suspend fun themesFor(mediaIds: List<Int>): Map<Int, List<MediaTheme>>
 }

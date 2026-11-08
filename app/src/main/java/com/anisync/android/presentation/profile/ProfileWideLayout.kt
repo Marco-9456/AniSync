@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -72,6 +73,7 @@ import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.CustomPullToRefreshIndicator
 import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.profile.components.ProfileActionButtons
 import com.anisync.android.presentation.profile.components.ProfileAvatarHalfSize
@@ -85,6 +87,7 @@ import com.anisync.android.presentation.util.PaneDragHandle
 import com.anisync.android.presentation.util.profileGridColumns
 import com.anisync.android.presentation.util.TwoPaneDefaults
 import com.anisync.android.presentation.util.TwoPaneRow
+import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -284,7 +287,10 @@ fun ProfileWideLayout(
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     showAccountSwitcher: Boolean,
     onAccountSwitchClick: () -> Unit,
+    onShareStats: () -> Unit,
+    onShareFavourites: () -> Unit,
     statsColumns: Int,
+    onOpenRecap: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -299,10 +305,12 @@ fun ProfileWideLayout(
     val hasBio = !profile.about.isNullOrBlank()
     val collapse = remember(density, profile.id, hasBio) { BioCollapseState(density) }
 
+    // ST4 draws the profile flat on the page background, the identity column and the tab pane
+    // without cards around them. The resize handle stays between them.
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             ProfileBannerSurface(
@@ -315,7 +323,7 @@ fun ProfileWideLayout(
                     } else {
                         ShareUtils.shareText(
                             context = context,
-                            text = "${profile.name}\nhttps://anilist.co/user/${profile.name}"
+                            text = "${profile.name}\n${AniListUrls.userUrl(profile.name)}"
                         )
                     }
                 },
@@ -354,7 +362,10 @@ fun ProfileWideLayout(
                 onLastReplyClick = onLastReplyClick,
                 showAccountSwitcher = showAccountSwitcher,
                 onAccountSwitchClick = onAccountSwitchClick,
+                onShareStats = onShareStats,
+                onShareFavourites = onShareFavourites,
                 statsColumns = statsColumns,
+                onOpenRecap = onOpenRecap,
                 collapse = collapse,
                 modifier = Modifier.weight(1f)
             )
@@ -482,7 +493,10 @@ private fun ProfileTwoPane(
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
     showAccountSwitcher: Boolean,
     onAccountSwitchClick: () -> Unit,
+    onShareStats: () -> Unit,
+    onShareFavourites: () -> Unit,
     statsColumns: Int,
+    onOpenRecap: (String) -> Unit,
     collapse: BioCollapseState,
     modifier: Modifier = Modifier
 ) {
@@ -508,7 +522,9 @@ private fun ProfileTwoPane(
         modifier = modifier
             .fillMaxSize()
             .onSizeChanged { rowWidthPx = it.width },
-        gutterColor = MaterialTheme.colorScheme.surfaceContainer,
+        gutterColor = MaterialTheme.colorScheme.background,
+        leadingColor = MaterialTheme.colorScheme.background,
+        trailingColor = MaterialTheme.colorScheme.background,
         gutterPadding = PaddingValues(start = WideGutterStart, top = 12.dp, end = 16.dp, bottom = 16.dp),
         handle = {
             PaneDragHandle(
@@ -560,7 +576,10 @@ private fun ProfileTwoPane(
                 onCommentClick = onCommentClick,
                 onActivityClick = onActivityClick,
                 onLastReplyClick = onLastReplyClick,
-                statsColumns = statsColumns
+                onShareStats = onShareStats,
+                onShareFavourites = onShareFavourites,
+                statsColumns = statsColumns,
+                onOpenRecap = onOpenRecap
             )
         }
     )
@@ -771,12 +790,27 @@ private fun ProfileTabPane(
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit,
     onActivityClick: (Int) -> Unit,
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
+    onShareStats: () -> Unit,
+    onShareFavourites: () -> Unit,
     statsColumns: Int,
+    onOpenRecap: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Column counts come from the pane, not the window: this pane is a fraction of the window wide,
     // and a window-derived count budgets for space it does not have, squeezing every cell.
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // The tabs never scroll here, so each Statistics view and each filter simply keeps a list
+        // state of its own.
+        val listStateKey = when (uiState.selectedTab) {
+            ProfileTab.STATS -> uiState.selectedStatsView.name
+            ProfileTab.ACTIVITY -> "ACTIVITY_${uiState.selectedActivityFilter.name}"
+            ProfileTab.ANIME -> "ANIME_${uiState.selectedAnimeStatus.name}"
+            ProfileTab.MANGA -> "MANGA_${uiState.selectedMangaStatus.name}"
+            ProfileTab.FAVORITES -> "FAVORITES_${uiState.selectedFavoritesFilter.name}"
+            ProfileTab.SOCIAL -> "SOCIAL_${uiState.selectedSocialTab.name}"
+            ProfileTab.OVERVIEW, ProfileTab.REVIEWS -> uiState.selectedTab.name
+        }
+        val listState = rememberSaveable(listStateKey, saver = LazyListState.Saver) { LazyListState() }
         val portraitColumns = profileGridColumns(baseMinSize = 150.dp, availableWidth = maxWidth)
         val studioColumns = profileGridColumns(
             baseMinSize = 240.dp,
@@ -785,9 +819,12 @@ private fun ProfileTabPane(
         )
 
         Column(modifier = Modifier.fillMaxSize()) {
-            ProfileTabsButtonGroup(
-                selectedTab = uiState.selectedTab,
+            ProfileTabStrip(
+                uiState = uiState,
                 onTabSelected = { onAction(ProfileAction.SelectTab(it)) },
+                onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
+                onStatsViewSelected = { onAction(ProfileAction.SelectStatsView(it)) },
+                onFilterAction = onAction,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -807,9 +844,13 @@ private fun ProfileTabPane(
                     )
                 }
             ) {
+                val showShareFab = uiState.showsShareFab(profile)
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 48.dp + LocalMainNavBarInset.current)
+                    contentPadding = PaddingValues(
+                        bottom = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
+                    )
                 ) {
                     profileSelectedTabContent(
                         profile = profile,
@@ -829,9 +870,12 @@ private fun ProfileTabPane(
                         onLastReplyClick = onLastReplyClick,
                         portraitColumns = portraitColumns,
                         studioColumns = studioColumns,
-                        statsColumns = statsColumns
+                        statsColumns = statsColumns,
+                        onOpenRecap = onOpenRecap
                     )
                 }
+
+                if (showShareFab) ProfileShareFab(uiState, onShareStats = onShareStats, onShareFavourites = onShareFavourites)
             }
         }
     }

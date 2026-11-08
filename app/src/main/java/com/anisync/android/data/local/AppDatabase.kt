@@ -12,6 +12,7 @@ import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.data.local.entity.MediaDetailsEntity
 import com.anisync.android.data.local.entity.MediaTagsEntity
 import com.anisync.android.data.local.entity.MediaThemesEntity
+import com.anisync.android.data.local.entity.RecapEntity
 import com.anisync.android.data.local.entity.SavedForumThreadEntity
 import com.anisync.android.data.local.entity.TrendingEntity
 import com.anisync.android.data.local.entity.UserProfileEntity
@@ -21,6 +22,13 @@ import com.anisync.android.data.local.entity.UserProfileEntity
  *
  * Version History:
  * ─────────────────────────────────────────────────────────────────────────────
+ * v30 (Nov 2026):
+ *   - Added recaps table for monthly and yearly recaps:
+ *     • ownerId, periodKey, kind, builtAt, isFinal, settingsKey, seenAt, payload
+ *     Keyed by account and period. The payload keeps the fetched activities and
+ *     title facts, so a recap is counted again without the network.
+ *     Auto-migration, new table only.
+ *
  * v29 (Oct 2026):
  *   - Added media_tags table for the library's tag filter:
  *     • mediaId, tags (JSON list), fetchedAt
@@ -130,9 +138,10 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         TrendingEntity::class,
         SavedForumThreadEntity::class,
         MediaThemesEntity::class,
-        MediaTagsEntity::class
+        MediaTagsEntity::class,
+        RecapEntity::class
     ],
-    version = 29,
+    version = 30,
     exportSchema = true,
     autoMigrations = [
         androidx.room.AutoMigration(from = 2, to = 3),
@@ -159,7 +168,8 @@ import com.anisync.android.data.local.entity.UserProfileEntity
         androidx.room.AutoMigration(from = 25, to = 26),
         androidx.room.AutoMigration(from = 26, to = 27),
         androidx.room.AutoMigration(from = 27, to = 28),
-        androidx.room.AutoMigration(from = 28, to = 29)
+        androidx.room.AutoMigration(from = 28, to = 29),
+        androidx.room.AutoMigration(from = 29, to = 30)
     ]
 )
 @TypeConverters(Converters::class)
@@ -172,4 +182,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun savedForumThreadDao(): SavedForumThreadDao
     abstract fun mediaThemesDao(): com.anisync.android.data.local.dao.MediaThemesDao
     abstract fun mediaTagsDao(): com.anisync.android.data.local.dao.MediaTagsDao
+    abstract fun recapDao(): com.anisync.android.data.local.dao.RecapDao
 }

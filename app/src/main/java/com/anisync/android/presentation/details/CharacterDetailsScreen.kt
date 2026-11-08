@@ -97,15 +97,12 @@ import com.anisync.android.presentation.details.components.formatPersonBirthday
 import com.anisync.android.presentation.details.components.personGridItems
 import com.anisync.android.presentation.navigation.TrailKind
 import com.anisync.android.presentation.navigation.TrailLabel
-import com.anisync.android.presentation.share.CharacterShareCard
-import com.anisync.android.presentation.share.ShareImageSheet
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalPaneIsRoot
 import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.type.MediaType
-import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.getName
 import com.anisync.android.util.getTitle
 
@@ -117,6 +114,7 @@ private const val PreviewCount = 6
 fun CharacterDetailsScreen(
     characterId: Int,
     onBackClick: () -> Unit,
+    onShareCard: (characterId: Int) -> Unit = {},
     onMediaClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onTrailLabel: (TrailLabel) -> Unit = {},
@@ -126,7 +124,6 @@ fun CharacterDetailsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
-    var showShareSheet by rememberSaveable { mutableStateOf(false) }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val isScrolled by remember {
@@ -152,7 +149,7 @@ fun CharacterDetailsScreen(
         BannerIconButton(
             icon = Icons.Default.Share,
             contentDescription = stringResource(R.string.cd_share),
-            onClick = { showShareSheet = true }
+            onClick = { onShareCard(characterId) }
         )
         if (LocalPaneIsRoot.current) {
             BannerIconButton(
@@ -212,7 +209,7 @@ fun CharacterDetailsScreen(
                             boxSize = 40.dp
                         )
                     }
-                    IconButton(onClick = { showShareSheet = true }, colors = chromeColors) {
+                    IconButton(onClick = { onShareCard(characterId) }, colors = chromeColors) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = stringResource(R.string.cd_share),
@@ -276,19 +273,6 @@ fun CharacterDetailsScreen(
             }
         }
 
-        if (showShareSheet) {
-            details?.let {
-                ShareImageSheet(
-                    onDismiss = { showShareSheet = false },
-                    link = AniListUrls.characterUrl(it.id)
-                ) {
-                    CharacterShareCard(
-                        details = it,
-                        displayName = it.getName(titleLanguage)
-                    )
-                }
-            }
-        }
     }
 }
 

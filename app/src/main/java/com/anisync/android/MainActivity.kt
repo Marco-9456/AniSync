@@ -191,6 +191,7 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
+            keepActivityForLink(intent)
             handleAuthRedirect(intent)
             routeAccountDeepLink(intent)
 
@@ -435,10 +436,21 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        keepActivityForLink(intent)
         handleAuthRedirect(intent)
         if (!routeAccountDeepLink(intent)) {
             _newIntents.tryEmit(intent)
         }
+    }
+
+    /**
+     * A link from a notification, a widget or another app arrives with NEW_TASK, and Navigation
+     * answers that by restarting the task, which builds this activity a second time before the link
+     * opens. With CLEAR_TASK as well it builds the same back stack inside the running activity.
+     */
+    private fun keepActivityForLink(intent: Intent?) {
+        if (intent?.data == null) return
+        if (intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0) intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
     }
 
     private fun syncLibrariesIfStale() {

@@ -38,6 +38,8 @@ import com.anisync.android.presentation.navigation.SettingsLookAndFeel
 import com.anisync.android.presentation.navigation.SettingsMediaUpload
 import com.anisync.android.presentation.navigation.SettingsNotifications
 import com.anisync.android.presentation.navigation.SettingsOpenSourceLicenses
+import com.anisync.android.presentation.navigation.SettingsRecapBuilder
+import com.anisync.android.presentation.navigation.SettingsRecaps
 import com.anisync.android.presentation.navigation.SettingsSponsors
 import com.anisync.android.presentation.navigation.SettingsStorage
 import com.anisync.android.presentation.navigation.SettingsUpdates
@@ -104,6 +106,7 @@ enum class SettingsCategory {
     LookAndFeel,
     AniList,
     Notifications,
+    Recaps,
     Storage,
     MediaUpload,
     Updates,
@@ -117,6 +120,7 @@ private fun SettingsCategory.toPaneRoute(): Any = when (this) {
     SettingsCategory.LookAndFeel -> SettingsLookAndFeel
     SettingsCategory.AniList -> SettingsAniList
     SettingsCategory.Notifications -> SettingsNotifications
+    SettingsCategory.Recaps -> SettingsRecaps
     SettingsCategory.Storage -> SettingsStorage
     SettingsCategory.MediaUpload -> SettingsMediaUpload
     SettingsCategory.Updates -> SettingsUpdates
@@ -199,6 +203,9 @@ private fun SettingsDetailPane(
             )
         }
         composable<SettingsNotifications> { NotificationsScreen(onBackClick = popOrClose) }
+        composable<SettingsRecaps> {
+            RecapsScreen(onBackClick = popOrClose, onOpenNotifications = { paneNav.navigate(SettingsNotifications) })
+        }
         composable<SettingsStorage> { StorageScreen(onBackClick = popOrClose) }
         composable<SettingsMediaUpload> { MediaUploadSettingsScreen(onBackClick = popOrClose) }
         composable<SettingsUpdates> { UpdatesScreen(onBackClick = popOrClose) }
@@ -218,9 +225,13 @@ private fun SettingsDetailPane(
             DeveloperToolsScreen(
                 onBackClick = popOrClose,
                 onFontPlaygroundClick = { paneNav.navigate(SettingsFontPlayground) },
+                onRecapBuilderClick = { paneNav.navigate(SettingsRecapBuilder) },
             )
         }
         composable<SettingsFontPlayground> { FontSettingsScreen(onBackClick = popOrClose) }
+        composable<SettingsRecapBuilder> {
+            RecapBuilderScreen(onBackClick = popOrClose, onOpenStory = { navController.navigate(it) })
+        }
     }
     }
 }

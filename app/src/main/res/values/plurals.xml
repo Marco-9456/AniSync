@@ -23,4 +23,339 @@
         <item quantity="one">%dm</item>
         <item quantity="other">%dm</item>
     </plurals>
+
+    <!-- Statistics -->
+    <plurals name="stats_unit_anime">
+        <item quantity="one">anime</item>
+        <item quantity="other">anime</item>
+    </plurals>
+    <plurals name="stats_unit_manga">
+        <item quantity="one">manga</item>
+        <item quantity="other">manga</item>
+    </plurals>
+    <plurals name="stats_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="stats_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <plurals name="stats_hero_chapters_read">
+        <item quantity="one">%1$s chapter read</item>
+        <item quantity="other">%1$s chapters read</item>
+    </plurals>
+    <plurals name="stats_hero_stale">
+        <item quantity="one">AniList recounts these about every two days, so a change from this week is not in yet.</item>
+        <item quantity="other">AniList recounts these about every two days, so %d changes from this week are not in yet.</item>
+    </plurals>
+    <plurals name="stats_day_streak">
+        <item quantity="one">day streak</item>
+        <item quantity="other">day streak</item>
+    </plurals>
+    <plurals name="stats_active_days">
+        <item quantity="one">active day</item>
+        <item quantity="other">active days</item>
+    </plurals>
+    <plurals name="stats_busiest_on_count">
+        <item quantity="one">Busiest on %1$s, %2$d activity</item>
+        <item quantity="other">Busiest on %1$s, %2$d activities</item>
+    </plurals>
+    <plurals name="stats_teaser_top_genre">
+        <item quantity="one">your top genre, %d title</item>
+        <item quantity="other">your top genre, %d titles</item>
+    </plurals>
+    <plurals name="stats_teaser_top_genre_other">
+        <item quantity="one">their top genre, %d title</item>
+        <item quantity="other">their top genre, %d titles</item>
+    </plurals>
+    <plurals name="stats_teaser_century">
+        <item quantity="one">a century of anime, %1$s decade</item>
+        <item quantity="other">a century of anime, %1$s decades</item>
+    </plurals>
+    <plurals name="stats_teaser_decades_peak">
+        <item quantity="one">%1$s decade, peak in %2$s</item>
+        <item quantity="other">%1$s decades, peak in %2$s</item>
+    </plurals>
+    <plurals name="stats_roles">
+        <item quantity="one">%d role</item>
+        <item quantity="other">%d roles</item>
+    </plurals>
+    <plurals name="stats_weekday_share">
+        <item quantity="one">%1$s of your %2$s activity.</item>
+        <item quantity="other">%1$s of your %2$s activities.</item>
+    </plurals>
+    <plurals name="stats_weekday_share_other">
+        <item quantity="one">%1$s of their %2$s activity.</item>
+        <item quantity="other">%1$s of their %2$s activities.</item>
+    </plurals>
+    <plurals name="stats_busiest_day_detail">
+        <item quantity="one">%d activity. Tap to see what it was.</item>
+        <item quantity="other">%d activities. Tap to see what they were.</item>
+    </plurals>
+    <plurals name="stats_spread_count">
+        <item quantity="one">%1$s %2$s</item>
+        <item quantity="other">%1$s %2$ss</item>
+    </plurals>
+    <plurals name="stats_spread_perfect">
+        <item quantity="one">%1$s perfect 100</item>
+        <item quantity="other">%1$s perfect 100s</item>
+    </plurals>
+    <plurals name="stats_best_rated">
+        <item quantity="one">Best rated, with %d title or more</item>
+        <item quantity="other">Best rated, with %d titles or more</item>
+    </plurals>
+    <plurals name="stats_tags_show_more">
+        <item quantity="one">Show %d more</item>
+        <item quantity="other">Show %d more</item>
+    </plurals>
+    <plurals name="stats_unit_days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <plurals name="stats_unit_hours">
+        <item quantity="one">hour</item>
+        <item quantity="other">hours</item>
+    </plurals>
+    <plurals name="stats_unit_minutes">
+        <item quantity="one">minute</item>
+        <item quantity="other">minutes</item>
+    </plurals>
+    <plurals name="stats_unit_chapters">
+        <item quantity="one">chapter</item>
+        <item quantity="other">chapters</item>
+    </plurals>
+    <plurals name="stats_hours_total">
+        <item quantity="one">%1$s hour</item>
+        <item quantity="other">%1$s hours</item>
+    </plurals>
+    <plurals name="stats_episodes_total">
+        <item quantity="one">%1$s episode</item>
+        <item quantity="other">%1$s episodes</item>
+    </plurals>
+    <plurals name="stats_hero_volumes">
+        <item quantity="one">%1$s volume</item>
+        <item quantity="other">%1$s volumes</item>
+    </plurals>
+    <plurals name="stats_works">
+        <item quantity="one">%1$s work</item>
+        <item quantity="other">%1$s works</item>
+    </plurals>
+    <plurals name="stats_titles">
+        <item quantity="one">%1$s title</item>
+        <item quantity="other">%1$s titles</item>
+    </plurals>
+    <plurals name="stats_chapters_short">
+        <item quantity="one">%1$s chapter</item>
+        <item quantity="other">%1$s chapters</item>
+    </plurals>
+    <plurals name="stats_length_episodes">
+        <item quantity="one">%d episode</item>
+        <item quantity="other">%d episodes</item>
+    </plurals>
+    <plurals name="stats_length_chapters">
+        <item quantity="one">%d chapter</item>
+        <item quantity="other">%d chapters</item>
+    </plurals>
+    <plurals name="stats_lengths_unknown">
+        <item quantity="one">%d title has no episode count on AniList yet.</item>
+        <item quantity="other">%d titles have no episode count on AniList yet.</item>
+    </plurals>
+    <plurals name="stats_lengths_unknown_manga">
+        <item quantity="one">%d title has no chapter count on AniList yet.</item>
+        <item quantity="other">%d titles have no chapter count on AniList yet.</item>
+    </plurals>
+    <plurals name="stats_eras_decades_anime">
+        <item quantity="one">%1$s decade of anime.</item>
+        <item quantity="other">%1$s decades of anime.</item>
+    </plurals>
+    <plurals name="stats_eras_decades_manga">
+        <item quantity="one">%1$s decade of manga.</item>
+        <item quantity="other">%1$s decades of manga.</item>
+    </plurals>
+    <plurals name="stats_eras_peak_titles">
+        <item quantity="one">peak, %1$s title</item>
+        <item quantity="other">peak, %1$s titles</item>
+    </plurals>
+    <plurals name="stats_spread_focused_body">
+        <item quantity="one">Your scores stay close together, most within %1$d point of %2$s.</item>
+        <item quantity="other">Your scores stay close together, most within %1$d points of %2$s.</item>
+    </plurals>
+    <plurals name="stats_spread_focused_body_other">
+        <item quantity="one">Their scores stay close together, most within %1$d point of %2$s.</item>
+        <item quantity="other">Their scores stay close together, most within %1$d points of %2$s.</item>
+    </plurals>
+    <plurals name="stats_spread_balanced_body">
+        <item quantity="one">Most of your scores land within %1$d point of your mean of %2$s.</item>
+        <item quantity="other">Most of your scores land within %1$d points of your mean of %2$s.</item>
+    </plurals>
+    <plurals name="stats_spread_balanced_body_other">
+        <item quantity="one">Most of their scores land within %1$d point of their mean of %2$s.</item>
+        <item quantity="other">Most of their scores land within %1$d points of their mean of %2$s.</item>
+    </plurals>
+    <plurals name="a11y_timeline_bar">
+        <item quantity="one">%1$d, %2$d title</item>
+        <item quantity="other">%1$d, %2$d titles</item>
+    </plurals>
+    <!-- Share cards -->
+    <plurals name="share_progress_episodes_of">
+        <item quantity="one">%1$s of %2$s episode</item>
+        <item quantity="other">%1$s of %2$s episodes</item>
+    </plurals>
+    <plurals name="share_progress_chapters_of">
+        <item quantity="one">%1$s of %2$s chapter</item>
+        <item quantity="other">%1$s of %2$s chapters</item>
+    </plurals>
+    <plurals name="share_media_episode_count">
+        <item quantity="one">%1$s episode</item>
+        <item quantity="other">%1$s episodes</item>
+    </plurals>
+    <plurals name="share_media_chapter_count">
+        <item quantity="one">%1$s chapter</item>
+        <item quantity="other">%1$s chapters</item>
+    </plurals>
+    <plurals name="share_duration_days">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <plurals name="share_duration_hours">
+        <item quantity="one">%1$s hour</item>
+        <item quantity="other">%1$s hours</item>
+    </plurals>
+    <plurals name="share_stats_sentence_manga">
+        <item quantity="one">manga, %1$s chapter read</item>
+        <item quantity="other">manga, %1$s chapters read</item>
+    </plurals>
+    <plurals name="share_stats_title_count">
+        <item quantity="one">%1$s title</item>
+        <item quantity="other">%1$s titles</item>
+    </plurals>
+    <plurals name="share_favourites_count">
+        <item quantity="one">%1$s favourite</item>
+        <item quantity="other">%1$s favourites</item>
+    </plurals>
+    <plurals name="share_known_for_more">
+        <item quantity="one">and in %1$s more title</item>
+        <item quantity="other">and in %1$s more titles</item>
+    </plurals>
+    <plurals name="share_review_helpful">
+        <item quantity="one">%1$s · %2$s found it helpful</item>
+        <item quantity="other">%1$s · %2$s found it helpful</item>
+    </plurals>
+    <plurals name="share_recap_episodes_word">
+        <item quantity="one">episode</item>
+        <item quantity="other">episodes</item>
+    </plurals>
+    <plurals name="share_recap_titles_word">
+        <item quantity="one">title</item>
+        <item quantity="other">titles</item>
+    </plurals>
+    <plurals name="share_recap_finished_word">
+        <item quantity="one">finished</item>
+        <item quantity="other">finished</item>
+    </plurals>
+    <plurals name="share_recap_episode_count">
+        <item quantity="one">%1$s episode</item>
+        <item quantity="other">%1$s episodes</item>
+    </plurals>
+    <plurals name="share_recap_hour_count">
+        <item quantity="one">%1$s hour</item>
+        <item quantity="other">%1$s hours</item>
+    </plurals>
+    <plurals name="share_recap_busiest_month">
+        <item quantity="one">%1$s was your busiest month: %2$s episode.</item>
+        <item quantity="other">%1$s was your busiest month: %2$s episodes.</item>
+    </plurals>
+    <plurals name="share_recap_manga_chapters">
+        <item quantity="one">manga chapter</item>
+        <item quantity="other">manga chapters</item>
+    </plurals>
+    <plurals name="recap_opener_franchise">
+        <item quantity="one">%1$s, %2$s and %3$s %4$s entry.</item>
+        <item quantity="other">%1$s, %2$s and %3$s %4$s entries.</item>
+    </plurals>
+    <plurals name="recap_hour_count">
+        <item quantity="one">%1$s hour</item>
+        <item quantity="other">%1$s hours</item>
+    </plurals>
+    <plurals name="recap_minute_count">
+        <item quantity="one">%1$s minute</item>
+        <item quantity="other">%1$s minutes</item>
+    </plurals>
+    <plurals name="recap_day_count">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <plurals name="recap_franchise_took">
+        <item quantity="one">With %1$s, the franchise took %2$s of your %3$s title.</item>
+        <item quantity="other">With %1$s, the franchise took %2$s of your %3$s titles.</item>
+    </plurals>
+    <plurals name="recap_franchise_named_took">
+        <item quantity="one">%1$s took %2$s of your %3$s title.</item>
+        <item quantity="other">%1$s took %2$s of your %3$s titles.</item>
+    </plurals>
+    <plurals name="recap_note_shorts_film">
+        <item quantity="one">Ranked by time, so %1$s %2$s-minute short never outranks a feature film.</item>
+        <item quantity="other">Ranked by time, so %1$s %2$s-minute shorts never outrank a feature film.</item>
+    </plurals>
+    <plurals name="recap_note_shorts">
+        <item quantity="one">Ranked by time, so %1$s %2$s-minute short never outranks a full episode.</item>
+        <item quantity="other">Ranked by time, so %1$s %2$s-minute shorts never outrank full episodes.</item>
+    </plurals>
+    <plurals name="recap_started_count">
+        <item quantity="one">and started %1$s</item>
+        <item quantity="other">and started %1$s</item>
+    </plurals>
+    <plurals name="recap_more_finished">
+        <item quantity="one">And %1$s more, %2$s</item>
+        <item quantity="other">And %1$s more, from %2$s to %3$s</item>
+    </plurals>
+    <plurals name="recap_days_with_anime">
+        <item quantity="one">%1$s day with anime</item>
+        <item quantity="other">%1$s days with anime</item>
+    </plurals>
+    <plurals name="recap_days_in_a_row">
+        <item quantity="one">%1$s day in a row</item>
+        <item quantity="other">%1$s days in a row</item>
+    </plurals>
+    <plurals name="recap_of_your_episodes">
+        <item quantity="one">%1$s of your %2$s episode</item>
+        <item quantity="other">%1$s of your %2$s episodes</item>
+    </plurals>
+    <plurals name="recap_kept_up">
+        <item quantity="one">Kept up with %1$s show as it aired</item>
+        <item quantity="other">Kept up with %1$s shows as they aired</item>
+    </plurals>
+    <plurals name="recap_manga_chapter_count">
+        <item quantity="one">%1$s manga chapter</item>
+        <item quantity="other">%1$s manga chapters</item>
+    </plurals>
+    <plurals name="recap_quietest_month">
+        <item quantity="one">%1$s was the quietest month, with %2$s episode.</item>
+        <item quantity="other">%1$s was the quietest month, with %2$s episodes.</item>
+    </plurals>
+    <plurals name="recap_episodes_so_far">
+        <item quantity="one">%1$s episode so far.</item>
+        <item quantity="other">%1$s episodes so far.</item>
+    </plurals>
+    <plurals name="recap_episodes_so_far_short">
+        <item quantity="one">%1$s episode so far</item>
+        <item quantity="other">%1$s episodes so far</item>
+    </plurals>
+    <plurals name="recap_finished_so_far">
+        <item quantity="one">%1$s title finished so far.</item>
+        <item quantity="other">%1$s titles finished so far.</item>
+    </plurals>
+    <plurals name="recap_finished_chip">
+        <item quantity="one">%1$s finished</item>
+        <item quantity="other">%1$s finished</item>
+    </plurals>
+    <plurals name="recap_updates_chip">
+        <item quantity="one">%1$s update</item>
+        <item quantity="other">%1$s updates</item>
+    </plurals>
+    <plurals name="recap_settings_stored_desc">
+        <item quantity="one">%1$s month kept, %2$s. A cleared recap is rebuilt from AniList when you open it</item>
+        <item quantity="other">%1$s months kept, %2$s. A cleared recap is rebuilt from AniList when you open it</item>
+    </plurals>
 </resources>

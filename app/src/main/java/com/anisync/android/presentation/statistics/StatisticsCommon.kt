@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Videocam
@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,12 +31,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.presentation.util.formatDecimal
-
-data class EditorialStat(
-    val value: String,
-    val label: String,
-    val icon: ImageVector? = null
-)
 
 enum class RatingBadgeSize { Default, Small }
 
@@ -71,6 +66,7 @@ fun RatingBadge(meanScore: Float, size: RatingBadgeSize = RatingBadgeSize.Defaul
 }
 
 @Composable
+@ReadOnlyComposable
 fun formatDisplayName(format: String): String = when (format) {
     "TV" -> stringResource(R.string.format_tv_series)
     "TV_SHORT" -> stringResource(R.string.format_tv_short)
@@ -90,10 +86,10 @@ fun formatDisplayName(format: String): String = when (format) {
 fun getFormatIcon(format: String): ImageVector = when (format) {
     "TV", "TV_SHORT" -> Icons.Default.Tv
     "MOVIE" -> Icons.Default.Movie
-    "SPECIAL", "OVA", "ONA" -> Icons.Default.Videocam
     "MUSIC" -> Icons.Default.MusicNote
-    "MANGA", "NOVEL", "ONE_SHOT" -> Icons.Default.Book
-    else -> Icons.Default.PlayArrow
+    "MANGA", "ONE_SHOT" -> Icons.AutoMirrored.Filled.MenuBook
+    "NOVEL" -> Icons.Default.AutoStories
+    else -> Icons.Default.Videocam
 }
 
 // region Previews

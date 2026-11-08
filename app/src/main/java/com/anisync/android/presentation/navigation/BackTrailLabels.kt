@@ -226,6 +226,7 @@ private fun screenRow(destination: NavDestination): TrailRow {
         destination.hasRoute<SettingsLinks>() -> Icons.Rounded.Link to R.string.settings_links
         destination.hasRoute<SettingsDeveloperTools>() -> Icons.Outlined.Build to R.string.settings_developer_tools
         destination.hasRoute<SettingsFontPlayground>() -> Icons.Outlined.TextFields to R.string.font_playground_title
+        destination.hasRoute<SettingsRecapBuilder>() -> Icons.Outlined.Build to R.string.dev_recap_builder
         else -> Icons.AutoMirrored.Outlined.ArrowBack to R.string.back
     }
     return TrailRow(icon, stringResource(title))

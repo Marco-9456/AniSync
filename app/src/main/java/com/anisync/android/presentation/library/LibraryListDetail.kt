@@ -25,6 +25,7 @@ fun LibraryListDetail(
     onNavigateToCalendar: () -> Unit,
     onNavigateToNotes: () -> Unit,
     onBrowseDiscover: () -> Unit,
+    onOpenRecap: (String) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
@@ -34,6 +35,7 @@ fun LibraryListDetail(
             onNavigateToCalendar = onNavigateToCalendar,
             onNavigateToNotes = onNavigateToNotes,
             onBrowseDiscover = onBrowseDiscover,
+            onOpenRecap = onOpenRecap,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )
@@ -51,6 +53,7 @@ fun LibraryListDetail(
             onNavigateToCalendar = onNavigateToCalendar,
             onNavigateToNotes = onNavigateToNotes,
             onBrowseDiscover = onBrowseDiscover,
+            onOpenRecap = onOpenRecap,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )

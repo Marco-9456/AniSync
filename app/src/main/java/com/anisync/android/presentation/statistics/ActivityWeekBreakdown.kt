@@ -117,7 +117,6 @@ internal fun ActivityWeekBreakdown(
     var openDay by remember { mutableStateOf<ActivityDay?>(null) }
     val week = remember(byDate, weekOffset) { buildActivityWeek(byDate, weekOffset) }
 
-    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val mutedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
     val locale = LocalConfiguration.current.locales[0]
 
@@ -145,8 +144,6 @@ internal fun ActivityWeekBreakdown(
                     style = MaterialTheme.typography.labelMedium,
                     color = mutedColor
                 )
-                Spacer(Modifier.width(10.dp))
-                ActivityUpdateInfo(tint = labelColor)
             }
 
             Spacer(Modifier.height(12.dp))

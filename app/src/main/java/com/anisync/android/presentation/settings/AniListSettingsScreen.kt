@@ -46,6 +46,7 @@ import com.anisync.android.data.account.Account
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.login.AniListAuth
 import com.anisync.android.ui.theme.ProvideDisplaySize
+import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.AppLinksUtil
 
 /**
@@ -136,7 +137,7 @@ fun AniListSettingsScreen(
             if (active != null && active.name.isNotBlank()) {
                 IconButton(
                     onClick = {
-                        AppLinksUtil.openInBrowser(context, "https://anilist.co/user/${active.name}")
+                        AppLinksUtil.openInBrowser(context, AniListUrls.userUrl(active.name))
                     }
                 ) {
                     Icon(

@@ -1,5 +1,8 @@
 package com.anisync.android.presentation.profile
 
+import com.anisync.android.domain.PeopleList
+import com.anisync.android.domain.PeopleSort
+import com.anisync.android.domain.PersonStat
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -19,6 +22,10 @@ import com.anisync.android.domain.StudioStat
 import com.anisync.android.domain.TagStat
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.domain.VoiceActorStat
+import com.anisync.android.domain.stats.ActivityInsights
+import com.anisync.android.domain.stats.Eras
+import com.anisync.android.domain.stats.ScoreSummary
+import com.anisync.android.domain.stats.summarizeScores
 
 @Stable
 data class ProfileUiState(
@@ -39,6 +46,13 @@ data class ProfileUiState(
     val selectedMangaStatus: LibraryStatus = LibraryStatus.CURRENT,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
     val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
+    val selectedStatsView: StatsView = StatsView.OVERVIEW,
+    val genreSort: GenreSort = GenreSort.TITLES,
+    /** The order each People list is in, COUNT when it was never changed. */
+    val peopleSorts: Map<PeopleList, PeopleSort> = emptyMap(),
+    val peopleExpanded: Set<PeopleList> = emptySet(),
+    /** Longer People lists fetched for an order or a Show more, by list and order. */
+    val peopleFetched: Map<PeopleList, Map<PeopleSort, List<PersonStat>>> = emptyMap(),
     val isEditProfileDialogVisible: Boolean = false,
     val isBiographySheetVisible: Boolean = false,
     val userAnimeList: List<LibraryEntry> = emptyList(),
@@ -74,8 +88,13 @@ data class ProfileUiState(
     val messageSendError: String? = null,
     val messageSentEvent: Long? = null,
     val statsData: StatisticsUiModel? = null,
+    /** Changes on the viewer's own lists that AniList's statistics have not counted yet. */
+    val uncountedAnime: Int = 0,
+    val uncountedManga: Int = 0,
     val isStatsLoading: Boolean = false,
     val statsErrorMessage: String? = null,
+    /** The failure was AniList's rate limit outlasting every wait, not the connection. */
+    val statsRateLimited: Boolean = false,
     val viewerId: Int? = null,
     val unreadNotificationCount: Int = 0,
     /** Whether older activities remain to be loaded into the Activity tab. */
@@ -86,64 +105,76 @@ data class ProfileUiState(
     val editingActivity: com.anisync.android.domain.UserActivity? = null,
     val isSavingActivityEdit: Boolean = false,
     /** The follower the viewer asked to remove, awaiting the confirm dialog. */
-    val followerToRemove: SocialUser? = null
+    val followerToRemove: SocialUser? = null,
+    /** The viewer's recaps for Statistics, empty on anyone else's profile. */
+    val recaps: com.anisync.android.presentation.recap.RecapsUiModel = com.anisync.android.presentation.recap.RecapsUiModel()
 )
 
 data class StatisticsUiModel(
     val animeStats: AnimeStatisticsUi,
     val mangaStats: MangaStatisticsUi?,
-    val activityHistory: List<ActivityHistoryDay> = emptyList()
+    val activityHistory: List<ActivityHistoryDay> = emptyList(),
+    val activityInsights: ActivityInsights? = null
 )
 
+/** What anime and manga statistics share, so a view built from either is written once. */
+interface ListStatisticsUi {
+    val totalCount: Int
+    val meanScore: Double
+    val standardDeviation: Double
+    val statusDistribution: List<StatusUiModel>
+    val scoreDistribution: List<ScoreUiModel>
+    val genreDistribution: List<GenreStat>
+    val tagDistribution: List<TagStat>
+    val formatDistribution: List<FormatStat>
+    val countryDistribution: List<CountryStat>
+    val scoreSummary: ScoreSummary
+    val eras: Eras?
+}
+
 data class AnimeStatisticsUi(
-    val totalCount: Int,
+    override val totalCount: Int,
     val daysWatched: Double,
-    val meanScore: Double,
-    val standardDeviation: Double,
+    override val meanScore: Double,
+    override val standardDeviation: Double,
     val episodesWatched: Int,
     val minutesWatched: Int,
-    val statusDistribution: List<StatusUiModel>,
-    val scoreDistribution: List<ScoreUiModel>,
-    val genreDistribution: List<GenreStat>,
-    val tagDistribution: List<TagStat>,
-    val formatDistribution: List<FormatStat>,
-    val releaseYearDistribution: List<YearUiModel>,
-    val startYearDistribution: List<YearUiModel>,
+    override val statusDistribution: List<StatusUiModel>,
+    override val scoreDistribution: List<ScoreUiModel>,
+    override val genreDistribution: List<GenreStat>,
+    override val tagDistribution: List<TagStat>,
+    override val formatDistribution: List<FormatStat>,
     val lengthDistribution: List<LengthUiModel>,
     val studioDistribution: List<StudioStat>,
     val voiceActorDistribution: List<VoiceActorStat>,
     val staffDistribution: List<StaffStat>,
-    val countryDistribution: List<CountryStat>
-)
+    override val countryDistribution: List<CountryStat>,
+    override val scoreSummary: ScoreSummary = summarizeScores(emptyMap()),
+    override val eras: Eras? = null
+) : ListStatisticsUi
 
 data class MangaStatisticsUi(
-    val totalCount: Int,
+    override val totalCount: Int,
     val chaptersRead: Int,
     val volumesRead: Int,
-    val meanScore: Double,
-    val standardDeviation: Double,
-    val statusDistribution: List<StatusUiModel>,
-    val scoreDistribution: List<ScoreUiModel>,
-    val genreDistribution: List<GenreStat>,
-    val tagDistribution: List<TagStat>,
-    val formatDistribution: List<FormatStat>,
-    val releaseYearDistribution: List<YearUiModel>,
-    val startYearDistribution: List<YearUiModel>,
+    override val meanScore: Double,
+    override val standardDeviation: Double,
+    override val statusDistribution: List<StatusUiModel>,
+    override val scoreDistribution: List<ScoreUiModel>,
+    override val genreDistribution: List<GenreStat>,
+    override val tagDistribution: List<TagStat>,
+    override val formatDistribution: List<FormatStat>,
     val lengthDistribution: List<LengthUiModel>,
     val staffDistribution: List<StaffStat>,
-    val countryDistribution: List<CountryStat>
-)
+    override val countryDistribution: List<CountryStat>,
+    override val scoreSummary: ScoreSummary = summarizeScores(emptyMap()),
+    override val eras: Eras? = null
+) : ListStatisticsUi
 
 data class ScoreUiModel(
     val score: Int,
     val label: String,
     val normalizedScore: Float,
-    val count: Int,
-    val heightFraction: Float
-)
-
-data class YearUiModel(
-    val year: Int,
     val count: Int,
     val heightFraction: Float
 )
@@ -159,20 +190,37 @@ data class StatusUiModel(
 data class LengthUiModel(
     val label: String,
     val count: Int,
-    val heightFraction: Float
+    val heightFraction: Float,
+    val meanScore: Float = 0f
 )
 
 @Immutable
 enum class ProfileTab(@StringRes val titleRes: Int) {
     OVERVIEW(R.string.profile_tab_overview),
+    STATS(R.string.statistics_title),
     ACTIVITY(R.string.profile_tab_activity),
     ANIME(R.string.media_type_anime),
     MANGA(R.string.media_type_manga),
     FAVORITES(R.string.section_favorites),
     SOCIAL(R.string.profile_tab_social),
-    REVIEWS(R.string.section_reviews),
-    STATS(R.string.statistics_title)
+    REVIEWS(R.string.section_reviews)
 }
+
+/** The views behind the Statistics rail's chips. Recaps only exists on the viewer's own profile. */
+@Immutable
+enum class StatsView {
+    OVERVIEW,
+    RECAPS,
+    ACTIVITY,
+    TASTE,
+    HOW_YOU_WATCH,
+    ERAS,
+    PEOPLE
+}
+
+/** How the Taste view orders its genres. */
+@Immutable
+enum class GenreSort { TITLES, HOURS, SCORE }
 
 @Immutable
 enum class ProfileFavoritesFilter(@StringRes val labelRes: Int) {
@@ -213,6 +261,9 @@ sealed interface ProfileAction {
      * is used by the screen's auto-refresh on entry so cold opens render instantly.
      */
     data class Refresh(val forceNetwork: Boolean = true) : ProfileAction
+
+    /** Statistics failed to load, try them again on their own. */
+    data object RetryStats : ProfileAction
     data object ToggleFollow : ProfileAction
     data class UpdateAbout(val about: String) : ProfileAction
     data class SelectTab(val tab: ProfileTab) : ProfileAction
@@ -222,6 +273,10 @@ sealed interface ProfileAction {
     data class SelectMangaStatus(val status: LibraryStatus) : ProfileAction
     data class SelectSocialTab(val tab: ProfileSocialTab) : ProfileAction
     data class SelectStatsType(val type: ProfileStatsType) : ProfileAction
+    data class SelectStatsView(val view: StatsView) : ProfileAction
+    data class SelectGenreSort(val sort: GenreSort) : ProfileAction
+    data class SelectPeopleSort(val list: PeopleList, val sort: PeopleSort) : ProfileAction
+    data class TogglePeopleExpanded(val list: PeopleList) : ProfileAction
     data class SetEditProfileDialogVisible(val visible: Boolean) : ProfileAction
     data class SetBiographySheetVisible(val visible: Boolean) : ProfileAction
     data class SelectReview(val review: MediaReview?) : ProfileAction

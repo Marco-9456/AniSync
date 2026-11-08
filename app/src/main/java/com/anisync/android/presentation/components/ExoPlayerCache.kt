@@ -12,6 +12,9 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.cache.Cache
+import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
@@ -101,7 +104,8 @@ class ExoPlayerCache internal constructor(private val context: Context) {
  * Builds a prepared [ExoPlayer] for an inline video [url], muted and looping by default.
  *
  * A theme song wants the opposite of an embedded clip, so [muted], [loop] and [autoPlay]
- * are overridable: the openings and endings sheet opens with sound and plays once.
+ * are overridable: the openings and endings sheet opens with sound and plays once. A [cache]
+ * keeps what was streamed on disk, so a looped or replayed song reads the file it already has.
  *
  * Single source of truth so the cached ([ExoPlayerCache]) and self-managed ([VideoPlayer])
  * paths can't drift. Two things make user-embedded clips actually play instead of erroring:
@@ -119,7 +123,8 @@ internal fun buildVideoExoPlayer(
     url: String,
     muted: Boolean = true,
     loop: Boolean = true,
-    autoPlay: Boolean = false
+    autoPlay: Boolean = false,
+    cache: Cache? = null,
 ): ExoPlayer {
     val loadControl = DefaultLoadControl.Builder()
         .setBufferDurationsMs(
@@ -137,7 +142,7 @@ internal fun buildVideoExoPlayer(
 
     return ExoPlayer.Builder(context)
         .setLoadControl(loadControl)
-        .setMediaSourceFactory(DefaultMediaSourceFactory(videoDataSourceFactory()))
+        .setMediaSourceFactory(DefaultMediaSourceFactory(videoDataSourceFactory(cache)))
         .build().apply {
             setMediaItem(MediaItem.fromUri(url))
             repeatMode = if (loop) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
@@ -147,7 +152,7 @@ internal fun buildVideoExoPlayer(
                 override fun onPlayerError(error: PlaybackException) {
                     if (error.isMatroskaFormatFailure() && reloadedWithoutCueSeek.add(this@apply)) {
                         Log.w("VideoPlayer", "Reloading $url without the seek for Cues", error)
-                        reloadWithoutCueSeek(url)
+                        reloadWithoutCueSeek(url, cache)
                     }
                 }
             })
@@ -156,8 +161,14 @@ internal fun buildVideoExoPlayer(
 }
 
 @OptIn(UnstableApi::class)
-private fun videoDataSourceFactory(): OkHttpDataSource.Factory =
-    OkHttpDataSource.Factory(MediaHttp.videoClient).setUserAgent(MediaHttp.USER_AGENT)
+private fun videoDataSourceFactory(cache: Cache?): DataSource.Factory {
+    val http = OkHttpDataSource.Factory(MediaHttp.videoClient).setUserAgent(MediaHttp.USER_AGENT)
+    if (cache == null) return http
+    return CacheDataSource.Factory()
+        .setCache(cache)
+        .setUpstreamDataSourceFactory(http)
+        .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+}
 
 /** Players already moved to the fallback below, so a second failure is shown instead of looped. */
 private val reloadedWithoutCueSeek: MutableSet<ExoPlayer> =
@@ -182,11 +193,11 @@ private fun PlaybackException.isMatroskaFormatFailure(): Boolean =
  * start, which is all an embedded clip needs.
  */
 @OptIn(UnstableApi::class)
-private fun ExoPlayer.reloadWithoutCueSeek(url: String) {
+private fun ExoPlayer.reloadWithoutCueSeek(url: String, cache: Cache?) {
     val extractors = DefaultExtractorsFactory()
         .setMatroskaExtractorFlags(MatroskaExtractor.FLAG_DISABLE_SEEK_FOR_CUES)
     setMediaSource(
-        ProgressiveMediaSource.Factory(videoDataSourceFactory(), extractors)
+        ProgressiveMediaSource.Factory(videoDataSourceFactory(cache), extractors)
             .createMediaSource(MediaItem.fromUri(url))
     )
     prepare()

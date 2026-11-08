@@ -6,6 +6,7 @@ import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.content.edit
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings.Companion.MAX_GRID_COLUMNS
@@ -15,6 +16,7 @@ import com.anisync.android.domain.FeedMediaType
 import com.anisync.android.domain.FeedScope
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.media.MediaHost
+import com.anisync.android.domain.recap.DEFAULT_KEPT_MONTHS
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.AppPaletteStyles
 import com.anisync.android.ui.theme.FontAxisOverrides
@@ -31,6 +33,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
+import java.time.LocalTime
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.collections.List
@@ -83,7 +86,31 @@ enum class StartScreen(val tabKey: String?) {
     LIBRARY("library"),
     DISCOVER("discover"),
     FEED("feed"),
-    FORUM("forum")
+    FORUM("forum"),
+    PROFILE("profile")
+}
+
+/**
+ * The size a share card opens at in the studio. [CHAT] fits its height to the content and keeps
+ * rounded corners, the others are fixed at 1:1, 4:5 and 9:16.
+ */
+enum class CardSize {
+    CHAT,
+    SQUARE,
+    PORTRAIT,
+    STORY
+}
+
+/** How a finished recap announces itself. Persisted by name. */
+enum class RecapDelivery {
+    /** A notification on the day, and a banner in Library for a week. */
+    NOTIFICATION_AND_BANNER,
+
+    /** The banner in Library and the profile, no notification. */
+    BANNER_ONLY,
+
+    /** Nothing, recaps wait under Statistics. */
+    NOWHERE
 }
 
 /**
@@ -595,6 +622,119 @@ class AppSettings @Inject constructor(
     // on the screen the user left. Profile and Settings are intentionally never stored.
     private val _lastMainTab = MutableStateFlow(prefs.getString(KEY_LAST_MAIN_TAB, null))
     val lastMainTab: StateFlow<String?> = _lastMainTab.asStateFlow()
+
+    // Share cards: whether scores start hidden in the studio, and the size it opens at.
+    private val _hideScoresOnCards = MutableStateFlow(prefs.getBoolean(KEY_HIDE_SCORES_ON_CARDS, false))
+    val hideScoresOnCards: StateFlow<Boolean> = _hideScoresOnCards.asStateFlow()
+
+    fun setHideScoresOnCards(hidden: Boolean) {
+        _hideScoresOnCards.value = hidden
+        prefs.edit { putBoolean(KEY_HIDE_SCORES_ON_CARDS, hidden) }
+    }
+
+    private val _defaultCardSize = MutableStateFlow(readDefaultCardSize())
+    val defaultCardSize: StateFlow<CardSize> = _defaultCardSize.asStateFlow()
+
+    private fun readDefaultCardSize(): CardSize {
+        val name = runCatching { prefs.getString(KEY_DEFAULT_CARD_SIZE, null) }.getOrNull()
+            ?: return CardSize.STORY
+        return runCatching { CardSize.valueOf(name) }.getOrDefault(CardSize.STORY)
+    }
+
+    fun setDefaultCardSize(size: CardSize) {
+        _defaultCardSize.value = size
+        prefs.edit { putString(KEY_DEFAULT_CARD_SIZE, size.name) }
+    }
+
+    // Recaps: which ones get built, what they count, how they arrive and how long they stay.
+    private val _recapMonthly = MutableStateFlow(prefs.getBoolean(KEY_RECAP_MONTHLY, true))
+    val recapMonthly: StateFlow<Boolean> = _recapMonthly.asStateFlow()
+
+    fun setRecapMonthly(enabled: Boolean) {
+        _recapMonthly.value = enabled
+        prefs.edit { putBoolean(KEY_RECAP_MONTHLY, enabled) }
+    }
+
+    private val _recapYearly = MutableStateFlow(prefs.getBoolean(KEY_RECAP_YEARLY, true))
+    val recapYearly: StateFlow<Boolean> = _recapYearly.asStateFlow()
+
+    fun setRecapYearly(enabled: Boolean) {
+        _recapYearly.value = enabled
+        prefs.edit { putBoolean(KEY_RECAP_YEARLY, enabled) }
+    }
+
+    private val _recapIncludeManga = MutableStateFlow(prefs.getBoolean(KEY_RECAP_INCLUDE_MANGA, true))
+    val recapIncludeManga: StateFlow<Boolean> = _recapIncludeManga.asStateFlow()
+
+    fun setRecapIncludeManga(enabled: Boolean) {
+        _recapIncludeManga.value = enabled
+        prefs.edit { putBoolean(KEY_RECAP_INCLUDE_MANGA, enabled) }
+    }
+
+    private val _recapCountRepeats = MutableStateFlow(prefs.getBoolean(KEY_RECAP_COUNT_REPEATS, false))
+    val recapCountRepeats: StateFlow<Boolean> = _recapCountRepeats.asStateFlow()
+
+    fun setRecapCountRepeats(enabled: Boolean) {
+        _recapCountRepeats.value = enabled
+        prefs.edit { putBoolean(KEY_RECAP_COUNT_REPEATS, enabled) }
+    }
+
+    /** Lets recaps name adult titles while the account's adult content setting is off. */
+    private val _recapShowAdult = MutableStateFlow(prefs.getBoolean(KEY_RECAP_SHOW_ADULT, false))
+    val recapShowAdult: StateFlow<Boolean> = _recapShowAdult.asStateFlow()
+
+    fun setRecapShowAdult(enabled: Boolean) {
+        _recapShowAdult.value = enabled
+        prefs.edit { putBoolean(KEY_RECAP_SHOW_ADULT, enabled) }
+    }
+
+    private val _recapThemeSong = MutableStateFlow(prefs.getBoolean(KEY_RECAP_THEME_SONG, true))
+    val recapThemeSong: StateFlow<Boolean> = _recapThemeSong.asStateFlow()
+
+    fun setRecapThemeSong(enabled: Boolean) {
+        _recapThemeSong.value = enabled
+        prefs.edit { putBoolean(KEY_RECAP_THEME_SONG, enabled) }
+    }
+
+    private val _recapSongsOnMobileData = MutableStateFlow(prefs.getBoolean(KEY_RECAP_SONGS_ON_MOBILE_DATA, false))
+    val recapSongsOnMobileData: StateFlow<Boolean> = _recapSongsOnMobileData.asStateFlow()
+
+    fun setRecapSongsOnMobileData(enabled: Boolean) {
+        _recapSongsOnMobileData.value = enabled
+        prefs.edit { putBoolean(KEY_RECAP_SONGS_ON_MOBILE_DATA, enabled) }
+    }
+
+    private val _recapDelivery = MutableStateFlow(readRecapDelivery())
+    val recapDelivery: StateFlow<RecapDelivery> = _recapDelivery.asStateFlow()
+
+    private fun readRecapDelivery(): RecapDelivery {
+        val name = runCatching { prefs.getString(KEY_RECAP_DELIVERY, null) }.getOrNull()
+            ?: return RecapDelivery.NOTIFICATION_AND_BANNER
+        return runCatching { RecapDelivery.valueOf(name) }.getOrDefault(RecapDelivery.NOTIFICATION_AND_BANNER)
+    }
+
+    fun setRecapDelivery(delivery: RecapDelivery) {
+        _recapDelivery.value = delivery
+        prefs.edit { putString(KEY_RECAP_DELIVERY, delivery.name) }
+    }
+
+    /** When a finished recap is built and announced on the 1st, stored as minutes past midnight. */
+    private val _recapTime = MutableStateFlow(
+        LocalTime.MIN.plusMinutes(
+            prefs.getInt(KEY_RECAP_TIME_MINUTES, DEFAULT_RECAP_TIME_MINUTES).coerceIn(0, MINUTES_PER_DAY - 1).toLong()
+        )
+    )
+    val recapTime: StateFlow<LocalTime> = _recapTime.asStateFlow()
+
+    fun setRecapTime(time: LocalTime) {
+        _recapTime.value = time
+        prefs.edit { putInt(KEY_RECAP_TIME_MINUTES, time.hour * 60 + time.minute) }
+    }
+
+    private val _recapKeptMonths = MutableStateFlow(
+        prefs.getInt(KEY_RECAP_KEPT_MONTHS, DEFAULT_KEPT_MONTHS).coerceAtLeast(1)
+    )
+    val recapKeptMonths: StateFlow<Int> = _recapKeptMonths.asStateFlow()
 
     private val _startScreen = MutableStateFlow(readStartScreen())
     val startScreen: StateFlow<StartScreen> = _startScreen.asStateFlow()
@@ -1530,6 +1670,20 @@ companion object {
         private const val KEY_FORUM_CATEGORY_ID = "forum_category_id"
         private const val KEY_LAST_MAIN_TAB = "last_main_tab"
         private const val KEY_START_SCREEN = "start_screen"
+        private const val KEY_HIDE_SCORES_ON_CARDS = "hide_scores_on_cards"
+        private const val KEY_DEFAULT_CARD_SIZE = "default_card_size"
+        private const val KEY_RECAP_MONTHLY = "recap_monthly"
+        private const val KEY_RECAP_YEARLY = "recap_yearly"
+        private const val KEY_RECAP_INCLUDE_MANGA = "recap_include_manga"
+        private const val KEY_RECAP_COUNT_REPEATS = "recap_count_repeats"
+        private const val KEY_RECAP_SHOW_ADULT = "recap_show_adult"
+        private const val KEY_RECAP_THEME_SONG = "recap_theme_song"
+        private const val KEY_RECAP_SONGS_ON_MOBILE_DATA = "recap_songs_on_mobile_data"
+        private const val KEY_RECAP_DELIVERY = "recap_delivery"
+        private const val KEY_RECAP_TIME_MINUTES = "recap_time_minutes"
+        private const val KEY_RECAP_KEPT_MONTHS = "recap_kept_months"
+        private const val DEFAULT_RECAP_TIME_MINUTES = 9 * 60
+        private const val MINUTES_PER_DAY = 24 * 60
         private const val KEY_MEDIA_HOST = "media_host"
         private const val KEY_LITTERBOX_DURATION = "litterbox_duration"
         private const val KEY_CUSTOM_HOST_URL = "custom_host_url"

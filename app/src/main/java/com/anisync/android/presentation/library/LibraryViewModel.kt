@@ -17,6 +17,7 @@ import com.anisync.android.domain.shouldAskForScore
 import com.anisync.android.domain.withCompletionScore
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
+import com.anisync.android.presentation.recap.RecapEntries
 import com.anisync.android.presentation.util.LIBRARY_ALL_TAB_ID
 import com.anisync.android.presentation.util.LIBRARY_FAVORITES_TAB_ID
 import com.anisync.android.type.MediaType
@@ -55,6 +56,7 @@ class LibraryViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val appSettings: AppSettings,
     private val toastManager: ToastManager,
+    private val recapEntries: RecapEntries,
     tabReselectBus: TabReselectBus
 ) : ViewModel() {
 
@@ -101,6 +103,11 @@ class LibraryViewModel @Inject constructor(
             onScrollToTop = { _uiState.update { it.copy(scrollToTopRequest = it.scrollToTopRequest + 1) } },
             onSearch = { _uiState.update { it.copy(searchOverlayRequest = it.searchOverlayRequest + 1) } }
         )
+        recapEntries.banner()
+            .catch { emit(null) }
+            .onEach { banner -> _uiState.update { it.copy(recapBanner = banner) } }
+            .launchIn(viewModelScope)
+        viewModelScope.launch { recapEntries.prefetchSongs() }
     }
 
     private val _actions = MutableSharedFlow<LibraryAction>()
@@ -193,6 +200,7 @@ class LibraryViewModel @Inject constructor(
     fun onAction(action: LibraryAction) {
         when (action) {
             is LibraryAction.OnScreenVisible -> onScreenVisible()
+            is LibraryAction.CloseRecapBanner -> recapEntries.closeBanner()
             is LibraryAction.Refresh -> refresh()
             is LibraryAction.OnMediaTypeChange -> {
                 hasRestoredTab = false

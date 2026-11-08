@@ -3,6 +3,7 @@ package com.anisync.android.data
 import android.content.Context
 import coil3.ImageLoader
 import coil3.annotation.ExperimentalCoilApi
+import com.anisync.android.data.media.ThemeAudioCache
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.cache.normalized.apolloStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -16,20 +17,20 @@ import javax.inject.Singleton
  * The one list of everything AniSync caches on disk, so the figure shown in Settings and the
  * bytes the clear button reclaims cannot drift apart.
  *
- * Two of these sit outside [Context.getCacheDir] and used to be invisible to both: the Apollo
- * normalized cache lives in `databases/`, and the downloaded update APK in the app's external
- * files directory.
+ * The Apollo cache and the downloaded update APK used to live outside [Context.getCacheDir], so
+ * their old homes stay listed for what earlier versions left behind.
  */
 @Singleton
 class CacheInventory @Inject constructor(
     @ApplicationContext private val context: Context,
     private val imageLoader: ImageLoader,
-    private val apolloClient: ApolloClient
+    private val apolloClient: ApolloClient,
+    private val themeAudio: ThemeAudioCache,
 ) {
 
     /** Every cache, measured. */
     suspend fun totalBytes(): Long = withContext(Dispatchers.IO) {
-        imageBytes() + apolloBytes() + updateApkBytes() + otherBytes()
+        imageBytes() + apolloBytes() + themeAudio.bytes() + updateApkBytes() + otherBytes()
     }
 
     /**
@@ -38,12 +39,13 @@ class CacheInventory @Inject constructor(
      * The image cache goes through Coil's own API rather than a directory delete: Coil holds an
      * open journal and its own size accounting, and pulling the directory out from under it
      * corrupts both. Apollo likewise clears through its store so the open SQLite connection stays
-     * consistent.
+     * consistent, and the theme songs through Media3's index.
      */
     suspend fun clearAll() = withContext(Dispatchers.IO) {
         imageLoader.diskCache?.clear()
         imageLoader.memoryCache?.clear()
         runCatching { apolloClient.apolloStore.clearAll() }
+        runCatching { themeAudio.clear() }
         updateApkDirs().forEach { it.deleteRecursively() }
         otherCacheFiles().forEach { it.deleteRecursively() }
     }
@@ -64,7 +66,7 @@ class CacheInventory @Inject constructor(
      */
     private fun apolloCacheFiles(): List<File> =
         listOf(context.getDatabasePath(APOLLO_CACHE_DB), File(context.cacheDir, APOLLO_CACHE_DB))
-            .flatMap { db -> APOLLO_SUFFIXES.map { File(db.parentFile, db.name + it) } }
+            .flatMap { db -> SQLITE_SUFFIXES.map { File(db.parentFile, db.name + it) } }
             .filter { it.isFile }
 
     /**
@@ -88,8 +90,8 @@ class CacheInventory @Inject constructor(
 
     @OptIn(ExperimentalCoilApi::class)
     private fun alreadyCounted(): Set<String> =
-        setOf(imageLoader.diskCache?.directory?.name ?: IMAGE_CACHE_DIR, APK_DIR) +
-            APOLLO_SUFFIXES.map { APOLLO_CACHE_DB + it }
+        setOf(imageLoader.diskCache?.directory?.name ?: IMAGE_CACHE_DIR, APK_DIR, ThemeAudioCache.DIR) +
+            SQLITE_SUFFIXES.flatMap { listOf(APOLLO_CACHE_DB + it, ThemeAudioCache.INDEX_DB + it) }
 
     private fun File?.sizeRecursive(): Long =
         this?.walkTopDown()?.filter { it.isFile }?.sumOf { it.length() } ?: 0L
@@ -100,6 +102,6 @@ class CacheInventory @Inject constructor(
         const val IMAGE_CACHE_DIR = "image_cache"
 
         /** SQLite keeps its journal and shared-memory files alongside the database. */
-        val APOLLO_SUFFIXES = listOf("", "-journal", "-wal", "-shm")
+        val SQLITE_SUFFIXES = listOf("", "-journal", "-wal", "-shm")
     }
 }

@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.SystemClock
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -56,10 +57,13 @@ fun ProfileScreen(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     isOwnProfile: Boolean = true,
+    onShareCard: (ShareStudio) -> Unit = {},
+    onOpenRecap: (String) -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollToTopRequest by viewModel.scrollToTopRequest.collectAsStateWithLifecycle()
+    val dockRequest by viewModel.dockRequest.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val activeAccountId by viewModel.activeAccountId.collectAsStateWithLifecycle()
@@ -120,6 +124,7 @@ fun ProfileScreen(
                         profile = profile,
                         uiState = uiState,
                         scrollToTopRequest = scrollToTopRequest,
+                        dockRequest = dockRequest,
                         isOwnProfile = isOwnProfile,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope,
@@ -144,7 +149,9 @@ fun ProfileScreen(
                             onLastReplyClick(activityId, replyId, profileColor)
                         },
                         showAccountSwitcher = isOwnProfile && accounts.size > 1,
-                        onAccountSwitchClick = { showAccountSwitcherSheet = true }
+                        onAccountSwitchClick = { showAccountSwitcherSheet = true },
+                        onShareCard = onShareCard,
+                        onOpenRecap = onOpenRecap
                     )
                 }
 

@@ -29,6 +29,18 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
+ * One batch's answers by AniList id. [unplaced] counts entries that came back without an AniList
+ * id, which could be any of the titles asked for that have no answer.
+ */
+data class ThemesBatch(val byId: Map<Int, MediaThemes>, val unplaced: Int) {
+    /**
+     * The titles of [ids] this batch can be stored for. With an unplaced entry, the ones without an
+     * answer may be that entry, so they keep what they had rather than being stored as having none.
+     */
+    fun answered(ids: List<Int>): List<Int> = if (unplaced == 0) ids else ids.filter { it in byId }
+}
+
+/**
  * Read-only client for the AnimeThemes API, the source of a title's openings and endings.
  *
  * One GraphQL request resolves the AniList id and returns the themes with it. It is
@@ -63,6 +75,38 @@ class AnimeThemesApi @Inject constructor() {
             }
         }
         decodeThemes(post(payload.toString()))
+    }
+
+    /**
+     * Themes for several AniList titles in one request, keyed by AniList id. A title AnimeThemes
+     * does not list is missing from the map. Results come back in AnimeThemes' order, so each one
+     * is matched to its title through the AniList id it carries.
+     */
+    suspend fun getThemes(anilistIds: List<Int>): ThemesBatch = withContext(Dispatchers.IO) {
+        if (anilistIds.isEmpty()) return@withContext ThemesBatch(emptyMap(), unplaced = 0)
+        val payload = buildJsonObject {
+            put("query", THEMES_QUERY)
+            putJsonObject("variables") {
+                putJsonArray("id") { anilistIds.forEach { add(it) } }
+            }
+        }
+        decodeThemesById(post(payload.toString()))
+    }
+
+    internal fun decodeThemesById(body: String): ThemesBatch {
+        val response = json.decodeFromString<ThemesResponseDto>(body)
+        if (response.errors.isNotEmpty()) {
+            throw AnimeThemesException.Query(response.errors.mapNotNull { it.message })
+        }
+        val byId = LinkedHashMap<Int, MediaThemes>()
+        var unplaced = 0
+        response.data?.anime.orEmpty().forEach { anime ->
+            val themes = MediaThemes(animeSlug = anime.slug, themes = anime.themes.mapNotNull { it.toDomain() })
+            val ids = anime.resources?.nodes.orEmpty().mapNotNull { it.externalId }
+            if (ids.isEmpty()) unplaced++
+            ids.forEach { id -> byId.putIfAbsent(id, themes) }
+        }
+        return ThemesBatch(byId, unplaced)
     }
 
     internal fun decodeThemes(body: String): MediaThemes {
@@ -113,6 +157,7 @@ class AnimeThemesApi @Inject constructor() {
             query(${'$'}id: [Int!]) {
               findAnimeByExternalSite(site: ANILIST, id: ${'$'}id) {
                 slug
+                resources(site: ANILIST) { nodes { externalId } }
                 animethemes {
                   id type sequence slug
                   group { name }
@@ -176,8 +221,15 @@ private data class ThemesDataDto(
 @Serializable
 private data class AnimeDto(
     val slug: String? = null,
+    val resources: ResourceConnectionDto? = null,
     @SerialName("animethemes") val themes: List<ThemeDto> = emptyList()
 )
+
+@Serializable
+private data class ResourceConnectionDto(val nodes: List<ResourceDto> = emptyList())
+
+@Serializable
+private data class ResourceDto(val externalId: Int? = null)
 
 @Serializable
 private data class ThemeDto(

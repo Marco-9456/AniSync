@@ -15,14 +15,25 @@ import com.anisync.android.data.filterAdultActivities
 import com.anisync.android.data.util.AppLocale
 import com.anisync.android.domain.ActivityRepository
 import com.anisync.android.domain.AnimeStatistics
+import com.anisync.android.domain.stats.activityInsights
+import com.anisync.android.domain.stats.ScoreBucket
+import com.anisync.android.domain.stats.eras
+import com.anisync.android.domain.stats.scoreBuckets
+import com.anisync.android.domain.stats.summarizeScores
+import com.anisync.android.domain.stats.uncountedChanges
+import com.anisync.android.presentation.statistics.bucketActivityDays
 import com.anisync.android.domain.CachePolicy
+import com.anisync.android.domain.GenreStat
+import com.anisync.android.domain.PeopleList
+import com.anisync.android.domain.PeopleSort
+import com.anisync.android.domain.PersonStat
 import com.anisync.android.domain.GetProfileUseCase
+import com.anisync.android.domain.ADULT_GENRES
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MangaStatistics
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
-import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.StatisticsRepository
 import com.anisync.android.presentation.components.alert.ToastManager
 import com.anisync.android.presentation.components.alert.ToastType
@@ -71,10 +82,13 @@ class ProfileViewModel @Inject constructor(
     private val detailsRepository: com.anisync.android.domain.DetailsRepository,
     private val statisticsRepository: StatisticsRepository,
     private val activityRepository: ActivityRepository,
+    private val libraryRepository: com.anisync.android.domain.LibraryRepository,
     private val accountManager: com.anisync.android.data.account.AccountManager,
     private val appSettings: AppSettings,
     private val notificationBadgeStore: NotificationBadgeStore,
     private val toastManager: ToastManager,
+    private val recapEntries: com.anisync.android.presentation.recap.RecapEntries,
+    private val statsLauncher: com.anisync.android.domain.ProfileStatsLauncher,
     @ApplicationContext private val context: Context,
     tabReselectBus: TabReselectBus,
     savedStateHandle: SavedStateHandle
@@ -89,6 +103,8 @@ class ProfileViewModel @Inject constructor(
         /** Minimum gap between user-initiated refreshes (pull-to-refresh). */
         private const val GESTURE_REFRESH_COOLDOWN_MS = 5_000L
 
+        /** How many rate limit windows Statistics waits out with its loader up before it gives up. */
+        private const val MAX_RATE_LIMIT_WAITS = 3
     }
 
     /**
@@ -145,6 +161,11 @@ class ProfileViewModel @Inject constructor(
         val selectedMangaStatus: LibraryStatus = LibraryStatus.CURRENT,
         val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
+        val selectedStatsView: StatsView = StatsView.OVERVIEW,
+        val genreSort: GenreSort = GenreSort.TITLES,
+        val peopleSorts: Map<PeopleList, PeopleSort> = emptyMap(),
+        val peopleExpanded: Set<PeopleList> = emptySet(),
+        val peopleFetched: Map<PeopleList, Map<PeopleSort, List<PersonStat>>> = emptyMap(),
         val isEditProfileDialogVisible: Boolean = false,
         val isBiographySheetVisible: Boolean = false,
         val selectedReview: com.anisync.android.domain.MediaReview? = null,
@@ -202,7 +223,10 @@ class ProfileViewModel @Inject constructor(
         val isStatsLoading: Boolean = false,
         val statsData: StatisticsUiModel? = null,
         val statsErrorMessage: String? = null,
-        val hasFetchedStats: Boolean = false
+        val statsRateLimited: Boolean = false,
+        val hasFetchedStats: Boolean = false,
+        val uncountedAnime: Int = 0,
+        val uncountedManga: Int = 0
     )
 
     private val statsState = MutableStateFlow(StatsState())
@@ -376,12 +400,13 @@ class ProfileViewModel @Inject constructor(
 
     private val _scrollToTopRequest = MutableStateFlow(0L)
 
-    /**
-     * Bumped when the Profile tab is reselected, asking the page to scroll back to the top.
-     * Kept beside [uiState] rather than inside it: that state is assembled by a wide combine
-     * whose arguments are read back by index, and one more flow buys nothing here.
-     */
+    /** Bumped when the Profile tab is reselected, asking the page to scroll back to the top. */
     val scrollToTopRequest: StateFlow<Long> = _scrollToTopRequest.asStateFlow()
+
+    private val _dockRequest = MutableStateFlow(0L)
+
+    /** Bumped when a recap asks for Statistics, so the page opens docked as a tab pick does. */
+    val dockRequest: StateFlow<Long> = _dockRequest.asStateFlow()
 
     init {
         tabReselectBus.observeTab(
@@ -394,43 +419,84 @@ class ProfileViewModel @Inject constructor(
     private val adultActivityOptions =
         combine(appSettings.showAdultContent, appSettings.othersAdultActivity, ::Pair)
 
-    val uiState: StateFlow<ProfileUiState> = combine(
-        profileState,
-        localState,
-        socialState,
-        reviewsState,
-        statsState,
-        mediaListState,
+    private val recapProgress = MutableStateFlow<com.anisync.android.presentation.recap.RecapProgress?>(null)
+    private val recapYear = MutableStateFlow<com.anisync.android.presentation.recap.RecapRunningYear?>(null)
+    private var recapsLoaded = false
+
+    /** Recaps belong to the viewer, so another member's profile never shows any. */
+    private val recapsState: kotlinx.coroutines.flow.Flow<com.anisync.android.presentation.recap.RecapsUiModel> =
+        if (targetUsername.isNullOrBlank()) {
+            combine(recapEntries.entries(), recapProgress, recapYear, recapEntries.firstBuildRunning()) { entries, progress, year, building ->
+                com.anisync.android.presentation.recap.RecapsUiModel(entries, progress, year, building = building && entries.isEmpty())
+            }.catch { e ->
+                // A recap row Room cannot read must not take the whole profile down with it.
+                android.util.Log.w("ProfileViewModel", "Recaps could not be read", e)
+                emit(com.anisync.android.presentation.recap.RecapsUiModel())
+            }
+        } else {
+            kotlinx.coroutines.flow.flowOf(com.anisync.android.presentation.recap.RecapsUiModel())
+        }
+
+    /** The tabs' own states, below the header. */
+    private class Sections(
+        val social: SocialState,
+        val reviews: ReviewsState,
+        val stats: StatsState,
+        val mediaLists: MediaListState,
+        val favorites: FavoritesState,
+    )
+
+    /** Edits made here, laid over AniList's activity feed until the server agrees. */
+    private class FeedOverlays(
+        val subscriptions: Map<Int, Boolean>,
+        val likes: Map<Int, Pair<Boolean, Int>>,
+        val deleted: Set<Int>,
+        val edited: Map<Int, com.anisync.android.domain.UserActivity>,
+        val pagination: ActivityPaginationState,
+    )
+
+    /** What depends on who is looking rather than on whose profile it is. */
+    private class ViewerParts(
+        val viewerId: Int?,
+        val unreadCount: Int,
+        val adultOptions: Pair<Boolean, Boolean>,
+        val recaps: com.anisync.android.presentation.recap.RecapsUiModel,
+    )
+
+    private val sections = combine(socialState, reviewsState, statsState, mediaListState, favoritesState, ::Sections)
+
+    private val feedOverlays = combine(
         activitySubscriptionOverrides,
         activityLikeOverrides,
         deletedActivityIds,
-        viewerIdFlow,
-        notificationBadgeStore.unreadCount,
-        favoritesState,
+        editedActivities,
         activityPaginationState,
-        adultActivityOptions,
-        editedActivities
-    ) { params ->
-        val remote = params[0] as ProfileUiState
-        val local = params[1] as ProfileUiLocalState
-        val social = params[2] as SocialState
-        val reviews = params[3] as ReviewsState
-        val stats = params[4] as StatsState
-        val mediaLists = params[5] as MediaListState
-        @Suppress("UNCHECKED_CAST")
-        val subOverrides = params[6] as Map<Int, Boolean>
-        @Suppress("UNCHECKED_CAST")
-        val likeOverrides = params[7] as Map<Int, Pair<Boolean, Int>>
-        @Suppress("UNCHECKED_CAST")
-        val deletedIds = params[8] as Set<Int>
-        val viewerId = params[9] as Int?
-        val unreadCount = params[10] as Int
-        val favoritesOverlay = params[11] as FavoritesState
-        val pagination = params[12] as ActivityPaginationState
-        @Suppress("UNCHECKED_CAST")
-        val (showAdultContent, showOthersAdultActivity) = params[13] as Pair<Boolean, Boolean>
-        @Suppress("UNCHECKED_CAST")
-        val edited = params[14] as Map<Int, com.anisync.android.domain.UserActivity>
+        ::FeedOverlays,
+    )
+
+    private val viewerParts = combine(viewerIdFlow, notificationBadgeStore.unreadCount, adultActivityOptions, recapsState, ::ViewerParts)
+
+    val uiState: StateFlow<ProfileUiState> = combine(
+        profileState,
+        localState,
+        sections,
+        feedOverlays,
+        viewerParts,
+    ) { remote, local, parts, overlays, viewer ->
+        val social = parts.social
+        val reviews = parts.reviews
+        val stats = parts.stats
+        val mediaLists = parts.mediaLists
+        val favoritesOverlay = parts.favorites
+        val subOverrides = overlays.subscriptions
+        val likeOverrides = overlays.likes
+        val deletedIds = overlays.deleted
+        val edited = overlays.edited
+        val pagination = overlays.pagination
+        val viewerId = viewer.viewerId
+        val unreadCount = viewer.unreadCount
+        val (showAdultContent, showOthersAdultActivity) = viewer.adultOptions
+        val recaps = viewer.recaps
 
         // Fold lazily-loaded older activity pages into the profile's initial feed
         // (deduped, newest-first) before overlays apply, so a like/subscribe/delete
@@ -505,6 +571,11 @@ class ProfileViewModel @Inject constructor(
             selectedMangaStatus = local.selectedMangaStatus,
             selectedSocialTab = local.selectedSocialTab,
             selectedStatsType = local.selectedStatsType,
+            selectedStatsView = local.selectedStatsView,
+            genreSort = local.genreSort,
+            peopleSorts = local.peopleSorts,
+            peopleExpanded = local.peopleExpanded,
+            peopleFetched = local.peopleFetched,
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
             isBiographySheetVisible = local.isBiographySheetVisible,
             selectedReview = local.selectedReview,
@@ -537,8 +608,11 @@ class ProfileViewModel @Inject constructor(
             reviewsHasNextPage = reviews.reviewsHasNextPage,
             isReviewsPaginating = reviews.isReviewsPaginating,
             statsData = stats.statsData,
+            uncountedAnime = stats.uncountedAnime,
+            uncountedManga = stats.uncountedManga,
             isStatsLoading = stats.isStatsLoading,
             statsErrorMessage = stats.statsErrorMessage,
+            statsRateLimited = stats.statsRateLimited,
             userAnimeList = mediaLists.userAnimeList,
             userAnimeListByStatus = mediaLists.userAnimeListByStatus,
             isUserAnimeListLoading = mediaLists.isUserAnimeListLoading,
@@ -547,6 +621,7 @@ class ProfileViewModel @Inject constructor(
             isUserMangaListLoading = mediaLists.isUserMangaListLoading,
             viewerId = viewerId,
             unreadNotificationCount = unreadCount,
+            recaps = recaps,
             activitiesHasNextPage = pagination.hasNextPage,
             isActivitiesPaginating = pagination.isPaginating
         )
@@ -558,6 +633,28 @@ class ProfileViewModel @Inject constructor(
 
     init {
         observeTargetProfileForFollowState()
+
+        if (targetUsername.isNullOrBlank()) {
+            // A recap story's last page asks for Statistics through the launcher.
+            viewModelScope.launch {
+                statsLauncher.pending.collect { pending ->
+                    if (!pending) return@collect
+                    statsLauncher.consume()
+                    localState.update { it.copy(selectedTab = ProfileTab.STATS, selectedStatsView = StatsView.OVERVIEW) }
+                    _dockRequest.update { it + 1 }
+                    if (!statsState.value.hasFetchedStats) fetchStats()
+                    loadRecaps(refresh = false)
+                }
+            }
+            // The month in progress and the year so far come from what the first build stores.
+            viewModelScope.launch {
+                var wasBuilding = false
+                recapEntries.firstBuildRunning().collect { building ->
+                    if (wasBuilding && !building) loadRecaps(refresh = false, force = true)
+                    wasBuilding = building
+                }
+            }
+        }
 
         viewModelScope.launch {
             viewerIdFlow.value = activityRepository.getViewerId()
@@ -588,12 +685,14 @@ class ProfileViewModel @Inject constructor(
     fun onAction(action: ProfileAction) {
         when (action) {
             is ProfileAction.Refresh -> refresh(forceNetwork = action.forceNetwork)
+            ProfileAction.RetryStats -> fetchStats(forceRefresh = true)
             is ProfileAction.ToggleFollow -> toggleFollow()
             is ProfileAction.UpdateAbout -> updateAbout(action.about)
             is ProfileAction.SelectTab -> {
                 localState.update {
                     it.copy(selectedTab = action.tab)
                 }
+                if (action.tab == ProfileTab.STATS) loadRecaps(refresh = false)
                 if (action.tab == ProfileTab.SOCIAL && !socialState.value.hasFetchedSocialData) {
                     fetchSocialData()
                 } else if (action.tab == ProfileTab.REVIEWS && !reviewsState.value.hasFetchedReviews) {
@@ -623,6 +722,23 @@ class ProfileViewModel @Inject constructor(
                 localState.update {
                     it.copy(selectedStatsType = action.type)
                 }
+            }
+
+            is ProfileAction.SelectStatsView -> localState.update { it.copy(selectedStatsView = action.view) }
+
+            is ProfileAction.SelectGenreSort -> localState.update { it.copy(genreSort = action.sort) }
+            is ProfileAction.SelectPeopleSort -> {
+                localState.update { it.copy(peopleSorts = it.peopleSorts + (action.list to action.sort)) }
+                if (action.sort != PeopleSort.COUNT || action.list in localState.value.peopleExpanded) {
+                    fetchPeople(action.list, action.sort)
+                }
+            }
+            is ProfileAction.TogglePeopleExpanded -> {
+                val expanding = action.list !in localState.value.peopleExpanded
+                localState.update {
+                    it.copy(peopleExpanded = if (expanding) it.peopleExpanded + action.list else it.peopleExpanded - action.list)
+                }
+                if (expanding) fetchPeople(action.list, localState.value.peopleSorts[action.list] ?: PeopleSort.COUNT)
             }
 
             is ProfileAction.SelectActivityFilter -> {
@@ -854,7 +970,28 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The month in progress and the running year for the viewer's own Statistics, and the first
+     * build when nothing is stored yet. Loaded once when Statistics opens, again on a pull.
+     */
+    private fun loadRecaps(refresh: Boolean, force: Boolean = false) {
+        if (!targetUsername.isNullOrBlank()) return
+        if (recapsLoaded && !refresh && !force) return
+        recapsLoaded = true
+        viewModelScope.launch {
+            // The first build stores the month and the year too, building them here would fetch them twice.
+            if (recapEntries.buildIfEmpty()) return@launch
+            launch { recapEntries.prefetchSongs() }
+            recapProgress.value = recapEntries.inProgress(refresh)
+            recapYear.value = recapEntries.runningYear(refresh)
+        }
+    }
+
     private fun refresh(forceNetwork: Boolean = true) {
+        if (forceNetwork && localState.value.selectedTab == ProfileTab.STATS) {
+            loadRecaps(refresh = true)
+            refreshPeople()
+        }
         // Synchronous early-return so a second pull-to-refresh while the first
         // is still in flight is dropped, not stacked. The 429 toast gate only
         // fires AFTER a rate limit happens; this prevents the burst from
@@ -1293,20 +1430,39 @@ class ProfileViewModel @Inject constructor(
             // froze the activity-history heatmap at first fetch — the normalized cache
             // never revalidates on its own, so new activity never showed (#88).
             val policy = if (forceRefresh) CachePolicy.NetworkOnly else CachePolicy.NetworkFirst
-            when (val result = statisticsRepository.getUserStatistics(userId, policy)) {
+            // A rate limit keeps the loader up and asks again once it is over, as the media page does.
+            var fetched = statisticsRepository.getUserStatistics(userId, policy)
+            repeat(MAX_RATE_LIMIT_WAITS) {
+                val countdown = (fetched as? Result.Error)?.countdownSeconds ?: return@repeat
+                delay((countdown + 1) * 1_000L)
+                fetched = statisticsRepository.getUserStatistics(userId, policy)
+            }
+            when (val result = fetched) {
                 is Result.Success -> {
                     // Process data on default dispatcher
                     val processedData = kotlinx.coroutines.withContext(Dispatchers.Default) {
-                        val animeUi = processAnimeStats(result.data.scoreFormat, result.data.animeStats)
-                        val mangaUi = result.data.mangaStats?.let { processMangaStats(it, result.data.scoreFormat) }
-                        StatisticsUiModel(animeUi, mangaUi, activityHistory = result.data.activityHistory)
+                        val showAdult = appSettings.showAdultContent.value
+                        val animeUi = processAnimeStats(result.data.animeStats, showAdult)
+                        val mangaUi = result.data.mangaStats?.let { processMangaStats(it, showAdult) }
+                        StatisticsUiModel(
+                            animeUi,
+                            mangaUi,
+                            activityHistory = result.data.activityHistory,
+                            activityInsights = activityInsights(
+                                bucketActivityDays(result.data.activityHistory).mapValues { it.value.amount }
+                            )
+                        )
                     }
 
+                    val uncounted = if (userId == viewerIdFlow.value) uncountedOnLists(processedData) else 0 to 0
                     statsState.update {
                         it.copy(
                             isStatsLoading = false,
                             statsData = processedData,
-                            hasFetchedStats = true
+                            statsRateLimited = false,
+                            hasFetchedStats = true,
+                            uncountedAnime = uncounted.first,
+                            uncountedManga = uncounted.second
                         )
                     }
                 }
@@ -1314,7 +1470,8 @@ class ProfileViewModel @Inject constructor(
                     statsState.update {
                         it.copy(
                             isStatsLoading = false,
-                            statsErrorMessage = result.message
+                            statsErrorMessage = result.message,
+                            statsRateLimited = result.countdownSeconds != null
                         )
                     }
                 }
@@ -1322,25 +1479,12 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun processAnimeStats(scoreFormat: ScoreFormat?, stats: AnimeStatistics): AnimeStatisticsUi {
-        val effectiveScoreFormat = scoreFormat ?: inferScoreFormat(stats.scoreDistribution.map { it.score })
-        val scoreUi = bucketScores(effectiveScoreFormat, stats.scoreDistribution.map { it.score to it.count })
-
-        val sortedReleaseYears = stats.releaseYearDistribution.sortedBy { it.year }.takeLast(12)
-        val maxReleaseYearCount = sortedReleaseYears.maxOfOrNull { it.count } ?: 1
-        val releaseYearsUi = sortedReleaseYears.map {
-            YearUiModel(it.year, it.count, it.count.toFloat() / maxReleaseYearCount.coerceAtLeast(1))
-        }
-
-        val sortedStartYears = stats.startYearDistribution.sortedBy { it.year }.takeLast(12)
-        val maxStartYearCount = sortedStartYears.maxOfOrNull { it.count } ?: 1
-        val startYearsUi = sortedStartYears.map {
-            YearUiModel(it.year, it.count, it.count.toFloat() / maxStartYearCount.coerceAtLeast(1))
-        }
+    private fun processAnimeStats(stats: AnimeStatistics, showAdult: Boolean): AnimeStatisticsUi {
+        val buckets = scoreBuckets(stats.scoreDistribution)
 
         val maxLengthCount = stats.lengthDistribution.maxOfOrNull { it.count } ?: 1
         val lengthsUi = stats.lengthDistribution.map {
-            LengthUiModel(it.length, it.count, it.count.toFloat() / maxLengthCount.coerceAtLeast(1))
+            LengthUiModel(it.length, it.count, it.count.toFloat() / maxLengthCount.coerceAtLeast(1), it.meanScore)
         }
 
         val statusesUi = stats.statusDistribution.toStatusUi()
@@ -1353,39 +1497,30 @@ class ProfileViewModel @Inject constructor(
             episodesWatched = stats.episodesWatched,
             minutesWatched = stats.minutesWatched,
             statusDistribution = statusesUi,
-            scoreDistribution = scoreUi,
-            genreDistribution = stats.genreDistribution.take(20),
-            tagDistribution = stats.tagDistribution.take(25),
+            scoreDistribution = scoreUi(buckets),
+            genreDistribution = stats.genreDistribution.filterAdultGenres(showAdult).take(20),
+            tagDistribution = stats.tagDistribution.filter { showAdult || !it.isAdult }.take(25),
             formatDistribution = stats.formatDistribution,
-            releaseYearDistribution = releaseYearsUi,
-            startYearDistribution = startYearsUi,
             lengthDistribution = lengthsUi,
             studioDistribution = stats.studioDistribution.take(20),
             voiceActorDistribution = stats.voiceActorDistribution.take(10),
             staffDistribution = stats.staffDistribution.take(10),
-            countryDistribution = stats.countryDistribution
+            countryDistribution = stats.countryDistribution,
+            scoreSummary = summarizeScores(buckets.associate { it.score to it.count }),
+            eras = eras(
+                releaseYears = stats.releaseYearDistribution.associate { it.year to it.count },
+                startYears = stats.startYearDistribution.associate { it.year to it.count },
+                releaseMeans = stats.releaseYearDistribution.associate { it.year to it.meanScore.toDouble() }
+            )
         )
     }
 
-    private fun processMangaStats(stats: MangaStatistics, scoreFormat: ScoreFormat?): MangaStatisticsUi {
-        val effectiveScoreFormat = scoreFormat ?: inferScoreFormat(stats.scoreDistribution.map { it.score })
-        val scoreUi = bucketScores(effectiveScoreFormat, stats.scoreDistribution.map { it.score to it.count })
-
-        val sortedReleaseYears = stats.releaseYearDistribution.sortedBy { it.year }.takeLast(12)
-        val maxReleaseYearCount = sortedReleaseYears.maxOfOrNull { it.count } ?: 1
-        val releaseYearsUi = sortedReleaseYears.map {
-            YearUiModel(it.year, it.count, it.count.toFloat() / maxReleaseYearCount.coerceAtLeast(1))
-        }
-
-        val sortedStartYears = stats.startYearDistribution.sortedBy { it.year }.takeLast(12)
-        val maxStartYearCount = sortedStartYears.maxOfOrNull { it.count } ?: 1
-        val startYearsUi = sortedStartYears.map {
-            YearUiModel(it.year, it.count, it.count.toFloat() / maxStartYearCount.coerceAtLeast(1))
-        }
+    private fun processMangaStats(stats: MangaStatistics, showAdult: Boolean): MangaStatisticsUi {
+        val buckets = scoreBuckets(stats.scoreDistribution)
 
         val maxLengthCount = stats.lengthDistribution.maxOfOrNull { it.count } ?: 1
         val lengthsUi = stats.lengthDistribution.map {
-            LengthUiModel(it.length, it.count, it.count.toFloat() / maxLengthCount.coerceAtLeast(1))
+            LengthUiModel(it.length, it.count, it.count.toFloat() / maxLengthCount.coerceAtLeast(1), it.meanScore)
         }
 
         val statusesUi = stats.statusDistribution.toStatusUi()
@@ -1397,65 +1532,87 @@ class ProfileViewModel @Inject constructor(
             meanScore = stats.meanScore.toDouble(),
             standardDeviation = stats.standardDeviation.toDouble(),
             statusDistribution = statusesUi,
-            scoreDistribution = scoreUi,
-            genreDistribution = stats.genreDistribution.take(20),
-            tagDistribution = stats.tagDistribution.take(25),
+            scoreDistribution = scoreUi(buckets),
+            genreDistribution = stats.genreDistribution.filterAdultGenres(showAdult).take(20),
+            tagDistribution = stats.tagDistribution.filter { showAdult || !it.isAdult }.take(25),
             formatDistribution = stats.formatDistribution,
-            releaseYearDistribution = releaseYearsUi,
-            startYearDistribution = startYearsUi,
             lengthDistribution = lengthsUi,
             staffDistribution = stats.staffDistribution.take(10),
-            countryDistribution = stats.countryDistribution
+            countryDistribution = stats.countryDistribution,
+            scoreSummary = summarizeScores(buckets.associate { it.score to it.count }),
+            eras = eras(
+                releaseYears = stats.releaseYearDistribution.associate { it.year to it.count },
+                startYears = stats.startYearDistribution.associate { it.year to it.count },
+                releaseMeans = stats.releaseYearDistribution.associate { it.year to it.meanScore.toDouble() }
+            )
         )
     }
 
-    private fun bucketScores(
-        format: ScoreFormat,
-        scores: List<Pair<Int, Int>>
-    ): List<ScoreUiModel> {
-        val bucketCount = when (format) {
-            ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> 10
-            ScoreFormat.POINT_5 -> 5
-            ScoreFormat.POINT_3 -> 3
-        }
-        val maxRawScore = when (format) {
-            ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL -> 100
-            ScoreFormat.POINT_10 -> 10
-            ScoreFormat.POINT_5 -> 5
-            ScoreFormat.POINT_3 -> 3
-        }
-        val counts = IntArray(bucketCount)
-        scores.forEach { (rawScore, count) ->
-            val s = rawScore.coerceIn(1, maxRawScore)
-            val bucketIndex = when (format) {
-                ScoreFormat.POINT_100, ScoreFormat.POINT_10_DECIMAL -> ((s - 1) / 10).coerceIn(0, bucketCount - 1)
-                else -> (s - 1).coerceIn(0, bucketCount - 1)
+    /** People lists asked for and not answered yet, so a second tap does not ask again. */
+    private val peopleInFlight = HashSet<Pair<PeopleList, PeopleSort>>()
+
+    /**
+     * Loads one People list in one order, up to AniList's hundred entries, once per list and order
+     * unless [force]d. The rows already shown stay until it lands, and stay if it fails.
+     */
+    private fun fetchPeople(list: PeopleList, sort: PeopleSort, force: Boolean = false) {
+        if (!force && localState.value.peopleFetched[list]?.containsKey(sort) == true) return
+        val userId = uiState.value.profile?.id ?: return
+        if (!peopleInFlight.add(list to sort)) return
+        viewModelScope.launch {
+            try {
+                var result = statisticsRepository.getPeopleStatistics(userId, list, sort)
+                repeat(MAX_RATE_LIMIT_WAITS) {
+                    val countdown = (result as? Result.Error)?.countdownSeconds ?: return@repeat
+                    delay((countdown + 1) * 1_000L)
+                    result = statisticsRepository.getPeopleStatistics(userId, list, sort)
+                }
+                val people = (result as? Result.Success)?.data ?: return@launch
+                localState.update { state ->
+                    val forList = state.peopleFetched[list].orEmpty() + (sort to people)
+                    state.copy(peopleFetched = state.peopleFetched + (list to forList))
+                }
+            } finally {
+                peopleInFlight.remove(list to sort)
             }
-            counts[bucketIndex] += count
         }
-        val maxCount = counts.maxOrNull()?.coerceAtLeast(1) ?: 1
-        return (1..bucketCount).map { bucket ->
-            val count = counts[bucket - 1]
-            val label = when (format) {
-                ScoreFormat.POINT_100 -> (bucket * 10).toString()
-                ScoreFormat.POINT_10_DECIMAL -> "$bucket.0"
-                else -> bucket.toString()
-            }
-            val normalized = when (format) {
-                ScoreFormat.POINT_100 -> (bucket * 10) / 100f
-                ScoreFormat.POINT_10_DECIMAL, ScoreFormat.POINT_10 -> bucket / 10f
-                ScoreFormat.POINT_5 -> bucket / 5f
-                ScoreFormat.POINT_3 -> bucket / 3f
-            }
+    }
+
+    /** Asks again for every People list already loaded, keeping their rows until the answers land. */
+    private fun refreshPeople() {
+        localState.value.peopleFetched.forEach { (list, sorts) -> sorts.keys.forEach { fetchPeople(list, it, force = true) } }
+    }
+
+    /**
+     * Changes on the viewer's own anime and manga lists that AniList's statistics have not counted
+     * yet, read from the library rows in Room.
+     */
+    private suspend fun uncountedOnLists(stats: StatisticsUiModel): Pair<Int, Int> {
+        fun Map<LibraryStatus, Int>.byStatus() = filterKeys { it != LibraryStatus.UNKNOWN }.mapKeys { it.key.name }
+        fun List<StatusUiModel>.byStatus() = associate { it.status to it.count }
+        val anime = libraryRepository.countByStatus(com.anisync.android.type.MediaType.ANIME)
+        val manga = libraryRepository.countByStatus(com.anisync.android.type.MediaType.MANGA)
+        return uncountedChanges(anime.byStatus(), stats.animeStats.statusDistribution.byStatus()) to
+            (stats.mangaStats?.let { uncountedChanges(manga.byStatus(), it.statusDistribution.byStatus()) } ?: 0)
+    }
+
+    /** Each step the list was counted in, scaled to the most given one. */
+    private fun scoreUi(buckets: List<ScoreBucket>): List<ScoreUiModel> {
+        val max = buckets.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
+        return buckets.map { bucket ->
             ScoreUiModel(
-                score = bucket,
-                label = label,
-                normalizedScore = normalized,
-                count = count,
-                heightFraction = count.toFloat() / maxCount
+                score = bucket.score,
+                label = bucket.score.toString(),
+                normalizedScore = bucket.score / 100f,
+                count = bucket.count,
+                heightFraction = bucket.count.toFloat() / max
             )
         }
     }
+
+    /** Hentai is AniList's one adult genre, and it follows the adult content setting. */
+    private fun List<GenreStat>.filterAdultGenres(showAdult: Boolean): List<GenreStat> =
+        if (showAdult) this else filterNot { it.genre in ADULT_GENRES }
 
     private fun List<com.anisync.android.domain.StatusStat>.toStatusUi(): List<StatusUiModel> {
         val total = sumOf { it.count }.coerceAtLeast(1)
@@ -1470,16 +1627,6 @@ class ProfileViewModel @Inject constructor(
                     colorRoleIndex = index % 5
                 )
             }
-    }
-
-    private fun inferScoreFormat(scores: List<Int>): ScoreFormat {
-        val maxScore = scores.maxOrNull() ?: 10
-        return when {
-            maxScore > 10 -> ScoreFormat.POINT_100
-            maxScore > 5 -> ScoreFormat.POINT_10
-            maxScore > 3 -> ScoreFormat.POINT_5
-            else -> ScoreFormat.POINT_3
-        }
     }
 
     private fun fetchUserAnimeList(forceRefresh: Boolean = false) {
