@@ -706,18 +706,12 @@
     <string name="a11y_wp_card_unknown_manga">%1$s، %2$d فصل مقروء، الإجمالي غير معروف</string>
     <!-- Statistics Screen -->
     <string name="statistics_title">الإحصائيات</string>
-    <string name="statistics_total_anime">إجمالي الأنمي</string>
     <string name="statistics_episodes">الحلقات</string>
     <string name="statistics_mean_score">متوسط التقييم</string>
-    <string name="statistics_score_distribution">توزيع التقييمات</string>
     <string name="statistics_top_genres">أبرز الأنواع</string>
-    <string name="statistics_formats">الصيغ</string>
-    <string name="statistics_top_studios">أبرز الاستوديوهات</string>
     <string name="profile_favorites_studios">الاستوديوهات</string>
-    <string name="statistics_by_year">حسب سنة الإصدار</string>
     <string name="statistics_anime">أنمي</string>
     <string name="statistics_manga">مانجا</string>
-    <string name="statistics_total_manga">إجمالي المانجا</string>
     <string name="statistics_chapters">الفصول</string>
     <string name="statistics_no_manga_stats">لا تتوفر إحصائيات مانجا</string>
     <!-- Activity heatmap -->
@@ -726,7 +720,6 @@
     <string name="statistics_activity_less">أقل</string>
     <string name="statistics_activity_more">أكثر</string>
     <string name="statistics_activity_a11y">خريطة حرارية للنشاط تضم %1$d نشاطًا خلال العام الماضي</string>
-    <string name="statistics_activity_update_info">يحدّث AniList إحصائياتك تلقائيًا كل 48 ساعة</string>
     <plurals name="statistics_activity_count">
         <item quantity="zero">%d نشاط</item>
         <item quantity="one">%d نشاط</item>
@@ -1059,21 +1052,7 @@
     <string name="locked">مغلق</string>
     <string name="cd_go_back_one_level">الرجوع مستوى واحدًا</string>
     <string name="cd_thread_depth">عمق الموضوع: %d مستويات. انقر للرجوع.</string>
-    <string name="statistics_std_dev">الانحراف المعياري</string>
-    <string name="statistics_days_of_your_life">≈ %1$s يوماً من حياتك</string>
-    <string name="statistics_top_tags">أبرز الوسوم</string>
-    <string name="statistics_top_voice_actors">أبرز المؤدين الصوتيين</string>
-    <string name="statistics_top_staff">أبرز الطاقم</string>
-    <string name="statistics_length_distribution">مدة الحلقة</string>
-    <string name="statistics_chapter_length_distribution">عدد الفصول</string>
-    <string name="statistics_start_year">بدأت المشاهدة</string>
     <string name="statistics_status_breakdown">تفصيل الحالة</string>
-    <string name="statistics_country_distribution">الدول</string>
-    <string name="statistics_peak_year">عامك الذروة</string>
-    <string name="statistics_time_breakdown">الوقت المستغرق</string>
-    <string name="statistics_taste_focused">ذوقك مركّز جداً</string>
-    <string name="statistics_taste_balanced">ذوق متوازن</string>
-    <string name="statistics_taste_eclectic">ذوق متنوع وواسع</string>
     <!-- Airing calendar -->
     <string name="calendar_title">تقويم العرض</string>
     <string name="calendar_open">تقويم العرض</string>
