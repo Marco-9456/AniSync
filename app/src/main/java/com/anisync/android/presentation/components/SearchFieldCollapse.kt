@@ -96,8 +96,7 @@ fun rememberSearchFieldCollapse(searchBarState: SearchBarState): SearchFieldColl
 
 /**
  * Closes the keyboard once the field starts to leave, since typing into a field off screen shows
- * nothing. Call it inside the bar's content: the expanded bar is its own window, and only that
- * window's controller reaches the keyboard it opened.
+ * nothing. Call it inside the bar's content, so it lives exactly as long as the expanded bar.
  */
 @Composable
 fun HideKeyboardOnCollapse(collapse: SearchFieldCollapse) {
