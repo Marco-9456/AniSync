@@ -1604,7 +1604,7 @@
     <string name="recap_settings_include_manga_desc">章節與卷數將於各自頁中呈現</string>
     <string name="setting_adult_in_search">在搜尋結果中包含 18+ 內容</string>
     <string name="setting_adult_in_quick_search">在快速搜尋中包含 18+ 內容</string>
-    <string name="recap_settings_show_adult">顯示成人內容項目</string>
+    <string name="recap_settings_show_adult">列出成人條目</string>
     <string name="recap_settings_show_adult_desc">成人條目一直都在統計裡，但啟用此項將展示其名稱、封面及曲目</string>
     <string name="themes_group_inserts">插入曲</string>
     <plurals name="themes_inserts_count">
@@ -1736,7 +1736,7 @@
     <string name="stats_header_started">開始時間</string>
     <string name="stats_eras_started_anime">你開始觀看的年份</string>
     <string name="stats_eras_started_manga">你開始閱讀的年份</string>
-    <string name="stats_decade">%1$d 年代</string>
+    <string name="stats_decade">%1$d年代</string>
     <string name="stats_people_sort_roles">角色量</string>
     <string name="stats_spotlight_voice_own">扮演你所看最多角色的聲優是</string>
     <string name="share_stats_top_genre">偏好風格</string>
@@ -1785,4 +1785,9 @@
     <string name="share_staff_voice_of">為以下角色注入靈魂</string>
     <string name="share_staff_active_since">自 %1$s 以來開始活動</string>
     <string name="share_detail_home_town">家鄉</string>
+    <string name="stats_decade_share_half_anime">你動畫中有至少一半都來自 %1$s</string>
+    <string name="stats_decade_share_half_manga">你漫畫中有至少一半都來自 %1$s­</string>
+    <string name="cd_expand_all">展開全部</string>
+    <string name="stats_teaser_people_locked_other">聲優、工作人員、工作室等只在參與個人倉庫中至少 2 部作品時才會被列出</string>
+    <string name="stats_adult_note">成人類別與標籤會根據你的內容設定調整</string>
 </resources>
