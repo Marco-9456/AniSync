@@ -788,7 +788,7 @@
     <string name="share_stats_chapters">章數</string>
     <string name="share_stats_volumes">冊數</string>
     <string name="share_stats_mean">平均分</string>
-    <string name="share_media_episodes">集</string>
+    <string name="share_media_episodes">集數</string>
     <string name="share_media_chapters">章</string>
     <string name="share_media_popularity">人氣值</string>
     <string name="share_media_ep_number">第 %1$d 集</string>
@@ -862,7 +862,7 @@
     <string name="settings_sponsors_desc">來買杯咖啡去支持 AniSync</string>
     <string name="sponsors_hero_headline">買杯咖啡~</string>
     <string name="sponsors_become_button">買杯咖啡</string>
-    <string name="support_card_body">AniSync 是免費、無廣告的，我用了自己的空暇時間來創造了它。如果你覺得它十分有用，請買杯咖啡來支持它的開發~</string>
+    <string name="support_card_body">AniSync 是免費、無廣告而且開源的，我在自己的空暇時間創造了它。如果這更新給你帶來了小確幸，來買杯咖啡支持它的開發吧~</string>
     <string name="sponsor_tier_backer">支持者</string>
     <string name="sponsor_tier_generous">慷慨的支持者</string>
     <string name="sponsors_kofi_button">Ko-fi</string>
@@ -870,7 +870,7 @@
     <string name="sponsors_empty_tier_cta">暫無… 來成為第一位吧~</string>
     <string name="sponsors_updated_at">更新於 %1$s</string>
     <string name="sponsors_refresh">刷新</string>
-    <string name="sponsors_hero_body">AniSync 是款我在業餘時間做出的免費無廣開源應用，如果它對你有所幫助，歡迎隨手給個小費贊助我。贊助是全然可選的，也就是說沒有會員制與贊助福利，感謝以下人們的幫助。</string>
+    <string name="sponsors_hero_body">AniSync 是款我在業餘時間做出的免費無廣開源應用，如它為你帶來了些小確幸，歡迎隨手給個小費贊助我。贊助是全然可選的，也就是說沒有會員制與贊助福利。感謝以下人們的幫助，這名單是我對他們的一點心意。</string>
     <string name="notification_channel_activity_mention_desc">當有人在動態提及你時</string>
     <string name="notification_channel_activity_like_desc">當有人點讚或回覆了你的動態時</string>
     <string name="notification_channel_activity_message_desc">當有人傳送給你私信時</string>
@@ -1783,7 +1783,7 @@
     <string name="stats_months_partial_last">%1$s是結束於%2$s日，所以該月並不完整</string>
     <string name="stats_months_partial_single">%1$s只包含了%2$s日至%3$s日，所以該月並不完整</string>
     <string name="share_staff_voice_of">為以下角色注入靈魂</string>
-    <string name="share_staff_active_since">自 %1$s 以來開始活動</string>
+    <string name="share_staff_active_since">自 %1$s 起活躍</string>
     <string name="share_detail_home_town">家鄉</string>
     <string name="stats_decade_share_half_anime">你動畫中有至少一半都來自 %1$s</string>
     <string name="stats_decade_share_half_manga">你漫畫中有至少一半都來自 %1$s­</string>
@@ -1806,4 +1806,13 @@
     <string name="stats_teaser_people_locked">聲優、工作人員、工作室等只在參與個人倉庫中至少 2 部作品時才會被列出</string>
     <string name="profile_social_mutuals">互關</string>
     <string name="profile_mutual">互關</string>
+    <string name="share_review_eyebrow">心得 · %1$s</string>
+    <string name="share_detail_author">作者</string>
+    <string name="share_detail_time">時長</string>
+    <string name="share_detail_ranking">排名</string>
+    <string name="share_media_score">評分</string>
+    <string name="share_media_community_score">社區評分</string>
+    <string name="cd_share">分享</string>
+    <string name="stats_hero_lists_note_own">在你清單裡共有 %1$s 項，而正在觀看者不會被記入總計的 %2$s 項中</string>
+    <string name="stats_hero_lists_note_other">在他清單裡共有 %1$s 項，而正在觀看者不會被記入總計的 %2$s 項中</string>
 </resources>
