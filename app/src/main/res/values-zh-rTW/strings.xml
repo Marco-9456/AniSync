@@ -595,7 +595,7 @@
     <string name="person_attr_date_of_death">卒日</string>
     <string name="person_attr_hometown">家鄉</string>
     <string name="person_attr_active_since">出道時間</string>
-    <string name="person_attr_years_active">活動時長</string>
+    <string name="person_attr_years_active">活躍年份</string>
     <string name="person_attr_occupation">職業</string>
     <string name="person_attr_language">語言</string>
     <string name="forum_load_more_count">再加載 %1$d 條，還有 %2$d 條</string>
@@ -683,7 +683,7 @@
     <string name="themes_attribution">此主題資料與影片來自 AnimeThemes.moe</string>
     <string name="themes_open_source">在 AnimeThemes 上打開</string>
     <string name="profile_no_recent_updates">暫無近期更新</string>
-    <string name="profile_no_activity_for_filter">暫無%1$s活動</string>
+    <string name="profile_no_activity_for_filter">暫無%1$s動態</string>
     <string name="profile_placeholder_anime">動畫清單將在此展示</string>
     <string name="profile_placeholder_manga">漫畫清單將在此展示</string>
     <string name="profile_placeholder_favorites">我的最愛將在此展示</string>
@@ -1091,20 +1091,20 @@
     <string name="statistics_episodes">集</string>
     <string name="statistics_mean_score">平均評分</string>
     <string name="statistics_chapters">章節</string>
-    <string name="statistics_activity_history">活動歷史</string>
-    <string name="statistics_activity_summary">%2$d 天中裡的 %1$d 次活動</string>
+    <string name="statistics_activity_history">動態歷史</string>
+    <string name="statistics_activity_summary">在 %2$d 天中共有 %1$d 則動態</string>
     <string name="statistics_activity_less">少</string>
     <string name="statistics_activity_more">多</string>
     <plurals name="statistics_activity_count">
-        <item quantity="other">%d 次活動</item>
+        <item quantity="other">%d 則動態</item>
     </plurals>
     <string name="statistics_activity_period_month">月視圖</string>
     <string name="statistics_activity_period_week">週視圖</string>
     <string name="statistics_activity_week_current">本週</string>
     <string name="statistics_activity_week_previous">上週</string>
-    <string name="statistics_activity_per_day">平均 %1$s 次每天</string>
-    <string name="statistics_activity_busiest_day">最多活動的日子</string>
-    <string name="statistics_activity_active_days">活動天數</string>
+    <string name="statistics_activity_per_day">平均每日 %1$s 次</string>
+    <string name="statistics_activity_busiest_day">最活躍的日子</string>
+    <string name="statistics_activity_active_days">活躍天數</string>
     <plurals name="statistics_activity_days">
         <item quantity="other">%d 天</item>
     </plurals>
@@ -1776,4 +1776,13 @@
     <string name="stats_months_partial_both">%1$s從%2$s日開始，而%3$s結束於%4$s日，所以這兩月都不完整</string>
     <string name="stats_months_partial_first">%1$s是從%2$s日開始，所以該月並不完整</string>
     <string name="stats_activity_recount_note">AniList 大約每 48 小時會重新統計，所以近兩天數據將在之後補齊</string>
+    <string name="recap_settings_notifications_off">通知設定未被打開，因此回顧將不會發佈通知，點擊來去打開它</string>
+    <string name="recap_settings_count_repeats_desc">將重複欣賞納入時間與集數統計</string>
+    <string name="recap_settings_theme_song_desc">播放你喜好動畫的片頭/片尾曲，資料來自於 AnimeThemes</string>
+    <string name="recap_settings_hide_scores_desc">打開後將默認隱藏作品評分，需要時依然能在詳情頁手動打開</string>
+    <string name="stats_months_partial_last">%1$s是結束於%2$s日，所以該月並不完整</string>
+    <string name="stats_months_partial_single">%1$s只包含了%2$s日至%3$s日，所以該月並不完整</string>
+    <string name="share_staff_voice_of">為以下角色注入靈魂</string>
+    <string name="share_staff_active_since">自 %1$s 以來開始活動</string>
+    <string name="share_detail_home_town">家鄉</string>
 </resources>
