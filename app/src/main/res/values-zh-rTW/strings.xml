@@ -1102,7 +1102,7 @@
     <string name="statistics_activity_period_week">週視圖</string>
     <string name="statistics_activity_week_current">本週</string>
     <string name="statistics_activity_week_previous">上週</string>
-    <string name="statistics_activity_per_day">平均每日 %1$s 次</string>
+    <string name="statistics_activity_per_day">平均每日 %1$s 則</string>
     <string name="statistics_activity_busiest_day">最活躍的日子</string>
     <string name="statistics_activity_active_days">活躍天數</string>
     <plurals name="statistics_activity_days">
@@ -1542,7 +1542,7 @@
     <plurals name="notification_actors_others">
         <item quantity="other">%1$s 、 %2$d 等等</item>
     </plurals>
-    <string name="notification_actors_two">%1$s 與 %2$s</string>
+    <string name="notification_actors_two">%1$s, %2$s</string>
     <string name="download_started">下載已開始</string>
     <string name="download_failed">下載失敗</string>
     <string name="mute">靜音</string>
@@ -1591,12 +1591,12 @@
     <string name="dev_recap_user_id">AniList 用戶 ID</string>
     <string name="dev_recap_invalid_input">檢查用戶 ID 、時段、時區</string>
     <string name="settings_recaps">回顧</string>
-    <string name="settings_recaps_desc">月度與年度回顧、主題歌、呈現方式</string>
+    <string name="settings_recaps_desc">年度與月度回顧、主題歌、呈現方式</string>
     <string name="recap_failed_body">回顧第一次使用時需要網際網路，檢查你的連線後重試</string>
     <string name="recap_monthly_recaps">月度回顧</string>
     <string name="recap_yearly_recaps">年度回顧</string>
     <string name="recap_none_title">暫無回顧</string>
-    <string name="notification_channel_recaps_desc">你的月、年度回顧已準備好呈現</string>
+    <string name="notification_channel_recaps_desc">你的年、月度回顧已準備好呈現</string>
     <string name="recap_settings_delivery_nowhere_desc">在你打開他們前，回顧將保持在統計標籤頁裡</string>
     <string name="recap_settings_past">過往回顧</string>
     <string name="recap_settings_stored">設備上的回顧</string>
@@ -1707,7 +1707,7 @@
     <string name="stats_by_weekday">週視圖</string>
     <string name="stats_by_month">月視圖</string>
     <string name="stats_teaser_genre_count">%1$s %2$s</string>
-    <string name="stats_busiest_on_rate">在%1$s時最為活躍，平均每天 %2$s 次動態</string>
+    <string name="stats_busiest_on_rate">在%1$s時最為活躍，平均每天 %2$s 則動態</string>
     <string name="stats_teaser_then">其次是 %1$s</string>
     <string name="stats_at_a_glance">速覽</string>
     <string name="stats_count_open_ended">%1$d+</string>
@@ -1788,6 +1788,22 @@
     <string name="stats_decade_share_half_anime">你動畫中有至少一半都來自 %1$s</string>
     <string name="stats_decade_share_half_manga">你漫畫中有至少一半都來自 %1$s­</string>
     <string name="cd_expand_all">展開全部</string>
-    <string name="stats_teaser_people_locked_other">聲優、工作人員、工作室等只在參與個人倉庫中至少 2 部作品時才會被列出</string>
+    <string name="stats_teaser_people_locked_other">聲優、工作人員、工作室等只在參與他的倉庫中至少 2 部作品時才會被列出</string>
     <string name="stats_adult_note">成人類別與標籤會根據你的內容設定調整</string>
+    <string name="dev_recap_period">具體年份或月份（如 %1$s 或 %2$s ）</string>
+    <string name="dev_recap_zone">時區（如 Asia/Riyadh 或 UTC+3 ）</string>
+    <string name="dev_recap_run_job">立即進行回顧作業</string>
+    <string name="dev_recap_stored_empty">暫無存檔</string>
+    <string name="dev_recap_builder_subtitle">為任一公開帳號構建回顧，就跟初次構建時一樣，但不存檔</string>
+    <string name="dev_recap_stored_subtitle">為已登入帳號儲存，而變更下方選項能以此離線重新統計</string>
+    <string name="recap_compare_under_half">比%1$s的一半來得少</string>
+    <string name="recap_by_time">按時序，你看了</string>
+    <string name="recap_mood_eyebrow">你的風味</string>
+    <string name="recap_finished_eyebrow">你看完了</string>
+    <string name="stats_teaser_mean_mode">平均 %1$s · 最高 %2$s</string>
+    <string name="stats_teaser_score_prompt">評分至少五項來查看你的分佈</string>
+    <string name="stats_teaser_score_prompt_other">直到他評分滿五項才會展示其分佈</string>
+    <string name="stats_teaser_people_locked">聲優、工作人員、工作室等只在參與個人倉庫中至少 2 部作品時才會被列出</string>
+    <string name="profile_social_mutuals">互關</string>
+    <string name="profile_mutual">互關</string>
 </resources>
