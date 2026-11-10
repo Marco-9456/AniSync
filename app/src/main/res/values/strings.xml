@@ -2418,7 +2418,7 @@
     <string name="recap_watching_label">watching</string>
     <string name="recap_episodes_by_month">Episodes by month</string>
     <string name="recap_busiest_ran_away">%1$s ran away with it.</string>
-    <string name="recap_busiest_month">%1$s was your busiest month.</string>
+    <string name="recap_busiest_month">%1$s 是你的巔峰之月</string>
     <string name="recap_taste_eyebrow">What you watched most</string>
     <string name="recap_taste_title">%1$s, with plenty of %2$s</string>
     <string name="recap_taste_title_one">%1$s, above all</string>
