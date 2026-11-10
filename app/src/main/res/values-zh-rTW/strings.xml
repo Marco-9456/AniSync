@@ -1815,4 +1815,8 @@
     <string name="cd_share">分享</string>
     <string name="stats_hero_lists_note_own">在你清單裡共有 %1$s 項，而正在觀看者不會被記入總計的 %2$s 項中</string>
     <string name="stats_hero_lists_note_other">在他清單裡共有 %1$s 項，而正在觀看者不會被記入總計的 %2$s 項中</string>
+    <string name="recap_opener_in_anime">%1$s 動畫足跡</string>
+    <string name="recap_time_across">在這月的 %2$s 裡，共橫跨了 %1$s</string>
+    <string name="recap_most_watched_eyebrow">你看最久的是</string>
+    <string name="recap_weekday_your_day">%1$s似乎很合你意</string>
 </resources>
