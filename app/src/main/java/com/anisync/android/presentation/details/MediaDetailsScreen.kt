@@ -626,12 +626,7 @@ fun MediaDetailsScreen(
                                     },
                                     onRecommendMedia = viewModel::recommendMedia,
                                     onUserClick = onUserClick,
-                                    onStatusSelect = { status ->
-                                        viewModel.saveMediaListEntry(
-                                            status,
-                                            state.details.listProgress ?: 0
-                                        )
-                                    },
+                                    onStatusSelect = viewModel::saveMediaListEntry,
                                     onProgressChange = { progress ->
                                         viewModel.updateProgress(progress.coerceAtLeast(0))
                                     },

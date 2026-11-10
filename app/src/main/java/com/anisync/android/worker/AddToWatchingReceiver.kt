@@ -65,11 +65,9 @@ class AddToWatchingReceiver : BroadcastReceiver() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Update status to CURRENT (watching) with progress 0
                 val result = detailsRepository.updateMediaListEntry(
                     mediaId = mediaId,
-                    status = LibraryStatus.CURRENT,
-                    progress = 0
+                    status = LibraryStatus.CURRENT
                 )
 
                 when (result) {

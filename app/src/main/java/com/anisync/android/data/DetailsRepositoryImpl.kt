@@ -102,6 +102,14 @@ private fun formatFuzzyDateShort(month: Int?, day: Int?, year: Int?): String? {
     }
 }
 
+/** Sends [progress] only when there is one to set, so a status change never overwrites it. */
+internal fun listStatusMutation(mediaId: Int, status: LibraryStatus, progress: Int?) =
+    SaveMediaListEntryMutation(
+        mediaId = Optional.present(mediaId),
+        status = Optional.present(status.toApiStatus()),
+        progress = Optional.presentIfNotNull(progress)
+    )
+
 class DetailsRepositoryImpl @Inject constructor(
     private val apolloClient: ApolloClient,
     private val mediaDetailsDao: MediaDetailsDao,
@@ -480,18 +488,10 @@ class DetailsRepositoryImpl @Inject constructor(
     override suspend fun updateMediaListEntry(
         mediaId: Int,
         status: LibraryStatus,
-        progress: Int
+        progress: Int?
     ): Result<Unit> {
         return safeApiCall {
-            val apiStatus = status.toApiStatus()
-
-            val response = apolloClient.mutation(
-                SaveMediaListEntryMutation(
-                    mediaId = Optional.present(mediaId),
-                    status = Optional.present(apiStatus),
-                    progress = Optional.present(progress)
-                )
-            ).execute()
+            val response = apolloClient.mutation(listStatusMutation(mediaId, status, progress)).execute()
 
             if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
                 refreshMediaDetails(mediaId)
@@ -499,7 +499,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 val existingEntry = libraryDao.getEntry(owner, mediaId)
 
                 if (existingEntry != null) {
-                    libraryDao.updateStatusAndProgress(owner, mediaId, status, progress)
+                    libraryDao.updateStatusAndProgress(owner, mediaId, status, progress ?: existingEntry.progress)
                 } else {
                     val savedEntry = response.data?.SaveMediaListEntry
                     val cachedMedia = mediaDetailsDao.getById(mediaId)
@@ -514,7 +514,7 @@ class DetailsRepositoryImpl @Inject constructor(
                             titleNative = cachedMedia.titleNative,
                             titleUserPreferred = cachedMedia.titleUserPreferred,
                             coverUrl = cachedMedia.coverUrl,
-                            progress = progress,
+                            progress = progress ?: savedEntry?.progress ?: 0,
                             totalEpisodes = cachedMedia.episodes,
                             totalChapters = cachedMedia.chapters,
                             totalVolumes = cachedMedia.volumes,

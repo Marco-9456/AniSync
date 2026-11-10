@@ -591,7 +591,7 @@ class DiscoverViewModel @Inject constructor(
      */
     private fun addToPlanning(mediaId: Int) {
         viewModelScope.launch {
-            detailsRepository.updateMediaListEntry(mediaId, LibraryStatus.PLANNING, progress = 0)
+            detailsRepository.updateMediaListEntry(mediaId, LibraryStatus.PLANNING)
         }
     }
 

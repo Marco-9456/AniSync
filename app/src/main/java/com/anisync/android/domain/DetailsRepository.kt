@@ -32,12 +32,14 @@ interface DetailsRepository {
     suspend fun refreshListEntryIfStale(mediaId: Int): Result<Unit>
 
     /**
-     * Update media list entry (status, progress).
+     * Sets the viewer's status on [mediaId], adding the title when it is not on a list. A null
+     * [progress] leaves AniList's as it is, so adding a title the library has not synced yet keeps
+     * the progress logged on it elsewhere.
      */
     suspend fun updateMediaListEntry(
         mediaId: Int,
         status: LibraryStatus,
-        progress: Int
+        progress: Int? = null
     ): Result<Unit>
 
     /**

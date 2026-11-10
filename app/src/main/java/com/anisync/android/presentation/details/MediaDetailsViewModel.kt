@@ -303,7 +303,8 @@ class MediaDetailsViewModel @Inject constructor(
         }
     }
 
-    fun saveMediaListEntry(status: LibraryStatus, progress: Int) {
+    /** A null [progress] leaves AniList's alone, which a status change from the tracker always does. */
+    fun saveMediaListEntry(status: LibraryStatus, progress: Int? = null) {
         viewModelScope.launch {
             _isSaving.value = true
             val statusBefore = currentListStatus()
