@@ -378,9 +378,10 @@ class MediaDetailsViewModel @Inject constructor(
             val details = (uiState.value as? DetailsUiState.Success)?.details ?: return@launch
 
             var existingEntry = libraryRepository.getEntry(mediaId)
-            if (existingEntry == null && details.listEntryId != null) {
-                // On the list with no library row to edit. A blank draft would save over the real
-                // entry, so fetch it first, which writes the row.
+            if (existingEntry == null) {
+                // No library row to edit. AniList can still have an entry added elsewhere since the
+                // last sync, even while this page shows none, and a blank draft would save over it.
+                // Fetching writes the row.
                 val result = detailsRepository.refreshMediaDetails(mediaId)
                 if (result is Result.Error) {
                     toastManager.showResultError(result)
