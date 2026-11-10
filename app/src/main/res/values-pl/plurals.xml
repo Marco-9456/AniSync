@@ -1,3 +1,279 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <plurals name="time_days">
+        <item quantity="one">%dd</item>
+        <item quantity="few">%dd</item>
+        <item quantity="many">%dd</item>
+        <item quantity="other">%dd</item>
+    </plurals>
+    <plurals name="time_hours">
+        <item quantity="one">%dh</item>
+        <item quantity="few">%dh</item>
+        <item quantity="many">%dh</item>
+        <item quantity="other">%dh</item>
+    </plurals>
+    <plurals name="time_minutes">
+        <item quantity="one">%dm</item>
+        <item quantity="few">%dm</item>
+        <item quantity="many">%dm</item>
+        <item quantity="other">%dm</item>
+    </plurals>
+    <plurals name="stats_unit_anime">
+        <item quantity="one">anime</item>
+        <item quantity="few">anime</item>
+        <item quantity="many">anime</item>
+        <item quantity="other">anime</item>
+    </plurals>
+    <plurals name="stats_unit_manga">
+        <item quantity="one">manga</item>
+        <item quantity="few">mangi</item>
+        <item quantity="many">mang</item>
+        <item quantity="other">mang</item>
+    </plurals>
+    <plurals name="stats_hours">
+        <item quantity="one">%d godzina</item>
+        <item quantity="few">%d godziny</item>
+        <item quantity="many">%d godzin</item>
+        <item quantity="other">%d godzin</item>
+    </plurals>
+    <plurals name="stats_minutes">
+        <item quantity="one">%d minuta</item>
+        <item quantity="few">%d minuty</item>
+        <item quantity="many">%d minut</item>
+        <item quantity="other">%d minut</item>
+    </plurals>
+    <plurals name="stats_day_streak">
+        <item quantity="one">dzień serii</item>
+        <item quantity="few">dni serii</item>
+        <item quantity="many">dni serii</item>
+        <item quantity="other">dni serii</item>
+    </plurals>
+    <plurals name="stats_active_days">
+        <item quantity="one">aktywny dzień</item>
+        <item quantity="few">aktywne dni</item>
+        <item quantity="many">aktywnych dni</item>
+        <item quantity="other">aktywnych dni</item>
+    </plurals>
+    <plurals name="stats_roles">
+        <item quantity="one">%d rola</item>
+        <item quantity="few">%d role</item>
+        <item quantity="many">%d ról</item>
+        <item quantity="other">%d ról</item>
+    </plurals>
+    <plurals name="stats_tags_show_more">
+        <item quantity="one">Pokaż %d więcej</item>
+        <item quantity="few">Pokaż %d więcej</item>
+        <item quantity="many">Pokaż %d więcej</item>
+        <item quantity="other">Pokaż %d więcej</item>
+    </plurals>
+    <plurals name="stats_unit_days">
+        <item quantity="one">dzień</item>
+        <item quantity="few">dni</item>
+        <item quantity="many">dni</item>
+        <item quantity="other">dni</item>
+    </plurals>
+    <plurals name="stats_unit_hours">
+        <item quantity="one">godzina</item>
+        <item quantity="few">godziny</item>
+        <item quantity="many">godzin</item>
+        <item quantity="other">godzin</item>
+    </plurals>
+    <plurals name="stats_unit_minutes">
+        <item quantity="one">minuta</item>
+        <item quantity="few">minuty</item>
+        <item quantity="many">minut</item>
+        <item quantity="other">minut</item>
+    </plurals>
+    <plurals name="stats_unit_chapters">
+        <item quantity="one">rozdział</item>
+        <item quantity="few">rozdziały</item>
+        <item quantity="many">rozdziałów</item>
+        <item quantity="other">rozdziałów</item>
+    </plurals>
+    <plurals name="stats_hours_total">
+        <item quantity="one">%1$s godzina</item>
+        <item quantity="few">%1$s godziny</item>
+        <item quantity="many">%1$s godzin</item>
+        <item quantity="other">%1$s godzin</item>
+    </plurals>
+    <plurals name="stats_episodes_total">
+        <item quantity="one">%1$s odcinek</item>
+        <item quantity="few">%1$s odcinki</item>
+        <item quantity="many">%1$s odcinków</item>
+        <item quantity="other">%1$s odcinków</item>
+    </plurals>
+    <plurals name="stats_hero_volumes">
+        <item quantity="one">%1$s tom</item>
+        <item quantity="few">%1$s tomy</item>
+        <item quantity="many">%1$s tomów</item>
+        <item quantity="other">%1$s tomów</item>
+    </plurals>
+    <plurals name="stats_works">
+        <item quantity="one">%1$s praca</item>
+        <item quantity="few">%1$s prace</item>
+        <item quantity="many">%1$s prac</item>
+        <item quantity="other">%1$s prac</item>
+    </plurals>
+    <plurals name="stats_titles">
+        <item quantity="one">%1$s tytuł</item>
+        <item quantity="few">%1$s tytuły</item>
+        <item quantity="many">%1$s tytułów</item>
+        <item quantity="other">%1$s tytułów</item>
+    </plurals>
+    <plurals name="stats_chapters_short">
+        <item quantity="one">%1$s rozdział</item>
+        <item quantity="few">%1$s rozdziały</item>
+        <item quantity="many">%1$s rozdziałów</item>
+        <item quantity="other">%1$s rozdziałów</item>
+    </plurals>
+    <plurals name="stats_length_episodes">
+        <item quantity="one">%d odcinek</item>
+        <item quantity="few">%d odcinki</item>
+        <item quantity="many">%d odcinków</item>
+        <item quantity="other">%d odcinków</item>
+    </plurals>
+    <plurals name="stats_length_chapters">
+        <item quantity="one">%d rozdział</item>
+        <item quantity="few">%d rozdziały</item>
+        <item quantity="many">%d rozdziałów</item>
+        <item quantity="other">%d rozdziałów</item>
+    </plurals>
+    <plurals name="stats_eras_decades_anime">
+        <item quantity="one">%1$s dekada anime.</item>
+        <item quantity="few">%1$s dekady anime.</item>
+        <item quantity="many">%1$s dekad anime.</item>
+        <item quantity="other">%1$s dekad anime.</item>
+    </plurals>
+    <plurals name="stats_eras_decades_manga">
+        <item quantity="one">%1$s dekada mangi.</item>
+        <item quantity="few">%1$s dekady mangi.</item>
+        <item quantity="many">%1$s dekad mangi.</item>
+        <item quantity="other">%1$s dekad mangi.</item>
+    </plurals>
+    <plurals name="a11y_timeline_bar">
+        <item quantity="one">%1$d, %2$d tytuł</item>
+        <item quantity="few">%1$d, %2$d tytuły</item>
+        <item quantity="many">%1$d, %2$d tytułów</item>
+        <item quantity="other">%1$d, %2$d tytułów</item>
+    </plurals>
+    <plurals name="share_media_episode_count">
+        <item quantity="one">%1$s odcinek</item>
+        <item quantity="few">%1$s odcinki</item>
+        <item quantity="many">%1$s odcinków</item>
+        <item quantity="other">%1$s odcinków</item>
+    </plurals>
+    <plurals name="share_media_chapter_count">
+        <item quantity="one">%1$s rozdział</item>
+        <item quantity="few">%1$s rozdziały</item>
+        <item quantity="many">%1$s rozdziałów</item>
+        <item quantity="other">%1$s rozdziałów</item>
+    </plurals>
+    <plurals name="share_duration_days">
+        <item quantity="one">%1$s dzień</item>
+        <item quantity="few">%1$s dni</item>
+        <item quantity="many">%1$s dni</item>
+        <item quantity="other">%1$s dni</item>
+    </plurals>
+    <plurals name="share_duration_hours">
+        <item quantity="one">%1$s godzina</item>
+        <item quantity="few">%1$s godziny</item>
+        <item quantity="many">%1$s godzin</item>
+        <item quantity="other">%1$s godzin</item>
+    </plurals>
+    <plurals name="share_stats_title_count">
+        <item quantity="one">%1$s tytuł</item>
+        <item quantity="few">%1$s tytuły</item>
+        <item quantity="many">%1$s tytułów</item>
+        <item quantity="other">%1$s tytułów</item>
+    </plurals>
+    <plurals name="share_favourites_count">
+        <item quantity="one">%1$s ulubiony</item>
+        <item quantity="few">%1$s ulubione</item>
+        <item quantity="many">%1$s ulubionych</item>
+        <item quantity="other">%1$s ulubionych</item>
+    </plurals>
+    <plurals name="share_recap_episodes_word">
+        <item quantity="one">odcinek</item>
+        <item quantity="few">odcinki</item>
+        <item quantity="many">odcinków</item>
+        <item quantity="other">odcinków</item>
+    </plurals>
+    <plurals name="share_recap_titles_word">
+        <item quantity="one">tytuł</item>
+        <item quantity="few">tytuły</item>
+        <item quantity="many">tytułów</item>
+        <item quantity="other">tytułów</item>
+    </plurals>
+    <plurals name="share_recap_finished_word">
+        <item quantity="one">ukończony</item>
+        <item quantity="few">ukończone</item>
+        <item quantity="many">ukończonych</item>
+        <item quantity="other">ukończonych</item>
+    </plurals>
+    <plurals name="share_recap_episode_count">
+        <item quantity="one">%1$s odcinek</item>
+        <item quantity="few">%1$s odcinki</item>
+        <item quantity="many">%1$s odcinków</item>
+        <item quantity="other">%1$s odcinków</item>
+    </plurals>
+    <plurals name="share_recap_hour_count">
+        <item quantity="one">%1$s godzina</item>
+        <item quantity="few">%1$s godziny</item>
+        <item quantity="many">%1$s godzin</item>
+        <item quantity="other">%1$s godzin</item>
+    </plurals>
+    <plurals name="share_recap_manga_chapters">
+        <item quantity="one">rozdział mangi</item>
+        <item quantity="few">rozdziały mangi</item>
+        <item quantity="many">rozdziałów mangi</item>
+        <item quantity="other">rozdziałów mangi</item>
+    </plurals>
+    <plurals name="recap_hour_count">
+        <item quantity="one">%1$s godzina</item>
+        <item quantity="few">%1$s godziny</item>
+        <item quantity="many">%1$s godzin</item>
+        <item quantity="other">%1$s godzin</item>
+    </plurals>
+    <plurals name="recap_minute_count">
+        <item quantity="one">%1$s minuta</item>
+        <item quantity="few">%1$s minuty</item>
+        <item quantity="many">%1$s minut</item>
+        <item quantity="other">%1$s minut</item>
+    </plurals>
+    <plurals name="recap_day_count">
+        <item quantity="one">%1$s dzień</item>
+        <item quantity="few">%1$s dni</item>
+        <item quantity="many">%1$s dni</item>
+        <item quantity="other">%1$s dni</item>
+    </plurals>
+    <plurals name="recap_days_with_anime">
+        <item quantity="one">%1$s dzień z anime</item>
+        <item quantity="few">%1$s dni z anime</item>
+        <item quantity="many">%1$s dni z anime</item>
+        <item quantity="other">%1$s dni z anime</item>
+    </plurals>
+    <plurals name="recap_days_in_a_row">
+        <item quantity="one">%1$s dzień z rzędu</item>
+        <item quantity="few">%1$s dni z rzędu</item>
+        <item quantity="many">%1$s dni z rzędu</item>
+        <item quantity="other">%1$s dni z rzędu</item>
+    </plurals>
+    <plurals name="recap_manga_chapter_count">
+        <item quantity="one">%1$s rozdział mangi</item>
+        <item quantity="few">%1$s rozdziały mangi</item>
+        <item quantity="many">%1$s rozdziałów mangi</item>
+        <item quantity="other">%1$s rozdziałów mangi</item>
+    </plurals>
+    <plurals name="recap_finished_chip">
+        <item quantity="one">%1$s ukończony</item>
+        <item quantity="few">%1$s ukończone</item>
+        <item quantity="many">%1$s ukończonych</item>
+        <item quantity="other">%1$s ukończonych</item>
+    </plurals>
+    <plurals name="recap_updates_chip">
+        <item quantity="one">%1$s aktualizacja</item>
+        <item quantity="few">%1$s aktualizacje</item>
+        <item quantity="many">%1$s aktualizacji</item>
+        <item quantity="other">%1$s aktualizacji</item>
+    </plurals>
 </resources>
