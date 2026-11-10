@@ -1,3 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <plurals name="time_days">
+        <item quantity="other">%d 天</item>
+    </plurals>
+    <plurals name="time_hours">
+        <item quantity="other">%d 小時</item>
+    </plurals>
+    <plurals name="time_minutes">
+        <item quantity="other">%d 分鐘</item>
+    </plurals>
+    <plurals name="stats_unit_anime">
+        <item quantity="other">動畫</item>
+    </plurals>
+    <plurals name="stats_unit_manga">
+        <item quantity="other">漫畫</item>
+    </plurals>
+    <plurals name="stats_minutes">
+        <item quantity="other">%d 分鐘</item>
+    </plurals>
+    <plurals name="stats_hero_chapters_read">
+        <item quantity="other">共讀了 %1$s 章</item>
+    </plurals>
+    <plurals name="stats_day_streak">
+        <item quantity="other">連續天數</item>
+    </plurals>
+    <plurals name="stats_hero_stale">
+        <item quantity="other">AniList 大約每 2 天會重新統計，所以共有 %d 則本週動態更新未在內呈現</item>
+    </plurals>
+    <plurals name="stats_active_days">
+        <item quantity="other">活躍天數</item>
+    </plurals>
+    <plurals name="stats_hours">
+        <item quantity="other">%d 小時</item>
+    </plurals>
+    <plurals name="stats_busiest_on_count">
+        <item quantity="other">在 %1$s 時最為活躍，共 %2$d 則動態</item>
+    </plurals>
+    <plurals name="stats_teaser_top_genre">
+        <item quantity="other">你最喜好的風格，共</item>
+    </plurals>
 </resources>
