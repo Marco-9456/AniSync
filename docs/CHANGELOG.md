@@ -76,6 +76,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **+1 Progress** - A +1 checks the title with AniList first. When the progress moved on elsewhere, the count takes AniList's number and says so instead of overwriting it, and a +1 AniList turns down goes back to where it started.
 - **Add To Watching From A Notification** - Add to Watching on an airing notification adds the title to the account the notification was for, even when another account is active.
 - **Activity History** - On the days the clocks change, a day in Activity History lists the same activities AniList counted into its bar.
+- **Empty Notifications** - The "No notifications" message sits in the middle of the screen. (#183)
+- **Clearing A Biography** - A biography can be emptied and saved, where the editor asked for at least one character. (#177)
+- **Joined Date** - The Joined label on a profile is translated with the rest of the app. (#176)
+- **Character Pages** - The filter bars on a character's page scroll sideways like the rest of the app, so long tab names are no longer cut off. (#172)
+- **Airing Timeline** - The NOW marker fits the whole word in languages where it is longer, and sits on the timeline instead of just below it. (#168)
 
 ## [3.3.0] - 2026-10-20
 
