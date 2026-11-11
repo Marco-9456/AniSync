@@ -101,7 +101,9 @@ sealed interface RichTextBlock {
 
     data class Spoiler(
         val children: List<RichTextBlock>,
-        override val align: RichTextAlignment = RichTextAlignment.Start
+        override val align: RichTextAlignment = RichTextAlignment.Start,
+        /** What the writer said it spoils, from `~!{label} …!~`. Null shows the generic word. */
+        val label: String? = null
     ) : RichTextBlock
 
     data class Blockquote(

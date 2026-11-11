@@ -1,6 +1,5 @@
 package com.anisync.android.domain.parser
 
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
@@ -35,8 +34,11 @@ private val NESTED_LIST_TAGS: Set<String> = setOf("ul", "ol")
 private val BLOCK_TAGS: Set<String> = setOf(
     "p", "div", "ul", "ol", "li", "table", "blockquote",
     "h1", "h2", "h3", "h4", "h5", "hr", "pre", "center",
-    "youtube", "video", "iframe"
+    "youtube", "video", "iframe", RichTextSpoilers.BLOCK_TAG
 )
+
+// The website's own spoiler element. Its fallback label is the English word, which says nothing.
+private const val WEBSITE_DEFAULT_LABEL = "Spoiler"
 
 internal class RichTextHtmlParser(
     private val inlineParser: RichTextInlineParser
@@ -199,7 +201,8 @@ internal class RichTextHtmlParser(
                 handleHeading(element, workingCtx, tag[1].digitToInt())
             }
 
-            "spoiler" -> handleSpoilerBlock(element, workingCtx)
+            RichTextSpoilers.BLOCK_TAG, RichTextSpoilers.INLINE_TAG ->
+                handleSpoilerBlock(element, workingCtx, element.attr(RichTextSpoilers.LABEL_ATTR))
             "blockquote" -> handleBlockquote(element, workingCtx)
             "hr" -> {
                 workingCtx.flushText()
@@ -240,10 +243,7 @@ internal class RichTextHtmlParser(
                             swallowed != null -> "~~~\n$withSwallowed\n~~~"
                             else -> withSwallowed
                         }
-                        val reparsed = Jsoup.parseBodyFragment(
-                            RichTextNormalizer.normalize(reparseSource)
-                        ).body()
-                        walkChildren(reparsed, workingCtx)
+                        walkChildren(parseRichTextBody(reparseSource), workingCtx)
                         workingCtx.flushText()
                     } else {
                         workingCtx.emitBlock(
@@ -385,23 +385,37 @@ internal class RichTextHtmlParser(
             else -> block
         }
 
-    private fun handleSpoilerBlock(element: Element, ctx: ParseContext) {
+    private fun handleSpoilerBlock(element: Element, ctx: ParseContext, label: String? = null) {
         ctx.flushText()
         val spoilerCtx = ctx.detached(
             align = ctx.align,
             currentLinkUrl = ctx.currentLinkUrl,
             listDepth = ctx.listDepth
         )
-        walkChildren(element, spoilerCtx)
+        walkChildren(spoilerContent(element), spoilerCtx)
         spoilerCtx.flushText()
         if (spoilerCtx.blocks.isNotEmpty()) {
             ctx.emitBlock(
                 RichTextBlock.Spoiler(
                     children = spoilerCtx.blocks,
-                    align = ctx.align
+                    align = ctx.align,
+                    label = label?.trim()?.takeIf { it.isNotEmpty() && it != WEBSITE_DEFAULT_LABEL }
                 )
             )
         }
+    }
+
+    /**
+     * The website's element keeps its content escaped in a `data-content` attribute and only renders
+     * it on a tap, next to a close icon. Read that if it is there, otherwise the element's own children.
+     */
+    private fun spoilerContent(element: Element): Element {
+        if (!element.hasClass("markdown-spoiler")) return element
+        element.children().firstOrNull { it.hasAttr("data-content") }?.let {
+            return parseRichTextBody(it.attr("data-content"))
+        }
+        element.children().filter { it.hasClass("hide-spoiler") }.forEach { it.remove() }
+        return element
     }
 
     private fun handleBlockquote(element: Element, ctx: ParseContext) {
@@ -598,12 +612,24 @@ internal class RichTextHtmlParser(
             return
         }
 
+        if (element.hasClass("markdown-spoiler")) {
+            handleSpoilerBlock(element, ctx, element.attr("data-label"))
+            return
+        }
+
         walkChildren(element, ctx)
     }
 
     private fun handleSpan(element: Element, ctx: ParseContext) {
+        // RichTextSpoilers turns AniList's own spans back into markers, so one only reaches here
+        // when its markup differs from the usual shape.
         if (element.hasClass("markdown_spoiler")) {
             handleSpoilerBlock(element, ctx)
+            return
+        }
+
+        if (element.hasClass("markdown-spoiler")) {
+            handleSpoilerBlock(element, ctx, element.attr("data-label"))
             return
         }
 

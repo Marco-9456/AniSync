@@ -11,8 +11,6 @@ internal object RichTextNormalizer {
     // handled normally. group1 = the leading marker run (1–3 of `_`/`*`), group2 = the centred body.
     private val CENTER_DANGLING_EMPHASIS_REGEX =
         Regex("""~~~(?:center)?(_{1,3}|\*{1,3})((?:(?!~~~).)*?)~~~\1""", RegexOption.DOT_MATCHES_ALL)
-    private val SPOILER_MARKDOWN_REGEX =
-        Regex("""~!(.*?)!~""", RegexOption.DOT_MATCHES_ALL)
     private val YOUTUBE_DIV_REGEX = Regex(
         """<div([^>]*)class=['\"]youtube['\"]([^>]*)>(.*?)</div>""",
         RegexOption.DOT_MATCHES_ALL
@@ -35,7 +33,7 @@ internal object RichTextNormalizer {
         // Shield <pre>…</pre> from the markdown→HTML rewrites below. Their content is either genuine
         // code (must stay verbatim) or a rich post AniList wrongly fenced — which the HTML parser
         // re-normalizes from the code's own text later. Rewriting it here corrupts that text: e.g. a
-        // ~!spoiler!~ inside the fence would be turned into <spoiler> tags that Jsoup then strips when
+        // ~!spoiler!~ inside the fence would be turned into marker tags that Jsoup then strips when
         // the code's wholeText is read, losing the spoiler before it can be recovered.
         val masked = maskPreBlocks(processed)
         processed = masked.text
@@ -46,11 +44,10 @@ internal object RichTextNormalizer {
         processed = convertLinkedImages(processed)
         processed = unwrapEmptyAnchors(processed)
         processed = convertBoldSpanningTags(processed)
-        processed = convertMarkdownSpoilerSpans(processed)
         processed = replaceCenterTags(processed)
         processed = replaceDanglingCenterEmphasis(processed)
         processed = replaceCenterMarkdownBlocks(processed)
-        processed = replaceMarkdownSpoilers(processed)
+        processed = RichTextSpoilers.markers(processed)
         processed = preserveYoutubeDivs(processed)
         processed = normalizeMarkdownBlockquotes(processed)
         return restorePreBlocks(processed, masked.blocks)
@@ -362,48 +359,11 @@ internal object RichTextNormalizer {
         }
     }
 
-    private fun replaceMarkdownSpoilers(text: String): String {
-        if (text.indexOf("~!") < 0) return text
-        return text.replace(SPOILER_MARKDOWN_REGEX) { match ->
-            "<spoiler>${match.groupValues[1]}</spoiler>"
-        }
-    }
-
     private fun preserveYoutubeDivs(text: String): String {
         if (!text.contains("youtube")) return text
         return text.replace(YOUTUBE_DIV_REGEX) { match ->
             "<youtube${match.groupValues[1]}class=\"youtube\"${match.groupValues[2]}>${match.groupValues[3]}</youtube>"
         }
-    }
-
-    private val markdownSpoilerOpenRegex = Regex(
-        """<span\s+class=['"]markdown_spoiler['"]\s*>\s*<span\s*>"""
-    )
-
-    private fun convertMarkdownSpoilerSpans(html: String): String {
-        val openMatches = markdownSpoilerOpenRegex.findAll(html).toList()
-        if (openMatches.isEmpty()) return html
-
-        val sb = StringBuilder()
-        var lastEnd = 0
-        for (match in openMatches) {
-            sb.append(html, lastEnd, match.range.first)
-            sb.append("<div rel=\"spoiler\">")
-            lastEnd = match.range.last + 1
-        }
-        sb.append(html, lastEnd, html.length)
-
-        var result = sb.toString()
-        val closeTag = "</span></span>"
-        var remaining = openMatches.size
-        while (remaining > 0) {
-            val idx = result.indexOf(closeTag)
-            if (idx == -1) break
-            result = result.substring(0, idx) + "</div>" + result.substring(idx + closeTag.length)
-            remaining--
-        }
-
-        return result
     }
 
     private fun normalizeMarkdownBlockquotes(text: String): String {

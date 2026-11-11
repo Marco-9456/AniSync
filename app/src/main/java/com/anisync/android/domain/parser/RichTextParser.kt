@@ -3,10 +3,20 @@ package com.anisync.android.domain.parser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Element
 
 data class ParserConfig(
     val enableAniListLinkBlocks: Boolean = true
 )
+
+/** Normalizes AniList HTML (or typed markdown), parses it and wraps its spoilers. */
+internal fun parseRichTextBody(html: String): Element {
+    val document = Jsoup.parseBodyFragment(RichTextNormalizer.normalize(html))
+    document.outputSettings().prettyPrint(false)
+    val body = document.body()
+    RichTextSpoilers.wrap(body)
+    return body
+}
 
 object RichTextParser {
     suspend fun parse(
@@ -16,13 +26,9 @@ object RichTextParser {
         if (html.isBlank()) return@withContext ParsedRichText(emptyList(), emptyList())
 
         try {
-            val normalized = RichTextNormalizer.normalize(html)
-            val document = Jsoup.parseBodyFragment(normalized)
-            document.outputSettings().prettyPrint(false)
-
             val inlineParser = RichTextInlineParser(config)
             val htmlParser = RichTextHtmlParser(inlineParser)
-            val rawResult = htmlParser.parse(document.body())
+            val rawResult = htmlParser.parse(parseRichTextBody(html))
 
             val groupedBlocks = RichTextPostProcessor.groupInlineBlocks(rawResult.blocks)
             val imageUrls = RichTextPostProcessor.extractImageUrls(groupedBlocks)
