@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 @HiltViewModel
@@ -400,6 +401,15 @@ class MediaDetailsViewModel @Inject constructor(
                     return@launch
                 }
                 existingEntry = libraryRepository.getEntry(mediaId)
+            } else {
+                // The page skips a row synced in the last minute, and a change made elsewhere in
+                // that minute would show here as the old progress. A slow check opens on the row.
+                withTimeoutOrNull(EDITOR_CHECK_TIMEOUT_MS) {
+                    withRequestPriority(RequestPriority.Prefetch) {
+                        detailsRepository.checkListEntry(mediaId)
+                    }
+                }
+                existingEntry = libraryRepository.getEntry(mediaId) ?: existingEntry
             }
             val draft = existingEntry ?: LibraryEntry(
                 id = 0,
@@ -543,6 +553,8 @@ class MediaDetailsViewModel @Inject constructor(
 
         /** Asking on the exact instant the window turns over tends to land just before it. */
         private const val RETRY_GRACE_MS = 1_000L
+
+        private const val EDITOR_CHECK_TIMEOUT_MS = 2_000L
     }
 
     fun rateRecommendation(recommendationId: Int, rating: com.anisync.android.type.RecommendationRating) {
