@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **18+ Options** - With adult content on, the AniList options show the three switches AniList added under it: 18+ titles in search, 18+ titles in quick search, and other people's 18+ activity. Discover search follows the first, the title pickers in threads, recommendations and filters follow the second, and the feed and other people's profiles follow the third. Turning adult content on turns all three back on, as AniList does.
 - **Submission Updates** - Notifications say when AniList accepts, partly accepts or rejects a title, staff or character submission you made, with the reviewer's note, and they have a Submissions filter of their own.
 - **Open On Profile** - Open on, under General and in the first-run setup, can pin the app to your profile.
+- **Media Alerts** - Notifications can ping you for media updates, the new related titles, data changes, merges and removals AniList sends about titles on your lists, and for the outcome of data submissions you sent. Each has its own switch in a new Media section of the notification settings. Only updates that arrive after you install this version are pushed, so the older ones stay in the inbox.
+- **Rewatch Count** - A title you rewatched or reread says how many times on its Library cover, beside the notes and priority marks.
+- **Donator Badges** - Activities, forum threads and comments, and users in search carry AniList's donator badge beside the name, by the website's rules: Donator for the first three tiers, the donator's own text from the fourth, and the colour cycle from the fifth. A serving moderator's search result shows none, as on the website.
+- **Community Guidelines** - About links to AniList's community guidelines.
 
 ### Changed
 
@@ -39,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Search Field** - Discover, Library and Forum search move the search field out of the way as the results scroll down and bring it back on the first scroll up, as the bar over Discover does. The filters and the rail stay on screen, and the keyboard closes as the field leaves.
 - **Back To Search Results** - Opening a result from Discover, Library or Forum search leaves the search open behind it, so back returns to the results as you left them, scrolled to the same place and with the keyboard closed. On a tablet, Library and Forum search stay in the list pane and open what you pick in the pane beside them. (#175)
 - **Pull To Refresh** - A pull only starts when your finger lands with the page already at the top, so scrolling back up never refreshes by accident. The page follows your finger and the loading indicator grows in the space it opens, turning from a circle into a burst as it fills, with a tick once letting go will refresh. Pushing back above that point calls it off. While the refresh runs the page springs back and the indicator stays at the top, cycling through its shapes until the new data is in. (#182)
+- **Spoilers** - Spoilers open and close where AniList's website says they do, nested and unmatched markers included. A spoiler in the middle of a sentence stays in the sentence as a stretch you tap, and one written with a label in braces, such as `~!{Episode 12} text!~`, shows the label while it is shut. An open spoiler keeps a faint outline, so you can see where it ends.
+- **Spoiler Button** - With several lines selected, the spoiler button puts its markers on lines of their own, which AniList needs to hide them as one block.
+- **Profile Donator Badge** - The badge on a profile shows the donator's own text and cycles through AniList's colours the way the website does.
+- **Private Profiles** - A profile or activity that is private or was deleted says so, where it showed a general error before.
 
 ### Fixed
 
@@ -60,6 +68,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Muted Notifications** - Notifications muted in the phone's settings stay silent when they stack. Once two or more were showing, the stack took the sound and settings of activity replies, whatever type they were. (#170)
 - **Search Rail** - Results in Discover and Library search stop a little short of the rail above them as they scroll, as they do under the rail on Discover, instead of running right up against it.
 - **Lists On A Tablet** - Opening the first title beside the Library or Discover list no longer starts the list over, so it keeps its place and anything open on it.
+- **Spoilers In Previews** - Notifications, forum comment cards on a profile and Activity History no longer show what is inside a spoiler.
+- **Saving Entries** - Saving an entry sends AniList only what you changed in the sheet, so progress, a score or notes changed on the website or in another app while it was open are kept.
+- **+1 Progress** - A +1 checks the title with AniList first. When the progress moved on elsewhere, the count takes AniList's number and says so instead of overwriting it, and a +1 AniList turns down goes back to where it started.
+- **Add To Watching From A Notification** - Add to Watching on an airing notification adds the title to the account the notification was for, even when another account is active.
+- **Activity History** - On the days the clocks change, a day in Activity History lists the same activities AniList counted into its bar.
+- **Forum Replies** - AniList no longer sends the replies under a forum comment. A comment that has some says how many, and a tap opens them on AniList.
 
 ## [3.3.0] - 2026-10-20
 
