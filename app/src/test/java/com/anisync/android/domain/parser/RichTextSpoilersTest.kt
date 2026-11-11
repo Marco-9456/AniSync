@@ -23,9 +23,33 @@ class RichTextSpoilersTest {
 
         val spoiler = parsed.spoilers().single()
         assertEquals("Season 3 spoilers", spoiler.label)
-        assertEquals("Myne was adopted", spoiler.hiddenText().trim())
+        assertEquals("Myne was adopted", spoiler.hidden.trim())
         assertFalse(parsed.visibleText().contains("Myne"))
         assertFalse(parsed.visibleText().contains("{"))
+    }
+
+    @Test
+    fun `a spoiler sharing its line stays inside the sentence`() = runBlocking {
+        val parsed = RichTextParser.parse(
+            "<p>It ends <span class='markdown_spoiler'><span>badly</span></span> for everyone.</p>"
+        )
+
+        val text = parsed.blocks.single() as RichTextBlock.Text
+        assertEquals(3, text.inlines.size)
+        val spoiler = text.inlines[1] as RichTextInline.Spoiler
+        assertNull(spoiler.label)
+        assertEquals(listOf(RichTextInline.Text("badly")), spoiler.children)
+        assertEquals("It ends  for everyone.", parsed.visibleText().trim())
+    }
+
+    @Test
+    fun `a spoiler alone on its line is a block`() = runBlocking {
+        val parsed = RichTextParser.parse("<p>Before</p>\n<p>~!{Finale}It all ends!~</p>\n<p>After</p>")
+
+        val spoiler = parsed.spoilers().single()
+        assertFalse(spoiler.inline)
+        assertEquals("Finale", spoiler.label)
+        assertEquals("It all ends", spoiler.hidden.trim())
     }
 
     @Test
@@ -43,7 +67,7 @@ class RichTextSpoilersTest {
         assertFalse(visible.contains("secret"))
         assertTrue(visible.contains("Thoughts below."))
         assertTrue(visible.contains("Bye."))
-        val hidden = parsed.spoilers().single().hiddenText()
+        val hidden = parsed.spoilers().single().hidden
         assertTrue(hidden.contains("first secret"))
         assertTrue(hidden.contains("second secret"))
         assertTrue(hidden.contains("third secret"))
@@ -59,7 +83,7 @@ class RichTextSpoilersTest {
         val visible = parsed.visibleText()
         assertFalse(visible.contains("line"))
         assertFalse(visible.contains("paragraph"))
-        assertTrue(parsed.spoilers().single().hiddenText().contains("last paragraph"))
+        assertTrue(parsed.spoilers().single().hidden.contains("last paragraph"))
     }
 
     @Test
@@ -96,10 +120,11 @@ class RichTextSpoilersTest {
     fun `a closer pairs with the nearest opener so spoilers nest`() = runBlocking {
         val parsed = RichTextParser.parse("~!outer ~!inner!~ rest!~")
 
-        val outer = parsed.blocks.filterIsInstance<RichTextBlock.Spoiler>().single()
-        assertTrue(outer.hiddenText().contains("outer"))
-        assertTrue(outer.hiddenText().contains("rest"))
-        assertTrue(outer.children.anySpoiler())
+        val outer = parsed.spoilers().single()
+        assertFalse(outer.inline)
+        assertTrue(outer.hidden.contains("outer"))
+        assertTrue(outer.hidden.contains("rest"))
+        assertEquals("inner", outer.inner.single().hidden.trim())
         assertEquals("", parsed.visibleText().trim())
     }
 
@@ -107,9 +132,9 @@ class RichTextSpoilersTest {
     fun `a fourth level stays text inside the third`() = runBlocking {
         val parsed = RichTextParser.parse("~!a ~!b ~!c ~!d!~ c2!~ b2!~ a2!~")
 
-        assertEquals(3, parsed.spoilerDepth())
+        assertEquals(3, parsed.spoilers().single().depth())
         // Its markers stay, and a single tilde pair reads as strikethrough there as on the website.
-        assertTrue(parsed.allText().contains("!d!"))
+        assertTrue(parsed.spoilers().single().hidden.contains("!d!"))
         assertEquals("", parsed.visibleText().trim())
     }
 
@@ -117,11 +142,11 @@ class RichTextSpoilersTest {
     fun `empty braces are content and blank braces are no label`() = runBlocking {
         val braces = RichTextParser.parse("~!{} text!~").spoilers().single()
         assertNull(braces.label)
-        assertTrue(braces.hiddenText().contains("{} text"))
+        assertTrue(braces.hidden.contains("{} text"))
 
         val blank = RichTextParser.parse("~!{   } text!~").spoilers().single()
         assertNull(blank.label)
-        assertEquals("text", blank.hiddenText().trim())
+        assertEquals("text", blank.hidden.trim())
     }
 
     @Test
@@ -134,7 +159,7 @@ class RichTextSpoilersTest {
     fun `a closer with nothing open is skipped`() = runBlocking {
         val parsed = RichTextParser.parse("a !~ b ~!c!~")
 
-        assertEquals("c", parsed.spoilers().single().hiddenText().trim())
+        assertEquals("c", parsed.spoilers().single().hidden.trim())
         assertTrue(parsed.visibleText().contains("a !~ b"))
     }
 
@@ -147,15 +172,22 @@ class RichTextSpoilersTest {
     }
 
     @Test
-    fun `the website's element reads its label and its escaped content`() = runBlocking {
-        val parsed = RichTextParser.parse(
+    fun `the website's elements read their label and their escaped content`() = runBlocking {
+        val block = RichTextParser.parse(
             "<div class=\"markdown-spoiler\" data-label=\"Ending\"><i class=\"hide-spoiler\"></i>" +
                 "<div data-content=\"&lt;p&gt;Bobby lives&lt;/p&gt;\"></div></div>"
-        )
+        ).spoilers().single()
+        assertFalse(block.inline)
+        assertEquals("Ending", block.label)
+        assertEquals("Bobby lives", block.hidden.trim())
 
-        val spoiler = parsed.spoilers().single()
-        assertEquals("Ending", spoiler.label)
-        assertEquals("Bobby lives", spoiler.hiddenText().trim())
+        val inline = RichTextParser.parse(
+            "<p>So <span class=\"markdown-spoiler\" data-label=\"Spoiler\"><i class=\"hide-spoiler\"></i>" +
+                "<span data-content=\"he wins\"></span></span> then.</p>"
+        ).spoilers().single()
+        assertTrue(inline.inline)
+        assertNull(inline.label)
+        assertEquals("he wins", inline.hidden.trim())
     }
 
     @Test
@@ -173,25 +205,35 @@ class RichTextSpoilersTest {
         )
     }
 
-    private fun ParsedRichText.spoilers(): List<RichTextBlock.Spoiler> = blocks.spoilerBlocks()
+    /** A spoiler found in a parse, block or inline, with the text it hides and the ones inside it. */
+    private class Found(val label: String?, val inline: Boolean, val hidden: String, val inner: List<Found>) {
+        fun depth(): Int = 1 + (inner.maxOfOrNull { it.depth() } ?: 0)
+    }
 
-    private fun List<RichTextBlock>.spoilerBlocks(): List<RichTextBlock.Spoiler> = flatMap { block ->
+    private fun ParsedRichText.spoilers(): List<Found> = blocks.spoilersIn()
+
+    private fun List<RichTextBlock>.spoilersIn(): List<Found> = flatMap { block ->
         when (block) {
-            is RichTextBlock.Spoiler -> listOf(block)
-            else -> block.childBlocks().spoilerBlocks()
+            is RichTextBlock.Spoiler -> listOf(
+                Found(block.label, inline = false, hidden = textOf(block.children), inner = block.children.spoilersIn())
+            )
+            is RichTextBlock.Text -> block.inlines.inlineSpoilersIn()
+            else -> block.childBlocks().spoilersIn()
         }
     }
 
-    private fun List<RichTextBlock>.anySpoiler(): Boolean = spoilerBlocks().isNotEmpty()
-
-    private fun ParsedRichText.spoilerDepth(): Int {
-        fun depth(blocks: List<RichTextBlock>): Int = blocks.maxOfOrNull { block ->
-            when (block) {
-                is RichTextBlock.Spoiler -> 1 + depth(block.children)
-                else -> depth(block.childBlocks())
-            }
-        } ?: 0
-        return depth(blocks)
+    private fun List<RichTextInline>.inlineSpoilersIn(): List<Found> = flatMap { inline ->
+        when (inline) {
+            is RichTextInline.Spoiler -> listOf(
+                Found(
+                    inline.label,
+                    inline = true,
+                    hidden = buildString { appendInlines(inline.children, includeSpoilers = true) },
+                    inner = inline.children.inlineSpoilersIn()
+                )
+            )
+            else -> inline.childInlines().inlineSpoilersIn()
+        }
     }
 
     private fun RichTextBlock.childBlocks(): List<RichTextBlock> = when (this) {
@@ -203,17 +245,25 @@ class RichTextSpoilersTest {
         else -> emptyList()
     }
 
+    private fun RichTextInline.childInlines(): List<RichTextInline> = when (this) {
+        is RichTextInline.Bold -> children
+        is RichTextInline.Italic -> children
+        is RichTextInline.BoldItalic -> children
+        is RichTextInline.Strikethrough -> children
+        is RichTextInline.Link -> children
+        is RichTextInline.Spoiler -> children
+        else -> emptyList()
+    }
+
     private fun ParsedRichText.visibleText(): String = buildString { appendText(blocks, includeSpoilers = false) }
 
-    private fun ParsedRichText.allText(): String = buildString { appendText(blocks, includeSpoilers = true) }
-
-    private fun RichTextBlock.Spoiler.hiddenText(): String = buildString { appendText(children, includeSpoilers = true) }
+    private fun textOf(blocks: List<RichTextBlock>): String = buildString { appendText(blocks, includeSpoilers = true) }
 
     private fun StringBuilder.appendText(blocks: List<RichTextBlock>, includeSpoilers: Boolean) {
         for (block in blocks) {
             when (block) {
                 is RichTextBlock.Text -> {
-                    appendInlines(block.inlines)
+                    appendInlines(block.inlines, includeSpoilers)
                     append('\n')
                 }
                 is RichTextBlock.CodeBlock -> append(block.code).append('\n')
@@ -223,17 +273,18 @@ class RichTextSpoilersTest {
         }
     }
 
-    private fun StringBuilder.appendInlines(inlines: List<RichTextInline>) {
+    private fun StringBuilder.appendInlines(inlines: List<RichTextInline>, includeSpoilers: Boolean) {
         for (inline in inlines) {
             when (inline) {
                 is RichTextInline.Text -> append(inline.value)
                 is RichTextInline.LineBreak -> append('\n')
                 is RichTextInline.InlineCode -> append(inline.code)
-                is RichTextInline.Bold -> appendInlines(inline.children)
-                is RichTextInline.Italic -> appendInlines(inline.children)
-                is RichTextInline.BoldItalic -> appendInlines(inline.children)
-                is RichTextInline.Strikethrough -> appendInlines(inline.children)
-                is RichTextInline.Link -> appendInlines(inline.children)
+                is RichTextInline.Bold -> appendInlines(inline.children, includeSpoilers)
+                is RichTextInline.Italic -> appendInlines(inline.children, includeSpoilers)
+                is RichTextInline.BoldItalic -> appendInlines(inline.children, includeSpoilers)
+                is RichTextInline.Strikethrough -> appendInlines(inline.children, includeSpoilers)
+                is RichTextInline.Link -> appendInlines(inline.children, includeSpoilers)
+                is RichTextInline.Spoiler -> if (includeSpoilers) appendInlines(inline.children, true)
                 is RichTextInline.Image -> Unit
             }
         }

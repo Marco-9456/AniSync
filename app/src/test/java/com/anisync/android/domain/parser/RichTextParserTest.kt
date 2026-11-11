@@ -523,9 +523,13 @@ class RichTextParserTest {
             assertTrue(cards.any { it.id == 186497 })
             assertTrue(cards.any { it.id == 182483 })
 
-            // Both spoilers survive (Ep.10's ~!…!~ is no longer flattened into visible prose).
+            // Both spoilers survive (Ep.10's ~!…!~ is no longer flattened into visible prose). Ep.11's
+            // shares its line with a divider image, so it is an inline one, as on the website.
             val spoilers = blocks.filterIsInstance<RichTextBlock.Spoiler>()
-            assertEquals(2, spoilers.size)
+            val inlineSpoilers = blocks.filterIsInstance<RichTextBlock.Text>()
+                .flatMap { it.inlines.filterIsInstance<RichTextInline.Spoiler>() }
+            assertEquals(1, spoilers.size)
+            assertEquals(1, inlineSpoilers.size)
             assertTrue(
                 spoilers.any { s ->
                     s.children.deepBlocks().filterIsInstance<RichTextBlock.Text>()
@@ -1019,6 +1023,7 @@ class RichTextParserTest {
                 is RichTextInline.BoldItalic -> appendInlineText(inline.children)
                 is RichTextInline.Strikethrough -> appendInlineText(inline.children)
                 is RichTextInline.Link -> appendInlineText(inline.children)
+                is RichTextInline.Spoiler -> appendInlineText(inline.children)
                 is RichTextInline.Image -> Unit
             }
         }

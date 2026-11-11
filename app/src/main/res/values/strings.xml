@@ -1130,6 +1130,7 @@
     <string name="richtext_format_code">Code</string>
     <string name="richtext_format_link">Link</string>
     <string name="richtext_format_spoiler">Spoiler</string>
+    <string name="cd_richtext_spoiler_hide">Hide spoiler</string>
     <string name="richtext_char_count">%1$d / %2$d</string>
     <string name="forum_categories_title">Categories</string>
     <string name="forum_add_categories">Add Categories</string>

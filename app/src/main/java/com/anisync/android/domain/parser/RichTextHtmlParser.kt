@@ -201,8 +201,10 @@ internal class RichTextHtmlParser(
                 handleHeading(element, workingCtx, tag[1].digitToInt())
             }
 
-            RichTextSpoilers.BLOCK_TAG, RichTextSpoilers.INLINE_TAG ->
+            RichTextSpoilers.BLOCK_TAG ->
                 handleSpoilerBlock(element, workingCtx, element.attr(RichTextSpoilers.LABEL_ATTR))
+            RichTextSpoilers.INLINE_TAG ->
+                handleInlineSpoiler(element, workingCtx, element.attr(RichTextSpoilers.LABEL_ATTR))
             "blockquote" -> handleBlockquote(element, workingCtx)
             "hr" -> {
                 workingCtx.flushText()
@@ -325,6 +327,8 @@ internal class RichTextHtmlParser(
 
             "br" -> ctx.appendInline(RichTextInline.LineBreak)
             "span" -> handleSpan(element, ctx)
+            RichTextSpoilers.INLINE_TAG ->
+                handleInlineSpoiler(element, ctx, element.attr(RichTextSpoilers.LABEL_ATTR))
             "img" -> {
                 // In an inline context (e.g. an emoji `<img width=20>` after a heading word),
                 // keep an emoji-sized image in the text flow instead of breaking to its own block.
@@ -399,11 +403,40 @@ internal class RichTextHtmlParser(
                 RichTextBlock.Spoiler(
                     children = spoilerCtx.blocks,
                     align = ctx.align,
-                    label = label?.trim()?.takeIf { it.isNotEmpty() && it != WEBSITE_DEFAULT_LABEL }
+                    label = spoilerLabel(label)
                 )
             )
         }
     }
+
+    private fun handleInlineSpoiler(element: Element, ctx: ParseContext, label: String?) {
+        val spoilerCtx = ctx.detached(
+            align = ctx.align,
+            currentLinkUrl = ctx.currentLinkUrl,
+            listDepth = ctx.listDepth
+        )
+        walkInlineChildren(spoilerContent(element), spoilerCtx)
+        if (spoilerCtx.blocks.isEmpty()) {
+            val inlines = trimEdgeInlineText(spoilerCtx.consumeInlineBufferTrimmed())
+            if (!isBlankInlineList(inlines)) {
+                ctx.appendInline(RichTextInline.Spoiler(spoilerLabel(label), inlines))
+            }
+            return
+        }
+        // A full-size image or a card cannot sit in a line of text, so this one is drawn as a block.
+        spoilerCtx.flushText()
+        ctx.flushText()
+        ctx.emitBlock(
+            RichTextBlock.Spoiler(
+                children = spoilerCtx.blocks,
+                align = ctx.align,
+                label = spoilerLabel(label)
+            )
+        )
+    }
+
+    private fun spoilerLabel(raw: String?): String? =
+        raw?.trim()?.takeIf { it.isNotEmpty() && it != WEBSITE_DEFAULT_LABEL }
 
     /**
      * The website's element keeps its content escaped in a `data-content` attribute and only renders
@@ -629,7 +662,7 @@ internal class RichTextHtmlParser(
         }
 
         if (element.hasClass("markdown-spoiler")) {
-            handleSpoilerBlock(element, ctx, element.attr("data-label"))
+            handleInlineSpoiler(element, ctx, element.attr("data-label"))
             return
         }
 

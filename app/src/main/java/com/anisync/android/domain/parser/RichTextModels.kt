@@ -49,6 +49,9 @@ sealed interface RichTextInline {
 
     /** A small image that flows within text (e.g. an emoji-sized `img20(...)` inside a heading). */
     data class Image(val url: String, val width: Int?, val height: Int?) : RichTextInline
+
+    /** A `~!…!~` that shares its line with other text, drawn as its label until tapped. */
+    data class Spoiler(val label: String?, val children: List<RichTextInline>) : RichTextInline
 }
 
 sealed interface RichTextBlock {
