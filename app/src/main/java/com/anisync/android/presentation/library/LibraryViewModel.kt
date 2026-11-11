@@ -722,8 +722,21 @@ class LibraryViewModel @Inject constructor(
     // The status before the first tap of a burst, so the settled save can tell whether the burst is
     // what finished the entry.
     private val statusBaseline = java.util.concurrent.ConcurrentHashMap<Int, LibraryStatus>()
-    private val progressCoalescer =
-        com.anisync.android.presentation.util.MutationCoalescer<Int, Int>(viewModelScope, debounceMs = 600L) { mediaId, progress ->
+    private val progressCoalescer: com.anisync.android.presentation.util.MutationCoalescer<Int, Int> =
+        com.anisync.android.presentation.util.MutationCoalescer(viewModelScope, debounceMs = 600L) { mediaId, progress ->
+            val startedFrom = progressBaseline[mediaId]
+            val elsewhere = startedFrom?.let {
+                progressChangedElsewhere(detailsRepository, libraryRepository, mediaId, it)
+            }
+            if (elsewhere != null) {
+                // The taps counted from an older row. Show AniList's count instead of writing over it.
+                progressBaseline[mediaId] = elsewhere
+                statusBaseline.remove(mediaId)
+                progressCoalescer.reset(mediaId, elsewhere)
+                patchEntryProgress(mediaId, elsewhere)
+                toastManager.showToast(ToastType.INFO, R.string.library_progress_changed_elsewhere, elsewhere)
+                return@MutationCoalescer false
+            }
             when (val result = libraryRepository.updateProgress(mediaId, progress)) {
                 is Result.Success -> {
                     progressBaseline[mediaId] = progress

@@ -12,6 +12,8 @@ import com.anisync.android.data.local.dao.LibraryDao
 import com.anisync.android.data.local.entity.LibraryEntryEntity
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.ForumRepository
+import com.anisync.android.presentation.components.alert.ToastType
+import com.anisync.android.presentation.library.progressChangedElsewhere
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.GetMediaDetailsUseCase
 import com.anisync.android.domain.LibraryEntry
@@ -325,7 +327,16 @@ class MediaDetailsViewModel @Inject constructor(
     fun updateProgress(progress: Int) {
         viewModelScope.launch {
             val statusBefore = currentListStatus()
-            if (libraryRepository.getEntry(mediaId) == null) {
+            val row = libraryRepository.getEntry(mediaId)
+            if (row != null) {
+                val elsewhere = progressChangedElsewhere(detailsRepository, libraryRepository, mediaId, row.progress)
+                if (elsewhere != null) {
+                    // The tracker counted from an older row. The page follows the row, so it shows AniList's count.
+                    toastManager.showToast(ToastType.INFO, R.string.library_progress_changed_elsewhere, elsewhere)
+                    return@launch
+                }
+            }
+            if (row == null) {
                 // Not in the local library yet (that list was never fetched), so there is no row
                 // for the library path to update. Same rule as that path: the last one completes it.
                 val details = (uiState.value as? DetailsUiState.Success)?.details
