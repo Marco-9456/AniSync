@@ -797,15 +797,15 @@ class LibraryViewModel @Inject constructor(
 
     /**
      * Opens the edit sheet on [entry] as AniList has it now. The row can be up to a list refresh old,
-     * and a sheet opened on it would send its older progress back with any edit. The check is skipped
-     * for an entry checked in the last minute, and a slow or refused one leaves the row as it is.
+     * and a sheet opened on it would show its older progress. It asks AniList every time, even right
+     * after a sync, and a slow or refused check leaves the row as it is.
      */
     private fun openEditor(entry: LibraryEntry) {
         editorJob?.cancel()
         editorJob = viewModelScope.launch {
             withTimeoutOrNull(EDITOR_CHECK_TIMEOUT_MS) {
                 withRequestPriority(RequestPriority.Prefetch) {
-                    detailsRepository.refreshListEntryIfStale(entry.mediaId)
+                    detailsRepository.checkListEntry(entry.mediaId)
                 }
             }
             // Gone means it was taken off the list elsewhere, and the card goes with it.
