@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-11-11
+
 ### Added
 
 - **Recaps** - Every month you watch anime in gets a recap on the 1st of the next one, and every year one on 1 January, counted on the phone from your list activity and ranked by the time you spent. Each plays as a story: time watched, your top titles, genres, your biggest day, longest streak and busiest weekday, the month's manga, and for a year the busiest month and the shows you kept up with while they aired. The story plays the opening or ending of your top title from AnimeThemes, every page shares as an image, and the Share Studio offers each page of the story beside the recap's card. A new recap comes with a notification that has Watch and Share card, a banner at the top of Library for a week, and a New mark under Statistics, where a Recaps view on your own profile keeps the past ones.

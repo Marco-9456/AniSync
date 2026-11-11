@@ -67,8 +67,8 @@ android {
         applicationId = "com.anisync.android"
         minSdk = 26
         targetSdk = 37
-        versionCode = 22
-        versionName = "3.3.0"
+        versionCode = 23
+        versionName = "3.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

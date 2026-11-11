@@ -1,0 +1,24 @@
+Added:
+- Recaps: a monthly and a yearly story of what you watched, with its theme song, a notification and a Recaps page in Settings.
+- Share Studio: thirteen card templates at four sizes for titles, characters, staff, reviews, stats, favourites and recaps.
+- Library search can filter by tag.
+- Jump back: hold the back arrow to go straight to any page behind you.
+- The weighted score explained, mutual followers, removing followers and AniList's 18+ options.
+- Notifications for submissions and media updates, each with its own switch.
+- Rewatch counts on Library covers, and AniList's donator badges next to names.
+- Open on profile, and AniList's community guidelines linked from About.
+
+Changed:
+- Statistics is a profile tab with Overview, Activity, Taste, How you watch, Eras and People.
+- Discover and Library search share new result cards, filters and sort, and library filters moved into search.
+- Spoilers open and close the way AniList's website does, inline spoilers stay in their sentence and labels show.
+- Your lists refresh when AniSync comes back, and title pages and the entry editor check your entry with AniList.
+- Pull to refresh only starts at the top of the page.
+- Misc became part of General in the forum, and Events has its own category.
+
+Fixed:
+- Edits, +1 and Add to Watching no longer write over progress changed on the website or in another app.
+- Switching accounts no longer mixes up two accounts' lists, and an expired session moves to your other account.
+- Spoilers no longer show in notifications and previews.
+- The feed and profiles keep your place when you come back.
+- Share cards on Android 8 and 9, the feed in Spanish, the Seasonal chip in December and muted notifications that rang once stacked.
