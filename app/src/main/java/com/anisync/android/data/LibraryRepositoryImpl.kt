@@ -327,6 +327,7 @@ class LibraryRepositoryImpl @Inject constructor(
      * Also sets completedAt date when completing.
      */
     override suspend fun updateProgress(mediaId: Int, progress: Int): Result<Unit> {
+        val before = libraryDao.getEntry(currentOwnerId(), mediaId)
         // 1. Update local
         val localResult = updateProgressLocal(mediaId, progress)
         if (localResult is Result.Error) return localResult
@@ -338,7 +339,7 @@ class LibraryRepositoryImpl @Inject constructor(
         val now = todayUtcMillis()
 
         // 3. Try sync to network
-        return safeApiCall {
+        val result = safeApiCall {
             val response = apolloClient.mutation(
                 com.anisync.android.SaveMediaListEntryMutation(
                     mediaId = Optional.present(mediaId),
@@ -353,6 +354,14 @@ class LibraryRepositoryImpl @Inject constructor(
                 throw Exception(errorMessage)
             }
         }
+        // A count AniList never took stays out of the row, or the next edit would send it along.
+        if (result is Result.Error && before != null &&
+            libraryDao.getEntry(currentOwnerId(), mediaId)?.progress == progress
+        ) {
+            libraryDao.updateEntry(before)
+            runCatching { WidgetRefresh.all(context) }
+        }
+        return result
     }
 
     override suspend fun updateProgressLocal(mediaId: Int, progress: Int): Result<Unit> {
