@@ -453,7 +453,12 @@ class DetailsRepositoryImpl @Inject constructor(
         return if (stale) refreshMediaDetails(id) else Result.Success(Unit)
     }
 
-    override suspend fun refreshListEntryIfStale(mediaId: Int): Result<Unit> {
+    override suspend fun refreshListEntryIfStale(mediaId: Int): Result<Unit> =
+        refreshListEntry(mediaId, LIST_ENTRY_RECHECK_MS)
+
+    override suspend fun checkListEntry(mediaId: Int): Result<Unit> = refreshListEntry(mediaId, maxAgeMs = 0L)
+
+    private suspend fun refreshListEntry(mediaId: Int, maxAgeMs: Long): Result<Unit> {
         val owner = accountStore.activeAccount.value?.id ?: return Result.Success(Unit)
         val local = libraryDao.getEntry(owner, mediaId) ?: return Result.Success(Unit)
         // A details fetch carries the entry too, so it counts as a check.
@@ -462,7 +467,7 @@ class DetailsRepositoryImpl @Inject constructor(
             refreshTimes.entryCheckedAt(owner, mediaId) ?: 0L,
             mediaDetailsDao.getById(mediaId)?.lastUpdated ?: 0L
         )
-        if (System.currentTimeMillis() - checkedAt < LIST_ENTRY_RECHECK_MS) return Result.Success(Unit)
+        if (System.currentTimeMillis() - checkedAt < maxAgeMs) return Result.Success(Unit)
 
         return safeApiCall {
             val askedAt = System.currentTimeMillis()

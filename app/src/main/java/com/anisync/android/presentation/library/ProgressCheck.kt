@@ -13,8 +13,8 @@ private const val PROGRESS_CHECK_TIMEOUT_MS = 2_000L
  * made from, or null to go ahead.
  *
  * A +1 saves an absolute number, so one counted from a row older than a change made on the website
- * or in another app would write that change over. The check costs nothing for a title checked in
- * the last minute, and a slow or refused one lets the save through as before.
+ * or in another app would write that change over. It asks AniList once per burst of taps, even for
+ * a row synced seconds ago, and a slow or refused check lets the save through as before.
  */
 internal suspend fun progressChangedElsewhere(
     detailsRepository: DetailsRepository,
@@ -24,7 +24,7 @@ internal suspend fun progressChangedElsewhere(
 ): Int? {
     withTimeoutOrNull(PROGRESS_CHECK_TIMEOUT_MS) {
         withRequestPriority(RequestPriority.Prefetch) {
-            detailsRepository.refreshListEntryIfStale(mediaId)
+            detailsRepository.checkListEntry(mediaId)
         }
     }
     val current = libraryRepository.getEntry(mediaId)?.progress ?: return null

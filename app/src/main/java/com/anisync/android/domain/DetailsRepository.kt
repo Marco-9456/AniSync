@@ -32,6 +32,13 @@ interface DetailsRepository {
     suspend fun refreshListEntryIfStale(mediaId: Int): Result<Unit>
 
     /**
+     * Asks AniList for the viewer's own entry on [mediaId] now, however recently it was checked. For
+     * a save that counts from the entry, where a change made elsewhere a moment ago is the one it
+     * would write over.
+     */
+    suspend fun checkListEntry(mediaId: Int): Result<Unit>
+
+    /**
      * Sets the viewer's status on [mediaId], adding the title when it is not on a list. A null
      * [progress] leaves AniList's as it is, so adding a title the library has not synced yet keeps
      * the progress logged on it elsewhere.
