@@ -102,7 +102,8 @@ fun AuthorRow(
             DonatorBadge(
                 tier = donatorTier,
                 badgeText = donatorBadge,
-                placement = DonatorBadgePlacement.NextToName
+                placement = DonatorBadgePlacement.NextToName,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
             )
         }
         Spacer(Modifier.width(8.dp))

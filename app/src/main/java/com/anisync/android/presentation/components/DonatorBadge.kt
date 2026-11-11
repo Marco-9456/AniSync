@@ -45,14 +45,18 @@ enum class DonatorBadgePlacement {
  * Next to a name, tiers one to three read "Donator", four and up show the donator's own text, and
  * five and up cycle through the rainbow. On the profile header every donator gets their own text
  * over the rainbow. The rainbow is the website's: thirteen stops over twenty seconds, eased between
- * each, at 71% opacity under white text. A quiet badge takes the page colour like the website's.
+ * each, at 71% opacity under white text.
+ *
+ * A quiet badge takes [containerColor]. The website always sets it on a card in the page colour, so
+ * that is the default, and a badge sitting on the page itself passes a container colour instead.
  */
 @Composable
 fun DonatorBadge(
     tier: Int,
     badgeText: String?,
     placement: DonatorBadgePlacement,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surface
 ) {
     if (tier <= 0) return
     val text = donatorBadgeText(tier, badgeText, placement) ?: stringResource(R.string.donator_badge_default)
@@ -97,7 +101,7 @@ fun DonatorBadge(
             overflow = TextOverflow.Ellipsis,
             modifier = bounded
                 .clip(shape)
-                .background(MaterialTheme.colorScheme.surface)
+                .background(containerColor)
                 .then(padding)
         )
     }

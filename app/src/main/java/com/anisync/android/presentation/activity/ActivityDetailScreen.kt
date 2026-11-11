@@ -721,7 +721,8 @@ private fun WroteToLine(authorName: String, recipientName: String, donatorTier: 
             tier = donatorTier,
             badgeText = donatorBadge,
             placement = DonatorBadgePlacement.NextToName,
-            modifier = Modifier.align(Alignment.CenterVertically)
+            modifier = Modifier.align(Alignment.CenterVertically),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
         )
         val rest = template.substring(slot + AUTHOR_SLOT.length).trim()
         if (rest.isNotEmpty()) {
