@@ -180,7 +180,8 @@ fun UserResultCard(
                 tier = donatorTier,
                 badgeText = donatorBadge,
                 placement = com.anisync.android.presentation.components.DonatorBadgePlacement.NextToName,
-                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
+                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp),
+                maxWidth = androidx.compose.ui.unit.Dp.Unspecified
             )
         }
         Box(modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 12.dp)) {

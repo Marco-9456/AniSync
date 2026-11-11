@@ -202,7 +202,8 @@ private fun ThreadAuthorBlock(
                     tier = donatorTier,
                     badgeText = donatorBadge,
                     placement = DonatorBadgePlacement.NextToName,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    maxWidth = 200.dp
                 )
             }
             Text(

@@ -25,7 +25,9 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.em
 import com.anisync.android.R
 import com.anisync.android.ui.theme.emphasis
@@ -49,6 +51,8 @@ enum class DonatorBadgePlacement {
  *
  * A quiet badge takes [containerColor]. The website always sets it on a card in the page colour, so
  * that is the default, and a badge sitting on the page itself passes a container colour instead.
+ * Next to a name the badge stops at [maxWidth], so a long text cannot squeeze the name out of a
+ * crowded row. Where the badge has a line of its own, pass [Dp.Unspecified].
  */
 @Composable
 fun DonatorBadge(
@@ -56,7 +60,8 @@ fun DonatorBadge(
     badgeText: String?,
     placement: DonatorBadgePlacement,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surface
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    maxWidth: Dp = 112.dp
 ) {
     if (tier <= 0) return
     val text = donatorBadgeText(tier, badgeText, placement) ?: stringResource(R.string.donator_badge_default)
@@ -75,8 +80,7 @@ fun DonatorBadge(
     } else {
         Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
     }
-    // A long custom text must not squeeze the name it sits beside down to nothing.
-    val bounded = if (onHeader) modifier else modifier.widthIn(max = 112.dp)
+    val bounded = if (onHeader || !maxWidth.isSpecified) modifier else modifier.widthIn(max = maxWidth)
 
     if (rainbow) {
         val progress = rememberRainbowProgress()
