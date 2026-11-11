@@ -46,7 +46,7 @@
         <item quantity="other">共橫跨%1$s個年代，巔峰位於 %2$s 年</item>
     </plurals>
     <plurals name="stats_roles">
-        <item quantity="other">%d 角色</item>
+        <item quantity="other">%d 位角色</item>
     </plurals>
     <plurals name="stats_tags_show_more">
         <item quantity="other">展示額外 %d 條</item>
@@ -76,7 +76,7 @@
         <item quantity="other">%1$s 部作品</item>
     </plurals>
     <plurals name="stats_titles">
-        <item quantity="other">%1$s 項</item>
+        <item quantity="other">%1$s 部作品</item>
     </plurals>
     <plurals name="stats_chapters_short">
         <item quantity="other">%1$s 章</item>
@@ -121,7 +121,7 @@
         <item quantity="other">集</item>
     </plurals>
     <plurals name="share_recap_titles_word">
-        <item quantity="other">項</item>
+        <item quantity="other">部作品</item>
     </plurals>
     <plurals name="share_recap_episode_count">
         <item quantity="other">%1$s 集</item>
@@ -140,5 +140,17 @@
     </plurals>
     <plurals name="recap_day_count">
         <item quantity="other">%1$s 天</item>
+    </plurals>
+    <plurals name="recap_finished_so_far">
+        <item quantity="other">目前看完了%1$s部作品</item>
+    </plurals>
+    <plurals name="recap_episodes_so_far">
+        <item quantity="other">現已累計 %1$s 集</item>
+    </plurals>
+    <plurals name="recap_episodes_so_far_short">
+        <item quantity="other">現已累計 %1$s 集</item>
+    </plurals>
+    <plurals name="stats_best_rated">
+        <item quantity="other">最高評分（至少 %d 部作品）</item>
     </plurals>
 </resources>
