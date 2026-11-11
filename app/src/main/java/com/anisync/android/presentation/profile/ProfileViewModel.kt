@@ -382,15 +382,11 @@ class ProfileViewModel @Inject constructor(
                             if (cached != null) {
                                 // Refresh failed but the profile is already on screen — keep it.
                                 emit(ProfileUiState(isLoading = false, profile = cached))
+                            } else if (result.code == 404 || result.message.contains("not found", ignoreCase = true)) {
+                                // AniList answers 404 for a private account as well as a missing one.
+                                emit(ProfileUiState(isLoading = false, loadErrorRes = R.string.profile_user_unavailable))
                             } else {
-                                val message = if (
-                                    result.message.contains("not found", ignoreCase = true)
-                                ) {
-                                    "Could not load @$targetUsername right now. The account may be private, temporarily unavailable, or rate-limited."
-                                } else {
-                                    result.message
-                                }
-                                emit(ProfileUiState(isLoading = false, errorMessage = message))
+                                emit(ProfileUiState(isLoading = false, errorMessage = result.message))
                             }
                         }
                     }

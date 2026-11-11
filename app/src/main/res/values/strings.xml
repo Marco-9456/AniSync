@@ -651,6 +651,7 @@
     <string name="profile_edit">Edit Profile</string>
     <string name="profile_unknown_error">Something went wrong while loading your profile.</string>
     <string name="profile_user_load_error">We could not load this user profile right now. The account may be private, unavailable or temporarily rate-limited.</string>
+    <string name="profile_user_unavailable">This profile is private or no longer exists.</string>
     <string name="profile_rate_limited_error">AniList is limiting requests right now. Wait a moment, then try again.</string>
     <string name="profile_tab_overview">Overview</string>
     <string name="profile_tab_activity">Activity</string>
@@ -1100,6 +1101,7 @@
     <string name="activity_detail_replies">Replies (%d)</string>
     <string name="activity_detail_no_replies">No replies yet</string>
     <string name="activity_detail_private">Private</string>
+    <string name="activity_unavailable">This activity is private or was deleted.</string>
     <string name="activity_detail_wrote_to">%1$s wrote to %2$s</string>
     <string name="activity_last_reply">%1$s replied %2$s</string>
     <string name="activity_open_on_anilist">Open on AniList</string>

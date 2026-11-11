@@ -2,6 +2,7 @@ package com.anisync.android.presentation.activity
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.R
 import com.anisync.android.domain.ActivityEventBus
 import com.anisync.android.domain.ActivityReply
 import com.anisync.android.domain.ActivityRepository
@@ -10,6 +11,7 @@ import com.anisync.android.domain.CommentNode
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.parser.RichTextParser
 import com.anisync.android.presentation.components.alert.ToastManager
+import com.anisync.android.presentation.components.alert.ToastType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -192,8 +194,9 @@ class ActivityDetailViewModel @Inject constructor(
                 is Result.Error -> {
                     if (activityResult.code == 404) {
                         // Activity was deleted or not found — show a toast and pop back
-                        // instead of a dead-end error screen (e.g. when opening from a notification)
-                        toastManager.showResultError(activityResult)
+                        // instead of a dead-end error screen (e.g. when opening from a notification).
+                        // AniList also answers 404 for any activity of a private account.
+                        toastManager.showToast(ToastType.NOT_FOUND, R.string.activity_unavailable)
                         _uiState.update { it.copy(isLoading = false, isRefreshing = false) }
                         _finishedEvents.tryEmit(Unit)
                     } else {
