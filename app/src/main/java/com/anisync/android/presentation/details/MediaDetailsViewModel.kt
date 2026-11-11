@@ -419,9 +419,10 @@ class MediaDetailsViewModel @Inject constructor(
     }
 
     fun saveLibraryEntry(entry: LibraryEntry) {
+        val baseline = _draftEntry.value?.takeIf { it.mediaId == entry.mediaId }
         viewModelScope.launch {
             _isSaving.value = true
-            when (val result = libraryRepository.updateEntry(entry)) {
+            when (val result = libraryRepository.updateEntry(entry, baseline)) {
                 is Result.Success -> {
                     refresh()
                     closeEditSheet()

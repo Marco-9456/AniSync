@@ -807,8 +807,9 @@ class LibraryViewModel @Inject constructor(
     }
 
     private fun updateEntry(entry: LibraryEntry) {
+        val baseline = _uiState.value.editingEntry?.takeIf { it.mediaId == entry.mediaId }
         viewModelScope.launch {
-            when (val result = libraryRepository.updateEntry(entry)) {
+            when (val result = libraryRepository.updateEntry(entry, baseline)) {
                 is Result.Success -> toastManager.showToast(ToastType.SUCCESS, message = "Entry updated")
                 is Result.Error -> showResultError(result)
             }

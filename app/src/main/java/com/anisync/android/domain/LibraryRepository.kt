@@ -57,9 +57,11 @@ interface LibraryRepository {
     suspend fun getEntry(mediaId: Int): LibraryEntry?
 
     /**
-     * Update an entire entry (score, status, notes, etc).
+     * Saves an edit of [entry]. Only what differs from [baseline], the entry the editor opened on,
+     * goes to AniList, so a change made elsewhere since then survives. Without a baseline the row as
+     * it is now stands in, and a title with no AniList entry yet is saved whole.
      */
-    suspend fun updateEntry(entry: LibraryEntry): Result<Unit>
+    suspend fun updateEntry(entry: LibraryEntry, baseline: LibraryEntry? = null): Result<Unit>
 
     /**
      * Delete an entry from the library.

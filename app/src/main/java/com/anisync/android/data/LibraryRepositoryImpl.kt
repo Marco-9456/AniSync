@@ -390,70 +390,42 @@ class LibraryRepositoryImpl @Inject constructor(
     override suspend fun countByStatus(type: MediaType): Map<LibraryStatus, Int> =
         libraryDao.countByStatus(currentOwnerId(), type).associate { it.status to it.count }
 
-    override suspend fun updateEntry(entry: LibraryEntry): Result<Unit> {
+    override suspend fun updateEntry(entry: LibraryEntry, baseline: LibraryEntry?): Result<Unit> {
         val owner = currentOwnerId()
-        // Get original entry to detect status changes
-        val originalEntry = libraryDao.getEntry(owner, entry.mediaId)
+        val stored = libraryDao.getEntry(owner, entry.mediaId)
+        val current = stored?.toDomain()
+        val from = baseline ?: current
         val now = todayUtcMillis()
-        
-        // Auto-fill dates based on status changes
+
         var updatedEntry = entry
-        
-        // If changing to CURRENT (Watching/Reading) and startedAt is not set, auto-fill it
-        if (entry.status == LibraryStatus.CURRENT && 
-            originalEntry?.status != LibraryStatus.CURRENT &&
-            entry.startedAt == null) {
+        // Moving to Watching/Reading or Completed fills in the matching date when it is empty.
+        if (entry.status == LibraryStatus.CURRENT && from?.status != LibraryStatus.CURRENT && entry.startedAt == null) {
             updatedEntry = updatedEntry.copy(startedAt = now)
         }
-        
-        // If changing to COMPLETED and completedAt is not set, auto-fill it
-        if (entry.status == LibraryStatus.COMPLETED && 
-            originalEntry?.status != LibraryStatus.COMPLETED &&
-            entry.completedAt == null) {
+        if (entry.status == LibraryStatus.COMPLETED && from?.status != LibraryStatus.COMPLETED && entry.completedAt == null) {
             updatedEntry = updatedEntry.copy(completedAt = now)
         }
-        
-        // 1. Update local DB
-        // We assume media type is present or default to ANIME logic for entity mapping
-        libraryDao.updateEntry(updatedEntry.toEntity(updatedEntry.type ?: MediaType.ANIME).copy(ownerId = owner))
 
-        // 2. Sync to network
-        return safeApiCall {
-            val apiStatus = updatedEntry.status.toApiStatus()
+        // A title AniList has no entry for yet goes whole.
+        val edits = from?.takeIf { it.id != 0 }?.let { ListEntryEdits.between(it, updatedEntry) }
+        if (edits != null && edits.isEmpty) return Result.Success(Unit)
 
+        val local = if (current != null && edits != null) edits.applyTo(current, updatedEntry) else updatedEntry
+        libraryDao.updateEntry(local.toEntity(local.type ?: MediaType.ANIME).copy(ownerId = owner))
+
+        val result = safeApiCall {
             val response = apolloClient.mutation(
-                com.anisync.android.SaveMediaListEntryMutation(
-                    mediaId = Optional.present(updatedEntry.mediaId),
-                    status = Optional.present(apiStatus),
-                    progress = Optional.present(updatedEntry.progress),
-                    progressVolumes = Optional.presentIfNotNull(updatedEntry.progressVolumes),
-                    score = Optional.presentIfNotNull(updatedEntry.score),
-                    advancedScores = advancedScoresFor(updatedEntry),
-                    repeat = Optional.present(updatedEntry.rewatches),
-                    // Only when it moved. AniList's priority is a plain 0..255 Int and this client
-                    // only writes 0/1/2, so resending it unchanged would flatten a value some other
-                    // client set outside that range.
-                    priority = if (updatedEntry.priority != (originalEntry?.priority ?: 0)) {
-                        Optional.present(updatedEntry.priority)
-                    } else {
-                        Optional.absent()
-                    },
-                    notes = Optional.presentIfNotNull(updatedEntry.notes),
-                    startedAt = updatedEntry.startedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
-                    completedAt = updatedEntry.completedAt?.let { Optional.present(it.toFuzzyDateInput()) } ?: Optional.absent(),
-                    customLists = Optional.present(updatedEntry.customLists),
-                    `private` = Optional.present(updatedEntry.isPrivate),
-                    hiddenFromStatusLists = Optional.present(updatedEntry.hiddenFromStatusLists)
-                )
+                listEntryMutation(updatedEntry, edits, advancedScoresFor(updatedEntry))
             ).execute()
 
-            if (response.data?.SaveMediaListEntry != null && !response.hasErrors()) {
-                // Success
-            } else {
+            if (response.data?.SaveMediaListEntry == null || response.hasErrors()) {
                 val errorMessage = response.errors?.firstOrNull()?.message ?: "Sync failed"
                 throw Exception(errorMessage)
             }
         }
+        // AniList still has the old entry, and a later edit would otherwise count from this one.
+        if (result is Result.Error && stored != null) libraryDao.updateEntry(stored)
+        return result
     }
 
     /**
