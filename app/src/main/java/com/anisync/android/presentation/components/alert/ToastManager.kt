@@ -125,6 +125,8 @@ class ToastManager @Inject constructor(
      */
     fun showResultError(error: Result.Error, action: ToastAction? = null) {
         val api = error.exception?.findApiError()
+        // The session expired dialog speaks for it, and knows whether another account took over.
+        if (api is ApiError.SessionExpired) return
         val type = api?.let { ToastType.of(it) } ?: ToastType.fromCode(error.code)
         val strings = AppLocale.wrap(context)
 
