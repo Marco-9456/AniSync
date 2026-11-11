@@ -1,5 +1,7 @@
-query GetUserLibrary($username: String!, $type: MediaType!) {
-  MediaListCollection(userName: $username, type: $type) {
+# The signed-in account's own list goes by id, never by a name resolved from the cached viewer, which
+# can still belong to the account that was active a moment ago. Other people's lists go by name.
+query GetUserLibrary($userId: Int, $username: String, $type: MediaType!) {
+  MediaListCollection(userId: $userId, userName: $username, type: $type) {
     user {
       id
       mediaListOptions {

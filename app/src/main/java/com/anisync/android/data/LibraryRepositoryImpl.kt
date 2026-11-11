@@ -96,172 +96,165 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Fetch from network and update local cache.
-     * The Flow from getLibrary() will emit automatically.
+     * Fetches the active account's list by its id and stores it under that same id.
+     *
+     * Asking for the cached viewer's name instead let a switch mid-sync fetch the previous account's
+     * list and file it under the next one.
      */
-    override suspend fun refreshLibrary(username: String, type: MediaType): Result<Unit> {
-        return safeApiCall {
-            var resolvedScoreFormat: com.anisync.android.type.ScoreFormat? = null
-            val actualUsername = if (username.isBlank()) {
-                val viewerResponse = apolloClient.query(GetViewerQuery()).execute()
-                resolvedScoreFormat = viewerResponse.data?.Viewer?.mediaListOptions?.scoreFormat
-                viewerResponse.data?.Viewer?.name
-                    ?: throw Exception("Unable to get current user")
-            } else {
-                username
-            }
-
-            val response = apolloClient.query(
-                GetUserLibraryQuery(username = actualUsername, type = type)
-            )
-            .fetchPolicy(FetchPolicy.NetworkOnly)
-            .execute()
-
-            if (response.hasErrors()) {
-                val errorMessage = response.errors?.firstOrNull()?.message ?: "Unknown error"
-                throw Exception(errorMessage)
-            }
-
-            val lists = response.data?.MediaListCollection?.lists ?: emptyList()
-            val options = response.data?.MediaListCollection?.user?.mediaListOptions
-
-            // The scores in this response are in the scoring system it names, and a cached viewer can
-            // still hold the one AniList converted them away from.
-            val scoreFormatApi = options?.scoreFormat
-                ?: resolvedScoreFormat
-                ?: apolloClient.query(GetViewerQuery())
-                    .fetchPolicy(FetchPolicy.CacheFirst)
+    override suspend fun refreshLibrary(type: MediaType): Result<Unit> = safeApiCall {
+        fetchForActiveAccount(
+            activeOwner = { accountStore.activeAccount.value?.id?.takeIf { it > 0 } },
+            fetch = { owner ->
+                val response = apolloClient.query(GetUserLibraryQuery(userId = Optional.present(owner), type = type))
+                    .fetchPolicy(FetchPolicy.NetworkOnly)
                     .execute()
-                    .data?.Viewer?.mediaListOptions?.scoreFormat
-            if (scoreFormatApi != null) {
-                appSettings.setUserScoreFormat(mapScoreFormat(scoreFormatApi.name))
-            }
-
-            val animeCustomLists = options?.animeList?.customLists?.filterNotNull() ?: emptyList()
-            val mangaCustomLists = options?.mangaList?.customLists?.filterNotNull() ?: emptyList()
-
-            // The categories are the key to the per-entry scores: the save mutation takes a bare
-            // array, so the order AniList returns them in is the order scores go back in.
-            appSettings.setAdvancedScoring(
-                MediaType.ANIME,
-                options?.animeList?.advancedScoring?.filterNotNull() ?: emptyList(),
-                options?.animeList?.advancedScoringEnabled == true
-            )
-            appSettings.setAdvancedScoring(
-                MediaType.MANGA,
-                options?.mangaList?.advancedScoring?.filterNotNull() ?: emptyList(),
-                options?.mangaList?.advancedScoringEnabled == true
-            )
-
-            val apiAnimeSet = animeCustomLists.toHashSet()
-            val apiMangaSet = mangaCustomLists.toHashSet()
-
-            val currentAnimeOrder = appSettings.animeListOrder.value
-            val currentAnimeOrderSet = currentAnimeOrder.toHashSet()
-            val syncedAnime = currentAnimeOrder.filter { it.startsWith("status:") || it in apiAnimeSet } +
-                    animeCustomLists.filter { it !in currentAnimeOrderSet }
-            if (syncedAnime != currentAnimeOrder) {
-                appSettings.setAnimeListOrder(syncedAnime)
-            }
-
-            val currentMangaOrder = appSettings.mangaListOrder.value
-            val currentMangaOrderSet = currentMangaOrder.toHashSet()
-            val syncedManga = currentMangaOrder.filter { it.startsWith("status:") || it in apiMangaSet } +
-                    mangaCustomLists.filter { it !in currentMangaOrderSet }
-            if (syncedManga != currentMangaOrder) {
-                appSettings.setMangaListOrder(syncedManga)
-            }
-
-            val apiCustomNamesForType = if (type == MediaType.ANIME) apiAnimeSet else apiMangaSet
-
-            // Group by entry ID to handle duplicates from custom lists
-            val entryMap = mutableMapOf<Int, LibraryEntry>()
-
-            lists.filterNotNull().forEach { group ->
-                val listName = group.name ?: return@forEach
-                val isCustom = group.isCustomList == true ||
-                        (group.isCustomList != false && listName in apiCustomNamesForType)
-
-                group.entries?.filterNotNull()?.forEach { entry ->
-                    val entryId = entry.id ?: return@forEach
-                    val media = entry.media
-                    val existing = entryMap[entryId]
-
-                    if (existing == null) {
-                        val status = entry.status?.toDomainStatus() ?: LibraryStatus.UNKNOWN
-                        entryMap[entryId] = LibraryEntry(
-                            id = entryId,
-                            mediaId = media?.id ?: 0,
-                            titleRomaji = media?.title?.romaji,
-                            titleEnglish = media?.title?.english,
-                            titleNative = media?.title?.native,
-                            titleUserPreferred = media?.title?.userPreferred ?: "Unknown Title",
-                            coverUrl = media?.coverImage?.extraLarge,
-                            cover = com.anisync.android.domain.CoverImage.of(media?.coverImage?.medium, media?.coverImage?.large, media?.coverImage?.extraLarge),
-                            progress = entry.progress ?: 0,
-                            progressVolumes = entry.progressVolumes,
-                            totalEpisodes = media?.episodes,
-                            totalChapters = media?.chapters,
-                            totalVolumes = media?.volumes,
-                            type = media?.type,
-                            format = media?.format,
-                            status = status,
-                            nextAiringEpisode = media?.nextAiringEpisode?.episode,
-                            timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring,
-                            mediaStatus = media?.status?.name,
-                            nextAiringEpisodeTime = media?.nextAiringEpisode?.airingAt?.toLong(),
-                            score = entry.score,
-                            advancedScores = entry.advancedScores.toScoreMap(),
-                            rewatches = entry.repeat ?: 0,
-                            priority = entry.priority ?: 0,
-                            notes = entry.notes,
-                            startedAt = entry.startedAt?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
-                            completedAt = entry.completedAt?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
-                            updatedAt = entry.updatedAt?.toLong()?.times(1000L),
-                            createdAt = entry.createdAt?.toLong()?.times(1000L),
-                            mediaStartDate = media?.startDate?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
-                            genres = media?.genres?.filterNotNull() ?: emptyList(),
-                            customLists = if (isCustom) listOf(listName) else emptyList(),
-                            isPrivate = entry.`private` ?: false,
-                            hiddenFromStatusLists = entry.hiddenFromStatusLists ?: false
-                        )
-                    } else if (isCustom && !existing.customLists.contains(listName)) {
-                        entryMap[entryId] = existing.copy(customLists = existing.customLists + listName)
-                    }
+                if (response.hasErrors()) {
+                    throw Exception(response.errors?.firstOrNull()?.message ?: "Unknown error")
                 }
-            }
+                response.data
+            },
+            store = { owner, data -> storeLibrary(owner, type, data) },
+        )
+    }
 
-            // Collapse any rows that resolve to the same media into one (AniList media merges, or a
-            // duplicate written by an external sync tool, can produce two list entries for one media).
-            // Keep the most recently updated, carrying over every custom-list membership, so the cache
-            // holds a single row per media and the grid never gets two cards with the same key.
-            val entries = entryMap.values
-                .groupBy { it.mediaId }
-                .map { (_, dups) ->
-                    if (dups.size == 1) {
-                        dups[0]
-                    } else {
-                        val keep = dups.maxByOrNull { it.updatedAt ?: 0L } ?: dups[0]
-                        keep.copy(customLists = dups.flatMap { it.customLists }.distinct())
-                    }
-                }
+    private suspend fun storeLibrary(owner: Int, type: MediaType, data: GetUserLibraryQuery.Data?) {
+        val lists = data?.MediaListCollection?.lists ?: emptyList()
+        val options = data?.MediaListCollection?.user?.mediaListOptions
 
-            // Smart merge to preserve locally-added entries during API sync delay.
-            // Tag rows with the active account so each account's library persists independently.
-            val owner = currentOwnerId()
-
-            // An empty response is far likelier to be a throttled or partial fetch than an account
-            // that just deleted its entire list for this media type — a 429 whose body still parses
-            // gets here with no lists at all. smartMergeByType reads "absent from the response" as
-            // "removed on the server", so without this the cached library is wiped and the screen
-            // shows an empty-state for a library that is still perfectly intact upstream.
-            if (entries.isEmpty() && libraryDao.getByType(owner, type).isNotEmpty()) {
-                return@safeApiCall
-            }
-
-            libraryDao.smartMergeByType(owner, type, entries.map { it.toEntity(type).copy(ownerId = owner) })
-            refreshTimes.markRefreshed(owner, type)
+        // The scores in this response are in the scoring system it names, and a cached viewer can
+        // still hold the one AniList converted them away from.
+        val scoreFormatApi = options?.scoreFormat
+            ?: apolloClient.query(GetViewerQuery())
+                .fetchPolicy(FetchPolicy.CacheFirst)
+                .execute()
+                .data?.Viewer?.takeIf { it.id == owner }?.mediaListOptions?.scoreFormat
+        if (scoreFormatApi != null) {
+            appSettings.setUserScoreFormat(mapScoreFormat(scoreFormatApi.name))
         }
+
+        val animeCustomLists = options?.animeList?.customLists?.filterNotNull() ?: emptyList()
+        val mangaCustomLists = options?.mangaList?.customLists?.filterNotNull() ?: emptyList()
+
+        // The categories are the key to the per-entry scores: the save mutation takes a bare
+        // array, so the order AniList returns them in is the order scores go back in.
+        appSettings.setAdvancedScoring(
+            MediaType.ANIME,
+            options?.animeList?.advancedScoring?.filterNotNull() ?: emptyList(),
+            options?.animeList?.advancedScoringEnabled == true
+        )
+        appSettings.setAdvancedScoring(
+            MediaType.MANGA,
+            options?.mangaList?.advancedScoring?.filterNotNull() ?: emptyList(),
+            options?.mangaList?.advancedScoringEnabled == true
+        )
+
+        val apiAnimeSet = animeCustomLists.toHashSet()
+        val apiMangaSet = mangaCustomLists.toHashSet()
+
+        val currentAnimeOrder = appSettings.animeListOrder.value
+        val currentAnimeOrderSet = currentAnimeOrder.toHashSet()
+        val syncedAnime = currentAnimeOrder.filter { it.startsWith("status:") || it in apiAnimeSet } +
+                animeCustomLists.filter { it !in currentAnimeOrderSet }
+        if (syncedAnime != currentAnimeOrder) {
+            appSettings.setAnimeListOrder(syncedAnime)
+        }
+
+        val currentMangaOrder = appSettings.mangaListOrder.value
+        val currentMangaOrderSet = currentMangaOrder.toHashSet()
+        val syncedManga = currentMangaOrder.filter { it.startsWith("status:") || it in apiMangaSet } +
+                mangaCustomLists.filter { it !in currentMangaOrderSet }
+        if (syncedManga != currentMangaOrder) {
+            appSettings.setMangaListOrder(syncedManga)
+        }
+
+        val apiCustomNamesForType = if (type == MediaType.ANIME) apiAnimeSet else apiMangaSet
+
+        // Group by entry ID to handle duplicates from custom lists
+        val entryMap = mutableMapOf<Int, LibraryEntry>()
+
+        lists.filterNotNull().forEach { group ->
+            val listName = group.name ?: return@forEach
+            val isCustom = group.isCustomList == true ||
+                    (group.isCustomList != false && listName in apiCustomNamesForType)
+
+            group.entries?.filterNotNull()?.forEach { entry ->
+                val entryId = entry.id ?: return@forEach
+                val media = entry.media
+                val existing = entryMap[entryId]
+
+                if (existing == null) {
+                    val status = entry.status?.toDomainStatus() ?: LibraryStatus.UNKNOWN
+                    entryMap[entryId] = LibraryEntry(
+                        id = entryId,
+                        mediaId = media?.id ?: 0,
+                        titleRomaji = media?.title?.romaji,
+                        titleEnglish = media?.title?.english,
+                        titleNative = media?.title?.native,
+                        titleUserPreferred = media?.title?.userPreferred ?: "Unknown Title",
+                        coverUrl = media?.coverImage?.extraLarge,
+                        cover = com.anisync.android.domain.CoverImage.of(media?.coverImage?.medium, media?.coverImage?.large, media?.coverImage?.extraLarge),
+                        progress = entry.progress ?: 0,
+                        progressVolumes = entry.progressVolumes,
+                        totalEpisodes = media?.episodes,
+                        totalChapters = media?.chapters,
+                        totalVolumes = media?.volumes,
+                        type = media?.type,
+                        format = media?.format,
+                        status = status,
+                        nextAiringEpisode = media?.nextAiringEpisode?.episode,
+                        timeUntilAiring = media?.nextAiringEpisode?.timeUntilAiring,
+                        mediaStatus = media?.status?.name,
+                        nextAiringEpisodeTime = media?.nextAiringEpisode?.airingAt?.toLong(),
+                        score = entry.score,
+                        advancedScores = entry.advancedScores.toScoreMap(),
+                        rewatches = entry.repeat ?: 0,
+                        priority = entry.priority ?: 0,
+                        notes = entry.notes,
+                        startedAt = entry.startedAt?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
+                        completedAt = entry.completedAt?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
+                        updatedAt = entry.updatedAt?.toLong()?.times(1000L),
+                        createdAt = entry.createdAt?.toLong()?.times(1000L),
+                        mediaStartDate = media?.startDate?.let { mapFuzzyDateToLong(it.year, it.month, it.day) },
+                        genres = media?.genres?.filterNotNull() ?: emptyList(),
+                        customLists = if (isCustom) listOf(listName) else emptyList(),
+                        isPrivate = entry.`private` ?: false,
+                        hiddenFromStatusLists = entry.hiddenFromStatusLists ?: false
+                    )
+                } else if (isCustom && !existing.customLists.contains(listName)) {
+                    entryMap[entryId] = existing.copy(customLists = existing.customLists + listName)
+                }
+            }
+        }
+
+        // Collapse any rows that resolve to the same media into one (AniList media merges, or a
+        // duplicate written by an external sync tool, can produce two list entries for one media).
+        // Keep the most recently updated, carrying over every custom-list membership, so the cache
+        // holds a single row per media and the grid never gets two cards with the same key.
+        val entries = entryMap.values
+            .groupBy { it.mediaId }
+            .map { (_, dups) ->
+                if (dups.size == 1) {
+                    dups[0]
+                } else {
+                    val keep = dups.maxByOrNull { it.updatedAt ?: 0L } ?: dups[0]
+                    keep.copy(customLists = dups.flatMap { it.customLists }.distinct())
+                }
+            }
+
+        // Smart merge to preserve locally-added entries during API sync delay, under the account
+        // that asked, so each account's library persists independently.
+        //
+        // An empty response is far likelier to be a throttled or partial fetch than an account
+        // that just deleted its entire list for this media type — a 429 whose body still parses
+        // gets here with no lists at all. smartMergeByType reads "absent from the response" as
+        // "removed on the server", so without this the cached library is wiped and the screen
+        // shows an empty-state for a library that is still perfectly intact upstream.
+        if (entries.isEmpty() && libraryDao.getByType(owner, type).isNotEmpty()) {
+            return
+        }
+
+        libraryDao.smartMergeByType(owner, type, entries.map { it.toEntity(type).copy(ownerId = owner) })
+        refreshTimes.markRefreshed(owner, type)
     }
 
     override fun lastRefreshedAt(type: MediaType): Long? =

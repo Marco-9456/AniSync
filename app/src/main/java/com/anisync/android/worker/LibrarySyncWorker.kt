@@ -56,8 +56,7 @@ class LibrarySyncWorker @AssistedInject constructor(
             return Result.success()
         }
 
-        // Empty username means resolve the signed in viewer, which the repository already does.
-        return when (libraryRepository.refreshLibrary("", type)) {
+        return when (libraryRepository.refreshLibrary(type)) {
             is DomainResult.Success -> {
                 WidgetRefresh.all(appContext)
                 // Titles added elsewhere need their tags too, or the library's tag filter misses them.

@@ -690,7 +690,7 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
             val type = _uiState.value.mediaType
-            when (val result = libraryRepository.refreshLibrary("", type)) {
+            when (val result = libraryRepository.refreshLibrary(type)) {
                 is Result.Success -> syncTags(type)
                 is Result.Error -> showResultError(result)
             }

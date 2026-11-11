@@ -22,11 +22,10 @@ interface LibraryRepository {
     suspend fun countByStatus(type: MediaType): Map<LibraryStatus, Int>
 
     /**
-     * Trigger a network refresh.
-     * Fetches from API and updates local cache.
-     * Returns Result to indicate success/failure for UI feedback.
+     * Fetches the active account's [type] list and merges it into the local library. When the active
+     * account changes while the list is on its way, the account switched to is fetched instead.
      */
-    suspend fun refreshLibrary(username: String, type: MediaType): Result<Unit>
+    suspend fun refreshLibrary(type: MediaType): Result<Unit>
 
     /**
      * When [refreshLibrary] last brought the active account's [type] list down since the app

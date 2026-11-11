@@ -166,8 +166,8 @@ class OnboardingViewModel @Inject constructor(
                 _uiState.update { copy(bannerUrl = profile.bannerUrl, avatarUrl = profile.avatarUrl) }
             }
 
-            libraryRepository.refreshLibrary(account.name, MediaType.ANIME)
-            libraryRepository.refreshLibrary(account.name, MediaType.MANGA)
+            libraryRepository.refreshLibrary(MediaType.ANIME)
+            libraryRepository.refreshLibrary(MediaType.MANGA)
 
             val anime = libraryRepository.observeLibrary(account.name, MediaType.ANIME).first()
             val manga = libraryRepository.observeLibrary(account.name, MediaType.MANGA).first()
