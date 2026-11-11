@@ -17,5 +17,10 @@ data class ForumComment(
     val authorAvatarUrl: String?,
     val createdAt: Long,
     val siteUrl: String?,
-    val childComments: List<ForumComment> = emptyList()
+    val childComments: List<ForumComment> = emptyList(),
+    /**
+     * Replies under this one that AniList sent as bare ids, with nothing to show. Since November 2026
+     * `childComments` carries no text or author, so they can only be read on the website.
+     */
+    val hiddenReplies: Int = 0
 )
