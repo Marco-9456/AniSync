@@ -62,4 +62,22 @@ class RequestCoalescerTest {
         val request = ApolloRequest.Builder(GetViewerQuery()).build()
         assertEquals("GetViewer:{}", coalescer.key(request))
     }
+
+    private class SwitchableSession(var current: String?) : SessionTokens {
+        override fun getToken() = current
+        override fun onSessionExpired() = Unit
+    }
+
+    @Test
+    fun `an account switched to never joins the previous account's request`() {
+        val session = SwitchableSession("previous")
+        val shared = RequestCoalescer(session)
+        val request = ApolloRequest.Builder(GetViewerQuery()).build()
+
+        val before = shared.key(request)
+        assertEquals(before, shared.key(request))
+
+        session.current = "next"
+        assertNotEquals(before, shared.key(request))
+    }
 }

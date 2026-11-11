@@ -26,9 +26,10 @@ import okio.Buffer
  *
  * One instance per [com.apollographql.apollo.ApolloClient], never a singleton: the per-account
  * clients in [com.anisync.android.data.account.TokenedApolloClientFactory] would otherwise share a
- * key space and hand one account another account's viewer.
+ * key space and hand one account another account's viewer. The shared client keys on [session] for
+ * the same reason, since it outlives an account switch.
  */
-class RequestCoalescer : ApolloInterceptor {
+class RequestCoalescer(private val session: SessionTokens? = null) : ApolloInterceptor {
 
     private val inflight = InflightTracker()
 
@@ -56,10 +57,11 @@ class RequestCoalescer : ApolloInterceptor {
     }
 
     /**
-     * Operation name plus serialised variables.
+     * Operation name plus serialised variables, and the session when there is one.
      *
      * The name alone is not enough: `GetMediaDetails(1)` and `GetMediaDetails(2)` are different
-     * requests, and joining them would hand one screen another anime.
+     * requests, and joining them would hand one screen another anime. Without the session, an
+     * account that has just been switched to would join the previous account's `GetViewer`.
      */
     internal fun <D : Operation.Data> key(request: ApolloRequest<D>): String {
         val adapters = request.executionContext[CustomScalarAdapters] ?: CustomScalarAdapters.Empty
@@ -69,7 +71,8 @@ class RequestCoalescer : ApolloInterceptor {
             request.operation.serializeVariables(writer, adapters, withDefaultValues = true)
             writer.endObject()
         }
-        return "${request.operation.name()}:${buffer.readUtf8()}"
+        val key = "${request.operation.name()}:${buffer.readUtf8()}"
+        return if (session == null) key else "${session.getToken().hashCode()}/$key"
     }
 
     private companion object {
