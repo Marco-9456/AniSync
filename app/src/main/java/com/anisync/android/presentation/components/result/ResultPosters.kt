@@ -163,15 +163,26 @@ fun UserResultCard(
     name: String,
     avatarUrl: String?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    donatorTier: Int = 0,
+    donatorBadge: String? = null
 ) {
     PosterFrame(title = name, onClick = onClick, modifier = modifier) {
-        PersonPortrait(
-            imageUrl = avatarUrl,
-            contentDescription = name,
-            shape = ExpressiveShapes.mediaCover,
-            modifier = Modifier.fillMaxWidth().aspectRatio(1f)
-        )
+        // The badge sits on the avatar, so a donator's card keeps the height of the cards beside it.
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+            PersonPortrait(
+                imageUrl = avatarUrl,
+                contentDescription = name,
+                shape = ExpressiveShapes.mediaCover,
+                modifier = Modifier.fillMaxSize()
+            )
+            com.anisync.android.presentation.components.DonatorBadge(
+                tier = donatorTier,
+                badgeText = donatorBadge,
+                placement = com.anisync.android.presentation.components.DonatorBadgePlacement.NextToName,
+                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
+            )
+        }
         Box(modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 12.dp)) {
             PosterTitle(name, maxLines = 1)
         }

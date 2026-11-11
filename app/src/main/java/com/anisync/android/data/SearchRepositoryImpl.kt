@@ -22,6 +22,7 @@ import com.anisync.android.domain.SearchResult
 import com.anisync.android.fragment.MediaCardFields
 import com.anisync.android.type.MediaSort
 import com.anisync.android.type.MediaType
+import com.anisync.android.type.ModRole
 import com.apollographql.apollo.ApolloClient
 import com.apollographql.apollo.api.Optional
 import com.apollographql.cache.normalized.FetchPolicy
@@ -161,7 +162,10 @@ class SearchRepositoryImpl @Inject constructor(
                 SearchResult.UserResult(
                     id = u.id,
                     displayName = u.name,
-                    imageUrl = u.avatar?.medium
+                    imageUrl = u.avatar?.medium,
+                    donatorTier = u.donatorTier ?: 0,
+                    donatorBadge = u.donatorBadge,
+                    isActiveModerator = isActiveModerator(u.moderatorRoles)
                 )
             } ?: emptyList()
 
@@ -267,7 +271,10 @@ class SearchRepositoryImpl @Inject constructor(
                     SearchResult.UserResult(
                         id = u.id,
                         displayName = u.name,
-                        imageUrl = u.avatar?.medium
+                        imageUrl = u.avatar?.medium,
+                        donatorTier = u.donatorTier ?: 0,
+                        donatorBadge = u.donatorBadge,
+                        isActiveModerator = isActiveModerator(u.moderatorRoles)
                     )
                 } ?: emptyList()
 
@@ -423,3 +430,7 @@ class SearchRepositoryImpl @Inject constructor(
             Optional.present(value + 1)
         } else Optional.absent()
 }
+
+/** A moderator still serving. AniList's website shows their role where a donator badge would go. */
+private fun isActiveModerator(roles: List<ModRole?>?): Boolean =
+    !roles.isNullOrEmpty() && ModRole.RETIRED !in roles

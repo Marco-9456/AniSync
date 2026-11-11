@@ -32,6 +32,9 @@ query SearchAll($search: String, $page: Int, $perPage: Int) {
     users(search: $search, sort: [SEARCH_MATCH]) {
       id
       name
+      donatorTier
+      donatorBadge
+      moderatorRoles
       avatar {
         medium
       }

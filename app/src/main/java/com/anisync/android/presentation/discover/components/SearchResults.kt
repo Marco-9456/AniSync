@@ -214,6 +214,8 @@ private class SearchResultSet(
             is SearchResult.UserResult -> UserResultRow(
                 name = item.displayName,
                 avatarUrl = item.imageUrl,
+                donatorTier = item.searchDonatorTier(),
+                donatorBadge = item.donatorBadge,
                 onClick = { actions.onUser(item.displayName) },
                 modifier = modifier
             )
@@ -259,6 +261,8 @@ private class SearchResultSet(
             is SearchResult.UserResult -> UserResultCard(
                 name = item.displayName,
                 avatarUrl = item.imageUrl,
+                donatorTier = item.searchDonatorTier(),
+                donatorBadge = item.donatorBadge,
                 onClick = { actions.onUser(item.displayName) },
                 modifier = modifier
             )
@@ -414,3 +418,6 @@ private fun ResultCategory.icon(): ImageVector = when (this) {
     ResultCategory.USERS -> Icons.Default.Group
     ResultCategory.STUDIOS -> Icons.Default.Domain
 }
+
+/** No donator badge for a serving moderator, whose role takes its place on the website. */
+private fun SearchResult.UserResult.searchDonatorTier(): Int = if (isActiveModerator) 0 else donatorTier

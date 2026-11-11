@@ -40,7 +40,11 @@ sealed interface SearchResult {
     data class UserResult(
         override val id: Int,
         override val displayName: String,
-        override val imageUrl: String?
+        override val imageUrl: String?,
+        val donatorTier: Int = 0,
+        val donatorBadge: String? = null,
+        /** A serving moderator, whose role badge takes the donator badge's place on the website. */
+        val isActiveModerator: Boolean = false
     ) : SearchResult
 
     @Immutable

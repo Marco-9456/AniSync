@@ -208,15 +208,31 @@ fun UserResultRow(
     name: String,
     avatarUrl: String?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    donatorTier: Int = 0,
+    donatorBadge: String? = null
 ) {
-    CompactRowFrame(title = name, onClick = onClick, modifier = modifier, thumb = {
-        com.anisync.android.presentation.components.UserAvatar(
-            contentDescription = name,
-            size = 56.dp,
-            url = avatarUrl
-        )
-    })
+    CompactRowFrame(
+        title = name,
+        onClick = onClick,
+        modifier = modifier,
+        thumb = {
+            com.anisync.android.presentation.components.UserAvatar(
+                contentDescription = name,
+                size = 56.dp,
+                url = avatarUrl
+            )
+        },
+        detail = if (donatorTier > 0) {
+            {
+                com.anisync.android.presentation.components.DonatorBadge(
+                    tier = donatorTier,
+                    badgeText = donatorBadge,
+                    placement = com.anisync.android.presentation.components.DonatorBadgePlacement.NextToName
+                )
+            }
+        } else null
+    )
 }
 
 /** A studio: no artwork exists for one, so a tile stands in for it. */
