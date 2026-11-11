@@ -47,6 +47,33 @@ class DonatorBadgeTest {
         assertClose(Color(0, 105, 255, 181), rainbowAt(1f))
     }
 
+    @Test
+    fun `a name and badge that fit both keep their whole width`() {
+        assertEquals(NameAndBadgeWidths(80, 50), nameAndBadgeWidths(available = 200, name = 80, badge = 50, gap = 6, minBadge = 40))
+    }
+
+    @Test
+    fun `a long badge gives way to the name and ends where the line does`() {
+        assertEquals(NameAndBadgeWidths(80, 74), nameAndBadgeWidths(available = 160, name = 80, badge = 300, gap = 6, minBadge = 40))
+    }
+
+    @Test
+    fun `a badge with too little room beside the whole name stays out`() {
+        assertEquals(NameAndBadgeWidths(80, null), nameAndBadgeWidths(available = 120, name = 80, badge = 300, gap = 6, minBadge = 40))
+        assertEquals(NameAndBadgeWidths(100, null), nameAndBadgeWidths(available = 100, name = 150, badge = 50, gap = 6, minBadge = 40))
+    }
+
+    @Test
+    fun `a badge shorter than the minimum still shows when it fits`() {
+        assertEquals(NameAndBadgeWidths(80, 30), nameAndBadgeWidths(available = 116, name = 80, badge = 30, gap = 6, minBadge = 40))
+    }
+
+    @Test
+    fun `no badge or no limit leaves the name alone`() {
+        assertEquals(NameAndBadgeWidths(90, null), nameAndBadgeWidths(available = 90, name = 120, badge = null, gap = 6, minBadge = 40))
+        assertEquals(NameAndBadgeWidths(120, 300), nameAndBadgeWidths(available = null, name = 120, badge = 300, gap = 6, minBadge = 40))
+    }
+
     private fun assertClose(expected: Color, actual: Color) {
         val tolerance = 1.5f / 255f
         assertEquals(expected.red, actual.red, tolerance)

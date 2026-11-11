@@ -52,8 +52,7 @@ import com.anisync.android.domain.ActivityMediaType
 import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
-import com.anisync.android.presentation.components.DonatorBadge
-import com.anisync.android.presentation.components.DonatorBadgePlacement
+import com.anisync.android.presentation.components.NameWithDonatorBadge
 import com.anisync.android.presentation.components.ReadMoreToggle
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.formatRelativeTimeSeconds
@@ -353,23 +352,21 @@ private fun ActivityCardHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(
-                    text = activity.userName.orEmpty(),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .clickable { activity.userName?.let { onUserClick(it) } }
-                )
-
-                DonatorBadge(
+                NameWithDonatorBadge(
                     tier = activity.userDonatorTier,
                     badgeText = activity.userDonatorBadge,
-                    placement = DonatorBadgePlacement.NextToName
-                )
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    Text(
+                        text = activity.userName.orEmpty(),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable { activity.userName?.let { onUserClick(it) } }
+                    )
+                }
 
                 // Icon-only status markers
                 if (activity.isPinned) {

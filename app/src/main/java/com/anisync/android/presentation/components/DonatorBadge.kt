@@ -9,7 +9,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -22,12 +21,13 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.em
 import com.anisync.android.R
 import com.anisync.android.ui.theme.emphasis
@@ -51,8 +51,7 @@ enum class DonatorBadgePlacement {
  *
  * A quiet badge takes [containerColor]. The website always sets it on a card in the page colour, so
  * that is the default, and a badge sitting on the page itself passes a container colour instead.
- * Next to a name the badge stops at [maxWidth], so a long text cannot squeeze the name out of a
- * crowded row. Where the badge has a line of its own, pass [Dp.Unspecified].
+ * Beside a name in a row, use [NameWithDonatorBadge] so the name keeps its room.
  */
 @Composable
 fun DonatorBadge(
@@ -60,8 +59,7 @@ fun DonatorBadge(
     badgeText: String?,
     placement: DonatorBadgePlacement,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surface,
-    maxWidth: Dp = 112.dp
+    containerColor: Color = MaterialTheme.colorScheme.surface
 ) {
     if (tier <= 0) return
     val text = donatorBadgeText(tier, badgeText, placement) ?: stringResource(R.string.donator_badge_default)
@@ -80,7 +78,6 @@ fun DonatorBadge(
     } else {
         Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
     }
-    val bounded = if (onHeader || !maxWidth.isSpecified) modifier else modifier.widthIn(max = maxWidth)
 
     if (rainbow) {
         val progress = rememberRainbowProgress()
@@ -90,7 +87,7 @@ fun DonatorBadge(
             color = Color.White,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = bounded
+            modifier = modifier
                 .clip(shape)
                 // Read in the draw phase, so the cycle repaints the badge without recomposing it.
                 .drawBehind { drawRect(rainbowAt(progress.value)) }
@@ -103,7 +100,7 @@ fun DonatorBadge(
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = bounded
+            modifier = modifier
                 .clip(shape)
                 .background(containerColor)
                 .then(padding)
@@ -111,6 +108,76 @@ fun DonatorBadge(
     }
 }
 
+/**
+ * A name with the donator badge after it, the name served first. The badge takes what the line has
+ * left once the whole name fits and stays out when that is too little to read, so a long custom text
+ * never pushes the name out of a narrow row.
+ */
+@Composable
+fun NameWithDonatorBadge(
+    tier: Int,
+    badgeText: String?,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    gap: Dp = 6.dp,
+    name: @Composable () -> Unit
+) {
+    Layout(
+        contents = listOf(
+            name,
+            {
+                DonatorBadge(
+                    tier = tier,
+                    badgeText = badgeText,
+                    placement = DonatorBadgePlacement.NextToName,
+                    containerColor = containerColor
+                )
+            }
+        ),
+        modifier = modifier
+    ) { (nameMeasurables, badgeMeasurables), constraints ->
+        val nameMeasurable = nameMeasurables.firstOrNull()
+        val badgeMeasurable = badgeMeasurables.firstOrNull()
+        val gapPx = gap.roundToPx()
+        val widths = nameAndBadgeWidths(
+            available = constraints.maxWidth.takeIf { it != Constraints.Infinity },
+            name = nameMeasurable?.maxIntrinsicWidth(constraints.maxHeight) ?: 0,
+            badge = badgeMeasurable?.maxIntrinsicWidth(constraints.maxHeight),
+            gap = gapPx,
+            minBadge = MIN_BADGE_WIDTH.roundToPx()
+        )
+        val loose = constraints.copy(minWidth = 0)
+        val namePlaceable = nameMeasurable?.measure(loose.copy(maxWidth = widths.name))
+        val badgePlaceable = widths.badge?.let { badgeMeasurable?.measure(loose.copy(maxWidth = it)) }
+        val nameWidth = namePlaceable?.width ?: 0
+        val width = nameWidth + (badgePlaceable?.let { gapPx + it.width } ?: 0)
+        val height = maxOf(namePlaceable?.height ?: 0, badgePlaceable?.height ?: 0)
+        layout(width.coerceIn(constraints.minWidth, constraints.maxWidth), height) {
+            namePlaceable?.placeRelative(0, (height - namePlaceable.height) / 2)
+            badgePlaceable?.placeRelative(nameWidth + gapPx, (height - badgePlaceable.height) / 2)
+        }
+    }
+}
+
+/** The widths [NameWithDonatorBadge] gives the name and the badge, with a null badge left out. */
+internal data class NameAndBadgeWidths(val name: Int, val badge: Int?)
+
+/**
+ * The name gets its whole width when the line has it, the badge the rest. A badge with less than
+ * [minBadge] left beside the whole name is dropped, and an [available] of null means no limit.
+ */
+internal fun nameAndBadgeWidths(available: Int?, name: Int, badge: Int?, gap: Int, minBadge: Int): NameAndBadgeWidths {
+    if (available == null) return NameAndBadgeWidths(name, badge)
+    if (badge == null) return NameAndBadgeWidths(minOf(name, available), null)
+    val left = available - gap - name
+    return if (left >= minOf(badge, minBadge)) {
+        NameAndBadgeWidths(name, minOf(badge, left))
+    } else {
+        NameAndBadgeWidths(minOf(name, available), null)
+    }
+}
+
+private val MIN_BADGE_WIDTH = 40.dp
 private const val CUSTOM_TEXT_TIER = 4
 private const val RAINBOW_TIER = 5
 private const val RAINBOW_CYCLE_MILLIS = 20_000

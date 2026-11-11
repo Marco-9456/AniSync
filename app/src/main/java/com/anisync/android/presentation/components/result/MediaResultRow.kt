@@ -228,8 +228,7 @@ fun UserResultRow(
                 com.anisync.android.presentation.components.DonatorBadge(
                     tier = donatorTier,
                     badgeText = donatorBadge,
-                    placement = com.anisync.android.presentation.components.DonatorBadgePlacement.NextToName,
-                    maxWidth = androidx.compose.ui.unit.Dp.Unspecified
+                    placement = com.anisync.android.presentation.components.DonatorBadgePlacement.NextToName
                 )
             }
         } else null

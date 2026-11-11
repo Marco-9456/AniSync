@@ -41,8 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.parser.ParsedRichText
 import com.anisync.android.presentation.components.AnimatedFavoriteButton
-import com.anisync.android.presentation.components.DonatorBadge
-import com.anisync.android.presentation.components.DonatorBadgePlacement
+import com.anisync.android.presentation.components.NameWithDonatorBadge
 import com.anisync.android.presentation.components.RichTextRenderer
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.forum.components.shared.formatCount
@@ -185,9 +184,10 @@ private fun ThreadAuthorBlock(
         )
         Spacer(Modifier.width(10.dp))
         Column {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            NameWithDonatorBadge(
+                tier = donatorTier,
+                badgeText = donatorBadge,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
             ) {
                 Text(
                     text = name,
@@ -195,15 +195,7 @@ private fun ThreadAuthorBlock(
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                DonatorBadge(
-                    tier = donatorTier,
-                    badgeText = donatorBadge,
-                    placement = DonatorBadgePlacement.NextToName,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    maxWidth = 200.dp
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             Text(
