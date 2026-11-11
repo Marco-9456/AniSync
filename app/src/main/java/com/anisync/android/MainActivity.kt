@@ -207,6 +207,8 @@ class MainActivity : AppCompatActivity() {
                 appSettings.completeOnboarding()
             }
 
+            accountManager.restoreSignedInAccount()
+
             // Resolve a migrated legacy login + claim its pre-ownerId library rows for the account.
             lifecycleScope.launch(Dispatchers.IO) {
                 accountManager.reconcileActiveAccount()

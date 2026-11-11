@@ -167,6 +167,17 @@ class AccountManager @Inject constructor(
         accountStore.updateActiveDetails(name, avatarUrl)
 
     /**
+     * Activates a signed-in account when none is active but one is still saved. Only an expired
+     * session leaves the app like that, and before 3.4.0 it did even with another account signed in,
+     * so an updated app would otherwise keep that account behind the sign-in screen.
+     */
+    fun restoreSignedInAccount() {
+        if (accountStore.activeAccount.value != null) return
+        val signedIn = accountStore.accounts.value.firstOrNull { !it.isExpired && !it.isProvisional } ?: return
+        switch(signedIn.id)
+    }
+
+    /**
      * Startup reconcile (same session, so it does NOT bump [sessionEpoch]):
      *  - If the active account is a migrated legacy login (provisional id), resolve its real
      *    identity and promote it.
