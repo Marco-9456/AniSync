@@ -90,6 +90,7 @@ import coil3.request.crossfade
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
 import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.rememberAniLinkRouter
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.util.AppInfo
 import com.anisync.android.util.launchUrl
@@ -146,6 +147,9 @@ private class ExpressiveMorphShape(
 private enum class HeroState { Idle, Pressed, Revealed }
 
 private const val AVATAR_URL = "https://avatars.githubusercontent.com/u/41828058?v=4"
+
+// The thread AniList's own footer links as its community guidelines.
+private const val COMMUNITY_GUIDELINES_URL = "https://anilist.co/forum/thread/14"
 
 @Composable
 private fun AboutHero(
@@ -406,6 +410,7 @@ fun AboutScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val linkRouter = rememberAniLinkRouter()
 
     SettingsScreenScaffold(
         title = stringResource(R.string.settings_about),
@@ -436,6 +441,12 @@ fun AboutScreen(
                 title = stringResource(R.string.settings_anilist_api),
                 subtitle = stringResource(R.string.settings_anilist_api_desc),
                 onClick = { context.launchUrl("https://anilist.co") }
+            )
+            SettingsDivider()
+            SettingsItem(
+                title = stringResource(R.string.about_community_guidelines),
+                subtitle = stringResource(R.string.about_community_guidelines_desc),
+                onClick = { linkRouter.navigate(COMMUNITY_GUIDELINES_URL) }
             )
             SettingsDivider()
             SettingsItem(

@@ -528,6 +528,8 @@
     <string name="settings_acknowledgments_desc">Thanks to contributors and libraries</string>
     <string name="settings_anilist_api">Powered by AniList</string>
     <string name="settings_anilist_api_desc">Data provided by AniList GraphQL API</string>
+    <string name="about_community_guidelines">Community guidelines</string>
+    <string name="about_community_guidelines_desc">AniList\'s rules for posts, comments and profiles</string>
     <string name="search_settings">Search settings</string>
     <string name="clear_search">Clear search</string>
     <string name="no_settings_found">No settings found</string>
