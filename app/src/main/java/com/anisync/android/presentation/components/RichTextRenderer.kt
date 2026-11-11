@@ -1,11 +1,13 @@
 package com.anisync.android.presentation.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +34,7 @@ import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.ContainedLoadingIndicator
@@ -55,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -707,26 +711,53 @@ private fun RenderSingleBlock(
 
                 is RichTextBlock.Spoiler -> {
                     var revealed by remember { mutableStateOf(false) }
+                    val shape = RoundedCornerShape(8.dp)
+                    val label = block.label ?: stringResource(R.string.richtext_format_spoiler)
+                    val angle by animateFloatAsState(
+                        targetValue = if (revealed) 180f else 0f,
+                        label = "spoiler_chevron"
+                    )
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(shape)
                             .background(spoilerColor.copy(alpha = if (revealed) 0.05f else 0.15f))
+                            .then(
+                                // Open, the box keeps an edge so it is clear where the spoiler ends.
+                                if (revealed) Modifier.border(1.dp, spoilerColor.copy(alpha = 0.2f), shape)
+                                else Modifier
+                            )
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { revealed = !revealed }
+                                .clickable(
+                                    role = Role.Button,
+                                    onClickLabel = stringResource(
+                                        if (revealed) R.string.cd_richtext_spoiler_hide
+                                        else R.string.cd_richtext_spoiler_show
+                                    )
+                                ) { revealed = !revealed }
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = if (revealed) "Spoiler" else "Spoiler, click to view",
+                                text = if (revealed) label else stringResource(R.string.richtext_spoiler_hidden, label),
                                 style = style.copy(
                                     color = spoilerColor.copy(alpha = 0.8f),
                                     fontStyle = FontStyle.Italic,
                                     fontWeight = FontWeight.SemiBold
-                                )
+                                ),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                imageVector = Icons.Rounded.ExpandMore,
+                                contentDescription = null,
+                                tint = spoilerColor.copy(alpha = 0.8f),
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .graphicsLayer { rotationZ = angle }
                             )
                         }
                         AnimatedVisibility(
