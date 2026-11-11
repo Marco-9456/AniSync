@@ -52,6 +52,8 @@ import com.anisync.android.domain.ActivityMediaType
 import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
+import com.anisync.android.presentation.components.DonatorBadge
+import com.anisync.android.presentation.components.DonatorBadgePlacement
 import com.anisync.android.presentation.components.ReadMoreToggle
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.formatRelativeTimeSeconds
@@ -361,6 +363,12 @@ private fun ActivityCardHeader(
                     modifier = Modifier
                         .weight(1f, fill = false)
                         .clickable { activity.userName?.let { onUserClick(it) } }
+                )
+
+                DonatorBadge(
+                    tier = activity.userDonatorTier,
+                    badgeText = activity.userDonatorBadge,
+                    placement = DonatorBadgePlacement.NextToName
                 )
 
                 // Icon-only status markers

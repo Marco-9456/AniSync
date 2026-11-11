@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.anisync.android.R
+import com.anisync.android.presentation.components.DonatorBadge
+import com.anisync.android.presentation.components.DonatorBadgePlacement
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 import com.anisync.android.ui.theme.LocalAvatarShape
@@ -70,6 +72,8 @@ fun AuthorRow(
     timestampSeconds: Long,
     modifier: Modifier = Modifier,
     avatarSize: Dp = 24.dp,
+    donatorTier: Int = 0,
+    donatorBadge: String? = null,
     onUserClick: ((String) -> Unit)? = null
 ) {
     Row(
@@ -93,6 +97,14 @@ fun AuthorRow(
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false)
         )
+        if (donatorTier > 0) {
+            Spacer(Modifier.width(6.dp))
+            DonatorBadge(
+                tier = donatorTier,
+                badgeText = donatorBadge,
+                placement = DonatorBadgePlacement.NextToName
+            )
+        }
         Spacer(Modifier.width(8.dp))
         Text(
             text = stringResource(R.string.separator_bullet),

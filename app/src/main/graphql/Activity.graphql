@@ -16,6 +16,8 @@ query GetActivity($id: Int!) {
         id
         isBlocked
         name
+        donatorTier
+        donatorBadge
         avatar {
           large
         }
@@ -56,6 +58,8 @@ query GetActivity($id: Int!) {
         isBlocked
         name
         moderatorRoles
+        donatorTier
+        donatorBadge
         avatar {
           large
         }
@@ -103,6 +107,8 @@ query GetActivity($id: Int!) {
         id
         isBlocked
         name
+        donatorTier
+        donatorBadge
         avatar {
           large
         }

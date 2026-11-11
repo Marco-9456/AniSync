@@ -94,6 +94,8 @@ data class UserActivity(
     val userId: Int? = null,
     val userName: String? = null,
     val userAvatarUrl: String? = null,
+    val userDonatorTier: Int = 0,
+    val userDonatorBadge: String? = null,
     val recipientId: Int? = null,
     val recipientName: String? = null,
     val recipientAvatarUrl: String? = null,

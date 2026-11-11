@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -70,6 +71,8 @@ fun DonatorBadge(
     } else {
         Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
     }
+    // A long custom text must not squeeze the name it sits beside down to nothing.
+    val bounded = if (onHeader) modifier else modifier.widthIn(max = 112.dp)
 
     if (rainbow) {
         val progress = rememberRainbowProgress()
@@ -79,7 +82,7 @@ fun DonatorBadge(
             color = Color.White,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = modifier
+            modifier = bounded
                 .clip(shape)
                 // Read in the draw phase, so the cycle repaints the badge without recomposing it.
                 .drawBehind { drawRect(rainbowAt(progress.value)) }
@@ -92,7 +95,7 @@ fun DonatorBadge(
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = modifier
+            modifier = bounded
                 .clip(shape)
                 .background(MaterialTheme.colorScheme.surface)
                 .then(padding)
