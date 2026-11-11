@@ -1,11 +1,5 @@
 package com.anisync.android.presentation.profile.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -49,7 +43,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -60,6 +53,8 @@ import coil3.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.presentation.components.DonatorBadge
+import com.anisync.android.presentation.components.DonatorBadgePlacement
 import com.anisync.android.presentation.components.bannerScrimBrush
 import com.anisync.android.presentation.components.bannerScrimHeight
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
@@ -81,15 +76,6 @@ import java.util.Locale
 /** Avatar diameter shared by the compact header overlay and the wide identity pane. */
 val ProfileAvatarSize = 132.dp
 val ProfileAvatarHalfSize = ProfileAvatarSize / 2
-
-private val RainbowColors = listOf(
-    Color(0xFFE91E63),
-    Color(0xFFFF9800),
-    Color(0xFFFFEB3B),
-    Color(0xFF4CAF50),
-    Color(0xFF2196F3),
-    Color(0xFF9C27B0)
-)
 
 /**
  * The full-width cover banner: the user's banner image with a top/bottom scrim and the top-end
@@ -261,19 +247,11 @@ fun ProfileIdentityDetails(
                 )
             }
 
-            if (profile.donatorTier > 0) {
-                val badgeText = profile.donatorBadge?.takeIf { it.isNotBlank() } ?: "Donator"
-                val isRainbow = profile.donatorTier >= 5
-
-                if (isRainbow) {
-                    RainbowDonatorBadge(badgeText = badgeText)
-                } else {
-                    RegularDonatorBadge(
-                        badgeText = badgeText,
-                        tier = profile.donatorTier
-                    )
-                }
-            }
+            DonatorBadge(
+                tier = profile.donatorTier,
+                badgeText = profile.donatorBadge,
+                placement = DonatorBadgePlacement.ProfileHeader
+            )
 
             // Mutual-follow indicator (#81): only on others' profiles, and only when they
             // follow the viewer. "Mutual" when the viewer follows back, else "Follows you".
@@ -458,69 +436,6 @@ fun ProfileActionButtons(
                 )
             }
         }
-    }
-}
-
-/**
- * Isolated composable for the rainbow animation. Keeping it out of [ProfileIdentityInfo] prevents the
- * whole identity column from recomposing on every animation frame.
- */
-@Composable
-private fun RainbowDonatorBadge(badgeText: String, modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "rainbow")
-    val progress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = RainbowColors.size.toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = RainbowColors.size * 1000,
-                easing = LinearEasing
-            ),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rainbowProgress"
-    )
-
-    val colorIndex = progress.toInt() % RainbowColors.size
-    val nextIndex = (colorIndex + 1) % RainbowColors.size
-    val fraction = progress - progress.toInt()
-    val animatedColor = lerp(RainbowColors[colorIndex], RainbowColors[nextIndex], fraction)
-
-    Surface(
-        color = animatedColor,
-        shape = CircleShape,
-        modifier = modifier
-    ) {
-        Text(
-            text = badgeText,
-            style = MaterialTheme.typography.labelLarge.emphasis(),
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-        )
-    }
-}
-
-@Composable
-private fun RegularDonatorBadge(badgeText: String, tier: Int, modifier: Modifier = Modifier) {
-    val donatorColor = remember(tier) {
-        when (tier) {
-            1 -> Color(0xFF78909C) // Blue-grey for $1
-            2 -> Color(0xFF5C6BC0) // Indigo for $3
-            3 -> Color(0xFFFFB300) // Amber for $5
-            else -> Color(0xFFFF6F00) // Deep amber for $10
-        }
-    }
-    Surface(
-        color = donatorColor,
-        shape = CircleShape,
-        modifier = modifier
-    ) {
-        Text(
-            text = badgeText,
-            style = MaterialTheme.typography.labelLarge.emphasis(),
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-        )
     }
 }
 
