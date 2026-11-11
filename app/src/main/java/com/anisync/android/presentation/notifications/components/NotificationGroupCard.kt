@@ -59,6 +59,7 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.domain.ActivityKind
+import com.anisync.android.domain.parser.RichTextPlainText
 import com.anisync.android.domain.ActivityLikeNotification
 import com.anisync.android.domain.ActivityMentionNotification
 import com.anisync.android.domain.ActivityMessageNotification
@@ -86,7 +87,6 @@ import com.anisync.android.presentation.notifications.NotificationEntry
 import com.anisync.android.presentation.notifications.NotificationTarget
 import com.anisync.android.presentation.util.selectedPaneItem
 import com.anisync.android.util.getQuantityStringOrDefault
-import org.jsoup.Jsoup
 
 @Composable
 fun NotificationGroupCard(
@@ -348,17 +348,11 @@ private fun SubtitleSlots(payload: GroupPayload, expanded: Boolean = false) {
 }
 
 /**
- * Strips AniList rich-text HTML to a plain text excerpt. Drops embedded
- * images, videos and AniList link cards — those would overflow the card
- * and add visual noise. Whitespace is collapsed so a short multi-paragraph
- * comment reads as a single tidy line. Spoiler spans are removed entirely:
- * `.text()` would otherwise print their hidden content in the preview.
+ * Strips AniList rich-text HTML to a plain text excerpt, collapsed so a short multi-paragraph
+ * comment reads as a single tidy line. Spoilers go with everything they hide, including the ones
+ * that cross paragraphs, which Jsoup alone ends at the first `</p>`.
  */
-private fun htmlToPlainExcerpt(html: String): String {
-    val document = Jsoup.parse(html)
-    document.select("span.markdown_spoiler").remove()
-    return document.text().trim()
-}
+private fun htmlToPlainExcerpt(html: String): String = RichTextPlainText.excerpt(html)
 
 @Composable
 private fun NotificationLeading(

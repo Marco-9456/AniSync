@@ -50,6 +50,7 @@ import coil3.request.crossfade
 import com.anisync.android.R
 import com.anisync.android.domain.ActivityMediaType
 import com.anisync.android.domain.UserActivity
+import com.anisync.android.domain.parser.RichTextPlainText
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.AppModalBottomSheet
 import com.anisync.android.presentation.profile.components.MediaTypeLabel
@@ -325,13 +326,14 @@ private val LeftoverMarkup = Regex("""[#*_>`~]+""")
 /**
  * The readable opening of a status post, for use as a row title.
  *
- * AniList posts routinely open with an image embed, a link or a spoiler marker, none of which say
- * anything in one line, so the markup is stripped before the first surviving line is taken. A post
- * that is nothing but an image has no excerpt at all, and the row falls back to naming the kind.
+ * AniList posts routinely open with an image embed, a link or a spoiler, none of which say anything
+ * in one line, so the markup is stripped before the first surviving line is taken. A spoiler goes
+ * with what it hides. A post that is nothing but an image has no excerpt at all, and the row falls
+ * back to naming the kind.
  */
 internal fun statusExcerpt(body: String?): String? {
     if (body.isNullOrBlank()) return null
-    return body
+    return RichTextPlainText.withoutSpoilers(body)
         .replace(EmbedMarkup, " ")
         .replace(LinkMarkup, "$1")
         .replace(HtmlTag, " ")

@@ -49,6 +49,16 @@ class StatusExcerptTest {
     }
 
     @Test
+    fun `a spoiler is left out with what it hides`() {
+        assertEquals("New season soon", statusExcerpt("~!{Ending}Bobby dies!~\nNew season soon"))
+        assertEquals("Loved it a lot", statusExcerpt("Loved it ~!the twist!~ a lot"))
+        assertEquals(
+            "Wow",
+            statusExcerpt("<p>Wow <span class='markdown_spoiler'><span>he lives</span></span></p>")
+        )
+    }
+
+    @Test
     fun `nothing in, nothing out`() {
         assertNull(statusExcerpt(null))
         assertNull(statusExcerpt("   \n  "))

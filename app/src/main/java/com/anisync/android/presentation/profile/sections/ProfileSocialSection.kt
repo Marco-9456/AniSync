@@ -53,6 +53,7 @@ import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.domain.SocialThreadComment
+import com.anisync.android.domain.parser.RichTextPlainText
 import com.anisync.android.domain.SocialUser
 import com.anisync.android.presentation.components.RailChip
 import com.anisync.android.presentation.forum.components.ForumThreadCard
@@ -62,7 +63,6 @@ import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.profile.components.ProfileTabRail
-import org.jsoup.Jsoup
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun LazyListScope.profileSocialTab(
@@ -378,7 +378,7 @@ fun SocialThreadCommentCard(
     onUserClick: (String) -> Unit = {}
 ) {
     val cleanText = remember(comment.commentHtml) {
-        Jsoup.parse(comment.commentHtml ?: "").text()
+        RichTextPlainText.excerpt(comment.commentHtml.orEmpty())
     }
     
     Card(

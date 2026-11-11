@@ -16,6 +16,25 @@ private val ESCAPED_HTML_TAG_REGEX = Regex("""<[a-zA-Z/][^>]*>""")
 // objective-c, asp.net). Any character outside this set in the token means AniList's fence misparse
 // swallowed real post content there instead, so it must be recovered rather than dropped.
 private val LANGUAGE_TOKEN_REGEX = Regex("""[A-Za-z0-9#+.-]+""")
+
+/**
+ * A `<code class="language-…">` info string normally names a language (e.g. `language-kotlin`).
+ * When AniList's fence parser swallows post content into it (an unclosed/space-less ```` ```<img …> ````
+ * or a `~~~` centre fence opened straight onto its first line), the info string carries real
+ * markup, a URL, or a centred title instead. Returns that swallowed content so the caller can
+ * re-parse it, or null for a genuine language token.
+ */
+internal fun swallowedLanguageContent(codeClass: String): String? {
+    val trimmed = codeClass.trim()
+    if (!trimmed.startsWith("language-")) return null
+    val info = trimmed.removePrefix("language-")
+    if (info.isBlank()) return null
+    // A real language token is a short identifier (kotlin, c++, objective-c). AniList's fence
+    // misparse stuffs real post content here instead — an HTML tag, a bare URL, or markdown/prose
+    // such as a centred italic title (`_Cute Clothes~_`). Anything that isn't a plain language
+    // identifier is recovered so it isn't silently dropped (the centred title used to vanish).
+    return info.takeUnless { LANGUAGE_TOKEN_REGEX.matches(it) }
+}
 private val TRIPLE_TILDE_REGEX = Regex("~~~")
 
 // AniList's asHtml endpoint sometimes dumps an entire rich post — or a rich section of a
@@ -876,25 +895,6 @@ internal class RichTextHtmlParser(
             text.contains("class=\"youtube\"") ||
             text.contains("~!") ||
             text.contains("~~~")
-
-    /**
-     * A `<code class="language-…">` info string normally names a language (e.g. `language-kotlin`).
-     * When AniList's fence parser swallows post content into it (an unclosed/space-less ```` ```<img …> ````
-     * or a `~~~` centre fence opened straight onto its first line), the info string carries real
-     * markup, a URL, or a centred title instead. Returns that swallowed content so the caller can
-     * re-parse it, or null for a genuine language token.
-     */
-    private fun swallowedLanguageContent(codeClass: String): String? {
-        val trimmed = codeClass.trim()
-        if (!trimmed.startsWith("language-")) return null
-        val info = trimmed.removePrefix("language-")
-        if (info.isBlank()) return null
-        // A real language token is a short identifier (kotlin, c++, objective-c). AniList's fence
-        // misparse stuffs real post content here instead — an HTML tag, a bare URL, or markdown/prose
-        // such as a centred italic title (`_Cute Clothes~_`). Anything that isn't a plain language
-        // identifier is recovered so it isn't silently dropped (the centred title used to vanish).
-        return info.takeUnless { LANGUAGE_TOKEN_REGEX.matches(it) }
-    }
 
     /**
      * True when [trimmed] carries a single dangling `~~~` centre fence at its tail. AniList's asHtml
