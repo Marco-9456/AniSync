@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.HorizontalDivider
@@ -57,9 +56,6 @@ import com.anisync.android.presentation.components.AnimatedFavoriteButton
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
-import com.anisync.android.util.AppLinksUtil
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role
 import com.anisync.android.presentation.util.rememberHapticFeedback
 import kotlinx.coroutines.launch
 
@@ -438,37 +434,6 @@ fun ThreadCommentItem(
                         }
 
                         actionSlot()
-
-                        val webUrl = comment.webUrl
-                        if (comment.hiddenReplies > 0 && webUrl != null) {
-                            val context = LocalContext.current
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .clickable(role = Role.Button) { AppLinksUtil.openInBrowser(context, webUrl) }
-                                    .padding(horizontal = 8.dp, vertical = 6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Text(
-                                    text = pluralStringResourceOrDefault(
-                                        R.plurals.forum_replies_on_anilist,
-                                        comment.hiddenReplies,
-                                        comment.hiddenReplies
-                                    ),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1
-                                )
-                            }
-                        }
 
                         // Inline "Continue thread" for drill-down eligible comments
                         if (onDrillDown != null) {

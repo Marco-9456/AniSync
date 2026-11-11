@@ -398,7 +398,6 @@ class ForumRepositoryImpl @Inject constructor(
                 val children =
                     (node.childComments as? List<*>)?.mapNotNull { mapToForumComment(it) }
                         ?: emptyList()
-                val hidden = bareReplyCount(node.childComments)
                 ForumComment(
                     id = node.id ?: 0,
                     body = node.comment ?: "",
@@ -412,21 +411,17 @@ class ForumRepositoryImpl @Inject constructor(
                     authorDonatorBadge = node.user?.donatorBadge,
                     createdAt = (node.createdAt ?: 0).toLong(),
                     siteUrl = node.siteUrl,
-                    childComments = children,
-                    hiddenReplies = hidden
+                    childComments = children
                 )
             }
 
             is Map<*, *> -> {
-                // Counted by its parent instead, an empty "Unknown" row says nothing.
-                if (node.isBareReply()) return null
                 val userMap = node["user"] as? Map<*, *>
                 val avatarMap = userMap?.get("avatar") as? Map<*, *>
                 if (userMap?.get("isBlocked") == true) return null
                 val children =
                     (node["childComments"] as? List<*>)?.mapNotNull { mapToForumComment(it) }
                         ?: emptyList()
-                val hidden = bareReplyCount(node["childComments"])
 
                 ForumComment(
                     id = (node["id"] as? Number)?.toInt() ?: 0,
@@ -440,26 +435,12 @@ class ForumRepositoryImpl @Inject constructor(
                     authorDonatorBadge = userMap?.get("donatorBadge") as? String,
                     createdAt = (node["createdAt"] as? Number)?.toLong() ?: 0L,
                     siteUrl = node["siteUrl"] as? String,
-                    childComments = children,
-                    hiddenReplies = hidden
+                    childComments = children
                 )
             }
 
             else -> null
         }
-    }
-
-    /** A reply AniList sent as an id alone: no text, no author. */
-    private fun Map<*, *>.isBareReply(): Boolean = this["comment"] == null && this["user"] == null
-
-    /** Bare replies directly under a comment, each with the whole tree below it. */
-    private fun bareReplyCount(children: Any?): Int = (children as? List<*>).orEmpty().sumOf { child ->
-        val map = child as? Map<*, *>
-        if (map != null && map.isBareReply()) 1 + treeSize(map["childComments"]) else 0
-    }
-
-    private fun treeSize(children: Any?): Int = (children as? List<*>).orEmpty().sumOf { child ->
-        1 + treeSize((child as? Map<*, *>)?.get("childComments"))
     }
 
     // =========================================================================

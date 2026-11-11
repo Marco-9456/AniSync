@@ -11,10 +11,7 @@ data class CommentNode(
     val authorDonatorTier: Int = 0,
     val authorDonatorBadge: String? = null,
     val createdAt: Long,
-    val childComments: List<CommentNode> = emptyList(),
-    /** Replies that can only be read on the website, see [ForumComment.hiddenReplies]. */
-    val hiddenReplies: Int = 0,
-    val webUrl: String? = null
+    val childComments: List<CommentNode> = emptyList()
 )
 
 fun ForumComment.toCommentNode(): CommentNode = CommentNode(
@@ -28,7 +25,5 @@ fun ForumComment.toCommentNode(): CommentNode = CommentNode(
     authorDonatorTier = authorDonatorTier,
     authorDonatorBadge = authorDonatorBadge,
     createdAt = createdAt,
-    childComments = childComments.map { it.toCommentNode() },
-    hiddenReplies = hiddenReplies,
-    webUrl = siteUrl
+    childComments = childComments.map { it.toCommentNode() }
 )

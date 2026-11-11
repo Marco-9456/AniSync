@@ -73,7 +73,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **+1 Progress** - A +1 checks the title with AniList first. When the progress moved on elsewhere, the count takes AniList's number and says so instead of overwriting it, and a +1 AniList turns down goes back to where it started.
 - **Add To Watching From A Notification** - Add to Watching on an airing notification adds the title to the account the notification was for, even when another account is active.
 - **Activity History** - On the days the clocks change, a day in Activity History lists the same activities AniList counted into its bar.
-- **Forum Replies** - AniList no longer sends the replies under a forum comment. A comment that has some says how many, and a tap opens them on AniList.
 
 ## [3.3.0] - 2026-10-20
 
