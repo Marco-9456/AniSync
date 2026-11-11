@@ -23,10 +23,13 @@ object NotificationChannels {
     const val ACTIVITY_MESSAGE_CHANNEL_ID = "activity_message_notifications"
     const val FOLLOW_CHANNEL_ID = "follow_notifications"
     const val RECAPS_CHANNEL_ID = "recap_notifications"
+    const val MEDIA_UPDATES_CHANNEL_ID = "media_update_notifications"
+    const val SUBMISSIONS_CHANNEL_ID = "submission_notifications"
 
     private const val GROUP_AIRING_ID = "group_airing"
     private const val GROUP_FORUM_ID = "group_forum"
     private const val GROUP_ACTIVITY_ID = "group_activity"
+    private const val GROUP_MEDIA_ID = "group_media"
     private const val GROUP_OTHER_ID = "group_other"
 
     private data class ChannelSpec(
@@ -45,6 +48,7 @@ object NotificationChannels {
                 NotificationChannelGroup(GROUP_AIRING_ID, context.getString(R.string.notification_group_airing)),
                 NotificationChannelGroup(GROUP_FORUM_ID, context.getString(R.string.notification_group_forum)),
                 NotificationChannelGroup(GROUP_ACTIVITY_ID, context.getString(R.string.notification_group_activity)),
+                NotificationChannelGroup(GROUP_MEDIA_ID, context.getString(R.string.notification_group_media)),
                 NotificationChannelGroup(GROUP_OTHER_ID, context.getString(R.string.notification_group_other)),
             )
         )
@@ -63,6 +67,8 @@ object NotificationChannels {
             ChannelSpec(ACTIVITY_LIKE_CHANNEL_ID, R.string.notification_channel_activity_like, R.string.notification_channel_activity_like_desc, GROUP_ACTIVITY_ID),
             ChannelSpec(ACTIVITY_MESSAGE_CHANNEL_ID, R.string.notification_channel_activity_message, R.string.notification_channel_activity_message_desc, GROUP_ACTIVITY_ID),
             ChannelSpec(FOLLOW_CHANNEL_ID, R.string.notification_follows, R.string.notification_follows_desc, GROUP_ACTIVITY_ID),
+            ChannelSpec(MEDIA_UPDATES_CHANNEL_ID, R.string.notification_media_updates, R.string.notification_media_updates_desc, GROUP_MEDIA_ID),
+            ChannelSpec(SUBMISSIONS_CHANNEL_ID, R.string.notification_submission_updates, R.string.notification_submission_updates_desc, GROUP_MEDIA_ID),
             ChannelSpec(RECAPS_CHANNEL_ID, R.string.settings_recaps, R.string.notification_channel_recaps_desc, GROUP_OTHER_ID),
             ChannelSpec(UPDATE_CHANNEL_ID, R.string.update_notification_channel_name, R.string.update_notification_channel_desc, GROUP_OTHER_ID),
         )

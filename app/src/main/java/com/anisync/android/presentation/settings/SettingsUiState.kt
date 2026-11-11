@@ -59,6 +59,8 @@ sealed interface SettingsAction {
     data class SetActivityLikeEnabled(val enabled: Boolean) : SettingsAction
     data class SetActivityMessageEnabled(val enabled: Boolean) : SettingsAction
     data class SetFollowsEnabled(val enabled: Boolean) : SettingsAction
+    data class SetMediaUpdatesEnabled(val enabled: Boolean) : SettingsAction
+    data class SetSubmissionUpdatesEnabled(val enabled: Boolean) : SettingsAction
     data class SetInboxReadTrackingEnabled(val enabled: Boolean) : SettingsAction
     data class SetInboxMarkReadOnOpen(val enabled: Boolean) : SettingsAction
     data class SetStreamingDelayMinutes(val minutes: Int) : SettingsAction
@@ -168,6 +170,8 @@ data class SettingsUiState(
     val activityLikeEnabled: Boolean = true,
     val activityMessageEnabled: Boolean = true,
     val followsEnabled: Boolean = true,
+    val mediaUpdatesEnabled: Boolean = true,
+    val submissionUpdatesEnabled: Boolean = true,
     val streamingDelayMinutes: Int = 0,
     val inboxReadTrackingEnabled: Boolean = true,
     val inboxMarkReadOnOpen: Boolean = false,

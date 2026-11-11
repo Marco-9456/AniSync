@@ -171,9 +171,11 @@ class SettingsViewModel @Inject constructor(
             },
             combine(
                 notificationPreferences.inboxReadTrackingEnabled,
-                notificationPreferences.inboxMarkReadOnOpen
-            ) { readTracking, markOnOpen ->
-                listOf<Any>(readTracking, markOnOpen)
+                notificationPreferences.inboxMarkReadOnOpen,
+                notificationPreferences.mediaUpdatesEnabled,
+                notificationPreferences.submissionUpdatesEnabled
+            ) { readTracking, markOnOpen, mediaUpdates, submissionUpdates ->
+                listOf<Any>(readTracking, markOnOpen, mediaUpdates, submissionUpdates)
             }
         ) { airing, forum, activity, inbox ->
             airing + forum + activity + inbox
@@ -228,6 +230,8 @@ class SettingsViewModel @Inject constructor(
             followsEnabled = notifications[14] as Boolean,
             inboxReadTrackingEnabled = notifications[15] as Boolean,
             inboxMarkReadOnOpen = notifications[16] as Boolean,
+            mediaUpdatesEnabled = notifications[17] as Boolean,
+            submissionUpdatesEnabled = notifications[18] as Boolean,
             isAutoUpdateEnabled = updatesAndNav.autoUpdate,
             isPrereleaseAllowed = updatesAndNav.allowPrerelease,
             navBarStyle = updatesAndNav.navBarStyle,
@@ -375,6 +379,12 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.SetFollowsEnabled -> notificationPreferences.setFollowsEnabled(
                 action.enabled
             )
+
+            is SettingsAction.SetMediaUpdatesEnabled ->
+                notificationPreferences.setMediaUpdatesEnabled(action.enabled)
+
+            is SettingsAction.SetSubmissionUpdatesEnabled ->
+                notificationPreferences.setSubmissionUpdatesEnabled(action.enabled)
 
             is SettingsAction.SetInboxReadTrackingEnabled -> {
                 notificationPreferences.setInboxReadTrackingEnabled(action.enabled)

@@ -32,7 +32,15 @@ import com.anisync.android.domain.ActivityReplyNotification
 import com.anisync.android.domain.ActivityReplySubscribedNotification
 import com.anisync.android.domain.AiringNotification
 import com.anisync.android.domain.AiringSchedule
+import com.anisync.android.domain.CharacterSubmissionUpdateNotification
 import com.anisync.android.domain.FollowingNotification
+import com.anisync.android.domain.MediaDataChangeNotification
+import com.anisync.android.domain.MediaDeletionNotification
+import com.anisync.android.domain.MediaMergeNotification
+import com.anisync.android.domain.MediaSubmissionUpdateNotification
+import com.anisync.android.domain.RelatedMediaAdditionNotification
+import com.anisync.android.domain.StaffSubmissionUpdateNotification
+import com.anisync.android.domain.parser.RichTextPlainText
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.Notification
 import com.anisync.android.domain.NotificationRepository
@@ -89,6 +97,7 @@ class NotificationWorker @AssistedInject constructor(
         private const val CATEGORY_PLANNING = "planning"
         private const val CATEGORY_UPCOMING = "upcoming"
         private const val CATEGORY_SOCIAL_SUMMARY = "social"
+        private const val CATEGORY_MEDIA = "media"
         private const val SUMMARY_ID = 0
     }
 
@@ -122,6 +131,10 @@ class NotificationWorker @AssistedInject constructor(
             notificationPreferences.activityLikeEnabled.value ||
             notificationPreferences.activityMessageEnabled.value ||
             notificationPreferences.followsEnabled.value
+        val anyMediaEnabled = notificationPreferences.mediaUpdatesEnabled.value ||
+            notificationPreferences.submissionUpdatesEnabled.value
+        // Media and submission alerts share the social watermark, so they ride the same pass.
+        val feedTypesEnabled = anySocialEnabled || anyMediaEnabled
 
         for (account in accounts) {
             val ctx = AcctCtx(account.id, account.token, account.name, showLabel)
@@ -142,12 +155,12 @@ class NotificationWorker @AssistedInject constructor(
 
                 // AniList feed (airing + social) — both checks read the same feed, so fetch the
                 // pages once per account and share the result.
-                if (watchingEnabled || anySocialEnabled) {
+                if (watchingEnabled || feedTypesEnabled) {
                     val airingWatermark = preferencesRepository.getLastNotifiedId(ctx.id)
                     val socialWatermark = preferencesRepository.getLastSocialNotifiedId(ctx.id)
                     val stopBelowId = minOf(
                         if (watchingEnabled) airingWatermark else Int.MAX_VALUE,
-                        if (anySocialEnabled) socialWatermark else Int.MAX_VALUE
+                        if (feedTypesEnabled) socialWatermark else Int.MAX_VALUE
                     )
                     val recent = fetchRecentNotifications(ctx, stopBelowId)
 
@@ -162,7 +175,7 @@ class NotificationWorker @AssistedInject constructor(
                         }
                         notifyNewAiring(ctx, recent, airingWatermark, planningMediaIds)
                     }
-                    if (anySocialEnabled) {
+                    if (feedTypesEnabled) {
                         notifyNewSocial(ctx, recent, socialWatermark)
                     }
                 }
@@ -234,7 +247,7 @@ class NotificationWorker @AssistedInject constructor(
                     .maxOfOrNull { it.id } ?: 0
                 if (latestAiringId > 0) preferencesRepository.setLastNotifiedId(ctx.id, latestAiringId)
                 val latestSocialId = allNotifications
-                    .filter { isSocialNotification(it) }
+                    .filter { isSocialNotification(it) || isMediaNotification(it) }
                     .maxOfOrNull { it.id } ?: 0
                 if (latestSocialId > 0) preferencesRepository.setLastSocialNotifiedId(ctx.id, latestSocialId)
             }
@@ -345,18 +358,147 @@ class NotificationWorker @AssistedInject constructor(
      */
     private suspend fun notifyNewSocial(ctx: AcctCtx, recent: List<Notification>, lastSocialId: Int) {
         val newSocial = recent
-            .filter { it.id > lastSocialId && isSocialNotification(it) }
+            .filter { it.id > lastSocialId && (isSocialNotification(it) || isMediaNotification(it)) }
             .sortedBy { it.id }
         if (newSocial.isEmpty()) return
 
-        val enabled = newSocial.filter { isTypeEnabled(it) }
-        val bySlot = enabled.groupBy { socialSlot(it) }
+        val (media, social) = newSocial.filter { isTypeEnabled(it) }.partition(::isMediaNotification)
+        val bySlot = social.groupBy { socialSlot(it) }
         for ((slot, members) in bySlot) {
             if (slot != null) showSocialNotification(slot, members, ctx)
         }
         if (bySlot.isNotEmpty()) maybePostSocialSummary(ctx)
 
+        if (media.isNotEmpty()) {
+            val since = notificationPreferences.mediaAlertsSince(System.currentTimeMillis() / 1000L)
+            media.filter { it.createdAt >= since }.forEach { showMediaNotification(it, ctx) }
+        }
+
         preferencesRepository.setLastSocialNotifiedId(ctx.id, newSocial.maxOf { it.id })
+    }
+
+    /** Titles on the viewer's lists changing on AniList, and the verdicts on their submissions. */
+    private fun isMediaNotification(notification: Notification): Boolean =
+        notification is RelatedMediaAdditionNotification ||
+            notification is MediaDataChangeNotification ||
+            notification is MediaMergeNotification ||
+            notification is MediaDeletionNotification ||
+            notification is MediaSubmissionUpdateNotification ||
+            notification is StaffSubmissionUpdateNotification ||
+            notification is CharacterSubmissionUpdateNotification
+
+    private suspend fun showMediaNotification(notification: Notification, ctx: AcctCtx) {
+        val alert = mediaAlert(notification) ?: return
+        val builder = NotificationCompat.Builder(applicationContext, alert.channelId)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(alert.title)
+            .setAutoCancel(true)
+            .setWhen(notification.createdAt.toLong() * 1000L)
+            .setShowWhen(true)
+            .setContentIntent(deepLinkIntent(alert.deepLink, ctx, notification.id))
+        if (alert.text.isNotBlank()) {
+            builder.setContentText(alert.text)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(alert.text))
+        }
+        alert.imageUrl?.let { loadImage(it) }?.let(builder::setLargeIcon)
+        post(ctx, CATEGORY_MEDIA, notification.id, builder)
+    }
+
+    private data class MediaAlert(
+        val title: String,
+        val text: String,
+        val channelId: String,
+        val deepLink: String,
+        val imageUrl: String?
+    )
+
+    /** Worded like the inbox card for the same notification, so the two read alike. */
+    private fun mediaAlert(notification: Notification): MediaAlert? = when (notification) {
+        is RelatedMediaAdditionNotification -> MediaAlert(
+            title = notification.media?.title ?: string(R.string.notifications_item_media_added_fallback),
+            text = notification.context.trim()
+                .ifEmpty { string(R.string.notifications_item_media_added_context) },
+            channelId = NotificationChannels.MEDIA_UPDATES_CHANNEL_ID,
+            deepLink = "anisync://details/${notification.mediaId}",
+            imageUrl = notification.media?.coverUrl
+        )
+        is MediaDataChangeNotification -> MediaAlert(
+            title = notification.media?.title ?: string(R.string.notifications_item_media_changed_fallback),
+            text = withNote(
+                notification.context.trim()
+                    .ifBlank { string(R.string.notifications_item_media_changed_context) },
+                notification.reason
+            ),
+            channelId = NotificationChannels.MEDIA_UPDATES_CHANNEL_ID,
+            deepLink = "anisync://details/${notification.mediaId}",
+            imageUrl = notification.media?.coverUrl
+        )
+        is MediaMergeNotification -> MediaAlert(
+            title = string(
+                R.string.notifications_item_media_merged,
+                notification.deletedMediaTitles.joinToString(", ")
+                    .ifBlank { string(R.string.notifications_item_media_merged_fallback) },
+                notification.media?.title ?: string(R.string.notifications_item_media_merged_target)
+            ),
+            text = withNote("", notification.reason),
+            channelId = NotificationChannels.MEDIA_UPDATES_CHANNEL_ID,
+            deepLink = "anisync://details/${notification.mediaId}",
+            imageUrl = notification.media?.coverUrl
+        )
+        is MediaDeletionNotification -> MediaAlert(
+            title = string(R.string.notifications_item_media_deleted, notification.deletedMediaTitle),
+            text = withNote("", notification.reason),
+            channelId = NotificationChannels.MEDIA_UPDATES_CHANNEL_ID,
+            deepLink = "anisync://notifications",
+            imageUrl = null
+        )
+        is MediaSubmissionUpdateNotification -> submissionAlert(
+            subject = notification.media?.title ?: notification.submittedTitle,
+            status = notification.status,
+            notes = notification.notes,
+            imageUrl = notification.media?.coverUrl,
+            deepLink = notification.media?.id?.let { "anisync://details/$it" }
+        )
+        is StaffSubmissionUpdateNotification -> submissionAlert(
+            subject = notification.staffName,
+            status = notification.status,
+            notes = notification.notes,
+            imageUrl = notification.staffImageUrl,
+            deepLink = notification.staffId?.let { "https://anilist.co/staff/$it" }
+        )
+        is CharacterSubmissionUpdateNotification -> submissionAlert(
+            subject = notification.characterName,
+            status = notification.status,
+            notes = notification.notes,
+            imageUrl = notification.characterImageUrl,
+            deepLink = notification.characterId?.let { "https://anilist.co/character/$it" }
+        )
+        else -> null
+    }
+
+    private fun submissionAlert(
+        subject: String?,
+        status: String,
+        notes: String,
+        imageUrl: String?,
+        deepLink: String?
+    ) = MediaAlert(
+        title = subject?.takeIf { it.isNotBlank() } ?: string(R.string.notifications_item_submission_fallback),
+        text = withNote(
+            status.takeIf { it.isNotBlank() }
+                ?.let { string(R.string.notifications_item_submission_status, it.lowercase()) }
+                .orEmpty(),
+            notes
+        ),
+        channelId = NotificationChannels.SUBMISSIONS_CHANNEL_ID,
+        deepLink = deepLink ?: "anisync://notifications",
+        imageUrl = imageUrl
+    )
+
+    /** [line] with a moderator's note under it, flattened from AniList's markup. */
+    private fun withNote(line: String, note: String): String {
+        val plainNote = RichTextPlainText.excerpt(note)
+        return listOf(line, plainNote).filter { it.isNotBlank() }.joinToString("\n")
     }
 
     private fun isSocialNotification(notification: Notification): Boolean {
@@ -387,6 +529,13 @@ class NotificationWorker @AssistedInject constructor(
         is ActivityReplyLikeNotification -> notificationPreferences.activityLikeEnabled.value
         is ActivityMessageNotification -> notificationPreferences.activityMessageEnabled.value
         is FollowingNotification -> notificationPreferences.followsEnabled.value
+        is RelatedMediaAdditionNotification,
+        is MediaDataChangeNotification,
+        is MediaMergeNotification,
+        is MediaDeletionNotification -> notificationPreferences.mediaUpdatesEnabled.value
+        is MediaSubmissionUpdateNotification,
+        is StaffSubmissionUpdateNotification,
+        is CharacterSubmissionUpdateNotification -> notificationPreferences.submissionUpdatesEnabled.value
         else -> false
     }
 

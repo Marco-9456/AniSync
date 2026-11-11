@@ -406,6 +406,11 @@
     <string name="notification_inbox_mark_read_on_open_desc">Treat opening the inbox as reading everything in it</string>
     <string name="notification_follows">New Followers</string>
     <string name="notification_follows_desc">When someone starts following you</string>
+    <string name="notification_group_media">Media</string>
+    <string name="notification_media_updates">Media Updates</string>
+    <string name="notification_media_updates_desc">New related titles, data changes, merges and removals for titles on your lists</string>
+    <string name="notification_submission_updates">Submission Updates</string>
+    <string name="notification_submission_updates_desc">When AniList accepts or declines a data submission you sent</string>
     <string name="notification_channel_watching">Watching List</string>
     <string name="notification_channel_watching_desc">New episodes for shows you\'re watching</string>
     <string name="notification_channel_planning">Planning List</string>

@@ -72,6 +72,13 @@ class NotificationPreferences @Inject constructor(
     private val _followsEnabled = MutableStateFlow(prefs.getBoolean(KEY_FOLLOWS_ENABLED, true))
     val followsEnabled: StateFlow<Boolean> = _followsEnabled.asStateFlow()
 
+    // Media - new relations, data changes, merges and removals on titles in the viewer's lists.
+    private val _mediaUpdatesEnabled = MutableStateFlow(prefs.getBoolean(KEY_MEDIA_UPDATES_ENABLED, true))
+    val mediaUpdatesEnabled: StateFlow<Boolean> = _mediaUpdatesEnabled.asStateFlow()
+
+    private val _submissionUpdatesEnabled = MutableStateFlow(prefs.getBoolean(KEY_SUBMISSION_UPDATES_ENABLED, true))
+    val submissionUpdatesEnabled: StateFlow<Boolean> = _submissionUpdatesEnabled.asStateFlow()
+
     // Inbox - keep a local record of which notifications have been read.
     // AniList serves one unread count and no per-notification flag, so New/Earlier, the dots and
     // Mark all read all run off state this device keeps. Off, the inbox carries no read state and
@@ -158,6 +165,27 @@ class NotificationPreferences @Inject constructor(
         prefs.edit().putBoolean(KEY_FOLLOWS_ENABLED, enabled).apply()
     }
 
+    fun setMediaUpdatesEnabled(enabled: Boolean) {
+        _mediaUpdatesEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_MEDIA_UPDATES_ENABLED, enabled).apply()
+    }
+
+    fun setSubmissionUpdatesEnabled(enabled: Boolean) {
+        _submissionUpdatesEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_SUBMISSION_UPDATES_ENABLED, enabled).apply()
+    }
+
+    /**
+     * When the tray started taking media and submission notifications, in epoch seconds. Older ones
+     * stay in the inbox only, so the first run after an update does not post a backlog.
+     */
+    fun mediaAlertsSince(nowSeconds: Long): Long {
+        val stored = prefs.getLong(KEY_MEDIA_ALERTS_SINCE, 0L)
+        if (stored > 0L) return stored
+        prefs.edit().putLong(KEY_MEDIA_ALERTS_SINCE, nowSeconds).apply()
+        return nowSeconds
+    }
+
     fun setInboxReadTrackingEnabled(enabled: Boolean) {
         _inboxReadTrackingEnabled.value = enabled
         prefs.edit().putBoolean(KEY_INBOX_READ_TRACKING, enabled).apply()
@@ -211,6 +239,9 @@ class NotificationPreferences @Inject constructor(
         private const val KEY_ACTIVITY_LIKE_ENABLED = "activity_like_enabled"
         private const val KEY_ACTIVITY_MESSAGE_ENABLED = "activity_message_enabled"
         private const val KEY_FOLLOWS_ENABLED = "follows_enabled"
+        private const val KEY_MEDIA_UPDATES_ENABLED = "media_updates_enabled"
+        private const val KEY_SUBMISSION_UPDATES_ENABLED = "submission_updates_enabled"
+        private const val KEY_MEDIA_ALERTS_SINCE = "media_alerts_since"
         private const val KEY_STREAMING_DELAY_MINUTES = "streaming_delay_minutes"
         private const val KEY_INBOX_READ_TRACKING = "inbox_read_tracking"
         private const val KEY_INBOX_MARK_READ_ON_OPEN = "inbox_mark_read_on_open"

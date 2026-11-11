@@ -33,8 +33,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,6 +50,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.data.WhatsNewItem
+import com.anisync.android.presentation.components.LocalWhatsNew
+import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.rememberControlledSliderState
 import com.anisync.android.util.NotificationPermissionHelper
 
@@ -82,6 +87,10 @@ fun NotificationsScreen(
     val streamingDelayMinutes = uiState.streamingDelayMinutes
     val inboxReadTrackingEnabled = uiState.inboxReadTrackingEnabled
     val inboxMarkReadOnOpen = uiState.inboxMarkReadOnOpen
+    val whatsNewStore = LocalWhatsNew.current
+    // Read once on entry so the pill stays up for the visit that clears it.
+    val showMediaAlertsNew = remember { WhatsNewItem.NOTIFICATIONS_MEDIA in whatsNewStore.active.value }
+    LaunchedEffect(Unit) { whatsNewStore.markSeen(WhatsNewItem.NOTIFICATIONS_MEDIA) }
 
     var hasSystemPermission by rememberSaveable { mutableStateOf(true) }
 
@@ -326,6 +335,33 @@ fun NotificationsScreen(
                     checked = followsEnabled,
                     enabled = isNotificationsEnabled,
                     onCheckedChange = { viewModel.onAction(SettingsAction.SetFollowsEnabled(it)) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsSectionLabel(stringResource(R.string.notification_group_media))
+
+            SettingsGroup {
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_media_updates),
+                    subtitle = stringResource(R.string.notification_media_updates_desc),
+                    checked = uiState.mediaUpdatesEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetMediaUpdatesEnabled(it)) },
+                    titleBadge = if (showMediaAlertsNew) {
+                        { WhatsNewPill(WhatsNewItem.Kind.NEW) }
+                    } else {
+                        null
+                    }
+                )
+                SettingsDivider()
+                SwitchSettingsItem(
+                    title = stringResource(R.string.notification_submission_updates),
+                    subtitle = stringResource(R.string.notification_submission_updates_desc),
+                    checked = uiState.submissionUpdatesEnabled,
+                    enabled = isNotificationsEnabled,
+                    onCheckedChange = { viewModel.onAction(SettingsAction.SetSubmissionUpdatesEnabled(it)) }
                 )
             }
         }

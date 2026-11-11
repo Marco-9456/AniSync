@@ -26,7 +26,8 @@ enum class WhatsNewItem(val sinceVersionCode: Int, val kind: Kind, val place: Pl
     ANILIST_ADULT_OPTIONS(23, Kind.NEW),
     PROFILE_MUTUALS(23, Kind.NEW, Place.PROFILE),
     SETTINGS_RECAPS(23, Kind.NEW),
-    PROFILE_STATS_MOVED(23, Kind.MOVED, Place.PROFILE);
+    PROFILE_STATS_MOVED(23, Kind.MOVED, Place.PROFILE),
+    NOTIFICATIONS_MEDIA(23, Kind.NEW);
 
     enum class Kind { NEW, MOVED }
 
