@@ -218,7 +218,7 @@
     <string name="a11y_action_see_all_button">查看全部</string>
     <string name="settings_look_and_feel">主題與樣式</string>
     <string name="settings_look_and_feel_desc">主題、顯示大小、顏色、底欄、頭像、應用圖示</string>
-    <string name="details_label_titles">標題</string>
+    <string name="details_label_titles">作品</string>
     <string name="details_label_romaji">羅馬拼音</string>
     <string name="details_label_english">英文</string>
     <string name="details_label_native">原文</string>
@@ -1651,7 +1651,7 @@
     <string name="dev_recap_manga_chapters">漫畫章節</string>
     <string name="dev_recap_months">月</string>
     <string name="dev_recap_busiest_month">最活躍月份</string>
-    <string name="recap_your_month">你的 %1$s 回顧</string>
+    <string name="recap_your_month">你的%1$s回顧</string>
     <string name="recap_notification_title">你的 %1$s 回顧來啦</string>
     <string name="recap_settings_time">通知時間</string>
     <string name="recap_settings_card_size">默認卡片大小</string>
@@ -1664,7 +1664,7 @@
     <string name="dev_recap_weekday">最活躍的星期</string>
     <string name="share_recap_top_five">前五項</string>
     <string name="dev_recap_value_count">%1$s（%2$s）</string>
-    <string name="dev_recap_title_line">%1$s，用時%2$s（%3$s）</string>
+    <string name="dev_recap_title_line">%1$s，用時 %2$s（%3$s）</string>
     <string name="dev_recap_biggest_day">巔峰日</string>
     <string name="dev_recap_biggest_day_lead">當日榜首</string>
     <string name="dev_recap_hidden_title">隱藏項</string>
@@ -1724,19 +1724,19 @@
     <string name="stats_not_scored">未評分</string>
     <string name="stats_eras_eyebrow_own">你的年代跨度</string>
     <string name="stats_eras_eyebrow_other">他的年代跨度</string>
-    <string name="stats_header_by_decade">年代視圖</string>
+    <string name="stats_header_by_decade">年代</string>
     <string name="stats_header_released">發行年</string>
     <string name="stats_length_range">%1$s 至 %2$s</string>
     <string name="recap_date_range">%1$s 至 %2$s</string>
     <string name="stats_time_on_top_two">又 %1$s %2$s</string>
     <string name="stats_finish_line">在你的觀看清單中共看完了 %1$s（%2$s/%3$s）</string>
-    <string name="stats_eras_ends_this_year_own">你所看最早的作品是來自 %1$d 年，而你最新看的則是今年</string>
+    <string name="stats_eras_ends_this_year_own">你所看最早的作品是來自 %1$d 年，而你最新看的則是在今年</string>
     <string name="stats_eras_ends_own">你所看最早的作品是來自 %1$d 年，而你最新看的則是來自 %2$d 年</string>
     <string name="stats_eras_released_anime">你的動畫發行年</string>
     <string name="stats_header_started">開始時間</string>
     <string name="stats_eras_started_anime">你開始觀看的年份</string>
     <string name="stats_eras_started_manga">你開始閱讀的年份</string>
-    <string name="stats_decade">%1$d年代</string>
+    <string name="stats_decade">%1$d 年代</string>
     <string name="stats_people_sort_roles">角色量</string>
     <string name="stats_spotlight_voice_own">扮演你所看最多角色的聲優是</string>
     <string name="share_stats_top_genre">偏好風格</string>
@@ -1819,4 +1819,16 @@
     <string name="recap_time_across">在這月的 %2$s 裡，共橫跨了 %1$s</string>
     <string name="recap_most_watched_eyebrow">你看最久的是</string>
     <string name="recap_weekday_your_day">%1$s似乎很合你意</string>
+    <string name="stats_hero_watch_time">累積看了 %1$s又 %2$s</string>
+    <string name="stats_hero_watch_time_single">累積看了 %1$s</string>
+    <string name="recap_opens_on">將在 %1$s 時就緒，</string>
+    <string name="recap_in_progress">進行中</string>
+    <string name="recap_in_progress_eyebrow">%1$s · 現在進行式</string>
+    <string name="recap_opens_year">%1$s 時就緒</string>
+    <plurals name="recap_busiest_month">
+        <item quantity="other">%1$s 是你的巔峰之月</item>
+    </plurals>
+    <string name="details_score_info_read_more">閱讀 AniList 的解說</string>
+    <string name="stats_length_or_more">%1$s 及以上</string>
+    <string name="stats_tags_title">最多的標籤</string>
 </resources>
