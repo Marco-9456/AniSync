@@ -307,7 +307,9 @@ internal fun QueueCover(
         CoverBadgeRibbon(
             badges = coverBadges(
                 hasNotes = !entry.notes.isNullOrBlank(),
-                priority = priority
+                priority = priority,
+                rewatches = entry.rewatches,
+                isManga = entry.type == MediaType.MANGA
             ),
             modifier = Modifier.align(Alignment.TopStart)
         )

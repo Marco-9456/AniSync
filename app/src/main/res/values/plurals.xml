@@ -358,4 +358,12 @@
         <item quantity="one">%1$s month kept, %2$s. A cleared recap is rebuilt from AniList when you open it</item>
         <item quantity="other">%1$s months kept, %2$s. A cleared recap is rebuilt from AniList when you open it</item>
     </plurals>
+    <plurals name="a11y_rewatch_count">
+        <item quantity="one">Rewatched %1$d time</item>
+        <item quantity="other">Rewatched %1$d times</item>
+    </plurals>
+    <plurals name="a11y_reread_count">
+        <item quantity="one">Reread %1$d time</item>
+        <item quantity="other">Reread %1$d times</item>
+    </plurals>
 </resources>

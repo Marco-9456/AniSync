@@ -286,7 +286,9 @@ private fun PosterArt(
             CoverBadgeRibbon(
                 badges = coverBadges(
                     hasNotes = !entry.notes.isNullOrBlank(),
-                    priority = entry.priorityLevel.takeIf { showPriority }
+                    priority = entry.priorityLevel.takeIf { showPriority },
+                    rewatches = entry.rewatches,
+                    isManga = entry.type == MediaType.MANGA
                 ),
                 iconSize = 16.dp,
                 cellPadding = 5.dp,
