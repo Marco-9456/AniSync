@@ -1935,6 +1935,7 @@
     <string name="ok">OK</string>
     <string name="session_expired_title">Session Expired</string>
     <string name="session_expired_message">Your session has expired. Please log in again to continue using AniSync.</string>
+    <string name="session_expired_switched">Your session for %1$s has expired, so AniSync switched to %2$s. To use %1$s again, sign in from the account switcher on your profile.</string>
     <!-- Filter sheets -->
     <string name="reset">Reset</string>
     <string name="search_tags_hint">Search tags</string>

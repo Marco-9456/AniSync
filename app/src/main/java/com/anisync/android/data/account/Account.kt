@@ -29,5 +29,8 @@ data class Account(
     companion object {
         /** Placeholder id for a migrated legacy token before its real Viewer id is known. */
         const val PROVISIONAL_ID = 0
+
+        /** The [expiresAt] written once AniList refuses the token, see [AccountStore.markExpired]. */
+        const val REFUSED_AT = 1L
     }
 }

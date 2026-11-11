@@ -339,17 +339,17 @@ class MainActivity : AppCompatActivity() {
                                 )
 
                                 // Session expired dialog
-                                var showSessionExpiredDialog by remember { mutableStateOf(false) }
-
-                                LaunchedEffect(Unit) {
-                                    authRepository.sessionExpired.collect {
-                                        showSessionExpiredDialog = true
-                                    }
+                                var sessionExpiry by remember {
+                                    mutableStateOf<com.anisync.android.data.account.SessionExpiry?>(null)
                                 }
 
-                                if (showSessionExpiredDialog) {
+                                LaunchedEffect(Unit) {
+                                    authRepository.sessionExpired.collect { sessionExpiry = it }
+                                }
+
+                                sessionExpiry?.let { expiry ->
                                     AppAlertDialog(
-                                        onDismissRequest = { showSessionExpiredDialog = false },
+                                        onDismissRequest = { sessionExpiry = null },
                                         icon = {
                                             Icon(
                                                 imageVector = Icons.Outlined.Lock,
@@ -358,10 +358,14 @@ class MainActivity : AppCompatActivity() {
                                         },
                                         title = { Text(stringResource(R.string.session_expired_title)) },
                                         text = {
-                                            Text(stringResource(R.string.session_expired_message))
+                                            Text(
+                                                expiry.switchedTo?.let {
+                                                    stringResource(R.string.session_expired_switched, expiry.expired, it)
+                                                } ?: stringResource(R.string.session_expired_message)
+                                            )
                                         },
                                         confirmButton = {
-                                            TextButton(onClick = { showSessionExpiredDialog = false }) {
+                                            TextButton(onClick = { sessionExpiry = null }) {
                                                 Text(stringResource(R.string.ok))
                                             }
                                         }
