@@ -139,7 +139,10 @@ class DetailsRepositoryImpl @Inject constructor(
 
             val media = response.data?.Media ?: throw Exception("Media not found")
 
-            val listEntry = media.mediaListEntry?.viewerListEntryFields
+            // After a switch while this was out, the entry it carries can belong to either account,
+            // so neither the page's copy nor the library row takes it.
+            val sameAccount = owner != null && accountStore.activeAccount.value?.id == owner
+            val listEntry = media.mediaListEntry?.viewerListEntryFields?.takeIf { sameAccount }
             val listStatus = listEntry?.status?.toDomainStatus()
 
             val characters = media.characters?.edges?.filterNotNull()?.map { edge ->
@@ -362,7 +365,7 @@ class DetailsRepositoryImpl @Inject constructor(
             )
 
             mediaDetailsDao.insert(details.toEntity())
-            if (owner != null) {
+            if (owner != null && sameAccount) {
                 syncLibraryEntry(owner, media.toLibraryEntry(), rowWhenAsked, listEntry, askedAt)
             }
         }
@@ -469,6 +472,7 @@ class DetailsRepositoryImpl @Inject constructor(
                 .execute()
                 .dataOrThrow()
                 .Media ?: return@safeApiCall
+            if (accountStore.activeAccount.value?.id != owner) return@safeApiCall
             syncLibraryEntry(owner, local.toDomain(), local, media.mediaListEntry?.viewerListEntryFields, askedAt)
         }
     }
