@@ -44,6 +44,9 @@ class ApiErrorMessages @Inject constructor(
             is ApiError.TokenRejected ->
                 context.getString(R.string.api_error_token_rejected)
 
+            is ApiError.SessionChanged ->
+                context.getString(R.string.api_error_session_changed)
+
             is ApiError.PermissionDenied ->
                 error.reason ?: context.getString(R.string.api_error_permission_denied)
 

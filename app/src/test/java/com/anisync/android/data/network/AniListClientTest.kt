@@ -1,12 +1,20 @@
 package com.anisync.android.data.network
 
 import com.anisync.android.GetViewerQuery
+import com.anisync.android.cache.Cache.cache
 import com.anisync.android.data.util.ApiError
 import com.anisync.android.data.util.Clock
 import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.Result
 import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.http.HttpRequest
+import com.apollographql.apollo.api.http.HttpResponse
 import com.apollographql.apollo.interceptor.ApolloInterceptor
+import com.apollographql.apollo.network.http.HttpInterceptor
+import com.apollographql.apollo.network.http.HttpInterceptorChain
+import com.apollographql.cache.normalized.FetchPolicy
+import com.apollographql.cache.normalized.fetchPolicy
+import com.apollographql.cache.normalized.memory.MemoryCacheFactory
 import com.apollographql.mockserver.MockResponse
 import com.apollographql.mockserver.MockServer
 import com.apollographql.mockserver.enqueueString
@@ -14,10 +22,12 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.days
 
 /**
  * The whole chain against a real HTTP server: identity headers, pacing, classification and retry,
@@ -183,5 +193,91 @@ class AniListClientTest {
 
         assertEquals(30, monitor.stats.value.limit)
         assertEquals(17, monitor.stats.value.remaining)
+    }
+
+    private class SwitchingSession(var current: String?) : SessionTokens {
+        override fun getToken() = current
+        override fun onSessionExpired() = Unit
+    }
+
+    /** Switches accounts while the request is on the wire, the way a tap in the account switcher can. */
+    private class SwitchWhileOut(private val session: SwitchingSession, private val to: String) : HttpInterceptor {
+        override suspend fun intercept(request: HttpRequest, chain: HttpInterceptorChain): HttpResponse {
+            session.current = to
+            return chain.proceed(request)
+        }
+    }
+
+    /** Switches accounts once the answer is in, while the call is still deciding what to do with it. */
+    private class SwitchAfterAnswer(private val session: SwitchingSession, private val to: String) : HttpInterceptor {
+        override suspend fun intercept(request: HttpRequest, chain: HttpInterceptorChain): HttpResponse =
+            chain.proceed(request).also { session.current = to }
+    }
+
+    /**
+     * The bleed this guards against: the previous account's `GetViewer` landed in the cache just
+     * after a switch cleared it, and the library sync then fetched that account's list for the new
+     * one.
+     */
+    @Test
+    fun `an answer that comes back after an account switch is dropped and never cached`() = runTest {
+        mockServer.enqueueString(viewerJson)
+        val session = SwitchingSession("previous")
+        val gate = gate()
+        val apollo = ApolloClient.Builder()
+            .serverUrl(mockServer.url())
+            .addHttpInterceptor(AniListHttpInterceptor(session, gate))
+            .addHttpInterceptor(SwitchWhileOut(session, to = "next"))
+            .httpExposeErrorBody(true)
+            .addInterceptor(RequestCoalescer(session), ApolloInterceptor.InsertionPoint.BeforeNetwork)
+            .addInterceptor(
+                AniListErrorInterceptor(session, gate, RetryPolicy(RetryConfig(jitterMs = 0), Random(0))),
+                ApolloInterceptor.InsertionPoint.BeforeNetwork,
+            )
+            .cache(MemoryCacheFactory(), defaultMaxAge = 1.days)
+            .build()
+
+        val result = safeApiCall { apollo.query(GetViewerQuery()).execute() }
+
+        val error = result as Result.Error
+        assertTrue("was ${error.exception}", error.exception is ApiError.SessionChanged)
+        val headers = mockServer.takeRequest().headers.mapKeys { it.key.lowercase() }
+        assertEquals("Bearer previous", headers["authorization"])
+        val cached = apollo.query(GetViewerQuery()).fetchPolicy(FetchPolicy.CacheOnly).execute()
+        assertNull("the previous account's viewer reached the cache", cached.data)
+    }
+
+    @Test
+    fun `a rate limited request is not retried as the account switched to`() = runTest {
+        mockServer.enqueue(
+            MockResponse.Builder()
+                .statusCode(429)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Retry-After", "1")
+                .addHeader("X-RateLimit-Limit", "30")
+                .addHeader("X-RateLimit-Remaining", "0")
+                .body("""{"data":null,"errors":[{"message":"Too Many Requests.","status":429}]}""")
+                .build(),
+        )
+        mockServer.enqueueString(viewerJson)
+        val session = SwitchingSession("previous")
+        val gate = gate()
+        val apollo = ApolloClient.Builder()
+            .serverUrl(mockServer.url())
+            .addHttpInterceptor(SwitchAfterAnswer(session, to = "next"))
+            .addHttpInterceptor(AniListHttpInterceptor(session, gate))
+            .httpExposeErrorBody(true)
+            .addInterceptor(
+                AniListErrorInterceptor(session, gate, RetryPolicy(RetryConfig(jitterMs = 0), Random(0))),
+                ApolloInterceptor.InsertionPoint.BeforeNetwork,
+            )
+            .build()
+
+        val result = safeApiCall { apollo.query(GetViewerQuery()).execute() }
+
+        val error = result as Result.Error
+        assertTrue("was ${error.exception}", error.exception is ApiError.SessionChanged)
+        val headers = mockServer.takeRequest().headers.mapKeys { it.key.lowercase() }
+        assertEquals("Bearer previous", headers["authorization"])
     }
 }

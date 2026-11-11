@@ -62,6 +62,9 @@ class AniListErrorInterceptor @Inject constructor(
 
         return flow {
             val priority = resolveRequestPriority()
+            // Every attempt is signed afresh, so a retry that waited through an account switch
+            // would go out as the account switched to.
+            val signedFor = if (tokenScoped) null else session.getToken()
             var attempt = 0
             while (true) {
                 attempt++
@@ -86,6 +89,7 @@ class AniListErrorInterceptor @Inject constructor(
                             "in_ms=${decision.delayMs} cause=${error::class.simpleName}"
                     }
                     delay(decision.delayMs)
+                    if (signedFor != null && signedFor != session.getToken()) throw ApiError.SessionChanged()
                     continue
                 }
 

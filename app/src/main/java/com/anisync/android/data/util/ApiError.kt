@@ -53,6 +53,13 @@ sealed class ApiError(
     class TokenRejected : ApiError("Account token rejected")
 
     /**
+     * The account a request was signed for stopped being the active one before its answer came
+     * back. The answer belongs to that account, so it is neither cached nor handed to the one
+     * signed in now, and the request is not retried under the new token.
+     */
+    class SessionChanged : ApiError("Account changed before the answer arrived")
+
+    /**
      * The token is valid but not allowed to do this. AniList conflates permission with auth and
      * answers 401 for it, sometimes inside an HTTP 200 body.
      */

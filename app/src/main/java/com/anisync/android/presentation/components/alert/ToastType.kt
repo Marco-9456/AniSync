@@ -74,6 +74,7 @@ enum class ToastType(
             is ApiError.Offline -> OFFLINE
             is ApiError.Timeout -> TIMEOUT
             is ApiError.Validation -> VALIDATION_ERROR
+            is ApiError.SessionChanged -> INFO
             is ApiError.GraphQLError, is ApiError.Unknown -> ERROR
         }
 
