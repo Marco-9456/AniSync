@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="time_days">
+        <item quantity="other">%d 天</item>
+    </plurals>
+    <plurals name="time_hours">
+        <item quantity="other">%d 小時</item>
+    </plurals>
+    <plurals name="time_minutes">
+        <item quantity="other">%d 分鐘</item>
+    </plurals>
+    <plurals name="stats_unit_anime">
+        <item quantity="other">動畫</item>
+    </plurals>
+    <plurals name="stats_unit_manga">
+        <item quantity="other">漫畫</item>
+    </plurals>
+    <plurals name="stats_minutes">
+        <item quantity="other">%d 分鐘</item>
+    </plurals>
+    <plurals name="stats_hero_chapters_read">
+        <item quantity="other">共讀了 %1$s 章</item>
+    </plurals>
+    <plurals name="stats_day_streak">
+        <item quantity="other">連續天數</item>
+    </plurals>
+    <plurals name="stats_hero_stale">
+        <item quantity="other">AniList 大約每 2 天會重新統計，所以共有 %d 則本週動態更新未在內呈現</item>
+    </plurals>
+    <plurals name="stats_active_days">
+        <item quantity="other">活躍天數</item>
+    </plurals>
+    <plurals name="stats_hours">
+        <item quantity="other">%d 小時</item>
+    </plurals>
+    <plurals name="stats_busiest_on_count">
+        <item quantity="other">在 %1$s 時最為活躍，共 %2$d 則動態</item>
+    </plurals>
+    <plurals name="stats_teaser_top_genre">
+        <item quantity="other">你最喜歡的風格，共 %d 部作品</item>
+    </plurals>
+    <plurals name="stats_teaser_top_genre_other">
+        <item quantity="other">他最喜歡的風格，共 %d 部作品</item>
+    </plurals>
+    <plurals name="stats_teaser_decades_peak">
+        <item quantity="other">共橫跨%1$s個年代，巔峰位於 %2$s 年</item>
+    </plurals>
+    <plurals name="stats_roles">
+        <item quantity="other">%d 位角色</item>
+    </plurals>
+    <plurals name="stats_tags_show_more">
+        <item quantity="other">展示額外 %d 條</item>
+    </plurals>
+    <plurals name="stats_unit_days">
+        <item quantity="other">天</item>
+    </plurals>
+    <plurals name="stats_unit_hours">
+        <item quantity="other">小時</item>
+    </plurals>
+    <plurals name="stats_unit_minutes">
+        <item quantity="other">分鐘</item>
+    </plurals>
+    <plurals name="stats_unit_chapters">
+        <item quantity="other">章</item>
+    </plurals>
+    <plurals name="stats_hours_total">
+        <item quantity="other">%1$s 小時</item>
+    </plurals>
+    <plurals name="stats_episodes_total">
+        <item quantity="other">%1$s 集</item>
+    </plurals>
+    <plurals name="stats_hero_volumes">
+        <item quantity="other">%1$s 卷</item>
+    </plurals>
+    <plurals name="stats_works">
+        <item quantity="other">%1$s 部作品</item>
+    </plurals>
+    <plurals name="stats_titles">
+        <item quantity="other">%1$s 部作品</item>
+    </plurals>
+    <plurals name="stats_chapters_short">
+        <item quantity="other">%1$s 章</item>
+    </plurals>
+    <plurals name="stats_length_episodes">
+        <item quantity="other">%d 集</item>
+    </plurals>
+    <plurals name="stats_length_chapters">
+        <item quantity="other">%d 章</item>
+    </plurals>
+    <plurals name="stats_eras_decades_anime">
+        <item quantity="other">動畫生涯共橫跨了%1$s個年代，</item>
+    </plurals>
+    <plurals name="stats_eras_decades_manga">
+        <item quantity="other">漫畫生涯共橫跨了%1$s個年代</item>
+    </plurals>
+    <plurals name="stats_eras_peak_titles">
+        <item quantity="other">巔峰，共 %1$s 項</item>
+    </plurals>
+    <plurals name="share_duration_days">
+        <item quantity="other">%1$s 天</item>
+    </plurals>
+    <plurals name="share_duration_hours">
+        <item quantity="other">%1$s 小時</item>
+    </plurals>
+    <plurals name="share_media_chapter_count">
+        <item quantity="other">%1$s 章</item>
+    </plurals>
+    <plurals name="share_media_episode_count">
+        <item quantity="other">%1$s 集</item>
+    </plurals>
+    <plurals name="share_review_helpful">
+        <item quantity="other">%1$s · %2$s 人認為值得參考</item>
+    </plurals>
+    <plurals name="share_recap_finished_word">
+        <item quantity="other">看完了</item>
+    </plurals>
+    <plurals name="share_recap_hour_count">
+        <item quantity="other">%1$s 小時</item>
+    </plurals>
+    <plurals name="share_recap_episodes_word">
+        <item quantity="other">集</item>
+    </plurals>
+    <plurals name="share_recap_titles_word">
+        <item quantity="other">部作品</item>
+    </plurals>
+    <plurals name="share_recap_episode_count">
+        <item quantity="other">%1$s 集</item>
+    </plurals>
+    <plurals name="share_recap_manga_chapters">
+        <item quantity="other">漫畫章數</item>
+    </plurals>
+    <plurals name="share_recap_busiest_month">
+        <item quantity="other">%1$s是你的巔峰之月：共有 %2$s 集</item>
+    </plurals>
+    <plurals name="recap_hour_count">
+        <item quantity="other">%1$s 小時</item>
+    </plurals>
+    <plurals name="recap_minute_count">
+        <item quantity="other">%1$s 分鐘</item>
+    </plurals>
+    <plurals name="recap_day_count">
+        <item quantity="other">%1$s 天</item>
+    </plurals>
+    <plurals name="recap_finished_so_far">
+        <item quantity="other">目前看完了%1$s部作品</item>
+    </plurals>
+    <plurals name="recap_episodes_so_far">
+        <item quantity="other">現已累計 %1$s 集</item>
+    </plurals>
+    <plurals name="recap_episodes_so_far_short">
+        <item quantity="other">現已累計 %1$s 集</item>
+    </plurals>
+    <plurals name="stats_best_rated">
+        <item quantity="other">最高評分（至少 %d 部作品）</item>
+    </plurals>
+</resources>

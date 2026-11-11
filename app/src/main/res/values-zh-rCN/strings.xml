@@ -96,7 +96,7 @@
     <string name="forum_sort_field_relevance">相关性</string>
     <string name="forum_sort_most_replies">最多回覆</string>
     <string name="forum_sort_most_viewed">最多浏览</string>
-    <string name="forum_sort_least_recently_replied">最新回覆</string>
+    <string name="forum_sort_least_recently_replied">最久无新回覆</string>
     <string name="forum_sort_fewest_replies">最少回覆</string>
     <string name="forum_sort_least_viewed">最少浏览</string>
     <string name="forum_sort_title_az">标题（A→Z）</string>
