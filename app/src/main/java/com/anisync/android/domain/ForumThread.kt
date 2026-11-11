@@ -21,6 +21,8 @@ data class ForumThread(
     val authorId: Int,
     val authorName: String,
     val authorAvatarUrl: String?,
+    val authorDonatorTier: Int = 0,
+    val authorDonatorBadge: String? = null,
     val repliedAt: Long? = null,
     val replyUserName: String? = null,
     val replyUserAvatarUrl: String? = null,

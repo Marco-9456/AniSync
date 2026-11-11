@@ -19,6 +19,8 @@ query GetForumThread($id: Int!) {
             id
             isBlocked
             name
+            donatorTier
+            donatorBadge
             avatar {
                 large
             }
@@ -66,6 +68,8 @@ query GetForumComments(
                 id
                 isBlocked
                 name
+                donatorTier
+                donatorBadge
                 avatar {
                     large
                 }

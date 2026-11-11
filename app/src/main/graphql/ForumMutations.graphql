@@ -26,6 +26,8 @@ mutation CreateForumThread(
     user {
       id
       name
+      donatorTier
+      donatorBadge
       avatar {
         large
       }
@@ -49,6 +51,8 @@ mutation CreateForumComment($id: Int, $threadId: Int!, $comment: String!) {
     user {
       id
       name
+      donatorTier
+      donatorBadge
       avatar {
         large
       }
@@ -68,6 +72,8 @@ mutation CreateForumCommentReply($id: Int, $threadId: Int!, $comment: String!, $
     user {
       id
       name
+      donatorTier
+      donatorBadge
       avatar {
         large
       }

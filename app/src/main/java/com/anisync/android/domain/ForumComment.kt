@@ -15,6 +15,8 @@ data class ForumComment(
     val authorId: Int,
     val authorName: String,
     val authorAvatarUrl: String?,
+    val authorDonatorTier: Int = 0,
+    val authorDonatorBadge: String? = null,
     val createdAt: Long,
     val siteUrl: String?,
     val childComments: List<ForumComment> = emptyList(),

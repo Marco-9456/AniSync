@@ -297,6 +297,8 @@ fun ThreadCommentItem(
                         avatarUrl = comment.authorAvatarUrl,
                         timestampSeconds = comment.createdAt,
                         avatarSize = avatarRadius * 2,
+                        donatorTier = comment.authorDonatorTier,
+                        donatorBadge = comment.authorDonatorBadge,
                         modifier = Modifier.weight(1f, fill = false),
                         onUserClick = onUserClick
                     )
