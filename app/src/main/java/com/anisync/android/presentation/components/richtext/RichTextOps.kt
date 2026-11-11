@@ -29,6 +29,26 @@ internal fun TextFieldState.wrapSelection(prefix: String, suffix: String) {
     }
 }
 
+/**
+ * Wraps the selection in spoiler markers. A selection over several lines gets them on lines of their
+ * own, the block form AniList draws as one box, with room for a `{label}` after the opener.
+ */
+internal fun TextFieldState.wrapSpoiler() {
+    edit {
+        val text = asCharSequence()
+        val start = selection.min
+        val end = selection.max
+        val selected = text.substring(start, end)
+        if (!selected.contains('\n')) {
+            replace(start, end, "~!$selected!~")
+            return@edit
+        }
+        val before = if (start > 0 && text[start - 1] != '\n') "\n" else ""
+        val after = if (end < text.length && text[end] != '\n') "\n" else ""
+        replace(start, end, "$before~!\n${selected.trim('\n')}\n!~$after")
+    }
+}
+
 internal fun TextFieldState.insertAtCursor(insertion: String) {
     edit {
         replace(selection.min, selection.max, insertion)

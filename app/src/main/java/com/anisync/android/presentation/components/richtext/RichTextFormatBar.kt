@@ -85,7 +85,7 @@ fun RichTextFormatBar(
             textFieldState.toggleLinkSyntax()
         })
         add(FormatAction(Icons.Default.VisibilityOff, stringResource(R.string.richtext_format_spoiler)) {
-            textFieldState.wrapSelection("~!", "!~")
+            textFieldState.wrapSpoiler()
         })
     }
     val moreLabel = stringResource(R.string.more_options)
@@ -193,7 +193,7 @@ fun EditorFormatToolbar(
             }
             formatItem(Icons.Default.VisibilityOff, spoilerLabel) {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                textFieldState.wrapSelection("~!", "!~")
+                textFieldState.wrapSpoiler()
             }
         }
     }
