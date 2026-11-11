@@ -1848,4 +1848,27 @@
     <string name="stats_length_or_more">%1$s lub więcej</string>
     <string name="stats_eras_eyebrow_own">Twoje epoki</string>
     <string name="stats_eras_eyebrow_other">Epoki</string>
+    <string name="empty_upcoming_action">Dodaj aktualnie wychodzące anime do listy oglądanych, aby zobaczyć nadchodzące odcinki</string>
+    <string name="empty_characters_title">Brak postaci</string>
+    <string name="empty_characters_action">Informacje o postaciach nie są dostępne dla tego tytułu</string>
+    <string name="empty_discussions_title">Nie ma jeszcze żadnych dyskusji</string>
+    <string name="empty_discussions_action">Bądź pierwszy który rozpocznie konwersacje</string>
+    <string name="empty_discussions_button">Rozpocznij dyskusję</string>
+    <string name="empty_comments_title">Nie ma jeszcze komentarzy</string>
+    <string name="empty_comments_action">Bądź pierwszym który podzieli się tym co myśli</string>
+    <string name="empty_forum_search_title">Nie znaleziono wątków dla %s</string>
+    <string name="empty_forum_search_action">Spróbuj inne słowa kluczowe</string>
+    <string name="stats_eras_ends_this_year_own">Twój najstarszy tytuł wyszedł w %1$d, a najnowszy w tym roku.</string>
+    <string name="stats_eras_ends_this_year_other">Najstarszy tytuł wyszedł w %1$d, a najnowszy w tym roku.</string>
+    <string name="stats_eras_ends_own">Twój najstarszy tytuł wyszedł w %1$d, a najnowszy w %2$d.</string>
+    <string name="stats_eras_ends_other">Najstarszy tytuł wyszedł w %1$d, a najnowszy w %2$d.</string>
+    <string name="stats_eras_century_anime">Wiek anime.</string>
+    <string name="stats_eras_century_manga">Wiek mangi.</string>
+    <string name="stats_two_sentences">%1$s %2$s</string>
+    <string name="stats_decade">%1$ds</string>
+    <string name="stats_decade_none">brak</string>
+    <string name="stats_decade_share_most_anime">Większość twojego anime pochodzi z %1$s.</string>
+    <string name="stats_decade_share_half_anime">Połowa twojego anime pochodzi z %1$s.</string>
+    <string name="stats_decade_share_third_anime">Jedna trzecia twojego anime pochodzi z %1$s.</string>
+    <string name="stats_decade_share_quarter_anime">Jedna czwarta twojego anime pochodzi z %1$s.</string>
 </resources>
