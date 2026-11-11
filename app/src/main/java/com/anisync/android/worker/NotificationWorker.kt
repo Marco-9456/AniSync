@@ -867,6 +867,7 @@ class NotificationWorker @AssistedInject constructor(
         // "Add to Watching" action button
         val addToWatchingIntent = Intent(applicationContext, AddToWatchingReceiver::class.java).apply {
             action = AddToWatchingReceiver.ACTION_ADD_TO_WATCHING
+            putExtra(AddToWatchingReceiver.EXTRA_ACCOUNT_ID, ctx.id)
             putExtra(AddToWatchingReceiver.EXTRA_MEDIA_ID, airing.mediaId)
             putExtra(AddToWatchingReceiver.EXTRA_NOTIFICATION_ID, notificationId)
             putExtra(AddToWatchingReceiver.EXTRA_NOTIFICATION_TAG, notificationTag(ctx, CATEGORY_PLANNING))

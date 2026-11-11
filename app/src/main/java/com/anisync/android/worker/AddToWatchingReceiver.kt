@@ -6,7 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.widget.Toast
+import com.anisync.android.data.account.AccountStore
+import com.anisync.android.data.account.TokenedApolloClientFactory
+import com.anisync.android.data.listStatusMutation
 import com.anisync.android.data.local.dao.LibraryDao
+import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.DetailsRepository
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.R
@@ -31,8 +35,15 @@ class AddToWatchingReceiver : BroadcastReceiver() {
     @Inject
     lateinit var libraryDao: LibraryDao
 
+    @Inject
+    lateinit var accountStore: AccountStore
+
+    @Inject
+    lateinit var tokenedClients: TokenedApolloClientFactory
+
     companion object {
         const val ACTION_ADD_TO_WATCHING = "com.anisync.android.ACTION_ADD_TO_WATCHING"
+        const val EXTRA_ACCOUNT_ID = "extra_account_id"
         const val EXTRA_MEDIA_ID = "extra_media_id"
         const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
         const val EXTRA_NOTIFICATION_TAG = "extra_notification_tag"
@@ -63,12 +74,18 @@ class AddToWatchingReceiver : BroadcastReceiver() {
         // Use goAsync() to extend the BroadcastReceiver's lifecycle for the coroutine
         val pendingResult = goAsync()
 
+        val accountId = intent.getIntExtra(EXTRA_ACCOUNT_ID, NO_ACCOUNT)
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val result = detailsRepository.updateMediaListEntry(
-                    mediaId = mediaId,
-                    status = LibraryStatus.CURRENT
-                )
+                val result = if (accountId == NO_ACCOUNT || accountId == accountStore.activeAccount.value?.id) {
+                    detailsRepository.updateMediaListEntry(
+                        mediaId = mediaId,
+                        status = LibraryStatus.CURRENT
+                    )
+                } else {
+                    addForAccount(accountId, mediaId)
+                }
 
                 when (result) {
                     is Result.Success -> {
@@ -109,4 +126,23 @@ class AddToWatchingReceiver : BroadcastReceiver() {
             }
         }
     }
+
+    /**
+     * A notification stays in the tray across an account switch, so the action saves to the
+     * account it was posted for rather than whichever one is active now.
+     */
+    private suspend fun addForAccount(accountId: Int, mediaId: Int): Result<Unit> {
+        val account = accountStore.accounts.value.firstOrNull { it.id == accountId && !it.isExpired }
+            ?: throw IllegalStateException("Account $accountId is signed out")
+        return safeApiCall {
+            val response = tokenedClients.create(account.token)
+                .mutation(listStatusMutation(mediaId, LibraryStatus.CURRENT, progress = null))
+                .execute()
+            if (response.data?.SaveMediaListEntry == null || response.hasErrors()) {
+                throw Exception(response.errors?.firstOrNull()?.message ?: "Sync failed")
+            }
+        }
+    }
 }
+
+private const val NO_ACCOUNT = -1
