@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
-import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -128,6 +127,7 @@ import com.anisync.android.presentation.share.toShareBitmap
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.data.CardSize
 import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.rememberAnimationsEnabled
 import com.anisync.android.ui.theme.resolveDarkTheme
 import com.anisync.android.ui.theme.shareCardColorScheme
 import com.anisync.android.util.ShareUtils
@@ -674,10 +674,7 @@ private fun rememberAutoAdvance(): Boolean {
         manager?.addTouchExplorationStateChangeListener(listener)
         onDispose { manager?.removeTouchExplorationStateChangeListener(listener) }
     }
-    val animationsOff = remember(context) {
-        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-    }
-    return !exploring && !animationsOff
+    return !exploring && rememberAnimationsEnabled()
 }
 
 private fun touchExploration(context: Context): Boolean =

@@ -2,6 +2,7 @@
 
 package com.anisync.android.presentation.util
 
+import android.provider.Settings
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
@@ -9,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 
@@ -176,5 +178,17 @@ object AppMotion {
     fun rememberFastColorEffectsSpec(): FiniteAnimationSpec<Color> {
         val motionScheme = MaterialTheme.motionScheme
         return remember(motionScheme) { motionScheme.fastEffectsSpec() }
+    }
+}
+
+/**
+ * False when the system's animator duration scale is 0, the Remove animations accessibility
+ * setting, so motion that only decorates a page can stay still.
+ */
+@Composable
+fun rememberAnimationsEnabled(): Boolean {
+    val context = LocalContext.current
+    return remember(context) {
+        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) != 0f
     }
 }
