@@ -130,4 +130,9 @@ abstract class RepositoryModule {
     abstract fun bindRecapEnvironment(
         impl: com.anisync.android.data.AppRecapEnvironment
     ): com.anisync.android.data.RecapEnvironment
+
+    @Binds
+    abstract fun bindSupportersRepository(
+        impl: com.anisync.android.data.SupportersRepositoryImpl
+    ): com.anisync.android.domain.SupportersRepository
 }
