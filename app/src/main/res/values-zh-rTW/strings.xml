@@ -1836,8 +1836,8 @@
     <string name="stats_score_most_given">眾數</string>
     <string name="stats_scores_scored">%2$s 部中共有 %1$s 部被評分</string>
     <string name="details_score_info_title">評分</string>
-    <string name="stats_spread_eclectic_body">你的評分相對分散，從 %1$s 到 %2$s 都有</string>
-    <string name="stats_spread_eclectic_body_other">他的評分相對分散，從 %1$s 至 %2$s 都有</string>
+    <string name="stats_spread_eclectic_body">你的評分相對分散，從%1$s到%2$s都有</string>
+    <string name="stats_spread_eclectic_body_other">他的評分相對分散，從%1$s至%2$s都有</string>
     <string name="donator_badge_default">贊助者</string>
     <string name="stats_decade_share_half_list">此列表中有至少一半都來自 %1$s­</string>
     <string name="stats_eras_released_manga">你的漫畫發行年</string>
@@ -1847,4 +1847,24 @@
     <string name="stats_eras_ends_other">他所看最早的作品是來自 %1$d 年，而他最新看的則是來自 %2$d 年</string>
     <string name="stats_eras_ends_this_year_other">他所看最早的作品是來自 %1$d 年，而他最新看的則是在今年</string>
     <string name="stats_streak_every_kept_day">涵蓋在 AniList 仍保留的各天內，總共約六個月</string>
+    <string name="stats_time_detail_own">累積 %2$s共看了 %1$s，自從你於 %4$s加入 AniList 起每天平均看有 %3$s動畫</string>
+    <string name="stats_time_detail_other">累積 %2$s共看了 %1$s，自從他於 %4$s加入 AniList 起每天平均看有 %3$s動畫</string>
+    <string name="stats_read_detail_own">自從你於 %2$s加入 AniList 起每天平均看有 %1$s 章漫畫</string>
+    <string name="stats_read_detail_other">自從他於 %2$s加入 AniList 起每天平均看有 %1$s 章漫畫</string>
+    <string name="stats_finish_line_other">在他的觀看清單中共看完了 %1$s（%2$s/%3$s）</string>
+    <string name="stats_eras_started_most_own">你在 %1$d 年時開始看了最多作品，共 %2$s 部</string>
+    <string name="stats_eras_started_most_other">他在 %1$d 年時開始看了最多作品，共 %2$s 部</string>
+    <string name="stats_spotlight_voice_other">扮演他所看最多角色的聲優是</string>
+    <string name="stats_spotlight_staff_own">你讀過最多作品的作者是</string>
+    <string name="stats_spotlight_staff_other">他讀過最多作品的作者是</string>
+    <string name="stats_decade_share_most_anime">你動畫中大多都來自 %1$s</string>
+    <string name="stats_decade_share_third_anime">你動畫中有約⅓都來自 %1$s</string>
+    <string name="stats_decade_share_quarter_anime">你動畫中有約¼都來自 %1$s</string>
+    <string name="stats_decade_share_most_manga">你漫畫中大多都來自 %1$s</string>
+    <string name="stats_decade_share_third_manga">你漫畫中有約⅓都來自 %1$s</string>
+    <string name="stats_decade_share_quarter_manga">你漫畫中有約¼都來自 %1$s</string>
+    <string name="stats_decade_share_third_list">此列表中有約⅓都來自 %1$s</string>
+    <string name="stats_decade_share_quarter_list">列表中有約¼都來自 %1$s</string>
+    <string name="stats_decade_share_most_list">此列表中大多都來自 %1$s</string>
+    <string name="stats_decade_none">無</string>
 </resources>
