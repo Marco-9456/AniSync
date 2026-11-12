@@ -420,7 +420,9 @@ private fun ThanksWall(
                 .fillMaxWidth()
         ) {
             val columns = ((maxWidth + CELL_GAP) / (MIN_CELL + CELL_GAP)).toInt().coerceAtLeast(1)
-            val cellWidth = (maxWidth - CELL_GAP * (columns - 1)) / columns
+            // Whole dp: an exact third can overshoot the row by a fraction once rounded to pixels,
+            // and the flow then wraps the last cell of every row.
+            val cellWidth = ((maxWidth - CELL_GAP * (columns - 1)) / columns).value.toInt().dp
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(CELL_GAP),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
