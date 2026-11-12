@@ -165,9 +165,13 @@ fun SupportScreen(
         val supporters = uiState.supporters.orEmpty()
         val shareText = stringResource(R.string.support_share_text, FDROID_URL, REPOSITORY_URL)
 
-        val hero: @Composable () -> Unit = {
-            SupportHero(onHeadlineBottom = { headlineBottom = it })
-            TipActions(onKofi = { openTip(KOFI_URL) }, onGitHub = { openTip(GITHUB_SPONSORS_URL) })
+        val hero: @Composable () -> Unit = { SupportHero(onHeadlineBottom = { headlineBottom = it }) }
+        val actions: @Composable (Modifier) -> Unit = { actionsModifier ->
+            TipActions(
+                onKofi = { openTip(KOFI_URL) },
+                onGitHub = { openTip(GITHUB_SPONSORS_URL) },
+                modifier = actionsModifier,
+            )
         }
         val thanks: @Composable (Modifier) -> Unit = { thanksModifier ->
             if (supporters.isNotEmpty()) {
@@ -192,7 +196,10 @@ fun SupportScreen(
         }
 
         BoxWithConstraints(Modifier.fillMaxSize()) {
-            val wide = maxWidth >= SettingsTwoColumnMinWidth
+            // Only a window wider than it is tall splits. On a tablet held upright the hero would
+            // leave half the page empty beside a long second column, so one centred column reads
+            // better there.
+            val wide = maxWidth >= SettingsTwoColumnMinWidth && maxWidth > maxHeight
             SideEffect { twoColumns = wide }
             if (!wide) {
                 LazyColumn(
@@ -206,7 +213,10 @@ fun SupportScreen(
                     ),
                 ) {
                     item(HERO_KEY) {
-                        Column(Modifier.fillMaxWidth().adaptiveReadingWidth()) { hero() }
+                        Column(Modifier.fillMaxWidth().adaptiveReadingWidth()) {
+                            hero()
+                            actions(Modifier.padding(top = 24.dp))
+                        }
                     }
                     item("thanks") {
                         thanks(Modifier.fillMaxWidth().adaptiveReadingWidth().padding(top = 40.dp))
@@ -216,6 +226,8 @@ fun SupportScreen(
                     }
                 }
             } else {
+                // The buttons open the second column: under the hero they fell below a 1280 by
+                // 800dp tablet's pane, and the one thing the page asks for needed a scroll.
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
@@ -238,7 +250,8 @@ fun SupportScreen(
                             .fillMaxHeight(),
                         contentPadding = PaddingValues(top = topPadding + 8.dp, bottom = bottomPadding),
                     ) {
-                        item("thanks") { thanks(Modifier.fillMaxWidth().padding(bottom = 24.dp)) }
+                        item("actions") { actions(Modifier) }
+                        item("thanks") { thanks(Modifier.fillMaxWidth().padding(top = 40.dp)) }
                         item("rest") { Column { rest() } }
                     }
                 }
@@ -365,9 +378,9 @@ private fun rememberCookieTurn(): State<Float> {
 }
 
 @Composable
-private fun TipActions(onKofi: () -> Unit, onGitHub: () -> Unit) {
+private fun TipActions(onKofi: () -> Unit, onGitHub: () -> Unit, modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier.padding(top = 24.dp),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Button(
