@@ -146,7 +146,8 @@ private class ExpressiveMorphShape(
 
 private enum class HeroState { Idle, Pressed, Revealed }
 
-private const val AVATAR_URL = "https://avatars.githubusercontent.com/u/41828058?v=4"
+/** The developer's GitHub picture, behind About's easter egg and on Support AniSync. */
+internal const val DEVELOPER_AVATAR_URL = "https://avatars.githubusercontent.com/u/41828058?v=4"
 
 // The thread AniList's own footer links as its community guidelines.
 private const val COMMUNITY_GUIDELINES_URL = "https://anilist.co/forum/thread/14"
@@ -162,7 +163,7 @@ private fun AboutHero(
     // Preload the avatar image to ensure it's instantly available when the easter egg triggers
     LaunchedEffect(Unit) {
         val request = ImageRequest.Builder(context)
-            .data(AVATAR_URL)
+            .data(DEVELOPER_AVATAR_URL)
             .build()
         context.imageLoader.enqueue(request)
     }
@@ -302,7 +303,7 @@ private fun AboutHero(
                     ) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(AVATAR_URL)
+                                .data(DEVELOPER_AVATAR_URL)
                                 .crossfade(true)
                                 .build(),
                             contentDescription = null,
@@ -318,7 +319,7 @@ private fun AboutHero(
                     // Head Layer: Pops out of the shape
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data(AVATAR_URL)
+                            .data(DEVELOPER_AVATAR_URL)
                             .crossfade(true)
                             .build(),
                         contentDescription = stringResource(R.string.cd_developer_avatar),

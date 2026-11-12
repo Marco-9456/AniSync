@@ -1316,21 +1316,32 @@
     <string name="thread_locked_desc">This thread is locked and cannot receive new replies.</string>
     <!-- Settings / About -->
     <string name="cd_developer_avatar">Developer Avatar</string>
-    <!-- Donate screen -->
-    <string name="settings_sponsors">Donate</string>
-    <string name="settings_sponsors_desc">Buy me a coffee to support AniSync</string>
-    <string name="sponsors_title">Donate</string>
+    <!-- Support AniSync screen -->
+    <string name="settings_sponsors">Support AniSync</string>
+    <string name="settings_sponsors_desc">Buy me a coffee, or help in other ways</string>
+    <string name="sponsors_title">Support AniSync</string>
     <string name="sponsors_hero_headline">Buy me a coffee</string>
-    <string name="sponsors_hero_body">AniSync is free, ad-free, and open source — made in my spare time. If it brightens your day, you can leave a tip to support development. Tips are completely optional — there\'s nothing to buy and no perks attached. The names below are just my thank-you to everyone who\'s helped out.</string>
+    <string name="sponsors_hero_body">AniSync is free, ad-free, and open source, made in my spare time. If it brightens your day, you can leave a tip to support development. Tips are completely optional, there\'s nothing to buy and no perks attached. The names below are just my thank-you to everyone who\'s helped out.</string>
     <string name="sponsors_become_button">Buy a coffee</string>
-    <string name="sponsors_github_button">GitHub</string>
-    <string name="sponsors_kofi_button">Ko-fi</string>
-    <string name="sponsors_refresh">Refresh</string>
-    <string name="sponsors_updated_at">Updated %1$s</string>
-    <string name="sponsor_tier_generous">Generous</string>
-    <string name="sponsor_tier_backer">Backer</string>
-    <string name="sponsors_empty_tier_cta">No one here yet — be the first to chip in</string>
-    <string name="a11y_sponsor_avatar">Avatar of %1$s</string>
+    <string name="sponsors_github_button">GitHub Sponsors</string>
+    <string name="support_eyebrow">From the developer</string>
+    <string name="support_caption">Ko-fi for a one-off tip. GitHub Sponsors if you already use GitHub.</string>
+    <string name="support_thanks_eyebrow">Thank you</string>
+    <string name="support_thanks_since">left a tip since %1$s</string>
+    <string name="support_anonymous">Anonymous</string>
+    <string name="support_other_ways">Other ways to help</string>
+    <string name="support_star_title">Star AniSync on GitHub</string>
+    <string name="support_star_desc">Helps other people find the app</string>
+    <string name="support_translate_title">Translate AniSync</string>
+    <string name="support_translate_desc">Add or fix your language on Weblate</string>
+    <string name="support_report_title">Report a bug or an idea</string>
+    <string name="support_report_desc">Opens a new issue on GitHub</string>
+    <string name="support_share_title">Share AniSync</string>
+    <string name="support_share_desc">Send a friend the F-Droid or GitHub link</string>
+    <string name="support_share_text">AniSync, a free and open source AniList app for Android. F-Droid: %1$s GitHub: %2$s</string>
+    <string name="support_reminders_section">Reminders</string>
+    <string name="support_reminders_title">Support reminders</string>
+    <string name="support_reminders_desc">A card after a feature update, at most once every three months</string>
     <!-- Support card, raised by a list edit after a feature update -->
     <string name="support_card_title">Enjoying AniSync %1$s?</string>
     <string name="support_card_body">AniSync is free, ad-free and open source, built in my spare time. If this update earned its place, a coffee says thanks.</string>

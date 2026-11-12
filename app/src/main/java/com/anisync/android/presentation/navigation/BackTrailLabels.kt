@@ -218,7 +218,7 @@ private fun screenRow(destination: NavDestination): TrailRow {
         destination.hasRoute<SettingsStorage>() -> Icons.Outlined.Storage to R.string.settings_storage
         destination.hasRoute<SettingsMediaUpload>() -> Icons.Outlined.CloudUpload to R.string.settings_media_upload
         destination.hasRoute<SettingsUpdates>() -> Icons.Outlined.Update to R.string.settings_updates
-        destination.hasRoute<SettingsSponsors>() -> Icons.Rounded.VolunteerActivism to R.string.sponsors_title
+        destination.hasRoute<SettingsSupport>() -> Icons.Rounded.VolunteerActivism to R.string.sponsors_title
         destination.hasRoute<SettingsAbout>() -> Icons.Outlined.Info to R.string.settings_about
         destination.hasRoute<SettingsOpenSourceLicenses>() ->
             Icons.Outlined.Description to R.string.settings_open_source_licenses

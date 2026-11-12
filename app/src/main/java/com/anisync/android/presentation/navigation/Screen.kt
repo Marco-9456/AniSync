@@ -434,10 +434,11 @@ object SettingsStorage
 object SettingsAbout
 
 /**
- * Sponsors screen — lists GitHub Sponsors backers.
+ * Support AniSync: a tip through Ko-fi or GitHub Sponsors, the people who left one, and free ways
+ * to help.
  */
 @Serializable
-object SettingsSponsors
+object SettingsSupport
 
 /**
  * Open source licenses screen.

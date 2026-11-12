@@ -85,7 +85,7 @@ import com.anisync.android.presentation.settings.NotificationsScreen
 import com.anisync.android.presentation.settings.RecapsScreen
 import com.anisync.android.presentation.settings.OpenSourceLicensesScreen
 import com.anisync.android.presentation.settings.SettingsListDetail
-import com.anisync.android.presentation.settings.SponsorsScreen
+import com.anisync.android.presentation.settings.SupportScreen
 import com.anisync.android.presentation.settings.StorageScreen
 import com.anisync.android.presentation.settings.UpdatesScreen
 import com.anisync.android.presentation.util.AniLinkCallbacks
@@ -1486,14 +1486,14 @@ fun AniSyncNavHost(
                 )
             }
 
-            // Sponsors Settings
-            composable<SettingsSponsors>(
+            // Support AniSync
+            composable<SettingsSupport>(
                 enterTransition = { sharedAxisZEnter() },
                 exitTransition = { sharedAxisZExit() },
                 popEnterTransition = { sharedAxisZPopEnter() },
                 popExitTransition = { sharedAxisZPopExit() }
             ) {
-                SponsorsScreen(
+                SupportScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }

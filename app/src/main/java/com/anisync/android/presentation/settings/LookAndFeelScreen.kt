@@ -97,9 +97,6 @@ import com.anisync.android.ui.theme.toDisplayName
 import com.materialkolor.PaletteStyle
 import kotlin.math.abs
 
-/** Below this width the page is one column. At or above it the preview and mode stay pinned. */
-private val TwoColumnMinWidth = 720.dp
-
 private const val DISPLAY_SIZE_SETTLE_FRAMES = 12
 
 /**
@@ -376,7 +373,7 @@ fun LookAndFeelScreen(
     ) { topContentPadding ->
         val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 32.dp
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            if (maxWidth < TwoColumnMinWidth) {
+            if (maxWidth < SettingsTwoColumnMinWidth) {
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),

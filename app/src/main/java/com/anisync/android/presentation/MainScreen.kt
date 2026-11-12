@@ -109,7 +109,7 @@ import com.anisync.android.domain.MainTab
 import com.anisync.android.presentation.navigation.Library
 import com.anisync.android.presentation.navigation.MediaDetails
 import com.anisync.android.presentation.navigation.Profile
-import com.anisync.android.presentation.navigation.SettingsSponsors
+import com.anisync.android.presentation.navigation.SettingsSupport
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.LocalMainNavBarSuppressor
@@ -298,7 +298,7 @@ fun MainScreen(
             visible = supportPromptVisible,
             onTip = {
                 viewModel.onSupportPromptTip()
-                navController.navigateSafely(SettingsSponsors)
+                navController.navigateSafely(SettingsSupport)
             },
             onDismiss = viewModel::onSupportPromptDismissed,
             bottomPadding = bottomPadding

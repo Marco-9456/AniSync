@@ -40,8 +40,8 @@ import com.anisync.android.presentation.navigation.SettingsNotifications
 import com.anisync.android.presentation.navigation.SettingsOpenSourceLicenses
 import com.anisync.android.presentation.navigation.SettingsRecapBuilder
 import com.anisync.android.presentation.navigation.SettingsRecaps
-import com.anisync.android.presentation.navigation.SettingsSponsors
 import com.anisync.android.presentation.navigation.SettingsStorage
+import com.anisync.android.presentation.navigation.SettingsSupport
 import com.anisync.android.presentation.navigation.SettingsUpdates
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
@@ -110,7 +110,7 @@ enum class SettingsCategory {
     Storage,
     MediaUpload,
     Updates,
-    Sponsors,
+    Support,
     About,
     DeveloperTools,
 }
@@ -124,7 +124,7 @@ private fun SettingsCategory.toPaneRoute(): Any = when (this) {
     SettingsCategory.Storage -> SettingsStorage
     SettingsCategory.MediaUpload -> SettingsMediaUpload
     SettingsCategory.Updates -> SettingsUpdates
-    SettingsCategory.Sponsors -> SettingsSponsors
+    SettingsCategory.Support -> SettingsSupport
     SettingsCategory.About -> SettingsAbout
     SettingsCategory.DeveloperTools -> SettingsDeveloperTools
 }
@@ -209,7 +209,7 @@ private fun SettingsDetailPane(
         composable<SettingsStorage> { StorageScreen(onBackClick = popOrClose) }
         composable<SettingsMediaUpload> { MediaUploadSettingsScreen(onBackClick = popOrClose) }
         composable<SettingsUpdates> { UpdatesScreen(onBackClick = popOrClose) }
-        composable<SettingsSponsors> { SponsorsScreen(onBackClick = popOrClose) }
+        composable<SettingsSupport> { SupportScreen(onBackClick = popOrClose) }
         composable<SettingsAbout> {
             AboutScreen(
                 onBackClick = popOrClose,

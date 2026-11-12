@@ -366,4 +366,9 @@
         <item quantity="one">Reread %1$d time</item>
         <item quantity="other">Reread %1$d times</item>
     </plurals>
+    <!-- Support AniSync: the word beside the big count, "6 people left a tip since July 2026" -->
+    <plurals name="support_thanks_people">
+        <item quantity="one">person</item>
+        <item quantity="other">people</item>
+    </plurals>
 </resources>

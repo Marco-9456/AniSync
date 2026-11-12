@@ -114,7 +114,7 @@ fun SettingsScreen(
         modifier = modifier,
         actions = {
             val context = LocalContext.current
-            IconButton(onClick = { onCategorySelected(SettingsCategory.Sponsors) }) {
+            IconButton(onClick = { onCategorySelected(SettingsCategory.Support) }) {
                 Icon(
                     imageVector = Icons.Rounded.VolunteerActivism,
                     contentDescription = stringResource(R.string.settings_sponsors)
@@ -235,7 +235,7 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_sponsors),
                 subtitle = stringResource(R.string.settings_sponsors_desc),
                 icon = Icons.Rounded.VolunteerActivism,
-                onClick = { onCategorySelected(SettingsCategory.Sponsors) }
+                onClick = { onCategorySelected(SettingsCategory.Support) }
             ),
             CategoryData(
                 key = "about",
@@ -407,7 +407,7 @@ private fun SettingsCategory.cardKey(): String = when (this) {
     SettingsCategory.Storage -> "storage"
     SettingsCategory.MediaUpload -> "media_upload"
     SettingsCategory.Updates -> "updates"
-    SettingsCategory.Sponsors -> "sponsors"
+    SettingsCategory.Support -> "sponsors"
     SettingsCategory.About -> "about"
     SettingsCategory.DeveloperTools -> "dev_tools"
 }

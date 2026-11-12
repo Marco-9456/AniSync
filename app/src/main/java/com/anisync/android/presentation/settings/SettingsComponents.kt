@@ -99,6 +99,12 @@ fun SettingsScreenScaffold(
 }
 
 /**
+ * Below this width a settings page is one column. At or above it the pages that split, Look and
+ * feel and Support AniSync, keep their top block pinned beside a scrolling column.
+ */
+internal val SettingsTwoColumnMinWidth = 720.dp
+
+/**
  * Small section label shown above a [SettingsGroup] or a bespoke control block. Kept subtle
  * (labelLarge / primary) so groups still carry the visual weight.
  */
