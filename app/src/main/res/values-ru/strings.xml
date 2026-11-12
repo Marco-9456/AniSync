@@ -535,10 +535,6 @@
     <string name="sponsors_hero_headline">Угостить меня кофе</string>
     <string name="sponsors_become_button">Угостить кофе</string>
     <string name="sponsors_github_button">GitHub</string>
-    <string name="sponsors_kofi_button">Ko-fi</string>
-    <string name="sponsors_refresh">Обновить</string>
-    <string name="sponsor_tier_generous">Щедрый</string>
-    <string name="sponsor_tier_backer">Поддержавший</string>
     <string name="link_repository">Репозиторий</string>
     <string name="link_developer">Разработчик</string>
     <string name="by_author">автор: %s</string>
@@ -1347,9 +1343,6 @@
     <string name="cd_developer_avatar">Аватар разработчика</string>
     <string name="settings_sponsors_desc">Угостите меня кофе в поддержку AniSync</string>
     <string name="sponsors_hero_body">AniSync бесплатен, без рекламы и с открытым исходным кодом — сделан в моё свободное время. Если он скрашивает ваш день, вы можете оставить чаевые в поддержку разработки. Чаевые совершенно необязательны — ничего покупать не нужно, и никаких бонусов за них нет. Имена ниже — просто моя благодарность всем, кто помог.</string>
-    <string name="sponsors_updated_at">Обновлено %1$s</string>
-    <string name="sponsors_empty_tier_cta">Здесь пока никого — станьте первым, кто поддержит</string>
-    <string name="a11y_sponsor_avatar">Аватар %1$s</string>
     <string name="support_card_title">Нравится AniSync %1$s?</string>
     <string name="support_card_body">AniSync бесплатен, без рекламы и с открытым исходным кодом, создан в моё свободное время. Если это обновление оказалось полезным, чашка кофе поможет выпустить следующее.</string>
     <string name="support_card_dismiss">Не сейчас</string>

@@ -956,13 +956,6 @@
     <string name="sponsors_hero_body">AniSync مجاني وبلا إعلانات ومفتوح المصدر — صُنع في وقت فراغي. إذا كان يضيف شيئًا إلى يومك، يمكنك ترك إكرامية لدعم التطوير. الإكراميات اختيارية تمامًا، فلا شيء للشراء ولا مزايا مرتبطة بها. الأسماء أدناه هي شكري لكل من ساعد.</string>
     <string name="sponsors_become_button">اشترِ قهوة</string>
     <string name="sponsors_github_button">GitHub</string>
-    <string name="sponsors_kofi_button">Ko-fi</string>
-    <string name="sponsors_refresh">تحديث</string>
-    <string name="sponsors_updated_at">حُدّث %1$s</string>
-    <string name="sponsor_tier_generous">كريم</string>
-    <string name="sponsor_tier_backer">داعم</string>
-    <string name="sponsors_empty_tier_cta">لا أحد هنا بعد — كن أول المساهمين</string>
-    <string name="a11y_sponsor_avatar">الصورة الرمزية لـ %1$s</string>
     <string name="link_repository">المستودع</string>
     <string name="link_developer">المطوّر</string>
     <string name="by_author">بقلم %s</string>

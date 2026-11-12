@@ -459,11 +459,6 @@
         <item quantity="other">+%1$d پاسخ</item>
     </plurals>
     <string name="forum_comments_count_short">%1$s دیدگاه</string>
-    <string name="sponsors_refresh">به‌روزرسانی</string>
-    <string name="sponsors_updated_at">به‌روزرسانی در %1$s</string>
-    <string name="sponsor_tier_backer">حامی</string>
-    <string name="sponsors_empty_tier_cta">هنوز کسی اینجا نیست — شما اولین حامی باشید</string>
-    <string name="a11y_sponsor_avatar">آواتار %1$s</string>
     <string name="support_card_body">برنامه AniSync رایگان، بدون تبلیغات و متن‌باز است که در اوقات فراغتم ساخته‌ام. اگر این به‌روزرسانی برایتان مفید واقع شده، یک قهوه می‌تواند انرژی‌بخش نسخه بعدی باشد.</string>
     <string name="support_card_dismiss">اکنون نه</string>
     <string name="link_developer">توسعه‌دهنده</string>
@@ -1178,8 +1173,6 @@
     <string name="sponsors_hero_body">AniSync رایگان، بدون تبلیغات و متن‌باز است که در اوقات فراغتم آن را ساخته‌ام. اگر برایتان مفید بوده، می‌توانید با پرداخت دلخواه از توسعه آن حمایت کنید. حمایت مالی کاملاً اختیاری است و هیچ قابلیت پولی یا امتیازی در ازای آن وجود ندارد. نام‌های زیر تشکری از تمامی عزیزانی است که کمک کرده‌اند.</string>
     <string name="sponsors_become_button">خرید قهوه</string>
     <string name="sponsors_github_button">GitHub</string>
-    <string name="sponsors_kofi_button">Ko-fi</string>
-    <string name="sponsor_tier_generous">سخاوتمند</string>
     <string name="support_card_title">از نسخه %1$s برنامه AniSync راضی هستید؟</string>
     <string name="link_repository">مخزن سورس‌کد</string>
     <string name="empty_upcoming_title">قسمت جدیدی در نوبت پخش نیست</string>

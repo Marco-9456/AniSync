@@ -43,7 +43,7 @@
         <item quantity="other">他最喜歡的風格，共 %d 部作品</item>
     </plurals>
     <plurals name="stats_teaser_decades_peak">
-        <item quantity="other">共橫跨%1$s個年代，巔峰位於 %2$s 年</item>
+        <item quantity="other">共橫跨%1$s個年代，巔峰位於 %2$s</item>
     </plurals>
     <plurals name="stats_roles">
         <item quantity="other">%d 位角色</item>
@@ -142,7 +142,7 @@
         <item quantity="other">%1$s 天</item>
     </plurals>
     <plurals name="recap_finished_so_far">
-        <item quantity="other">目前看完了%1$s部作品</item>
+        <item quantity="other">，目前看完了%1$s部作品</item>
     </plurals>
     <plurals name="recap_episodes_so_far">
         <item quantity="other">現已累計 %1$s 集</item>
@@ -152,5 +152,35 @@
     </plurals>
     <plurals name="stats_best_rated">
         <item quantity="other">最高評分（至少 %d 部作品）</item>
+    </plurals>
+    <plurals name="stats_spread_focused_body_other">
+        <item quantity="other">他的評分相當集中，分佈於平均數 %2$s 周圍，僅 %1$d 個標準差</item>
+    </plurals>
+    <plurals name="stats_spread_balanced_body_other">
+        <item quantity="other">大多他的評分落在平均 %2$s 周圍 %1$d 個標準差</item>
+    </plurals>
+    <plurals name="stats_spread_focused_body">
+        <item quantity="other">你的評分相當集中，分佈於平均數 %2$s 周圍，僅 %1$d 個標準差</item>
+    </plurals>
+    <plurals name="stats_spread_balanced_body">
+        <item quantity="other">大多你的評分落在平均 %2$s 周圍 %1$d 個標準差</item>
+    </plurals>
+    <plurals name="stats_spread_perfect">
+        <item quantity="other">%1$s部整好滿分</item>
+    </plurals>
+    <plurals name="stats_spread_count">
+        <item quantity="other">%1$s部 %2$s 分</item>
+    </plurals>
+    <plurals name="stats_weekday_share">
+        <item quantity="other">在你的 %2$s 則動態中共佔了 %1$s 則</item>
+    </plurals>
+    <plurals name="stats_weekday_share_other">
+        <item quantity="other">在他的 %2$s 則動態中共佔了 %1$s 則</item>
+    </plurals>
+    <plurals name="stats_busiest_day_detail">
+        <item quantity="other">%d 則動態，點擊查閱具體內容</item>
+    </plurals>
+    <plurals name="share_progress_episodes_of">
+        <item quantity="other">看到了第 %1$s/%2$s 集</item>
     </plurals>
 </resources>

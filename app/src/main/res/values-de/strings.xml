@@ -924,13 +924,6 @@
     <string name="sponsors_hero_body">AniSync ist kostenlos, werbefrei und quelloffen — entstanden in meiner Freizeit. Wenn es deinen Tag verschönert, kannst du mit einem Trinkgeld die Entwicklung unterstützen. Trinkgelder sind völlig freiwillig, es gibt nichts zu kaufen und keine Vorteile dabei. Die Namen unten sind einfach mein Dankeschön an alle, die geholfen haben.</string>
     <string name="sponsors_become_button">Kaffee spendieren</string>
     <string name="sponsors_github_button">GitHub</string>
-    <string name="sponsors_kofi_button">Ko-fi</string>
-    <string name="sponsors_refresh">Aktualisieren</string>
-    <string name="sponsors_updated_at">Aktualisiert %1$s</string>
-    <string name="sponsor_tier_generous">Großzügig</string>
-    <string name="sponsor_tier_backer">Unterstützer</string>
-    <string name="sponsors_empty_tier_cta">Noch niemand hier — sei der Erste</string>
-    <string name="a11y_sponsor_avatar">Avatar von %1$s</string>
     <string name="link_repository">Repository</string>
     <string name="link_developer">Entwickler</string>
     <string name="by_author">von %s</string>

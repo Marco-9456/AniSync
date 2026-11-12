@@ -997,13 +997,6 @@
     <string name="sponsors_hero_body">AniSync gratis, tanpa iklan, dan open source, dibuat di waktu luangku. Kalau aplikasi ini bikin harimu lebih cerah, kamu bisa kasih tip untuk mendukung pengembangannya. Tip sepenuhnya opsional: tidak ada yang dibeli dan tidak ada keuntungan khusus. Nama-nama di bawah adalah ucapan terima kasihku untuk semua yang sudah membantu.</string>
     <string name="sponsors_become_button">Traktir kopi</string>
     <string name="sponsors_github_button">GitHub</string>
-    <string name="sponsors_kofi_button">Ko-fi</string>
-    <string name="sponsors_refresh">Muat ulang</string>
-    <string name="sponsors_updated_at">Diperbarui %1$s</string>
-    <string name="sponsor_tier_generous">Dermawan</string>
-    <string name="sponsor_tier_backer">Pendukung</string>
-    <string name="sponsors_empty_tier_cta">Belum ada, jadilah yang pertama</string>
-    <string name="a11y_sponsor_avatar">Avatar %1$s</string>
     <string name="link_repository">Repositori</string>
     <string name="link_developer">Pengembang</string>
     <string name="by_author">oleh %s</string>
