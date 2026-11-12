@@ -1,0 +1,83 @@
+name: Update Supporters
+
+# Writes everyone who has left a tip to app/src/main/assets/supporters.json, the list the
+# Support screen bundles and refreshes from main.
+#
+#   - Ko-fi has no API that lists supporters, so its tips are added by hand to
+#     .github/supporters/kofi.json, from the dashboard's supporter export. An entry
+#     without a name shows as Anonymous. Amounts and emails never go in.
+#   - GitHub Sponsors comes from the API, past and one-time sponsorships included.
+#     Private sponsorships stay out.
+#
+# Requires a repo secret SPONSORS_PAT: classic PAT belonging to the maintainer with the
+# `read:user` scope.
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/supporters/**']
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-supporters
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Fetch GitHub sponsors
+        env:
+          GH_TOKEN: ${{ secrets.SPONSORS_PAT }}
+        run: |
+          gh api graphql -f query='
+            query {
+              user(login: "Marco-9456") {
+                sponsorshipsAsMaintainer(first: 100, activeOnly: false) {
+                  nodes {
+                    createdAt
+                    sponsorEntity {
+                      ... on User { login name url }
+                      ... on Organization { login name url }
+                    }
+                  }
+                }
+              }
+            }' --jq '[
+              .data.user.sponsorshipsAsMaintainer.nodes[]
+              | select(.sponsorEntity.login != null)
+              | {
+                  name: (.sponsorEntity.name // .sponsorEntity.login),
+                  date: .createdAt[0:10],
+                  url: .sponsorEntity.url
+                }
+            ]' > "$RUNNER_TEMP/github.json"
+
+      # Newest first, names in order within a day, and nothing that changes between runs,
+      # so the commit step only commits when someone was added.
+      - name: Merge supporters
+        run: |
+          jq -n \
+            --slurpfile kofi .github/supporters/kofi.json \
+            --slurpfile github "$RUNNER_TEMP/github.json" '
+            {
+              supporters: ($kofi[0] + $github[0])
+                | group_by(.date)
+                | reverse
+                | map(sort_by(.name // ""))
+                | add // []
+            }' > app/src/main/assets/supporters.json
+
+      - uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "chore(supporters): sync the in-app supporter list"
+          file_pattern: 'app/src/main/assets/supporters.json'
+          commit_user_name: 'Marco-9456'
+          commit_user_email: '41828058+Marco-9456@users.noreply.github.com'
+          commit_author: 'Marco-9456 <41828058+Marco-9456@users.noreply.github.com>'
