@@ -7,7 +7,8 @@ name: Update Supporters
 #     .github/supporters/kofi.json, from the dashboard's supporter export. An entry
 #     without a name shows as Anonymous. Amounts and emails never go in.
 #   - GitHub Sponsors comes from the API, past and one-time sponsorships included.
-#     Private sponsorships stay out.
+#     Private sponsorships stay out, and so do organisations, whose fields need the
+#     read:org scope.
 #
 # Requires a repo secret SPONSORS_PAT: classic PAT belonging to the maintainer with the
 # `read:user` scope.
@@ -44,7 +45,6 @@ jobs:
                     createdAt
                     sponsorEntity {
                       ... on User { login name url }
-                      ... on Organization { login name url }
                     }
                   }
                 }
