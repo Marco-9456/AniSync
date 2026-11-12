@@ -1482,7 +1482,8 @@ fun AniSyncNavHost(
                     onBackClick = { navController.popBackStack() },
                     onNavigateToOpenSourceLicenses = { navController.navigate(SettingsOpenSourceLicenses) },
                     onNavigateToAcknowledgments = { navController.navigate(SettingsAcknowledgments) },
-                    onNavigateToLinks = { navController.navigate(SettingsLinks) }
+                    onNavigateToLinks = { navController.navigate(SettingsLinks) },
+                    onNavigateToSupport = { navController.navigate(SettingsSupport) }
                 )
             }
 

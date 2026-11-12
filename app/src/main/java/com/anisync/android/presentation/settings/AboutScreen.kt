@@ -408,6 +408,7 @@ fun AboutScreen(
     onNavigateToOpenSourceLicenses: () -> Unit,
     onNavigateToAcknowledgments: () -> Unit,
     onNavigateToLinks: () -> Unit,
+    onNavigateToSupport: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -460,6 +461,12 @@ fun AboutScreen(
                 title = stringResource(R.string.about_improve_translations),
                 subtitle = stringResource(R.string.about_improve_translations_desc, stringResource(R.string.app_name)),
                 onClick = { context.launchUrl("https://hosted.weblate.org/engage/anisync/") }
+            )
+            SettingsDivider()
+            SettingsItem(
+                title = stringResource(R.string.settings_sponsors),
+                subtitle = stringResource(R.string.settings_sponsors_desc),
+                onClick = onNavigateToSupport
             )
         }
 

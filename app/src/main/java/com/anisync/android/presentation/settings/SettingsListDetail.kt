@@ -216,6 +216,7 @@ private fun SettingsDetailPane(
                 onNavigateToOpenSourceLicenses = { paneNav.navigate(SettingsOpenSourceLicenses) },
                 onNavigateToAcknowledgments = { paneNav.navigate(SettingsAcknowledgments) },
                 onNavigateToLinks = { paneNav.navigate(SettingsLinks) },
+                onNavigateToSupport = { paneNav.navigate(SettingsSupport) },
             )
         }
         composable<SettingsOpenSourceLicenses> { OpenSourceLicensesScreen(onBackClick = popOrClose) }
