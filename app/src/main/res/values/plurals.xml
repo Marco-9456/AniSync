@@ -366,6 +366,11 @@
         <item quantity="one">Reread %1$d time</item>
         <item quantity="other">Reread %1$d times</item>
     </plurals>
+    <!-- Settings: the Support AniSync row, once at least three people have left a tip -->
+    <plurals name="settings_sponsors_count">
+        <item quantity="one">Thanks to %1$d supporter</item>
+        <item quantity="other">Thanks to %1$d supporters</item>
+    </plurals>
     <!-- Support AniSync: the word beside the big count, "6 people left a tip since July 2026" -->
     <plurals name="support_thanks_people">
         <item quantity="one">person</item>

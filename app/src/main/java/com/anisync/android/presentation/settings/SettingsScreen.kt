@@ -65,11 +65,15 @@ import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.util.launchUrl
 import com.anisync.android.presentation.components.AppLinksPromptDialog
 import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.decorativeAvatarShape
 import com.anisync.android.ui.theme.resolveDarkTheme
 
 /** AniSync's Weblate project — community translation. Opened from the Settings top bar. */
 internal const val WEBLATE_URL = "https://hosted.weblate.org/engage/anisync/"
+
+/** Fewer than this reads as nobody tipping, so the Support AniSync row keeps its plain subtitle. */
+private const val SUPPORTER_COUNT_SHOWN_FROM = 3
 
 private data class CategoryData(
     val key: String,
@@ -93,6 +97,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val supporterCount by viewModel.supporterCount.collectAsStateWithLifecycle()
     // Developer Tools is visible in debug builds, or once unlocked via the hidden tap gesture
     // on the About screen's version label (see AboutScreen).
     val devToolsUnlocked by LocalAppSettings.current.devToolsUnlocked
@@ -231,9 +236,13 @@ fun SettingsScreen(
                 onClick = { onCategorySelected(SettingsCategory.Updates) }
             ),
             CategoryData(
-                key = "sponsors",
+                key = "support",
                 title = stringResource(R.string.settings_sponsors),
-                subtitle = stringResource(R.string.settings_sponsors_desc),
+                subtitle = if (supporterCount >= SUPPORTER_COUNT_SHOWN_FROM) {
+                    pluralStringResourceOrDefault(R.plurals.settings_sponsors_count, supporterCount, supporterCount)
+                } else {
+                    stringResource(R.string.settings_sponsors_desc)
+                },
                 icon = Icons.Rounded.VolunteerActivism,
                 onClick = { onCategorySelected(SettingsCategory.Support) }
             ),
@@ -407,7 +416,7 @@ private fun SettingsCategory.cardKey(): String = when (this) {
     SettingsCategory.Storage -> "storage"
     SettingsCategory.MediaUpload -> "media_upload"
     SettingsCategory.Updates -> "updates"
-    SettingsCategory.Support -> "sponsors"
+    SettingsCategory.Support -> "support"
     SettingsCategory.About -> "about"
     SettingsCategory.DeveloperTools -> "dev_tools"
 }
@@ -421,6 +430,7 @@ private fun categoryBadge(key: String, active: Set<WhatsNewItem>): (@Composable 
         "general" -> WhatsNewItem.SETTINGS_GENERAL
         "lookandfeel" -> WhatsNewItem.SETTINGS_LOOK_AND_FEEL
         "recaps" -> WhatsNewItem.SETTINGS_RECAPS
+        "support" -> WhatsNewItem.SETTINGS_SUPPORT
         else -> null
     }
     if (leaf != null && leaf in active) return { WhatsNewPill(leaf.kind) }
@@ -446,6 +456,7 @@ private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> 
             "account" -> Color(0xFF37474F) to Color(0xFFBBD9E8)
             "links" -> Color(0xFF324F34) to Color(0xFFCBEFD0)
             "updates" -> Color(0xFF004D61) to Color(0xFFACEFEE)
+            "support" -> Color(0xFF73342D) to Color(0xFFFFDAD5)
             "about" -> Color(0xFF3F474D) to Color(0xFFDEE3EB)
             "dev_tools" -> Color(0xFF6E4E13) to Color(0xFFFFDEAC)
             else -> Color(0xFF37474F) to Color(0xFFBBD9E8)
@@ -461,6 +472,7 @@ private fun getCategoryColors(key: String, isDark: Boolean): Pair<Color, Color> 
             "account" -> Color(0xFFD6EAF5) to Color(0xFF103548)
             "links" -> Color(0xFFCBEFD0) to Color(0xFF042106)
             "updates" -> Color(0xFFACEFEE) to Color(0xFF002022)
+            "support" -> Color(0xFFFFDAD5) to Color(0xFF73342D)
             "about" -> Color(0xFFEFF1F7) to Color(0xFF44474F)
             "dev_tools" -> Color(0xFFFFDEAC) to Color(0xFF281900)
             else -> Color(0xFFD6EAF5) to Color(0xFF103548)
