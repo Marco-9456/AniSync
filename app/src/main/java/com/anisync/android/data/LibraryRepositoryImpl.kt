@@ -22,6 +22,7 @@ import com.anisync.android.data.util.safeApiCall
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryRepository
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.ListSaves
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.Tag
 import com.anisync.android.type.MediaListStatus
@@ -63,6 +64,7 @@ class LibraryRepositoryImpl @Inject constructor(
     private val appSettings: AppSettings,
     private val accountStore: AccountStore,
     private val refreshTimes: LibraryRefreshTimes,
+    private val listSaves: ListSaves,
     @param:ApplicationContext private val context: Context
 ) : LibraryRepository {
 
@@ -361,6 +363,7 @@ class LibraryRepositoryImpl @Inject constructor(
             libraryDao.updateEntry(before)
             runCatching { WidgetRefresh.all(context) }
         }
+        if (result is Result.Success) listSaves.note()
         return result
     }
 
@@ -434,6 +437,7 @@ class LibraryRepositoryImpl @Inject constructor(
         }
         // AniList still has the old entry, and a later edit would otherwise count from this one.
         if (result is Result.Error && stored != null) libraryDao.updateEntry(stored)
+        if (result is Result.Success) listSaves.note()
         return result
     }
 

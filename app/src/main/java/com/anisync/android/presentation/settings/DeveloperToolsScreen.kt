@@ -142,8 +142,8 @@ fun DeveloperToolsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Support card — the same card an update raises, without an update behind it. It is hosted
-        // above the navigation, so it floats over this screen as soon as the button is pressed.
+        // Support card: the same card a feature update raises, without the update or the waits. It
+        // is hosted above the navigation, so Show now floats it over this screen straight away.
         SettingsGroup {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainer,
@@ -164,10 +164,17 @@ fun DeveloperToolsScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     FilledTonalButton(
-                        onClick = { appSettings.showSupportPrompt() },
+                        onClick = { viewModel.onAction(SettingsAction.ShowSupportCard) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(stringResource(R.string.dev_tools_show_support_card))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    FilledTonalButton(
+                        onClick = { viewModel.onAction(SettingsAction.ArmSupportCard) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.dev_tools_arm_support_card))
                     }
                 }
             }

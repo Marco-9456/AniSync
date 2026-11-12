@@ -3,8 +3,8 @@ package com.anisync.android.presentation.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.BuildConfig
 import com.anisync.android.R
@@ -40,37 +41,38 @@ import com.anisync.android.ui.theme.ExpressiveShapes
 private val MaxWidth = 460.dp
 
 /**
- * The tip nudge that floats over the app on the first launch after an update: the one moment the
- * app has earned the right to ask. It sits in the middle of the window rather than in a screen, so
- * it reaches whichever tab the launch opened on and lands the same way at every size.
+ * The tip nudge. A feature update arms it, and it rises once a list edit reaches AniList, the
+ * moment the app has just done its job, so it never stands between someone and what they opened
+ * the app for. It is hosted above the navigation rather than in a screen and sits just over the
+ * navigation bar, out of the way of the list that was just edited.
  *
- * Both answers are final for this version. "Buy a coffee" opens the Donate screen and "Not now"
- * marks the build seen, so neither one leaves the card waiting to come back on the next launch.
- * There is no close affordance beside them: it would be a third button saying what "Not now"
- * already says.
+ * Both answers put it away for months. "Buy a coffee" opens the Support screen and "Not now" waits
+ * for a later feature update. There is no close affordance beside them: it would be a third button
+ * saying what "Not now" already says.
  */
 @Composable
 fun SupportPromptCard(
     visible: Boolean,
-    onDonate: () -> Unit,
+    onTip: () -> Unit,
     onDismiss: () -> Unit,
+    bottomPadding: Dp,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.BottomCenter
     ) {
         AnimatedVisibility(
             visible = visible,
-            enter = fadeIn() + scaleIn(initialScale = 0.92f),
-            exit = fadeOut() + scaleOut(targetScale = 0.92f)
+            enter = fadeIn() + slideInVertically { it / 2 },
+            exit = fadeOut() + slideOutVertically { it / 2 }
         ) {
             Surface(
                 shape = RoundedCornerShape(28.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shadowElevation = 6.dp,
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
+                    .padding(start = 16.dp, end = 16.dp, bottom = bottomPadding)
                     .widthIn(max = MaxWidth)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
@@ -117,7 +119,7 @@ fun SupportPromptCard(
                                 style = MaterialTheme.typography.labelLarge
                             )
                         }
-                        FilledTonalButton(onClick = onDonate, shape = ExpressiveShapes.pill) {
+                        FilledTonalButton(onClick = onTip, shape = ExpressiveShapes.pill) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_kofi),
                                 contentDescription = null,

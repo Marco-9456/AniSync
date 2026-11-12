@@ -1331,9 +1331,9 @@
     <string name="sponsor_tier_backer">Backer</string>
     <string name="sponsors_empty_tier_cta">No one here yet — be the first to chip in</string>
     <string name="a11y_sponsor_avatar">Avatar of %1$s</string>
-    <!-- Support card, floated once after an update -->
+    <!-- Support card, raised by a list edit after a feature update -->
     <string name="support_card_title">Enjoying AniSync %1$s?</string>
-    <string name="support_card_body">AniSync is free, ad-free and open source, built in my spare time. If this update earns its place, a coffee keeps the next one coming.</string>
+    <string name="support_card_body">AniSync is free, ad-free and open source, built in my spare time. If this update earned its place, a coffee says thanks.</string>
     <string name="support_card_dismiss">Not now</string>
     <string name="link_repository">Repository</string>
     <string name="link_developer">Developer</string>
@@ -1870,7 +1870,8 @@
     <string name="dev_tools_replay_onboarding_subtitle">Reopens the first-run flow over the running app. Leaving it returns you to the Library tab.</string>
     <string name="dev_tools_support_section">Support card</string>
     <string name="dev_tools_show_support_card">Show support card</string>
-    <string name="dev_tools_show_support_card_subtitle">Floats the tip card the app shows once after an update, without waiting for one.</string>
+    <string name="dev_tools_arm_support_card">Show after the next list edit</string>
+    <string name="dev_tools_show_support_card_subtitle">The tip card waits for a feature update, then rises once a list edit reaches AniList. Show it now, or arm it for your next edit.</string>
     <string name="dev_recap_builder">Recap builder</string>
     <string name="dev_recap_builder_subtitle">Builds a recap for any public user the way a first build would, without storing it</string>
     <string name="dev_recap_user_id">AniList user id</string>

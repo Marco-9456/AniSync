@@ -7,12 +7,15 @@ import com.anisync.android.data.AppSettings
 import com.anisync.android.data.NavBarStyle
 import com.anisync.android.data.NotificationBadgeStore
 import com.anisync.android.data.NotificationReadStore
+import com.anisync.android.data.SupportPromptStore
 import com.anisync.android.data.network.RateLimitMonitor
+import com.anisync.android.domain.ListSaves
 import com.anisync.android.domain.MainTab
 import com.anisync.android.domain.TabReselectBus
 import com.anisync.android.presentation.components.alert.ToastManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,6 +30,8 @@ class MainScreenViewModel @Inject constructor(
     private val notificationReadStore: NotificationReadStore,
     private val appSettings: AppSettings,
     private val whatsNewStore: com.anisync.android.data.WhatsNewStore,
+    private val supportPrompt: SupportPromptStore,
+    listSaves: ListSaves,
     val toastManager: ToastManager,
     /** Drives the rate limit notice and the pull-to-refresh gates. */
     val rateLimitMonitor: RateLimitMonitor,
@@ -105,21 +110,28 @@ class MainScreenViewModel @Inject constructor(
     }
 
     /**
-     * The tip card the app floats on the first launch after an update. Checked here rather than in
-     * the Application: this is the point where there is a window to float it over.
+     * The tip card. A feature update arms it at launch, and it rises once a list edit reaches
+     * AniList, so it never stands between someone and what they opened the app for.
      */
-    val supportPromptVisible: StateFlow<Boolean> = appSettings.supportPromptVisible
+    val supportPromptVisible: StateFlow<Boolean> = supportPrompt.visible
 
     init {
         whatsNewStore.noteLaunch()
-        appSettings.noteAppVersion()
+        supportPrompt.noteLaunch()
         // Rows already read on this device are subtracted from AniList's count, which only ever
         // clears all at once. Applied here so the badge is right before the inbox is ever opened.
         notificationReadStore.syncBadge()
+        viewModelScope.launch {
+            listSaves.count.drop(1).collect { supportPrompt.onListSaved() }
+        }
     }
 
     fun onSupportPromptDismissed() {
-        appSettings.dismissSupportPrompt()
+        supportPrompt.onNotNow()
+    }
+
+    fun onSupportPromptTip() {
+        supportPrompt.onTipOpened()
     }
 
     private companion object {

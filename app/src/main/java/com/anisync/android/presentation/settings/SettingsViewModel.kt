@@ -73,6 +73,7 @@ class SettingsViewModel @Inject constructor(
     private val toastManager: ToastManager,
     private val rateLimitGate: com.anisync.android.data.network.RateLimitGate,
     rateLimitMonitor: com.anisync.android.data.network.RateLimitMonitor,
+    private val supportPrompt: com.anisync.android.data.SupportPromptStore,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -433,6 +434,8 @@ class SettingsViewModel @Inject constructor(
             }
 
             SettingsAction.FetchLatestRelease -> fetchLatestRelease()
+            SettingsAction.ShowSupportCard -> supportPrompt.show()
+            SettingsAction.ArmSupportCard -> supportPrompt.arm()
 
             is SettingsAction.SetFontAxis -> appSettings.updateTypographyCategory(action.category) {
                 it.withAxis(action.axis, action.value)

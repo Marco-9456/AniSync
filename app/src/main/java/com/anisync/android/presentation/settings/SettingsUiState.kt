@@ -93,6 +93,12 @@ sealed interface SettingsAction {
 
     data object FetchLatestRelease : SettingsAction
 
+    /** Raises the support card now (developer screen). */
+    data object ShowSupportCard : SettingsAction
+
+    /** Arms the support card for the next list edit, past every wait (developer screen). */
+    data object ArmSupportCard : SettingsAction
+
     // Font playground (developer screen) — live per-category variable-font axis controls.
     data class SetFontAxis(
         val category: TypeCategory,
