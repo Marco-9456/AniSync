@@ -863,13 +863,7 @@
     <string name="sponsors_hero_headline">買杯咖啡~</string>
     <string name="sponsors_become_button">買杯咖啡</string>
     <string name="support_card_body">AniSync 是免費、無廣告而且開源的，我在自己的空暇時間創造了它。如果這更新給你帶來了小確幸，來買杯咖啡支持它的開發吧~</string>
-    <string name="sponsor_tier_backer">支持者</string>
-    <string name="sponsor_tier_generous">慷慨的支持者</string>
-    <string name="sponsors_kofi_button">Ko-fi</string>
     <string name="sponsors_github_button">GitHub</string>
-    <string name="sponsors_empty_tier_cta">暫無… 來成為第一位吧~</string>
-    <string name="sponsors_updated_at">更新於 %1$s</string>
-    <string name="sponsors_refresh">刷新</string>
     <string name="sponsors_hero_body">AniSync 是款我在業餘時間做出的免費無廣開源應用，如它為你帶來了些小確幸，歡迎隨手給個小費贊助我。贊助是全然可選的，也就是說沒有會員制與贊助福利。感謝以下人們的幫助，這名單是我對他們的一點心意。</string>
     <string name="notification_channel_activity_mention_desc">當有人在動態提及你時</string>
     <string name="notification_channel_activity_like_desc">當有人點讚或回覆了你的動態時</string>

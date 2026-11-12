@@ -656,13 +656,6 @@
     <string name="sponsors_hero_body">AniSync இலவசம், விளம்பரம் இல்லாதது மற்றும் திறந்த மூலமானது - எனது ஓய்வு நேரத்தில் உருவாக்கப்பட்டது. இது உங்கள் நாளை பிரகாசமாக்கினால், வளர்ச்சியை ஆதரிக்க ஒரு உதவிக்குறிப்பை நீங்கள் விட்டுவிடலாம். உதவிக்குறிப்புகள் முற்றிலும் விருப்பமானவை - வாங்க எதுவும் இல்லை மற்றும் சலுகைகள் எதுவும் இணைக்கப்படவில்லை. கீழே உள்ள பெயர்கள் உதவிய அனைவருக்கும் எனது நன்றிகள் மட்டுமே.</string>
     <string name="sponsors_become_button">ஒரு காபி வாங்கு</string>
     <string name="sponsors_github_button">அறிவிலிமையம்</string>
-    <string name="sponsors_kofi_button">காபி</string>
-    <string name="sponsors_refresh">புதுப்பிப்பு</string>
-    <string name="sponsors_updated_at">%1$s புதுப்பிக்கப்பட்டது</string>
-    <string name="sponsor_tier_generous">பெருந்தன்மை உடையவர்</string>
-    <string name="sponsor_tier_backer">ஆதரவாளர்</string>
-    <string name="sponsors_empty_tier_cta">இதுவரை யாரும் இங்கு இல்லை — முதலில் உள்நுழையுங்கள்</string>
-    <string name="a11y_sponsor_avatar">%1$s இன் அவதாரம்</string>
     <string name="link_repository">களஞ்சியம்</string>
     <string name="link_developer">உருவாக்குநர்</string>
     <string name="by_author">%s மூலம்</string>

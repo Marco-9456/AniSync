@@ -911,9 +911,6 @@
     <string name="sponsors_hero_headline">Kup mi kawę</string>
     <string name="sponsors_become_button">Kup kawę</string>
     <string name="sponsors_github_button">GitHub</string>
-    <string name="sponsors_kofi_button">Ko-fi</string>
-    <string name="sponsors_refresh">Odśwież</string>
-    <string name="sponsor_tier_backer">Wspierający</string>
     <string name="support_card_title">Podoba ci się AniSync %1$s?</string>
     <string name="support_card_dismiss">Nie teraz</string>
     <string name="link_repository">Repozytorium</string>
@@ -1377,10 +1374,6 @@
     <string name="hide_from_status_lists_desc">Nie wyświetlaj na globalnej liście nowości</string>
     <string name="thread_locked_desc">Ten wątek jest zablokowany i nie może otrzymywać nowych odpowiedzi.</string>
     <string name="sponsors_hero_body">AniSync jest darmowe, bez reklam oraz open source — tworzone w moim czasie wolnym. Jeżeli to poprawi twój dzień, możesz zostawić napiwek aby wspomóc rozwój aplikacji. Napiwki są całkowicie opcjonalne — nie ma tu nic do kupienia, żadnych dodatków. Lista imion poniżej to zwyczajnie wyraz mojego podziękowania dla tych którzy zdecydowali się pomóc.</string>
-    <string name="sponsors_updated_at">Zaktualizowano %1$s</string>
-    <string name="sponsor_tier_generous">Hojni</string>
-    <string name="sponsors_empty_tier_cta">Nikogo tu jeszcze nie ma — bądź pierwszy</string>
-    <string name="a11y_sponsor_avatar">Awatar %1$s</string>
     <string name="support_card_body">AniSync jest darmowe, bez reklam oraz open source, tworzone czasie wolnym. Jeżeli ta aktualizacja okaże się przydatna, kawa sprawi że będą następne.</string>
     <string name="empty_sign_in_action">Połącz swoje konto AniList aby synchronizować bibliotekę między urządzeniami</string>
     <string name="cd_zoomable_image">Przybliżany obrazek</string>

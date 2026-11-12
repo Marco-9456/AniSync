@@ -618,13 +618,6 @@
     <string name="sponsors_hero_body">AniSync es libre, sin anuncios y de código abierto; lo creé en mi tiempo libre. Si te alegra el día, puedes dejar una propina para apoyar su desarrollo. Las propinas son totalmente opcionales: no hay nada que comprar ni beneficios asociados. Los nombres que aparecen a continuación son simplemente mi agradecimiento a todos los que me han ayudado.</string>
     <string name="sponsors_become_button">Compra un café</string>
     <string name="sponsors_github_button">GitHub</string>
-    <string name="sponsors_kofi_button">Ko-fi</string>
-    <string name="sponsors_refresh">Actualizar</string>
-    <string name="sponsors_updated_at">Actualizado %1$s</string>
-    <string name="sponsor_tier_generous">Generoso</string>
-    <string name="sponsor_tier_backer">Colaborador</string>
-    <string name="sponsors_empty_tier_cta">Aún ninguna aquí; sea el primero para compartir los gastos</string>
-    <string name="a11y_sponsor_avatar">Avatar de %1$s</string>
     <string name="link_repository">Repositorio</string>
     <string name="link_developer">Desarrollador</string>
     <string name="by_author">por %s</string>

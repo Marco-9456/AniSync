@@ -565,13 +565,6 @@
     <string name="sponsors_hero_body">O AniSync é gratuito, livre de anúncios e de código aberto — feito no meu tempo livre. Se ele melhora o seu dia, pode deixar uma contribuição para apoiar o desenvolvimento. As contribuições são totalmente opcionais — não há nada para comprar e nenhum benefício extra incluso. Os nomes abaixo são apenas o meu muito obrigado a todos que ajudaram.</string>
     <string name="sponsors_become_button">Comprar um café</string>
     <string name="sponsors_github_button">GitHub</string>
-    <string name="sponsors_kofi_button">Ko-fi</string>
-    <string name="sponsors_refresh">Atualizar</string>
-    <string name="sponsors_updated_at">Atualizado em %1$s</string>
-    <string name="sponsor_tier_generous">Generoso</string>
-    <string name="sponsor_tier_backer">Apoiador</string>
-    <string name="sponsors_empty_tier_cta">Ninguém por aqui ainda — seja o primeiro a contribuir</string>
-    <string name="a11y_sponsor_avatar">Avatar de %1$s</string>
     <string name="link_repository">Repositório</string>
     <string name="link_developer">Programador</string>
     <string name="by_author">por %s</string>
