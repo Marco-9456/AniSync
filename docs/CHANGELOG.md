@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Support AniSync** - Donate is now Support AniSync, in Settings and in About. One button buys a coffee on Ko-fi with GitHub Sponsors beside it, and a thank-you wall lists everyone who has left a tip on either, newest first. Starring, translating, reporting a bug and sharing the app sit below, for anyone who would rather help that way.
+
+### Changed
+
+- **Support Card** - The tip card only asks after a feature update, at most once every three months and never in the app's first two weeks. Instead of opening over the app at launch it waits for a list edit to reach AniList, and it rises above the navigation bar. Two Not now answers in a row turn it off, as does the new Support reminders switch.
+
+### Fixed
+
+- **Supporter List** - The list of supporters was always empty, because it only read current GitHub sponsorships. Tips left on Ko-fi now show up too.
+
 ## [3.4.0] - 2026-11-11
 
 ### Added
