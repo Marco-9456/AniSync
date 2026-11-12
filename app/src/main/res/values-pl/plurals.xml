@@ -271,9 +271,21 @@
         <item quantity="other">%1$s ukończonych</item>
     </plurals>
     <plurals name="recap_updates_chip">
-        <item quantity="one">%1$s aktualizacja</item>
-        <item quantity="few">%1$s aktualizacje</item>
-        <item quantity="many">%1$s aktualizacji</item>
-        <item quantity="other">%1$s aktualizacji</item>
+        <item quantity="one">%1$s zmiana</item>
+        <item quantity="few">%1$s zmiany</item>
+        <item quantity="many">%1$s zmian</item>
+        <item quantity="other">%1$s zmian</item>
+    </plurals>
+    <plurals name="stats_hero_stale">
+        <item quantity="one">AniList przelicza statystyki co dwa dni, więc zmiana z tego tygodnia nie jest jeszcze widoczna.</item>
+        <item quantity="few">AniList przelicza statystyki co dwa dni, więc %d zmiany z tego tygodnia nie są jeszcze widoczne.</item>
+        <item quantity="many">AniList przelicza statystyki co dwa dni, więc %d zmian z tego tygodnia nie jest jeszcze widocznych.</item>
+        <item quantity="other">AniList przelicza statystyki co dwa dni, więc %d zmian z tego tygodnia nie jest jeszcze widocznych.</item>
+    </plurals>
+    <plurals name="stats_teaser_century">
+        <item quantity="one">wiek anime, %1$s dekada</item>
+        <item quantity="few">wiek anime, %1$s dekady</item>
+        <item quantity="many">wiek anime, %1$s dekad</item>
+        <item quantity="other">wiek anime, %1$s dekad</item>
     </plurals>
 </resources>
