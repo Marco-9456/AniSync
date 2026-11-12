@@ -180,4 +180,7 @@
     <plurals name="stats_busiest_day_detail">
         <item quantity="other">%d 則動態，點擊查閱具體內容</item>
     </plurals>
+    <plurals name="share_progress_episodes_of">
+        <item quantity="other">看到了第 %1$s/%2$s 集</item>
+    </plurals>
 </resources>
