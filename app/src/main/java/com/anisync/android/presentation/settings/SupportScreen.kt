@@ -1,5 +1,10 @@
 package com.anisync.android.presentation.settings
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,8 +51,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,10 +62,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInParent
@@ -91,6 +100,7 @@ import com.anisync.android.presentation.share.cards.fitted
 import com.anisync.android.presentation.util.adaptiveReadingWidth
 import com.anisync.android.presentation.util.formatMonthYear
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
+import com.anisync.android.presentation.util.rememberAnimationsEnabled
 import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.lineBox
@@ -262,8 +272,9 @@ private fun SupportHero(onHeadlineBottom: (Int) -> Unit) {
 }
 
 /**
- * The developer's avatar from About in a 9-sided cookie, drawn twice the way About's easter egg
- * does it, so the head breaks out over the top edge. A Ko-fi cup sits on a sunny shape at its foot.
+ * The developer's avatar from About in a slowly turning 9-sided cookie, drawn twice the way
+ * About's easter egg does it, so the head breaks out over the top edge. A Ko-fi cup sits on a sunny
+ * shape at its foot.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -273,16 +284,25 @@ private fun DeveloperMark() {
     val avatar = remember(context) {
         ImageRequest.Builder(context).data(DEVELOPER_AVATAR_URL).crossfade(true).build()
     }
+    val cookie = MaterialShapes.Cookie9Sided.fitted()
+    val turn = rememberCookieTurn()
     Box(
         Modifier
             .size(width = MARK_SIZE + 32.dp, height = HEAD_ROOM + MARK_SIZE)
+            .preferredFrameRate(COOKIE_FRAME_RATE)
             .clearAndSetSemantics { },
     ) {
+        // The angle is read only inside the layers, so a frame of the turn redraws them and
+        // recomposes or measures nothing.
         Box(
             Modifier
                 .offset(y = HEAD_ROOM)
                 .size(MARK_SIZE)
-                .clip(MaterialShapes.Cookie9Sided.fitted())
+                .graphicsLayer {
+                    rotationZ = turn.value
+                    shape = cookie
+                    clip = true
+                }
                 .background(scheme.tertiaryContainer),
         ) {
             AsyncImage(
@@ -291,7 +311,12 @@ private fun DeveloperMark() {
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .scale(AVATAR_SCALE)
+                    // Turned back by the same angle, so the body stays upright under the head.
+                    .graphicsLayer {
+                        rotationZ = -turn.value
+                        scaleX = AVATAR_SCALE
+                        scaleY = AVATAR_SCALE
+                    }
                     .offset(y = AVATAR_LIFT),
             )
         }
@@ -325,6 +350,18 @@ private fun DeveloperMark() {
             )
         }
     }
+}
+
+/** The cookie's angle: one slow turn every [COOKIE_TURN_MILLIS], held still when animations are off. */
+@Composable
+private fun rememberCookieTurn(): State<Float> {
+    if (!rememberAnimationsEnabled()) return remember { mutableFloatStateOf(0f) }
+    return rememberInfiniteTransition(label = "CookieTurn").animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(COOKIE_TURN_MILLIS, easing = LinearEasing)),
+        label = "CookieTurn",
+    )
 }
 
 @Composable
@@ -563,6 +600,12 @@ private val HEAD_ROOM = 36.dp
 /** About's easter egg scale and lift, at this size. */
 private const val AVATAR_SCALE = 1.3f
 private val AVATAR_LIFT = (-19).dp
+
+/** Slow enough to read as calm. A nine-sided cookie looks the same every 40 degrees anyway. */
+private const val COOKIE_TURN_MILLIS = 20_000
+
+/** A turn this slow moves under a degree a frame at 30 fps, so a 120 Hz screen can idle lower. */
+private const val COOKIE_FRAME_RATE = 30f
 
 private val MIN_CELL = 112.dp
 private val CELL_GAP = 13.dp
