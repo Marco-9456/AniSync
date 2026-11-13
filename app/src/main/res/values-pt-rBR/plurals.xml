@@ -426,9 +426,9 @@
         <item quantity="other">%1$s finalizados</item>
     </plurals>
     <plurals name="recap_updates_chip">
-        <item quantity="one">%1$s atualizado</item>
-        <item quantity="many">%1$s atualizados</item>
-        <item quantity="other">%1$s atualizados</item>
+        <item quantity="one">%1$s atualização</item>
+        <item quantity="many">%1$s atualizações</item>
+        <item quantity="other">%1$s atualizações</item>
     </plurals>
     <plurals name="recap_settings_stored_desc">
         <item quantity="one">%1$s mês mantido, %2$s. Uma retrospectiva limpa é refeita através do AniList quando você abre</item>
@@ -444,5 +444,15 @@
         <item quantity="one">Relido %1$d vez</item>
         <item quantity="many">Relido %1$d vezes</item>
         <item quantity="other">Relido %1$d vezes</item>
+    </plurals>
+    <plurals name="settings_sponsors_count">
+        <item quantity="one">Obrigado a %1$d apoiador</item>
+        <item quantity="many">Obrigado aos %1$d apoiadores</item>
+        <item quantity="other">Obrigado aos %1$d apoiadores</item>
+    </plurals>
+    <plurals name="support_thanks_people">
+        <item quantity="one">pessoa</item>
+        <item quantity="many">pessoas</item>
+        <item quantity="other">pessoas</item>
     </plurals>
 </resources>
