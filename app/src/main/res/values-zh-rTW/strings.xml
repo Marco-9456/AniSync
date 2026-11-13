@@ -1861,4 +1861,6 @@
     <string name="stats_decade_share_quarter_list">列表中有約¼都來自 %1$s</string>
     <string name="stats_decade_share_most_list">此列表中大多都來自 %1$s</string>
     <string name="stats_decade_none">無</string>
+    <string name="about_community_guidelines">社區準則</string>
+    <string name="about_community_guidelines_desc">AniList 的發帖、評論與用戶自介規範</string>
 </resources>
