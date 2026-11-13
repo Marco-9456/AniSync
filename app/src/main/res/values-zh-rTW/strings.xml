@@ -1863,4 +1863,23 @@
     <string name="stats_decade_none">無</string>
     <string name="about_community_guidelines">社區準則</string>
     <string name="about_community_guidelines_desc">AniList 的發帖、評論與用戶自介規範</string>
+    <string name="support_eyebrow">開發者的話</string>
+    <string name="support_thanks_eyebrow">感謝以下</string>
+    <string name="support_thanks_since">自 %1$s 以來的支持</string>
+    <string name="support_other_ways">還有以下支持方式~</string>
+    <string name="support_star_title">在 GitHub 上為 AniSync 點亮星星</string>
+    <string name="support_star_desc">讓更多人能找到這款應用</string>
+    <string name="support_translate_title">為 AniSync 翻譯</string>
+    <string name="support_translate_desc">在 Weblate 上完善或修復你的語言</string>
+    <string name="support_report_title">回報錯誤或提出點子</string>
+    <string name="support_report_desc">在 GitHub 上創建新議題</string>
+    <string name="support_share_title">分享 AniSync</string>
+    <string name="support_share_text">AniSync 是款免費且開源的 AniList 安卓客戶端，F-Droid：%1$s GitHub：%2$s</string>
+    <string name="support_share_desc">發送 F-Droid 與 GitHub 連結給你的親朋好友</string>
+    <string name="support_reminders_section">提醒</string>
+    <string name="support_reminders_title">贊助提示</string>
+    <string name="support_reminders_desc">在功能更新後彈出的卡片，三個月內頂多出現一次</string>
+    <string name="support_anonymous">匿名支持者</string>
+    <string name="support_caption">Ko-fi 是一次性小費，如果你有在用 GitHub ，也能選擇 GitHub Sponsor</string>
+    <string name="dev_tools_arm_support_card">在下次清單編輯時展示</string>
 </resources>
