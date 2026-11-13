@@ -1882,4 +1882,18 @@
     <string name="support_anonymous">匿名支持者</string>
     <string name="support_caption">Ko-fi 是一次性小費，如果你有在用 GitHub ，也能選擇 GitHub Sponsor</string>
     <string name="dev_tools_arm_support_card">在下次清單編輯時展示</string>
+    <string name="notification_group_media">媒體</string>
+    <string name="notification_media_updates">媒體更新</string>
+    <string name="notification_media_updates_desc">當你清單上有新相關條目、資料更變、合併與移除項時</string>
+    <string name="notification_submission_updates_desc">當 AniList 接受或拒絕你提交的資料時</string>
+    <string name="notification_submission_updates">提交更新</string>
+    <string name="recap_settings_stored_empty">暫無，當你初次查看回顧時將從 AniList 構建</string>
+    <string name="notification_episode_aired">第 %1$d 集發布啦~</string>
+    <string name="notification_episode_one_available">初集首發啦~</string>
+    <string name="recap_view_note">每個有清單動態更新的月份都將各自構建其回顧</string>
+    <string name="edit_entry_score_of_max">%2$d 中的 %1$d 項</string>
+    <string name="stats_spotlight_detail_anime_own">在你動畫中共有 %1$s，共觀看了 %2$s</string>
+    <string name="stats_spotlight_detail_anime_other">在他動畫中共有 %1$s，共觀看了 %2$s</string>
+    <string name="stats_spotlight_detail_manga_other">在他漫畫中有 %1$s，共計 %2$s</string>
+    <string name="stats_spotlight_detail_manga_own">在你漫畫中有 %1$s，共計 %2$s</string>
 </resources>
