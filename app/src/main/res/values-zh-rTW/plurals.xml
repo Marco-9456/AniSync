@@ -183,4 +183,10 @@
     <plurals name="share_progress_episodes_of">
         <item quantity="other">看到了第 %1$s/%2$s 集</item>
     </plurals>
+    <plurals name="support_thanks_people">
+        <item quantity="other">位支持者</item>
+    </plurals>
+    <plurals name="settings_sponsors_count">
+        <item quantity="other">感謝那 %1$d 位支持者</item>
+    </plurals>
 </resources>
