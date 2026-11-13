@@ -6,6 +6,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
+import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
@@ -20,6 +21,7 @@ import com.anisync.android.data.network.RequestPriority
 import com.anisync.android.data.network.withRequestPriority
 import com.anisync.android.data.util.ApiError
 import com.anisync.android.domain.RecapRepository
+import com.anisync.android.domain.recap.RecapBuildProgress
 import com.anisync.android.domain.recap.nextRecapRun
 import com.anisync.android.domain.recap.recapBannerCandidates
 import dagger.assisted.Assisted
@@ -30,6 +32,7 @@ import java.time.Clock
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.YearMonth
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 import com.anisync.android.domain.Result as DomainResult
@@ -85,7 +88,9 @@ class RecapWorker @AssistedInject constructor(
 
     /** The first build a shelf asks for: everything retention keeps, no notification, no schedule change. */
     private suspend fun firstBuild(): Result {
-        val outcome = withRequestPriority(RequestPriority.Background) { recapRepository.backfill() }
+        val outcome = withRequestPriority(RequestPriority.Background) {
+            recapRepository.backfill { setProgress(progressData(it)) }
+        }
         if (outcome is DomainResult.Error) {
             Log.w(TAG, "First recap build failed: ${outcome.message}")
             if (outcome.isWorthRetrying() && runAttemptCount < MAX_ATTEMPTS) return Result.retry()
@@ -144,6 +149,18 @@ class RecapWorker @AssistedInject constructor(
 
         const val FIRST_BUILD_NAME = "recap_first_build"
         private const val KEY_FIRST_BUILD = "first_build"
+        private const val KEY_FRACTION = "fraction"
+        private const val KEY_READ_BACK_TO = "read_back_to"
+
+        internal fun progressData(progress: RecapBuildProgress): Data =
+            workDataOf(KEY_FRACTION to progress.fraction, KEY_READ_BACK_TO to progress.readBackTo?.toString())
+
+        /** What a running first build last reported, null before its first report. */
+        fun buildProgress(data: Data): RecapBuildProgress? {
+            val fraction = data.getFloat(KEY_FRACTION, -1f).takeIf { it >= 0f } ?: return null
+            val readBackTo = data.getString(KEY_READ_BACK_TO)?.let { runCatching { YearMonth.parse(it) }.getOrNull() }
+            return RecapBuildProgress(fraction, readBackTo)
+        }
 
         /**
          * Builds every recap retention keeps, for an account with none stored yet. KEEP holds a build

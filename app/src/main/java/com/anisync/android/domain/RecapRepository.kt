@@ -1,6 +1,7 @@
 package com.anisync.android.domain
 
 import com.anisync.android.domain.recap.Recap
+import com.anisync.android.domain.recap.RecapBuildProgress
 import com.anisync.android.domain.recap.RecapMedia
 import com.anisync.android.domain.recap.RecapPeriod
 import com.anisync.android.domain.recap.RecapSettings
@@ -71,9 +72,9 @@ interface RecapRepository {
 
     /**
      * The first build: one sweep over the current and the previous calendar year, stored as last
-     * year's recap and every month retention keeps.
+     * year's recap and every month retention keeps. [onProgress] hears how far it got after each request.
      */
-    suspend fun backfill(): Result<Unit>
+    suspend fun backfill(onProgress: suspend (RecapBuildProgress) -> Unit = {}): Result<Unit>
 
     /**
      * What the recap job does on the 1st: builds last month, and last year in January, unless they

@@ -9,6 +9,7 @@ import com.anisync.android.domain.StoredRecap
 import com.anisync.android.domain.recap.ActivityWindow
 import com.anisync.android.domain.recap.FetchedActivity
 import com.anisync.android.domain.recap.FetchedPage
+import com.anisync.android.domain.recap.RecapBuildProgress
 import com.anisync.android.domain.recap.RecapMedia
 import com.anisync.android.domain.recap.RecapMediaType
 import com.anisync.android.domain.recap.RecapPeriod
@@ -140,6 +141,15 @@ class RecapRepositoryTest {
         env.settingsFlow.value = RecapSettings(countRepeats = true)
         val recounted = repository.observeRecaps().first { it.october().recap.episodes != 7 }.october()
         assertEquals("the two rewatched episodes now count", 9, recounted.recap.episodes)
+    }
+
+    @Test
+    fun `a first build reports how far back it has read, then runs on to the end`() = runTest {
+        val reports = ArrayList<RecapBuildProgress>()
+        assertTrue(repository.backfill { reports += it } is Result.Success)
+        assertEquals(YearMonth.of(2025, 3), reports.mapNotNull { it.readBackTo }.last())
+        assertTrue(reports.zipWithNext().all { (before, after) -> after.fraction >= before.fraction })
+        assertEquals(1f, reports.last().fraction, 0.001f)
     }
 
     @Test
