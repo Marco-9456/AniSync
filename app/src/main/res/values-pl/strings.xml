@@ -431,8 +431,8 @@
     <plurals name="statistics_activity_count">
         <item quantity="one">%d aktywność</item>
         <item quantity="few">%d aktywności</item>
-        <item quantity="many">%d aktywność</item>
-        <item quantity="other">%d aktywność</item>
+        <item quantity="many">%d aktywności</item>
+        <item quantity="other">%d aktywności</item>
     </plurals>
     <string name="statistics_activity_period_month">Miesiąc</string>
     <string name="statistics_activity_period_week">Tydzień</string>
@@ -793,10 +793,16 @@
     <string name="notification_channel_activity_message">Wiadomości bezpośrednie</string>
     <string name="notification_channel_activity_message_desc">Gdy ktoś wyśle do ciebie wiadomość</string>
     <plurals name="notification_activity_replies">
-        <item quantity="one">Odpowiedzi na aktywność</item>
+        <item quantity="one">%1$d nowa odpowiedź na twój %2$s</item>
+        <item quantity="few">%1$d nowe odpowiedzi na twój %2$s</item>
+        <item quantity="many">%1$d nowych odpowiedzi na twój %2$s</item>
+        <item quantity="other">%1$d nowych odpowiedzi na twój %2$s</item>
     </plurals>
     <plurals name="notification_activity_messages">
-        <item quantity="one">Wiadomości bezpośrednie</item>
+        <item quantity="one">%1$d wiadomość bezpośrednia</item>
+        <item quantity="few">%1$d wiadomości bezpośrednie</item>
+        <item quantity="many">%1$d wiadomości bezpośrednich</item>
+        <item quantity="other">%1$d wiadomości bezpośrednich</item>
     </plurals>
     <string name="activity_detail_title">Aktywność</string>
     <string name="activity_detail_reply">Odpowiedź</string>
@@ -1833,7 +1839,7 @@
     <string name="stats_per_day_h">%1$d h</string>
     <string name="stats_header_their_lists">Ich listy</string>
     <string name="stats_header_formats">Formaty</string>
-    <string name="stats_finish_line">Kończysz %1$s tego co zacząłeś: %2$s z %3$s.</string>
+    <string name="stats_finish_line">Kończysz %1$s tego co zaczynasz: %2$s z %3$s.</string>
     <string name="stats_finish_line_other">Kończy %1$s tego co zaczyna: %2$s z %3$s.</string>
     <string name="stats_format_line">%1$s · %2$s · %3$s</string>
     <string name="stats_not_scored">nie oceniono</string>
