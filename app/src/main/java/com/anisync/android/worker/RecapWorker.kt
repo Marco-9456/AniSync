@@ -86,17 +86,22 @@ class RecapWorker @AssistedInject constructor(
         return Result.success()
     }
 
-    /** The first build a shelf asks for: everything retention keeps, no notification, no schedule change. */
+    /**
+     * The first build a shelf asks for: everything retention keeps, no notification, no schedule
+     * change. One that gives up ends failed, so Statistics offers Retry rather than starting it over.
+     */
     private suspend fun firstBuild(): Result {
+        val owner = accountStore.activeAccount.value?.id
         val outcome = withRequestPriority(RequestPriority.Background) {
             recapRepository.backfill { setProgress(progressData(it)) }
         }
         if (outcome is DomainResult.Error) {
             Log.w(TAG, "First recap build failed: ${outcome.message}")
             if (outcome.isWorthRetrying() && runAttemptCount < MAX_ATTEMPTS) return Result.retry()
-        } else {
-            songs.prefetch(recapBannerCandidates(LocalDate.now()))
+            // After a switch the new account's Statistics starts a build of its own.
+            return if (owner == accountStore.activeAccount.value?.id) Result.failure() else Result.success()
         }
+        songs.prefetch(recapBannerCandidates(LocalDate.now()))
         return Result.success()
     }
 

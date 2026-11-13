@@ -264,6 +264,9 @@ sealed interface ProfileAction {
 
     /** Statistics failed to load, try them again on their own. */
     data object RetryStats : ProfileAction
+
+    /** The first recap build gave up, start it again. */
+    data object RetryRecaps : ProfileAction
     data object ToggleFollow : ProfileAction
     data class UpdateAbout(val about: String) : ProfileAction
     data class SelectTab(val tab: ProfileTab) : ProfileAction

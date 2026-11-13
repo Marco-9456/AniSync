@@ -417,13 +417,14 @@ class ProfileViewModel @Inject constructor(
 
     private val recapProgress = MutableStateFlow<com.anisync.android.presentation.recap.RecapProgress?>(null)
     private val recapYear = MutableStateFlow<com.anisync.android.presentation.recap.RecapRunningYear?>(null)
+    private val recapBuild = MutableStateFlow<com.anisync.android.presentation.recap.RecapBuild?>(null)
     private var recapsLoaded = false
 
     /** Recaps belong to the viewer, so another member's profile never shows any. */
     private val recapsState: kotlinx.coroutines.flow.Flow<com.anisync.android.presentation.recap.RecapsUiModel> =
         if (targetUsername.isNullOrBlank()) {
-            combine(recapEntries.entries(), recapProgress, recapYear, recapEntries.firstBuildRunning()) { entries, progress, year, building ->
-                com.anisync.android.presentation.recap.RecapsUiModel(entries, progress, year, building = building && entries.isEmpty())
+            combine(recapEntries.entries(), recapProgress, recapYear, recapBuild) { entries, progress, year, build ->
+                com.anisync.android.presentation.recap.RecapsUiModel(entries, progress, year, build = build.takeIf { entries.isEmpty() })
             }.catch { e ->
                 // A recap row Room cannot read must not take the whole profile down with it.
                 android.util.Log.w("ProfileViewModel", "Recaps could not be read", e)
@@ -642,12 +643,14 @@ class ProfileViewModel @Inject constructor(
                     loadRecaps(refresh = false)
                 }
             }
-            // The month in progress and the year so far come from what the first build stores.
+            // The month in progress and the year so far come from what the first build stores. A failed
+            // build waits for Retry instead of looping, and one this screen never saw running stays hidden.
             viewModelScope.launch {
-                var wasBuilding = false
-                recapEntries.firstBuildRunning().collect { building ->
-                    if (wasBuilding && !building) loadRecaps(refresh = false, force = true)
-                    wasBuilding = building
+                var wasRunning = false
+                recapEntries.firstBuild().collect { build ->
+                    recapBuild.value = build.takeUnless { it == com.anisync.android.presentation.recap.RecapBuild.Failed && !wasRunning }
+                    if (wasRunning && build == null) loadRecaps(refresh = false, force = true)
+                    wasRunning = build is com.anisync.android.presentation.recap.RecapBuild.Running
                 }
             }
         }
@@ -682,6 +685,7 @@ class ProfileViewModel @Inject constructor(
         when (action) {
             is ProfileAction.Refresh -> refresh(forceNetwork = action.forceNetwork)
             ProfileAction.RetryStats -> fetchStats(forceRefresh = true)
+            ProfileAction.RetryRecaps -> loadRecaps(refresh = false, force = true)
             is ProfileAction.ToggleFollow -> toggleFollow()
             is ProfileAction.UpdateAbout -> updateAbout(action.about)
             is ProfileAction.SelectTab -> {

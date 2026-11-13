@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.anisync.android.data.AppSettings
 import com.anisync.android.data.RecapDelivery
@@ -14,7 +15,9 @@ import com.anisync.android.data.account.AccountStore
 import com.anisync.android.domain.RecapRepository
 import com.anisync.android.domain.Result
 import com.anisync.android.domain.StoredRecap
+import com.anisync.android.domain.recap.RecapBuildProgress
 import com.anisync.android.domain.recap.RecapPeriod
+import com.anisync.android.domain.recap.backfillPeriods
 import com.anisync.android.domain.recap.recapBannerCandidates
 import com.anisync.android.worker.RecapWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -71,14 +74,27 @@ data class RecapProgress(
 @Immutable
 data class RecapRunningYear(val year: Int, val episodes: Int, val months: List<Int>)
 
+/** The first build, as Statistics shows it until something is stored. */
+@Immutable
+sealed interface RecapBuild {
+    /**
+     * Queued or running, reading the list history back to [since]. [fraction] stays null until the
+     * worker reports, and [readBackTo] is the oldest month read while the history comes in.
+     */
+    data class Running(val since: YearMonth, val fraction: Float? = null, val readBackTo: YearMonth? = null) : RecapBuild
+
+    /** Gave up after its retries, and waits for the viewer to try again. */
+    data object Failed : RecapBuild
+}
+
 /** Everything Statistics shows about recaps on the viewer's own profile. */
 @Immutable
 data class RecapsUiModel(
     val entries: List<RecapEntry> = emptyList(),
     val inProgress: RecapProgress? = null,
     val runningYear: RecapRunningYear? = null,
-    /** True while the first build runs, before anything is stored. */
-    val building: Boolean = false,
+    /** The first build while nothing is stored yet. */
+    val build: RecapBuild? = null,
 ) {
     val months: List<RecapEntry> get() = entries.filter { !it.isYear }
     val years: List<RecapEntry> get() = entries.filter { it.isYear }
@@ -158,10 +174,15 @@ class RecapEntries @Inject constructor(
         notices.closeBanner(owner, YearMonth.now())
     }
 
-    /** True while a first build is queued or running. */
-    fun firstBuildRunning(): Flow<Boolean> =
+    /** The first build while it is queued or running, or after it failed, null otherwise. */
+    fun firstBuild(): Flow<RecapBuild?> =
         WorkManager.getInstance(context).getWorkInfosForUniqueWorkFlow(RecapWorker.FIRST_BUILD_NAME)
-            .map { infos -> infos.any { !it.state.isFinished } }
+            .map { infos -> firstBuildOf(infos.map { it.state to RecapWorker.buildProgress(it.progress) }, firstBuildSince()) }
+            .distinctUntilChanged()
+
+    /** The month a first build reads back to, where the oldest period it stores begins. */
+    private fun firstBuildSince(): YearMonth =
+        backfillPeriods(LocalDate.now(), appSettings.recapKeptMonths.value).minOfOrNull { YearMonth.from(it.firstDay) } ?: YearMonth.now()
 
     /** Starts the first build when nothing is stored for the account yet, true when it did. */
     suspend fun buildIfEmpty(): Boolean {
@@ -216,4 +237,14 @@ class RecapEntries @Inject constructor(
             seed = top?.color,
         )
     }
+}
+
+/** What a first build's runs add up to: running while one is unfinished, failed when one failed. */
+internal fun firstBuildOf(runs: List<Pair<WorkInfo.State, RecapBuildProgress?>>, since: YearMonth): RecapBuild? = when {
+    runs.any { !it.first.isFinished } -> {
+        val progress = runs.firstNotNullOfOrNull { (state, progress) -> progress.takeIf { state == WorkInfo.State.RUNNING } }
+        RecapBuild.Running(since, progress?.fraction, progress?.readBackTo)
+    }
+    runs.any { it.first == WorkInfo.State.FAILED } -> RecapBuild.Failed
+    else -> null
 }

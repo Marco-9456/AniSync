@@ -587,7 +587,8 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onActivityClick = onActivityClick,
                 statsColumns = statsColumns,
                 onOpenRecap = onOpenRecap,
-                onRetryStats = { onAction(ProfileAction.RetryStats) }
+                onRetryStats = { onAction(ProfileAction.RetryStats) },
+                onRetryRecaps = { onAction(ProfileAction.RetryRecaps) }
             )
         }
     }

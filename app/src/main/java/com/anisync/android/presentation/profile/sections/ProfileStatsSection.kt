@@ -118,12 +118,13 @@ fun LazyListScope.profileStatsTab(
     onActivityClick: (Int) -> Unit = {},
     onOpenRecap: (String) -> Unit = {},
     onRetryStats: () -> Unit = {},
+    onRetryRecaps: () -> Unit = {},
     statsColumns: Int = 1,
 ) {
     val ownProfile = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
     // Recaps come from the device, not from AniList's statistics, so they never wait on them.
     if (uiState.selectedStatsView == StatsView.RECAPS && ownProfile) {
-        statsRecaps(uiState.recaps, statsColumns, onOpenRecap)
+        statsRecaps(uiState.recaps, statsColumns, onOpenRecap, onRetryRecaps)
         return
     }
     if (uiState.selectedStatsView == StatsView.OVERVIEW && ownProfile) {
