@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Supporter List** - The list of supporters was always empty, because it only read current GitHub sponsorships. Tips left on Ko-fi now show up too.
-- **Building Recaps** - While Statistics built your first recaps it showed nothing but a spinner, for minutes on a long list, which looked stuck. It now says that the first build reads every list update since January of last year and that AniList's pace limit makes this take a few minutes, with a bar for how far back it has read. A build that fails waits on a Retry button instead of starting over on its own. (#187)
+- **Building Recaps** - While Statistics built your first recaps it showed nothing but a spinner, for minutes on a long list, which looked stuck. It now says that the first build reads every list update since January of last year and that AniList's pace limit makes this take a few minutes, with a bar for how far back it has read. A build the phone stops part way carries on from what it had already read the next time, and one that fails waits on a Retry button instead of starting over on its own. (#187)
 
 ## [3.4.0] - 2026-11-11
 
