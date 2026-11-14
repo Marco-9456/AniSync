@@ -132,6 +132,11 @@ abstract class RepositoryModule {
     ): com.anisync.android.data.RecapEnvironment
 
     @Binds
+    abstract fun bindRecapCheckpoints(
+        impl: com.anisync.android.data.FileRecapCheckpoints
+    ): com.anisync.android.data.RecapCheckpoints
+
+    @Binds
     abstract fun bindSupportersRepository(
         impl: com.anisync.android.data.SupportersRepositoryImpl
     ): com.anisync.android.domain.SupportersRepository
