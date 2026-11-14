@@ -183,4 +183,13 @@
     <plurals name="share_progress_episodes_of">
         <item quantity="other">看到了第 %1$s/%2$s 集</item>
     </plurals>
+    <plurals name="support_thanks_people">
+        <item quantity="other">位支持者</item>
+    </plurals>
+    <plurals name="settings_sponsors_count">
+        <item quantity="other">感謝這 %1$d 位支持者</item>
+    </plurals>
+    <plurals name="recap_settings_stored_desc">
+        <item quantity="other">已存有 %1$s 個月，共 %2$s，清空後查看回顧時將再次從 AniList 構建</item>
+    </plurals>
 </resources>
