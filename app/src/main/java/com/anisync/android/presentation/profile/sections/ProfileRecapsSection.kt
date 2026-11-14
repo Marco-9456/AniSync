@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.profile.sections
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,14 +18,13 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
-import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.recap.RecapBuild
+import com.anisync.android.presentation.recap.RecapBuildingCard
 import com.anisync.android.presentation.recap.RecapEntry
 import com.anisync.android.presentation.recap.RecapInProgressCard
 import com.anisync.android.presentation.recap.RecapMonthTile
@@ -39,25 +37,23 @@ import com.anisync.android.presentation.statistics.StatsSectionHeader
 import com.anisync.android.presentation.statistics.statsBodySmall
 
 /**
- * Overview's recaps, above the hero on the viewer's own profile: the recaps waiting to be opened,
- * or the month in progress when none are. A tablet pane drops the header and fills its width with
- * two cards, as ST4 draws them.
+ * Overview's recaps, above the hero on the viewer's own profile: the first build while it runs, the
+ * recaps waiting to be opened, or the month in progress when none are. A tablet pane drops the
+ * header and fills its width with two cards, as ST4 draws them.
  */
 internal fun LazyListScope.recapShelf(recaps: RecapsUiModel, columns: Int, onOpenRecap: (String) -> Unit) {
     val shelf = recaps.shelf
     val progress = recaps.inProgress
     // A failed first build is the Recaps view's to explain, Overview just leaves the shelf out.
-    val building = recaps.build is RecapBuild.Running
-    if (!building && shelf.isEmpty() && progress == null) return
+    val build = recaps.build as? RecapBuild.Running
+    if (build == null && shelf.isEmpty() && progress == null) return
     val wide = columns > 1
     if (!wide) {
         item(key = "recap_shelf_header") { StatsSectionHeader(title = stringResource(R.string.recap_shelf_title), top = 0.dp) }
     }
     item(key = "recap_shelf", contentType = "recap_shelf") {
         when {
-            building -> Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                AppCircularProgressIndicator()
-            }
+            build != null -> RecapBuildingCard(build, Modifier.padding(horizontal = 16.dp))
             shelf.isNotEmpty() && wide -> Row(
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -87,11 +83,9 @@ internal fun LazyListScope.recapShelf(recaps: RecapsUiModel, columns: Int, onOpe
  */
 internal fun LazyListScope.statsRecaps(recaps: RecapsUiModel, columns: Int, onOpenRecap: (String) -> Unit, onRetry: () -> Unit) {
     val perRow = if (columns > 1) 4 else 2
-    when (recaps.build) {
+    when (val build = recaps.build) {
         is RecapBuild.Running -> {
-            item(key = "recaps_building") {
-                Box(Modifier.fillMaxWidth().padding(vertical = 48.dp), contentAlignment = Alignment.Center) { AppCircularProgressIndicator() }
-            }
+            item(key = "recaps_building") { RecapBuildingCard(build, Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) }
             return
         }
         RecapBuild.Failed -> {

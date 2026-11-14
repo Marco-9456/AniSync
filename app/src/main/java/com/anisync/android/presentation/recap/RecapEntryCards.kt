@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.recap
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,8 +24,10 @@ import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -53,6 +56,7 @@ import com.anisync.android.presentation.share.cards.cardUpper
 import com.anisync.android.presentation.share.cards.fitted
 import com.anisync.android.presentation.statistics.fittedStyle
 import com.anisync.android.presentation.util.LocalAppSettings
+import com.anisync.android.presentation.util.formatMonthYear
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import com.anisync.android.ui.theme.lineBox
@@ -321,6 +325,48 @@ fun RecapInProgressCard(progress: RecapProgress, modifier: Modifier = Modifier) 
                 }
             }
         }
+    }
+}
+
+/** The first build while it runs, the same card on Overview's shelf and in the Recaps view. */
+@Composable
+fun RecapBuildingCard(build: RecapBuild.Running, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    val ink = scheme.onSecondaryContainer
+    val locale = recapLocale()
+    Column(
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(28.dp))
+            .background(scheme.secondaryContainer)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(stringResource(R.string.recap_building_title), style = MaterialTheme.typography.titleLarge, color = ink)
+        Text(
+            text = stringResource(R.string.recap_building_body, formatMonthYear(build.since, locale)),
+            style = MaterialTheme.typography.bodyMedium,
+            color = ink.copy(alpha = 0.85f),
+        )
+        val track = ink.copy(alpha = 0.18f)
+        val bar = Modifier.fillMaxWidth().padding(top = 14.dp)
+        val fraction = build.fraction
+        if (fraction == null) {
+            LinearProgressIndicator(modifier = bar, color = ink, trackColor = track)
+        } else {
+            val shown by animateFloatAsState(fraction, ProgressIndicatorDefaults.ProgressAnimationSpec, label = "RecapBuildProgress")
+            LinearProgressIndicator(progress = { shown }, modifier = bar, color = ink, trackColor = track)
+        }
+        Text(
+            text = when {
+                build.readBackTo != null -> stringResource(R.string.recap_building_read_back, formatMonthYear(build.readBackTo, locale))
+                fraction != null -> stringResource(R.string.recap_building_titles)
+                else -> ""
+            },
+            style = MaterialTheme.typography.labelMedium,
+            color = ink.copy(alpha = 0.75f),
+            modifier = Modifier.padding(top = 4.dp),
+        )
     }
 }
 

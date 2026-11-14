@@ -2462,6 +2462,10 @@
     <string name="recap_view_note">Every month with list activity gets a recap.</string>
     <string name="recap_none_title">No recaps yet</string>
     <string name="recap_none_body">A month with list activity gets its recap on the 1st of the next one.</string>
+    <string name="recap_building_title">Building your recaps</string>
+    <string name="recap_building_body">The first build reads every list update since %1$s. AniList limits how fast that can go, so it takes a few minutes. It keeps going if you leave this screen.</string>
+    <string name="recap_building_read_back">Read back to %1$s</string>
+    <string name="recap_building_titles">Looking up titles</string>
     <string name="notification_channel_recaps_desc">Your monthly and yearly recaps, the day they are ready</string>
     <string name="recap_notification_title">Your %1$s recap is ready</string>
     <string name="recap_notification_text">%1$s across %2$s, with %3$s on top. Tap to watch it.</string>
