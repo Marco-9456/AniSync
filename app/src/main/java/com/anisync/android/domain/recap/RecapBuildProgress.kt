@@ -27,8 +27,11 @@ class RecapBuildTracker(
 ) {
     private var oldest = Long.MAX_VALUE
 
-    suspend fun onPage(page: FetchedPage) {
-        oldest = minOf(oldest, page.activities.minOfOrNull { it.createdAt } ?: return)
+    suspend fun onPage(page: FetchedPage) = onRead(page.activities)
+
+    /** Reports the history read so far, a page of it or what a stopped build had saved. */
+    suspend fun onRead(activities: List<FetchedActivity>) {
+        oldest = minOf(oldest, activities.minOfOrNull { it.createdAt } ?: return)
         val end = minOf(now, window.to)
         val span = (end - window.from).coerceAtLeast(1)
         val read = (end - oldest).coerceIn(0, span)

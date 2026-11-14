@@ -14,12 +14,18 @@ import com.anisync.android.domain.recap.RecapMedia
 import com.anisync.android.domain.recap.RecapMediaType
 import com.anisync.android.domain.recap.RecapPeriod
 import com.anisync.android.domain.recap.RecapSettings
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -35,7 +41,8 @@ class RecapRepositoryTest {
     private val dao = FakeRecapDao()
     private val remote = FakeRecapRemote()
     private val env = FakeRecapEnvironment(zone, nowMillis = at(2026, 11, 7, 12) * 1000)
-    private val repository = RecapRepositoryImpl(remote, dao, env)
+    private val checkpoints = FakeRecapCheckpoints()
+    private val repository = RecapRepositoryImpl(remote, dao, env, checkpoints)
 
     private val october = RecapPeriod.Month(YearMonth.of(2026, 10))
     private val september = RecapPeriod.Month(YearMonth.of(2026, 9))
@@ -152,6 +159,77 @@ class RecapRepositoryTest {
         assertEquals(1f, reports.last().fraction, 0.001f)
     }
 
+    /** 130 updates from February 2025 on, newer ones with higher ids as on AniList, three pages of them. */
+    private fun useLongHistory() {
+        remote.activities.clear()
+        remote.activities += (1..130).map { index ->
+            val mediaId = listOf(10, 20, 30)[index % 3]
+            activity(index, mediaId, "watched episode", "${index / 3 + 1}", at(2025, 2, 1) + index * 4 * 86_400L)
+        }
+    }
+
+    @Test
+    fun `a first build that failed reads only what it had not read before`() = runTest {
+        useLongHistory()
+        remote.beforePage = { page -> if (page == 3) throw java.io.IOException("connection reset") }
+        assertTrue(repository.backfill() is Result.Error)
+        val saved = checkpoints.saved.getValue(1)
+        assertEquals(100, saved.activities.size)
+        assertFalse(saved.complete)
+
+        remote.beforePage = null
+        remote.windows.clear()
+        assertTrue(repository.backfill() is Result.Success)
+        assertEquals("what was logged since, then the rest below the oldest saved", 2, remote.windows.size)
+        assertEquals(saved.activities.maxOf { it.createdAt }, remote.windows[0].from)
+        assertEquals(saved.activities.minOf { it.createdAt } + 1, remote.windows[1].to)
+        assertTrue("a finished build leaves nothing behind", checkpoints.saved.isEmpty())
+
+        val clean = RecapRepositoryImpl(remote, FakeRecapDao(), env, FakeRecapCheckpoints())
+        clean.backfill()
+        suspend fun RecapRepositoryImpl.counts() = observeRecaps().first().map { it.period to it.recap.episodes }
+        assertEquals(clean.counts(), repository.counts())
+    }
+
+    @Test
+    fun `a first build the system stops keeps what it read`() = runTest {
+        useLongHistory()
+        val onThirdPage = CompletableDeferred<Unit>()
+        remote.beforePage = { page ->
+            if (page == 3) {
+                onThirdPage.complete(Unit)
+                awaitCancellation()
+            }
+        }
+        val build = launch { repository.backfill() }
+        onThirdPage.await()
+        build.cancelAndJoin()
+        assertEquals(100, checkpoints.saved.getValue(1).activities.size)
+    }
+
+    @Test
+    fun `a saved history from another window or over a day old is read again`() = runTest {
+        val stray = activity(99, 10, "watched episode", "9", at(2025, 5, 1))
+        checkpoints.saved[1] = RecapCheckpoint(from = 0, savedAt = env.nowMillis, complete = true, activities = listOf(stray))
+        repository.backfill()
+        val window = remote.windows.single()
+        assertTrue(dao.rows.values.none { it.payload.contains("\"i\":99,") })
+
+        dao.rows.clear()
+        remote.windows.clear()
+        checkpoints.saved[1] = RecapCheckpoint(window.from, env.nowMillis - 25 * 60 * 60 * 1000L, complete = true, activities = listOf(stray))
+        repository.backfill()
+        assertEquals(1, remote.windows.size)
+        assertTrue(dao.rows.values.none { it.payload.contains("\"i\":99,") })
+    }
+
+    @Test
+    fun `clearing the recaps drops a saved history too`() = runTest {
+        checkpoints.saved[1] = RecapCheckpoint(from = 0, savedAt = env.nowMillis, complete = false, activities = emptyList())
+        repository.clear()
+        assertTrue(checkpoints.saved.isEmpty())
+    }
+
     @Test
     fun `a second first build fetches nothing`() = runTest {
         repository.backfill()
@@ -263,13 +341,17 @@ internal class FakeRecapRemote : RecapRemote {
     /** Runs once before the first page is served. */
     var beforeFirstPage: (() -> Unit)? = null
 
-    /** Every window a page was asked for. */
+    /** Runs before every page with its number in the window, where a test throws or holds the build. */
+    var beforePage: (suspend (Int) -> Unit)? = null
+
+    /** Every window a page was asked for, once for its first page. */
     val windows = ArrayList<ActivityWindow>()
 
     override suspend fun activityPage(userId: Int, window: ActivityWindow, page: Int): FetchedPage {
         beforeFirstPage?.also { beforeFirstPage = null }?.invoke()
+        beforePage?.invoke(page)
         requests++
-        windows += window
+        if (page == 1) windows += window
         val inside = activities
             .filter { it.createdAt > window.createdAfter && it.createdAt < window.createdBefore }
             .sortedByDescending { it.id }
@@ -288,6 +370,22 @@ internal class FakeRecapRemote : RecapRemote {
     }
 
     override suspend fun user(userId: Int): RecapUser? = null
+}
+
+/** Saved histories in memory. A save yields first, so one from a cancelled build fails as a real write would. */
+internal class FakeRecapCheckpoints : RecapCheckpoints {
+    val saved = HashMap<Int, RecapCheckpoint>()
+
+    override suspend fun load(owner: Int): RecapCheckpoint? = saved[owner]
+
+    override suspend fun save(owner: Int, checkpoint: RecapCheckpoint) {
+        yield()
+        saved[owner] = checkpoint
+    }
+
+    override suspend fun clear(owner: Int) {
+        saved.remove(owner)
+    }
 }
 
 internal class FakeRecapEnvironment(
