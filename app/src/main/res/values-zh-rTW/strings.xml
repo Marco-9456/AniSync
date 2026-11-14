@@ -1526,9 +1526,9 @@
     <string name="search_sort_volumes">卷數</string>
     <string name="forum_start_discussion">對此新開討論</string>
     <string name="empty_discussions_button">新開討論</string>
-    <string name="year_picker_hint_empty">點擊可可選取年份，再點擊另一年可形成區間</string>
+    <string name="year_picker_hint_empty">點擊即可選取年份，再點擊另一年則可形成區間</string>
     <string name="year_picker_hint_single">選擇另一年將形成區間</string>
-    <string name="year_picker_hint_range">從選擇一年來開始</string>
+    <string name="year_picker_hint_range">選擇一年來重新開始</string>
     <string name="whats_new_discover_filters">型別篩選器現在位於結果上方一行，季度篩選器已移入年份篩選器中，且所有排序方式均為雙向。</string>
     <string name="media_status_releasing">連載中</string>
     <string name="ok">OK</string>
@@ -1896,4 +1896,8 @@
     <string name="stats_spotlight_detail_anime_other">在他動畫中共有 %1$s，共觀看了 %2$s</string>
     <string name="stats_spotlight_detail_manga_other">在他漫畫中有 %1$s，共計 %2$s</string>
     <string name="stats_spotlight_detail_manga_own">在你漫畫中有 %1$s，共計 %2$s</string>
+    <string name="recap_building_title">正在構建你的回顧</string>
+    <string name="recap_building_read_back">來看看在 %1$s時都發生些什麼…</string>
+    <string name="recap_building_titles">蒐羅作品中…</string>
+    <string name="recap_building_body">初次的構建會查閱你自 %1$s以來的每次清單更新，因此很容易就達到 AniList 的限速… 所以等幾分鐘吧，瀏覽其它頁面時它也會繼續工作的</string>
 </resources>
