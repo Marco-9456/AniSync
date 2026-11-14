@@ -2362,4 +2362,8 @@
     <string name="support_reminders_title">Lembretes de contribuição</string>
     <string name="support_reminders_desc">Um cartão após uma atualização de recurso, no máximo uma vez a cada três meses</string>
     <string name="dev_tools_arm_support_card">Exibir após a próxima edição da lista</string>
+    <string name="recap_building_title">Construindo suas retrospectivas</string>
+    <string name="recap_building_body">A primeira compilação lê cada atualização de lista desde %1$s. O AniList limita a velocidade disso, então leva alguns minutos. O processo continua rodando se você sair desta tela.</string>
+    <string name="recap_building_read_back">Lido até %1$s</string>
+    <string name="recap_building_titles">Procurado títulos</string>
 </resources>
