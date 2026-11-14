@@ -24,7 +24,7 @@ import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
@@ -329,6 +329,7 @@ fun RecapInProgressCard(progress: RecapProgress, modifier: Modifier = Modifier) 
 }
 
 /** The first build while it runs, the same card on Overview's shelf and in the Recaps view. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RecapBuildingCard(build: RecapBuild.Running, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
@@ -352,10 +353,10 @@ fun RecapBuildingCard(build: RecapBuild.Running, modifier: Modifier = Modifier) 
         val bar = Modifier.fillMaxWidth().padding(top = 14.dp)
         val fraction = build.fraction
         if (fraction == null) {
-            LinearProgressIndicator(modifier = bar, color = ink, trackColor = track)
+            LinearWavyProgressIndicator(modifier = bar, color = ink, trackColor = track)
         } else {
             val shown by animateFloatAsState(fraction, ProgressIndicatorDefaults.ProgressAnimationSpec, label = "RecapBuildProgress")
-            LinearProgressIndicator(progress = { shown }, modifier = bar, color = ink, trackColor = track)
+            LinearWavyProgressIndicator(progress = { shown }, modifier = bar, color = ink, trackColor = track)
         }
         Text(
             text = when {
