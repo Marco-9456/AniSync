@@ -1,8 +1,8 @@
 package com.anisync.android.presentation.profile
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -15,6 +15,12 @@ import com.anisync.android.domain.UserActivity
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.profile.components.ActivityCard
+import com.anisync.android.presentation.profile.components.ActivityUpdateRow
+import com.anisync.android.presentation.profile.components.updateRowShape
+import com.anisync.android.presentation.profile.sections.ActivityDayHeader
+import com.anisync.android.presentation.profile.sections.dayIn
+import com.anisync.android.presentation.profile.sections.isGroupedUpdate
+import java.time.ZoneId
 
 @Composable
 fun RecentUpdatesSection(
@@ -44,8 +50,18 @@ fun RecentUpdatesSection(
 
         val displayedActivities = remember(activities, maxItems) { activities.take(maxItems) }
 
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            displayedActivities.forEach { activity ->
+        val zone = remember { ZoneId.systemDefault() }
+        Column {
+            displayedActivities.forEachIndexed { index, activity ->
+                val day = activity.dayIn(zone)
+                val previous = displayedActivities.getOrNull(index - 1)
+                val next = displayedActivities.getOrNull(index + 1)
+                if (!activity.isPinned && (previous == null || previous.isPinned || previous.dayIn(zone) != day)) {
+                    ActivityDayHeader(day, start = 16.dp)
+                }
+                val update = activity.isGroupedUpdate()
+                val joinsAbove = update && previous?.isGroupedUpdate() == true && previous.dayIn(zone) == day
+                val joinsBelow = update && next?.isGroupedUpdate() == true && next.dayIn(zone) == day
                 key(activity.id) {
                     val canDelete = viewerId != null && (
                         activity.userId == viewerId ||
@@ -64,19 +80,31 @@ fun RecentUpdatesSection(
                         onEditClick?.let { cb -> { cb(activity.id) } }
                     } else null
 
-                    ActivityCard(
-                        activity = activity,
-                        onClick = { onActivityClick(activity.id) },
-                        onUserClick = onUserClick,
-                        onMediaClick = onMediaClick,
-                        onLastReplyClick = onLastReplyClick,
-                        onSubscribeClick = { onSubscribeClick(activity.id) },
-                        onLikeClick = cardLike,
-                        onDeleteClick = cardDelete,
-                        onEditClick = cardEdit,
-                        maxBodyLines = maxBodyLines,
-                        showAuthor = false
-                    )
+                    if (update) {
+                        ActivityUpdateRow(
+                            activity = activity,
+                            shape = updateRowShape(top = !joinsAbove, bottom = !joinsBelow),
+                            onClick = { onActivityClick(activity.id) },
+                            onMediaClick = onMediaClick,
+                            onLikeClick = cardLike,
+                            modifier = Modifier.padding(bottom = if (joinsBelow) 2.dp else 12.dp)
+                        )
+                    } else {
+                        ActivityCard(
+                            activity = activity,
+                            onClick = { onActivityClick(activity.id) },
+                            onUserClick = onUserClick,
+                            onMediaClick = onMediaClick,
+                            onLastReplyClick = onLastReplyClick,
+                            onSubscribeClick = { onSubscribeClick(activity.id) },
+                            onLikeClick = cardLike,
+                            onDeleteClick = cardDelete,
+                            onEditClick = cardEdit,
+                            maxBodyLines = maxBodyLines,
+                            showAuthor = false,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                    }
                 }
             }
         }

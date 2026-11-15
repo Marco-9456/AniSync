@@ -55,6 +55,8 @@ data class ProfileUiState(
     /** The Manga list's chip, null for All. */
     val selectedMangaStatus: LibraryStatus? = LibraryStatus.CURRENT,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
+    val isStatusComposerVisible: Boolean = false,
+    val isPostingStatus: Boolean = false,
     val peopleOrder: PeopleOrder = PeopleOrder.NEWEST,
     val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
     val selectedStatsView: StatsView = StatsView.OVERVIEW,
@@ -223,9 +225,10 @@ enum class ProfileTab(@StringRes val titleRes: Int) {
     ANIME(R.string.media_type_anime),
     MANGA(R.string.media_type_manga),
     FAVORITES(R.string.section_favorites),
-    SOCIAL(R.string.profile_page_people);
+    SOCIAL(R.string.profile_page_people),
+    ABOUT(R.string.profile_about);
 
-    val isPage: Boolean get() = this == FAVORITES || this == SOCIAL
+    val isPage: Boolean get() = this == FAVORITES || this == SOCIAL || this == ABOUT
 }
 
 /** The views behind the Statistics rail's chips. Recaps only exists on the viewer's own profile. */
@@ -256,9 +259,9 @@ enum class ProfileFavoritesFilter(@StringRes val labelRes: Int) {
 @Immutable
 enum class ProfileActivityFilter(@StringRes val labelRes: Int) {
     ALL(R.string.profile_activity_all),
-    STATUS(R.string.profile_activity_status),
+    STATUS(R.string.profile_activity_statuses),
     MESSAGES(R.string.profile_activity_messages),
-    LISTS(R.string.profile_activity_lists),
+    LISTS(R.string.profile_activity_updates),
     REVIEWS(R.string.section_reviews),
     THREADS(R.string.profile_activity_threads),
     COMMENTS(R.string.profile_activity_comments);
@@ -354,6 +357,8 @@ sealed interface ProfileAction {
     data class DeleteActivity(val activityId: Int) : ProfileAction
     data class EditActivity(val activityId: Int) : ProfileAction
     data object DismissActivityEdit : ProfileAction
+    data class SetStatusComposerVisible(val visible: Boolean) : ProfileAction
+    data class PostStatus(val text: String) : ProfileAction
     data class SubmitActivityEdit(val text: String) : ProfileAction
     data object ConsumeActivitySnackbar : ProfileAction
 }

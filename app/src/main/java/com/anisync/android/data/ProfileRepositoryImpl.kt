@@ -336,7 +336,14 @@ class ProfileRepositoryImpl @Inject constructor(
                 donatorTier = user.donatorTier ?: 0,
                 donatorBadge = user.donatorBadge,
                 moderatorRoles = user.moderatorRoles?.filterNotNull()?.map { it.name } ?: emptyList(),
-                createdAt = user.createdAt?.toLong()?.times(1000)
+                createdAt = user.createdAt?.toLong()?.times(1000),
+                previousNames = user.previousNames?.filterNotNull()
+                    ?.mapNotNull { previous ->
+                        previous.name?.takeIf { it.isNotBlank() }?.let {
+                            com.anisync.android.domain.PreviousName(it, previous.createdAt?.toLong()?.times(1000))
+                        }
+                    }
+                    .orEmpty()
             )
 
             val timings = ProfileRefreshTimings(

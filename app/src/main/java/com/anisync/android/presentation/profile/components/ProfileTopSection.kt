@@ -12,17 +12,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.UserAvatar
-import com.anisync.android.ui.theme.emphasis
+import com.anisync.android.presentation.profile.sections.BioPreview
 
 // Hoisted static layout constants to prevent reallocation. The avatar size is shared with the wide
 // identity pane (see ProfileIdentity.kt).
@@ -108,25 +103,10 @@ fun ProfileTopSection(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                val hasBiography = !profile.about.isNullOrBlank()
-                if (hasBiography) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    OutlinedButton(
-                        onClick = onShowBiography,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.profile_view_biography),
-                            style = MaterialTheme.typography.labelLarge.emphasis()
-                        )
-                    }
+                val about = profile.about
+                if (!about.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    BioPreview(about = about, onOpen = onShowBiography)
                 }
             }
         }

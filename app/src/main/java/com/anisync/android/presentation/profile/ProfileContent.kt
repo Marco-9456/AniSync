@@ -64,6 +64,7 @@ import com.anisync.android.presentation.profile.components.DirectMessageInputShe
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.profile.sections.PeopleSwitcher
+import com.anisync.android.presentation.profile.sections.profileAboutPage
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
@@ -354,7 +355,7 @@ fun ProfileContent(
                     onAction(ProfileAction.SetEditProfileDialogVisible(true))
                 },
                 onShowBiography = {
-                    onAction(ProfileAction.SetBiographySheetVisible(true))
+                    onAction(ProfileAction.SelectTab(ProfileTab.ABOUT))
                 },
                 isFollowing = uiState.isFollowingUser,
                 isFollowerOfViewer = uiState.isFollowerOfViewer,
@@ -467,6 +468,19 @@ fun ProfileContent(
         )
     }
 
+    if (uiState.isStatusComposerVisible) {
+        com.anisync.android.presentation.components.richtext.RichTextInputSheet(
+            title = stringResource(R.string.profile_post_status),
+            placeholder = stringResource(R.string.feed_compose_placeholder),
+            submitLabel = stringResource(R.string.post),
+            isSubmitting = uiState.isPostingStatus,
+            minLength = com.anisync.android.domain.ContentLimits.TextActivity.min,
+            maxLength = com.anisync.android.domain.ContentLimits.TextActivity.max,
+            onSubmit = { body -> onAction(ProfileAction.PostStatus(body)) },
+            onDismiss = { onAction(ProfileAction.SetStatusComposerVisible(false)) }
+        )
+    }
+
     val editing = uiState.editingActivity
     if (editing != null) {
         val isMessage = editing.type == com.anisync.android.domain.ActivityType.MESSAGE
@@ -575,7 +589,12 @@ internal fun LazyListScope.profileSelectedTabContent(
                 viewerId = uiState.viewerId,
                 activitiesHasNextPage = uiState.activitiesHasNextPage,
                 isActivitiesPaginating = uiState.isActivitiesPaginating,
-                onLoadMore = { onAction(ProfileAction.LoadMoreActivities) }
+                onLoadMore = { onAction(ProfileAction.LoadMoreActivities) },
+                onCompose = if (isOwnProfile) {
+                    { onAction(ProfileAction.SetStatusComposerVisible(true)) }
+                } else {
+                    null
+                }
             )
         }
 
@@ -642,6 +661,12 @@ internal fun LazyListScope.profileSelectedTabContent(
                 titleLanguage = uiState.titleLanguage
             )
         }
+
+        ProfileTab.ABOUT -> profileAboutPage(
+            profile = profile,
+            isOwnProfile = isOwnProfile,
+            onEditAbout = { onAction(ProfileAction.SetEditProfileDialogVisible(true)) }
+        )
 
         ProfileTab.STATS -> {
             item(key = "stats_top_gap") { Spacer(Modifier.height(8.dp)) }
@@ -718,6 +743,8 @@ private fun pageTitle(uiState: ProfileUiState): String {
             if (own) stringResource(R.string.profile_people_title_own) else stringResource(R.string.profile_people_title, name)
         ProfileTab.FAVORITES ->
             if (own) stringResource(R.string.profile_favorites_title_own) else stringResource(R.string.profile_favorites_title, name)
+        ProfileTab.ABOUT ->
+            if (own) stringResource(R.string.profile_about_title_own) else stringResource(R.string.profile_about_title, name)
         else -> stringResource(uiState.selectedTab.titleRes)
     }
 }
@@ -821,7 +848,7 @@ internal fun ProfileTabStrip(
                 onSelect = { onFilterAction(ProfileAction.SelectSocialTab(it)) },
                 onOrderSelected = { onFilterAction(ProfileAction.SelectPeopleOrder(it)) }
             )
-            ProfileTab.OVERVIEW -> Unit
+            ProfileTab.OVERVIEW, ProfileTab.ABOUT -> Unit
         }
     }
 }

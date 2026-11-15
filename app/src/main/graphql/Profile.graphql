@@ -130,6 +130,10 @@ query GetFullUserProfile(
     donatorBadge
     moderatorRoles
     createdAt
+    previousNames {
+      name
+      createdAt
+    }
     statistics {
       anime {
         count

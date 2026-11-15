@@ -171,6 +171,8 @@ class ProfileViewModel @Inject constructor(
         val selectedMangaStatus: LibraryStatus? = LibraryStatus.CURRENT,
         val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
         val peopleOrder: PeopleOrder = PeopleOrder.NEWEST,
+        val isStatusComposerVisible: Boolean = false,
+        val isPostingStatus: Boolean = false,
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
         val selectedStatsView: StatsView = StatsView.OVERVIEW,
         val genreSort: GenreSort = GenreSort.TITLES,
@@ -659,6 +661,8 @@ class ProfileViewModel @Inject constructor(
             selectedMangaStatus = local.selectedMangaStatus,
             selectedSocialTab = local.selectedSocialTab,
             peopleOrder = local.peopleOrder,
+            isStatusComposerVisible = local.isStatusComposerVisible,
+            isPostingStatus = local.isPostingStatus,
             selectedStatsType = local.selectedStatsType,
             selectedStatsView = local.selectedStatsView,
             genreSort = local.genreSort,
@@ -987,6 +991,9 @@ class ProfileViewModel @Inject constructor(
                 }
             }
             is ProfileAction.SubmitActivityEdit -> submitActivityEdit(action.text)
+            is ProfileAction.SetStatusComposerVisible ->
+                localState.update { it.copy(isStatusComposerVisible = action.visible) }
+            is ProfileAction.PostStatus -> postStatus(action.text)
             is ProfileAction.ConsumeActivitySnackbar -> Unit
         }
     }
@@ -994,6 +1001,25 @@ class ProfileViewModel @Inject constructor(
     private fun openActivityEdit(activityId: Int) {
         val target = uiState.value.profile?.activities?.firstOrNull { it.id == activityId } ?: return
         localState.update { it.copy(editingActivity = target) }
+    }
+
+    private fun postStatus(text: String) {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty() || localState.value.isPostingStatus) return
+        localState.update { it.copy(isPostingStatus = true) }
+        viewModelScope.launch {
+            when (val result = activityRepository.saveTextActivity(trimmed)) {
+                is Result.Success -> {
+                    toastManager.showToast(ToastType.SUCCESS, R.string.status_posted)
+                    localState.update { it.copy(isPostingStatus = false, isStatusComposerVisible = false) }
+                    activityPaginationState.update { it.copy(appended = listOf(result.data) + it.appended) }
+                }
+                is Result.Error -> {
+                    localState.update { it.copy(isPostingStatus = false) }
+                    toastManager.showResultError(result)
+                }
+            }
+        }
     }
 
     private fun submitActivityEdit(text: String) {

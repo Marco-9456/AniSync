@@ -805,7 +805,7 @@ private fun ProfileTabPane(
             ProfileTab.MANGA -> "MANGA_${uiState.selectedMangaStatus?.name ?: "ALL"}"
             ProfileTab.FAVORITES -> "FAVORITES_${uiState.selectedFavoritesFilter.name}"
             ProfileTab.SOCIAL -> "SOCIAL_${uiState.selectedSocialTab.name}"
-            ProfileTab.OVERVIEW -> uiState.selectedTab.name
+            ProfileTab.OVERVIEW, ProfileTab.ABOUT -> uiState.selectedTab.name
         }
         val listState = rememberSaveable(listStateKey, saver = LazyListState.Saver) { LazyListState() }
         val portraitColumns = profileGridColumns(baseMinSize = 150.dp, availableWidth = maxWidth)
