@@ -74,9 +74,9 @@ fun LazyListScope.profileSocialTab(
     onLoadMore: () -> Unit = {},
     userColumns: Int = 3,
     /** Set on the viewer's own profile, where each follower carries a remove button. */
-    onRemoveFollower: ((SocialUser) -> Unit)? = null
+    onRemoveFollower: ((SocialUser) -> Unit)? = null,
+    selectedTab: ProfileSocialTab = uiState.selectedSocialTab
 ) {
-    val selectedTab = uiState.selectedSocialTab
 
     if (uiState.isSocialLoading) {
         item(key = "social_loading") {
@@ -276,7 +276,7 @@ internal fun SocialTabRail(uiState: ProfileUiState, onSelect: (ProfileSocialTab)
     LaunchedEffect(selectedTab) {
         if (selectedTab == ProfileSocialTab.MUTUALS) whatsNewStore.markSeen(WhatsNewItem.PROFILE_MUTUALS)
     }
-    ProfileTabRail(ProfileSocialTab.entries, selectedTab) { tab, selected ->
+    ProfileTabRail(ProfileSocialTab.entries.filterNot { it.isForum }, selectedTab) { tab, selected ->
         RailChip(
             label = stringResource(tab.labelRes),
             icon = socialTabIcon(tab),

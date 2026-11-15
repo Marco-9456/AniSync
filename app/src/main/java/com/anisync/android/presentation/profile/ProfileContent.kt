@@ -22,15 +22,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.RateReview
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
@@ -49,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -64,7 +55,6 @@ import com.anisync.android.presentation.components.shareFabBottomInset
 import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.LocalWhatsNew
-import com.anisync.android.presentation.components.WhatsNewDot
 import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
@@ -100,6 +90,18 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.anisync.android.presentation.components.ScrollToTopOnRequest
+import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(
     ExperimentalFoundationApi::class,
@@ -165,6 +167,8 @@ fun ProfileContent(
             )
         )
     }
+
+    BackHandler(enabled = uiState.selectedTab.isPage) { onAction(ProfileAction.ClosePage) }
 
     if (LocalAdaptiveInfo.current.supportsTwoPane) {
         ProfileWideLayout(
@@ -269,12 +273,65 @@ fun ProfileContent(
             onTabSelected = onTabSelected,
             onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
             onStatsViewSelected = onStatsViewSelected,
-            onFilterAction = onFilterAction,
-            onListQueryChange = onListQueryChange
+            onFilterAction = if (uiState.selectedTab.isPage) onAction else onFilterAction,
+            onListQueryChange = onListQueryChange,
+            onClosePage = { onAction(ProfileAction.ClosePage) }
+        )
+    }
+    val tabContent: LazyListScope.() -> Unit = {
+        profileSelectedTabContent(
+            profile = profile,
+            uiState = uiState,
+            isOwnProfile = isOwnProfile,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            onAction = onAction,
+            onMediaClick = onMediaClick,
+            onCharacterClick = onCharacterClick,
+            onStaffClick = onStaffClick,
+            onVoiceActorClick = onVoiceActorClick,
+            onStudioClick = onStudioClick,
+            onUserClick = onUserClick,
+            onThreadClick = onThreadClick,
+            onCommentClick = onCommentClick,
+            onActivityClick = onActivityClick,
+            onLastReplyClick = onLastReplyClick,
+            portraitColumns = portraitColumns,
+            studioColumns = studioColumns,
+            statsColumns = statsColumns,
+            onOpenRecap = onOpenRecap,
+            onStatsViewSelected = onStatsViewSelected
         )
     }
 
     val showShareFab = uiState.showsShareFab(profile)
+    val bottomPadding = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
+    if (uiState.selectedTab.isPage) {
+        val pageListState = rememberSaveable(uiState.pageListKey(), saver = LazyListState.Saver) { LazyListState() }
+        Box(modifier = modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Surface(color = MaterialTheme.colorScheme.background) {
+                    Box(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+                        tabStrip()
+                    }
+                }
+                AppPullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
+                    onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    LazyColumn(
+                        state = pageListState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = bottomPadding)
+                    ) {
+                        tabContent()
+                    }
+                }
+            }
+            if (showShareFab) ProfileShareFab(uiState, onShareStats = shareStats, onShareFavourites = shareFavourites)
+        }
+    } else {
     Box(modifier = modifier.fillMaxSize()) {
     AppPullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
@@ -287,9 +344,7 @@ fun ProfileContent(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            bottom = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
-        )
+        contentPadding = PaddingValues(bottom = bottomPadding)
     ) {
         item(key = "profile_header", contentType = "header") {
             ProfileTopSection(
@@ -316,7 +371,7 @@ fun ProfileContent(
                 onBackClick = onBackClick,
                 followingTotal = uiState.followingTotal,
                 followersTotal = uiState.followersTotal,
-                onPeopleClick = { onTabSelected(ProfileTab.SOCIAL) }
+                onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) }
             )
         }
 
@@ -331,29 +386,7 @@ fun ProfileContent(
             }
         }
 
-        profileSelectedTabContent(
-            profile = profile,
-            uiState = uiState,
-            isOwnProfile = isOwnProfile,
-            sharedTransitionScope = sharedTransitionScope,
-            animatedVisibilityScope = animatedVisibilityScope,
-            onAction = onAction,
-            onMediaClick = onMediaClick,
-            onCharacterClick = onCharacterClick,
-            onStaffClick = onStaffClick,
-            onVoiceActorClick = onVoiceActorClick,
-            onStudioClick = onStudioClick,
-            onUserClick = onUserClick,
-            onThreadClick = onThreadClick,
-            onCommentClick = onCommentClick,
-            onActivityClick = onActivityClick,
-            onLastReplyClick = onLastReplyClick,
-            portraitColumns = portraitColumns,
-            studioColumns = studioColumns,
-            statsColumns = statsColumns,
-            onOpenRecap = onOpenRecap,
-            onStatsViewSelected = onStatsViewSelected
-        )
+        tabContent()
     }
 
     if (tabsDocked) {
@@ -372,6 +405,7 @@ fun ProfileContent(
     }
     // Kept out of the pull box, which carries everything inside it down with the finger.
     if (showShareFab) ProfileShareFab(uiState, onShareStats = shareStats, onShareFavourites = shareFavourites)
+    }
     }
     }
 
@@ -509,8 +543,26 @@ internal fun LazyListScope.profileSelectedTabContent(
             }
         }
 
-        ProfileTab.ACTIVITY -> {
-            profileActivityTab(
+        ProfileTab.ACTIVITY -> when (uiState.selectedActivityFilter) {
+            ProfileActivityFilter.REVIEWS -> profileReviewsTab(
+                uiState = uiState,
+                onUserClick = onUserClick,
+                onReviewClick = { onAction(ProfileAction.SelectReview(it)) },
+                onLoadMore = { onAction(ProfileAction.LoadMoreReviews) }
+            )
+            ProfileActivityFilter.THREADS, ProfileActivityFilter.COMMENTS -> profileSocialTab(
+                uiState = uiState,
+                selectedTab = if (uiState.selectedActivityFilter == ProfileActivityFilter.THREADS) {
+                    ProfileSocialTab.FORUM_THREADS
+                } else {
+                    ProfileSocialTab.FORUM_COMMENTS
+                },
+                onUserClick = onUserClick,
+                onThreadClick = onThreadClick,
+                onCommentClick = onCommentClick,
+                onLoadMore = { onAction(ProfileAction.LoadMoreSocial) }
+            )
+            else -> profileActivityTab(
                 profile = profile,
                 selectedFilter = uiState.selectedActivityFilter,
                 onUserClick = onUserClick,
@@ -588,15 +640,6 @@ internal fun LazyListScope.profileSelectedTabContent(
             )
         }
 
-        ProfileTab.REVIEWS -> {
-            profileReviewsTab(
-                uiState = uiState,
-                onUserClick = onUserClick,
-                onReviewClick = { onAction(ProfileAction.SelectReview(it)) },
-                onLoadMore = { onAction(ProfileAction.LoadMoreReviews) }
-            )
-        }
-
         ProfileTab.STATS -> {
             item(key = "stats_top_gap") { Spacer(Modifier.height(8.dp)) }
             profileStatsTab(
@@ -643,17 +686,57 @@ internal fun BoxScope.ProfileShareFab(uiState: ProfileUiState, onShareStats: () 
     )
 }
 
-private fun profileTabIcon(tab: ProfileTab): ImageVector {
-    return when (tab) {
-        ProfileTab.OVERVIEW -> Icons.Default.Person
-        ProfileTab.ACTIVITY -> Icons.Default.Schedule
-        ProfileTab.ANIME -> Icons.Default.Tv
-        ProfileTab.MANGA -> Icons.AutoMirrored.Filled.MenuBook
-        ProfileTab.FAVORITES -> Icons.Default.Group
-        ProfileTab.SOCIAL -> Icons.Default.Forum
-        ProfileTab.REVIEWS -> Icons.Default.RateReview
-        ProfileTab.STATS -> Icons.Default.BarChart
-    }
+private enum class StripTab(@StringRes val titleRes: Int) {
+    OVERVIEW(R.string.profile_tab_overview),
+    LISTS(R.string.profile_tab_lists),
+    STATS(R.string.profile_tab_stats),
+    ACTIVITY(R.string.profile_tab_activity)
+}
+
+private fun ProfileTab.stripTab(): StripTab = when (this) {
+    ProfileTab.OVERVIEW -> StripTab.OVERVIEW
+    ProfileTab.ANIME, ProfileTab.MANGA -> StripTab.LISTS
+    ProfileTab.STATS -> StripTab.STATS
+    else -> StripTab.ACTIVITY
+}
+
+internal fun ProfileUiState.pageListKey(): String = when (selectedTab) {
+    ProfileTab.FAVORITES -> "FAVORITES_${selectedFavoritesFilter.name}"
+    ProfileTab.SOCIAL -> "SOCIAL_${selectedSocialTab.name}"
+    else -> selectedTab.name
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProfilePageBar(title: String, subtitle: String?, onBack: () -> Unit) {
+    TopAppBar(
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+            }
+        },
+        title = {
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        },
+        windowInsets = WindowInsets(0),
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+    )
 }
 
 /** The profile tabs, and under them the open tab's rail, so the two dock together. */
@@ -665,13 +748,26 @@ internal fun ProfileTabStrip(
     onStatsViewSelected: (StatsView) -> Unit,
     onFilterAction: (ProfileAction) -> Unit,
     modifier: Modifier = Modifier,
-    onListQueryChange: (String) -> Unit = { onFilterAction(ProfileAction.SetListQuery(it)) }
+    onListQueryChange: (String) -> Unit = { onFilterAction(ProfileAction.SetListQuery(it)) },
+    onClosePage: () -> Unit = { onFilterAction(ProfileAction.ClosePage) }
 ) {
     val selectListTab: (MediaType) -> Unit = {
         onTabSelected(if (it == MediaType.MANGA) ProfileTab.MANGA else ProfileTab.ANIME)
     }
     Column(modifier = modifier) {
-        ProfileTabsButtonGroup(selectedTab = uiState.selectedTab, onTabSelected = onTabSelected)
+        if (uiState.selectedTab.isPage) {
+            ProfilePageBar(
+                title = stringResource(uiState.selectedTab.titleRes),
+                subtitle = uiState.profile?.name,
+                onBack = onClosePage
+            )
+        } else {
+            ProfileTabsButtonGroup(
+                selectedTab = uiState.selectedTab,
+                lastListTab = uiState.lastListTab,
+                onTabSelected = onTabSelected
+            )
+        }
         when (uiState.selectedTab) {
             ProfileTab.STATS -> StatsRail(
                 statsType = uiState.selectedStatsType,
@@ -712,7 +808,7 @@ internal fun ProfileTabStrip(
                 onFilterAction(ProfileAction.SelectFavoritesFilter(it))
             }
             ProfileTab.SOCIAL -> SocialTabRail(uiState) { onFilterAction(ProfileAction.SelectSocialTab(it)) }
-            ProfileTab.OVERVIEW, ProfileTab.REVIEWS -> Unit
+            ProfileTab.OVERVIEW -> Unit
         }
     }
 }
@@ -723,29 +819,34 @@ private const val PROFILE_TABS_INDEX = 1
 @Composable
 internal fun ProfileTabsButtonGroup(
     selectedTab: ProfileTab,
+    lastListTab: ProfileTab,
     onTabSelected: (ProfileTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val whatsNew = rememberActiveWhatsNew()
-    val mutualsNew = WhatsNewItem.PROFILE_MUTUALS in whatsNew
-    val statsMoved = WhatsNewItem.PROFILE_STATS_MOVED in whatsNew
+    val statsMoved = WhatsNewItem.PROFILE_STATS_MOVED in rememberActiveWhatsNew()
     val whatsNewStore = LocalWhatsNew.current
     LaunchedEffect(selectedTab) {
         if (selectedTab == ProfileTab.STATS) whatsNewStore.markSeen(WhatsNewItem.PROFILE_STATS_MOVED)
     }
     SegmentedTabGroup(
-        options = ProfileTab.entries,
-        selected = selectedTab,
-        onSelect = onTabSelected,
+        options = StripTab.entries,
+        selected = selectedTab.stripTab(),
+        onSelect = { tab ->
+            onTabSelected(
+                when (tab) {
+                    StripTab.OVERVIEW -> ProfileTab.OVERVIEW
+                    StripTab.LISTS -> lastListTab
+                    StripTab.STATS -> ProfileTab.STATS
+                    StripTab.ACTIVITY -> ProfileTab.ACTIVITY
+                }
+            )
+        },
         label = { stringResource(it.titleRes) },
-        modifier = modifier.padding(vertical = 6.dp),
-        icon = ::profileTabIcon,
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+        fillEqually = true,
+        contentPadding = PaddingValues(horizontal = 8.dp),
         badge = { tab ->
-            when {
-                tab == ProfileTab.SOCIAL && mutualsNew -> ({ WhatsNewDot() })
-                tab == ProfileTab.STATS && statsMoved -> ({ WhatsNewPill(WhatsNewItem.Kind.MOVED) })
-                else -> null
-            }
+            if (tab == StripTab.STATS && statsMoved) ({ WhatsNewPill(WhatsNewItem.Kind.MOVED) }) else null
         }
     )
 }

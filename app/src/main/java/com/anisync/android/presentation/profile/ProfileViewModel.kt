@@ -163,6 +163,8 @@ class ProfileViewModel @Inject constructor(
 
     private data class ProfileUiLocalState(
         val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
+        val lastListTab: ProfileTab = ProfileTab.ANIME,
+        val pageReturnTab: ProfileTab = ProfileTab.OVERVIEW,
         val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
         val selectedFavoritesFilter: ProfileFavoritesFilter = ProfileFavoritesFilter.ANIME,
         val selectedAnimeStatus: LibraryStatus? = LibraryStatus.CURRENT,
@@ -634,6 +636,7 @@ class ProfileViewModel @Inject constructor(
             isFollowerOfViewer = local.isFollowerOfViewer,
             isFollowLoading = local.isFollowLoading,
             selectedTab = local.selectedTab,
+            lastListTab = local.lastListTab,
             selectedActivityFilter = local.selectedActivityFilter,
             selectedFavoritesFilter = local.selectedFavoritesFilter,
             selectedAnimeStatus = local.selectedAnimeStatus,
@@ -781,13 +784,18 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.UpdateAbout -> updateAbout(action.about)
             is ProfileAction.SelectTab -> {
                 localState.update {
-                    it.copy(selectedTab = action.tab)
+                    it.copy(
+                        selectedTab = action.tab,
+                        pageReturnTab = if (action.tab.isPage && !it.selectedTab.isPage) it.selectedTab else it.pageReturnTab,
+                        lastListTab = if (action.tab == ProfileTab.ANIME || action.tab == ProfileTab.MANGA) action.tab else it.lastListTab,
+                        selectedSocialTab = socialTabFor(action.tab, it.selectedActivityFilter, it.selectedSocialTab)
+                    )
                 }
                 if (action.tab == ProfileTab.STATS) loadRecaps(refresh = false)
                 if (action.tab == ProfileTab.SOCIAL && !socialState.value.hasFetchedSocialData) {
                     fetchSocialData()
-                } else if (action.tab == ProfileTab.REVIEWS && !reviewsState.value.hasFetchedReviews) {
-                    fetchReviews()
+                } else if (action.tab == ProfileTab.ACTIVITY) {
+                    fetchActivityKind(localState.value.selectedActivityFilter)
                 } else if ((action.tab == ProfileTab.STATS || action.tab == ProfileTab.OVERVIEW) &&
                     !statsState.value.hasFetchedStats
                 ) {
@@ -807,6 +815,11 @@ class ProfileViewModel @Inject constructor(
                 ) {
                     fetchUserMangaList(forceRefresh = true)
                 }
+            }
+
+            ProfileAction.ClosePage -> {
+                val local = localState.value
+                if (local.selectedTab.isPage) onAction(ProfileAction.SelectTab(local.pageReturnTab))
             }
 
             is ProfileAction.SelectStatsType -> {
@@ -835,14 +848,18 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.SelectActivityFilter -> {
                 if (localState.value.selectedActivityFilter != action.filter) {
                     localState.update {
-                        it.copy(selectedActivityFilter = action.filter)
+                        it.copy(
+                            selectedActivityFilter = action.filter,
+                            selectedSocialTab = socialTabFor(it.selectedTab, action.filter, it.selectedSocialTab)
+                        )
                     }
                     // Server-side per-type pagination: a new filter is a new stream, so drop
                     // the previous filter's appended pages and re-seed. Otherwise its
                     // hasNextPage/page counter would carry over and the footer loader would
                     // page the wrong (or an exhausted) stream.
-                    seedActivityPagination(action.filter)
+                    if (action.filter.isFeed) seedActivityPagination(action.filter)
                 }
+                fetchActivityKind(action.filter)
             }
 
             is ProfileAction.SelectFavoritesFilter -> {
@@ -1107,7 +1124,9 @@ class ProfileViewModel @Inject constructor(
         // Keep the active filter so pagination keeps paging that type's stream.
         // The soft refresh on resume keeps them. It reads back the cached seed they
         // follow, and the reader it lands under may be pages deep (#164).
-        if (forceNetwork) seedActivityPagination(localState.value.selectedActivityFilter)
+        if (forceNetwork) {
+            seedActivityPagination(localState.value.selectedActivityFilter.takeIf { it.isFeed } ?: ProfileActivityFilter.ALL)
+        }
 
         viewModelScope.launch {
             Trace.beginSection("AniSync.Profile.Refresh.Total")
@@ -1142,7 +1161,12 @@ class ProfileViewModel @Inject constructor(
                             // Social and reviews come in pages, and reloading one cuts it back to
                             // page 1. A soft refresh only fills in a list that has not loaded (#164).
                             ProfileTab.SOCIAL -> fetchSocialData(forceRefresh = forceNetwork)
-                            ProfileTab.REVIEWS -> fetchReviews(forceRefresh = forceNetwork)
+                            ProfileTab.ACTIVITY -> when (localState.value.selectedActivityFilter) {
+                                ProfileActivityFilter.REVIEWS -> fetchReviews(forceRefresh = forceNetwork)
+                                ProfileActivityFilter.THREADS, ProfileActivityFilter.COMMENTS ->
+                                    fetchSocialData(forceRefresh = forceNetwork)
+                                else -> Unit
+                            }
                             ProfileTab.STATS -> fetchStats(forceRefresh = true)
                             // The heatmap rides the stats payload. An explicit pull forces the
                             // network (like the other tabs); a soft refresh stays network-first
@@ -1373,6 +1397,10 @@ class ProfileViewModel @Inject constructor(
             activityPaginationState.update { it.copy(isPaginating = true) }
             val nextPage = current.page + 1
             val types = activityTypesFor(current.filter)
+            if (types.isEmpty()) {
+                activityPaginationState.update { it.copy(isPaginating = false) }
+                return@launch
+            }
             when (val result = profileRepository.getUserActivitiesPage(userId, nextPage, types)) {
                 is Result.Success -> activityPaginationState.update {
                     it.copy(
@@ -1416,6 +1444,27 @@ class ProfileViewModel @Inject constructor(
         ProfileActivityFilter.STATUS -> listOf(com.anisync.android.domain.ActivityType.TEXT)
         ProfileActivityFilter.MESSAGES -> listOf(com.anisync.android.domain.ActivityType.MESSAGE)
         ProfileActivityFilter.LISTS -> listOf(com.anisync.android.domain.ActivityType.MEDIA_LIST)
+        ProfileActivityFilter.REVIEWS, ProfileActivityFilter.THREADS, ProfileActivityFilter.COMMENTS -> emptyList()
+    }
+
+    private fun fetchActivityKind(filter: ProfileActivityFilter) {
+        when (filter) {
+            ProfileActivityFilter.REVIEWS -> fetchReviews()
+            ProfileActivityFilter.THREADS, ProfileActivityFilter.COMMENTS -> fetchSocialData()
+            else -> Unit
+        }
+    }
+
+    /** Forum threads and comments page through the social lists, so their chip picks the social tab. */
+    private fun socialTabFor(
+        tab: ProfileTab,
+        filter: ProfileActivityFilter,
+        current: ProfileSocialTab
+    ): ProfileSocialTab = when {
+        tab == ProfileTab.SOCIAL && current.isForum -> ProfileSocialTab.FOLLOWING
+        tab == ProfileTab.ACTIVITY && filter == ProfileActivityFilter.THREADS -> ProfileSocialTab.FORUM_THREADS
+        tab == ProfileTab.ACTIVITY && filter == ProfileActivityFilter.COMMENTS -> ProfileSocialTab.FORUM_COMMENTS
+        else -> current
     }
 
     /**

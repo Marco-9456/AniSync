@@ -47,6 +47,7 @@ data class ProfileUiState(
     val isFollowerOfViewer: Boolean = false,
     val isFollowLoading: Boolean = false,
     val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
+    val lastListTab: ProfileTab = ProfileTab.ANIME,
     val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
     val selectedFavoritesFilter: ProfileFavoritesFilter = ProfileFavoritesFilter.ANIME,
     /** The Anime list's chip, null for All. */
@@ -216,13 +217,14 @@ data class LengthUiModel(
 @Immutable
 enum class ProfileTab(@StringRes val titleRes: Int) {
     OVERVIEW(R.string.profile_tab_overview),
-    STATS(R.string.statistics_title),
+    STATS(R.string.profile_tab_stats),
     ACTIVITY(R.string.profile_tab_activity),
     ANIME(R.string.media_type_anime),
     MANGA(R.string.media_type_manga),
     FAVORITES(R.string.section_favorites),
-    SOCIAL(R.string.profile_tab_social),
-    REVIEWS(R.string.section_reviews)
+    SOCIAL(R.string.profile_page_people);
+
+    val isPage: Boolean get() = this == FAVORITES || this == SOCIAL
 }
 
 /** The views behind the Statistics rail's chips. Recaps only exists on the viewer's own profile. */
@@ -255,7 +257,13 @@ enum class ProfileActivityFilter(@StringRes val labelRes: Int) {
     ALL(R.string.profile_activity_all),
     STATUS(R.string.profile_activity_status),
     MESSAGES(R.string.profile_activity_messages),
-    LISTS(R.string.profile_activity_lists)
+    LISTS(R.string.profile_activity_lists),
+    REVIEWS(R.string.section_reviews),
+    THREADS(R.string.profile_activity_threads),
+    COMMENTS(R.string.profile_activity_comments);
+
+    /** Reviews and forum posts are not in the activity feed, they load from their own queries. */
+    val isFeed: Boolean get() = this == ALL || this == STATUS || this == MESSAGES || this == LISTS
 }
 
 @Immutable
@@ -264,7 +272,9 @@ enum class ProfileSocialTab(@StringRes val labelRes: Int) {
     FOLLOWERS(R.string.profile_social_followers),
     MUTUALS(R.string.profile_social_mutuals),
     FORUM_THREADS(R.string.profile_social_forum_threads),
-    FORUM_COMMENTS(R.string.profile_social_forum_comments)
+    FORUM_COMMENTS(R.string.profile_social_forum_comments);
+
+    val isForum: Boolean get() = this == FORUM_THREADS || this == FORUM_COMMENTS
 }
 
 @Immutable
@@ -291,6 +301,7 @@ sealed interface ProfileAction {
     data object DismissUnfollow : ProfileAction
     data class UpdateAbout(val about: String) : ProfileAction
     data class SelectTab(val tab: ProfileTab) : ProfileAction
+    data object ClosePage : ProfileAction
     data class SelectActivityFilter(val filter: ProfileActivityFilter) : ProfileAction
     data class SelectFavoritesFilter(val filter: ProfileFavoritesFilter) : ProfileAction
     data class SelectAnimeStatus(val status: LibraryStatus?) : ProfileAction

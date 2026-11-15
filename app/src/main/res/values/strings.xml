@@ -719,6 +719,8 @@
     <string name="profile_activity_all">All</string>
     <string name="profile_activity_status">Status</string>
     <string name="profile_activity_messages">Messages</string>
+    <string name="profile_activity_threads">Threads</string>
+    <string name="profile_activity_comments">Comments</string>
     <string name="profile_activity_lists">Lists</string>
     <string name="profile_social_following">Following</string>
     <string name="profile_social_followers">Followers</string>
@@ -1441,6 +1443,9 @@
     <string name="profile_report_on_anilist">Report or block on AniList</string>
     <string name="profile_counts">%1$s anime  ·  %2$s manga  ·  %3$s</string>
     <string name="profile_people">Following and followers</string>
+    <string name="profile_tab_lists">Lists</string>
+    <string name="profile_tab_stats">Stats</string>
+    <string name="profile_page_people">People</string>
     <string name="profile_people_counts">%1$s following  ·  %2$s followers</string>
     <string name="status_posted">Status posted</string>
     <string name="list_created">List \'%s\' created.</string>

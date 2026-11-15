@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Schedule
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.runtime.Composable
@@ -51,6 +54,7 @@ fun LazyListScope.profileActivityTab(
         ProfileActivityFilter.STATUS -> profile.activities.filter { it.type == ActivityType.TEXT }
         ProfileActivityFilter.MESSAGES -> profile.activities.filter { it.type == ActivityType.MESSAGE }
         ProfileActivityFilter.LISTS -> profile.activities.filter { it.type == ActivityType.MEDIA_LIST }
+        ProfileActivityFilter.REVIEWS, ProfileActivityFilter.THREADS, ProfileActivityFilter.COMMENTS -> emptyList()
     }
 
     if (filteredActivities.isEmpty()) {
@@ -159,6 +163,9 @@ private fun activityFilterIcon(filter: ProfileActivityFilter): ImageVector {
         ProfileActivityFilter.STATUS -> Icons.Default.Schedule
         ProfileActivityFilter.MESSAGES -> Icons.Default.ChatBubbleOutline
         ProfileActivityFilter.LISTS -> Icons.AutoMirrored.Filled.List
+        ProfileActivityFilter.REVIEWS -> Icons.Default.RateReview
+        ProfileActivityFilter.THREADS -> Icons.Default.Forum
+        ProfileActivityFilter.COMMENTS -> Icons.AutoMirrored.Filled.Comment
     }
 }
 
