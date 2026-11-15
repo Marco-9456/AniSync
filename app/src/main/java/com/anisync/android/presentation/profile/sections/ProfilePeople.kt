@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
@@ -26,7 +25,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -166,6 +164,7 @@ internal fun PersonRow(
     val shareLabel = stringResource(R.string.profile_share)
     val openLabel = stringResource(R.string.profile_open_on_anilist)
     val removeLabel = stringResource(R.string.a11y_remove_follower)
+    val unfollowLabel = stringResource(R.string.profile_unfollow_confirm)
     var menuOpen by remember { mutableStateOf(false) }
     var confirmUnfollow by remember { mutableStateOf(false) }
 
@@ -188,25 +187,14 @@ internal fun PersonRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
-        if (showFollow) {
-            if (user.isFollowing) {
-                OutlinedButton(
-                    onClick = { confirmUnfollow = true },
-                    contentPadding = ButtonDefaults.ButtonWithIconContentPadding
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.profile_following))
-                }
-            } else {
-                FilledTonalButton(
-                    onClick = onToggleFollow,
-                    contentPadding = ButtonDefaults.ButtonWithIconContentPadding
-                ) {
-                    Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.profile_follow))
-                }
+        if (showFollow && !user.isFollowing) {
+            FilledTonalButton(
+                onClick = onToggleFollow,
+                contentPadding = ButtonDefaults.ButtonWithIconContentPadding
+            ) {
+                Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.profile_follow), maxLines = 1)
             }
         }
         Box {
@@ -238,6 +226,17 @@ internal fun PersonRow(
                         openUrl(context, AniListUrls.userUrl(user.name))
                     }
                 )
+                if (showFollow && user.isFollowing) {
+                    gap()
+                    item(
+                        text = unfollowLabel,
+                        leadingIcon = Icons.Default.PersonRemove,
+                        onClick = {
+                            menuOpen = false
+                            confirmUnfollow = true
+                        }
+                    )
+                }
                 if (onRemove != null) {
                     gap()
                     item(

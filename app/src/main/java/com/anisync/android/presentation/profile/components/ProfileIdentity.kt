@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -58,11 +60,13 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.data.WhatsNewItem
@@ -72,10 +76,10 @@ import com.anisync.android.presentation.components.DonatorBadgePlacement
 import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.bannerScrimBrush
 import com.anisync.android.presentation.components.bannerScrimHeight
+import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
-import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
 import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
@@ -410,14 +414,17 @@ fun ProfileIdentityDetails(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                val activeTime = remember(profile.activeAt) {
-                    formatProfileRelativeTime(profile.activeAt)
+                val resources = LocalResources.current
+                val activeTime = remember(profile.activeAt, resources) {
+                    formatRelativeTimeSeconds(resources, (profile.activeAt ?: 0L) / 1000L)
                 }
-                Text(
-                    text = stringResource(R.string.profile_active, activeTime),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (activeTime.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.profile_active, activeTime),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 if (joinedDate != null) {
                     Text(
                         text = stringResource(R.string.profile_joined, joinedDate),
@@ -437,20 +444,26 @@ fun ProfileIdentityDetails(
 
         val numbers = remember { NumberFormat.getIntegerInstance() }
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = stringResource(
-                R.string.profile_counts,
-                numbers.format(profile.animeCount),
-                numbers.format(profile.mangaCount),
-                pluralStringResourceOrDefault(
-                    R.plurals.profile_days_watched,
-                    profile.daysWatched.toInt(),
-                    numbers.format(profile.daysWatched.toInt())
-                )
-            ),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface
+        val counts = listOf(
+            stringResource(R.string.profile_count_anime, numbers.format(profile.animeCount)),
+            stringResource(R.string.profile_count_manga, numbers.format(profile.mangaCount)),
+            pluralStringResourceOrDefault(
+                R.plurals.profile_days_watched,
+                profile.daysWatched.toInt(),
+                numbers.format(profile.daysWatched.toInt())
+            )
         )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            counts.forEachIndexed { index, part ->
+                Text(
+                    text = if (index < counts.lastIndex) "$part  ·" else part,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
+        }
         if (onPeopleClick != null) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -562,7 +575,7 @@ fun ProfileActionButtons(
                 }
             }
         } else {
-            val labelPadding = ButtonDefaults.ButtonWithIconContentPadding
+            val labelPadding = PaddingValues(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
             if (isFollowing) {
                 FilledTonalButton(
                     onClick = onFollowClick,
@@ -571,7 +584,7 @@ fun ProfileActionButtons(
                 ) {
                     Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.size(8.dp))
-                    Text(stringResource(R.string.profile_following))
+                    ButtonLabel(stringResource(R.string.profile_following))
                 }
             } else {
                 Button(
@@ -581,13 +594,13 @@ fun ProfileActionButtons(
                 ) {
                     Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.size(8.dp))
-                    Text(stringResource(R.string.profile_follow))
+                    ButtonLabel(stringResource(R.string.profile_follow))
                 }
             }
             FilledTonalButton(onClick = onMessageClick, contentPadding = labelPadding) {
                 Icon(Icons.Default.Mail, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.size(8.dp))
-                Text(stringResource(R.string.profile_message))
+                ButtonLabel(stringResource(R.string.profile_message))
             }
         }
     }
@@ -645,3 +658,13 @@ private fun unreadCountAccessibilityLabel(count: Int): String =
             count
         )
     }
+
+@Composable
+private fun ButtonLabel(text: String) {
+    Text(
+        text = text,
+        maxLines = 1,
+        softWrap = false,
+        autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = 14.sp)
+    )
+}

@@ -724,7 +724,6 @@
     <string name="profile_activity_status">Status</string>
     <string name="profile_activity_messages">Messages</string>
     <string name="profile_activity_threads">Threads</string>
-    <string name="profile_activity_statuses">Statuses</string>
     <string name="profile_activity_updates">Updates</string>
     <string name="profile_activity_comments">Comments</string>
     <string name="profile_activity_lists">Lists</string>
@@ -1447,11 +1446,10 @@
     <string name="profile_share">Share profile</string>
     <string name="profile_open_on_anilist">Open on AniList</string>
     <string name="profile_report_on_anilist">Report or block on AniList</string>
-    <string name="profile_counts">%1$s anime  ·  %2$s manga  ·  %3$s</string>
+    <string name="profile_count_anime">%1$s anime</string>
+    <string name="profile_count_manga">%1$s manga</string>
     <string name="profile_people">Following and followers</string>
-    <string name="profile_tab_lists">Lists</string>
     <string name="profile_add_to_planning">Add to Planning</string>
-    <string name="profile_tab_stats">Stats</string>
     <string name="profile_page_people">People</string>
     <string name="profile_people_title">%1$s\'s people</string>
     <string name="profile_people_title_own">Your people</string>
@@ -1487,6 +1485,7 @@
     <string name="profile_compare_also_shared">Also on both lists</string>
     <string name="profile_compare_their_tens_title">%1$s\'s 10s you have not added</string>
     <string name="profile_compare_only_yours">Only on your list</string>
+    <string name="profile_compare_show_all">Show all %1$d</string>
     <string name="profile_compare_nothing">Nothing to compare yet</string>
     <string name="profile_compare_nothing_body">Titles you add to your list show up here next to %1$s\'s.</string>
     <string name="profile_no_statuses">No statuses yet</string>

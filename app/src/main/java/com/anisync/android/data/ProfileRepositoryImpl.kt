@@ -523,6 +523,20 @@ class ProfileRepositoryImpl @Inject constructor(
             }
         }
 
+    override suspend fun getPeopleCounts(userId: Int): Result<Pair<Int?, Int?>> =
+        dedupe("people-counts:$userId") {
+            safeApiCall {
+                val response = apolloClient.query(com.anisync.android.GetUserPeopleCountsQuery(userId = userId))
+                    .fetchPolicy(FetchPolicy.NetworkFirst)
+                    .execute()
+                if (response.hasErrors()) {
+                    throw Exception(response.errors?.first()?.message ?: "Unknown API Error")
+                }
+                val data = response.data ?: throw Exception("Empty response data")
+                data.following?.pageInfo?.total to data.followers?.pageInfo?.total
+            }
+        }
+
     override suspend fun getFavoritesOfKind(
         userId: Int,
         kind: com.anisync.android.domain.FavoriteKind,

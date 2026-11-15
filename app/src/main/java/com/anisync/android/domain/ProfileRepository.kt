@@ -154,6 +154,9 @@ interface ProfileRepository {
         policy: CachePolicy = CachePolicy.NetworkFirst
     ): Result<List<LibraryEntry>>
 
+    /** Following and follower totals alone, for the header. */
+    suspend fun getPeopleCounts(userId: Int): Result<Pair<Int?, Int?>>
+
     /** The profile carries 25 of each favourite kind, this pages through the rest. */
     suspend fun getFavoritesOfKind(
         userId: Int,

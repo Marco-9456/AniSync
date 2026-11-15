@@ -672,3 +672,22 @@ query GetUserFavoriteKind(
     }
   }
 }
+
+query GetUserPeopleCounts($userId: Int!) {
+  following: Page(perPage: 1) {
+    pageInfo {
+      total
+    }
+    following(userId: $userId) {
+      id
+    }
+  }
+  followers: Page(perPage: 1) {
+    pageInfo {
+      total
+    }
+    followers(userId: $userId) {
+      id
+    }
+  }
+}

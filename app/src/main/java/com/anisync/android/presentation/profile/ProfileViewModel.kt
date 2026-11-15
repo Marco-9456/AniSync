@@ -173,6 +173,7 @@ class ProfileViewModel @Inject constructor(
         val peopleOrder: PeopleOrder = PeopleOrder.NEWEST,
         val isStatusComposerVisible: Boolean = false,
         val compareType: com.anisync.android.type.MediaType = com.anisync.android.type.MediaType.ANIME,
+        val compareExpanded: Set<String> = emptySet(),
         val isPostingStatus: Boolean = false,
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
         val selectedStatsView: StatsView = StatsView.OVERVIEW,
@@ -683,6 +684,7 @@ class ProfileViewModel @Inject constructor(
             peopleOrder = local.peopleOrder,
             isStatusComposerVisible = local.isStatusComposerVisible,
             compareType = local.compareType,
+            compareExpanded = local.compareExpanded,
             isPostingStatus = local.isPostingStatus,
             selectedStatsType = local.selectedStatsType,
             selectedStatsView = local.selectedStatsView,
@@ -759,6 +761,19 @@ class ProfileViewModel @Inject constructor(
     init {
         observeTargetProfileForFollowState()
         openLinkedTab()
+        viewModelScope.launch {
+            val profileId = uiState.first { it.profile != null }.profile?.id ?: return@launch
+            val result = profileRepository.getPeopleCounts(profileId)
+            if (result is Result.Success) {
+                val (following, followers) = result.data
+                socialState.update {
+                    it.copy(
+                        followingTotal = it.followingTotal ?: following,
+                        followersTotal = it.followersTotal ?: followers
+                    )
+                }
+            }
+        }
         if (!targetUsername.isNullOrBlank()) {
             // Overview compares this list with the viewer's, so it needs the anime list early.
             viewModelScope.launch {
@@ -1026,6 +1041,8 @@ class ProfileViewModel @Inject constructor(
                 localState.update { it.copy(isStatusComposerVisible = action.visible) }
             is ProfileAction.PostStatus -> postStatus(action.text)
             ProfileAction.RetrySocial -> fetchSocialData(forceRefresh = true)
+            is ProfileAction.ExpandCompareSection ->
+                localState.update { it.copy(compareExpanded = it.compareExpanded + action.key) }
             ProfileAction.RetryReviews -> fetchReviews(forceRefresh = true)
             is ProfileAction.SelectCompareType -> {
                 localState.update { it.copy(compareType = action.type) }

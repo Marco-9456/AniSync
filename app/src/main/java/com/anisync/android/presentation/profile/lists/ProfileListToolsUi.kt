@@ -1,8 +1,6 @@
 package com.anisync.android.presentation.profile.lists
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,7 +16,6 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -234,18 +231,13 @@ internal fun ProfileListFilterSheet(
         if (genres.isNotEmpty()) {
             SheetSectionLabel(stringResource(R.string.filter_genres))
             Spacer(Modifier.height(8.dp))
-            FlowRow(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                genres.forEach { genre ->
-                    FilterChip(
-                        selected = genre in filters.genres,
-                        onClick = { onFiltersChange(filters.copy(genres = filters.genres.toggled(genre))) },
-                        label = { Text(genre) }
-                    )
-                }
-            }
+            OptionPillGrid(
+                options = genres,
+                label = { it },
+                isSelected = { it in filters.genres },
+                onClick = { genre -> onFiltersChange(filters.copy(genres = filters.genres.toggled(genre))) },
+                role = Role.Checkbox
+            )
             Spacer(Modifier.height(12.dp))
         }
         SheetSectionLabel(stringResource(if (isOwnProfile) R.string.profile_list_sort_score else R.string.profile_list_sort_their_score))

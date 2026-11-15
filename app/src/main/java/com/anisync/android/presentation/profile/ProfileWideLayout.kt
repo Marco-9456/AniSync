@@ -820,13 +820,17 @@ private fun ProfileTabPane(
         val showShareFab = uiState.showsShareFab(profile)
         val comparison = rememberListComparison(uiState, isOwnProfile)
         Column(modifier = Modifier.fillMaxSize()) {
+            val pageCollapsed by remember(listState) {
+                derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
+            }
             ProfileTabStrip(
                 uiState = uiState,
                 onTabSelected = { onAction(ProfileAction.SelectTab(it)) },
                 onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
                 onStatsViewSelected = { onAction(ProfileAction.SelectStatsView(it)) },
                 onFilterAction = onAction,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                pageCollapsed = pageCollapsed
             )
 
             AppPullToRefreshBox(

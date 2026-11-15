@@ -1,6 +1,8 @@
 package com.anisync.android.presentation.profile.sections
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,8 +35,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,7 +46,7 @@ import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.EmptyState
-import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
+import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.presentation.util.rememberCopyToClipboard
@@ -175,7 +180,10 @@ private fun AboutDetails(profile: UserProfile) {
                     DetailRow(Icons.Default.CalendarMonth, stringResource(R.string.profile_joined, dates.format(Date(it))))
                 }
                 profile.activeAt?.let {
-                    DetailRow(Icons.Default.Schedule, stringResource(R.string.profile_active, formatProfileRelativeTime(it)))
+                    DetailRow(
+                        Icons.Default.Schedule,
+                        stringResource(R.string.profile_active, formatRelativeTimeSeconds(LocalResources.current, it / 1000L))
+                    )
                 }
                 DetailRow(
                     icon = Icons.Default.Person,
@@ -234,33 +242,43 @@ private fun DetailRow(
 
 @Composable
 internal fun BioPreview(about: String, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    val container = MaterialTheme.colorScheme.surfaceContainerLow
     Surface(
         onClick = onOpen,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = container,
         shape = RoundedCornerShape(24.dp),
         modifier = modifier.fillMaxWidth()
     ) {
-        Column {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(BioPreviewHeight)
+                .clipToBounds()
+        ) {
             AsyncRichTextRenderer(
                 html = about,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(BioPreviewHeight)
-                    .clipToBounds()
-                    .padding(start = 16.dp, end = 16.dp, top = 12.dp)
+                    .wrapContentHeight(align = Alignment.Top, unbounded = true)
+                    .padding(start = 16.dp, end = 16.dp, top = 14.dp)
             )
-            Row(
-                horizontalArrangement = Arrangement.End,
+            Box(
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(end = 12.dp, bottom = 12.dp)
+                    .height(72.dp)
+                    .background(Brush.verticalGradient(listOf(container.copy(alpha = 0f), container)))
+            )
+            FilledTonalButton(
+                onClick = onOpen,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(12.dp)
             ) {
-                FilledTonalButton(onClick = onOpen) {
-                    Text(stringResource(R.string.profile_read_more), style = MaterialTheme.typography.labelLarge.emphasis())
-                }
+                Text(stringResource(R.string.profile_read_more), style = MaterialTheme.typography.labelLarge.emphasis())
             }
         }
     }
 }
 
-private val BioPreviewHeight = 120.dp
+private val BioPreviewHeight = 148.dp

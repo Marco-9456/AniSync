@@ -16,9 +16,9 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.RateReview
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -292,7 +292,7 @@ internal fun ActivityFilterRail(selected: ProfileActivityFilter, onSelect: (Prof
 private fun activityFilterIcon(filter: ProfileActivityFilter): ImageVector {
     return when (filter) {
         ProfileActivityFilter.ALL -> Icons.AutoMirrored.Filled.ViewList
-        ProfileActivityFilter.STATUS -> Icons.Default.Schedule
+        ProfileActivityFilter.STATUS -> Icons.Default.EditNote
         ProfileActivityFilter.MESSAGES -> Icons.Default.ChatBubbleOutline
         ProfileActivityFilter.LISTS -> Icons.AutoMirrored.Filled.List
         ProfileActivityFilter.REVIEWS -> Icons.Default.RateReview

@@ -58,6 +58,7 @@ data class ProfileUiState(
     val isStatusComposerVisible: Boolean = false,
     val compareType: com.anisync.android.type.MediaType = com.anisync.android.type.MediaType.ANIME,
     val viewerAvatarUrl: String? = null,
+    val compareExpanded: Set<String> = emptySet(),
     val isShowingSavedCopy: Boolean = false,
     val isPostingStatus: Boolean = false,
     val peopleOrder: PeopleOrder = PeopleOrder.NEWEST,
@@ -223,7 +224,7 @@ data class LengthUiModel(
 @Immutable
 enum class ProfileTab(@StringRes val titleRes: Int) {
     OVERVIEW(R.string.profile_tab_overview),
-    STATS(R.string.profile_tab_stats),
+    STATS(R.string.details_tab_stats),
     ACTIVITY(R.string.profile_tab_activity),
     ANIME(R.string.media_type_anime),
     MANGA(R.string.media_type_manga),
@@ -263,7 +264,7 @@ enum class ProfileFavoritesFilter(@StringRes val labelRes: Int) {
 @Immutable
 enum class ProfileActivityFilter(@StringRes val labelRes: Int) {
     ALL(R.string.profile_activity_all),
-    STATUS(R.string.profile_activity_statuses),
+    STATUS(R.string.profile_activity_status),
     MESSAGES(R.string.profile_activity_messages),
     LISTS(R.string.profile_activity_updates),
     REVIEWS(R.string.section_reviews),
@@ -364,6 +365,7 @@ sealed interface ProfileAction {
     data class SetStatusComposerVisible(val visible: Boolean) : ProfileAction
     data class SelectCompareType(val type: com.anisync.android.type.MediaType) : ProfileAction
     data object RetrySocial : ProfileAction
+    data class ExpandCompareSection(val key: String) : ProfileAction
     data object RetryReviews : ProfileAction
     data class PostStatus(val text: String) : ProfileAction
     data class SubmitActivityEdit(val text: String) : ProfileAction

@@ -42,6 +42,7 @@ import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.PosterCard
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.details.components.CharacterItem
+import com.anisync.android.presentation.profile.ProfileFavoritesFilter
 import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.RecentUpdatesSection
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
@@ -57,6 +58,7 @@ fun ProfileOverviewSection(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onNavigateToTab: (ProfileTab) -> Unit = {},
+    onOpenFavorites: (ProfileFavoritesFilter) -> Unit = {},
     onMediaClick: (Int) -> Unit = {},
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
@@ -162,7 +164,7 @@ fun ProfileOverviewSection(
         if (profile.favoriteAnime.isNotEmpty()) {
             HorizontalFavoritesSection(
                 title = stringResource(R.string.media_type_anime),
-                onActionClick = { onNavigateToTab(ProfileTab.ANIME) }
+                onActionClick = { onOpenFavorites(ProfileFavoritesFilter.ANIME) }
             ) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -195,7 +197,7 @@ fun ProfileOverviewSection(
         if (profile.favoriteMangaOverview.isNotEmpty()) {
             HorizontalFavoritesSection(
                 title = stringResource(R.string.media_type_manga),
-                onActionClick = { onNavigateToTab(ProfileTab.MANGA) }
+                onActionClick = { onOpenFavorites(ProfileFavoritesFilter.MANGA) }
             ) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -228,7 +230,7 @@ fun ProfileOverviewSection(
         if (profile.favoriteCharactersOverview.isNotEmpty()) {
             HorizontalFavoritesSection(
                 title = stringResource(R.string.profile_cast_characters),
-                onActionClick = { onNavigateToTab(ProfileTab.FAVORITES) }
+                onActionClick = { onOpenFavorites(ProfileFavoritesFilter.CHARACTERS) }
             ) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
@@ -250,7 +252,7 @@ fun ProfileOverviewSection(
         if (profile.favoriteStaffOverview.isNotEmpty()) {
             HorizontalFavoritesSection(
                 title = stringResource(R.string.profile_cast_staff),
-                onActionClick = { onNavigateToTab(ProfileTab.FAVORITES) }
+                onActionClick = { onOpenFavorites(ProfileFavoritesFilter.STAFF) }
             ) {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),

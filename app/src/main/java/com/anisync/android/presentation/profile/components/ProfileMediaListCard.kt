@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.R
@@ -60,7 +61,6 @@ import com.anisync.android.presentation.components.NotePreview
 import com.anisync.android.presentation.components.ScoreChip
 import com.anisync.android.presentation.util.AppMotion
 import com.anisync.android.presentation.util.TransitionKeys
-import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.toColor
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
@@ -253,8 +253,10 @@ private fun YourEntryLine(yours: LibraryEntry, total: Int?, mediaType: MediaType
     val parts = buildList {
         add(stringResource(R.string.profile_list_you))
         add(yours.status.toLabel(mediaType))
-        if (yours.progress > 0) add(progressLabel(yours.progress, total, mediaType))
         yours.score?.takeIf { it > 0.0 }?.let { add(formatScore(it, scoreFormat)) }
+        if (yours.progress > 0 && yours.status != LibraryStatus.COMPLETED) {
+            add(progressLabel(yours.progress, total, mediaType))
+        }
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(

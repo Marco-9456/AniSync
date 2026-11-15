@@ -110,6 +110,35 @@ internal fun OverviewCompareCard(
     }
 }
 
+/** Holds the card's place while their list loads, so Overview does not jump when it arrives. */
+@Composable
+internal fun OverviewCompareCardLoading(
+    ownerName: String,
+    yourAvatar: String?,
+    theirAvatar: String?,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(28.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            CompareEyebrow(stringResource(R.string.profile_compare_title, ownerName), yourAvatar, theirAvatar)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(176.dp)
+            ) {
+                AppCircularProgressIndicator()
+            }
+        }
+    }
+}
+
 @Composable
 private fun CompareEyebrow(text: String, yourAvatar: String?, theirAvatar: String?) {
     val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
@@ -174,7 +203,9 @@ fun LazyListScope.profileComparePage(
     titleLanguage: TitleLanguage,
     onMediaClick: (Int) -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+    expanded: Set<String> = emptySet(),
+    onExpand: (String) -> Unit = {}
 ) {
     item(key = "compare_seen") {
         val whatsNew = LocalWhatsNew.current
@@ -204,8 +235,8 @@ fun LazyListScope.profileComparePage(
     item(key = "compare_summary") {
         CompareSummary(comparison, type, ownerName, yourAvatar, theirAvatar)
     }
-    sharedSection("compare_both", R.string.profile_compare_both_scored, comparison.bothScored, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope)
-    sharedSection("compare_also", R.string.profile_compare_also_shared, comparison.alsoShared, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope)
+    sharedSection("compare_both", R.string.profile_compare_both_scored, comparison.bothScored, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_both" in expanded, onExpand)
+    sharedSection("compare_also", R.string.profile_compare_also_shared, comparison.alsoShared, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_also" in expanded, onExpand)
     if (comparison.theirTensNotYours.isNotEmpty()) {
         item(key = "compare_tens") {
             PosterShelf(
@@ -307,7 +338,9 @@ private fun LazyListScope.sharedSection(
     type: MediaType,
     onMediaClick: (Int) -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+    expanded: Boolean,
+    onExpand: (String) -> Unit
 ) {
     if (titles.isEmpty()) return
     item(key = "${key}_header") {
@@ -318,7 +351,8 @@ private fun LazyListScope.sharedSection(
             padding = PaddingValues(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp)
         )
     }
-    items(titles, key = { "${key}_${it.theirs.mediaId}" }) { shared ->
+    val shown = if (expanded) titles else titles.take(COMPARE_PREVIEW)
+    items(shown, key = { "${key}_${it.theirs.mediaId}" }) { shared ->
         ProfileMediaListCard(
             entry = shared.theirs,
             mediaType = type,
@@ -332,7 +366,18 @@ private fun LazyListScope.sharedSection(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
         )
     }
+    if (shown.size < titles.size) {
+        item(key = "${key}_more") {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                FilledTonalButton(onClick = { onExpand(key) }, modifier = Modifier.padding(top = 8.dp)) {
+                    Text(stringResource(R.string.profile_compare_show_all, titles.size))
+                }
+            }
+        }
+    }
 }
+
+private const val COMPARE_PREVIEW = 10
 
 @Composable
 private fun PosterShelf(
