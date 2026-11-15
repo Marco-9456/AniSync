@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -91,7 +92,8 @@ fun RichTextInputSheet(
     isSubmitEnabled: (body: String) -> Boolean = {
         ContentLimits.characterCount(it.trim()) in minLength..maxLength
     },
-    bottomBarLeading: (@Composable RowScope.() -> Unit)? = null
+    bottomBarLeading: (@Composable RowScope.() -> Unit)? = null,
+    header: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val bodyState = rememberSaveable(prefillBody, saver = TextFieldState.Saver) {
         TextFieldState(prefillBody.orEmpty())
@@ -202,6 +204,8 @@ fun RichTextInputSheet(
                 if (replyingToLabel != null) {
                     ReplyingToChip(replyingToLabel)
                 }
+
+                header?.invoke(this)
 
                 Spacer(Modifier.height(8.dp))
 
