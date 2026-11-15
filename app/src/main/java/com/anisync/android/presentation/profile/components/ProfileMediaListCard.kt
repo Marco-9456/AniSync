@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.anisync.android.presentation.util.bouncyCombinedClickable
 import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
@@ -95,6 +96,7 @@ fun ProfileMediaListCard(
     showStatus: Boolean = true,
     yours: LibraryEntry? = null,
     yourScoreFormat: ScoreFormat = ScoreFormat.POINT_100,
+    onLongClick: (() -> Unit)? = null,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     transitionPrefix: String = TransitionKeys.LIBRARY
@@ -134,10 +136,12 @@ fun ProfileMediaListCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = modifier
             .fillMaxWidth()
-            .bouncyClickable(
+            .bouncyCombinedClickable(
                 onClick = onClick,
                 role = Role.Button,
                 onClickLabel = stringResource(R.string.a11y_action_open_details, title),
+                onLongClick = onLongClick,
+                onLongClickLabel = onLongClick?.let { stringResource(R.string.a11y_action_more_actions) },
                 clipShape = RoundedCornerShape(14.dp)
             )
     ) {

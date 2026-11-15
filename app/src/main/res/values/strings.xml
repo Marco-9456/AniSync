@@ -660,6 +660,8 @@
     <string name="profile_unknown_error">Something went wrong while loading your profile.</string>
     <string name="profile_user_load_error">We could not load this user profile right now. The account may be private, unavailable or temporarily rate-limited.</string>
     <string name="profile_user_unavailable">This profile is private or no longer exists.</string>
+    <string name="profile_unavailable_title">%1$s\'s profile is not available</string>
+    <string name="profile_unavailable_body">It is private or no longer exists. AniList answers both the same way.</string>
     <string name="profile_rate_limited_error">AniList is limiting requests right now. Wait a moment, then try again.</string>
     <string name="profile_tab_overview">Overview</string>
     <string name="profile_tab_activity">Activity</string>
@@ -1444,6 +1446,7 @@
     <string name="profile_counts">%1$s anime  ·  %2$s manga  ·  %3$s</string>
     <string name="profile_people">Following and followers</string>
     <string name="profile_tab_lists">Lists</string>
+    <string name="profile_add_to_planning">Add to Planning</string>
     <string name="profile_tab_stats">Stats</string>
     <string name="profile_page_people">People</string>
     <string name="profile_people_counts">%1$s following  ·  %2$s followers</string>
@@ -2242,6 +2245,7 @@
     <string name="select_all">Select all</string>
     <string name="media_status_releasing">Releasing</string>
     <string name="a11y_action_select_entry">Select entry</string>
+    <string name="a11y_action_more_actions">More actions</string>
     <string name="a11y_action_mark_episode">Mark episode %1$d watched</string>
     <string name="library_all_caught_up">Up to date</string>
     <string name="library_episode_count">%1$d eps</string>

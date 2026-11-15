@@ -332,6 +332,10 @@ class ProfileViewModel @Inject constructor(
 
     private val viewerIdFlow = MutableStateFlow<Int?>(null)
 
+    private val linkTab: String? = savedStateHandle.get<String>("tab")
+
+    val targetName: String? get() = targetUsername
+
     private val targetUsername: String? = savedStateHandle.get<String>("username")
         ?.let(Uri::decode)
         ?.trim()
@@ -715,6 +719,7 @@ class ProfileViewModel @Inject constructor(
 
     init {
         observeTargetProfileForFollowState()
+        openLinkedTab()
 
         if (targetUsername.isNullOrBlank()) {
             // A recap story's last page asks for Statistics through the launcher.
@@ -817,6 +822,7 @@ class ProfileViewModel @Inject constructor(
                 }
             }
 
+            is ProfileAction.AddToPlanning -> addToPlanning(action.mediaId)
             ProfileAction.ClosePage -> {
                 val local = localState.value
                 if (local.selectedTab.isPage) onAction(ProfileAction.SelectTab(local.pageReturnTab))
@@ -1445,6 +1451,33 @@ class ProfileViewModel @Inject constructor(
         ProfileActivityFilter.MESSAGES -> listOf(com.anisync.android.domain.ActivityType.MESSAGE)
         ProfileActivityFilter.LISTS -> listOf(com.anisync.android.domain.ActivityType.MEDIA_LIST)
         ProfileActivityFilter.REVIEWS, ProfileActivityFilter.THREADS, ProfileActivityFilter.COMMENTS -> emptyList()
+    }
+
+    /** anilist.co/user/name/animelist and its siblings open the matching tab once the profile is in. */
+    private fun openLinkedTab() {
+        val (tab, filter) = when (linkTab?.lowercase()) {
+            "animelist" -> ProfileTab.ANIME to null
+            "mangalist" -> ProfileTab.MANGA to null
+            "stats" -> ProfileTab.STATS to null
+            "favorites" -> ProfileTab.FAVORITES to null
+            "social" -> ProfileTab.SOCIAL to null
+            "reviews" -> ProfileTab.ACTIVITY to ProfileActivityFilter.REVIEWS
+            else -> return
+        }
+        viewModelScope.launch {
+            uiState.first { it.profile != null }
+            onAction(ProfileAction.SelectTab(tab))
+            filter?.let { onAction(ProfileAction.SelectActivityFilter(it)) }
+            if (!tab.isPage) _dockRequest.update { it + 1 }
+        }
+    }
+
+    /** The Library row the mutation writes through to is what turns the row's You line on. */
+    private fun addToPlanning(mediaId: Int) {
+        viewModelScope.launch {
+            val result = detailsRepository.updateMediaListEntry(mediaId, LibraryStatus.PLANNING)
+            if (result is Result.Error) toastManager.showResultError(result)
+        }
     }
 
     private fun fetchActivityKind(filter: ProfileActivityFilter) {

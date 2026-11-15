@@ -302,6 +302,7 @@ sealed interface ProfileAction {
     data class UpdateAbout(val about: String) : ProfileAction
     data class SelectTab(val tab: ProfileTab) : ProfileAction
     data object ClosePage : ProfileAction
+    data class AddToPlanning(val mediaId: Int) : ProfileAction
     data class SelectActivityFilter(val filter: ProfileActivityFilter) : ProfileAction
     data class SelectFavoritesFilter(val filter: ProfileFavoritesFilter) : ProfileAction
     data class SelectAnimeStatus(val status: LibraryStatus?) : ProfileAction

@@ -55,6 +55,7 @@ import com.anisync.android.presentation.components.shareFabBottomInset
 import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.LocalWhatsNew
+import com.anisync.android.presentation.components.WhatsNewDot
 import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
@@ -620,7 +621,8 @@ internal fun LazyListScope.profileSelectedTabContent(
                 transitionPrefix = if (manga) "profile_manga" else "profile_anime",
                 // List rows are wide; 2-up is the most that stays legible (incl. the right pane).
                 listColumns = statsColumns.coerceAtMost(2),
-                gridColumns = studioColumns.coerceAtLeast(2)
+                gridColumns = studioColumns.coerceAtLeast(2),
+                onAddToPlanning = if (isOwnProfile) null else { mediaId -> onAction(ProfileAction.AddToPlanning(mediaId)) }
             )
         }
 
@@ -823,10 +825,14 @@ internal fun ProfileTabsButtonGroup(
     onTabSelected: (ProfileTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val statsMoved = WhatsNewItem.PROFILE_STATS_MOVED in rememberActiveWhatsNew()
+    val whatsNew = rememberActiveWhatsNew()
     val whatsNewStore = LocalWhatsNew.current
     LaunchedEffect(selectedTab) {
-        if (selectedTab == ProfileTab.STATS) whatsNewStore.markSeen(WhatsNewItem.PROFILE_STATS_MOVED)
+        when (selectedTab) {
+            ProfileTab.STATS -> whatsNewStore.markSeen(WhatsNewItem.PROFILE_STATS_MOVED)
+            ProfileTab.ANIME, ProfileTab.MANGA -> whatsNewStore.markSeen(WhatsNewItem.PROFILE_LISTS)
+            else -> Unit
+        }
     }
     SegmentedTabGroup(
         options = StripTab.entries,
@@ -846,7 +852,12 @@ internal fun ProfileTabsButtonGroup(
         fillEqually = true,
         contentPadding = PaddingValues(horizontal = 8.dp),
         badge = { tab ->
-            if (tab == StripTab.STATS && statsMoved) ({ WhatsNewPill(WhatsNewItem.Kind.MOVED) }) else null
+            when {
+                tab == StripTab.STATS && WhatsNewItem.PROFILE_STATS_MOVED in whatsNew -> ({ WhatsNewPill(WhatsNewItem.Kind.MOVED) })
+                tab == StripTab.LISTS && WhatsNewItem.PROFILE_LISTS in whatsNew -> ({ WhatsNewPill(WhatsNewItem.Kind.NEW) })
+                tab == StripTab.ACTIVITY && WhatsNewItem.PROFILE_POSTS_MOVED in whatsNew -> ({ WhatsNewDot() })
+                else -> null
+            }
         }
     )
 }

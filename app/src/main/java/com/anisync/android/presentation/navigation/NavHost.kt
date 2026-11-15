@@ -529,7 +529,9 @@ fun AniSyncNavHost(
                 deepLinks = listOf(
                     navDeepLink { uriPattern = "anisync://user/{username}" },
                     navDeepLink { uriPattern = "https://anilist.co/user/{username}" },
-                    // List, favourites and stats pages land on the profile itself
+                    // The segment after the name picks the tab, so a shared list link opens that list
+                    navDeepLink { uriPattern = "https://anilist.co/user/{username}/{tab}" },
+                    navDeepLink { uriPattern = "https://anilist.co/user/{username}/{tab}/.*" },
                     navDeepLink { uriPattern = "https://anilist.co/user/{username}/.*" }
                 )
             ) {

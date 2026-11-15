@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Schedule
+import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,7 +27,10 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.ActivityType
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.RailChip
+import com.anisync.android.presentation.components.WhatsNewPill
+import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.profile.ProfileActivityFilter
 import com.anisync.android.presentation.profile.components.ActivityCard
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
@@ -147,12 +151,22 @@ fun LazyListScope.profileActivityTab(
 /** The Activity tab's filters, docked with the profile tabs. */
 @Composable
 internal fun ActivityFilterRail(selected: ProfileActivityFilter, onSelect: (ProfileActivityFilter) -> Unit) {
+    val whatsNewStore = LocalWhatsNew.current
+    val postsMoved = WhatsNewItem.PROFILE_POSTS_MOVED in rememberActiveWhatsNew()
+    LaunchedEffect(selected) {
+        if (!selected.isFeed) whatsNewStore.markSeen(WhatsNewItem.PROFILE_POSTS_MOVED)
+    }
     ProfileTabRail(ProfileActivityFilter.entries, selected) { filter, isSelected ->
         RailChip(
             label = stringResource(filter.labelRes),
             icon = activityFilterIcon(filter),
             selected = isSelected,
-            onClick = { onSelect(filter) }
+            onClick = { onSelect(filter) },
+            badge = if (filter == ProfileActivityFilter.REVIEWS && postsMoved) {
+                { WhatsNewPill(WhatsNewItem.Kind.MOVED) }
+            } else {
+                null
+            }
         )
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -68,6 +69,7 @@ import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.DonatorBadge
 import com.anisync.android.presentation.components.DonatorBadgePlacement
+import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.bannerScrimBrush
 import com.anisync.android.presentation.components.bannerScrimHeight
 import com.anisync.android.presentation.components.menu.Menu
@@ -351,6 +353,21 @@ fun ProfileIdentityDetails(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            val level = remember(profile.animeCount, profile.mangaCount) {
+                (profile.animeCount + profile.mangaCount) / 10
+            }
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = CircleShape
+            ) {
+                Text(
+                    text = stringResource(R.string.profile_level, level),
+                    style = MaterialTheme.typography.labelLarge.emphasis(),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+
             DonatorBadge(
                 tier = profile.donatorTier,
                 badgeText = profile.donatorBadge,
@@ -458,6 +475,10 @@ fun ProfileIdentityDetails(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
+                if (WhatsNewItem.PROFILE_PEOPLE_MOVED in rememberActiveWhatsNew()) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    WhatsNewPill(WhatsNewItem.Kind.MOVED)
+                }
             }
         }
     }

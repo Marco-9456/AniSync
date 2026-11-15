@@ -37,6 +37,15 @@ import com.anisync.android.presentation.components.ProfileColorThemeOverride
 import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.login.AniListAuth
 import com.anisync.android.presentation.profile.components.AccountSwitcherSheet
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.ui.unit.dp
+import com.anisync.android.presentation.components.EmptyState
+import com.anisync.android.presentation.components.navigation.BackTrailButton
+import com.anisync.android.presentation.util.openUrl
+import com.anisync.android.util.AniListUrls
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -111,6 +120,10 @@ fun ProfileScreen(
                     ) {
                         AppCircularProgressIndicator()
                     }
+                }
+
+                uiState.loadErrorRes == R.string.profile_user_unavailable && profile == null -> {
+                    ProfileUnavailable(name = viewModel.targetName, onBackClick = onBackClick)
                 }
 
                 errorText != null && profile == null -> {
@@ -245,5 +258,34 @@ fun ProfileScreen(
             },
             onDismiss = { showAccountSwitcherSheet = false }
         )
+    }
+}
+
+/** AniList answers a private profile and a deleted one with the same 404, so the copy covers both. */
+@Composable
+private fun ProfileUnavailable(name: String?, onBackClick: (() -> Unit)?) {
+    val context = LocalContext.current
+    Box(modifier = Modifier.fillMaxSize()) {
+        EmptyState(
+            icon = Icons.Outlined.Lock,
+            title = if (name != null) {
+                stringResource(R.string.profile_unavailable_title, name)
+            } else {
+                stringResource(R.string.profile_user_unavailable)
+            },
+            description = stringResource(R.string.profile_unavailable_body),
+            actionLabel = name?.let { stringResource(R.string.profile_open_on_anilist) },
+            actionIcon = name?.let { Icons.AutoMirrored.Filled.OpenInNew },
+            onAction = name?.let { { openUrl(context, AniListUrls.userUrl(it)) } }
+        )
+        if (onBackClick != null) {
+            BackTrailButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(top = 12.dp, start = 12.dp)
+            )
+        }
     }
 }

@@ -18,6 +18,11 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -31,6 +36,7 @@ import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.MediaPosterCard
 import com.anisync.android.presentation.components.MediaTypeToggle
+import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.library.LibraryTab
 import com.anisync.android.presentation.library.components.LibraryRailChip
 import com.anisync.android.presentation.profile.components.ProfileMediaListCard
@@ -40,6 +46,7 @@ import com.anisync.android.presentation.profile.lists.ProfileListSummary
 import com.anisync.android.presentation.profile.lists.ProfileListTools
 import com.anisync.android.presentation.profile.lists.ProfileListView
 import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.presentation.util.toListIcon
 import com.anisync.android.type.MediaType
 
 internal enum class ListChip(val status: LibraryStatus?) {
@@ -110,7 +117,8 @@ fun LazyListScope.profileMediaTab(
     animatedVisibilityScope: AnimatedVisibilityScope?,
     transitionPrefix: String,
     listColumns: Int = 1,
-    gridColumns: Int = 2
+    gridColumns: Int = 2,
+    onAddToPlanning: ((Int) -> Unit)? = null
 ) {
     // A reload keeps the list on screen rather than swapping it for a spinner (#164).
     if (isLoading && !hasEntries) {
@@ -224,19 +232,37 @@ fun LazyListScope.profileMediaTab(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             row.forEach { item ->
-                Box(modifier = Modifier.weight(1f)) {
-                    ProfileMediaListCard(
-                        entry = item,
-                        mediaType = mediaType,
-                        onClick = { onMediaClick(item.mediaId) },
-                        titleLanguage = titleLanguage,
-                        showStatus = showStatus,
-                        yours = if (isOwnProfile) null else viewer[item.mediaId],
-                        yourScoreFormat = yourScoreFormat,
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        transitionPrefix = transitionPrefix
-                    )
+                key(item.mediaId) {
+                    val canPlan = onAddToPlanning != null && item.mediaId !in viewer
+                    var menuOpen by remember { mutableStateOf(false) }
+                    Box(modifier = Modifier.weight(1f)) {
+                        ProfileMediaListCard(
+                            entry = item,
+                            mediaType = mediaType,
+                            onClick = { onMediaClick(item.mediaId) },
+                            titleLanguage = titleLanguage,
+                            showStatus = showStatus,
+                            yours = if (isOwnProfile) null else viewer[item.mediaId],
+                            yourScoreFormat = yourScoreFormat,
+                            onLongClick = if (canPlan) ({ menuOpen = true }) else null,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            transitionPrefix = transitionPrefix
+                        )
+                        if (canPlan) {
+                            val planningLabel = stringResource(R.string.profile_add_to_planning)
+                            Menu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                item(
+                                    text = planningLabel,
+                                    leadingIcon = LibraryStatus.PLANNING.toListIcon(),
+                                    onClick = {
+                                        menuOpen = false
+                                        onAddToPlanning?.invoke(item.mediaId)
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
             repeat(listColumns - row.size) {

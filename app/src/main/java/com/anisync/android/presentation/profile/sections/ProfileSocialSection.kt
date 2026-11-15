@@ -274,6 +274,7 @@ internal fun SocialTabRail(uiState: ProfileUiState, onSelect: (ProfileSocialTab)
     val whatsNewStore = LocalWhatsNew.current
     val mutualsNew = WhatsNewItem.PROFILE_MUTUALS in rememberActiveWhatsNew()
     LaunchedEffect(selectedTab) {
+        whatsNewStore.markSeen(WhatsNewItem.PROFILE_PEOPLE_MOVED)
         if (selectedTab == ProfileSocialTab.MUTUALS) whatsNewStore.markSeen(WhatsNewItem.PROFILE_MUTUALS)
     }
     ProfileTabRail(ProfileSocialTab.entries.filterNot { it.isForum }, selectedTab) { tab, selected ->
