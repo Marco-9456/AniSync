@@ -172,6 +172,7 @@ class ProfileViewModel @Inject constructor(
         val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
         val peopleOrder: PeopleOrder = PeopleOrder.NEWEST,
         val isStatusComposerVisible: Boolean = false,
+        val compareType: com.anisync.android.type.MediaType = com.anisync.android.type.MediaType.ANIME,
         val isPostingStatus: Boolean = false,
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
         val selectedStatsView: StatsView = StatsView.OVERVIEW,
@@ -538,6 +539,7 @@ class ProfileViewModel @Inject constructor(
         val unreadCount: Int,
         val adultOptions: Pair<Boolean, Boolean>,
         val recaps: com.anisync.android.presentation.recap.RecapsUiModel,
+        val avatarUrl: String?,
     )
 
     private val sections = combine(socialState, reviewsState, statsState, mediaListState, favoritesState, ::Sections)
@@ -553,7 +555,14 @@ class ProfileViewModel @Inject constructor(
         ::FeedOverlays,
     )
 
-    private val viewerParts = combine(viewerIdFlow, notificationBadgeStore.unreadCount, adultActivityOptions, recapsState, ::ViewerParts)
+    private val viewerParts = combine(
+        viewerIdFlow,
+        notificationBadgeStore.unreadCount,
+        adultActivityOptions,
+        recapsState,
+        accountManager.activeAccount.map { it?.avatarUrl }.distinctUntilChanged(),
+        ::ViewerParts
+    )
 
     val uiState: StateFlow<ProfileUiState> = combine(
         profileState,
@@ -662,6 +671,7 @@ class ProfileViewModel @Inject constructor(
             selectedSocialTab = local.selectedSocialTab,
             peopleOrder = local.peopleOrder,
             isStatusComposerVisible = local.isStatusComposerVisible,
+            compareType = local.compareType,
             isPostingStatus = local.isPostingStatus,
             selectedStatsType = local.selectedStatsType,
             selectedStatsView = local.selectedStatsView,
@@ -725,6 +735,7 @@ class ProfileViewModel @Inject constructor(
             viewerId = viewerId,
             unreadNotificationCount = unreadCount,
             recaps = recaps,
+            viewerAvatarUrl = viewer.avatarUrl,
             activitiesHasNextPage = pagination.hasNextPage,
             isActivitiesPaginating = pagination.isPaginating
         )
@@ -737,6 +748,13 @@ class ProfileViewModel @Inject constructor(
     init {
         observeTargetProfileForFollowState()
         openLinkedTab()
+        if (!targetUsername.isNullOrBlank()) {
+            // Overview compares this list with the viewer's, so it needs the anime list early.
+            viewModelScope.launch {
+                uiState.first { it.profile != null }
+                fetchUserAnimeList()
+            }
+        }
 
         if (targetUsername.isNullOrBlank()) {
             // A recap story's last page asks for Statistics through the launcher.
@@ -816,6 +834,8 @@ class ProfileViewModel @Inject constructor(
                 if (action.tab == ProfileTab.STATS) loadRecaps(refresh = false)
                 if (action.tab == ProfileTab.SOCIAL && !socialState.value.hasFetchedSocialData) {
                     fetchSocialData()
+                } else if (action.tab == ProfileTab.COMPARE) {
+                    fetchListToCompare(localState.value.compareType)
                 } else if (action.tab == ProfileTab.ACTIVITY) {
                     fetchActivityKind(localState.value.selectedActivityFilter)
                 } else if ((action.tab == ProfileTab.STATS || action.tab == ProfileTab.OVERVIEW) &&
@@ -994,6 +1014,10 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.SetStatusComposerVisible ->
                 localState.update { it.copy(isStatusComposerVisible = action.visible) }
             is ProfileAction.PostStatus -> postStatus(action.text)
+            is ProfileAction.SelectCompareType -> {
+                localState.update { it.copy(compareType = action.type) }
+                fetchListToCompare(action.type)
+            }
             is ProfileAction.ConsumeActivitySnackbar -> Unit
         }
     }
@@ -1001,6 +1025,10 @@ class ProfileViewModel @Inject constructor(
     private fun openActivityEdit(activityId: Int) {
         val target = uiState.value.profile?.activities?.firstOrNull { it.id == activityId } ?: return
         localState.update { it.copy(editingActivity = target) }
+    }
+
+    private fun fetchListToCompare(type: com.anisync.android.type.MediaType) {
+        if (type == com.anisync.android.type.MediaType.MANGA) fetchUserMangaList() else fetchUserAnimeList()
     }
 
     private fun postStatus(text: String) {

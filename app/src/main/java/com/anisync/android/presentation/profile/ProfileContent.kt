@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.presentation.components.MediaTypeToggle
 import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.components.ShareFab
 import com.anisync.android.presentation.components.TabRequestEffect
@@ -63,8 +64,12 @@ import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
+import com.anisync.android.presentation.profile.lists.ListComparison
+import com.anisync.android.presentation.profile.sections.OverviewCompareCard
 import com.anisync.android.presentation.profile.sections.PeopleSwitcher
 import com.anisync.android.presentation.profile.sections.profileAboutPage
+import com.anisync.android.presentation.profile.sections.profileComparePage
+import com.anisync.android.presentation.profile.sections.rememberListComparison
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
@@ -278,6 +283,7 @@ fun ProfileContent(
             onClosePage = { onAction(ProfileAction.ClosePage) }
         )
     }
+    val comparison = rememberListComparison(uiState, isOwnProfile)
     val tabContent: LazyListScope.() -> Unit = {
         profileSelectedTabContent(
             profile = profile,
@@ -300,7 +306,8 @@ fun ProfileContent(
             studioColumns = studioColumns,
             statsColumns = statsColumns,
             onOpenRecap = onOpenRecap,
-            onStatsViewSelected = onStatsViewSelected
+            onStatsViewSelected = onStatsViewSelected,
+            comparison = comparison
         )
     }
 
@@ -530,10 +537,23 @@ internal fun LazyListScope.profileSelectedTabContent(
     studioColumns: Int,
     statsColumns: Int,
     onOpenRecap: (String) -> Unit = {},
-    onStatsViewSelected: (StatsView) -> Unit = { onAction(ProfileAction.SelectStatsView(it)) }
+    onStatsViewSelected: (StatsView) -> Unit = { onAction(ProfileAction.SelectStatsView(it)) },
+    comparison: ListComparison? = null
 ) {
     when (uiState.selectedTab) {
         ProfileTab.OVERVIEW -> {
+            if (comparison != null && comparison.sharedCount > 0) {
+                item(key = "overview_compare", contentType = "overview_compare") {
+                    OverviewCompareCard(
+                        comparison = comparison,
+                        ownerName = profile.name,
+                        yourAvatar = uiState.viewerAvatarUrl,
+                        theirAvatar = profile.avatarUrl,
+                        onCompare = { onAction(ProfileAction.SelectTab(ProfileTab.COMPARE)) },
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
+            }
             item(key = "tab_overview", contentType = "overview") {
                 ProfileOverviewSection(
                     profile = profile,
@@ -662,6 +682,20 @@ internal fun LazyListScope.profileSelectedTabContent(
             )
         }
 
+        ProfileTab.COMPARE -> profileComparePage(
+            comparison = comparison,
+            isLoading = if (uiState.compareType == MediaType.MANGA) uiState.isUserMangaListLoading else uiState.isUserAnimeListLoading,
+            type = uiState.compareType,
+            ownerName = profile.name,
+            yourAvatar = uiState.viewerAvatarUrl,
+            theirAvatar = profile.avatarUrl,
+            yourScoreFormat = uiState.viewerScoreFormat,
+            titleLanguage = uiState.titleLanguage,
+            onMediaClick = onMediaClick,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope
+        )
+
         ProfileTab.ABOUT -> profileAboutPage(
             profile = profile,
             isOwnProfile = isOwnProfile,
@@ -745,6 +779,7 @@ private fun pageTitle(uiState: ProfileUiState): String {
             if (own) stringResource(R.string.profile_favorites_title_own) else stringResource(R.string.profile_favorites_title, name)
         ProfileTab.ABOUT ->
             if (own) stringResource(R.string.profile_about_title_own) else stringResource(R.string.profile_about_title, name)
+        ProfileTab.COMPARE -> stringResource(R.string.profile_compare_title, name)
         else -> stringResource(uiState.selectedTab.titleRes)
     }
 }
@@ -847,6 +882,11 @@ internal fun ProfileTabStrip(
                 uiState = uiState,
                 onSelect = { onFilterAction(ProfileAction.SelectSocialTab(it)) },
                 onOrderSelected = { onFilterAction(ProfileAction.SelectPeopleOrder(it)) }
+            )
+            ProfileTab.COMPARE -> MediaTypeToggle(
+                selected = uiState.compareType,
+                onSelect = { onFilterAction(ProfileAction.SelectCompareType(it)) },
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
             )
             ProfileTab.OVERVIEW, ProfileTab.ABOUT -> Unit
         }

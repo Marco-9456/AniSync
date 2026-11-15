@@ -1,0 +1,364 @@
+package com.anisync.android.presentation.profile.sections
+
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.anisync.android.R
+import com.anisync.android.data.TitleLanguage
+import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
+import com.anisync.android.presentation.components.EmptyState
+import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.MediaPosterCard
+import com.anisync.android.presentation.components.SectionHeader
+import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.profile.ProfileTab
+import com.anisync.android.presentation.profile.ProfileUiState
+import com.anisync.android.presentation.profile.components.ProfileMediaListCard
+import com.anisync.android.presentation.profile.lists.ListComparison
+import com.anisync.android.presentation.profile.lists.SharedTitle
+import com.anisync.android.presentation.profile.lists.compareLists
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
+import com.anisync.android.type.MediaType
+import com.anisync.android.ui.theme.emphasis
+import java.text.NumberFormat
+import java.util.Locale
+
+@Composable
+internal fun OverviewCompareCard(
+    comparison: ListComparison,
+    ownerName: String,
+    yourAvatar: String?,
+    theirAvatar: String?,
+    onCompare: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(28.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            CompareEyebrow(stringResource(R.string.profile_compare_title, ownerName), yourAvatar, theirAvatar)
+            Spacer(modifier = Modifier.height(14.dp))
+            CompareHero(comparison, ownerName, MediaType.ANIME)
+            comparison.sameScore?.let {
+                CompareFact(Icons.Outlined.CheckCircle, stringResource(R.string.profile_compare_same_score, it.theirs.titleUserPreferred))
+            }
+            if (comparison.theirTensNotYours.isNotEmpty()) {
+                val count = comparison.theirTensNotYours.size
+                CompareFact(
+                    Icons.Default.Star,
+                    pluralStringResourceOrDefault(R.plurals.profile_compare_their_tens, count, count.toString(), ownerName)
+                )
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            FilledTonalButton(onClick = onCompare) {
+                Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.profile_compare_open))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompareEyebrow(text: String, yourAvatar: String?, theirAvatar: String?) {
+    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box {
+            UserAvatar(contentDescription = null, size = 28.dp, url = yourAvatar)
+            UserAvatar(contentDescription = null, size = 28.dp, url = theirAvatar, modifier = Modifier.offset(x = 20.dp))
+        }
+        Spacer(modifier = Modifier.width(30.dp))
+        Text(
+            text = text.uppercase(locale),
+            style = MaterialTheme.typography.labelMedium.emphasis(),
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+private fun CompareHero(comparison: ListComparison, ownerName: String, type: MediaType) {
+    val numbers = NumberFormat.getIntegerInstance()
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = numbers.format(comparison.sharedCount),
+            style = MaterialTheme.typography.displayMedium.emphasis().copy(fontSize = 56.sp),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.width(14.dp))
+        Text(
+            text = pluralStringResourceOrDefault(
+                if (type == MediaType.MANGA) R.plurals.profile_compare_shared_manga else R.plurals.profile_compare_shared_anime,
+                comparison.sharedCount,
+                numbers.format(comparison.yourCount),
+                ownerName
+            ),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun CompareFact(icon: ImageVector, text: String) {
+    Row(
+        verticalAlignment = Alignment.Top,
+        modifier = Modifier.padding(top = 10.dp)
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(text = text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+fun LazyListScope.profileComparePage(
+    comparison: ListComparison?,
+    isLoading: Boolean,
+    type: MediaType,
+    ownerName: String,
+    yourAvatar: String?,
+    theirAvatar: String?,
+    yourScoreFormat: ScoreFormat,
+    titleLanguage: TitleLanguage,
+    onMediaClick: (Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?
+) {
+    if (comparison == null || isLoading) {
+        item(key = "compare_loading") {
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp), contentAlignment = Alignment.Center) {
+                AppCircularProgressIndicator()
+            }
+        }
+        return
+    }
+    if (comparison.yourCount == 0) {
+        item(key = "compare_empty") {
+            EmptyState(
+                icon = Icons.Default.Groups,
+                title = stringResource(R.string.profile_compare_nothing),
+                description = stringResource(R.string.profile_compare_nothing_body, ownerName),
+                modifier = Modifier.height(360.dp)
+            )
+        }
+        return
+    }
+    item(key = "compare_summary") {
+        CompareSummary(comparison, type, ownerName, yourAvatar, theirAvatar)
+    }
+    sharedSection("compare_both", R.string.profile_compare_both_scored, comparison.bothScored, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope)
+    sharedSection("compare_also", R.string.profile_compare_also_shared, comparison.alsoShared, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope)
+    if (comparison.theirTensNotYours.isNotEmpty()) {
+        item(key = "compare_tens") {
+            PosterShelf(
+                title = stringResource(R.string.profile_compare_their_tens_title, ownerName),
+                items = comparison.theirTensNotYours,
+                titleLanguage = titleLanguage,
+                onMediaClick = onMediaClick,
+                prefix = "compare_tens"
+            )
+        }
+    }
+    if (comparison.onlyYours.isNotEmpty()) {
+        item(key = "compare_only_yours") {
+            PosterShelf(
+                title = stringResource(R.string.profile_compare_only_yours),
+                items = comparison.onlyYours,
+                titleLanguage = titleLanguage,
+                onMediaClick = onMediaClick,
+                prefix = "compare_only"
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompareSummary(comparison: ListComparison, type: MediaType, ownerName: String, yourAvatar: String?, theirAvatar: String?) {
+    val numbers = NumberFormat.getIntegerInstance()
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(28.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            CompareEyebrow(
+                stringResource(if (type == MediaType.MANGA) R.string.profile_compare_both_manga else R.string.profile_compare_both_anime),
+                yourAvatar,
+                theirAvatar
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            CompareHero(comparison, ownerName, type)
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                MeanBox(comparison.yourMean, stringResource(R.string.profile_compare_your_mean), Modifier.weight(1f))
+                MeanBox(comparison.theirMean, stringResource(R.string.profile_compare_their_mean, ownerName), Modifier.weight(1f))
+            }
+            if (comparison.theirsNotYours > 0) {
+                CompareFact(
+                    Icons.Outlined.PersonAdd,
+                    pluralStringResourceOrDefault(
+                        R.plurals.profile_compare_theirs_not_yours,
+                        comparison.theirsNotYours,
+                        ownerName,
+                        numbers.format(comparison.theirsNotYours)
+                    )
+                )
+            }
+            if (comparison.onlyYours.isNotEmpty()) {
+                CompareFact(
+                    Icons.Outlined.CheckCircle,
+                    pluralStringResourceOrDefault(
+                        R.plurals.profile_compare_yours_not_theirs,
+                        comparison.onlyYours.size,
+                        numbers.format(comparison.onlyYours.size),
+                        ownerName
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MeanBox(mean: Double?, label: String, modifier: Modifier = Modifier) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(20.dp),
+        modifier = modifier
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = mean?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: "-",
+                style = MaterialTheme.typography.headlineMedium.emphasis(),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+private fun LazyListScope.sharedSection(
+    key: String,
+    titleRes: Int,
+    titles: List<SharedTitle>,
+    yourScoreFormat: ScoreFormat,
+    titleLanguage: TitleLanguage,
+    type: MediaType,
+    onMediaClick: (Int) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?
+) {
+    if (titles.isEmpty()) return
+    item(key = "${key}_header") {
+        SectionHeader(
+            title = stringResource(titleRes),
+            subtitle = pluralStringResourceOrDefault(R.plurals.profile_favorites_count_titles, titles.size, titles.size.toString()),
+            level = HeaderLevel.Section,
+            padding = PaddingValues(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp)
+        )
+    }
+    items(titles, key = { "${key}_${it.theirs.mediaId}" }) { shared ->
+        ProfileMediaListCard(
+            entry = shared.theirs,
+            mediaType = type,
+            onClick = { onMediaClick(shared.theirs.mediaId) },
+            titleLanguage = titleLanguage,
+            yours = shared.yours,
+            yourScoreFormat = yourScoreFormat,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            transitionPrefix = key,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
+        )
+    }
+}
+
+@Composable
+private fun PosterShelf(
+    title: String,
+    items: List<LibraryEntry>,
+    titleLanguage: TitleLanguage,
+    onMediaClick: (Int) -> Unit,
+    prefix: String
+) {
+    Column {
+        SectionHeader(
+            title = title,
+            subtitle = pluralStringResourceOrDefault(R.plurals.profile_favorites_count_titles, items.size, items.size.toString()),
+            level = HeaderLevel.Section,
+            padding = PaddingValues(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp)
+        )
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(items, key = { it.mediaId }) { entry ->
+                MediaPosterCard(
+                    item = entry,
+                    onClick = { onMediaClick(entry.mediaId) },
+                    titleLanguage = titleLanguage,
+                    transitionPrefix = prefix,
+                    modifier = Modifier.width(112.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun rememberListComparison(uiState: ProfileUiState, isOwnProfile: Boolean): ListComparison? {
+    val type = if (uiState.selectedTab == ProfileTab.COMPARE) uiState.compareType else MediaType.ANIME
+    val enabled = !isOwnProfile && (uiState.selectedTab == ProfileTab.OVERVIEW || uiState.selectedTab == ProfileTab.COMPARE)
+    val theirs = if (type == MediaType.MANGA) uiState.userMangaList else uiState.userAnimeList
+    return remember(theirs, uiState.viewerEntries, uiState.viewerScoreFormat, type, enabled) {
+        if (!enabled || theirs.isEmpty()) null else compareLists(theirs, uiState.viewerEntries.values, type, uiState.viewerScoreFormat)
+    }
+}

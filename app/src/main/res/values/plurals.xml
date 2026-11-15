@@ -408,4 +408,24 @@
         <item quantity="one">%1$s studio</item>
         <item quantity="other">%1$s studios</item>
     </plurals>
+    <plurals name="profile_compare_shared_anime">
+        <item quantity="one">of your %1$s anime is on %2$s\'s list</item>
+        <item quantity="other">of your %1$s anime are on %2$s\'s list</item>
+    </plurals>
+    <plurals name="profile_compare_shared_manga">
+        <item quantity="one">of your %1$s manga is on %2$s\'s list</item>
+        <item quantity="other">of your %1$s manga are on %2$s\'s list</item>
+    </plurals>
+    <plurals name="profile_compare_their_tens">
+        <item quantity="one">%1$s title %2$s scored 10 is not on your list yet</item>
+        <item quantity="other">%1$s titles %2$s scored 10 are not on your list yet</item>
+    </plurals>
+    <plurals name="profile_compare_theirs_not_yours">
+        <item quantity="one">%1$s has %2$s title you have not added</item>
+        <item quantity="other">%1$s has %2$s titles you have not added</item>
+    </plurals>
+    <plurals name="profile_compare_yours_not_theirs">
+        <item quantity="one">You have %1$s title %2$s has not added</item>
+        <item quantity="other">You have %1$s titles %2$s has not added</item>
+    </plurals>
 </resources>

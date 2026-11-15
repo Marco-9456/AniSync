@@ -56,6 +56,8 @@ data class ProfileUiState(
     val selectedMangaStatus: LibraryStatus? = LibraryStatus.CURRENT,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
     val isStatusComposerVisible: Boolean = false,
+    val compareType: com.anisync.android.type.MediaType = com.anisync.android.type.MediaType.ANIME,
+    val viewerAvatarUrl: String? = null,
     val isPostingStatus: Boolean = false,
     val peopleOrder: PeopleOrder = PeopleOrder.NEWEST,
     val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
@@ -226,9 +228,10 @@ enum class ProfileTab(@StringRes val titleRes: Int) {
     MANGA(R.string.media_type_manga),
     FAVORITES(R.string.section_favorites),
     SOCIAL(R.string.profile_page_people),
-    ABOUT(R.string.profile_about);
+    ABOUT(R.string.profile_about),
+    COMPARE(R.string.profile_compare);
 
-    val isPage: Boolean get() = this == FAVORITES || this == SOCIAL || this == ABOUT
+    val isPage: Boolean get() = this == FAVORITES || this == SOCIAL || this == ABOUT || this == COMPARE
 }
 
 /** The views behind the Statistics rail's chips. Recaps only exists on the viewer's own profile. */
@@ -358,6 +361,7 @@ sealed interface ProfileAction {
     data class EditActivity(val activityId: Int) : ProfileAction
     data object DismissActivityEdit : ProfileAction
     data class SetStatusComposerVisible(val visible: Boolean) : ProfileAction
+    data class SelectCompareType(val type: com.anisync.android.type.MediaType) : ProfileAction
     data class PostStatus(val text: String) : ProfileAction
     data class SubmitActivityEdit(val text: String) : ProfileAction
     data object ConsumeActivitySnackbar : ProfileAction

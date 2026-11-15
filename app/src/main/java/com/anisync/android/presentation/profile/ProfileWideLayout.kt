@@ -77,6 +77,7 @@ import com.anisync.android.presentation.profile.components.ProfileAvatarSize
 import com.anisync.android.presentation.profile.components.ProfileBannerSurface
 import com.anisync.android.presentation.profile.components.ProfileDisplayName
 import com.anisync.android.presentation.profile.components.ProfileIdentityDetails
+import com.anisync.android.presentation.profile.sections.rememberListComparison
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.PaneDragHandle
@@ -805,6 +806,7 @@ private fun ProfileTabPane(
             ProfileTab.MANGA -> "MANGA_${uiState.selectedMangaStatus?.name ?: "ALL"}"
             ProfileTab.FAVORITES -> "FAVORITES_${uiState.selectedFavoritesFilter.name}"
             ProfileTab.SOCIAL -> "SOCIAL_${uiState.selectedSocialTab.name}"
+            ProfileTab.COMPARE -> "COMPARE_${uiState.compareType.name}"
             ProfileTab.OVERVIEW, ProfileTab.ABOUT -> uiState.selectedTab.name
         }
         val listState = rememberSaveable(listStateKey, saver = LazyListState.Saver) { LazyListState() }
@@ -816,6 +818,7 @@ private fun ProfileTabPane(
         )
 
         val showShareFab = uiState.showsShareFab(profile)
+        val comparison = rememberListComparison(uiState, isOwnProfile)
         Column(modifier = Modifier.fillMaxSize()) {
             ProfileTabStrip(
                 uiState = uiState,
@@ -858,7 +861,8 @@ private fun ProfileTabPane(
                         portraitColumns = portraitColumns,
                         studioColumns = studioColumns,
                         statsColumns = statsColumns,
-                        onOpenRecap = onOpenRecap
+                        onOpenRecap = onOpenRecap,
+                        comparison = comparison
                     )
                 }
             }
