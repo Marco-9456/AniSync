@@ -561,6 +561,7 @@ private fun ProfileTwoPane(
             ProfileTabPane(
                 profile = profile,
                 uiState = uiState,
+                isOwnProfile = isOwnProfile,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 onAction = onAction,
@@ -775,6 +776,7 @@ private fun BioCollapseSettler(collapse: BioCollapseState, bioScrollState: Scrol
 private fun ProfileTabPane(
     profile: UserProfile,
     uiState: ProfileUiState,
+    isOwnProfile: Boolean,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
     onAction: (ProfileAction) -> Unit,
@@ -802,8 +804,8 @@ private fun ProfileTabPane(
         val listStateKey = when (uiState.selectedTab) {
             ProfileTab.STATS -> uiState.selectedStatsView.name
             ProfileTab.ACTIVITY -> "ACTIVITY_${uiState.selectedActivityFilter.name}"
-            ProfileTab.ANIME -> "ANIME_${uiState.selectedAnimeStatus.name}"
-            ProfileTab.MANGA -> "MANGA_${uiState.selectedMangaStatus.name}"
+            ProfileTab.ANIME -> "ANIME_${uiState.selectedAnimeStatus?.name ?: "ALL"}"
+            ProfileTab.MANGA -> "MANGA_${uiState.selectedMangaStatus?.name ?: "ALL"}"
             ProfileTab.FAVORITES -> "FAVORITES_${uiState.selectedFavoritesFilter.name}"
             ProfileTab.SOCIAL -> "SOCIAL_${uiState.selectedSocialTab.name}"
             ProfileTab.OVERVIEW, ProfileTab.REVIEWS -> uiState.selectedTab.name
@@ -842,6 +844,7 @@ private fun ProfileTabPane(
                     profileSelectedTabContent(
                         profile = profile,
                         uiState = uiState,
+                        isOwnProfile = isOwnProfile,
                         sharedTransitionScope = sharedTransitionScope,
                         animatedVisibilityScope = animatedVisibilityScope,
                         onAction = onAction,

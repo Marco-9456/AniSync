@@ -376,4 +376,12 @@
         <item quantity="one">person</item>
         <item quantity="other">people</item>
     </plurals>
+    <plurals name="profile_list_titles">
+        <item quantity="one">%1$s title</item>
+        <item quantity="other">%1$s titles</item>
+    </plurals>
+    <plurals name="profile_list_results_for">
+        <item quantity="one">%1$s result for %2$s</item>
+        <item quantity="other">%1$s results for %2$s</item>
+    </plurals>
 </resources>

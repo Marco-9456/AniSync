@@ -26,6 +26,13 @@ import com.anisync.android.domain.stats.ActivityInsights
 import com.anisync.android.domain.stats.Eras
 import com.anisync.android.domain.stats.ScoreSummary
 import com.anisync.android.domain.stats.summarizeScores
+import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.data.TitleLanguage
+import com.anisync.android.presentation.profile.lists.ProfileListFilters
+import com.anisync.android.presentation.profile.lists.ProfileListResults
+import com.anisync.android.presentation.profile.lists.ProfileListSheet
+import com.anisync.android.presentation.profile.lists.ProfileListSort
+import com.anisync.android.presentation.profile.lists.ProfileListTools
 
 @Stable
 data class ProfileUiState(
@@ -42,8 +49,10 @@ data class ProfileUiState(
     val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
     val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
     val selectedFavoritesFilter: ProfileFavoritesFilter = ProfileFavoritesFilter.ANIME,
-    val selectedAnimeStatus: LibraryStatus = LibraryStatus.CURRENT,
-    val selectedMangaStatus: LibraryStatus = LibraryStatus.CURRENT,
+    /** The Anime list's chip, null for All. */
+    val selectedAnimeStatus: LibraryStatus? = LibraryStatus.CURRENT,
+    /** The Manga list's chip, null for All. */
+    val selectedMangaStatus: LibraryStatus? = LibraryStatus.CURRENT,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
     val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
     val selectedStatsView: StatsView = StatsView.OVERVIEW,
@@ -108,6 +117,14 @@ data class ProfileUiState(
     val followerToRemove: SocialUser? = null,
     val isSavingAbout: Boolean = false,
     val isUnfollowConfirmVisible: Boolean = false,
+    val listSheet: ProfileListSheet = ProfileListSheet.NONE,
+    val listTools: ProfileListTools = ProfileListTools(),
+    val listResults: ProfileListResults = ProfileListResults(),
+    val viewerEntries: Map<Int, LibraryEntry> = emptyMap(),
+    val viewerScoreFormat: ScoreFormat = ScoreFormat.POINT_100,
+    val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
+    val isAnimeListFailed: Boolean = false,
+    val isMangaListFailed: Boolean = false,
     /** The viewer's recaps for Statistics, empty on anyone else's profile. */
     val recaps: com.anisync.android.presentation.recap.RecapsUiModel = com.anisync.android.presentation.recap.RecapsUiModel()
 )
@@ -276,8 +293,15 @@ sealed interface ProfileAction {
     data class SelectTab(val tab: ProfileTab) : ProfileAction
     data class SelectActivityFilter(val filter: ProfileActivityFilter) : ProfileAction
     data class SelectFavoritesFilter(val filter: ProfileFavoritesFilter) : ProfileAction
-    data class SelectAnimeStatus(val status: LibraryStatus) : ProfileAction
-    data class SelectMangaStatus(val status: LibraryStatus) : ProfileAction
+    data class SelectAnimeStatus(val status: LibraryStatus?) : ProfileAction
+    data class SelectMangaStatus(val status: LibraryStatus?) : ProfileAction
+    data class SetListQuery(val query: String) : ProfileAction
+    data class SetListSort(val sort: ProfileListSort, val ascending: Boolean) : ProfileAction
+    data class SetListFilters(val filters: ProfileListFilters) : ProfileAction
+    data object ClearListFilters : ProfileAction
+    data object ToggleListView : ProfileAction
+    data class OpenListSheet(val sheet: ProfileListSheet) : ProfileAction
+    data object RetryList : ProfileAction
     data class SelectSocialTab(val tab: ProfileSocialTab) : ProfileAction
     data class SelectStatsType(val type: ProfileStatsType) : ProfileAction
     data class SelectStatsView(val view: StatsView) : ProfileAction

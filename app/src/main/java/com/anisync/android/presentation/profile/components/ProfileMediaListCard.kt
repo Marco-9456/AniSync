@@ -16,10 +16,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +50,8 @@ import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
+import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.domain.formatScore
 import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.MetaChip
 import com.anisync.android.presentation.components.NoteBottomSheet
@@ -87,6 +92,9 @@ fun ProfileMediaListCard(
     // favourites, so those chips (and the note) are hidden and the card shows only objective
     // media data — type + release year.
     showViewerListData: Boolean = true,
+    showStatus: Boolean = true,
+    yours: LibraryEntry? = null,
+    yourScoreFormat: ScoreFormat = ScoreFormat.POINT_100,
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     transitionPrefix: String = TransitionKeys.LIBRARY
@@ -186,10 +194,12 @@ fun ProfileMediaListCard(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     if (showViewerListData) {
-                        MetaChip(
-                            label = entry.status.toLabel(mediaType),
-                            accent = entry.status.toColor()
-                        )
+                        if (showStatus) {
+                            MetaChip(
+                                label = entry.status.toLabel(mediaType),
+                                accent = entry.status.toColor()
+                            )
+                        }
                         ScoreChip(score = entry.score, format = entry.scoreFormat)
                         if (entry.progress > 0 || (total ?: 0) > 0) {
                             MetaChip(label = progressLabel(entry.progress, total, mediaType))
@@ -209,6 +219,11 @@ fun ProfileMediaListCard(
                     }
                 }
 
+                if (yours != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    YourEntryLine(yours = yours, total = total, mediaType = mediaType, scoreFormat = yourScoreFormat)
+                }
+
                 if (showViewerListData && !entry.notes.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     NotePreview(
@@ -225,6 +240,32 @@ fun ProfileMediaListCard(
             note = entry.notes,
             heading = title,
             onDismiss = { showNoteSheet = false }
+        )
+    }
+}
+
+@Composable
+private fun YourEntryLine(yours: LibraryEntry, total: Int?, mediaType: MediaType, scoreFormat: ScoreFormat) {
+    val parts = buildList {
+        add(stringResource(R.string.profile_list_you))
+        add(yours.status.toLabel(mediaType))
+        if (yours.progress > 0) add(progressLabel(yours.progress, total, mediaType))
+        yours.score?.takeIf { it > 0.0 }?.let { add(formatScore(it, scoreFormat)) }
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = Icons.Default.Person,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = parts.joinToString("  ·  "),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

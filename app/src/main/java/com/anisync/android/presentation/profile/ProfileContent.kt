@@ -89,6 +89,11 @@ import com.anisync.android.presentation.profile.sections.profileMediaTab
 import com.anisync.android.presentation.profile.sections.profileReviewsTab
 import com.anisync.android.presentation.profile.sections.profileSocialTab
 import com.anisync.android.presentation.profile.sections.profileStatsTab
+import com.anisync.android.presentation.profile.lists.ProfileListFilterSheet
+import com.anisync.android.presentation.profile.lists.ProfileListSheet
+import com.anisync.android.presentation.profile.lists.ProfileListSortSheet
+import com.anisync.android.presentation.profile.lists.ProfileListToolbar
+import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.presentation.statistics.StatsRail
 import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.share.studio.ShareStudioSubject
@@ -256,13 +261,19 @@ fun ProfileContent(
         onAction(action)
         scope.launch { dockStrip() }
     }
+    // Docking while typing would swap the field for its pinned copy and drop focus mid word.
+    val onListQueryChange: (String) -> Unit = { query ->
+        onAction(ProfileAction.SetListQuery(query))
+        if (tabsDocked) scope.launch { dockStrip() }
+    }
     val tabStrip: @Composable () -> Unit = {
         ProfileTabStrip(
             uiState = uiState,
             onTabSelected = onTabSelected,
             onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
             onStatsViewSelected = onStatsViewSelected,
-            onFilterAction = onFilterAction
+            onFilterAction = onFilterAction,
+            onListQueryChange = onListQueryChange
         )
     }
 
@@ -331,6 +342,7 @@ fun ProfileContent(
         profileSelectedTabContent(
             profile = profile,
             uiState = uiState,
+            isOwnProfile = isOwnProfile,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
             onAction = onAction,
@@ -378,6 +390,29 @@ fun ProfileContent(
                 onAction(ProfileAction.SetBiographySheetVisible(false))
             }
         )
+    }
+
+    val listEntries = if (uiState.selectedTab == ProfileTab.MANGA) uiState.userMangaList else uiState.userAnimeList
+    val distinctListEntries = remember(listEntries) { listEntries.distinctBy { it.id } }
+    when (uiState.listSheet) {
+        ProfileListSheet.SORT -> ProfileListSortSheet(
+            tools = uiState.listTools,
+            isOwnProfile = isOwnProfile,
+            onSortChange = { sort, ascending -> onAction(ProfileAction.SetListSort(sort, ascending)) },
+            onDismiss = { onAction(ProfileAction.OpenListSheet(ProfileListSheet.NONE)) }
+        )
+        ProfileListSheet.FILTERS -> ProfileListFilterSheet(
+            entries = distinctListEntries,
+            status = if (uiState.selectedTab == ProfileTab.MANGA) uiState.selectedMangaStatus else uiState.selectedAnimeStatus,
+            tools = uiState.listTools,
+            viewer = uiState.viewerEntries,
+            titleLanguage = uiState.titleLanguage,
+            ownerScoreFormat = distinctListEntries.firstNotNullOfOrNull { it.scoreFormat } ?: ScoreFormat.POINT_100,
+            isOwnProfile = isOwnProfile,
+            onFiltersChange = { onAction(ProfileAction.SetListFilters(it)) },
+            onDismiss = { onAction(ProfileAction.OpenListSheet(ProfileListSheet.NONE)) }
+        )
+        ProfileListSheet.NONE -> Unit
     }
 
     uiState.selectedReview?.let { review ->
@@ -438,6 +473,7 @@ fun ProfileContent(
 internal fun LazyListScope.profileSelectedTabContent(
     profile: UserProfile,
     uiState: ProfileUiState,
+    isOwnProfile: Boolean,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
     onAction: (ProfileAction) -> Unit,
@@ -516,34 +552,31 @@ internal fun LazyListScope.profileSelectedTabContent(
             )
         }
 
-        ProfileTab.ANIME -> {
+        ProfileTab.ANIME, ProfileTab.MANGA -> {
+            val manga = uiState.selectedTab == ProfileTab.MANGA
             profileMediaTab(
-                itemsByStatus = uiState.userAnimeListByStatus,
-                selectedStatus = uiState.selectedAnimeStatus,
-                isLoading = uiState.isUserAnimeListLoading,
-                mediaType = MediaType.ANIME,
-                emptyMessageRes = R.string.profile_placeholder_anime,
+                results = uiState.listResults,
+                tools = uiState.listTools,
+                selectedStatus = if (manga) uiState.selectedMangaStatus else uiState.selectedAnimeStatus,
+                hasEntries = (if (manga) uiState.userMangaList else uiState.userAnimeList).isNotEmpty(),
+                isLoading = if (manga) uiState.isUserMangaListLoading else uiState.isUserAnimeListLoading,
+                loadFailed = if (manga) uiState.isMangaListFailed else uiState.isAnimeListFailed,
+                mediaType = if (manga) MediaType.MANGA else MediaType.ANIME,
+                ownerName = profile.name,
+                isOwnProfile = isOwnProfile,
+                viewer = uiState.viewerEntries,
+                yourScoreFormat = uiState.viewerScoreFormat,
+                titleLanguage = uiState.titleLanguage,
                 onMediaClick = onMediaClick,
+                onOpenSort = { onAction(ProfileAction.OpenListSheet(ProfileListSheet.SORT)) },
+                onClearFilters = { onAction(ProfileAction.ClearListFilters) },
+                onRetry = { onAction(ProfileAction.RetryList) },
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
-                transitionPrefix = "profile_anime",
+                transitionPrefix = if (manga) "profile_manga" else "profile_anime",
                 // List rows are wide; 2-up is the most that stays legible (incl. the right pane).
-                listColumns = statsColumns.coerceAtMost(2)
-            )
-        }
-
-        ProfileTab.MANGA -> {
-            profileMediaTab(
-                itemsByStatus = uiState.userMangaListByStatus,
-                selectedStatus = uiState.selectedMangaStatus,
-                isLoading = uiState.isUserMangaListLoading,
-                mediaType = MediaType.MANGA,
-                emptyMessageRes = R.string.profile_placeholder_manga,
-                onMediaClick = onMediaClick,
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-                transitionPrefix = "profile_manga",
-                listColumns = statsColumns.coerceAtMost(2)
+                listColumns = statsColumns.coerceAtMost(2),
+                gridColumns = studioColumns.coerceAtLeast(2)
             )
         }
 
@@ -639,7 +672,8 @@ internal fun ProfileTabStrip(
     onStatsTypeSelected: (ProfileStatsType) -> Unit,
     onStatsViewSelected: (StatsView) -> Unit,
     onFilterAction: (ProfileAction) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onListQueryChange: (String) -> Unit = { onFilterAction(ProfileAction.SetListQuery(it)) }
 ) {
     val selectListTab: (MediaType) -> Unit = {
         onTabSelected(if (it == MediaType.MANGA) ProfileTab.MANGA else ProfileTab.ANIME)
@@ -662,20 +696,26 @@ internal fun ProfileTabStrip(
             ProfileTab.ACTIVITY -> ActivityFilterRail(uiState.selectedActivityFilter) {
                 onFilterAction(ProfileAction.SelectActivityFilter(it))
             }
-            ProfileTab.ANIME -> MediaStatusRail(
-                itemsByStatus = uiState.userAnimeListByStatus,
-                selectedStatus = uiState.selectedAnimeStatus,
-                mediaType = MediaType.ANIME,
-                onStatusSelected = { onFilterAction(ProfileAction.SelectAnimeStatus(it)) },
-                onMediaTypeSelected = selectListTab
-            )
-            ProfileTab.MANGA -> MediaStatusRail(
-                itemsByStatus = uiState.userMangaListByStatus,
-                selectedStatus = uiState.selectedMangaStatus,
-                mediaType = MediaType.MANGA,
-                onStatusSelected = { onFilterAction(ProfileAction.SelectMangaStatus(it)) },
-                onMediaTypeSelected = selectListTab
-            )
+            ProfileTab.ANIME, ProfileTab.MANGA -> {
+                val manga = uiState.selectedTab == ProfileTab.MANGA
+                MediaStatusRail(
+                    itemsByStatus = if (manga) uiState.userMangaListByStatus else uiState.userAnimeListByStatus,
+                    selectedStatus = if (manga) uiState.selectedMangaStatus else uiState.selectedAnimeStatus,
+                    mediaType = if (manga) MediaType.MANGA else MediaType.ANIME,
+                    onStatusSelected = {
+                        onFilterAction(if (manga) ProfileAction.SelectMangaStatus(it) else ProfileAction.SelectAnimeStatus(it))
+                    },
+                    onMediaTypeSelected = selectListTab
+                )
+                ProfileListToolbar(
+                    query = uiState.listTools.query,
+                    onQueryChange = onListQueryChange,
+                    view = uiState.listTools.view,
+                    onToggleView = { onFilterAction(ProfileAction.ToggleListView) },
+                    activeFilters = uiState.listTools.filters.activeCount,
+                    onOpenFilters = { onFilterAction(ProfileAction.OpenListSheet(ProfileListSheet.FILTERS)) }
+                )
+            }
             ProfileTab.FAVORITES -> FavoritesFilterRail(uiState.selectedFavoritesFilter) {
                 onFilterAction(ProfileAction.SelectFavoritesFilter(it))
             }

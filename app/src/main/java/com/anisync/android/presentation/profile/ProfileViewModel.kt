@@ -64,6 +64,14 @@ import com.anisync.android.domain.MainTab
 import com.anisync.android.domain.TabReselectBus
 import com.anisync.android.domain.observeTab
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
+import com.anisync.android.presentation.profile.lists.ProfileListFilters
+import com.anisync.android.presentation.profile.lists.ProfileListResults
+import com.anisync.android.presentation.profile.lists.ProfileListSheet
+import com.anisync.android.presentation.profile.lists.ProfileListTools
+import com.anisync.android.presentation.profile.lists.ProfileListView
+import com.anisync.android.presentation.profile.lists.applyListTools
 
 private val LIBRARY_STATUS_DISPLAY_ORDER = arrayOf(
     LibraryStatus.CURRENT,
@@ -157,8 +165,8 @@ class ProfileViewModel @Inject constructor(
         val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
         val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
         val selectedFavoritesFilter: ProfileFavoritesFilter = ProfileFavoritesFilter.ANIME,
-        val selectedAnimeStatus: LibraryStatus = LibraryStatus.CURRENT,
-        val selectedMangaStatus: LibraryStatus = LibraryStatus.CURRENT,
+        val selectedAnimeStatus: LibraryStatus? = LibraryStatus.CURRENT,
+        val selectedMangaStatus: LibraryStatus? = LibraryStatus.CURRENT,
         val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
         val selectedStatsView: StatsView = StatsView.OVERVIEW,
@@ -181,7 +189,8 @@ class ProfileViewModel @Inject constructor(
         val isSavingActivityEdit: Boolean = false,
         val followerToRemove: com.anisync.android.domain.SocialUser? = null,
         val isSavingAbout: Boolean = false,
-        val isUnfollowConfirmVisible: Boolean = false
+        val isUnfollowConfirmVisible: Boolean = false,
+        val listSheet: ProfileListSheet = ProfileListSheet.NONE
     )
 
     private val localState = MutableStateFlow(ProfileUiLocalState())
@@ -243,7 +252,9 @@ class ProfileViewModel @Inject constructor(
         val userMangaListByStatus: Map<LibraryStatus, List<LibraryEntry>> = emptyMap(),
         val isUserMangaListLoading: Boolean = false,
         val hasFetchedMangaList: Boolean = false,
-        val lastMangaListFetchAtMs: Long = 0L
+        val lastMangaListFetchAtMs: Long = 0L,
+        val animeListFailed: Boolean = false,
+        val mangaListFailed: Boolean = false
     )
 
     private val mediaListState = MutableStateFlow(MediaListState())
@@ -436,6 +447,62 @@ class ProfileViewModel @Inject constructor(
             kotlinx.coroutines.flow.flowOf(com.anisync.android.presentation.recap.RecapsUiModel())
         }
 
+    private val listTools = MutableStateFlow(ProfileListTools())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val viewerLibrary: StateFlow<Map<Int, LibraryEntry>> =
+        if (targetUsername.isNullOrBlank()) {
+            MutableStateFlow(emptyMap())
+        } else {
+            accountManager.activeAccount
+                .map { it?.name }
+                .distinctUntilChanged()
+                .flatMapLatest { name ->
+                    if (name.isNullOrBlank()) {
+                        flowOf(emptyMap())
+                    } else {
+                        combine(
+                            libraryRepository.observeLibrary(name, com.anisync.android.type.MediaType.ANIME),
+                            libraryRepository.observeLibrary(name, com.anisync.android.type.MediaType.MANGA)
+                        ) { anime, manga -> (anime + manga).associateBy { it.mediaId } }
+                    }
+                }
+                .catch { emit(emptyMap()) }
+                .flowOn(Dispatchers.Default)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+        }
+
+    private val listResults = combine(
+        mediaListState,
+        localState.map { Triple(it.selectedTab, it.selectedAnimeStatus, it.selectedMangaStatus) }.distinctUntilChanged(),
+        listTools,
+        viewerLibrary,
+        appSettings.titleLanguage
+    ) { lists, (tab, animeStatus, mangaStatus), tools, viewer, language ->
+        when (tab) {
+            ProfileTab.ANIME -> applyListTools(lists.userAnimeList.distinctBy { it.id }, animeStatus, tools, viewer, language)
+            ProfileTab.MANGA -> applyListTools(lists.userMangaList.distinctBy { it.id }, mangaStatus, tools, viewer, language)
+            else -> ProfileListResults()
+        }
+    }.flowOn(Dispatchers.Default)
+
+    private class ListParts(
+        val tools: ProfileListTools,
+        val results: ProfileListResults,
+        val viewer: Map<Int, LibraryEntry>,
+        val viewerScoreFormat: com.anisync.android.domain.ScoreFormat,
+        val titleLanguage: com.anisync.android.data.TitleLanguage,
+    )
+
+    private val listParts = combine(
+        listTools,
+        listResults,
+        viewerLibrary,
+        appSettings.userScoreFormat,
+        appSettings.titleLanguage,
+        ::ListParts,
+    )
+
     /** The tabs' own states, below the header. */
     private class Sections(
         val social: SocialState,
@@ -464,6 +531,8 @@ class ProfileViewModel @Inject constructor(
 
     private val sections = combine(socialState, reviewsState, statsState, mediaListState, favoritesState, ::Sections)
 
+    private val sectionsAndLists = combine(sections, listParts, ::Pair)
+
     private val feedOverlays = combine(
         activitySubscriptionOverrides,
         activityLikeOverrides,
@@ -478,10 +547,11 @@ class ProfileViewModel @Inject constructor(
     val uiState: StateFlow<ProfileUiState> = combine(
         profileState,
         localState,
-        sections,
+        sectionsAndLists,
         feedOverlays,
         viewerParts,
-    ) { remote, local, parts, overlays, viewer ->
+    ) { remote, local, partsAndLists, overlays, viewer ->
+        val (parts, lists) = partsAndLists
         val social = parts.social
         val reviews = parts.reviews
         val stats = parts.stats
@@ -587,6 +657,14 @@ class ProfileViewModel @Inject constructor(
             followerToRemove = local.followerToRemove,
             isSavingAbout = local.isSavingAbout,
             isUnfollowConfirmVisible = local.isUnfollowConfirmVisible,
+            listSheet = local.listSheet,
+            listTools = lists.tools,
+            listResults = lists.results,
+            viewerEntries = lists.viewer,
+            viewerScoreFormat = lists.viewerScoreFormat,
+            titleLanguage = lists.titleLanguage,
+            isAnimeListFailed = mediaLists.animeListFailed,
+            isMangaListFailed = mediaLists.mangaListFailed,
             socialFollowing = social.socialFollowing,
             socialFollowers = social.socialFollowers,
             socialMutuals = social.socialMutuals,
@@ -783,6 +861,19 @@ class ProfileViewModel @Inject constructor(
                 localState.update {
                     it.copy(selectedMangaStatus = action.status)
                 }
+            }
+
+            is ProfileAction.SetListQuery -> listTools.update { it.copy(query = action.query) }
+            is ProfileAction.SetListSort -> listTools.update { it.copy(sort = action.sort, ascending = action.ascending) }
+            is ProfileAction.SetListFilters -> listTools.update { it.copy(filters = action.filters) }
+            ProfileAction.ClearListFilters -> listTools.update { it.copy(filters = ProfileListFilters()) }
+            ProfileAction.ToggleListView -> listTools.update {
+                it.copy(view = if (it.view == ProfileListView.LIST) ProfileListView.GRID else ProfileListView.LIST)
+            }
+            is ProfileAction.OpenListSheet -> localState.update { it.copy(listSheet = action.sheet) }
+            ProfileAction.RetryList -> when (localState.value.selectedTab) {
+                ProfileTab.MANGA -> fetchUserMangaList(forceRefresh = true)
+                else -> fetchUserAnimeList(forceRefresh = true)
             }
 
             is ProfileAction.SelectSocialTab -> {
@@ -1648,7 +1739,7 @@ class ProfileViewModel @Inject constructor(
         if (!forceRefresh && mediaListState.value.hasFetchedAnimeList) return
 
         viewModelScope.launch {
-            mediaListState.update { it.copy(isUserAnimeListLoading = true) }
+            mediaListState.update { it.copy(isUserAnimeListLoading = true, animeListFailed = false) }
             val username = uiState.value.profile?.name
             if (username.isNullOrBlank()) {
                 mediaListState.update { it.copy(isUserAnimeListLoading = false) }
@@ -1669,7 +1760,7 @@ class ProfileViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
-                    mediaListState.update { it.copy(isUserAnimeListLoading = false) }
+                    mediaListState.update { it.copy(isUserAnimeListLoading = false, animeListFailed = true) }
                 }
             }
         }
@@ -1680,7 +1771,7 @@ class ProfileViewModel @Inject constructor(
         if (!forceRefresh && mediaListState.value.hasFetchedMangaList) return
 
         viewModelScope.launch {
-            mediaListState.update { it.copy(isUserMangaListLoading = true) }
+            mediaListState.update { it.copy(isUserMangaListLoading = true, mangaListFailed = false) }
             val username = uiState.value.profile?.name
             if (username.isNullOrBlank()) {
                 mediaListState.update { it.copy(isUserMangaListLoading = false) }
@@ -1701,7 +1792,7 @@ class ProfileViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
-                    mediaListState.update { it.copy(isUserMangaListLoading = false) }
+                    mediaListState.update { it.copy(isUserMangaListLoading = false, mangaListFailed = true) }
                 }
             }
         }
