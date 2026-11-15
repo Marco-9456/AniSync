@@ -378,6 +378,12 @@ class MainActivity : AppCompatActivity() {
                                 // epoch, which tears down and rebuilds the entire MainScreen subtree
                                 // (fresh NavController + ViewModels) so screens refetch the new account.
                                 val sessionEpoch by accountManager.sessionEpoch.collectAsStateWithLifecycle()
+                                // A fresh NavController handles the activity's intent again, which
+                                // reopened the last link instead of the new account's start screen.
+                                val launchEpoch = remember { sessionEpoch }
+                                remember(sessionEpoch) {
+                                    if (sessionEpoch != launchEpoch) intent = Intent(intent).setData(null)
+                                }
 
                                 // Both libraries have to exist locally for the list indicators to be
                                 // truthful on the browsing screens, and only the anime one is fetched
