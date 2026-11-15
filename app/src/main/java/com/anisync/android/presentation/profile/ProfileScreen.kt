@@ -179,16 +179,13 @@ fun ProfileScreen(
             // cached yet (e.g. a pre-v19 row before its first refresh) so we never save HTML back.
             initialBody = profile.aboutMarkdown?.takeUnless { it.isBlank() }
                 ?: profile.about.orEmpty(),
-            isSubmitting = false,
+            isSubmitting = uiState.isSavingAbout,
             submitLabel = stringResource(R.string.save),
             minLength = 0,
             maxLength = 65_000,
-            onSubmit = { about ->
-                viewModel.onAction(ProfileAction.UpdateAbout(about))
-                viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false))
-            },
+            onSubmit = { about -> viewModel.onAction(ProfileAction.UpdateAbout(about)) },
             onDismiss = {
-                viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false))
+                if (!uiState.isSavingAbout) viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false))
             }
         )
     }

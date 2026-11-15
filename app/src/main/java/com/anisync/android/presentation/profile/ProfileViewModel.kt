@@ -179,7 +179,8 @@ class ProfileViewModel @Inject constructor(
         val isFollowLoading: Boolean = false,
         val editingActivity: com.anisync.android.domain.UserActivity? = null,
         val isSavingActivityEdit: Boolean = false,
-        val followerToRemove: com.anisync.android.domain.SocialUser? = null
+        val followerToRemove: com.anisync.android.domain.SocialUser? = null,
+        val isSavingAbout: Boolean = false
     )
 
     private val localState = MutableStateFlow(ProfileUiLocalState())
@@ -583,6 +584,7 @@ class ProfileViewModel @Inject constructor(
             editingActivity = local.editingActivity,
             isSavingActivityEdit = local.isSavingActivityEdit,
             followerToRemove = local.followerToRemove,
+            isSavingAbout = local.isSavingAbout,
             socialFollowing = social.socialFollowing,
             socialFollowers = social.socialFollowers,
             socialMutuals = social.socialMutuals,
@@ -1821,9 +1823,18 @@ class ProfileViewModel @Inject constructor(
     }
 
     private fun updateAbout(about: String) {
+        if (localState.value.isSavingAbout) return
+        localState.update { it.copy(isSavingAbout = true) }
         viewModelScope.launch {
-            if (profileRepository.updateAbout(about) is Result.Error) {
-                // In a real app, send a one-off UI event (e.g. Snackbar) here
+            when (val result = profileRepository.updateAbout(about)) {
+                is Result.Success -> {
+                    localState.update { it.copy(isSavingAbout = false, isEditProfileDialogVisible = false) }
+                    toastManager.showToast(ToastType.SUCCESS, R.string.profile_about_saved)
+                }
+                is Result.Error -> {
+                    localState.update { it.copy(isSavingAbout = false) }
+                    toastManager.showResultError(result)
+                }
             }
         }
     }

@@ -1390,6 +1390,7 @@
     <string name="activity_updated">Activity updated</string>
     <string name="activity_deleted">Activity deleted</string>
     <string name="message_sent">Message sent</string>
+    <string name="profile_about_saved">About saved</string>
     <string name="status_posted">Status posted</string>
     <string name="list_created">List \'%s\' created.</string>
     <string name="list_deleted">List \'%s\' deleted.</string>
