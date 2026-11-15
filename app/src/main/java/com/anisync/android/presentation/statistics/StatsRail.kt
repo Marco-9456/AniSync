@@ -38,6 +38,7 @@ fun StatsRail(
     onTypeSelected: (ProfileStatsType) -> Unit,
     onViewSelected: (StatsView) -> Unit,
     modifier: Modifier = Modifier,
+    isOwnProfile: Boolean = true,
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(selectedView) {
@@ -56,7 +57,7 @@ fun StatsRail(
     ) {
         items(views, key = { it.name }) { view ->
             RailChip(
-                label = stringResource(view.labelRes(statsType)),
+                label = stringResource(view.labelRes(statsType, isOwnProfile)),
                 icon = view.icon(statsType),
                 selected = view == selectedView,
                 onClick = { onViewSelected(view) },
@@ -66,15 +67,22 @@ fun StatsRail(
 }
 
 @StringRes
-internal fun StatsView.labelRes(statsType: ProfileStatsType): Int = when (this) {
+internal fun StatsView.labelRes(statsType: ProfileStatsType, isOwnProfile: Boolean): Int = when (this) {
     StatsView.OVERVIEW -> R.string.profile_tab_overview
     StatsView.RECAPS -> R.string.settings_recaps
     StatsView.ACTIVITY -> R.string.profile_tab_activity
     StatsView.TASTE -> R.string.stats_view_taste
-    StatsView.HOW_YOU_WATCH ->
-        if (statsType == ProfileStatsType.MANGA) R.string.stats_view_how_you_read else R.string.stats_view_how_you_watch
+    StatsView.HOW_YOU_WATCH -> howTheyWatchRes(statsType == ProfileStatsType.MANGA, isOwnProfile)
     StatsView.ERAS -> R.string.stats_view_eras
     StatsView.PEOPLE -> R.string.stats_view_people
+}
+
+@StringRes
+internal fun howTheyWatchRes(manga: Boolean, isOwnProfile: Boolean): Int = when {
+    isOwnProfile && manga -> R.string.stats_view_how_you_read
+    isOwnProfile -> R.string.stats_view_how_you_watch
+    manga -> R.string.stats_view_how_they_read
+    else -> R.string.stats_view_how_they_watch
 }
 
 private fun StatsView.icon(statsType: ProfileStatsType): ImageVector = when (this) {

@@ -662,9 +662,9 @@ internal fun LazyListScope.profileSelectedTabContent(
     }
 }
 
-/** Statistics once it has loaded and Favorites on a non-empty anime or manga list float the share button. */
+/** Statistics once it has loaded, outside Recaps, and Favorites on a non-empty anime or manga list float the share button. */
 internal fun ProfileUiState.showsShareFab(profile: UserProfile): Boolean = when (selectedTab) {
-    ProfileTab.STATS -> statsData != null
+    ProfileTab.STATS -> statsData != null && selectedStatsView != StatsView.RECAPS
     ProfileTab.FAVORITES -> when (selectedFavoritesFilter) {
         ProfileFavoritesFilter.ANIME -> profile.favoriteAnime.isNotEmpty()
         ProfileFavoritesFilter.MANGA -> profile.favoriteMangaOverview.isNotEmpty()
@@ -769,18 +769,18 @@ internal fun ProfileTabStrip(
             )
         }
         when (uiState.selectedTab) {
-            ProfileTab.STATS -> StatsRail(
-                statsType = uiState.selectedStatsType,
-                views = if (uiState.viewerId != null && uiState.viewerId == uiState.profile?.id) {
-                    StatsView.entries
-                } else {
-                    StatsView.entries.filter { it != StatsView.RECAPS }
-                },
-                selectedView = uiState.selectedStatsView,
-                onTypeSelected = onStatsTypeSelected,
-                onViewSelected = onStatsViewSelected,
-                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-            )
+            ProfileTab.STATS -> {
+                val own = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
+                StatsRail(
+                    statsType = uiState.selectedStatsType,
+                    views = if (own) StatsView.entries else StatsView.entries.filter { it != StatsView.RECAPS },
+                    selectedView = uiState.selectedStatsView,
+                    onTypeSelected = onStatsTypeSelected,
+                    onViewSelected = onStatsViewSelected,
+                    isOwnProfile = own,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                )
+            }
             ProfileTab.ACTIVITY -> ActivityFilterRail(uiState.selectedActivityFilter) {
                 onFilterAction(ProfileAction.SelectActivityFilter(it))
             }

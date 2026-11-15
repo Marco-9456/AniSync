@@ -1497,6 +1497,8 @@
     <string name="stats_view_taste">Taste</string>
     <string name="stats_view_how_you_watch">How you watch</string>
     <string name="stats_view_how_you_read">How you read</string>
+    <string name="stats_view_how_they_watch">How they watch</string>
+    <string name="stats_view_how_they_read">How they read</string>
     <string name="stats_view_eras">Eras</string>
     <string name="stats_view_people">People</string>
     <string name="stats_hero_eyebrow_anime">Anime · all time</string>
