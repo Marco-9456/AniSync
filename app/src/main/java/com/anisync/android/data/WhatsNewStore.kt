@@ -31,7 +31,8 @@ enum class WhatsNewItem(val sinceVersionCode: Int, val kind: Kind, val place: Pl
     SETTINGS_SUPPORT(24, Kind.NEW),
     PROFILE_LISTS(24, Kind.NEW, Place.PROFILE),
     PROFILE_PEOPLE_MOVED(24, Kind.MOVED, Place.PROFILE),
-    PROFILE_POSTS_MOVED(24, Kind.MOVED, Place.PROFILE);
+    PROFILE_POSTS_MOVED(24, Kind.MOVED, Place.PROFILE),
+    PROFILE_COMPARE(24, Kind.NEW, Place.PROFILE);
 
     enum class Kind { NEW, MOVED }
 

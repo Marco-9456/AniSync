@@ -32,6 +32,7 @@ import com.anisync.android.presentation.profile.sections.BioPreview
 // Hoisted static layout constants to prevent reallocation. The avatar size is shared with the wide
 // identity pane (see ProfileIdentity.kt).
 private val BannerHeight = 200.dp
+private val NoBannerHeight = 120.dp
 private val CardOverlap = 64.dp
 private val ContentCardShape = RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp)
 
@@ -65,7 +66,8 @@ fun ProfileTopSection(
     modifier: Modifier = Modifier
 ) {
     // The banner carries the status-bar height so everything below it stays put.
-    val bannerHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + BannerHeight
+    val bannerHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
+        if (profile.bannerUrl == null) NoBannerHeight else BannerHeight
 
     Box(modifier = modifier.fillMaxWidth()) {
         ProfileBannerSurface(

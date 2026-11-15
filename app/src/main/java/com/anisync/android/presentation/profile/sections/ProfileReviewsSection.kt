@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Refresh
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.MediaReview
+import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.profile.ProfileUiState
 
@@ -25,7 +29,8 @@ fun LazyListScope.profileReviewsTab(
     modifier: Modifier = Modifier,
     onUserClick: (String) -> Unit = {},
     onReviewClick: (MediaReview) -> Unit = {},
-    onLoadMore: () -> Unit = {}
+    onLoadMore: () -> Unit = {},
+    onRetry: () -> Unit = {}
 ) {
     if (uiState.isReviewsLoading && uiState.reviews.isEmpty()) {
         item(key = "reviews_loading") {
@@ -43,18 +48,15 @@ fun LazyListScope.profileReviewsTab(
 
     if (uiState.reviewsErrorMessage != null && uiState.reviews.isEmpty()) {
         item(key = "reviews_error") {
-            Box(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = uiState.reviewsErrorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center
-                )
-            }
+            EmptyState(
+                icon = Icons.Default.CloudOff,
+                title = stringResource(R.string.forum_empty_failed_title),
+                description = uiState.reviewsErrorMessage,
+                actionLabel = stringResource(R.string.retry),
+                actionIcon = Icons.Default.Refresh,
+                onAction = onRetry,
+                modifier = Modifier.padding(top = 32.dp)
+            )
         }
         return
     }

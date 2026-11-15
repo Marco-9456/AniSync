@@ -397,19 +397,30 @@ class ProfileViewModel @Inject constructor(
                     if (lastLoadedTargetProfile == null) {
                         emit(ProfileUiState(isLoading = true))
                     }
-                    when (val result = profileRepository.fetchUserProfile(targetUsername, forceNetwork)) {
+                    var fetched = profileRepository.fetchUserProfile(targetUsername, forceNetwork)
+                    // A rate limit on the first visit keeps the loader up and asks again once it is over.
+                    repeat(MAX_RATE_LIMIT_WAITS) {
+                        if (lastLoadedTargetProfile != null) return@repeat
+                        val countdown = (fetched as? Result.Error)?.countdownSeconds ?: return@repeat
+                        delay((countdown + 1) * 1_000L)
+                        fetched = profileRepository.fetchUserProfile(targetUsername, forceNetwork)
+                    }
+                    when (val result = fetched) {
                         is Result.Success -> {
                             lastLoadedTargetProfile = result.data
                             emit(ProfileUiState(isLoading = false, profile = result.data))
                         }
                         is Result.Error -> {
                             val cached = lastLoadedTargetProfile
+                            val offline = result.exception is com.anisync.android.data.util.ApiError.Offline
                             if (cached != null) {
                                 // Refresh failed but the profile is already on screen — keep it.
-                                emit(ProfileUiState(isLoading = false, profile = cached))
+                                emit(ProfileUiState(isLoading = false, profile = cached, isShowingSavedCopy = offline))
                             } else if (result.code == 404 || result.message.contains("not found", ignoreCase = true)) {
                                 // AniList answers 404 for a private account as well as a missing one.
                                 emit(ProfileUiState(isLoading = false, loadErrorRes = R.string.profile_user_unavailable))
+                            } else if (offline) {
+                                emit(ProfileUiState(isLoading = false, loadErrorRes = R.string.profile_offline_never_saved))
                             } else {
                                 emit(ProfileUiState(isLoading = false, errorMessage = result.message))
                             }
@@ -1014,6 +1025,8 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.SetStatusComposerVisible ->
                 localState.update { it.copy(isStatusComposerVisible = action.visible) }
             is ProfileAction.PostStatus -> postStatus(action.text)
+            ProfileAction.RetrySocial -> fetchSocialData(forceRefresh = true)
+            ProfileAction.RetryReviews -> fetchReviews(forceRefresh = true)
             is ProfileAction.SelectCompareType -> {
                 localState.update { it.copy(compareType = action.type) }
                 fetchListToCompare(action.type)

@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,14 +42,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
+import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.HeaderLevel
+import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.MediaPosterCard
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.components.WhatsNewPill
+import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.profile.components.ProfileMediaListCard
@@ -96,6 +101,10 @@ internal fun OverviewCompareCard(
                 Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(R.string.profile_compare_open))
+                if (WhatsNewItem.PROFILE_COMPARE in rememberActiveWhatsNew()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    WhatsNewPill(WhatsNewItem.Kind.NEW)
+                }
             }
         }
     }
@@ -167,6 +176,10 @@ fun LazyListScope.profileComparePage(
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?
 ) {
+    item(key = "compare_seen") {
+        val whatsNew = LocalWhatsNew.current
+        LaunchedEffect(Unit) { whatsNew.markSeen(WhatsNewItem.PROFILE_COMPARE) }
+    }
     if (comparison == null || isLoading) {
         item(key = "compare_loading") {
             Box(modifier = Modifier

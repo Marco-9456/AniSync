@@ -661,6 +661,8 @@
     <string name="profile_user_load_error">We could not load this user profile right now. The account may be private, unavailable or temporarily rate-limited.</string>
     <string name="profile_user_unavailable">This profile is private or no longer exists.</string>
     <string name="profile_unavailable_title">%1$s\'s profile is not available</string>
+    <string name="profile_offline_never_saved">No connection, and this profile has not been opened here before.</string>
+    <string name="profile_offline_saved_copy">Offline. This is the profile as it last loaded.</string>
     <string name="profile_unavailable_body">It is private or no longer exists. AniList answers both the same way.</string>
     <string name="profile_rate_limited_error">AniList is limiting requests right now. Wait a moment, then try again.</string>
     <string name="profile_tab_overview">Overview</string>
@@ -1470,6 +1472,9 @@
     <string name="profile_username_hint">Username · long press to copy</string>
     <string name="profile_read_more">Read more</string>
     <string name="profile_post_status">Post a status</string>
+    <string name="profile_picture_prompt_title">Add a picture and a banner</string>
+    <string name="profile_picture_prompt_body">AniList keeps these. The button opens your AniList settings.</string>
+    <string name="profile_picture_prompt_action">Open AniList settings</string>
     <string name="profile_compare">Compare</string>
     <string name="profile_compare_title">You and %1$s</string>
     <string name="profile_compare_open">Compare lists</string>

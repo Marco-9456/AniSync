@@ -58,6 +58,7 @@ data class ProfileUiState(
     val isStatusComposerVisible: Boolean = false,
     val compareType: com.anisync.android.type.MediaType = com.anisync.android.type.MediaType.ANIME,
     val viewerAvatarUrl: String? = null,
+    val isShowingSavedCopy: Boolean = false,
     val isPostingStatus: Boolean = false,
     val peopleOrder: PeopleOrder = PeopleOrder.NEWEST,
     val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
@@ -362,6 +363,8 @@ sealed interface ProfileAction {
     data object DismissActivityEdit : ProfileAction
     data class SetStatusComposerVisible(val visible: Boolean) : ProfileAction
     data class SelectCompareType(val type: com.anisync.android.type.MediaType) : ProfileAction
+    data object RetrySocial : ProfileAction
+    data object RetryReviews : ProfileAction
     data class PostStatus(val text: String) : ProfileAction
     data class SubmitActivityEdit(val text: String) : ProfileAction
     data object ConsumeActivitySnackbar : ProfileAction

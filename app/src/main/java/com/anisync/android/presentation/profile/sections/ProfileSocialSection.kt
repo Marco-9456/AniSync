@@ -13,6 +13,8 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,13 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.SocialThreadComment
 import com.anisync.android.domain.parser.RichTextPlainText
 import com.anisync.android.domain.SocialUser
+import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.components.shared.StatBadge
@@ -53,7 +55,8 @@ fun LazyListScope.profileSocialTab(
     /** Set on the viewer's own profile, where each follower carries a remove button. */
     onRemoveFollower: ((SocialUser) -> Unit)? = null,
     selectedTab: ProfileSocialTab = uiState.selectedSocialTab,
-    onToggleFollow: (SocialUser) -> Unit = {}
+    onToggleFollow: (SocialUser) -> Unit = {},
+    onRetry: () -> Unit = {}
 ) {
 
     if (uiState.isSocialLoading) {
@@ -72,18 +75,15 @@ fun LazyListScope.profileSocialTab(
 
     if (uiState.socialErrorMessage != null) {
         item(key = "social_error") {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = uiState.socialErrorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center
-                )
-            }
+            EmptyState(
+                icon = Icons.Default.CloudOff,
+                title = stringResource(R.string.forum_empty_failed_title),
+                description = uiState.socialErrorMessage,
+                actionLabel = stringResource(R.string.retry),
+                actionIcon = Icons.Default.Refresh,
+                onAction = onRetry,
+                modifier = Modifier.padding(top = 32.dp)
+            )
         }
         return
     }

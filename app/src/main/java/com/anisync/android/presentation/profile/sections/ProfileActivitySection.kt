@@ -236,7 +236,7 @@ internal fun ActivityDayHeader(epochDay: Long, start: Dp = 32.dp) {
 }
 
 @Composable
-private fun StatusComposerCard(avatarUrl: String?, onClick: () -> Unit) {
+internal fun StatusComposerCard(avatarUrl: String?, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         color = MaterialTheme.colorScheme.surfaceContainerLow,

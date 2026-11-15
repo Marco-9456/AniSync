@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.util.openUrl
+import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.util.AniListUrls
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -114,11 +116,30 @@ fun ProfileScreen(
                 ?: uiState.loadErrorRes?.let { stringResource(it) }
             when {
                 uiState.isLoading && profile == null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AppCircularProgressIndicator()
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.align(Alignment.Center)
+                        ) {
+                            viewModel.targetName?.let { name ->
+                                Text(
+                                    text = name,
+                                    style = MaterialTheme.typography.headlineMedium.emphasis(),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(bottom = 24.dp)
+                                )
+                            }
+                            AppCircularProgressIndicator()
+                        }
+                        if (onBackClick != null) {
+                            BackTrailButton(
+                                onClick = onBackClick,
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .statusBarsPadding()
+                                    .padding(top = 12.dp, start = 12.dp)
+                            )
+                        }
                     }
                 }
 

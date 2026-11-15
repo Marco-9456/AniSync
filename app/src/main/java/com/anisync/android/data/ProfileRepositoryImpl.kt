@@ -988,7 +988,8 @@ class ProfileRepositoryImpl @Inject constructor(
                             createdAt = entry.createdAt?.toLong()?.times(1000L),
                             customLists = if (isCustom) listOf(listName) else emptyList(),
                             isPrivate = entry.`private` ?: false,
-                            hiddenFromStatusLists = entry.hiddenFromStatusLists ?: false
+                            hiddenFromStatusLists = entry.hiddenFromStatusLists ?: false,
+                            genres = media?.genres?.filterNotNull().orEmpty()
                         )
                     } else if (isCustom && !existing.customLists.contains(listName)) {
                         entryMap[entryId] = existing.copy(customLists = existing.customLists + listName)

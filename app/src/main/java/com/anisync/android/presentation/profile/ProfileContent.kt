@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -17,16 +18,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -41,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -67,12 +76,14 @@ import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.profile.lists.ListComparison
 import com.anisync.android.presentation.profile.sections.OverviewCompareCard
 import com.anisync.android.presentation.profile.sections.PeopleSwitcher
+import com.anisync.android.presentation.profile.sections.StatusComposerCard
 import com.anisync.android.presentation.profile.sections.profileAboutPage
 import com.anisync.android.presentation.profile.sections.profileComparePage
 import com.anisync.android.presentation.profile.sections.rememberListComparison
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
+import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.presentation.util.profileGridColumns
 import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
 import com.anisync.android.presentation.profile.sections.ActivityFilterRail
@@ -382,6 +393,12 @@ fun ProfileContent(
             )
         }
 
+        if (uiState.isShowingSavedCopy) {
+            item(key = "profile_saved_copy", contentType = "notice") {
+                SavedCopyNotice(onRetry = { onAction(ProfileAction.Refresh()) })
+            }
+        }
+
         item(key = "profile_tabs", contentType = "tabs") {
             Surface(
                 color = MaterialTheme.colorScheme.background,
@@ -542,6 +559,19 @@ internal fun LazyListScope.profileSelectedTabContent(
 ) {
     when (uiState.selectedTab) {
         ProfileTab.OVERVIEW -> {
+            if (isOwnProfile) {
+                item(key = "overview_composer", contentType = "activity_composer") {
+                    StatusComposerCard(
+                        avatarUrl = profile.avatarUrl,
+                        onClick = { onAction(ProfileAction.SetStatusComposerVisible(true)) }
+                    )
+                }
+                if (profile.bannerUrl == null) {
+                    item(key = "overview_picture_prompt", contentType = "overview_prompt") {
+                        PicturePrompt()
+                    }
+                }
+            }
             if (comparison != null && comparison.sharedCount > 0) {
                 item(key = "overview_compare", contentType = "overview_compare") {
                     OverviewCompareCard(
@@ -581,7 +611,8 @@ internal fun LazyListScope.profileSelectedTabContent(
                 uiState = uiState,
                 onUserClick = onUserClick,
                 onReviewClick = { onAction(ProfileAction.SelectReview(it)) },
-                onLoadMore = { onAction(ProfileAction.LoadMoreReviews) }
+                onLoadMore = { onAction(ProfileAction.LoadMoreReviews) },
+                onRetry = { onAction(ProfileAction.RetryReviews) }
             )
             ProfileActivityFilter.THREADS, ProfileActivityFilter.COMMENTS -> profileSocialTab(
                 uiState = uiState,
@@ -593,7 +624,8 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onUserClick = onUserClick,
                 onThreadClick = onThreadClick,
                 onCommentClick = onCommentClick,
-                onLoadMore = { onAction(ProfileAction.LoadMoreSocial) }
+                onLoadMore = { onAction(ProfileAction.LoadMoreSocial) },
+                onRetry = { onAction(ProfileAction.RetrySocial) }
             )
             else -> profileActivityTab(
                 profile = profile,
@@ -631,7 +663,8 @@ internal fun LazyListScope.profileSelectedTabContent(
                     null
                 },
                 userColumns = portraitColumns,
-                onToggleFollow = { onAction(ProfileAction.TogglePersonFollow(it)) }
+                onToggleFollow = { onAction(ProfileAction.TogglePersonFollow(it)) },
+                onRetry = { onAction(ProfileAction.RetrySocial) }
             )
         }
 
@@ -766,6 +799,73 @@ internal fun ProfileUiState.pageListKey(): String = when (selectedTab) {
     ProfileTab.FAVORITES -> "FAVORITES_${selectedFavoritesFilter.name}"
     ProfileTab.SOCIAL -> "SOCIAL_${selectedSocialTab.name}"
     else -> selectedTab.name
+}
+
+/** Avatar and banner only change on the website, so the prompt hands off to AniList's settings. */
+@Composable
+private fun PicturePrompt() {
+    val context = LocalContext.current
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 12.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = stringResource(R.string.profile_picture_prompt_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+            Text(
+                text = stringResource(R.string.profile_picture_prompt_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+            )
+            Button(onClick = { openUrl(context, ANILIST_SETTINGS_URL) }) {
+                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.profile_picture_prompt_action))
+            }
+        }
+    }
+}
+
+private const val ANILIST_SETTINGS_URL = "https://anilist.co/settings"
+
+@Composable
+private fun SavedCopyNotice(onRetry: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.CloudOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = stringResource(R.string.profile_offline_saved_copy),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = onRetry) {
+                Text(stringResource(R.string.retry))
+            }
+        }
+    }
 }
 
 @Composable
