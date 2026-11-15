@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -51,7 +50,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -100,8 +98,6 @@ import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.type.MediaType
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import com.anisync.android.util.AniListUrls
-import com.anisync.android.util.ShareUtils
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.anisync.android.presentation.components.ScrollToTopOnRequest
 
@@ -140,9 +136,9 @@ fun ProfileContent(
     onAccountSwitchClick: () -> Unit = {},
     onShareCard: (ShareStudio) -> Unit = {},
     onOpenRecap: (String) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onBackClick: (() -> Unit)? = null
 ) {
-    val context = LocalContext.current
     val statsColumns = dashboardColumns()
 
     // Someone else's profile keeps its colours in the studio, the viewer's own follows the app.
@@ -197,7 +193,8 @@ fun ProfileContent(
             onShareFavourites = shareFavourites,
             statsColumns = statsColumns,
             onOpenRecap = onOpenRecap,
-            modifier = modifier
+            modifier = modifier,
+            onBackClick = onBackClick
         )
     } else {
     // Portrait grids (favorite characters/staff, social following/followers) keep their 3-up phone
@@ -312,19 +309,14 @@ fun ProfileContent(
                 onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
                 onNotificationsClick = onNotificationsClick,
                 unreadNotificationCount = unreadNotificationCount,
-                topActionIcon = if (isOwnProfile) Icons.Default.Settings else Icons.Default.Share,
-                onTopActionClick = {
-                    if (isOwnProfile) {
-                        onSettingsClick()
-                    } else {
-                        ShareUtils.shareText(
-                            context = context,
-                            text = "${profile.name}\n${AniListUrls.userUrl(profile.name)}"
-                        )
-                    }
-                },
+                topActionIcon = Icons.Default.Settings,
+                onTopActionClick = onSettingsClick,
                 showAccountSwitcher = showAccountSwitcher,
-                onAccountSwitchClick = onAccountSwitchClick
+                onAccountSwitchClick = onAccountSwitchClick,
+                onBackClick = onBackClick,
+                followingTotal = uiState.followingTotal,
+                followersTotal = uiState.followersTotal,
+                onPeopleClick = { onTabSelected(ProfileTab.SOCIAL) }
             )
         }
 

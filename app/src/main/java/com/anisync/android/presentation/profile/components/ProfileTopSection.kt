@@ -36,7 +36,7 @@ import com.anisync.android.ui.theme.emphasis
 
 // Hoisted static layout constants to prevent reallocation. The avatar size is shared with the wide
 // identity pane (see ProfileIdentity.kt).
-private val BannerHeight = 320.dp
+private val BannerHeight = 200.dp
 private val CardOverlap = 64.dp
 private val ContentCardShape = RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp)
 
@@ -63,6 +63,10 @@ fun ProfileTopSection(
     onTopActionClick: () -> Unit = onSettingsClick,
     showAccountSwitcher: Boolean = false,
     onAccountSwitchClick: () -> Unit = {},
+    onBackClick: (() -> Unit)? = null,
+    followingTotal: Int? = null,
+    followersTotal: Int? = null,
+    onPeopleClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // The banner carries the status-bar height so everything below it stays put.
@@ -74,7 +78,8 @@ fun ProfileTopSection(
             isOwnProfile = isOwnProfile,
             topActionIcon = topActionIcon,
             onTopActionClick = onTopActionClick,
-            height = bannerHeight
+            height = bannerHeight,
+            onBackClick = onBackClick
         )
 
         Surface(
@@ -97,6 +102,9 @@ fun ProfileTopSection(
                     isOwnProfile = isOwnProfile,
                     viewerFollows = isFollowing,
                     followsViewer = isFollowerOfViewer,
+                    followingTotal = followingTotal,
+                    followersTotal = followersTotal,
+                    onPeopleClick = onPeopleClick,
                     modifier = Modifier.fillMaxWidth()
                 )
 

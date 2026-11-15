@@ -59,6 +59,7 @@ fun ProfileScreen(
     isOwnProfile: Boolean = true,
     onShareCard: (ShareStudio) -> Unit = {},
     onOpenRecap: (String) -> Unit = {},
+    onBackClick: (() -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -151,7 +152,8 @@ fun ProfileScreen(
                         showAccountSwitcher = isOwnProfile && accounts.size > 1,
                         onAccountSwitchClick = { showAccountSwitcherSheet = true },
                         onShareCard = onShareCard,
-                        onOpenRecap = onOpenRecap
+                        onOpenRecap = onOpenRecap,
+                        onBackClick = onBackClick
                     )
                 }
 

@@ -1,7 +1,7 @@
 package com.anisync.android.presentation.profile.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,24 +18,35 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mail
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.PersonRemove
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,7 +56,9 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -57,10 +70,18 @@ import com.anisync.android.presentation.components.DonatorBadge
 import com.anisync.android.presentation.components.DonatorBadgePlacement
 import com.anisync.android.presentation.components.bannerScrimBrush
 import com.anisync.android.presentation.components.bannerScrimHeight
+import com.anisync.android.presentation.components.menu.Menu
+import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.profile.util.formatProfileRelativeTime
+import com.anisync.android.presentation.util.copyOnLongPress
+import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
+import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.ui.theme.emphasis
+import com.anisync.android.util.AniListUrls
+import com.anisync.android.util.ShareUtils
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -74,13 +95,13 @@ import java.util.Locale
  */
 
 /** Avatar diameter shared by the compact header overlay and the wide identity pane. */
-val ProfileAvatarSize = 132.dp
+val ProfileAvatarSize = 112.dp
 val ProfileAvatarHalfSize = ProfileAvatarSize / 2
 
 /**
  * The full-width cover banner: the user's banner image with a top/bottom scrim and the top-end
- * action button (settings on your own profile, share on others'). [height] lets the compact header
- * use its tall 320dp banner while the wide layout uses a shorter strip.
+ * action button (settings on your own profile, a menu on others'). [height] lets the compact header
+ * use its taller banner while the wide layout uses a shorter strip.
  */
 @Composable
 fun ProfileBannerSurface(
@@ -90,7 +111,8 @@ fun ProfileBannerSurface(
     onTopActionClick: () -> Unit,
     height: Dp,
     modifier: Modifier = Modifier,
-    shape: Shape = RectangleShape
+    shape: Shape = RectangleShape,
+    onBackClick: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier
@@ -136,34 +158,118 @@ fun ProfileBannerSurface(
                 .background(bannerScrimBrush())
         )
 
-        FilledTonalIconButton(
-            onClick = onTopActionClick,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .statusBarsPadding()
-                .padding(top = 16.dp, end = 16.dp)
-                .size(48.dp),
-            shape = CircleShape,
-            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                containerColor = Color.Black.copy(alpha = 0.4f),
-                contentColor = Color.White
+        val chromeColors = IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = Color.Black.copy(alpha = 0.4f),
+            contentColor = Color.White
+        )
+        if (onBackClick != null) {
+            BackTrailButton(
+                onClick = onBackClick,
+                colors = chromeColors,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(top = 12.dp, start = 12.dp)
             )
-        ) {
-            val showDot = isOwnProfile &&
-                rememberActiveWhatsNew().any { it.place == WhatsNewItem.Place.SETTINGS }
-            BadgedBox(badge = { if (showDot) Badge() }) {
-                Icon(
-                    imageVector = topActionIcon,
-                    contentDescription = if (isOwnProfile) stringResource(R.string.settings) else stringResource(R.string.action_share),
-                    modifier = Modifier.size(24.dp)
-                )
+        }
+        if (isOwnProfile) {
+            FilledTonalIconButton(
+                onClick = onTopActionClick,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 16.dp, end = 16.dp)
+                    .size(48.dp),
+                shape = CircleShape,
+                colors = chromeColors
+            ) {
+                val showDot = rememberActiveWhatsNew().any { it.place == WhatsNewItem.Place.SETTINGS }
+                BadgedBox(badge = { if (showDot) Badge() }) {
+                    Icon(
+                        imageVector = topActionIcon,
+                        contentDescription = stringResource(R.string.settings),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
+        } else {
+            ProfileMenuButton(
+                name = profile.name,
+                colors = chromeColors,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 12.dp, end = 12.dp)
+            )
+        }
+    }
+}
+
+/** Report and block are website only, the API has neither. */
+@Composable
+private fun ProfileMenuButton(
+    name: String,
+    colors: IconButtonColors,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val copy = rememberCopyToClipboard()
+    val copiedMessage = stringResource(R.string.profile_username_copied, name)
+    val clipLabel = stringResource(R.string.profile_username)
+    val copyLabel = stringResource(R.string.profile_copy_username)
+    val shareLabel = stringResource(R.string.profile_share)
+    val openLabel = stringResource(R.string.profile_open_on_anilist)
+    val reportLabel = stringResource(R.string.profile_report_on_anilist)
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        FilledTonalIconButton(
+            onClick = { expanded = true },
+            shape = CircleShape,
+            colors = colors,
+            modifier = Modifier.size(48.dp)
+        ) {
+            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.profile_menu))
+        }
+        Menu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            item(
+                text = copyLabel,
+                leadingIcon = Icons.Default.ContentCopy,
+                onClick = {
+                    expanded = false
+                    copy(clipLabel, name, copiedMessage)
+                }
+            )
+            item(
+                text = shareLabel,
+                leadingIcon = Icons.Default.Share,
+                onClick = {
+                    expanded = false
+                    ShareUtils.shareText(context, "$name\n${AniListUrls.userUrl(name)}")
+                }
+            )
+            item(
+                text = openLabel,
+                leadingIcon = Icons.AutoMirrored.Filled.OpenInNew,
+                onClick = {
+                    expanded = false
+                    openUrl(context, AniListUrls.userUrl(name))
+                }
+            )
+            gap()
+            item(
+                text = reportLabel,
+                leadingIcon = Icons.Outlined.Flag,
+                onClick = {
+                    expanded = false
+                    openUrl(context, AniListUrls.userUrl(name))
+                }
+            )
         }
     }
 }
 
 /**
- * The identity column: display name, level + donator badges, moderator role chips, and the
+ * The identity column: display name, donator badge, moderator role chips, and the
  * active/joined meta. Self-contained (no avatar or banner) so it drops into both the compact header
  * card and the wide identity pane.
  *
@@ -178,7 +284,10 @@ fun ProfileIdentityInfo(
     /** Whether the authenticated viewer follows this user (drives the Mutual vs Follows you label). */
     viewerFollows: Boolean = false,
     /** Whether this user follows the authenticated viewer back. */
-    followsViewer: Boolean = false
+    followsViewer: Boolean = false,
+    followingTotal: Int? = null,
+    followersTotal: Int? = null,
+    onPeopleClick: (() -> Unit)? = null
 ) {
     Column(modifier = modifier) {
         ProfileDisplayName(name = profile.name)
@@ -186,7 +295,10 @@ fun ProfileIdentityInfo(
             profile = profile,
             isOwnProfile = isOwnProfile,
             viewerFollows = viewerFollows,
-            followsViewer = followsViewer
+            followsViewer = followsViewer,
+            followingTotal = followingTotal,
+            followersTotal = followersTotal,
+            onPeopleClick = onPeopleClick
         )
     }
 }
@@ -200,7 +312,11 @@ fun ProfileDisplayName(name: String, modifier: Modifier = Modifier) {
             fontWeight = FontWeight.ExtraBold
         ),
         color = MaterialTheme.colorScheme.onBackground,
-        modifier = modifier
+        modifier = modifier.copyOnLongPress(
+            text = name,
+            clipLabel = stringResource(R.string.profile_username),
+            copiedMessage = stringResource(R.string.profile_username_copied, name)
+        )
     )
 }
 
@@ -216,7 +332,10 @@ fun ProfileIdentityDetails(
     isOwnProfile: Boolean,
     modifier: Modifier = Modifier,
     viewerFollows: Boolean = false,
-    followsViewer: Boolean = false
+    followsViewer: Boolean = false,
+    followingTotal: Int? = null,
+    followersTotal: Int? = null,
+    onPeopleClick: (() -> Unit)? = null
 ) {
     val joinedDate = remember(profile.createdAt) {
         profile.createdAt?.let {
@@ -232,21 +351,6 @@ fun ProfileIdentityDetails(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            val level = remember(profile.animeCount, profile.mangaCount) {
-                (profile.animeCount + profile.mangaCount) / 10
-            }
-            Surface(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = CircleShape
-            ) {
-                Text(
-                    text = stringResource(R.string.profile_level, level),
-                    style = MaterialTheme.typography.labelLarge.emphasis(),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-            }
-
             DonatorBadge(
                 tier = profile.donatorTier,
                 badgeText = profile.donatorBadge,
@@ -312,6 +416,49 @@ fun ProfileIdentityDetails(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+
+        val numbers = remember { NumberFormat.getIntegerInstance() }
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = stringResource(
+                R.string.profile_counts,
+                numbers.format(profile.animeCount),
+                numbers.format(profile.mangaCount),
+                pluralStringResourceOrDefault(
+                    R.plurals.profile_days_watched,
+                    profile.daysWatched.toInt(),
+                    numbers.format(profile.daysWatched.toInt())
+                )
+            ),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        if (onPeopleClick != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(role = Role.Button, onClick = onPeopleClick)
+                    .padding(vertical = 6.dp)
+            ) {
+                Text(
+                    text = if (followingTotal != null && followersTotal != null) {
+                        stringResource(R.string.profile_people_counts, numbers.format(followingTotal), numbers.format(followersTotal))
+                    } else {
+                        stringResource(R.string.profile_people)
+                    },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }
@@ -394,46 +541,32 @@ fun ProfileActionButtons(
                 }
             }
         } else {
+            val labelPadding = ButtonDefaults.ButtonWithIconContentPadding
             if (isFollowing) {
-                FilledTonalIconButton(
+                FilledTonalButton(
                     onClick = onFollowClick,
                     enabled = !isFollowLoading,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.size(48.dp)
+                    contentPadding = labelPadding
                 ) {
-                    Icon(
-                        imageVector = if (isFollowing) Icons.Default.PersonRemove else Icons.Default.PersonAdd,
-                        contentDescription = if (isFollowing) stringResource(R.string.profile_following) else stringResource(
-                            R.string.profile_follow
-                        ),
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(stringResource(R.string.profile_following))
                 }
             } else {
-                OutlinedIconButton(
+                Button(
                     onClick = onFollowClick,
                     enabled = !isFollowLoading,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.size(48.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    contentPadding = labelPadding
                 ) {
-                    Icon(
-                        imageVector = if (isFollowing) Icons.Default.PersonRemove else Icons.Default.PersonAdd,
-                        contentDescription = if (isFollowing) stringResource(R.string.profile_following) else stringResource(R.string.profile_follow),
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(stringResource(R.string.profile_follow))
                 }
             }
-            FilledTonalIconButton(
-                onClick = onMessageClick,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Mail,
-                    contentDescription = stringResource(R.string.profile_message),
-                    modifier = Modifier.size(20.dp)
-                )
+            FilledTonalButton(onClick = onMessageClick, contentPadding = labelPadding) {
+                Icon(Icons.Default.Mail, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.size(8.dp))
+                Text(stringResource(R.string.profile_message))
             }
         }
     }

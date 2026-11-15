@@ -1432,6 +1432,16 @@
     <string name="profile_list_empty_other">%1$s has nothing in %2$s.</string>
     <string name="profile_list_empty_title">Nothing here yet</string>
     <string name="profile_list_empty_own">Nothing in %1$s yet.</string>
+    <string name="profile_username">Username</string>
+    <string name="profile_username_copied">Copied %1$s</string>
+    <string name="profile_menu">Profile menu</string>
+    <string name="profile_copy_username">Copy username</string>
+    <string name="profile_share">Share profile</string>
+    <string name="profile_open_on_anilist">Open on AniList</string>
+    <string name="profile_report_on_anilist">Report or block on AniList</string>
+    <string name="profile_counts">%1$s anime  ·  %2$s manga  ·  %3$s</string>
+    <string name="profile_people">Following and followers</string>
+    <string name="profile_people_counts">%1$s following  ·  %2$s followers</string>
     <string name="status_posted">Status posted</string>
     <string name="list_created">List \'%s\' created.</string>
     <string name="list_deleted">List \'%s\' deleted.</string>

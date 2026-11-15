@@ -569,6 +569,7 @@ fun AniSyncNavHost(
                         onLogoutClick = { }, // Not used for other users
                         onNavigateToSettings = { }, // Not used for other users
                         isOwnProfile = false,
+                        onBackClick = { navController.popBackStack() },
                         onShareCard = { navController.navigate(it) },
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = this

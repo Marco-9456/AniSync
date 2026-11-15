@@ -25,7 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -57,7 +56,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -85,8 +83,6 @@ import com.anisync.android.presentation.util.PaneDragHandle
 import com.anisync.android.presentation.util.profileGridColumns
 import com.anisync.android.presentation.util.TwoPaneDefaults
 import com.anisync.android.presentation.util.TwoPaneRow
-import com.anisync.android.util.AniListUrls
-import com.anisync.android.util.ShareUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -289,9 +285,9 @@ fun ProfileWideLayout(
     onShareFavourites: () -> Unit,
     statsColumns: Int,
     onOpenRecap: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onBackClick: (() -> Unit)? = null
 ) {
-    val context = LocalContext.current
 
     // Owned here rather than in the identity pane because the overlay avatar below is drawn by this
     // Box, and has to recede in step with the clearance disappearing underneath it.
@@ -314,18 +310,10 @@ fun ProfileWideLayout(
             ProfileBannerSurface(
                 profile = profile,
                 isOwnProfile = isOwnProfile,
-                topActionIcon = if (isOwnProfile) Icons.Default.Settings else Icons.Default.Share,
-                onTopActionClick = {
-                    if (isOwnProfile) {
-                        onSettingsClick()
-                    } else {
-                        ShareUtils.shareText(
-                            context = context,
-                            text = "${profile.name}\n${AniListUrls.userUrl(profile.name)}"
-                        )
-                    }
-                },
+                topActionIcon = Icons.Default.Settings,
+                onTopActionClick = onSettingsClick,
                 height = WideBannerHeight,
+                onBackClick = onBackClick,
                 modifier = Modifier
                     .padding(
                         start = WideGutterStart,
@@ -554,7 +542,10 @@ private fun ProfileTwoPane(
                 unreadNotificationCount = unreadNotificationCount,
                 showAccountSwitcher = showAccountSwitcher,
                 onAccountSwitchClick = onAccountSwitchClick,
-                collapse = collapse
+                collapse = collapse,
+                followingTotal = uiState.followingTotal,
+                followersTotal = uiState.followersTotal,
+                onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) }
             )
         },
         trailing = {
@@ -607,7 +598,10 @@ private fun ProfileIdentityPane(
     showAccountSwitcher: Boolean,
     onAccountSwitchClick: () -> Unit,
     collapse: BioCollapseState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    followingTotal: Int? = null,
+    followersTotal: Int? = null,
+    onPeopleClick: (() -> Unit)? = null
 ) {
     val bioScrollState = rememberScrollState()
     val detailsHidden by remember(collapse) {
@@ -660,6 +654,9 @@ private fun ProfileIdentityPane(
                 isOwnProfile = isOwnProfile,
                 viewerFollows = isFollowing,
                 followsViewer = isFollowerOfViewer,
+                followingTotal = followingTotal,
+                followersTotal = followersTotal,
+                onPeopleClick = onPeopleClick,
                 // Measured inside the collapsing wrapper, where the block still lays out at its
                 // natural height — the wrapper only changes what it reports to the Column.
                 modifier = Modifier

@@ -384,4 +384,8 @@
         <item quantity="one">%1$s result for %2$s</item>
         <item quantity="other">%1$s results for %2$s</item>
     </plurals>
+    <plurals name="profile_days_watched">
+        <item quantity="one">%1$s day watched</item>
+        <item quantity="other">%1$s days watched</item>
+    </plurals>
 </resources>
