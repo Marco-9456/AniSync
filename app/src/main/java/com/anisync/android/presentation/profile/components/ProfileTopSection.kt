@@ -12,33 +12,37 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.UserAvatar
+import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.profile.sections.BioPreview
+import com.anisync.android.util.AniListUrls
+import com.anisync.android.util.ShareUtils
 
 // Hoisted static layout constants to prevent reallocation. The avatar size is shared with the wide
 // identity pane (see ProfileIdentity.kt).
-private val BannerHeight = 200.dp
-private val NoBannerHeight = 120.dp
-private val CardOverlap = 64.dp
-private val ContentCardShape = RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp)
+private val BannerHeight = 196.dp
 
 /**
- * The compact (phone) profile header: a tall banner with the rounded content card overlapping its
- * lower edge, the avatar straddling the seam, and the action buttons opposite it. The banner /
+ * The compact (phone) profile header: the banner, or a tonal band when there is none, the avatar
+ * on its lower edge and the action buttons opposite it. The banner /
  * identity info / action buttons are shared with the expanded two-pane layout via ProfileIdentity.kt.
  */
 @Composable
@@ -65,94 +69,133 @@ fun ProfileTopSection(
     onPeopleClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    // The banner carries the status-bar height so everything below it stays put.
-    val bannerHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
-        if (profile.bannerUrl == null) NoBannerHeight else BannerHeight
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val band = profile.bannerUrl == null
+    val headerHeight = if (band) statusBar + 64.dp else maxOf(BannerHeight, statusBar + 120.dp)
+    val avatarTop = if (band) headerHeight + 8.dp else headerHeight - ProfileAvatarHalfSize
+    val actionsTop = if (band) headerHeight + 64.dp else headerHeight + 8.dp
+    val identityTop = if (band) headerHeight + 116.dp else headerHeight + 60.dp
+    val context = LocalContext.current
+    val ownTopBar: @Composable (Boolean) -> Unit = { onBanner ->
+        ProfileOwnTopBar(
+            name = profile.name,
+            avatarUrl = profile.avatarUrl,
+            onBanner = onBanner,
+            showAccountSwitcher = showAccountSwitcher,
+            onAccountSwitchClick = onAccountSwitchClick,
+            unreadNotificationCount = unreadNotificationCount,
+            onNotificationsClick = onNotificationsClick,
+            onSettingsClick = onSettingsClick
+        )
+    }
 
     Box(modifier = modifier.fillMaxWidth()) {
-        ProfileBannerSurface(
-            profile = profile,
-            isOwnProfile = isOwnProfile,
-            topActionIcon = topActionIcon,
-            onTopActionClick = onTopActionClick,
-            height = bannerHeight,
-            onBackClick = onBackClick
-        )
-
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = bannerHeight - CardOverlap),
-            shape = ContentCardShape,
-            color = MaterialTheme.colorScheme.background,
-            tonalElevation = 0.dp
-        ) {
-            Column(
+        if (band) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(top = ProfileAvatarHalfSize + 24.dp, bottom = 16.dp),
-                horizontalAlignment = Alignment.Start
+                    .height(headerHeight)
             ) {
-                ProfileIdentityInfo(
-                    profile = profile,
-                    isOwnProfile = isOwnProfile,
-                    viewerFollows = isFollowing,
-                    followsViewer = isFollowerOfViewer,
-                    followingTotal = followingTotal,
-                    followersTotal = followersTotal,
-                    onPeopleClick = onPeopleClick,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                val about = profile.about
-                if (!about.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    BioPreview(about = about, onOpen = onShowBiography)
+                Box(modifier = Modifier.statusBarsPadding()) {
+                    if (isOwnProfile) {
+                        ownTopBar(false)
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(64.dp)
+                                .padding(horizontal = 4.dp)
+                        ) {
+                            if (onBackClick != null) BackTrailButton(onClick = onBackClick)
+                            Spacer(modifier = Modifier.weight(1f))
+                            ProfileMenuButton(
+                                name = profile.name,
+                                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                    containerColor = Color.Transparent,
+                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+                    }
                 }
             }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .offset(y = bannerHeight - CardOverlap - ProfileAvatarHalfSize),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            // Layout slot stays AvatarSize tall (so the name/content below isn't pushed),
-            // but an unshaped "None" avatar that's taller than wide is allowed to overflow
-            // upward into the banner instead of being cropped or covering the name.
-            Box(
-                modifier = Modifier.height(ProfileAvatarSize),
-                contentAlignment = Alignment.BottomStart
-            ) {
-                UserAvatar(
-                    url = profile.avatarUrl,
-                    contentDescription = stringResource(R.string.content_description_profile_avatar),
-                    size = ProfileAvatarSize,
-                    borderWidth = 2.dp,
-                    framePadding = 3.dp,
-                    isProfileHeader = true,
-                    modifier = Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true)
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            ProfileActionButtons(
+        } else {
+            ProfileBannerSurface(
+                profile = profile,
                 isOwnProfile = isOwnProfile,
-                isFollowing = isFollowing,
-                isFollowLoading = isFollowLoading,
-                onFollowClick = onFollowClick,
-                onMessageClick = onMessageClick,
-                onEditProfileClick = onEditProfileClick,
-                onNotificationsClick = onNotificationsClick,
-                unreadNotificationCount = unreadNotificationCount,
-                showAccountSwitcher = showAccountSwitcher,
-                onAccountSwitchClick = onAccountSwitchClick,
-                modifier = Modifier.padding(bottom = 12.dp)
+                topActionIcon = topActionIcon,
+                onTopActionClick = onTopActionClick,
+                height = headerHeight,
+                onBackClick = onBackClick,
+                ownTopBar = { ownTopBar(true) }
             )
         }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = identityTop)
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 16.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            ProfileIdentityInfo(
+                profile = profile,
+                isOwnProfile = isOwnProfile,
+                viewerFollows = isFollowing,
+                followsViewer = isFollowerOfViewer,
+                followingTotal = followingTotal,
+                followersTotal = followersTotal,
+                onPeopleClick = onPeopleClick,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            val about = profile.about
+            if (!about.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                BioPreview(about = about, onOpen = onShowBiography)
+            }
+        }
+
+        // An unshaped avatar taller than wide may overflow upward rather than be cropped.
+        Box(
+            modifier = Modifier
+                .padding(start = 16.dp)
+                .offset(y = avatarTop)
+                .height(ProfileAvatarSize),
+            contentAlignment = Alignment.BottomStart
+        ) {
+            UserAvatar(
+                url = profile.avatarUrl,
+                contentDescription = stringResource(R.string.content_description_profile_avatar),
+                size = ProfileAvatarSize,
+                borderWidth = 2.dp,
+                framePadding = 3.dp,
+                isProfileHeader = true,
+                modifier = Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true)
+            )
+        }
+
+        ProfileActionButtons(
+            isOwnProfile = isOwnProfile,
+            isFollowing = isFollowing,
+            isFollowLoading = isFollowLoading,
+            onFollowClick = onFollowClick,
+            onMessageClick = onMessageClick,
+            onEditProfileClick = onEditProfileClick,
+            onNotificationsClick = onNotificationsClick,
+            unreadNotificationCount = unreadNotificationCount,
+            showAccountSwitcher = showAccountSwitcher,
+            onAccountSwitchClick = onAccountSwitchClick,
+            onShareClick = {
+                ShareUtils.shareText(context, "${profile.name}\n${AniListUrls.userUrl(profile.name)}")
+            },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(y = actionsTop)
+                .padding(end = 20.dp)
+        )
     }
 }

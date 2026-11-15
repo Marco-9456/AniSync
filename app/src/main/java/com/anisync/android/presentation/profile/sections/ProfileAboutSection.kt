@@ -31,13 +31,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -242,17 +248,21 @@ private fun DetailRow(
 
 @Composable
 internal fun BioPreview(about: String, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    val density = LocalDensity.current
+    var contentHeight by remember(about) { mutableStateOf(0.dp) }
+    // A bio of a few lines reads as plain text, a longer one is cut short on a card.
+    val long = contentHeight > BioShortLimit
     val container = MaterialTheme.colorScheme.surfaceContainerLow
     Surface(
         onClick = onOpen,
-        color = container,
+        color = if (long) container else Color.Transparent,
         shape = RoundedCornerShape(24.dp),
         modifier = modifier.fillMaxWidth()
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(BioPreviewHeight)
+                .then(if (long) Modifier.height(BioPreviewHeight) else Modifier)
                 .clipToBounds()
         ) {
             AsyncRichTextRenderer(
@@ -260,25 +270,33 @@ internal fun BioPreview(about: String, onOpen: () -> Unit, modifier: Modifier = 
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight(align = Alignment.Top, unbounded = true)
-                    .padding(start = 16.dp, end = 16.dp, top = 14.dp)
+                    .onSizeChanged { contentHeight = with(density) { it.height.toDp() } }
+                    .padding(
+                        start = if (long) 16.dp else 0.dp,
+                        end = if (long) 16.dp else 0.dp,
+                        top = if (long) 14.dp else 0.dp
+                    )
             )
-            Box(
+            if (long) Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .height(72.dp)
                     .background(Brush.verticalGradient(listOf(container.copy(alpha = 0f), container)))
             )
-            FilledTonalButton(
-                onClick = onOpen,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(12.dp)
-            ) {
-                Text(stringResource(R.string.profile_read_more), style = MaterialTheme.typography.labelLarge.emphasis())
+            if (long) {
+                FilledTonalButton(
+                    onClick = onOpen,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(12.dp)
+                ) {
+                    Text(stringResource(R.string.profile_read_more), style = MaterialTheme.typography.labelLarge.emphasis())
+                }
             }
         }
     }
 }
 
 private val BioPreviewHeight = 148.dp
+private val BioShortLimit = 88.dp

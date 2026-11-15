@@ -35,9 +35,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
@@ -53,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -62,6 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.data.WhatsNewItem
+import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.MediaTypeToggle
 import com.anisync.android.presentation.components.SegmentedTabGroup
@@ -86,6 +90,7 @@ import com.anisync.android.presentation.profile.sections.StatusComposerCard
 import com.anisync.android.presentation.profile.sections.profileAboutPage
 import com.anisync.android.presentation.profile.sections.profileComparePage
 import com.anisync.android.presentation.profile.sections.rememberListComparison
+import com.anisync.android.presentation.share.cards.fitted
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
@@ -450,7 +455,7 @@ fun ProfileContent(
     }
 
     val statusScrimFrom = with(LocalDensity.current) {
-        ((if (profile.bannerUrl == null) 120.dp else 200.dp) - 64.dp).toPx()
+        (if (profile.bannerUrl == null) 56.dp else (196.dp - statusBarInset).coerceAtLeast(120.dp) - 8.dp).toPx()
     }
     val showStatusScrim by remember(statusScrimFrom) {
         derivedStateOf {
@@ -669,7 +674,24 @@ internal fun LazyListScope.profileSelectedTabContent(
                     onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
                     onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
                     onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
-                    viewerId = uiState.viewerId
+                    viewerId = uiState.viewerId,
+                    watching = remember(uiState.userAnimeList) {
+                        uiState.userAnimeList
+                            .filter { it.status == LibraryStatus.CURRENT || it.status == LibraryStatus.REPEATING }
+                            .distinctBy { it.mediaId }
+                            .sortedByDescending { it.updatedAt ?: 0L }
+                    },
+                    latestReview = uiState.reviews.firstOrNull(),
+                    titleLanguage = uiState.titleLanguage,
+                    onOpenWatching = {
+                        onAction(ProfileAction.SelectAnimeStatus(LibraryStatus.CURRENT))
+                        onAction(ProfileAction.SelectTab(ProfileTab.ANIME))
+                    },
+                    onOpenReviews = {
+                        onAction(ProfileAction.SelectTab(ProfileTab.ACTIVITY))
+                        onAction(ProfileAction.SelectActivityFilter(ProfileActivityFilter.REVIEWS))
+                    },
+                    onReviewClick = { onAction(ProfileAction.SelectReview(it)) }
                 )
             }
         }
@@ -872,32 +894,52 @@ internal fun ProfileUiState.pageListKey(): String = when (selectedTab) {
 }
 
 /** Avatar and banner only change on the website, so the prompt hands off to AniList's settings. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PicturePrompt() {
     val context = LocalContext.current
     Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        shape = RoundedCornerShape(28.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 12.dp)
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(
-                text = stringResource(R.string.profile_picture_prompt_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-            Text(
-                text = stringResource(R.string.profile_picture_prompt_body),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
-            )
-            Button(onClick = { openUrl(context, ANILIST_SETTINGS_URL) }) {
-                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.profile_picture_prompt_action))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(MaterialShapes.Cookie9Sided.fitted())
+                    .background(MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Image,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = stringResource(R.string.profile_picture_prompt_title),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = stringResource(R.string.profile_picture_prompt_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+                )
+                Button(onClick = { openUrl(context, ANILIST_SETTINGS_URL) }) {
+                    Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.profile_picture_prompt_action), maxLines = 1)
+                }
             }
         }
     }

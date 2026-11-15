@@ -15,10 +15,10 @@ import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.RateReview
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -239,17 +239,19 @@ internal fun ActivityDayHeader(epochDay: Long, start: Dp = 32.dp) {
 internal fun StatusComposerCard(avatarUrl: String?, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(28.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .height(56.dp)
+                .padding(start = 8.dp, end = 16.dp)
         ) {
-            UserAvatar(contentDescription = null, size = 36.dp, url = avatarUrl)
+            UserAvatar(contentDescription = null, size = 40.dp, url = avatarUrl)
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = stringResource(R.string.profile_post_status),
@@ -258,7 +260,7 @@ internal fun StatusComposerCard(avatarUrl: String?, onClick: () -> Unit) {
                 modifier = Modifier.weight(1f)
             )
             Icon(
-                imageVector = Icons.Default.Edit,
+                imageVector = Icons.Outlined.Image,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )

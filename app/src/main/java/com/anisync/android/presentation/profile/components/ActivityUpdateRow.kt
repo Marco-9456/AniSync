@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -43,7 +44,8 @@ internal fun ActivityUpdateRow(
     onClick: () -> Unit,
     onMediaClick: (Int) -> Unit,
     onLikeClick: (() -> Unit)?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.surfaceContainerLow
 ) {
     val context = LocalContext.current
     val time = remember(activity.timestamp) {
@@ -56,7 +58,7 @@ internal fun ActivityUpdateRow(
     Surface(
         onClick = onClick,
         shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = color,
         modifier = modifier.fillMaxWidth()
     ) {
         Row(

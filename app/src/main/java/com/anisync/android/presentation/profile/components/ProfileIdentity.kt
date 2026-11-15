@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
@@ -33,6 +34,8 @@ import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -40,9 +43,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -63,6 +68,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -73,6 +81,7 @@ import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.DonatorBadge
 import com.anisync.android.presentation.components.DonatorBadgePlacement
+import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.bannerScrimBrush
 import com.anisync.android.presentation.components.bannerScrimHeight
@@ -101,7 +110,7 @@ import java.util.Locale
  */
 
 /** Avatar diameter shared by the compact header overlay and the wide identity pane. */
-val ProfileAvatarSize = 112.dp
+val ProfileAvatarSize = 100.dp
 val ProfileAvatarHalfSize = ProfileAvatarSize / 2
 
 /**
@@ -118,7 +127,8 @@ fun ProfileBannerSurface(
     height: Dp,
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
-    onBackClick: (() -> Unit)? = null
+    onBackClick: (() -> Unit)? = null,
+    ownTopBar: (@Composable () -> Unit)? = null
 ) {
     Box(
         modifier = modifier
@@ -178,7 +188,9 @@ fun ProfileBannerSurface(
                     .padding(top = 12.dp, start = 12.dp)
             )
         }
-        if (isOwnProfile) {
+        if (isOwnProfile && ownTopBar != null) {
+            Box(modifier = Modifier.align(Alignment.TopStart).statusBarsPadding()) { ownTopBar() }
+        } else if (isOwnProfile) {
             FilledTonalIconButton(
                 onClick = onTopActionClick,
                 modifier = Modifier
@@ -213,7 +225,7 @@ fun ProfileBannerSurface(
 
 /** Report and block are website only, the API has neither. */
 @Composable
-private fun ProfileMenuButton(
+internal fun ProfileMenuButton(
     name: String,
     colors: IconButtonColors,
     modifier: Modifier = Modifier
@@ -345,7 +357,7 @@ fun ProfileIdentityDetails(
 ) {
     val joinedDate = remember(profile.createdAt) {
         profile.createdAt?.let {
-            val sdf = SimpleDateFormat("MMM yyyy", Locale.getDefault())
+            val sdf = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
             sdf.format(Date(it))
         }
     }
@@ -410,26 +422,22 @@ fun ProfileIdentityDetails(
 
         if (!isOwnProfile) {
             Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                val resources = LocalResources.current
-                val activeTime = remember(profile.activeAt, resources) {
-                    formatRelativeTimeSeconds(resources, (profile.activeAt ?: 0L) / 1000L)
-                }
-                if (activeTime.isNotEmpty()) {
+            val resources = LocalResources.current
+            val activeTime = remember(profile.activeAt, resources) {
+                formatRelativeTimeSeconds(resources, (profile.activeAt ?: 0L) / 1000L)
+            }
+            val meta = listOfNotNull(
+                activeTime.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.profile_active, it) },
+                joinedDate?.let { stringResource(R.string.profile_joined, it) }
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                meta.forEachIndexed { index, part ->
                     Text(
-                        text = stringResource(R.string.profile_active, activeTime),
+                        text = if (index < meta.lastIndex) "$part  ·" else part,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                if (joinedDate != null) {
-                    Text(
-                        text = stringResource(R.string.profile_joined, joinedDate),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -445,18 +453,21 @@ fun ProfileIdentityDetails(
         val numbers = remember { NumberFormat.getIntegerInstance() }
         Spacer(modifier = Modifier.height(12.dp))
         val counts = listOf(
-            stringResource(R.string.profile_count_anime, numbers.format(profile.animeCount)),
-            stringResource(R.string.profile_count_manga, numbers.format(profile.mangaCount)),
-            pluralStringResourceOrDefault(
-                R.plurals.profile_days_watched,
-                profile.daysWatched.toInt(),
+            boldNumbers(stringResource(R.string.profile_count_anime, numbers.format(profile.animeCount)), numbers.format(profile.animeCount)),
+            boldNumbers(stringResource(R.string.profile_count_manga, numbers.format(profile.mangaCount)), numbers.format(profile.mangaCount)),
+            boldNumbers(
+                pluralStringResourceOrDefault(
+                    R.plurals.profile_days_watched,
+                    profile.daysWatched.toInt(),
+                    numbers.format(profile.daysWatched.toInt())
+                ),
                 numbers.format(profile.daysWatched.toInt())
             )
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             counts.forEachIndexed { index, part ->
                 Text(
-                    text = if (index < counts.lastIndex) "$part  ·" else part,
+                    text = if (index < counts.lastIndex) part + AnnotatedString("  ·") else part,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -475,9 +486,13 @@ fun ProfileIdentityDetails(
             ) {
                 Text(
                     text = if (followingTotal != null && followersTotal != null) {
-                        stringResource(R.string.profile_people_counts, numbers.format(followingTotal), numbers.format(followersTotal))
+                        boldNumbers(
+                            stringResource(R.string.profile_people_counts, numbers.format(followingTotal), numbers.format(followersTotal)),
+                            numbers.format(followingTotal),
+                            numbers.format(followersTotal)
+                        )
                     } else {
-                        stringResource(R.string.profile_people)
+                        AnnotatedString(stringResource(R.string.profile_people))
                     },
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
@@ -514,13 +529,26 @@ fun ProfileActionButtons(
     unreadNotificationCount: Int,
     showAccountSwitcher: Boolean,
     onAccountSwitchClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onShareClick: (() -> Unit)? = null
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier
     ) {
-        if (isOwnProfile) {
+        if (isOwnProfile && onShareClick != null) {
+            val labelPadding = PaddingValues(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+            FilledTonalButton(onClick = onEditProfileClick, contentPadding = labelPadding) {
+                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.size(8.dp))
+                ButtonLabel(stringResource(R.string.profile_edit))
+            }
+            OutlinedButton(onClick = onShareClick, contentPadding = labelPadding) {
+                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.size(8.dp))
+                ButtonLabel(stringResource(R.string.action_share))
+            }
+        } else if (isOwnProfile) {
             if (showAccountSwitcher) {
                 FilledTonalIconButton(
                     onClick = onAccountSwitchClick,
@@ -667,4 +695,93 @@ private fun ButtonLabel(text: String) {
         softWrap = false,
         autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = 14.sp)
     )
+}
+
+private fun boldNumbers(text: String, vararg numbers: String): AnnotatedString = buildAnnotatedString {
+    append(text)
+    var from = 0
+    numbers.forEach { number ->
+        val at = text.indexOf(number, from)
+        if (at >= 0) {
+            addStyle(SpanStyle(fontWeight = FontWeight.Bold), at, at + number.length)
+            from = at + number.length
+        }
+    }
+}
+
+@Composable
+internal fun ProfileOwnTopBar(
+    name: String,
+    avatarUrl: String?,
+    onBanner: Boolean,
+    showAccountSwitcher: Boolean,
+    onAccountSwitchClick: () -> Unit,
+    unreadNotificationCount: Int,
+    onNotificationsClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val chrome = if (onBanner) {
+        IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = Color.Black.copy(alpha = 0.4f),
+            contentColor = Color.White
+        )
+    } else {
+        IconButtonDefaults.iconButtonColors()
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .padding(start = 16.dp, end = 8.dp)
+    ) {
+        Surface(
+            color = if (onBanner) Color.Black.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceContainerHighest,
+            contentColor = if (onBanner) Color.White else MaterialTheme.colorScheme.onSurface,
+            shape = CircleShape,
+            onClick = onAccountSwitchClick,
+            enabled = showAccountSwitcher
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .height(40.dp)
+                    .padding(start = 4.dp, end = if (showAccountSwitcher) 8.dp else 14.dp)
+            ) {
+                UserAvatar(contentDescription = null, size = 32.dp, url = avatarUrl)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = name, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                if (showAccountSwitcher) {
+                    Icon(
+                        imageVector = Icons.Default.ExpandMore,
+                        contentDescription = stringResource(R.string.account_switch),
+                        modifier = Modifier
+                            .padding(start = 4.dp)
+                            .size(20.dp)
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        IconButton(onClick = onNotificationsClick, colors = chrome) {
+            if (unreadNotificationCount > 0) {
+                BadgedBox(badge = { Badge { Text(formatBadgeCount(unreadNotificationCount)) } }) {
+                    Icon(
+                        Icons.Outlined.Notifications,
+                        contentDescription = stringResource(R.string.notifications_open) + ", " +
+                            unreadCountAccessibilityLabel(unreadNotificationCount)
+                    )
+                }
+            } else {
+                Icon(Icons.Outlined.Notifications, contentDescription = stringResource(R.string.notifications_open))
+            }
+        }
+        val settingsDot = rememberActiveWhatsNew().any { it.place == WhatsNewItem.Place.SETTINGS }
+        IconButton(onClick = onSettingsClick, colors = chrome) {
+            BadgedBox(badge = { if (settingsDot) Badge() }) {
+                Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.settings))
+            }
+        }
+    }
 }

@@ -656,7 +656,7 @@
     <string name="notifications_new_count_overflow" translatable="false">99+</string>
     <string name="notifications_mark_all_read">Mark all read</string>
     <string name="a11y_notification_unread">Unread</string>
-    <string name="profile_edit">Edit Profile</string>
+    <string name="profile_edit">Edit profile</string>
     <string name="profile_unknown_error">Something went wrong while loading your profile.</string>
     <string name="profile_user_load_error">We could not load this user profile right now. The account may be private, unavailable or temporarily rate-limited.</string>
     <string name="profile_user_unavailable">This profile is private or no longer exists.</string>
@@ -757,7 +757,7 @@
     <string name="edit_profile_about_label">About</string>
     <string name="profile_cast_characters">Characters</string>
     <string name="profile_cast_staff">Staff</string>
-    <string name="section_recent_updates">Recent Updates</string>
+    <string name="section_recent_updates">Recent updates</string>
     <string name="snapshot_days">%1$s days</string>
     <string name="snapshot_chapters">%1$s chapters</string>
     <string name="content_description_profile_avatar">Profile avatar</string>
@@ -1470,6 +1470,12 @@
     <string name="profile_username_hint">Username · long press to copy</string>
     <string name="profile_read_more">Read more</string>
     <string name="profile_post_status">Post a status</string>
+    <string name="profile_overview_watching">Watching</string>
+    <string name="profile_latest_review">Latest review</string>
+    <string name="profile_episode_of">Episode %1$d of %2$d</string>
+    <string name="profile_episode">Episode %1$d</string>
+    <string name="profile_chapter_of">Chapter %1$d of %2$d</string>
+    <string name="profile_chapter">Chapter %1$d</string>
     <string name="profile_picture_prompt_title">Add a picture and a banner</string>
     <string name="profile_picture_prompt_body">AniList keeps these. The button opens your AniList settings.</string>
     <string name="profile_picture_prompt_action">Open AniList settings</string>

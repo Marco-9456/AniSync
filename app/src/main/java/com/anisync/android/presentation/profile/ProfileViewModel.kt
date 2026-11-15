@@ -774,12 +774,12 @@ class ProfileViewModel @Inject constructor(
                 }
             }
         }
-        if (!targetUsername.isNullOrBlank()) {
-            // Overview compares this list with the viewer's, so it needs the anime list early.
-            viewModelScope.launch {
-                uiState.first { it.profile != null }
-                fetchUserAnimeList()
-            }
+        // Overview shows what they are watching, their latest review and, on someone else's
+        // profile, how their list compares, so the anime list and reviews load with the profile.
+        viewModelScope.launch {
+            uiState.first { it.profile != null }
+            fetchUserAnimeList()
+            fetchReviews()
         }
 
         if (targetUsername.isNullOrBlank()) {

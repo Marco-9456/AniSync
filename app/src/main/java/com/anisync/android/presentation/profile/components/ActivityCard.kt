@@ -88,7 +88,8 @@ fun ActivityCard(
      */
     maxBodyLines: Int? = null,
     /** False on a profile, where every card in the list belongs to the same person. */
-    showAuthor: Boolean = true
+    showAuthor: Boolean = true,
+    pinnedLabel: Boolean = false
 ) {
     if (activity.type == ActivityType.MEDIA_LIST) {
         ActivityListCard(
@@ -131,12 +132,33 @@ fun ActivityCard(
             .animateContentSize()
             .padding(16.dp)
         ) {
+            val labelled = pinnedLabel && activity.isPinned
+            if (labelled) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PushPin,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.pinned),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
             ActivityCardHeader(
                 activity = activity,
                 onSubscribeClick = onSubscribeClick,
                 onUserClick = onUserClick,
                 onEditClick = onEditClick,
-                onDeleteClick = onDeleteClick
+                onDeleteClick = onDeleteClick,
+                showPinIcon = !labelled
             )
 
             val isTextual = activity.type == ActivityType.TEXT || activity.type == ActivityType.MESSAGE
@@ -331,7 +353,8 @@ private fun ActivityCardHeader(
     onSubscribeClick: (() -> Unit)?,
     onUserClick: (String) -> Unit,
     onEditClick: (() -> Unit)?,
-    onDeleteClick: (() -> Unit)?
+    onDeleteClick: (() -> Unit)?,
+    showPinIcon: Boolean = true
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -369,7 +392,7 @@ private fun ActivityCardHeader(
                 }
 
                 // Icon-only status markers
-                if (activity.isPinned) {
+                if (activity.isPinned && showPinIcon) {
                     Icon(
                         imageVector = Icons.Default.PushPin,
                         contentDescription = stringResource(R.string.pinned),
