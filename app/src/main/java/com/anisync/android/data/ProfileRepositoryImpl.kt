@@ -516,16 +516,125 @@ class ProfileRepositoryImpl @Inject constructor(
             }
         }
 
+    override suspend fun getFavoritesOfKind(
+        userId: Int,
+        kind: com.anisync.android.domain.FavoriteKind,
+        policy: CachePolicy
+    ): Result<com.anisync.android.domain.FavoriteKindItems> = dedupe("favorites:$userId:$kind:$policy") {
+        safeApiCall {
+            val manga = mutableListOf<LibraryEntry>()
+            val characters = mutableListOf<com.anisync.android.domain.CharacterInfo>()
+            val staff = mutableListOf<com.anisync.android.domain.StaffDetails>()
+            val studios = mutableListOf<com.anisync.android.domain.StudioInfo>()
+            var page = 1
+            while (page <= MAX_FAVORITE_PAGES) {
+                val response = apolloClient.query(
+                    com.anisync.android.GetUserFavoriteKindQuery(
+                        userId = Optional.present(userId),
+                        page = Optional.present(page),
+                        manga = Optional.present(kind == com.anisync.android.domain.FavoriteKind.MANGA),
+                        characters = Optional.present(kind == com.anisync.android.domain.FavoriteKind.CHARACTERS),
+                        staff = Optional.present(kind == com.anisync.android.domain.FavoriteKind.STAFF),
+                        studios = Optional.present(kind == com.anisync.android.domain.FavoriteKind.STUDIOS)
+                    )
+                ).fetchPolicy(policy.toFetchPolicy()).execute()
+                if (response.hasErrors()) {
+                    throw Exception(response.errors?.first()?.message ?: "Unknown API Error")
+                }
+                val favourites = response.data?.User?.favourites ?: break
+                val hasNext = when (kind) {
+                    com.anisync.android.domain.FavoriteKind.MANGA -> {
+                        favourites.manga?.nodes?.filterNotNull()?.forEach { node ->
+                            val m = node.mediaCardFields
+                            manga += LibraryEntry(
+                                id = 0,
+                                mediaId = m.id,
+                                titleRomaji = m.title?.romaji,
+                                titleEnglish = m.title?.english,
+                                titleNative = m.title?.native,
+                                titleUserPreferred = m.title?.userPreferred ?: "Unknown",
+                                coverUrl = m.coverImage?.large,
+                                cover = com.anisync.android.domain.CoverImage.of(m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge),
+                                progress = 0,
+                                totalEpisodes = null,
+                                totalChapters = m.chapters,
+                                totalVolumes = m.volumes,
+                                type = m.type,
+                                format = m.format,
+                                mediaStartDate = mapFuzzyDateToLong(m.startDate?.year, m.startDate?.month, m.startDate?.day),
+                                status = com.anisync.android.domain.LibraryStatus.UNKNOWN
+                            )
+                        }
+                        favourites.manga?.pageInfo?.hasNextPage == true
+                    }
+                    com.anisync.android.domain.FavoriteKind.CHARACTERS -> {
+                        favourites.characters?.nodes?.filterNotNull()?.forEach { char ->
+                            characters += com.anisync.android.domain.CharacterInfo(
+                                id = char.id,
+                                nameFull = char.name?.userPreferred ?: "Unknown",
+                                nameNative = null,
+                                nameUserPreferred = char.name?.userPreferred ?: "Unknown",
+                                imageUrl = char.image?.large,
+                                role = ""
+                            )
+                        }
+                        favourites.characters?.pageInfo?.hasNextPage == true
+                    }
+                    com.anisync.android.domain.FavoriteKind.STAFF -> {
+                        favourites.staff?.nodes?.filterNotNull()?.forEach { member ->
+                            staff += com.anisync.android.domain.StaffDetails(
+                                id = member.id,
+                                name = member.name?.userPreferred ?: "Unknown",
+                                nativeName = null,
+                                nameUserPreferred = member.name?.userPreferred ?: "Unknown",
+                                imageUrl = member.image?.large,
+                                description = null,
+                                gender = null,
+                                age = null,
+                                bloodType = null,
+                                dateOfBirth = null,
+                                dateOfDeath = null,
+                                favourites = null,
+                                language = null,
+                                primaryOccupations = member.primaryOccupations?.filterNotNull() ?: emptyList(),
+                                yearsActive = emptyList(),
+                                homeTown = null,
+                                voicedCharacters = emptyList()
+                            )
+                        }
+                        favourites.staff?.pageInfo?.hasNextPage == true
+                    }
+                    com.anisync.android.domain.FavoriteKind.STUDIOS -> {
+                        favourites.studios?.nodes?.filterNotNull()?.forEach { studio ->
+                            studios += com.anisync.android.domain.StudioInfo(id = studio.id, name = studio.name)
+                        }
+                        favourites.studios?.pageInfo?.hasNextPage == true
+                    }
+                }
+                if (!hasNext) break
+                page++
+            }
+            com.anisync.android.domain.FavoriteKindItems(
+                manga = manga.distinctBy { it.mediaId },
+                characters = characters.distinctBy { it.id },
+                staff = staff.distinctBy { it.id },
+                studios = studios.distinctBy { it.id }
+            )
+        }
+    }
+
     override suspend fun getSocialData(
         userId: Int,
         page: Int,
-        policy: CachePolicy
-    ): Result<com.anisync.android.domain.UserSocialPage> = dedupe("social:$userId:$page:$policy") {
+        policy: CachePolicy,
+        sort: com.anisync.android.type.UserSort?
+    ): Result<com.anisync.android.domain.UserSocialPage> = dedupe("social:$userId:$page:$policy:$sort") {
         safeApiCall {
             val response = apolloClient.query(
                 com.anisync.android.GetUserSocialDataQuery(
                     userId = userId,
-                    page = Optional.present(page)
+                    page = Optional.present(page),
+                    sort = Optional.presentIfNotNull(sort?.let { listOf(it) })
                 )
             )
             .fetchPolicy(policy.toFetchPolicy())
@@ -541,7 +650,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 com.anisync.android.domain.SocialUser(
                     id = it.id,
                     name = it.name,
-                    avatarUrl = it.avatar?.large
+                    avatarUrl = it.avatar?.large,
+                    isFollowing = it.isFollowing == true
                 )
             } ?: emptyList()
 
@@ -549,7 +659,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 com.anisync.android.domain.SocialUser(
                     id = it.id,
                     name = it.name,
-                    avatarUrl = it.avatar?.large
+                    avatarUrl = it.avatar?.large,
+                    isFollowing = it.isFollowing == true
                 )
             } ?: emptyList()
 
@@ -557,7 +668,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 com.anisync.android.domain.SocialUser(
                     id = it.id,
                     name = it.name,
-                    avatarUrl = it.avatar?.large
+                    avatarUrl = it.avatar?.large,
+                    isFollowing = it.isFollowing == true
                 )
             } ?: emptyList()
 
@@ -905,3 +1017,6 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 }
+
+/** Stops a runaway loop. Forty pages is a thousand favourites. */
+private const val MAX_FAVORITE_PAGES = 40

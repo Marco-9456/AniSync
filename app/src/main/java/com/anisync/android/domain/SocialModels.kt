@@ -8,7 +8,8 @@ import kotlinx.serialization.Serializable
 data class SocialUser(
     val id: Int,
     val name: String,
-    val avatarUrl: String?
+    val avatarUrl: String?,
+    val isFollowing: Boolean = false
 )
 
 @Immutable

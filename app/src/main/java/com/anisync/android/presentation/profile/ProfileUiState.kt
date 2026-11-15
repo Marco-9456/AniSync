@@ -55,6 +55,7 @@ data class ProfileUiState(
     /** The Manga list's chip, null for All. */
     val selectedMangaStatus: LibraryStatus? = LibraryStatus.CURRENT,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
+    val peopleOrder: PeopleOrder = PeopleOrder.NEWEST,
     val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
     val selectedStatsView: StatsView = StatsView.OVERVIEW,
     val genreSort: GenreSort = GenreSort.TITLES,
@@ -278,6 +279,15 @@ enum class ProfileSocialTab(@StringRes val labelRes: Int) {
 }
 
 @Immutable
+enum class PeopleOrder(@StringRes val labelRes: Int, val sort: com.anisync.android.type.UserSort) {
+    NEWEST(R.string.profile_people_order_newest, com.anisync.android.type.UserSort.ID_DESC),
+    OLDEST(R.string.profile_people_order_oldest, com.anisync.android.type.UserSort.ID),
+    NAME(R.string.profile_people_order_name, com.anisync.android.type.UserSort.USERNAME),
+    WATCHED(R.string.profile_people_order_watched, com.anisync.android.type.UserSort.WATCHED_TIME_DESC),
+    READ(R.string.profile_people_order_read, com.anisync.android.type.UserSort.CHAPTERS_READ_DESC)
+}
+
+@Immutable
 enum class ProfileStatsType(@StringRes val labelRes: Int) {
     ANIME(R.string.statistics_anime),
     MANGA(R.string.statistics_manga)
@@ -303,6 +313,8 @@ sealed interface ProfileAction {
     data class SelectTab(val tab: ProfileTab) : ProfileAction
     data object ClosePage : ProfileAction
     data class AddToPlanning(val mediaId: Int) : ProfileAction
+    data class SelectPeopleOrder(val order: PeopleOrder) : ProfileAction
+    data class TogglePersonFollow(val user: com.anisync.android.domain.SocialUser) : ProfileAction
     data class SelectActivityFilter(val filter: ProfileActivityFilter) : ProfileAction
     data class SelectFavoritesFilter(val filter: ProfileFavoritesFilter) : ProfileAction
     data class SelectAnimeStatus(val status: LibraryStatus?) : ProfileAction

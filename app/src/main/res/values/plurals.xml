@@ -388,4 +388,24 @@
         <item quantity="one">%1$s day watched</item>
         <item quantity="other">%1$s days watched</item>
     </plurals>
+    <plurals name="profile_people_count">
+        <item quantity="one">%1$s person</item>
+        <item quantity="other">%1$s people</item>
+    </plurals>
+    <plurals name="profile_favorites_count_titles">
+        <item quantity="one">%1$s title</item>
+        <item quantity="other">%1$s titles</item>
+    </plurals>
+    <plurals name="profile_favorites_count_characters">
+        <item quantity="one">%1$s character</item>
+        <item quantity="other">%1$s characters</item>
+    </plurals>
+    <plurals name="profile_favorites_count_staff">
+        <item quantity="one">%1$s staff member</item>
+        <item quantity="other">%1$s staff members</item>
+    </plurals>
+    <plurals name="profile_favorites_count_studios">
+        <item quantity="one">%1$s studio</item>
+        <item quantity="other">%1$s studios</item>
+    </plurals>
 </resources>

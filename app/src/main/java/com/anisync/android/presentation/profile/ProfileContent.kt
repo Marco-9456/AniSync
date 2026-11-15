@@ -63,6 +63,7 @@ import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
 import com.anisync.android.presentation.profile.components.ProfileTopSection
+import com.anisync.android.presentation.profile.sections.PeopleSwitcher
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
@@ -71,7 +72,6 @@ import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
 import com.anisync.android.presentation.profile.sections.ActivityFilterRail
 import com.anisync.android.presentation.profile.sections.FavoritesFilterRail
 import com.anisync.android.presentation.profile.sections.MediaStatusRail
-import com.anisync.android.presentation.profile.sections.SocialTabRail
 import com.anisync.android.presentation.profile.sections.profileActivityTab
 import com.anisync.android.presentation.profile.sections.profileFavoritesTab
 import com.anisync.android.presentation.profile.sections.profileMediaTab
@@ -87,6 +87,7 @@ import com.anisync.android.presentation.statistics.StatsRail
 import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.type.MediaType
+import com.anisync.android.ui.theme.emphasis
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -98,10 +99,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(
@@ -593,7 +591,8 @@ internal fun LazyListScope.profileSelectedTabContent(
                 } else {
                     null
                 },
-                userColumns = portraitColumns
+                userColumns = portraitColumns,
+                onToggleFollow = { onAction(ProfileAction.TogglePersonFollow(it)) }
             )
         }
 
@@ -638,7 +637,9 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onStudioClick = onStudioClick,
                 // List rows are wide; 2-up is the most that stays legible (incl. the right pane).
                 listColumns = statsColumns.coerceAtMost(2),
-                studioColumns = studioColumns
+                studioColumns = studioColumns,
+                gridColumns = portraitColumns,
+                titleLanguage = uiState.titleLanguage
             )
         }
 
@@ -708,37 +709,34 @@ internal fun ProfileUiState.pageListKey(): String = when (selectedTab) {
     else -> selectedTab.name
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfilePageBar(title: String, subtitle: String?, onBack: () -> Unit) {
-    TopAppBar(
-        navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-            }
-        },
-        title = {
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (!subtitle.isNullOrBlank()) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        },
-        windowInsets = WindowInsets(0),
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-    )
+private fun pageTitle(uiState: ProfileUiState): String {
+    val name = uiState.profile?.name.orEmpty()
+    val own = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
+    return when (uiState.selectedTab) {
+        ProfileTab.SOCIAL ->
+            if (own) stringResource(R.string.profile_people_title_own) else stringResource(R.string.profile_people_title, name)
+        ProfileTab.FAVORITES ->
+            if (own) stringResource(R.string.profile_favorites_title_own) else stringResource(R.string.profile_favorites_title, name)
+        else -> stringResource(uiState.selectedTab.titleRes)
+    }
+}
+
+@Composable
+private fun ProfilePageBar(title: String, onBack: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        IconButton(onClick = onBack, modifier = Modifier.padding(start = 4.dp, top = 4.dp)) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineLarge.emphasis(),
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
+        )
+    }
 }
 
 /** The profile tabs, and under them the open tab's rail, so the two dock together. */
@@ -758,11 +756,7 @@ internal fun ProfileTabStrip(
     }
     Column(modifier = modifier) {
         if (uiState.selectedTab.isPage) {
-            ProfilePageBar(
-                title = stringResource(uiState.selectedTab.titleRes),
-                subtitle = uiState.profile?.name,
-                onBack = onClosePage
-            )
+            ProfilePageBar(title = pageTitle(uiState), onBack = onClosePage)
         } else {
             ProfileTabsButtonGroup(
                 selectedTab = uiState.selectedTab,
@@ -806,10 +800,27 @@ internal fun ProfileTabStrip(
                     onOpenFilters = { onFilterAction(ProfileAction.OpenListSheet(ProfileListSheet.FILTERS)) }
                 )
             }
-            ProfileTab.FAVORITES -> FavoritesFilterRail(uiState.selectedFavoritesFilter) {
-                onFilterAction(ProfileAction.SelectFavoritesFilter(it))
+            ProfileTab.FAVORITES -> {
+                val profile = uiState.profile
+                val own = uiState.viewerId != null && uiState.viewerId == profile?.id
+                FavoritesFilterRail(
+                    selected = uiState.selectedFavoritesFilter,
+                    count = when (uiState.selectedFavoritesFilter) {
+                        ProfileFavoritesFilter.ANIME -> profile?.favoriteAnime?.size
+                        ProfileFavoritesFilter.MANGA -> profile?.favoriteMangaOverview?.size
+                        ProfileFavoritesFilter.CHARACTERS -> profile?.favoriteCharactersOverview?.size
+                        ProfileFavoritesFilter.STAFF -> profile?.favoriteStaffOverview?.size
+                        ProfileFavoritesFilter.STUDIOS -> profile?.favoriteStudiosOverview?.size
+                    } ?: 0,
+                    ownerName = if (own) null else profile?.name,
+                    onSelect = { onFilterAction(ProfileAction.SelectFavoritesFilter(it)) }
+                )
             }
-            ProfileTab.SOCIAL -> SocialTabRail(uiState) { onFilterAction(ProfileAction.SelectSocialTab(it)) }
+            ProfileTab.SOCIAL -> PeopleSwitcher(
+                uiState = uiState,
+                onSelect = { onFilterAction(ProfileAction.SelectSocialTab(it)) },
+                onOrderSelected = { onFilterAction(ProfileAction.SelectPeopleOrder(it)) }
+            )
             ProfileTab.OVERVIEW -> Unit
         }
     }

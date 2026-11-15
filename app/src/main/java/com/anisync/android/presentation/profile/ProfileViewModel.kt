@@ -170,6 +170,7 @@ class ProfileViewModel @Inject constructor(
         val selectedAnimeStatus: LibraryStatus? = LibraryStatus.CURRENT,
         val selectedMangaStatus: LibraryStatus? = LibraryStatus.CURRENT,
         val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
+        val peopleOrder: PeopleOrder = PeopleOrder.NEWEST,
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
         val selectedStatsView: StatsView = StatsView.OVERVIEW,
         val genreSort: GenreSort = GenreSort.TITLES,
@@ -273,7 +274,9 @@ class ProfileViewModel @Inject constructor(
         // overview directly (objective media fields only — no viewer-list enrichment).
         val fullAnime: List<LibraryEntry>? = null,
         val isAnimeLoading: Boolean = false,
-        val animeFetched: Boolean = false
+        val animeFetched: Boolean = false,
+        val kinds: Map<com.anisync.android.domain.FavoriteKind, com.anisync.android.domain.FavoriteKindItems> = emptyMap(),
+        val loadingKinds: Set<com.anisync.android.domain.FavoriteKind> = emptySet()
     )
 
     private val favoritesState = MutableStateFlow(FavoritesState())
@@ -628,11 +631,20 @@ class ProfileViewModel @Inject constructor(
 
         // Swap in the lazily-loaded full favourite-anime list once available; until then the page-1
         // preview carried by the profile fetch stands.
-        val withFavorites = favoritesOverlay.fullAnime?.let { full ->
-            visible.profile?.let { p ->
-                visible.copy(profile = p.copy(favoriteAnime = full))
-            }
-        } ?: visible
+        val withFavorites = visible.profile
+            ?.takeIf { favoritesOverlay.fullAnime != null || favoritesOverlay.kinds.isNotEmpty() }
+            ?.let { p ->
+                val kinds = favoritesOverlay.kinds
+                visible.copy(
+                    profile = p.copy(
+                        favoriteAnime = favoritesOverlay.fullAnime ?: p.favoriteAnime,
+                        favoriteMangaOverview = kinds[com.anisync.android.domain.FavoriteKind.MANGA]?.manga ?: p.favoriteMangaOverview,
+                        favoriteCharactersOverview = kinds[com.anisync.android.domain.FavoriteKind.CHARACTERS]?.characters ?: p.favoriteCharactersOverview,
+                        favoriteStaffOverview = kinds[com.anisync.android.domain.FavoriteKind.STAFF]?.staff ?: p.favoriteStaffOverview,
+                        favoriteStudiosOverview = kinds[com.anisync.android.domain.FavoriteKind.STUDIOS]?.studios ?: p.favoriteStudiosOverview
+                    )
+                )
+            } ?: visible
 
         withFavorites.copy(
             isRefreshing = local.isRefreshing,
@@ -646,6 +658,7 @@ class ProfileViewModel @Inject constructor(
             selectedAnimeStatus = local.selectedAnimeStatus,
             selectedMangaStatus = local.selectedMangaStatus,
             selectedSocialTab = local.selectedSocialTab,
+            peopleOrder = local.peopleOrder,
             selectedStatsType = local.selectedStatsType,
             selectedStatsView = local.selectedStatsView,
             genreSort = local.genreSort,
@@ -807,8 +820,9 @@ class ProfileViewModel @Inject constructor(
                     // Overview shows the activity heatmap, which rides on the stats payload, so
                     // it warms the same cache the Stats tab reuses.
                     fetchStats()
-                } else if (action.tab == ProfileTab.FAVORITES && !favoritesState.value.animeFetched) {
-                    fetchFullFavoriteAnime()
+                } else if (action.tab == ProfileTab.FAVORITES) {
+                    if (!favoritesState.value.animeFetched) fetchFullFavoriteAnime()
+                    localState.value.selectedFavoritesFilter.kind()?.let { fetchFavoritesOfKind(it) }
                 } else if (action.tab == ProfileTab.ANIME &&
                     shouldRefreshAnimeList() &&
                     !mediaListState.value.isUserAnimeListLoading
@@ -823,6 +837,11 @@ class ProfileViewModel @Inject constructor(
             }
 
             is ProfileAction.AddToPlanning -> addToPlanning(action.mediaId)
+            is ProfileAction.SelectPeopleOrder -> {
+                localState.update { it.copy(peopleOrder = action.order) }
+                fetchSocialData(forceRefresh = true)
+            }
+            is ProfileAction.TogglePersonFollow -> togglePersonFollow(action.user)
             ProfileAction.ClosePage -> {
                 val local = localState.value
                 if (local.selectedTab.isPage) onAction(ProfileAction.SelectTab(local.pageReturnTab))
@@ -872,6 +891,7 @@ class ProfileViewModel @Inject constructor(
                 localState.update {
                     it.copy(selectedFavoritesFilter = action.filter)
                 }
+                action.filter.kind()?.let { fetchFavoritesOfKind(it) }
             }
 
             is ProfileAction.SelectAnimeStatus -> {
@@ -1178,7 +1198,12 @@ class ProfileViewModel @Inject constructor(
                             // network (like the other tabs); a soft refresh stays network-first
                             // with a cache fallback so the heatmap still revalidates (#88).
                             ProfileTab.OVERVIEW -> fetchStats(forceRefresh = forceNetwork)
-                            ProfileTab.FAVORITES -> fetchFullFavoriteAnime(forceRefresh = true)
+                            ProfileTab.FAVORITES -> {
+                                fetchFullFavoriteAnime(forceRefresh = true)
+                                localState.value.selectedFavoritesFilter.kind()?.let {
+                                    fetchFavoritesOfKind(it, forceRefresh = true)
+                                }
+                            }
                             ProfileTab.ANIME -> fetchUserAnimeList(forceRefresh = shouldRefreshAnimeList())
                             ProfileTab.MANGA -> fetchUserMangaList(forceRefresh = shouldRefreshMangaList())
                             else -> Unit
@@ -1580,6 +1605,40 @@ class ProfileViewModel @Inject constructor(
      * so this is the only place the favourites fan-out runs. Manga/characters/staff show their
      * page-1 overview directly, so they need no lazy fetch.
      */
+    private fun ProfileFavoritesFilter.kind(): com.anisync.android.domain.FavoriteKind? = when (this) {
+        ProfileFavoritesFilter.ANIME -> null
+        ProfileFavoritesFilter.MANGA -> com.anisync.android.domain.FavoriteKind.MANGA
+        ProfileFavoritesFilter.CHARACTERS -> com.anisync.android.domain.FavoriteKind.CHARACTERS
+        ProfileFavoritesFilter.STAFF -> com.anisync.android.domain.FavoriteKind.STAFF
+        ProfileFavoritesFilter.STUDIOS -> com.anisync.android.domain.FavoriteKind.STUDIOS
+    }
+
+    /** The profile carries one page of 25, so only a full page can hide more. */
+    private fun fetchFavoritesOfKind(kind: com.anisync.android.domain.FavoriteKind, forceRefresh: Boolean = false) {
+        val state = favoritesState.value
+        if (kind in state.loadingKinds) return
+        if (!forceRefresh && kind in state.kinds) return
+        viewModelScope.launch {
+            val profile = uiState.value.profile ?: uiState.map { it.profile }.filterNotNull().first()
+            val shown = when (kind) {
+                com.anisync.android.domain.FavoriteKind.MANGA -> profile.favoriteMangaOverview.size
+                com.anisync.android.domain.FavoriteKind.CHARACTERS -> profile.favoriteCharactersOverview.size
+                com.anisync.android.domain.FavoriteKind.STAFF -> profile.favoriteStaffOverview.size
+                com.anisync.android.domain.FavoriteKind.STUDIOS -> profile.favoriteStudiosOverview.size
+            }
+            if (!forceRefresh && shown < FAVORITES_PAGE_SIZE) return@launch
+            favoritesState.update { it.copy(loadingKinds = it.loadingKinds + kind) }
+            val policy = if (forceRefresh) CachePolicy.NetworkOnly else CachePolicy.NetworkFirst
+            val result = profileRepository.getFavoritesOfKind(profile.id, kind, policy)
+            favoritesState.update {
+                it.copy(
+                    kinds = if (result is Result.Success) it.kinds + (kind to result.data) else it.kinds,
+                    loadingKinds = it.loadingKinds - kind
+                )
+            }
+        }
+    }
+
     private fun fetchFullFavoriteAnime(forceRefresh: Boolean = false) {
         if (favoritesState.value.isAnimeLoading) return
         if (!forceRefresh && favoritesState.value.animeFetched) return
@@ -1893,7 +1952,8 @@ class ProfileViewModel @Inject constructor(
             }
 
             val policy = if (forceRefresh) CachePolicy.NetworkOnly else CachePolicy.NetworkFirst
-            when (val result = profileRepository.getSocialData(userId, page = 1, policy = policy)) {
+            val sort = localState.value.peopleOrder.sort
+            when (val result = profileRepository.getSocialData(userId, page = 1, policy = policy, sort = sort)) {
                 is Result.Success -> {
                     val page = result.data
                     socialState.update {
@@ -1951,7 +2011,7 @@ class ProfileViewModel @Inject constructor(
             }
 
             val nextPage = current.socialPage + 1
-            when (val result = profileRepository.getSocialData(userId, page = nextPage)) {
+            when (val result = profileRepository.getSocialData(userId, page = nextPage, sort = localState.value.peopleOrder.sort)) {
                 is Result.Success -> {
                     val p = result.data
                     socialState.update {
@@ -1980,6 +2040,27 @@ class ProfileViewModel @Inject constructor(
                 is Result.Error -> {
                     socialState.update { it.copy(isSocialPaginating = false) }
                 }
+            }
+        }
+    }
+
+    private fun togglePersonFollow(user: com.anisync.android.domain.SocialUser) {
+        viewModelScope.launch {
+            when (val result = profileRepository.toggleFollow(user.id)) {
+                is Result.Success -> {
+                    val following = result.data
+                    val flip: (List<com.anisync.android.domain.SocialUser>) -> List<com.anisync.android.domain.SocialUser> = { list ->
+                        list.map { if (it.id == user.id) it.copy(isFollowing = following) else it }
+                    }
+                    socialState.update {
+                        it.copy(
+                            socialFollowing = flip(it.socialFollowing),
+                            socialFollowers = flip(it.socialFollowers),
+                            socialMutuals = flip(it.socialMutuals)
+                        )
+                    }
+                }
+                is Result.Error -> toastManager.showResultError(result)
             }
         }
     }
@@ -2056,3 +2137,5 @@ class ProfileViewModel @Inject constructor(
         return System.currentTimeMillis() - state.lastMangaListFetchAtMs >= LIST_REFRESH_INTERVAL_MS
     }
 }
+
+private const val FAVORITES_PAGE_SIZE = 25

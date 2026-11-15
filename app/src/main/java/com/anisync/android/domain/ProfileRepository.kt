@@ -81,7 +81,8 @@ interface ProfileRepository {
     suspend fun getSocialData(
         userId: Int,
         page: Int = 1,
-        policy: CachePolicy = CachePolicy.NetworkFirst
+        policy: CachePolicy = CachePolicy.NetworkFirst,
+        sort: com.anisync.android.type.UserSort? = null
     ): Result<UserSocialPage>
 
     /**
@@ -153,6 +154,13 @@ interface ProfileRepository {
         policy: CachePolicy = CachePolicy.NetworkFirst
     ): Result<List<LibraryEntry>>
 
+    /** The profile carries 25 of each favourite kind, this pages through the rest. */
+    suspend fun getFavoritesOfKind(
+        userId: Int,
+        kind: FavoriteKind,
+        policy: CachePolicy = CachePolicy.NetworkFirst
+    ): Result<FavoriteKindItems>
+
     /**
      * Fetch user's anime list.
      */
@@ -173,3 +181,13 @@ interface ProfileRepository {
         id: Int? = null
     ): Result<Unit>
 }
+
+enum class FavoriteKind { MANGA, CHARACTERS, STAFF, STUDIOS }
+
+/** Every favourite of one kind, in the owner's order. Only the requested kind is filled. */
+data class FavoriteKindItems(
+    val manga: List<LibraryEntry> = emptyList(),
+    val characters: List<CharacterInfo> = emptyList(),
+    val staff: List<StaffDetails> = emptyList(),
+    val studios: List<StudioInfo> = emptyList()
+)
