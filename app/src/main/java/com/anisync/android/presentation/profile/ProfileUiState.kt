@@ -107,6 +107,7 @@ data class ProfileUiState(
     /** The follower the viewer asked to remove, awaiting the confirm dialog. */
     val followerToRemove: SocialUser? = null,
     val isSavingAbout: Boolean = false,
+    val isUnfollowConfirmVisible: Boolean = false,
     /** The viewer's recaps for Statistics, empty on anyone else's profile. */
     val recaps: com.anisync.android.presentation.recap.RecapsUiModel = com.anisync.android.presentation.recap.RecapsUiModel()
 )
@@ -269,6 +270,8 @@ sealed interface ProfileAction {
     /** The first recap build gave up, start it again. */
     data object RetryRecaps : ProfileAction
     data object ToggleFollow : ProfileAction
+    data object ConfirmUnfollow : ProfileAction
+    data object DismissUnfollow : ProfileAction
     data class UpdateAbout(val about: String) : ProfileAction
     data class SelectTab(val tab: ProfileTab) : ProfileAction
     data class SelectActivityFilter(val filter: ProfileActivityFilter) : ProfileAction

@@ -190,6 +190,24 @@ fun ProfileScreen(
         )
     }
 
+    if (uiState.isUnfollowConfirmVisible && profile != null) {
+        AppAlertDialog(
+            onDismissRequest = { viewModel.onAction(ProfileAction.DismissUnfollow) },
+            title = { Text(stringResource(R.string.profile_unfollow_title, profile.name)) },
+            text = { Text(stringResource(R.string.profile_unfollow_body)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.onAction(ProfileAction.ConfirmUnfollow) }) {
+                    Text(stringResource(R.string.profile_unfollow_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.onAction(ProfileAction.DismissUnfollow) }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
     uiState.followerToRemove?.let { follower ->
         AppAlertDialog(
             onDismissRequest = { viewModel.onAction(ProfileAction.DismissRemoveFollower) },

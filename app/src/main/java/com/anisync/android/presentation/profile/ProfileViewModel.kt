@@ -180,7 +180,8 @@ class ProfileViewModel @Inject constructor(
         val editingActivity: com.anisync.android.domain.UserActivity? = null,
         val isSavingActivityEdit: Boolean = false,
         val followerToRemove: com.anisync.android.domain.SocialUser? = null,
-        val isSavingAbout: Boolean = false
+        val isSavingAbout: Boolean = false,
+        val isUnfollowConfirmVisible: Boolean = false
     )
 
     private val localState = MutableStateFlow(ProfileUiLocalState())
@@ -585,6 +586,7 @@ class ProfileViewModel @Inject constructor(
             isSavingActivityEdit = local.isSavingActivityEdit,
             followerToRemove = local.followerToRemove,
             isSavingAbout = local.isSavingAbout,
+            isUnfollowConfirmVisible = local.isUnfollowConfirmVisible,
             socialFollowing = social.socialFollowing,
             socialFollowers = social.socialFollowers,
             socialMutuals = social.socialMutuals,
@@ -688,7 +690,16 @@ class ProfileViewModel @Inject constructor(
             is ProfileAction.Refresh -> refresh(forceNetwork = action.forceNetwork)
             ProfileAction.RetryStats -> fetchStats(forceRefresh = true)
             ProfileAction.RetryRecaps -> loadRecaps(refresh = false, force = true)
-            is ProfileAction.ToggleFollow -> toggleFollow()
+            is ProfileAction.ToggleFollow -> if (localState.value.isFollowingUser) {
+                localState.update { it.copy(isUnfollowConfirmVisible = true) }
+            } else {
+                toggleFollow()
+            }
+            ProfileAction.ConfirmUnfollow -> {
+                localState.update { it.copy(isUnfollowConfirmVisible = false) }
+                toggleFollow()
+            }
+            ProfileAction.DismissUnfollow -> localState.update { it.copy(isUnfollowConfirmVisible = false) }
             is ProfileAction.UpdateAbout -> updateAbout(action.about)
             is ProfileAction.SelectTab -> {
                 localState.update {
@@ -1182,6 +1193,7 @@ class ProfileViewModel @Inject constructor(
 
                 is Result.Error -> {
                     localState.update { it.copy(isFollowLoading = false) }
+                    toastManager.showResultError(result)
                 }
             }
         }

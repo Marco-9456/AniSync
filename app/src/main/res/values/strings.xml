@@ -1092,6 +1092,13 @@
     <string name="message_composer_hint">Write a message…</string>
     <string name="message_composer_private">Send as private</string>
     <string name="message_composer_send">Send</string>
+    <string name="message_composer_visibility">Who can read it</string>
+    <string name="message_composer_private_option">Private</string>
+    <string name="message_composer_public_option">On their profile</string>
+    <string name="message_composer_private_explain">Only you and %1$s can read it.</string>
+    <string name="message_composer_public_explain">Everyone who visits %1$s sees it in their activity.</string>
+    <string name="message_composer_send_private">Send privately</string>
+    <string name="message_composer_send_public">Post on their profile</string>
     <!-- Notification Channels -->
     <string name="notification_channel_activity_reply">Activity Replies</string>
     <string name="notification_channel_activity_reply_desc">When someone replies to your activity</string>
@@ -1391,6 +1398,9 @@
     <string name="activity_deleted">Activity deleted</string>
     <string name="message_sent">Message sent</string>
     <string name="profile_about_saved">About saved</string>
+    <string name="profile_unfollow_title">Unfollow %1$s?</string>
+    <string name="profile_unfollow_body">Their activity leaves your Following feed. You can follow again from this page at any time.</string>
+    <string name="profile_unfollow_confirm">Unfollow</string>
     <string name="status_posted">Status posted</string>
     <string name="list_created">List \'%s\' created.</string>
     <string name="list_deleted">List \'%s\' deleted.</string>
