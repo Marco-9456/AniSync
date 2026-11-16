@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.profile.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -42,6 +43,7 @@ import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.ProfileTabsButtonGroup
 import com.anisync.android.presentation.profile.sections.BioPreview
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
 
@@ -215,6 +217,10 @@ fun ProfileTopSection(
  */
 @Composable
 fun ProfileLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: Modifier = Modifier) {
+    if (LocalAdaptiveInfo.current.supportsTwoPane) {
+        WideLoadingSkeleton(name = name, onBackClick = onBackClick, modifier = modifier)
+        return
+    }
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val headerHeight = maxOf(BannerHeight, statusBar + 120.dp)
     val block = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -287,6 +293,97 @@ fun ProfileLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: 
                     .statusBarsPadding()
                     .padding(top = 12.dp, start = 12.dp)
             )
+        }
+    }
+}
+
+/** The two-pane first load: the identity column under its banner card, and the tab pane beside it. */
+@Composable
+private fun WideLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: Modifier = Modifier) {
+    val block = MaterialTheme.colorScheme.surfaceContainerHigh
+    val quiet = MaterialTheme.colorScheme.surfaceContainerLow
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp)
+    ) {
+        Box(modifier = Modifier.weight(0.32f)) {
+            Column {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(block)
+                )
+                Spacer(modifier = Modifier.height(ProfileAvatarHalfSize + 12.dp))
+                if (name != null) {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                listOf(0.6f, 0.85f, 0.7f).forEach { fraction ->
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 20.dp, bottom = 10.dp)
+                            .fillMaxWidth(fraction)
+                            .height(14.dp)
+                            .clip(CircleShape)
+                            .background(block)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .padding(start = 20.dp, end = 20.dp, top = 8.dp)
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(block)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .padding(start = 20.dp)
+                    .offset(y = 200.dp - ProfileAvatarHalfSize)
+                    .size(ProfileAvatarSize)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(3.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            )
+            if (onBackClick != null) {
+                BackTrailButton(onClick = onBackClick, modifier = Modifier.padding(12.dp))
+            }
+        }
+        Column(modifier = Modifier.weight(0.68f)) {
+            ProfileTabsButtonGroup(selectedTab = ProfileTab.OVERVIEW, lastListTab = ProfileTab.ANIME, onTabSelected = {})
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(240.dp)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(quiet)
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(320.dp)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(quiet)
+                )
+            }
+            Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
+                AppCircularProgressIndicator()
+            }
         }
     }
 }

@@ -9,6 +9,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -90,17 +92,13 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-// The wide profile reads as a dashboard: a shorter banner pinned on top (inset to the panes' width
-// and rounded to match them — a floating card), the avatar straddling its lower edge, and below it
-// two resizable panes — identity + bio on the left, the tab-switched content on the right.
+// The wide profile reads as a dashboard: two resizable panes, identity + bio on the left under the
+// banner card with the avatar straddling its lower edge, the tab-switched content on the right.
 private val WideBannerHeight = 200.dp
-private val WideBannerTopMargin = 12.dp
 
-// Horizontal offset of the overlay avatar = the two-pane gutter start + the identity pane's own
-// horizontal padding, so the avatar's left edge lines up with the name below it.
+// The overlay avatar's left edge lines up with the name below it.
 private val IdentityPanePadding = 20.dp
 private val WideGutterStart = 16.dp
-private val WideAvatarStartInset = WideGutterStart + IdentityPanePadding
 
 // EXPERIMENTAL: let the shared banner shrink along with the identity header, which grows *both*
 // panes rather than only the bio's. Flip to false to drop that last stage and leave the banner the
@@ -159,7 +157,6 @@ private class BioCollapseState(density: Density) {
     /** Height of the avatar-clearance spacer, the first thing to give way. */
     val avatarClearancePx = with(density) { ProfileAvatarHalfSize.toPx() }
 
-    private val bannerTopMarginPx = with(density) { WideBannerTopMargin.toPx() }
     private val bannerHeightPx = with(density) { WideBannerHeight.toPx() }
     private val bannerNameBottomInsetPx = with(density) { BannerNameBottomInset.toPx() }
     private val bannerStagePx = with(density) {
@@ -195,8 +192,7 @@ private class BioCollapseState(density: Density) {
 
     /** Top of the banner-overlay name, tracking the banner's bottom edge as the banner shrinks. */
     val bannerNameTopPx: Float
-        get() = bannerTopMarginPx + bannerHeightPx - bannerTrimPx -
-            bannerNameBottomInsetPx - bannerNameHeightPx
+        get() = bannerHeightPx - bannerTrimPx - bannerNameBottomInsetPx - bannerNameHeightPx
 
     fun snapTo(value: Float) {
         collapsedPx = value.coerceIn(0f, maxCollapsePx)
@@ -301,33 +297,13 @@ fun ProfileWideLayout(
     val collapse = remember(density, profile.id, hasBio) { BioCollapseState(density) }
 
     // ST4 draws the profile flat on the page background, the identity column and the tab pane
-    // without cards around them. The resize handle stays between them.
+    // without cards around them. The resize handle stays between them. The banner is a card at the
+    // top of the identity column, so the tabs start at the top of the screen on the right.
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            ProfileBannerSurface(
-                profile = profile,
-                isOwnProfile = isOwnProfile,
-                topActionIcon = Icons.Default.Settings,
-                onTopActionClick = onSettingsClick,
-                height = WideBannerHeight,
-                onBackClick = onBackClick,
-                modifier = Modifier
-                    .padding(
-                        start = WideGutterStart,
-                        top = WideBannerTopMargin,
-                        end = 16.dp
-                    )
-                    // Rounding moved out of the banner and applied here, *outside* the trim, so the
-                    // corners re-round against the collapsed height instead of being cut square.
-                    .clip(TwoPaneDefaults.PaneShape)
-                    .trimBottom { collapse.bannerTrimPx },
-                shape = RectangleShape
-            )
-
             ProfileTwoPane(
                 profile = profile,
                 uiState = uiState,
@@ -354,10 +330,22 @@ fun ProfileWideLayout(
                 statsColumns = statsColumns,
                 onOpenRecap = onOpenRecap,
                 collapse = collapse,
-                modifier = Modifier.weight(1f)
+                onSettingsClick = onSettingsClick,
+                onBackClick = onBackClick,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
             )
-        }
+    }
+}
 
+/**
+ * The top of the identity column: the banner card, with the avatar straddling its lower edge and the
+ * name's banner copy over it. Both overlays are drawn above the column so the avatar can cross the
+ * seam between the banner and the text below it.
+ */
+@Composable
+private fun BoxScope.IdentityPaneOverlays(profile: UserProfile, collapse: BioCollapseState) {
         // Faded-out overlays must leave the accessibility tree too, or TalkBack still stops on things
         // nobody can see — and with the name drawn twice during the handoff, only one copy may ever be
         // readable. Thresholded through derivedStateOf so crossing one costs a single recomposition
@@ -369,15 +357,12 @@ fun ProfileWideLayout(
             derivedStateOf { collapse.nameFraction >= NameHandoffPoint }
         }
 
-        // Avatar overlay: drawn last (above the banner and panes) so it can straddle the banner /
-        // identity-pane seam without being clipped by the pane's rounded Surface. Aligned with the
-        // identity content's left edge.
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .offset(
-                    x = WideAvatarStartInset,
-                    y = WideBannerTopMargin + WideBannerHeight - ProfileAvatarHalfSize
+                    x = IdentityPanePadding,
+                    y = WideBannerHeight - ProfileAvatarHalfSize
                 )
                 .height(ProfileAvatarSize)
                 // Recedes into the banner as the identity header collapses: the pane's clearance is
@@ -417,7 +402,7 @@ fun ProfileWideLayout(
                 // x offset would not do — a long name would run past the edge instead.
                 .fillMaxWidth()
                 .offset { IntOffset(0, collapse.bannerNameTopPx.roundToInt()) }
-                .padding(start = WideAvatarStartInset, end = BannerNameEndInset)
+                .padding(start = IdentityPanePadding, end = BannerNameEndInset)
                 // Picks up exactly where the in-pane copy finishes fading, so the two are never both
                 // visible and the name never blinks out between them.
                 .graphicsLayer {
@@ -429,7 +414,6 @@ fun ProfileWideLayout(
         ) {
             BannerOverlayName(name = profile.name)
         }
-    }
 }
 
 /**
@@ -485,6 +469,8 @@ private fun ProfileTwoPane(
     statsColumns: Int,
     onOpenRecap: (String) -> Unit,
     collapse: BioCollapseState,
+    onSettingsClick: () -> Unit,
+    onBackClick: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     val appSettings = LocalAppSettings.current
@@ -530,24 +516,43 @@ private fun ProfileTwoPane(
             )
         },
         leading = {
-            ProfileIdentityPane(
-                profile = profile,
-                isOwnProfile = isOwnProfile,
-                isFollowing = uiState.isFollowingUser,
-                isFollowerOfViewer = uiState.isFollowerOfViewer,
-                isFollowLoading = uiState.isFollowLoading,
-                onFollowClick = { onAction(ProfileAction.ToggleFollow) },
-                onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
-                onEditProfileClick = { onAction(ProfileAction.SetEditProfileDialogVisible(true)) },
-                onNotificationsClick = onNotificationsClick,
-                unreadNotificationCount = unreadNotificationCount,
-                showAccountSwitcher = showAccountSwitcher,
-                onAccountSwitchClick = onAccountSwitchClick,
-                collapse = collapse,
-                followingTotal = uiState.followingTotal,
-                followersTotal = uiState.followersTotal,
-                onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) }
-            )
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    ProfileBannerSurface(
+                        profile = profile,
+                        isOwnProfile = isOwnProfile,
+                        topActionIcon = Icons.Default.Settings,
+                        onTopActionClick = onSettingsClick,
+                        height = WideBannerHeight,
+                        onBackClick = onBackClick,
+                        modifier = Modifier
+                            // Rounding sits outside the trim, so the corners re-round against the
+                            // collapsed height instead of being cut square.
+                            .clip(TwoPaneDefaults.PaneShape)
+                            .trimBottom { collapse.bannerTrimPx },
+                        shape = RectangleShape
+                    )
+                    ProfileIdentityPane(
+                        profile = profile,
+                        isOwnProfile = isOwnProfile,
+                        isFollowing = uiState.isFollowingUser,
+                        isFollowerOfViewer = uiState.isFollowerOfViewer,
+                        isFollowLoading = uiState.isFollowLoading,
+                        onFollowClick = { onAction(ProfileAction.ToggleFollow) },
+                        onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
+                        onEditProfileClick = { onAction(ProfileAction.SetEditProfileDialogVisible(true)) },
+                        onNotificationsClick = onNotificationsClick,
+                        unreadNotificationCount = unreadNotificationCount,
+                        showAccountSwitcher = showAccountSwitcher,
+                        onAccountSwitchClick = onAccountSwitchClick,
+                        collapse = collapse,
+                        followingTotal = uiState.followingTotal,
+                        followersTotal = uiState.followersTotal,
+                        onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) }
+                    )
+                }
+                IdentityPaneOverlays(profile = profile, collapse = collapse)
+            }
         },
         trailing = {
             ProfileTabPane(
