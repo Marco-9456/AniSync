@@ -2009,4 +2009,26 @@
     <string name="onboarding_sync_row_airing">Harmonogram emisji</string>
     <string name="stats_spread_eclectic_body">Twoje oceny mają szeroki rozrzut, od %1$s do %2$s.</string>
     <string name="stats_spread_eclectic_body_other">Oceny mają szeroki rozrzut, od %1$s do %2$s.</string>
+    <string name="stats_header_chapter_length">Ilość rozdziałów</string>
+    <string name="stats_header_episode_length">Ilość odcinków</string>
+    <string name="stats_spotlight_detail_manga_own">%1$s w twoich mangach, %2$s</string>
+    <string name="stats_spotlight_detail_manga_other">%1$s w ich mangach, %2$s</string>
+    <string name="share_template_shelf">Półka</string>
+    <string name="share_template_collage">Kolaż</string>
+    <string name="share_duration_list">%1$s, %2$s</string>
+    <string name="share_fav_rank_item">%1$d. %2$s</string>
+    <string name="session_expired_switched">Sesja użytkownika %1$s wygasłam, więc AniSync przełączył się na %2$s. Aby znowu korzystać z %1$s, zaloguj się prze przełącznik kont w twoim profilu.</string>
+    <string name="notification_kind_status">Zmiana statusu</string>
+    <string name="notification_kind_status_indefinite">zmianie statusu</string>
+    <string name="notification_episode_one_available">Odcinek 1 jest teraz dostępny</string>
+    <string name="notifications_item_submission_fallback">Twoje zgłoszenie</string>
+    <string name="api_error_session_changed">Konto uległo zmianie przed ukończeniem.</string>
+    <string name="settings_back_trail">Przytrzymaj powrót, aby skoczyć</string>
+    <string name="settings_back_trail_desc">Przytrzymaj strzałkę cofania, aby zobaczyć strony przed aktualną i skoczyć bezpośrednio do nich</string>
+    <string name="a11y_back_trail">Pokaż strony przed tą</string>
+    <string name="back_trail_tip">Przytrzymaj, aby skoczyć do dowolnej strony</string>
+    <string name="back_trail_tip_tab">Przytrzymaj, aby skoczyć do %1$s</string>
+    <string name="whats_new_new">Nowe</string>
+    <string name="whats_new_moved">Przeniesiono</string>
+    <string name="a11y_whats_new_inside">Coś nowego w środku</string>
 </resources>
