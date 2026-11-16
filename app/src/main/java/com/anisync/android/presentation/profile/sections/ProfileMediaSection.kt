@@ -34,13 +34,14 @@ import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.EmptyState
-import com.anisync.android.presentation.components.MediaPosterCard
 import com.anisync.android.presentation.components.MediaTypeToggle
 import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.library.LibraryTab
 import com.anisync.android.presentation.library.components.LibraryRailChip
-import com.anisync.android.presentation.profile.components.ProfileMediaListCard
+import com.anisync.android.presentation.profile.components.ProfileListGridCell
+import com.anisync.android.presentation.profile.components.ProfileListRow
 import com.anisync.android.presentation.profile.components.ProfileTabRail
+import com.anisync.android.presentation.profile.lists.ProfileListFilters
 import com.anisync.android.presentation.profile.lists.ProfileListResults
 import com.anisync.android.presentation.profile.lists.ProfileListSummary
 import com.anisync.android.presentation.profile.lists.ProfileListTools
@@ -118,7 +119,10 @@ fun LazyListScope.profileMediaTab(
     transitionPrefix: String,
     listColumns: Int = 1,
     gridColumns: Int = 2,
-    onAddToPlanning: ((Int) -> Unit)? = null
+    onAddToPlanning: ((Int) -> Unit)? = null,
+    ownerAvatar: String? = null,
+    yourAvatar: String? = null,
+    onRemoveFilter: (ProfileListFilters) -> Unit = {}
 ) {
     // A reload keeps the list on screen rather than swapping it for a spinner (#164).
     if (isLoading && !hasEntries) {
@@ -154,8 +158,7 @@ fun LazyListScope.profileMediaTab(
             results = results,
             tools = tools,
             isOwnProfile = isOwnProfile,
-            onOpenSort = onOpenSort,
-            onClearFilters = onClearFilters
+            onRemoveFilter = onRemoveFilter
         )
     }
 
@@ -201,13 +204,11 @@ fun LazyListScope.profileMediaTab(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 row.forEach { item ->
-                    MediaPosterCard(
-                        item = item,
-                        onClick = { onMediaClick(item.mediaId) },
+                    ProfileListGridCell(
+                        entry = item,
+                        mediaType = mediaType,
                         titleLanguage = titleLanguage,
-                        transitionPrefix = transitionPrefix,
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope,
+                        onClick = { onMediaClick(item.mediaId) },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -236,18 +237,18 @@ fun LazyListScope.profileMediaTab(
                     val canPlan = onAddToPlanning != null && item.mediaId !in viewer
                     var menuOpen by remember { mutableStateOf(false) }
                     Box(modifier = Modifier.weight(1f)) {
-                        ProfileMediaListCard(
+                        ProfileListRow(
                             entry = item,
                             mediaType = mediaType,
+                            ownerAvatar = ownerAvatar,
                             onClick = { onMediaClick(item.mediaId) },
                             titleLanguage = titleLanguage,
                             showStatus = showStatus,
                             yours = if (isOwnProfile) null else viewer[item.mediaId],
+                            yourAvatar = yourAvatar,
                             yourScoreFormat = yourScoreFormat,
-                            onLongClick = if (canPlan) ({ menuOpen = true }) else null,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            transitionPrefix = transitionPrefix
+                            dateSort = tools.sort,
+                            onLongClick = if (canPlan) ({ menuOpen = true }) else null
                         )
                         if (canPlan) {
                             val planningLabel = stringResource(R.string.profile_add_to_planning)

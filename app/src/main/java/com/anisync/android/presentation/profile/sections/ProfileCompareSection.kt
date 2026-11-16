@@ -56,7 +56,7 @@ import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.ProfileUiState
-import com.anisync.android.presentation.profile.components.ProfileMediaListCard
+import com.anisync.android.presentation.profile.components.ProfileListRow
 import com.anisync.android.presentation.profile.lists.ListComparison
 import com.anisync.android.presentation.profile.lists.SharedTitle
 import com.anisync.android.presentation.profile.lists.compareLists
@@ -235,8 +235,8 @@ fun LazyListScope.profileComparePage(
     item(key = "compare_summary") {
         CompareSummary(comparison, type, ownerName, yourAvatar, theirAvatar)
     }
-    sharedSection("compare_both", R.string.profile_compare_both_scored, comparison.bothScored, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_both" in expanded, onExpand)
-    sharedSection("compare_also", R.string.profile_compare_also_shared, comparison.alsoShared, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_also" in expanded, onExpand)
+    sharedSection("compare_both", R.string.profile_compare_both_scored, comparison.bothScored, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_both" in expanded, onExpand, yourAvatar, theirAvatar)
+    sharedSection("compare_also", R.string.profile_compare_also_shared, comparison.alsoShared, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_also" in expanded, onExpand, yourAvatar, theirAvatar)
     if (comparison.theirTensNotYours.isNotEmpty()) {
         item(key = "compare_tens") {
             PosterShelf(
@@ -340,7 +340,9 @@ private fun LazyListScope.sharedSection(
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
     expanded: Boolean,
-    onExpand: (String) -> Unit
+    onExpand: (String) -> Unit,
+    yourAvatar: String?,
+    theirAvatar: String?
 ) {
     if (titles.isEmpty()) return
     item(key = "${key}_header") {
@@ -353,17 +355,16 @@ private fun LazyListScope.sharedSection(
     }
     val shown = if (expanded) titles else titles.take(COMPARE_PREVIEW)
     items(shown, key = { "${key}_${it.theirs.mediaId}" }) { shared ->
-        ProfileMediaListCard(
+        ProfileListRow(
             entry = shared.theirs,
             mediaType = type,
+            ownerAvatar = theirAvatar,
             onClick = { onMediaClick(shared.theirs.mediaId) },
             titleLanguage = titleLanguage,
             yours = shared.yours,
+            yourAvatar = yourAvatar,
             yourScoreFormat = yourScoreFormat,
-            sharedTransitionScope = sharedTransitionScope,
-            animatedVisibilityScope = animatedVisibilityScope,
-            transitionPrefix = key,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
         )
     }
     if (shown.size < titles.size) {

@@ -1,6 +1,7 @@
 package com.anisync.android.presentation.profile.sections
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,22 +31,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
@@ -248,52 +244,42 @@ private fun DetailRow(
 
 @Composable
 internal fun BioPreview(about: String, onOpen: () -> Unit, modifier: Modifier = Modifier) {
-    val density = LocalDensity.current
-    var contentHeight by remember(about) { mutableStateOf(0.dp) }
-    // A bio of a few lines reads as plain text, a longer one is cut short on a card.
-    val long = contentHeight > BioShortLimit
     val container = MaterialTheme.colorScheme.surfaceContainerLow
-    Surface(
-        onClick = onOpen,
-        color = if (long) container else Color.Transparent,
-        shape = RoundedCornerShape(24.dp),
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (long) Modifier.height(BioPreviewHeight) else Modifier)
-                .clipToBounds()
-        ) {
-            AsyncRichTextRenderer(
-                html = about,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight(align = Alignment.Top, unbounded = true)
-                    .onSizeChanged { contentHeight = with(density) { it.height.toDp() } }
-                    .padding(
-                        start = if (long) 16.dp else 0.dp,
-                        end = if (long) 16.dp else 0.dp,
-                        top = if (long) 14.dp else 0.dp
-                    )
-            )
-            if (long) Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(72.dp)
-                    .background(Brush.verticalGradient(listOf(container.copy(alpha = 0f), container)))
-            )
-            if (long) {
-                FilledTonalButton(
-                    onClick = onOpen,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(12.dp)
-                ) {
+    // A bio of a few lines reads as plain text, a longer one is cut short on a card. Decided while
+    // measuring, so the header never draws at one height and then settles at another: that jump
+    // moved everything under it each time the header scrolled back into view.
+    Layout(
+        contents = listOf(
+            { Box(modifier = Modifier.background(container)) },
+            { AsyncRichTextRenderer(html = about, modifier = Modifier.fillMaxWidth()) },
+            { Box(modifier = Modifier.background(Brush.verticalGradient(listOf(container.copy(alpha = 0f), container)))) },
+            {
+                FilledTonalButton(onClick = onOpen) {
                     Text(stringResource(R.string.profile_read_more), style = MaterialTheme.typography.labelLarge.emphasis())
                 }
             }
+        ),
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .clickable(onClick = onOpen)
+    ) { (card, text, fade, button), constraints ->
+        val width = constraints.maxWidth
+        val inset = 16.dp.roundToPx()
+        val body = text.first().measure(Constraints(maxWidth = (width - 2 * inset).coerceAtLeast(0)))
+        if (body.height <= BioShortLimit.roundToPx()) {
+            return@Layout layout(width, body.height) { body.placeRelative(0, 0) }
+        }
+        val height = BioPreviewHeight.roundToPx()
+        val cardPlaceable = card.first().measure(Constraints.fixed(width, height))
+        val fadePlaceable = fade.first().measure(Constraints.fixed(width, 72.dp.roundToPx()))
+        val buttonPlaceable = button.first().measure(Constraints())
+        val margin = 12.dp.roundToPx()
+        layout(width, height) {
+            cardPlaceable.placeRelative(0, 0)
+            body.placeRelative(inset, 14.dp.roundToPx())
+            fadePlaceable.placeRelative(0, height - fadePlaceable.height)
+            buttonPlaceable.placeRelative(width - buttonPlaceable.width - margin, height - buttonPlaceable.height - margin)
         }
     }
 }

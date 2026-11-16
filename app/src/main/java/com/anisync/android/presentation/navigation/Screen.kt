@@ -37,7 +37,7 @@ object Feed
 object Profile
 
 @Serializable
-data class UserProfile(val username: String, val tab: String? = null)
+data class UserProfile(val username: String, val tab: String? = null, val section: String? = null)
 
 /**
  * Details screen route with media ID and source screen for shared element matching.

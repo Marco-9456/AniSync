@@ -531,7 +531,8 @@ fun AniSyncNavHost(
                     navDeepLink { uriPattern = "https://anilist.co/user/{username}" },
                     // The segment after the name picks the tab, so a shared list link opens that list
                     navDeepLink { uriPattern = "https://anilist.co/user/{username}/{tab}" },
-                    navDeepLink { uriPattern = "https://anilist.co/user/{username}/{tab}/.*" },
+                    navDeepLink { uriPattern = "https://anilist.co/user/{username}/{tab}/{section}" },
+                    navDeepLink { uriPattern = "https://anilist.co/user/{username}/{tab}/{section}/.*" },
                     navDeepLink { uriPattern = "https://anilist.co/user/{username}/.*" }
                 )
             ) {

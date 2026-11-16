@@ -340,6 +340,7 @@ class ProfileViewModel @Inject constructor(
     private val viewerIdFlow = MutableStateFlow<Int?>(null)
 
     private val linkTab: String? = savedStateHandle.get<String>("tab")
+    private val linkSection: String? = savedStateHandle.get<String>("section")
 
     val targetName: String? get() = targetUsername
 
@@ -505,7 +506,9 @@ class ProfileViewModel @Inject constructor(
     ) { lists, (tab, animeStatus, mangaStatus), tools, viewer, language ->
         when (tab) {
             ProfileTab.ANIME -> applyListTools(lists.userAnimeList.distinctBy { it.id }, animeStatus, tools, viewer, language)
+                .copy(source = lists.userAnimeList)
             ProfileTab.MANGA -> applyListTools(lists.userMangaList.distinctBy { it.id }, mangaStatus, tools, viewer, language)
+                .copy(source = lists.userMangaList)
             else -> ProfileListResults()
         }
     }.flowOn(Dispatchers.Default)
@@ -1573,8 +1576,20 @@ class ProfileViewModel @Inject constructor(
             "reviews" -> ProfileTab.ACTIVITY to ProfileActivityFilter.REVIEWS
             else -> return
         }
+        val status = when (Uri.decode(linkSection.orEmpty()).lowercase()) {
+            "watching", "reading" -> LibraryStatus.CURRENT
+            "rewatching", "rereading" -> LibraryStatus.REPEATING
+            "completed" -> LibraryStatus.COMPLETED
+            "paused" -> LibraryStatus.PAUSED
+            "dropped" -> LibraryStatus.DROPPED
+            "planning" -> LibraryStatus.PLANNING
+            else -> null
+        }
         viewModelScope.launch {
             uiState.first { it.profile != null }
+            if (status != null) {
+                onAction(if (tab == ProfileTab.MANGA) ProfileAction.SelectMangaStatus(status) else ProfileAction.SelectAnimeStatus(status))
+            }
             onAction(ProfileAction.SelectTab(tab))
             filter?.let { onAction(ProfileAction.SelectActivityFilter(it)) }
             if (!tab.isPage) _dockRequest.update { it + 1 }

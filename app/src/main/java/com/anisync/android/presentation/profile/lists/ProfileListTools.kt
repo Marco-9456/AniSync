@@ -70,7 +70,9 @@ data class ProfileListTools(
 @Immutable
 data class ProfileListResults(
     val items: List<LibraryEntry> = emptyList(),
-    val inScope: Int = 0
+    val inScope: Int = 0,
+    /** The list these were worked out from, compared by identity to tell stale results apart. */
+    val source: List<LibraryEntry>? = null
 )
 
 internal fun LibraryEntry.scoreOutOf100(): Double? {
