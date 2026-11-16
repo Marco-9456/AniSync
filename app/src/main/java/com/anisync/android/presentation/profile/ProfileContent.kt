@@ -379,8 +379,10 @@ fun ProfileContent(
     val bottomPadding = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
     if (uiState.selectedTab.isPage) {
         val pageListState = rememberSaveable(uiState.pageListKey(), saver = LazyListState.Saver) { LazyListState() }
-        val pageCollapsed by remember(pageListState) {
-            derivedStateOf { pageListState.firstVisibleItemIndex > 0 || pageListState.firstVisibleItemScrollOffset > 0 }
+        val pageCollapsed by remember(pageListState) { derivedStateOf { pageListState.canScrollBackward } }
+        val whatsNewStore = LocalWhatsNew.current
+        LaunchedEffect(uiState.selectedTab) {
+            if (uiState.selectedTab == ProfileTab.COMPARE) whatsNewStore.markSeen(WhatsNewItem.PROFILE_COMPARE)
         }
         Box(modifier = modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {

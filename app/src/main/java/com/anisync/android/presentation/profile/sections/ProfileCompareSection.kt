@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -31,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,8 +48,8 @@ import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.HeaderLevel
-import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.MediaPosterCard
+import com.anisync.android.presentation.components.MediaPosterCardDefaults
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.WhatsNewPill
@@ -58,11 +58,13 @@ import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.profile.components.ProfileListRow
 import com.anisync.android.presentation.profile.lists.ListComparison
+import com.anisync.android.presentation.profile.lists.ScoreVerdict
 import com.anisync.android.presentation.profile.lists.SharedTitle
 import com.anisync.android.presentation.profile.lists.compareLists
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
+import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
-import com.anisync.android.ui.theme.emphasis
+import com.anisync.android.ui.theme.LocalExpressiveTypography
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -150,25 +152,31 @@ private fun CompareEyebrow(text: String, yourAvatar: String?, theirAvatar: Strin
         Spacer(modifier = Modifier.width(30.dp))
         Text(
             text = text.uppercase(locale),
-            style = MaterialTheme.typography.labelMedium.emphasis(),
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary
         )
     }
 }
 
 @Composable
-private fun CompareHero(comparison: ListComparison, ownerName: String, type: MediaType) {
+private fun CompareHero(comparison: ListComparison, ownerName: String, type: MediaType, too: Boolean = false) {
     val numbers = NumberFormat.getIntegerInstance()
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = numbers.format(comparison.sharedCount),
-            style = MaterialTheme.typography.displayMedium.emphasis().copy(fontSize = 56.sp),
+            style = LocalExpressiveTypography.current.heroWide.style(64.sp, 64.sp),
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.width(14.dp))
+        val sentence = when {
+            type == MediaType.MANGA && too -> R.plurals.profile_compare_shared_manga_too
+            type == MediaType.MANGA -> R.plurals.profile_compare_shared_manga
+            too -> R.plurals.profile_compare_shared_anime_too
+            else -> R.plurals.profile_compare_shared_anime
+        }
         Text(
             text = pluralStringResourceOrDefault(
-                if (type == MediaType.MANGA) R.plurals.profile_compare_shared_manga else R.plurals.profile_compare_shared_anime,
+                sentence,
                 comparison.sharedCount,
                 numbers.format(comparison.yourCount),
                 ownerName
@@ -207,10 +215,6 @@ fun LazyListScope.profileComparePage(
     expanded: Set<String> = emptySet(),
     onExpand: (String) -> Unit = {}
 ) {
-    item(key = "compare_seen") {
-        val whatsNew = LocalWhatsNew.current
-        LaunchedEffect(Unit) { whatsNew.markSeen(WhatsNewItem.PROFILE_COMPARE) }
-    }
     if (comparison == null || isLoading) {
         item(key = "compare_loading") {
             Box(modifier = Modifier
@@ -235,8 +239,8 @@ fun LazyListScope.profileComparePage(
     item(key = "compare_summary") {
         CompareSummary(comparison, type, ownerName, yourAvatar, theirAvatar)
     }
-    sharedSection("compare_both", R.string.profile_compare_both_scored, comparison.bothScored, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_both" in expanded, onExpand, yourAvatar, theirAvatar)
-    sharedSection("compare_also", R.string.profile_compare_also_shared, comparison.alsoShared, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_also" in expanded, onExpand, yourAvatar, theirAvatar)
+    sharedSection("compare_both", R.string.profile_compare_both_scored, comparison.bothScored, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_both" in expanded, onExpand, yourAvatar, theirAvatar, ownerName)
+    sharedSection("compare_also", R.string.profile_compare_also_shared, comparison.alsoShared, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_also" in expanded, onExpand, yourAvatar, theirAvatar, ownerName)
     if (comparison.theirTensNotYours.isNotEmpty()) {
         item(key = "compare_tens") {
             PosterShelf(
@@ -278,7 +282,7 @@ private fun CompareSummary(comparison: ListComparison, type: MediaType, ownerNam
                 theirAvatar
             )
             Spacer(modifier = Modifier.height(14.dp))
-            CompareHero(comparison, ownerName, type)
+            CompareHero(comparison, ownerName, type, too = true)
             Spacer(modifier = Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MeanBox(comparison.yourMean, stringResource(R.string.profile_compare_your_mean), Modifier.weight(1f))
@@ -288,7 +292,7 @@ private fun CompareSummary(comparison: ListComparison, type: MediaType, ownerNam
                 CompareFact(
                     Icons.Outlined.PersonAdd,
                     pluralStringResourceOrDefault(
-                        R.plurals.profile_compare_theirs_not_yours,
+                        if (type == MediaType.MANGA) R.plurals.profile_compare_theirs_not_yours_manga else R.plurals.profile_compare_theirs_not_yours_anime,
                         comparison.theirsNotYours,
                         ownerName,
                         numbers.format(comparison.theirsNotYours)
@@ -297,7 +301,7 @@ private fun CompareSummary(comparison: ListComparison, type: MediaType, ownerNam
             }
             if (comparison.onlyYours.isNotEmpty()) {
                 CompareFact(
-                    Icons.Outlined.CheckCircle,
+                    Icons.Outlined.Person,
                     pluralStringResourceOrDefault(
                         R.plurals.profile_compare_yours_not_theirs,
                         comparison.onlyYours.size,
@@ -320,10 +324,10 @@ private fun MeanBox(mean: Double?, label: String, modifier: Modifier = Modifier)
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = mean?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: "-",
-                style = MaterialTheme.typography.headlineMedium.emphasis(),
+                style = LocalExpressiveTypography.current.titleWide.style(28.sp, 34.sp),
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -342,7 +346,8 @@ private fun LazyListScope.sharedSection(
     expanded: Boolean,
     onExpand: (String) -> Unit,
     yourAvatar: String?,
-    theirAvatar: String?
+    theirAvatar: String?,
+    ownerName: String
 ) {
     if (titles.isEmpty()) return
     item(key = "${key}_header") {
@@ -364,6 +369,13 @@ private fun LazyListScope.sharedSection(
             yours = shared.yours,
             yourAvatar = yourAvatar,
             yourScoreFormat = yourScoreFormat,
+            factsLead = when (shared.verdict) {
+                ScoreVerdict.SAME -> stringResource(R.string.profile_compare_verdict_same)
+                ScoreVerdict.YOURS_HIGHER -> stringResource(R.string.profile_compare_verdict_yours)
+                ScoreVerdict.THEIRS_HIGHER -> stringResource(R.string.profile_compare_verdict_theirs, ownerName)
+                null -> null
+            },
+            showDate = false,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
         )
     }
@@ -400,12 +412,15 @@ private fun PosterShelf(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(items, key = { it.mediaId }) { entry ->
+                val facts = listOfNotNull(entry.format?.toLabel(), entry.releaseYear?.toString()).joinToString(" · ")
                 MediaPosterCard(
                     item = entry,
                     onClick = { onMediaClick(entry.mediaId) },
                     titleLanguage = titleLanguage,
                     transitionPrefix = prefix,
-                    modifier = Modifier.width(112.dp)
+                    listStatus = null,
+                    modifier = Modifier.width(112.dp),
+                    meta = { if (facts.isNotEmpty()) MediaPosterCardDefaults.MetaText(facts) }
                 )
             }
         }

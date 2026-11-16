@@ -72,7 +72,10 @@ fun ProfileListRow(
     yourAvatar: String? = null,
     yourScoreFormat: ScoreFormat = ScoreFormat.POINT_100,
     dateSort: ProfileListSort = ProfileListSort.UPDATED,
-    onLongClick: (() -> Unit)? = null
+    onLongClick: (() -> Unit)? = null,
+    /** Leads the facts line, which then leaves the length out to make room. */
+    factsLead: String? = null,
+    showDate: Boolean = true
 ) {
     val title = entry.getTitle(titleLanguage)
     val shape = RoundedCornerShape(16.dp)
@@ -116,7 +119,7 @@ fun ProfileListRow(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                val facts = mediaFacts(entry, mediaType)
+                val facts = mediaFacts(entry, mediaType, factsLead)
                 if (facts.isNotEmpty()) {
                     Text(
                         text = facts,
@@ -129,7 +132,7 @@ fun ProfileListRow(
                 Spacer(modifier = Modifier.height(4.dp))
                 PersonLine(
                     avatar = ownerAvatar,
-                    text = theirLine(entry, mediaType, showStatus, dateSort),
+                    text = theirLine(entry, mediaType, showStatus, dateSort.takeIf { showDate }),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 entry.notes?.takeIf { it.isNotBlank() }?.let { note ->
@@ -168,19 +171,20 @@ private fun PersonLine(avatar: String?, text: String, color: Color) {
 }
 
 @Composable
-private fun mediaFacts(entry: LibraryEntry, mediaType: MediaType): String {
+private fun mediaFacts(entry: LibraryEntry, mediaType: MediaType, lead: String?): String {
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     return listOfNotNull(
+        lead,
         entry.format?.toLabel(),
         entry.releaseYear?.toString(),
-        total?.takeIf { it > 0 }?.let {
+        total?.takeIf { it > 0 && lead == null }?.let {
             pluralStringResourceOrDefault(if (mediaType == MediaType.MANGA) R.plurals.profile_row_chapters else R.plurals.profile_row_episodes, it, it)
         }
     ).joinToString(" · ")
 }
 
 @Composable
-private fun theirLine(entry: LibraryEntry, mediaType: MediaType, showStatus: Boolean, dateSort: ProfileListSort): String {
+private fun theirLine(entry: LibraryEntry, mediaType: MediaType, showStatus: Boolean, dateSort: ProfileListSort?): String {
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     val parts = buildList {
         if (showStatus) add(entry.status.toLabel(mediaType))
@@ -197,6 +201,7 @@ private fun theirLine(entry: LibraryEntry, mediaType: MediaType, showStatus: Boo
             ProfileListSort.UPDATED -> entry.updatedAt?.let { add(stringResource(R.string.profile_row_updated, shortDate(it, fuzzy = false))) }
             ProfileListSort.STARTED -> entry.startedAt?.let { add(stringResource(R.string.profile_row_started, shortDate(it, fuzzy = true))) }
             ProfileListSort.ADDED -> entry.createdAt?.let { add(stringResource(R.string.profile_row_added, shortDate(it, fuzzy = false))) }
+            null -> Unit
             else -> entry.completedAt?.let { add(stringResource(R.string.profile_row_finished, shortDate(it, fuzzy = true))) }
         }
     }
@@ -209,8 +214,11 @@ private fun yourLine(yours: LibraryEntry, theirs: LibraryEntry, mediaType: Media
     val parts = buildList {
         add(stringResource(R.string.profile_list_you))
         add(yours.status.toLabel(mediaType))
-        if (yours.status != LibraryStatus.COMPLETED && yours.status != LibraryStatus.PLANNING && yours.progress > 0) {
-            add(progressText(yours.progress, total, mediaType))
+        val underway = yours.status == LibraryStatus.CURRENT || yours.status == LibraryStatus.REPEATING
+        when {
+            yours.status != LibraryStatus.COMPLETED && yours.status != LibraryStatus.PLANNING && yours.progress > 0 ->
+                add(progressText(yours.progress, total, mediaType))
+            underway -> add(stringResource(R.string.profile_row_not_started))
         }
         val score = yours.score?.takeIf { it > 0.0 }
         when {

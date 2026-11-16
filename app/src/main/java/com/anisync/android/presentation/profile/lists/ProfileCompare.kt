@@ -6,14 +6,23 @@ import com.anisync.android.type.MediaType
 import com.anisync.android.domain.ScoreFormat
 import kotlin.math.abs
 
+enum class ScoreVerdict { SAME, YOURS_HIGHER, THEIRS_HIGHER }
+
 @Immutable
 data class SharedTitle(val theirs: LibraryEntry, val yours: LibraryEntry) {
-    val sameScore: Boolean
+    /** Null unless both of you scored it. */
+    val verdict: ScoreVerdict?
         get() {
-            val a = theirs.scoreOutOf100() ?: return false
-            val b = yours.scoreOutOf100() ?: return false
-            return abs(a - b) < 0.5
+            val their = theirs.scoreOutOf100() ?: return null
+            val your = yours.scoreOutOf100() ?: return null
+            return when {
+                abs(their - your) < 0.5 -> ScoreVerdict.SAME
+                your > their -> ScoreVerdict.YOURS_HIGHER
+                else -> ScoreVerdict.THEIRS_HIGHER
+            }
         }
+
+    val sameScore: Boolean get() = verdict == ScoreVerdict.SAME
 }
 
 @Immutable

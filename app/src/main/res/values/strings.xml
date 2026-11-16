@@ -1475,6 +1475,7 @@
     <string name="profile_row_started">started %1$s</string>
     <string name="profile_row_added">added %1$s</string>
     <string name="profile_row_no_score">no score yet</string>
+    <string name="profile_row_not_started">not started yet</string>
     <string name="profile_list_search_anime">Search %1$s\'s anime</string>
     <string name="profile_list_search_manga">Search %1$s\'s manga</string>
     <string name="profile_list_search_own_anime">Search your anime</string>
@@ -1515,9 +1516,12 @@
     <string name="profile_compare_their_mean">%1$s\'s mean score</string>
     <string name="profile_compare_both_scored">Both scored</string>
     <string name="profile_compare_also_shared">Also on both lists</string>
-    <string name="profile_compare_their_tens_title">%1$s\'s 10s you have not added</string>
+    <string name="profile_compare_their_tens_title">%1$s\'s 10s you haven\'t added</string>
     <string name="profile_compare_only_yours">Only on your list</string>
     <string name="profile_compare_show_all">Show all %1$d</string>
+    <string name="profile_compare_verdict_same">Same score</string>
+    <string name="profile_compare_verdict_yours">You rated it higher</string>
+    <string name="profile_compare_verdict_theirs">%1$s rated it higher</string>
     <string name="profile_compare_nothing">Nothing to compare yet</string>
     <string name="profile_compare_nothing_body">Titles you add to your list show up here next to %1$s\'s.</string>
     <string name="profile_no_statuses">No statuses yet</string>
