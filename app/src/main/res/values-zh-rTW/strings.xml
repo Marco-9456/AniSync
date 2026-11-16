@@ -663,7 +663,7 @@
         <item quantity="other">%d 片尾</item>
     </plurals>
     <plurals name="themes_versions_count">
-        <item quantity="other">%d 版本</item>
+        <item quantity="other">%d 種版本</item>
     </plurals>
     <string name="themes_group_openings">片頭</string>
     <string name="themes_group_endings">片尾</string>
@@ -680,7 +680,7 @@
     <string name="themes_failed_body">AniList 的資料不受影響，只有主題請求失敗</string>
     <string name="themes_retry">重試</string>
     <string name="themes_variant_lyrics">歌詞</string>
-    <string name="themes_attribution">此主題資料與影片來自 AnimeThemes.moe</string>
+    <string name="themes_attribution">主題曲的影片和資料均來自 AnimeThemes.moe</string>
     <string name="themes_open_source">在 AnimeThemes 上打開</string>
     <string name="profile_no_recent_updates">暫無近期更新</string>
     <string name="profile_no_activity_for_filter">暫無%1$s動態</string>
@@ -1900,4 +1900,23 @@
     <string name="recap_building_read_back">來看看在 %1$s時都發生些什麼…</string>
     <string name="recap_building_titles">蒐羅作品中…</string>
     <string name="recap_building_body">初次的構建會查閱你自 %1$s以來的每次清單更新，因此很容易就達到 AniList 的限速… 所以等幾分鐘吧，瀏覽其它頁面時它也會繼續工作的</string>
+    <string name="recap_opener_across">橫跨 %2$s，共有 %1$s</string>
+    <string name="recap_mood_note">時長有所重疊，畢竟大多作品都會有多個風格標籤</string>
+    <string name="recap_biggest_day">巔峰之日：%1$s</string>
+    <string name="recap_customize">客製化</string>
+    <string name="share_recap_most_watched">時長榜</string>
+    <string name="recap_card_eyebrow">你的%1$s小卡</string>
+    <string name="recap_see_statistics">查看完整統計</string>
+    <string name="share_detail_top_titles">排行榜</string>
+    <string name="share_slide_keeps_look">故事頁中，其顏色與細節皆為固定不可調</string>
+    <string name="recap_opener_month_eyebrow">%1$s，來看看你的</string>
+    <string name="themes_variant_audio">純音樂</string>
+    <string name="themes_performer_as">飾演 %1$s</string>
+    <string name="themes_performers">角色</string>
+    <string name="themes_versions">版本</string>
+    <string name="themes_version_label">版本 %1$d</string>
+    <string name="themes_variant_creditless">無演員表</string>
+    <string name="themes_variant_with_credits">附演員表</string>
+    <string name="stats_header_their_lists">他的清單</string>
+    <string name="stats_header_formats">媒體類型</string>
 </resources>
