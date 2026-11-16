@@ -81,7 +81,9 @@ import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
+import com.anisync.android.presentation.profile.components.ProfileOwnTopBar
 import com.anisync.android.presentation.profile.components.ProfileTopSection
+import com.anisync.android.presentation.profile.components.ProfileVisitBar
 import com.anisync.android.presentation.profile.lists.ListComparison
 import com.anisync.android.presentation.profile.lists.ProfileListTopBar
 import com.anisync.android.presentation.profile.sections.OverviewCompareCard
@@ -251,11 +253,19 @@ fun ProfileContent(
     val listState = rememberLazyListState()
     ScrollToTopOnRequest(scrollToTopRequest, listState)
     val tabsIndex by rememberUpdatedState(if (uiState.isShowingSavedCopy) 2 else 1)
+    // Lists carry their own search bar. The other tabs say whose profile this is once the header
+    // has gone, in a bar only the pinned copy has, so the strip docks that much lower.
+    val showsIdentityBar = uiState.selectedTab == ProfileTab.OVERVIEW ||
+        uiState.selectedTab == ProfileTab.STATS || uiState.selectedTab == ProfileTab.ACTIVITY
+    val identityBarPx by rememberUpdatedState(
+        if (showsIdentityBar) with(LocalDensity.current) { ProfileIdentityBarHeight.toPx() } else 0f
+    )
     // Coming back to the page below the tabs never lays the in-list strip out, so its top is never
     // measured and the pinned copy goes by the list's position instead.
     val tabsDocked by remember {
         derivedStateOf {
-            listState.firstVisibleItemIndex > tabsIndex || inlineTabsTopWindow <= contentTopWindow + dockPx
+            listState.firstVisibleItemIndex > tabsIndex ||
+                inlineTabsTopWindow <= contentTopWindow + dockPx + identityBarPx
         }
     }
 
@@ -264,7 +274,7 @@ fun ProfileContent(
     val scope = rememberCoroutineScope()
     val dockStrip: suspend () -> Unit = {
         listState.scrollToItem(tabsIndex)
-        listState.scrollBy(-dockPx)
+        listState.scrollBy(-(dockPx + identityBarPx))
     }
     var dockHold by remember { mutableIntStateOf(0) }
     val requestDock: suspend () -> Unit = {
@@ -281,7 +291,6 @@ fun ProfileContent(
     LaunchedEffect(dockHold) {
         if (dockHold == 0) return@LaunchedEffect
         val dragged = async { listState.interactionSource.interactions.first { it is DragInteraction.Start } }
-        val target = dockPx.roundToInt()
         withTimeoutOrNull(20_000) {
             // Rows arriving under a strip that could not reach the top yet leave it where it was, so
             // the content's end counts as a change too, and a change mid scroll is looked at again
@@ -292,13 +301,14 @@ fun ProfileContent(
                     stripOffset = info.visibleItemsInfo.firstOrNull { it.key == PROFILE_TABS_KEY }?.offset,
                     itemCount = info.totalItemsCount,
                     contentEnd = info.visibleItemsInfo.lastOrNull()?.let { it.offset + it.size },
-                    scrolling = listState.isScrollInProgress
+                    scrolling = listState.isScrollInProgress,
+                    target = (dockPx + identityBarPx).roundToInt()
                 )
             }
                 .takeWhile { !dragged.isCompleted }
                 .collect { probe ->
                     val offset = probe.stripOffset
-                    if (!probe.scrolling && (offset == null || abs(offset - target) > 1)) dockStrip()
+                    if (!probe.scrolling && (offset == null || abs(offset - probe.target) > 1)) dockStrip()
                 }
         }
         dragged.cancel()
@@ -505,7 +515,30 @@ fun ProfileContent(
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
         ) {
-            Box(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+            Column(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+                if (showsIdentityBar) {
+                    if (isOwnProfile) {
+                        ProfileOwnTopBar(
+                            name = profile.name,
+                            avatarUrl = profile.avatarUrl,
+                            onBanner = false,
+                            showAccountSwitcher = showAccountSwitcher,
+                            onAccountSwitchClick = onAccountSwitchClick,
+                            unreadNotificationCount = unreadNotificationCount,
+                            onNotificationsClick = onNotificationsClick,
+                            onSettingsClick = onSettingsClick
+                        )
+                    } else {
+                        ProfileVisitBar(
+                            name = profile.name,
+                            avatarUrl = profile.avatarUrl,
+                            onBackClick = onBackClick,
+                            isFollowing = uiState.isFollowingUser,
+                            isFollowLoading = uiState.isFollowLoading,
+                            onFollowClick = { onAction(ProfileAction.ToggleFollow) }
+                        )
+                    }
+                }
                 tabStrip()
             }
         }
@@ -1066,7 +1099,7 @@ private fun ProfilePageBar(title: String, onBack: () -> Unit, collapsed: Boolean
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 36.dp, bottom = 12.dp)
             )
         }
     }
@@ -1194,7 +1227,15 @@ internal fun ProfileTabStrip(
 
 private const val PROFILE_TABS_KEY = "profile_tabs"
 
-private data class DockProbe(val stripOffset: Int?, val itemCount: Int, val contentEnd: Int?, val scrolling: Boolean)
+private data class DockProbe(
+    val stripOffset: Int?,
+    val itemCount: Int,
+    val contentEnd: Int?,
+    val scrolling: Boolean,
+    val target: Int
+)
+
+private val ProfileIdentityBarHeight = 64.dp
 
 @Composable
 internal fun ProfileTabsButtonGroup(

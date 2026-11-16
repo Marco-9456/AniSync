@@ -12,18 +12,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Comment
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.automirrored.filled.ViewList
-import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
@@ -54,6 +55,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Date
 
 fun LazyListScope.profileActivityTab(
     profile: UserProfile,
@@ -112,7 +114,7 @@ fun LazyListScope.profileActivityTab(
             val previous = filteredActivities.getOrNull(index - 1)
             if (!activity.isPinned && (previous == null || previous.isPinned || previous.dayIn(zone) != day)) {
                 item(key = "activity_day_${index}_$day", contentType = "activity_day") {
-                    ActivityDayHeader(day)
+                    ActivityDayHeader(day, start = 20.dp, top = 12.dp, bottom = 8.dp)
                 }
             }
             val update = activity.isGroupedUpdate()
@@ -137,24 +139,22 @@ fun LazyListScope.profileActivityTab(
             } else null
 
             if (update) {
+                // A day's updates join into one card.
                 ActivityUpdateRow(
                     activity = activity,
                     shape = updateRowShape(top = !joinsAbove, bottom = !joinsBelow),
                     onClick = { onActivityClick(activity.id) },
                     onMediaClick = onMediaClick,
                     onLikeClick = cardLike,
-                    modifier = modifier.padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = if (joinsAbove) 1.dp else 4.dp,
-                        bottom = if (joinsBelow) 1.dp else 8.dp
-                    )
+                    extraTop = if (joinsAbove) 0.dp else 4.dp,
+                    extraBottom = if (joinsBelow) 0.dp else 4.dp,
+                    modifier = modifier.padding(start = 16.dp, end = 16.dp, bottom = if (joinsBelow) 0.dp else 8.dp)
                 )
             } else {
                 ActivityCard(
                     activity = activity,
                     onClick = { onActivityClick(activity.id) },
-                    modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
                     onUserClick = onUserClick,
                     onMediaClick = onMediaClick,
                     onLastReplyClick = onLastReplyClick,
@@ -162,7 +162,9 @@ fun LazyListScope.profileActivityTab(
                     onLikeClick = cardLike,
                     onDeleteClick = cardDelete,
                     onEditClick = cardEdit,
-                    showAuthor = false
+                    showAuthor = false,
+                    pinnedLabel = true,
+                    timeText = activityTime(activity)
                 )
             }
             }
@@ -213,8 +215,26 @@ internal fun UserActivity.dayIn(zone: ZoneId): Long =
 
 internal fun UserActivity.isGroupedUpdate(): Boolean = type == ActivityType.MEDIA_LIST && !isPinned
 
+/** Under a day's header a card only needs its time, and the pinned post, above the days, its date. */
 @Composable
-internal fun ActivityDayHeader(epochDay: Long, start: Dp = 32.dp) {
+private fun activityTime(activity: UserActivity): String {
+    val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(activity.timestamp, activity.isPinned, locale) {
+        val date = Date(activity.timestamp)
+        if (activity.isPinned) {
+            val day = Instant.ofEpochMilli(activity.timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+            val skeleton = if (day.year == LocalDate.now().year) "MMMd" else "MMMdyyyy"
+            val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton)
+            DateTimeFormatter.ofPattern(pattern, locale).format(day)
+        } else {
+            android.text.format.DateFormat.getTimeFormat(context).format(date)
+        }
+    }
+}
+
+@Composable
+internal fun ActivityDayHeader(epochDay: Long, start: Dp = 32.dp, top: Dp = 16.dp, bottom: Dp = 6.dp) {
     val locale = LocalConfiguration.current.locales[0]
     val today = LocalDate.now()
     val day = LocalDate.ofEpochDay(epochDay)
@@ -231,7 +251,7 @@ internal fun ActivityDayHeader(epochDay: Long, start: Dp = 32.dp) {
         text = label,
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = start, end = 16.dp, top = 16.dp, bottom = 6.dp)
+        modifier = Modifier.padding(start = start, end = 16.dp, top = top, bottom = bottom)
     )
 }
 
@@ -293,10 +313,10 @@ internal fun ActivityFilterRail(selected: ProfileActivityFilter, onSelect: (Prof
 
 private fun activityFilterIcon(filter: ProfileActivityFilter): ImageVector {
     return when (filter) {
-        ProfileActivityFilter.ALL -> Icons.AutoMirrored.Filled.ViewList
-        ProfileActivityFilter.STATUS -> Icons.Default.EditNote
-        ProfileActivityFilter.MESSAGES -> Icons.Default.ChatBubbleOutline
-        ProfileActivityFilter.LISTS -> Icons.AutoMirrored.Filled.List
+        ProfileActivityFilter.ALL -> Icons.Outlined.ViewAgenda
+        ProfileActivityFilter.STATUS -> Icons.AutoMirrored.Filled.Chat
+        ProfileActivityFilter.MESSAGES -> Icons.Default.Mail
+        ProfileActivityFilter.LISTS -> Icons.AutoMirrored.Filled.PlaylistAddCheck
         ProfileActivityFilter.REVIEWS -> Icons.Default.RateReview
         ProfileActivityFilter.THREADS -> Icons.Default.Forum
         ProfileActivityFilter.COMMENTS -> Icons.AutoMirrored.Filled.Comment

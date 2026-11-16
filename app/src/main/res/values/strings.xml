@@ -722,6 +722,7 @@
     <string name="media_stats_score_dist_a11y">Score distribution histogram, most common score %1$d with %2$s ratings</string>
     <string name="profile_activity_all">All</string>
     <string name="profile_activity_status">Status</string>
+    <string name="profile_activity_statuses">Statuses</string>
     <string name="profile_activity_messages">Messages</string>
     <string name="profile_activity_threads">Threads</string>
     <string name="profile_activity_updates">Updates</string>
@@ -1476,6 +1477,14 @@
     <string name="profile_row_added">added %1$s</string>
     <string name="profile_row_no_score">no score yet</string>
     <string name="profile_row_not_started">not started yet</string>
+    <string name="profile_update_watched_one">Watched episode %1$d</string>
+    <string name="profile_update_watched_range">Watched episodes %1$d to %2$d</string>
+    <string name="profile_update_rewatched_one">Rewatched episode %1$d</string>
+    <string name="profile_update_rewatched_range">Rewatched episodes %1$d to %2$d</string>
+    <string name="profile_update_read_one">Read chapter %1$d</string>
+    <string name="profile_update_read_range">Read chapters %1$d to %2$d</string>
+    <string name="profile_update_reread_one">Reread chapter %1$d</string>
+    <string name="profile_update_reread_range">Reread chapters %1$d to %2$d</string>
     <string name="profile_list_search_anime">Search %1$s\'s anime</string>
     <string name="profile_list_search_manga">Search %1$s\'s manga</string>
     <string name="profile_list_search_own_anime">Search your anime</string>
@@ -1535,6 +1544,11 @@
     <string name="profile_people_order_name">By name</string>
     <string name="profile_people_order_watched">Most time watched</string>
     <string name="profile_people_order_read">Most chapters read</string>
+    <string name="profile_people_phrase_newest">newest members first</string>
+    <string name="profile_people_phrase_oldest">oldest members first</string>
+    <string name="profile_people_phrase_name">by name</string>
+    <string name="profile_people_phrase_watched">most time watched first</string>
+    <string name="profile_people_phrase_read">most chapters read first</string>
     <string name="profile_person_menu">More for %1$s</string>
     <string name="profile_people_counts">%1$s following  ·  %2$s followers</string>
     <string name="status_posted">Status posted</string>

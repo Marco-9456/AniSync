@@ -14,12 +14,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -95,7 +95,7 @@ internal fun PeopleSwitcher(
                 .padding(start = 16.dp, end = 4.dp)
         ) {
             val total = peopleTotal(uiState, selected)
-            val order = stringResource(uiState.peopleOrder.labelRes)
+            val order = stringResource(uiState.peopleOrder.phraseRes)
             Text(
                 text = if (total != null) {
                     stringResource(
@@ -130,7 +130,7 @@ private fun PeopleOrderButton(selected: PeopleOrder, onSelect: (PeopleOrder) -> 
     val labels = PeopleOrder.entries.associateWith { stringResource(it.labelRes) }
     Box {
         IconButton(onClick = { open = true }) {
-            Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = stringResource(R.string.profile_people_sort))
+            Icon(Icons.Default.SwapVert, contentDescription = stringResource(R.string.profile_people_sort))
         }
         Menu(expanded = open, onDismissRequest = { open = false }) {
             PeopleOrder.entries.forEach { order ->
@@ -170,18 +170,17 @@ internal fun PersonRow(
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .clickable(role = Role.Button, onClickLabel = user.name, onClick = onClick)
-            .padding(start = 12.dp, top = 4.dp, bottom = 4.dp)
+            .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp)
     ) {
-        UserAvatar(contentDescription = null, size = 40.dp, url = user.avatarUrl)
-        Spacer(modifier = Modifier.width(8.dp))
+        UserAvatar(contentDescription = null, size = 44.dp, url = user.avatarUrl)
         Text(
             text = user.name,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

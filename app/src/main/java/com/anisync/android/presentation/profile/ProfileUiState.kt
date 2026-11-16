@@ -264,9 +264,9 @@ enum class ProfileFavoritesFilter(@StringRes val labelRes: Int) {
 @Immutable
 enum class ProfileActivityFilter(@StringRes val labelRes: Int) {
     ALL(R.string.profile_activity_all),
-    STATUS(R.string.profile_activity_status),
-    MESSAGES(R.string.profile_activity_messages),
     LISTS(R.string.profile_activity_updates),
+    STATUS(R.string.profile_activity_statuses),
+    MESSAGES(R.string.profile_activity_messages),
     REVIEWS(R.string.section_reviews),
     THREADS(R.string.profile_activity_threads),
     COMMENTS(R.string.profile_activity_comments);
@@ -287,12 +287,13 @@ enum class ProfileSocialTab(@StringRes val labelRes: Int) {
 }
 
 @Immutable
-enum class PeopleOrder(@StringRes val labelRes: Int, val sort: com.anisync.android.type.UserSort) {
-    NEWEST(R.string.profile_people_order_newest, com.anisync.android.type.UserSort.ID_DESC),
-    OLDEST(R.string.profile_people_order_oldest, com.anisync.android.type.UserSort.ID),
-    NAME(R.string.profile_people_order_name, com.anisync.android.type.UserSort.USERNAME),
-    WATCHED(R.string.profile_people_order_watched, com.anisync.android.type.UserSort.WATCHED_TIME_DESC),
-    READ(R.string.profile_people_order_read, com.anisync.android.type.UserSort.CHAPTERS_READ_DESC)
+/** [labelRes] names the order in its menu, [phraseRes] finishes the count line under the tabs. */
+enum class PeopleOrder(@StringRes val labelRes: Int, @StringRes val phraseRes: Int, val sort: com.anisync.android.type.UserSort) {
+    NEWEST(R.string.profile_people_order_newest, R.string.profile_people_phrase_newest, com.anisync.android.type.UserSort.ID_DESC),
+    OLDEST(R.string.profile_people_order_oldest, R.string.profile_people_phrase_oldest, com.anisync.android.type.UserSort.ID),
+    NAME(R.string.profile_people_order_name, R.string.profile_people_phrase_name, com.anisync.android.type.UserSort.USERNAME),
+    WATCHED(R.string.profile_people_order_watched, R.string.profile_people_phrase_watched, com.anisync.android.type.UserSort.WATCHED_TIME_DESC),
+    READ(R.string.profile_people_order_read, R.string.profile_people_phrase_read, com.anisync.android.type.UserSort.CHAPTERS_READ_DESC)
 }
 
 @Immutable

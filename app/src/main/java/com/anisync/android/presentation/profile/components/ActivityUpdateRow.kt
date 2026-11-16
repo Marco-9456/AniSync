@@ -28,12 +28,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.anisync.android.R
 import com.anisync.android.domain.UserActivity
+import com.anisync.android.domain.recap.parseProgress
 import com.anisync.android.domain.url
 import java.util.Date
 
@@ -45,25 +46,25 @@ internal fun ActivityUpdateRow(
     onMediaClick: (Int) -> Unit,
     onLikeClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.surfaceContainerLow
+    color: Color = MaterialTheme.colorScheme.surfaceContainerLow,
+    extraTop: Dp = 0.dp,
+    extraBottom: Dp = 0.dp
 ) {
     val context = LocalContext.current
     val time = remember(activity.timestamp) {
         android.text.format.DateFormat.getTimeFormat(context).format(Date(activity.timestamp))
     }
-    val progress = remember(activity.status, activity.progress) {
-        val status = (activity.status ?: "").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-        listOfNotNull(status.takeIf { it.isNotBlank() }, activity.progress?.takeIf { it.isNotBlank() }).joinToString(" ")
-    }
+    val progress = updateAction(activity.status, activity.progress)
     Surface(
         onClick = onClick,
         shape = shape,
         color = color,
         modifier = modifier.fillMaxWidth()
     ) {
+        // The like's own touch padding makes up the rest of the 16dp end margin.
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 10.dp, end = 4.dp, top = 8.dp, bottom = 8.dp)
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp + extraTop, bottom = 8.dp + extraBottom)
         ) {
             AsyncImage(
                 model = activity.mediaCover?.url() ?: activity.mediaCoverUrl,
@@ -76,12 +77,12 @@ internal fun ActivityUpdateRow(
                         activity.mediaId?.let(onMediaClick)
                     }
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 if (progress.isNotBlank()) {
                     Text(
                         text = progress,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -90,17 +91,17 @@ internal fun ActivityUpdateRow(
                 Text(
                     text = activity.mediaTitle,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(start = 8.dp)) {
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(start = 6.dp)) {
                 Text(
                     text = time,
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(end = 8.dp)
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -132,8 +133,34 @@ internal fun ActivityUpdateRow(
 }
 
 internal fun updateRowShape(top: Boolean, bottom: Boolean): Shape = RoundedCornerShape(
-    topStart = if (top) 16.dp else 4.dp,
-    topEnd = if (top) 16.dp else 4.dp,
-    bottomStart = if (bottom) 16.dp else 4.dp,
-    bottomEnd = if (bottom) 16.dp else 4.dp
+    topStart = if (top) 24.dp else 0.dp,
+    topEnd = if (top) 24.dp else 0.dp,
+    bottomStart = if (bottom) 24.dp else 0.dp,
+    bottomEnd = if (bottom) 24.dp else 0.dp
 )
+
+/**
+ * What the update did, "Read chapters 1 to 30" rather than AniList's "read chapter 1 - 30". Verbs
+ * without a count, such as completed or dropped, keep AniList's wording.
+ */
+@Composable
+internal fun updateAction(status: String?, progress: String?): String {
+    val verb = status?.trim()?.lowercase().orEmpty()
+    val range = parseProgress(progress)
+    val phrase = when {
+        verb.startsWith("rewatched episode") -> R.string.profile_update_rewatched_one to R.string.profile_update_rewatched_range
+        verb.startsWith("watched episode") -> R.string.profile_update_watched_one to R.string.profile_update_watched_range
+        verb.startsWith("reread chapter") -> R.string.profile_update_reread_one to R.string.profile_update_reread_range
+        verb.startsWith("read chapter") -> R.string.profile_update_read_one to R.string.profile_update_read_range
+        else -> null
+    }
+    if (phrase != null && range != null) {
+        return if (range.first == range.last) {
+            stringResource(phrase.first, range.first)
+        } else {
+            stringResource(phrase.second, range.first, range.last)
+        }
+    }
+    val capitalised = verb.replaceFirstChar { it.titlecase() }
+    return listOfNotNull(capitalised.takeIf { it.isNotBlank() }, progress?.takeIf { it.isNotBlank() }).joinToString(" ")
+}

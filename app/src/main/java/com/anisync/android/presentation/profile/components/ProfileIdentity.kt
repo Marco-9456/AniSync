@@ -72,6 +72,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -783,5 +784,60 @@ internal fun ProfileOwnTopBar(
                 Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.settings))
             }
         }
+    }
+}
+
+/** Who this is once the header has scrolled away: back, their name, Follow and the profile menu. */
+@Composable
+internal fun ProfileVisitBar(
+    name: String,
+    avatarUrl: String?,
+    onBackClick: (() -> Unit)?,
+    isFollowing: Boolean,
+    isFollowLoading: Boolean,
+    onFollowClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .padding(start = 4.dp, end = 4.dp)
+    ) {
+        if (onBackClick != null) {
+            BackTrailButton(onClick = onBackClick)
+            Spacer(modifier = Modifier.width(8.dp))
+        } else {
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+        UserAvatar(contentDescription = null, size = 32.dp, url = avatarUrl)
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        FilledTonalButton(
+            onClick = onFollowClick,
+            enabled = !isFollowLoading,
+            contentPadding = PaddingValues(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+        ) {
+            Icon(
+                imageVector = if (isFollowing) Icons.Default.Check else Icons.Default.PersonAdd,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            ButtonLabel(stringResource(if (isFollowing) R.string.profile_following else R.string.profile_follow))
+        }
+        ProfileMenuButton(
+            name = name,
+            colors = IconButtonDefaults.iconButtonColors()
+        )
     }
 }

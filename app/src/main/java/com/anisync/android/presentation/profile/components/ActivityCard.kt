@@ -89,7 +89,9 @@ fun ActivityCard(
     maxBodyLines: Int? = null,
     /** False on a profile, where every card in the list belongs to the same person. */
     showAuthor: Boolean = true,
-    pinnedLabel: Boolean = false
+    pinnedLabel: Boolean = false,
+    /** Replaces the relative time, for lists that already say which day it was. */
+    timeText: String? = null
 ) {
     if (activity.type == ActivityType.MEDIA_LIST) {
         ActivityListCard(
@@ -147,7 +149,7 @@ fun ActivityCard(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = stringResource(R.string.pinned),
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -158,7 +160,8 @@ fun ActivityCard(
                 onUserClick = onUserClick,
                 onEditClick = onEditClick,
                 onDeleteClick = onDeleteClick,
-                showPinIcon = !labelled
+                showPinIcon = !labelled,
+                timeText = timeText
             )
 
             val isTextual = activity.type == ActivityType.TEXT || activity.type == ActivityType.MESSAGE
@@ -354,7 +357,8 @@ private fun ActivityCardHeader(
     onUserClick: (String) -> Unit,
     onEditClick: (() -> Unit)?,
     onDeleteClick: (() -> Unit)?,
-    showPinIcon: Boolean = true
+    showPinIcon: Boolean = true,
+    timeText: String? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -413,7 +417,7 @@ private fun ActivityCardHeader(
             }
 
             Text(
-                text = formatRelativeTimeSeconds(LocalResources.current, activity.timestamp / 1000L),
+                text = timeText ?: formatRelativeTimeSeconds(LocalResources.current, activity.timestamp / 1000L),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
