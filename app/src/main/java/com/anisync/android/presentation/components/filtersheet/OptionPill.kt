@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -45,7 +46,8 @@ fun OptionPill(
     modifier: Modifier = Modifier,
     idleColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     role: Role = Role.RadioButton,
-    count: String? = null
+    count: String? = null,
+    leadingIcon: ImageVector? = null
 ) {
     Surface(
         color = if (selected) MaterialTheme.colorScheme.secondaryContainer else idleColor,
@@ -59,6 +61,15 @@ fun OptionPill(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (leadingIcon != null) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+            }
             // The label takes the slack so the tick lands on the pill's trailing edge.
             Text(
                 text = label,

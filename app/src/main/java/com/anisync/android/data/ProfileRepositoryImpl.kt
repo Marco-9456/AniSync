@@ -278,7 +278,10 @@ class ProfileRepositoryImpl @Inject constructor(
                     nameNative = null,
                     nameUserPreferred = char.name?.userPreferred ?: "Unknown",
                     imageUrl = char.image?.large,
-                    role = ""
+                    role = "",
+                    series = char.media?.nodes?.firstOrNull()?.title?.let {
+                        com.anisync.android.domain.TitleSet(it.romaji, it.english, it.native, it.userPreferred)
+                    }
                 )
             } ?: emptyList()
 
@@ -596,7 +599,10 @@ class ProfileRepositoryImpl @Inject constructor(
                                 nameNative = null,
                                 nameUserPreferred = char.name?.userPreferred ?: "Unknown",
                                 imageUrl = char.image?.large,
-                                role = ""
+                                role = "",
+                                series = char.media?.nodes?.firstOrNull()?.title?.let {
+                                    com.anisync.android.domain.TitleSet(it.romaji, it.english, it.native, it.userPreferred)
+                                }
                             )
                         }
                         favourites.characters?.pageInfo?.hasNextPage == true

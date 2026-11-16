@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -41,7 +44,7 @@ fun DirectMessageInputSheet(
 
     RichTextInputSheet(
         title = title,
-        placeholder = stringResource(R.string.message_composer_hint),
+        placeholder = stringResource(R.string.message_composer_hint_to, recipientName),
         submitLabel = stringResource(
             if (isPrivate) R.string.message_composer_send_private else R.string.message_composer_send_public
         ),
@@ -69,13 +72,15 @@ fun DirectMessageInputSheet(
                     label = stringResource(R.string.message_composer_private_option),
                     selected = isPrivate,
                     onClick = { if (!isSending) isPrivate = true },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    leadingIcon = Icons.Default.Lock
                 )
                 OptionPill(
                     label = stringResource(R.string.message_composer_public_option),
                     selected = !isPrivate,
                     onClick = { if (!isSending) isPrivate = false },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    leadingIcon = Icons.Default.Public
                 )
             }
             Text(

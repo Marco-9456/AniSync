@@ -46,6 +46,7 @@ import com.anisync.android.presentation.profile.ProfileFavoritesFilter
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.profile.components.ProfileTabRail
 import com.anisync.android.presentation.util.bouncyClickable
+import com.anisync.android.util.getTitle
 import java.text.NumberFormat
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -99,7 +100,7 @@ fun LazyListScope.profileFavoritesTab(
             FavoritePortrait(
                 imageUrl = character.imageUrl,
                 name = character.nameUserPreferred,
-                detail = null,
+                detail = character.series?.getTitle(titleLanguage),
                 onClick = { onCharacterClick(character.id) },
                 modifier = cellModifier
             )
@@ -252,7 +253,7 @@ private fun FavoritePortrait(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(12.dp)
     Column(
         modifier = modifier
             .clip(shape)
@@ -270,7 +271,7 @@ private fun FavoritePortrait(
         )
         Text(
             text = name,
-            style = MaterialTheme.typography.labelLarge.emphasis(),
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -282,7 +283,8 @@ private fun FavoritePortrait(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 6.dp)
             )
         }
     }

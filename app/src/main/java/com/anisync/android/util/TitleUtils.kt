@@ -10,6 +10,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.MediaDetails
 import com.anisync.android.domain.RelatedMedia
 import com.anisync.android.domain.StaffDetails
+import com.anisync.android.domain.TitleSet
 import com.anisync.android.domain.VoiceActor
 import com.anisync.android.domain.VoicedCharacter
 
@@ -33,6 +34,13 @@ object TitleUtils {
 fun MediaDetails.getTitle(language: TitleLanguage): String {
     return TitleUtils.getTitle(language, titleRomaji, titleEnglish, titleNative, titleUserPreferred)
 }
+
+fun TitleSet.getTitle(language: TitleLanguage): String? =
+    if (romaji == null && english == null && native == null && userPreferred == null) {
+        null
+    } else {
+        TitleUtils.getTitle(language, romaji, english, native, userPreferred ?: romaji ?: english ?: native.orEmpty())
+    }
 
 fun LibraryEntry.getTitle(language: TitleLanguage): String {
     return TitleUtils.getTitle(language, titleRomaji, titleEnglish, titleNative, titleUserPreferred)

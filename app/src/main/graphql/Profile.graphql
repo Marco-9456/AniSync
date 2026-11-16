@@ -180,6 +180,16 @@ query GetFullUserProfile(
           image {
             large
           }
+          media(sort: [POPULARITY_DESC], perPage: 1) {
+            nodes {
+              title {
+                romaji
+                english
+                native
+                userPreferred
+              }
+            }
+          }
         }
       }
       staff(page: 1, perPage: 25) {
@@ -642,6 +652,16 @@ query GetUserFavoriteKind(
           }
           image {
             large
+          }
+          media(sort: [POPULARITY_DESC], perPage: 1) {
+            nodes {
+              title {
+                romaji
+                english
+                native
+                userPreferred
+              }
+            }
           }
         }
       }

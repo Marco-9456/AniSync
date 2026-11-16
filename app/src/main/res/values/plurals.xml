@@ -456,4 +456,8 @@
         <item quantity="one">reread once</item>
         <item quantity="other">reread %d times</item>
     </plurals>
+    <plurals name="account_new_notifications">
+        <item quantity="one">%d new notification</item>
+        <item quantity="other">%d new notifications</item>
+    </plurals>
 </resources>

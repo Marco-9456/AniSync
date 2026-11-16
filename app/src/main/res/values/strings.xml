@@ -523,6 +523,12 @@
     <string name="account_sign_in_failed">Couldn\'t sign in. Please try again.</string>
     <string name="account_remove_dialog_title">Remove account?</string>
     <string name="account_remove_dialog_message">%1$s will be removed from this device. You can sign in again at any time.</string>
+    <string name="account_sheet_title">Accounts</string>
+    <string name="account_signed_in">Signed in</string>
+    <string name="account_signed_in_with">Signed in · %1$s</string>
+    <string name="account_switch_to">Switch to this account</string>
+    <string name="account_add_another">Add an account</string>
+    <string name="account_manage">Manage accounts</string>
     <string name="settings_open_source_licenses">Open Source Licenses</string>
     <string name="settings_acknowledgments">Acknowledgments</string>
     <string name="settings_acknowledgments_desc">Thanks to contributors and libraries</string>
@@ -1098,12 +1104,13 @@
     <!-- Message Composer -->
     <string name="message_composer_title">Message %1$s</string>
     <string name="message_composer_hint">Write a message…</string>
+    <string name="message_composer_hint_to">Write to %1$s</string>
     <string name="message_composer_private">Send as private</string>
     <string name="message_composer_send">Send</string>
     <string name="message_composer_visibility">Who can read it</string>
     <string name="message_composer_private_option">Private</string>
     <string name="message_composer_public_option">On their profile</string>
-    <string name="message_composer_private_explain">Only you and %1$s can read it.</string>
+    <string name="message_composer_private_explain">Only you and %1$s can read it. On their profile, everyone who visits sees it in %1$s\'s activity.</string>
     <string name="message_composer_public_explain">Everyone who visits %1$s sees it in their activity.</string>
     <string name="message_composer_send_private">Send privately</string>
     <string name="message_composer_send_public">Post on their profile</string>
@@ -1407,7 +1414,7 @@
     <string name="message_sent">Message sent</string>
     <string name="profile_about_saved">About saved</string>
     <string name="profile_unfollow_title">Unfollow %1$s?</string>
-    <string name="profile_unfollow_body">Their activity leaves your Following feed. You can follow again from this page at any time.</string>
+    <string name="profile_unfollow_body">%1$s\'s activity leaves your Following feed. You can follow again from this page at any time.</string>
     <string name="profile_unfollow_confirm">Unfollow</string>
     <string name="profile_list_you">You</string>
     <string name="profile_list_sort_updated">Last updated</string>
@@ -1477,6 +1484,7 @@
     <string name="profile_row_added">added %1$s</string>
     <string name="profile_row_no_score">no score yet</string>
     <string name="profile_row_not_started">not started yet</string>
+    <string name="profile_watching_not_started">Not started yet</string>
     <string name="profile_update_watched_one">Watched episode %1$d</string>
     <string name="profile_update_watched_range">Watched episodes %1$d to %2$d</string>
     <string name="profile_update_rewatched_one">Rewatched episode %1$d</string>
@@ -1549,6 +1557,17 @@
     <string name="profile_people_phrase_name">by name</string>
     <string name="profile_people_phrase_watched">most time watched first</string>
     <string name="profile_people_phrase_read">most chapters read first</string>
+    <string name="profile_people_empty_following_own">You don\'t follow anyone yet</string>
+    <string name="profile_people_empty_following_own_body">People you follow show up here, and what they post fills your Following feed.</string>
+    <string name="profile_people_empty_followers_own">No followers yet</string>
+    <string name="profile_people_empty_followers_own_body">When someone follows you, they show up here. Sharing your profile is the quickest way to be found.</string>
+    <string name="profile_people_empty_mutual_own">No mutuals yet</string>
+    <string name="profile_people_empty_mutual_own_body">People you follow who follow you back show up here.</string>
+    <string name="profile_people_empty_following">%1$s doesn\'t follow anyone yet</string>
+    <string name="profile_people_empty_followers">No one follows %1$s yet</string>
+    <string name="profile_people_empty_mutual">%1$s has no mutuals yet</string>
+    <string name="profile_people_empty_body">When that changes, they show up here.</string>
+    <string name="profile_people_share_own">Share your profile</string>
     <string name="profile_person_menu">More for %1$s</string>
     <string name="profile_people_counts">%1$s following  ·  %2$s followers</string>
     <string name="status_posted">Status posted</string>

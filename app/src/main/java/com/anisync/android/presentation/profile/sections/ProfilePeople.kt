@@ -88,7 +88,8 @@ internal fun PeopleSwitcher(
             contentPadding = PaddingValues(horizontal = 8.dp),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
         )
-        Row(
+        // An empty list says so below, with nothing to count or order.
+        if (peopleTotal(uiState, selected) != 0) Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
@@ -256,7 +257,7 @@ internal fun PersonRow(
         AppAlertDialog(
             onDismissRequest = { confirmUnfollow = false },
             title = { Text(stringResource(R.string.profile_unfollow_title, user.name)) },
-            text = { Text(stringResource(R.string.profile_unfollow_body)) },
+            text = { Text(stringResource(R.string.profile_unfollow_body, user.name)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmUnfollow = false

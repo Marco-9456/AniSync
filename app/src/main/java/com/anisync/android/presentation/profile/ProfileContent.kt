@@ -119,6 +119,7 @@ import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.emphasis
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
@@ -272,9 +273,12 @@ fun ProfileContent(
     // Picking a tab or a Statistics view docks the strip, so the page starts at the top of the
     // screen. Each view comes back where it was left.
     val scope = rememberCoroutineScope()
+    // A short tab stops the list before the strip reaches the top of the screen, so the strip is
+    // moved by however far it still is from the dock line rather than by a fixed amount.
     val dockStrip: suspend () -> Unit = {
         listState.scrollToItem(tabsIndex)
-        listState.scrollBy(-(dockPx + identityBarPx))
+        val landed = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == PROFILE_TABS_KEY }?.offset ?: 0
+        listState.scrollBy(landed - (dockPx + identityBarPx))
     }
     var dockHold by remember { mutableIntStateOf(0) }
     val requestDock: suspend () -> Unit = {
@@ -387,6 +391,24 @@ fun ProfileContent(
 
     val showShareFab = uiState.showsShareFab(profile)
     val bottomPadding = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
+    // A short tab, a few posts or an empty state, leaves too little below the strip for it to
+    // reach the top, so the list gets just enough blank space after the tab to dock.
+    var tabFillerPx by remember { mutableIntStateOf(0) }
+    val bottomPaddingPx = with(LocalDensity.current) { bottomPadding.roundToPx() }
+    LaunchedEffect(listState, bottomPaddingPx) {
+        snapshotFlow {
+            val info = listState.layoutInfo
+            val strip = info.visibleItemsInfo.firstOrNull { it.key == PROFILE_TABS_KEY } ?: return@snapshotFlow null
+            val below = info.visibleItemsInfo.filter { it.index > strip.index && it.key != PROFILE_FILLER_KEY }
+            val lastContentIndex = info.totalItemsCount - 2
+            if ((below.lastOrNull()?.index ?: strip.index) < lastContentIndex) return@snapshotFlow 0
+            val viewport = info.viewportEndOffset - info.viewportStartOffset
+            val target = (dockPx + identityBarPx).roundToInt()
+            (viewport - target - strip.size - below.sumOf { it.size } - bottomPaddingPx).coerceAtLeast(0)
+        }
+            .filterNotNull()
+            .collect { tabFillerPx = it }
+    }
     if (uiState.selectedTab.isPage) {
         val pageListState = rememberSaveable(uiState.pageListKey(), saver = LazyListState.Saver) { LazyListState() }
         val pageCollapsed by remember(pageListState) { derivedStateOf { pageListState.canScrollBackward } }
@@ -488,6 +510,10 @@ fun ProfileContent(
         }
 
         tabContent()
+
+        item(key = PROFILE_FILLER_KEY, contentType = "filler") {
+            Spacer(modifier = Modifier.height(with(LocalDensity.current) { tabFillerPx.toDp() }))
+        }
     }
 
     val statusScrimFrom = with(LocalDensity.current) {
@@ -1226,6 +1252,7 @@ internal fun ProfileTabStrip(
 }
 
 private const val PROFILE_TABS_KEY = "profile_tabs"
+private const val PROFILE_FILLER_KEY = "profile_tab_filler"
 
 private data class DockProbe(
     val stripOffset: Int?,

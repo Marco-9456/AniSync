@@ -1,11 +1,14 @@
 package com.anisync.android.presentation.profile.sections
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,11 +16,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.FormatBold
+import androidx.compose.material.icons.filled.FormatItalic
+import androidx.compose.material.icons.filled.FormatStrikethrough
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.RateReview
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.ViewAgenda
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,6 +36,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.UserActivity
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
@@ -77,7 +92,7 @@ fun LazyListScope.profileActivityTab(
 ) {
     if (onCompose != null && (selectedFilter == ProfileActivityFilter.ALL || selectedFilter == ProfileActivityFilter.STATUS)) {
         item(key = "activity_composer", contentType = "activity_composer") {
-            StatusComposerCard(avatarUrl = profile.avatarUrl, onClick = onCompose)
+            StatusComposerCard(avatarUrl = profile.avatarUrl, onClick = onCompose, expanded = true)
         }
     }
     val filteredActivities = when (selectedFilter) {
@@ -255,8 +270,61 @@ internal fun ActivityDayHeader(epochDay: Long, start: Dp = 32.dp, top: Dp = 16.d
     )
 }
 
+/**
+ * Where you post a status. Overview shows the one-line pill, the Activity tab the fuller card with
+ * the format bar the composer opens with. Either way a tap opens the composer.
+ */
 @Composable
-internal fun StatusComposerCard(avatarUrl: String?, onClick: () -> Unit) {
+internal fun StatusComposerCard(avatarUrl: String?, onClick: () -> Unit, expanded: Boolean = false) {
+    if (expanded) {
+        val label = stringResource(R.string.profile_post_status)
+        Surface(
+            onClick = onClick,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+                .clearAndSetSemantics {
+                    contentDescription = label
+                    role = Role.Button
+                }
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp)
+            ) {
+                Row(modifier = Modifier.height(88.dp)) {
+                    UserAvatar(contentDescription = null, size = 40.dp, url = avatarUrl)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ComposerFormatIcons.forEach { icon ->
+                        Box(modifier = Modifier.size(34.dp), contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(17.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Button(onClick = onClick, enabled = false) {
+                        Text(stringResource(R.string.post))
+                    }
+                }
+            }
+        }
+        return
+    }
     Surface(
         onClick = onClick,
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -287,6 +355,16 @@ internal fun StatusComposerCard(avatarUrl: String?, onClick: () -> Unit) {
         }
     }
 }
+
+private val ComposerFormatIcons = listOf(
+    Icons.Outlined.AttachFile,
+    Icons.Default.FormatBold,
+    Icons.Default.FormatItalic,
+    Icons.Default.FormatStrikethrough,
+    Icons.Default.Code,
+    Icons.Default.Link,
+    Icons.Default.VisibilityOff
+)
 
 /** The Activity tab's filters, docked with the profile tabs. */
 @Composable

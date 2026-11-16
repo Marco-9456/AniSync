@@ -26,6 +26,7 @@ import com.anisync.android.presentation.profile.components.ActivityCard
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.statistics.ActivityHistorySection
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
+import com.anisync.android.util.getTitle
 
 private const val RECENT_UPDATES = 5
 private const val FAVOURITES_PER_KIND = 10
@@ -142,7 +143,7 @@ fun ProfileOverviewSection(
                 FavouriteKindLabel(stringResource(R.string.profile_cast_characters))
                 FavouritePortraitRow(
                     items = profile.favoriteCharactersOverview.take(FAVOURITES_PER_KIND).map {
-                        Triple(it.id, it.imageUrl, it.nameUserPreferred to null)
+                        Triple(it.id, it.imageUrl, it.nameUserPreferred to it.series?.getTitle(titleLanguage))
                     },
                     onClick = onCharacterClick
                 )

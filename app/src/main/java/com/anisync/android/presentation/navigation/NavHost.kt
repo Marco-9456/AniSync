@@ -513,6 +513,7 @@ fun AniSyncNavHost(
                     onLastReplyClick = navigateToProfileActivityReply,
                     onLogoutClick = onLogout,
                     onNavigateToSettings = onNavigateToSettings,
+                    onManageAccounts = { navController.navigate(SettingsAniList) },
                     onNavigateToNotifications = onNavigateToNotifications,
                     onShareCard = { navController.navigate(it) },
                     onOpenRecap = { navController.navigate(RecapStory(it)) },

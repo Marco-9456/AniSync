@@ -67,6 +67,7 @@ fun ProfileScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     onNavigateToSettings: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
+    onManageAccounts: (() -> Unit)? = null,
     isOwnProfile: Boolean = true,
     onShareCard: (ShareStudio) -> Unit = {},
     onOpenRecap: (String) -> Unit = {},
@@ -230,7 +231,7 @@ fun ProfileScreen(
         AppAlertDialog(
             onDismissRequest = { viewModel.onAction(ProfileAction.DismissUnfollow) },
             title = { Text(stringResource(R.string.profile_unfollow_title, profile.name)) },
-            text = { Text(stringResource(R.string.profile_unfollow_body)) },
+            text = { Text(stringResource(R.string.profile_unfollow_body, profile.name)) },
             confirmButton = {
                 TextButton(onClick = { viewModel.onAction(ProfileAction.ConfirmUnfollow) }) {
                     Text(stringResource(R.string.profile_unfollow_confirm))
@@ -277,7 +278,14 @@ fun ProfileScreen(
                 showAccountSwitcherSheet = false
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AniListAuth.AUTH_URL)))
             },
-            onDismiss = { showAccountSwitcherSheet = false }
+            onDismiss = { showAccountSwitcherSheet = false },
+            unreadNotificationCount = uiState.unreadNotificationCount,
+            onManageAccounts = onManageAccounts?.let { manage ->
+                {
+                    showAccountSwitcherSheet = false
+                    manage()
+                }
+            }
         )
     }
 }

@@ -104,6 +104,7 @@ internal fun WatchingRow(
 
 @Composable
 private fun progressText(progress: Int, total: Int?, manga: Boolean): String = when {
+    progress == 0 -> stringResource(R.string.profile_watching_not_started)
     (total ?: 0) > 0 -> stringResource(if (manga) R.string.profile_chapter_of else R.string.profile_episode_of, progress, total!!)
     else -> stringResource(if (manga) R.string.profile_chapter else R.string.profile_episode, progress)
 }
