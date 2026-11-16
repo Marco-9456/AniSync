@@ -5,12 +5,18 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import android.content.Intent
 import android.net.Uri
 import android.os.SystemClock
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import com.anisync.android.presentation.navigation.ShareStudio
@@ -35,9 +41,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.ProfileColorThemeOverride
-import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.login.AniListAuth
 import com.anisync.android.presentation.profile.components.AccountSwitcherSheet
+import com.anisync.android.presentation.profile.components.EditProfileSheet
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -45,6 +51,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.ui.unit.dp
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.navigation.BackTrailButton
+import com.anisync.android.presentation.profile.components.ProfileLoadingSkeleton
 import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.util.AniListUrls
@@ -117,35 +124,25 @@ fun ProfileScreen(
                 ?: uiState.loadErrorRes?.let { stringResource(it) }
             when {
                 uiState.isLoading && profile == null -> {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.align(Alignment.Center)
-                        ) {
-                            viewModel.targetName?.let { name ->
-                                Text(
-                                    text = name,
-                                    style = MaterialTheme.typography.headlineMedium.emphasis(),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(bottom = 24.dp)
-                                )
-                            }
-                            AppCircularProgressIndicator()
-                        }
-                        if (onBackClick != null) {
-                            BackTrailButton(
-                                onClick = onBackClick,
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .statusBarsPadding()
-                                    .padding(top = 12.dp, start = 12.dp)
-                            )
-                        }
-                    }
+                    ProfileLoadingSkeleton(name = viewModel.targetName, onBackClick = onBackClick)
                 }
 
                 uiState.loadErrorRes == R.string.profile_user_unavailable && profile == null -> {
                     ProfileUnavailable(name = viewModel.targetName, onBackClick = onBackClick)
+                }
+
+                uiState.loadErrorRes == R.string.profile_offline_never_saved && profile == null -> {
+                    ProfileStateFrame(name = viewModel.targetName, onBackClick = onBackClick) {
+                        EmptyState(
+                            icon = Icons.Default.CloudOff,
+                            title = stringResource(R.string.profile_offline_title),
+                            description = viewModel.targetName?.let { stringResource(R.string.profile_offline_never_saved_named, it) }
+                                ?: stringResource(R.string.profile_offline_never_saved),
+                            actionLabel = stringResource(R.string.profile_try_again),
+                            actionIcon = Icons.Default.Refresh,
+                            onAction = { viewModel.onAction(ProfileAction.Refresh()) }
+                        )
+                    }
                 }
 
                 errorText != null && profile == null -> {
@@ -209,21 +206,13 @@ fun ProfileScreen(
 
     val profile = uiState.profile
     if (profile != null && uiState.isEditProfileDialogVisible && isOwnProfile) {
-        RichTextInputScreen(
-            title = stringResource(R.string.edit_profile_title),
-            placeholder = stringResource(R.string.edit_profile_about_label),
+        EditProfileSheet(
             // Edit the raw markdown source; only fall back to the rendered HTML when no raw bio is
             // cached yet (e.g. a pre-v19 row before its first refresh) so we never save HTML back.
-            initialBody = profile.aboutMarkdown?.takeUnless { it.isBlank() }
-                ?: profile.about.orEmpty(),
-            isSubmitting = uiState.isSavingAbout,
-            submitLabel = stringResource(R.string.save),
-            minLength = 0,
-            maxLength = 65_000,
-            onSubmit = { about -> viewModel.onAction(ProfileAction.UpdateAbout(about)) },
-            onDismiss = {
-                if (!uiState.isSavingAbout) viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false))
-            }
+            about = profile.aboutMarkdown?.takeUnless { it.isBlank() } ?: profile.about.orEmpty(),
+            isSaving = uiState.isSavingAbout,
+            onSave = { about -> viewModel.onAction(ProfileAction.UpdateAbout(about)) },
+            onDismiss = { viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false)) }
         )
     }
 
@@ -294,27 +283,43 @@ fun ProfileScreen(
 @Composable
 private fun ProfileUnavailable(name: String?, onBackClick: (() -> Unit)?) {
     val context = LocalContext.current
-    Box(modifier = Modifier.fillMaxSize()) {
+    ProfileStateFrame(name = name, onBackClick = onBackClick) {
         EmptyState(
             icon = Icons.Outlined.Lock,
-            title = if (name != null) {
-                stringResource(R.string.profile_unavailable_title, name)
-            } else {
-                stringResource(R.string.profile_user_unavailable)
-            },
-            description = stringResource(R.string.profile_unavailable_body),
+            title = stringResource(R.string.profile_unavailable_title),
+            description = name?.let { stringResource(R.string.profile_unavailable_body, it) }
+                ?: stringResource(R.string.profile_user_unavailable),
             actionLabel = name?.let { stringResource(R.string.profile_open_on_anilist) },
             actionIcon = name?.let { Icons.AutoMirrored.Filled.OpenInNew },
             onAction = name?.let { { openUrl(context, AniListUrls.userUrl(it)) } }
         )
-        if (onBackClick != null) {
-            BackTrailButton(
-                onClick = onBackClick,
+    }
+}
+
+/** A profile that cannot show: the bar says whose it was, the block below says why. */
+@Composable
+private fun ProfileStateFrame(name: String?, onBackClick: (() -> Unit)?, content: @Composable () -> Unit) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .align(Alignment.TopStart)
                     .statusBarsPadding()
-                    .padding(top = 12.dp, start = 12.dp)
-            )
+                    .height(64.dp)
+                    .padding(start = 4.dp, end = 16.dp)
+            ) {
+                if (onBackClick != null) BackTrailButton(onClick = onBackClick)
+                if (name != null) {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        modifier = Modifier.padding(start = if (onBackClick != null) 4.dp else 12.dp)
+                    )
+                }
+            }
         }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { content() }
     }
 }

@@ -1,8 +1,10 @@
 package com.anisync.android.presentation.profile.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,24 +16,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.navigation.BackTrailButton
+import com.anisync.android.presentation.profile.ProfileTab
+import com.anisync.android.presentation.profile.ProfileTabsButtonGroup
 import com.anisync.android.presentation.profile.sections.BioPreview
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
@@ -197,5 +206,87 @@ fun ProfileTopSection(
                 .offset(y = actionsTop)
                 .padding(end = 20.dp)
         )
+    }
+}
+
+/**
+ * The first load: the header's shape, with only the name the link already gave, so nothing moves
+ * when the profile lands. The rate limit toast sits over this too, and the screen waits it out.
+ */
+@Composable
+fun ProfileLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: Modifier = Modifier) {
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val headerHeight = maxOf(BannerHeight, statusBar + 120.dp)
+    val block = MaterialTheme.colorScheme.surfaceContainerHigh
+    val quiet = MaterialTheme.colorScheme.surfaceContainerLow
+    Box(modifier = modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(headerHeight)
+                .background(block)
+        )
+        Column(modifier = Modifier.padding(top = headerHeight + 60.dp)) {
+            if (name != null) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(horizontal = 20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            listOf(0.55f, 0.75f, 0.57f).forEach { fraction ->
+                Box(
+                    modifier = Modifier
+                        .padding(start = 20.dp, bottom = 10.dp)
+                        .fillMaxWidth(fraction)
+                        .height(14.dp)
+                        .clip(CircleShape)
+                        .background(block)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .padding(start = 20.dp, end = 20.dp, top = 8.dp)
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(block)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            ProfileTabsButtonGroup(selectedTab = ProfileTab.OVERVIEW, lastListTab = ProfileTab.ANIME, onTabSelected = {})
+            Box(
+                modifier = Modifier
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp)
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(quiet)
+            )
+            Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
+                AppCircularProgressIndicator()
+            }
+        }
+        Box(
+            modifier = Modifier
+                .padding(start = 16.dp)
+                .offset(y = headerHeight - ProfileAvatarHalfSize)
+                .size(ProfileAvatarSize)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(3.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+        )
+        if (onBackClick != null) {
+            BackTrailButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(top = 12.dp, start = 12.dp)
+            )
+        }
     }
 }

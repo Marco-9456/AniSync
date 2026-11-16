@@ -3,20 +3,28 @@ package com.anisync.android.presentation.profile.sections
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Inbox
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -25,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
@@ -131,16 +140,18 @@ fun LazyListScope.profileMediaTab(
     yourAvatar: String? = null,
     onRemoveFilter: (ProfileListFilters) -> Unit = {}
 ) {
-    // A reload keeps the list on screen rather than swapping it for a spinner (#164).
+    // A reload keeps the list on screen rather than swapping it for a placeholder (#164). The first
+    // load holds the rows' places, so the list lands without the page jumping.
     if (isLoading && !hasEntries) {
         item(key = "media_loading_$transitionPrefix", contentType = "loading") {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                AppCircularProgressIndicator()
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = stringResource(R.string.profile_list_loading),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+                repeat(6) { ListRowPlaceholder() }
             }
         }
         return
@@ -179,7 +190,7 @@ fun LazyListScope.profileMediaTab(
                     title = stringResource(R.string.profile_list_nothing_matches),
                     description = stringResource(R.string.profile_list_nothing_matches_body),
                     actionLabel = if (tools.filters.isActive) stringResource(R.string.profile_list_clear_filters) else null,
-                    actionIcon = if (tools.filters.isActive) Icons.Default.FilterList else null,
+                    actionIcon = if (tools.filters.isActive) Icons.Default.Close else null,
                     onAction = if (tools.filters.isActive) onClearFilters else null,
                     modifier = Modifier.padding(top = 32.dp)
                 )
@@ -297,5 +308,38 @@ private fun emptyListMessage(
         LibraryStatus.PLANNING -> stringResource(R.string.empty_planning)
         LibraryStatus.COMPLETED -> stringResource(R.string.empty_completed)
         else -> stringResource(R.string.profile_list_empty_own, selectedStatus?.toLabel(mediaType) ?: stringResource(R.string.all))
+    }
+}
+
+/** A list row's shape while the list loads: the cover and three lines of text. */
+@Composable
+private fun ListRowPlaceholder() {
+    val block = MaterialTheme.colorScheme.surfaceContainerHigh
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 56.dp, height = 80.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(block)
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {
+            listOf(0.7f, 0.45f, 0.55f).forEach { fraction ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction)
+                        .height(12.dp)
+                        .clip(CircleShape)
+                        .background(block)
+                )
+            }
+        }
     }
 }
