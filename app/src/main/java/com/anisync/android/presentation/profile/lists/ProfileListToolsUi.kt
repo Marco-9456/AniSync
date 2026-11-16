@@ -6,12 +6,15 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -41,8 +44,11 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,6 +60,7 @@ import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.formatScore
 import com.anisync.android.domain.max
 import com.anisync.android.presentation.components.filtersheet.FilterSheetScaffold
+import com.anisync.android.presentation.components.filtersheet.IncludeExcludeChip
 import com.anisync.android.presentation.components.filtersheet.OptionPillGrid
 import com.anisync.android.presentation.components.filtersheet.SheetFooterButton
 import com.anisync.android.presentation.components.filtersheet.SheetSectionLabel
@@ -64,6 +71,7 @@ import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
 import java.text.NumberFormat
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ProfileListTopBar(
     query: String,
@@ -81,6 +89,9 @@ internal fun ProfileListTopBar(
     var text by rememberSaveable { mutableStateOf(query) }
     var focused by remember { mutableStateOf(false) }
     LaunchedEffect(query) { if (!focused && query != text) text = query }
+    val focusManager = LocalFocusManager.current
+    val imeVisible = WindowInsets.isImeVisible
+    LaunchedEffect(imeVisible) { if (!imeVisible && focused) focusManager.clearFocus() }
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = CircleShape,
@@ -120,20 +131,22 @@ internal fun ProfileListTopBar(
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { focused = it.isFocused }
                 )
             }
-            if (text.isNotEmpty()) {
+            // Only while typing: once the query is set the bar goes back to its three actions.
+            if (text.isNotEmpty() && focused) {
                 IconButton(onClick = {
                     text = ""
                     onQueryChange("")
-                }, modifier = Modifier.size(40.dp)) {
+                }) {
                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.profile_list_clear_search))
                 }
             }
-            IconButton(onClick = onToggleView, modifier = Modifier.size(40.dp)) {
+            IconButton(onClick = onToggleView) {
                 Icon(
                     imageVector = if (view == ProfileListView.LIST) Icons.Default.GridView else Icons.AutoMirrored.Filled.ViewList,
                     contentDescription = stringResource(
@@ -141,10 +154,10 @@ internal fun ProfileListTopBar(
                     )
                 )
             }
-            IconButton(onClick = onOpenSort, modifier = Modifier.size(40.dp)) {
+            IconButton(onClick = onOpenSort) {
                 Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = stringResource(R.string.profile_list_sort))
             }
-            IconButton(onClick = onOpenFilters, modifier = Modifier.size(40.dp).padding(end = 4.dp)) {
+            IconButton(onClick = onOpenFilters) {
                 BadgedBox(badge = { if (filtersActive) Badge() }) {
                     Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.profile_list_filters))
                 }
@@ -189,6 +202,9 @@ internal fun ProfileListSummary(
         filters.genres.forEach { genre ->
             RemovableChip(genre) { onRemoveFilter(filters.copy(genres = filters.genres - genre)) }
         }
+        filters.excludedGenres.forEach { genre ->
+            RemovableChip(genre, excluded = true) { onRemoveFilter(filters.copy(excludedGenres = filters.excludedGenres - genre)) }
+        }
         filters.scoreFloor?.let { floor ->
             RemovableChip(floorChipLabel(floor)) { onRemoveFilter(filters.copy(scoreFloor = null)) }
         }
@@ -197,14 +213,15 @@ internal fun ProfileListSummary(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(vertical = 8.dp)
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
 
 @Composable
-private fun RemovableChip(label: String, onRemove: () -> Unit) {
+private fun RemovableChip(label: String, excluded: Boolean = false, onRemove: () -> Unit) {
+    val container = if (excluded) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
+    val content = if (excluded) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
     InputChip(
         selected = true,
         onClick = onRemove,
@@ -212,11 +229,17 @@ private fun RemovableChip(label: String, onRemove: () -> Unit) {
         leadingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp)) },
         shape = CircleShape,
         colors = InputChipDefaults.inputChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer
+            selectedContainerColor = container,
+            selectedLabelColor = content,
+            selectedLeadingIconColor = content
         ),
-        border = null
+        border = null,
+        modifier = if (excluded) {
+            val state = stringResource(R.string.a11y_filter_excluded)
+            Modifier.semantics { stateDescription = state }
+        } else {
+            Modifier
+        }
     )
 }
 
@@ -238,6 +261,7 @@ private fun orderPhrase(tools: ProfileListTools, isOwnProfile: Boolean): String 
             ProfileListSort.THEIR_SCORE -> if (isOwnProfile) R.string.profile_order_score else R.string.profile_order_their_score
             ProfileListSort.YOUR_SCORE -> R.string.profile_order_your_score
             ProfileListSort.AVERAGE_SCORE -> R.string.profile_order_average
+            ProfileListSort.POPULARITY -> R.string.profile_order_popularity
             ProfileListSort.RELEASE_DATE -> R.string.profile_order_release
             ProfileListSort.ADDED -> R.string.profile_order_added
             ProfileListSort.STARTED -> R.string.profile_order_started
@@ -298,9 +322,19 @@ internal fun ProfileListFilterSheet(
         entries.mapNotNull { it.format }.filter { it != MediaFormat.UNKNOWN__ }
             .groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.map { it.key }
     }
-    val genres = remember(entries) {
-        entries.flatMap { it.genres }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.map { it.key }
+    val genres = remember(entries) { entries.flatMap { it.genres }.distinct().sorted() }
+    // What each choice would leave with the other filters kept.
+    val yourListCounts = remember(entries, status, tools, viewer, titleLanguage, isOwnProfile) {
+        if (isOwnProfile) {
+            emptyMap()
+        } else {
+            listOf(YourListFilter.ON_YOUR_LIST, YourListFilter.NOT_ON_YOUR_LIST).associateWith { choice ->
+                val narrowed = tools.copy(filters = filters.copy(yourList = choice))
+                applyListTools(entries, status, narrowed, viewer, titleLanguage).items.size
+            }
+        }
     }
+    val numbers = remember { NumberFormat.getIntegerInstance() }
     FilterSheetScaffold(
         title = stringResource(R.string.profile_list_filters),
         onDismiss = onDismiss,
@@ -320,7 +354,8 @@ internal fun ProfileListFilterSheet(
                 options = YourListFilter.entries,
                 label = { stringResource(it.labelRes) },
                 isSelected = { it == filters.yourList },
-                onClick = { onFiltersChange(filters.copy(yourList = it)) }
+                onClick = { onFiltersChange(filters.copy(yourList = it)) },
+                count = { choice -> yourListCounts[choice]?.let(numbers::format) }
             )
             Spacer(Modifier.height(12.dp))
         }
@@ -339,13 +374,19 @@ internal fun ProfileListFilterSheet(
         if (genres.isNotEmpty()) {
             SheetSectionLabel(stringResource(R.string.filter_genres))
             Spacer(Modifier.height(8.dp))
-            OptionPillGrid(
-                options = genres,
-                label = { it },
-                isSelected = { it in filters.genres },
-                onClick = { genre -> onFiltersChange(filters.copy(genres = filters.genres.toggled(genre))) },
-                role = Role.Checkbox
-            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(horizontal = 24.dp)
+            ) {
+                genres.forEach { genre ->
+                    IncludeExcludeChip(
+                        label = genre,
+                        state = filters.genreState(genre),
+                        onStateChange = { onFiltersChange(filters.withGenre(genre, it)) }
+                    )
+                }
+            }
             Spacer(Modifier.height(12.dp))
         }
         SheetSectionLabel(stringResource(if (isOwnProfile) R.string.profile_list_sort_score else R.string.profile_list_sort_their_score))

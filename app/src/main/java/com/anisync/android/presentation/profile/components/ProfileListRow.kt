@@ -5,21 +5,30 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import com.anisync.android.presentation.components.MediaPosterCard
+import com.anisync.android.presentation.components.MediaPosterCardDefaults
+import com.anisync.android.presentation.components.NoteBottomSheet
+import com.anisync.android.presentation.components.NotePreview
+import com.anisync.android.presentation.util.LocalLibraryStatuses
+import com.anisync.android.presentation.util.TransitionKeys
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -67,6 +76,7 @@ fun ProfileListRow(
 ) {
     val title = entry.getTitle(titleLanguage)
     val shape = RoundedCornerShape(16.dp)
+    var noteOpen by remember(entry.id) { mutableStateOf(false) }
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = shape,
@@ -117,17 +127,31 @@ fun ProfileListRow(
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                PersonLine(avatar = ownerAvatar, text = theirLine(entry, mediaType, showStatus, dateSort))
+                PersonLine(
+                    avatar = ownerAvatar,
+                    text = theirLine(entry, mediaType, showStatus, dateSort),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                entry.notes?.takeIf { it.isNotBlank() }?.let { note ->
+                    NotePreview(note = note, onOpen = { noteOpen = true }, modifier = Modifier.padding(start = 2.dp))
+                }
                 if (yours != null) {
-                    PersonLine(avatar = yourAvatar, text = yourLine(yours, entry, mediaType, yourScoreFormat))
+                    PersonLine(
+                        avatar = yourAvatar,
+                        text = yourLine(yours, entry, mediaType, yourScoreFormat),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
     }
+    if (noteOpen) {
+        entry.notes?.let { NoteBottomSheet(note = it, heading = title, onDismiss = { noteOpen = false }) }
+    }
 }
 
 @Composable
-private fun PersonLine(avatar: String?, text: String) {
+private fun PersonLine(avatar: String?, text: String, color: Color) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -136,7 +160,7 @@ private fun PersonLine(avatar: String?, text: String) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -220,55 +244,32 @@ private fun shortDate(millis: Long, fuzzy: Boolean): String {
     return format.format(Date(millis))
 }
 
+/** The app's poster card, with the owner's score where the community average usually sits. */
 @Composable
 fun ProfileListGridCell(
     entry: LibraryEntry,
-    mediaType: MediaType,
     titleLanguage: TitleLanguage,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showYourStatus: Boolean = true
 ) {
-    val title = entry.getTitle(titleLanguage)
-    val shape = RoundedCornerShape(16.dp)
-    Column(
-        modifier = modifier
-            .clip(shape)
-            .bouncyCombinedClickable(onClick = onClick, role = Role.Button, onClickLabel = title, pressedScale = 0.98f)
-    ) {
-        AsyncImage(
-            model = entry.cover.url() ?: entry.coverUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(0.7f)
-                .clip(shape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-        )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-        val facts = listOfNotNull(
-            entry.format?.toLabel(),
-            entry.releaseYear?.toString(),
-            entry.score?.takeIf { it > 0.0 }?.let { scoreOnScale(it, entry.scoreFormat ?: ScoreFormat.POINT_100) }
-        ).joinToString(" · ")
-        if (facts.isNotEmpty()) {
-            Text(
-                text = facts,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 2.dp)
-            )
+    val facts = listOfNotNull(entry.format?.toLabel(), entry.releaseYear?.toString()).joinToString(" · ")
+    val score = entry.score?.takeIf { it > 0.0 }?.let { scoreOnScale(it, entry.scoreFormat ?: ScoreFormat.POINT_100) }
+    MediaPosterCard(
+        item = entry,
+        onClick = onClick,
+        modifier = modifier,
+        titleLanguage = titleLanguage,
+        transitionPrefix = TransitionKeys.PROFILE,
+        listStatus = if (showYourStatus) LocalLibraryStatuses.current[entry.mediaId] else null,
+        meta = {
+            if (facts.isNotEmpty()) MediaPosterCardDefaults.MetaText(facts)
+            if (score != null) {
+                if (facts.isNotEmpty()) MediaPosterCardDefaults.MetaText("·")
+                MediaPosterCardDefaults.MetaText(score, emphasized = true)
+            }
         }
-    }
+    )
 }
 
 /** Numeric scores carry their scale, "8 / 10", stars and faces read on their own. */

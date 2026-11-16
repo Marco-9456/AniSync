@@ -328,6 +328,7 @@ sealed interface ProfileAction {
     data class SelectAnimeStatus(val status: LibraryStatus?) : ProfileAction
     data class SelectMangaStatus(val status: LibraryStatus?) : ProfileAction
     data class SetListQuery(val query: String) : ProfileAction
+    data class SetListSearchStatus(val status: LibraryStatus?) : ProfileAction
     data class SetListSort(val sort: ProfileListSort, val ascending: Boolean) : ProfileAction
     data class SetListFilters(val filters: ProfileListFilters) : ProfileAction
     data object ClearListFilters : ProfileAction

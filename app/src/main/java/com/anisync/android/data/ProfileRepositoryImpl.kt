@@ -1006,7 +1006,9 @@ class ProfileRepositoryImpl @Inject constructor(
                             genres = media?.genres?.filterNotNull().orEmpty(),
                             mediaStartDate = mapFuzzyDateToLong(media?.startDate?.year, media?.startDate?.month, media?.startDate?.day),
                             startedAt = mapFuzzyDateToLong(entry.startedAt?.year, entry.startedAt?.month, entry.startedAt?.day),
-                            completedAt = mapFuzzyDateToLong(entry.completedAt?.year, entry.completedAt?.month, entry.completedAt?.day)
+                            completedAt = mapFuzzyDateToLong(entry.completedAt?.year, entry.completedAt?.month, entry.completedAt?.day),
+                            averageScore = media?.averageScore,
+                            popularity = media?.popularity
                         )
                     } else if (isCustom && !existing.customLists.contains(listName)) {
                         entryMap[entryId] = existing.copy(customLists = existing.customLists + listName)

@@ -1137,14 +1137,26 @@ internal fun ProfileTabStrip(
             }
             ProfileTab.ANIME, ProfileTab.MANGA -> {
                 val manga = uiState.selectedTab == ProfileTab.MANGA
+                val searching = uiState.listTools.query.isNotBlank()
                 MediaStatusRail(
                     itemsByStatus = if (manga) uiState.userMangaListByStatus else uiState.userAnimeListByStatus,
-                    selectedStatus = if (manga) uiState.selectedMangaStatus else uiState.selectedAnimeStatus,
+                    selectedStatus = when {
+                        searching -> uiState.listTools.searchStatus
+                        manga -> uiState.selectedMangaStatus
+                        else -> uiState.selectedAnimeStatus
+                    },
                     mediaType = if (manga) MediaType.MANGA else MediaType.ANIME,
                     onStatusSelected = {
-                        onFilterAction(if (manga) ProfileAction.SelectMangaStatus(it) else ProfileAction.SelectAnimeStatus(it))
+                        onFilterAction(
+                            when {
+                                searching -> ProfileAction.SetListSearchStatus(it)
+                                manga -> ProfileAction.SelectMangaStatus(it)
+                                else -> ProfileAction.SelectAnimeStatus(it)
+                            }
+                        )
                     },
-                    onMediaTypeSelected = selectListTab
+                    onMediaTypeSelected = selectListTab,
+                    searchCounts = if (searching) uiState.listResults.searchCounts.orEmpty() else null
                 )
             }
             ProfileTab.FAVORITES -> {

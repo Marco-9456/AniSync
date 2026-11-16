@@ -63,7 +63,8 @@ internal enum class ListChip(val status: LibraryStatus?) {
 
 /**
  * The list tabs' chips, docked with the profile tabs. The type toggle pinned at the start moves
- * between the Anime and Manga tabs, the way it switches libraries on the Library screen.
+ * between the Anime and Manga tabs, the way it switches libraries on the Library screen. While
+ * searching, [searchCounts] turns the chips into the statuses the matches have.
  */
 @Composable
 internal fun MediaStatusRail(
@@ -71,11 +72,16 @@ internal fun MediaStatusRail(
     selectedStatus: LibraryStatus?,
     mediaType: MediaType,
     onStatusSelected: (LibraryStatus?) -> Unit,
-    onMediaTypeSelected: (MediaType) -> Unit
+    onMediaTypeSelected: (MediaType) -> Unit,
+    searchCounts: Map<LibraryStatus, Int>? = null
 ) {
     val showUnknown = itemsByStatus[LibraryStatus.UNKNOWN].orEmpty().isNotEmpty() ||
         selectedStatus == LibraryStatus.UNKNOWN
-    val chips = ListChip.entries.filter { it != ListChip.UNKNOWN || showUnknown }
+    val chips = if (searchCounts != null) {
+        ListChip.entries.filter { it.status == null || it.status == selectedStatus || (searchCounts[it.status] ?: 0) > 0 }
+    } else {
+        ListChip.entries.filter { it != ListChip.UNKNOWN || showUnknown }
+    }
     val loaded = itemsByStatus.isNotEmpty()
     ProfileTabRail(
         options = chips,
@@ -86,6 +92,7 @@ internal fun MediaStatusRail(
             tab = chip.status?.let { LibraryTab.Standard(it) } ?: LibraryTab.All,
             mediaType = mediaType,
             count = when {
+                searchCounts != null -> if (chip.status == null) searchCounts.values.sum() else searchCounts[chip.status] ?: 0
                 !loaded -> null
                 chip.status == null -> itemsByStatus.values.sumOf { it.size }
                 else -> itemsByStatus[chip.status]?.size
@@ -188,9 +195,9 @@ fun LazyListScope.profileMediaTab(
         return
     }
 
-    item(key = "media_top_spacer_$transitionPrefix") { Spacer(modifier = Modifier.height(12.dp)) }
+    item(key = "media_top_spacer_$transitionPrefix") { Spacer(modifier = Modifier.height(8.dp)) }
 
-    val showStatus = selectedStatus == null || tools.query.isNotBlank()
+    val showStatus = if (tools.query.isNotBlank()) tools.searchStatus == null else selectedStatus == null
     if (tools.view == ProfileListView.GRID) {
         itemsIndexed(
             items = items.chunked(gridColumns),
@@ -206,15 +213,15 @@ fun LazyListScope.profileMediaTab(
                 row.forEach { item ->
                     ProfileListGridCell(
                         entry = item,
-                        mediaType = mediaType,
                         titleLanguage = titleLanguage,
                         onClick = { onMediaClick(item.mediaId) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        showYourStatus = !isOwnProfile
                     )
                 }
                 repeat(gridColumns - row.size) { Spacer(modifier = Modifier.weight(1f)) }
             }
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
         return
     }
@@ -270,7 +277,7 @@ fun LazyListScope.profileMediaTab(
                 Spacer(modifier = Modifier.weight(1f))
             }
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

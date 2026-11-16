@@ -66,6 +66,21 @@ class ProfileListToolsTest {
     }
 
     @Test
+    fun `a search counts its matches by status and a picked status narrows them`() {
+        val everything = run(status = LibraryStatus.COMPLETED, tools = ProfileListTools(query = "o"))
+        assertEquals(mapOf(LibraryStatus.COMPLETED to 3, LibraryStatus.CURRENT to 1), everything.searchCounts)
+        assertEquals(4, everything.items.size)
+        val watching = run(tools = ProfileListTools(query = "o", searchStatus = LibraryStatus.CURRENT))
+        assertEquals(listOf(gal), watching.items)
+        assertEquals(mapOf(LibraryStatus.COMPLETED to 3, LibraryStatus.CURRENT to 1), watching.searchCounts)
+    }
+
+    @Test
+    fun `without a search the chips count the whole list`() {
+        assertEquals(null, run(status = LibraryStatus.COMPLETED).searchCounts)
+    }
+
+    @Test
     fun `on your list keeps only titles the viewer has`() {
         val result = run(
             tools = ProfileListTools(filters = ProfileListFilters(yourList = YourListFilter.ON_YOUR_LIST)),
@@ -80,6 +95,19 @@ class ProfileListToolsTest {
         assertEquals(listOf(horimiya), genres.items)
         val movies = run(tools = ProfileListTools(filters = ProfileListFilters(formats = setOf(MediaFormat.MOVIE))))
         assertEquals(listOf(rebellion), movies.items)
+    }
+
+    @Test
+    fun `an excluded genre drops every title that has it`() {
+        val result = run(tools = ProfileListTools(filters = ProfileListFilters(excludedGenres = setOf("Romance"))))
+        assertEquals(setOf(madoka, rebellion, gal), result.items.toSet())
+    }
+
+    @Test
+    fun `popularity puts the most popular first and the unknown last`() {
+        val known = listOf(madoka.copy(popularity = 900), horimiya.copy(popularity = 1200), gal.copy(popularity = 100), rebellion)
+        val result = applyListTools(known, null, ProfileListTools(sort = ProfileListSort.POPULARITY), emptyMap(), TitleLanguage.ROMAJI)
+        assertEquals(listOf(horimiya.mediaId, madoka.mediaId, gal.mediaId, rebellion.mediaId), result.items.map { it.mediaId })
     }
 
     @Test

@@ -1487,6 +1487,7 @@
     <string name="profile_order_score">highest score first</string>
     <string name="profile_order_your_score">your score first</string>
     <string name="profile_order_average">average score first</string>
+    <string name="profile_order_popularity">most popular first</string>
     <string name="profile_order_release">newest release first</string>
     <string name="profile_order_added">recently added first</string>
     <string name="profile_order_started">recently started first</string>

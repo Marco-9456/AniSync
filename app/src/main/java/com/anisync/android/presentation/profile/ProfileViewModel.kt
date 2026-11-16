@@ -959,7 +959,11 @@ class ProfileViewModel @Inject constructor(
                 }
             }
 
-            is ProfileAction.SetListQuery -> listTools.update { it.copy(query = action.query) }
+            is ProfileAction.SetListQuery -> listTools.update {
+                val fresh = it.query.isBlank() || action.query.isBlank()
+                it.copy(query = action.query, searchStatus = if (fresh) null else it.searchStatus)
+            }
+            is ProfileAction.SetListSearchStatus -> listTools.update { it.copy(searchStatus = action.status) }
             is ProfileAction.SetListSort -> listTools.update { it.copy(sort = action.sort, ascending = action.ascending) }
             is ProfileAction.SetListFilters -> listTools.update { it.copy(filters = action.filters) }
             ProfileAction.ClearListFilters -> listTools.update { it.copy(filters = ProfileListFilters()) }
