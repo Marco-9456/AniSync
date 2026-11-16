@@ -112,7 +112,7 @@
         <item quantity="other">%1$s · %2$s 人認為值得參考</item>
     </plurals>
     <plurals name="share_recap_finished_word">
-        <item quantity="other">看完了</item>
+        <item quantity="other">部看完了</item>
     </plurals>
     <plurals name="share_recap_hour_count">
         <item quantity="other">%1$s 小時</item>
@@ -191,5 +191,29 @@
     </plurals>
     <plurals name="recap_settings_stored_desc">
         <item quantity="other">已存有 %1$s 個月，共 %2$s，清空後查看回顧時將再次從 AniList 構建</item>
+    </plurals>
+    <plurals name="share_stats_title_count">
+        <item quantity="other">%1$s 部作品</item>
+    </plurals>
+    <plurals name="recap_days_in_a_row">
+        <item quantity="other">最長連續了 %1$s 天</item>
+    </plurals>
+    <plurals name="recap_opener_franchise">
+        <item quantity="other">總計有%2$s，共%1$s，其中整整有%3$s部是 %4$s</item>
+    </plurals>
+    <plurals name="recap_franchise_named_took">
+        <item quantity="other">其中 %1$s 在你的 %3$s 部作品中整整佔了%2$s部</item>
+    </plurals>
+    <plurals name="recap_more_finished">
+        <item quantity="other">還有額外 %1$s 部，從 %2$s 到 %3$s 都有</item>
+    </plurals>
+    <plurals name="recap_days_with_anime">
+        <item quantity="other">動畫共陪伴了你 %1$s 天</item>
+    </plurals>
+    <plurals name="recap_of_your_episodes">
+        <item quantity="other">在你的 %2$s 集中整整佔了 %1$s 集</item>
+    </plurals>
+    <plurals name="recap_started_count">
+        <item quantity="other">同時你還看上了 %1$s 部</item>
     </plurals>
 </resources>
