@@ -73,6 +73,7 @@ import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
+import com.anisync.android.presentation.profile.components.ProfileAccounts
 import com.anisync.android.presentation.profile.components.ProfileActionButtons
 import com.anisync.android.presentation.profile.components.ProfileAvatarHalfSize
 import com.anisync.android.presentation.profile.components.ProfileAvatarSize
@@ -276,8 +277,7 @@ fun ProfileWideLayout(
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit,
     onActivityClick: (Int) -> Unit,
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
-    showAccountSwitcher: Boolean,
-    onAccountSwitchClick: () -> Unit,
+    accounts: ProfileAccounts?,
     onShareStats: () -> Unit,
     onShareFavourites: () -> Unit,
     statsColumns: Int,
@@ -323,8 +323,7 @@ fun ProfileWideLayout(
                 onCommentClick = onCommentClick,
                 onActivityClick = onActivityClick,
                 onLastReplyClick = onLastReplyClick,
-                showAccountSwitcher = showAccountSwitcher,
-                onAccountSwitchClick = onAccountSwitchClick,
+                accounts = accounts,
                 onShareStats = onShareStats,
                 onShareFavourites = onShareFavourites,
                 statsColumns = statsColumns,
@@ -462,8 +461,7 @@ private fun ProfileTwoPane(
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit,
     onActivityClick: (Int) -> Unit,
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
-    showAccountSwitcher: Boolean,
-    onAccountSwitchClick: () -> Unit,
+    accounts: ProfileAccounts?,
     onShareStats: () -> Unit,
     onShareFavourites: () -> Unit,
     statsColumns: Int,
@@ -543,8 +541,7 @@ private fun ProfileTwoPane(
                         onEditProfileClick = { onAction(ProfileAction.SetEditProfileDialogVisible(true)) },
                         onNotificationsClick = onNotificationsClick,
                         unreadNotificationCount = unreadNotificationCount,
-                        showAccountSwitcher = showAccountSwitcher,
-                        onAccountSwitchClick = onAccountSwitchClick,
+                        accounts = accounts,
                         collapse = collapse,
                         followingTotal = uiState.followingTotal,
                         followersTotal = uiState.followersTotal,
@@ -601,8 +598,7 @@ private fun ProfileIdentityPane(
     onEditProfileClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     unreadNotificationCount: Int,
-    showAccountSwitcher: Boolean,
-    onAccountSwitchClick: () -> Unit,
+    accounts: ProfileAccounts?,
     collapse: BioCollapseState,
     modifier: Modifier = Modifier,
     followingTotal: Int? = null,
@@ -638,6 +634,7 @@ private fun ProfileIdentityPane(
         ) {
             ProfileDisplayName(
                 name = profile.name,
+                accounts = accounts,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = IdentityPanePadding)
@@ -683,8 +680,6 @@ private fun ProfileIdentityPane(
             onEditProfileClick = onEditProfileClick,
             onNotificationsClick = onNotificationsClick,
             unreadNotificationCount = unreadNotificationCount,
-            showAccountSwitcher = showAccountSwitcher,
-            onAccountSwitchClick = onAccountSwitchClick,
             modifier = Modifier.padding(horizontal = IdentityPanePadding)
         )
 

@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import com.anisync.android.R
 import kotlinx.coroutines.launch
 
@@ -81,11 +82,15 @@ fun Modifier.copyOnLongPress(
     text: String,
     clipLabel: String,
     copiedMessage: String,
+    onClickLabel: String? = null,
+    role: Role? = null,
     onClick: () -> Unit = {}
 ): Modifier {
     val copyToClipboard = rememberCopyToClipboard()
     return combinedClickable(
         onClick = onClick,
+        onClickLabel = onClickLabel,
+        role = role,
         onLongClick = { copyToClipboard(clipLabel, text, copiedMessage) },
         onLongClickLabel = stringResource(R.string.a11y_action_copy)
     )

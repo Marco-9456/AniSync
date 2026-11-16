@@ -81,7 +81,8 @@ import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
 import com.anisync.android.presentation.profile.components.ProfileBioSheet
-import com.anisync.android.presentation.profile.components.ProfileOwnTopBar
+import com.anisync.android.presentation.profile.components.ProfileAccounts
+import com.anisync.android.presentation.profile.components.ProfileOwnDockedBar
 import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.profile.components.ProfileVisitBar
 import com.anisync.android.presentation.profile.lists.ListComparison
@@ -172,8 +173,7 @@ fun ProfileContent(
     onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit = { _, _, _ -> },
     onActivityClick: (Int) -> Unit = {},
     onLastReplyClick: (activityId: Int, replyId: Int) -> Unit = { _, _ -> },
-    showAccountSwitcher: Boolean = false,
-    onAccountSwitchClick: () -> Unit = {},
+    accounts: ProfileAccounts? = null,
     onShareCard: (ShareStudio) -> Unit = {},
     onOpenRecap: (String) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -229,8 +229,7 @@ fun ProfileContent(
             onCommentClick = onCommentClick,
             onActivityClick = onActivityClick,
             onLastReplyClick = onLastReplyClick,
-            showAccountSwitcher = showAccountSwitcher,
-            onAccountSwitchClick = onAccountSwitchClick,
+            accounts = accounts,
             onShareStats = shareStats,
             onShareFavourites = shareFavourites,
             statsColumns = statsColumns,
@@ -483,8 +482,7 @@ fun ProfileContent(
                 unreadNotificationCount = unreadNotificationCount,
                 topActionIcon = Icons.Default.Settings,
                 onTopActionClick = onSettingsClick,
-                showAccountSwitcher = showAccountSwitcher,
-                onAccountSwitchClick = onAccountSwitchClick,
+                accounts = accounts,
                 onBackClick = onBackClick,
                 followingTotal = uiState.followingTotal,
                 followersTotal = uiState.followersTotal,
@@ -544,14 +542,10 @@ fun ProfileContent(
             Column(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
                 if (showsIdentityBar) {
                     if (isOwnProfile) {
-                        ProfileOwnTopBar(
+                        ProfileOwnDockedBar(
                             name = profile.name,
                             avatarUrl = profile.avatarUrl,
-                            onBanner = false,
-                            showAccountSwitcher = showAccountSwitcher,
-                            onAccountSwitchClick = onAccountSwitchClick,
-                            unreadNotificationCount = unreadNotificationCount,
-                            onNotificationsClick = onNotificationsClick,
+                            accounts = accounts,
                             onSettingsClick = onSettingsClick
                         )
                     } else {

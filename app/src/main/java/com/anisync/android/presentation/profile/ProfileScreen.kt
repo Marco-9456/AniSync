@@ -42,8 +42,8 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.ProfileColorThemeOverride
 import com.anisync.android.presentation.login.AniListAuth
-import com.anisync.android.presentation.profile.components.AccountSwitcherSheet
 import com.anisync.android.presentation.profile.components.EditProfileSheet
+import com.anisync.android.presentation.profile.components.ProfileAccounts
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -87,7 +87,17 @@ fun ProfileScreen(
     val context = LocalContext.current
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val activeAccountId by viewModel.activeAccountId.collectAsStateWithLifecycle()
-    var showAccountSwitcherSheet by remember { mutableStateOf(false) }
+    val unreadNotificationCount = uiState.unreadNotificationCount
+    val profileAccounts = remember(accounts, activeAccountId, unreadNotificationCount, onManageAccounts, viewModel) {
+        ProfileAccounts(
+            accounts = accounts,
+            activeAccountId = activeAccountId,
+            unreadNotificationCount = unreadNotificationCount,
+            onSwitch = viewModel::switchAccount,
+            onAddAccount = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AniListAuth.AUTH_URL))) },
+            onManageAccounts = onManageAccounts
+        )
+    }.takeIf { isOwnProfile }
 
     // Cooldown-gated ON_RESUME refresh. Notification badge no longer needs a
     // separate refresh — it rides on GetUserProfile via @include directive.
@@ -181,8 +191,7 @@ fun ProfileScreen(
                         onLastReplyClick = { activityId, replyId ->
                             onLastReplyClick(activityId, replyId, profileColor)
                         },
-                        showAccountSwitcher = isOwnProfile && accounts.size > 1,
-                        onAccountSwitchClick = { showAccountSwitcherSheet = true },
+                        accounts = profileAccounts,
                         onShareCard = onShareCard,
                         onOpenRecap = onOpenRecap,
                         onBackClick = onBackClick
@@ -250,29 +259,6 @@ fun ProfileScreen(
             dismissButton = {
                 TextButton(onClick = { viewModel.onAction(ProfileAction.DismissRemoveFollower) }) {
                     Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
-
-    if (showAccountSwitcherSheet) {
-        AccountSwitcherSheet(
-            accounts = accounts,
-            activeAccountId = activeAccountId,
-            onSwitch = { id ->
-                showAccountSwitcherSheet = false
-                viewModel.switchAccount(id)
-            },
-            onAddAccount = {
-                showAccountSwitcherSheet = false
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AniListAuth.AUTH_URL)))
-            },
-            onDismiss = { showAccountSwitcherSheet = false },
-            unreadNotificationCount = uiState.unreadNotificationCount,
-            onManageAccounts = onManageAccounts?.let { manage ->
-                {
-                    showAccountSwitcherSheet = false
-                    manage()
                 }
             }
         )

@@ -19,20 +19,20 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Settings
@@ -47,7 +47,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -63,18 +63,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.anisync.android.R
@@ -94,6 +98,7 @@ import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.presentation.util.rememberCopyToClipboard
+import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
@@ -306,10 +311,12 @@ fun ProfileIdentityInfo(
     followsViewer: Boolean = false,
     followingTotal: Int? = null,
     followersTotal: Int? = null,
-    onPeopleClick: (() -> Unit)? = null
+    onPeopleClick: (() -> Unit)? = null,
+    /** On your own profile the name opens the accounts on this device. */
+    accounts: ProfileAccounts? = null
 ) {
     Column(modifier = modifier) {
-        ProfileDisplayName(name = profile.name)
+        ProfileDisplayName(name = profile.name, accounts = accounts)
         ProfileIdentityDetails(
             profile = profile,
             isOwnProfile = isOwnProfile,
@@ -322,22 +329,68 @@ fun ProfileIdentityInfo(
     }
 }
 
-/** The display name alone, so a host can pin it while the rest of the identity collapses. */
+/**
+ * The display name. On your own profile it is also the account switcher, the name and an arrow
+ * opening the accounts menu the way the forum's feed button opens its feeds. A long press copies it
+ * either way.
+ */
 @Composable
-fun ProfileDisplayName(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = name,
-        style = MaterialTheme.typography.displaySmall.copy(
-            fontWeight = FontWeight.ExtraBold
-        ),
-        color = MaterialTheme.colorScheme.onBackground,
-        modifier = modifier.copyOnLongPress(
+fun ProfileDisplayName(name: String, modifier: Modifier = Modifier, accounts: ProfileAccounts? = null) {
+    val style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold)
+    val clipLabel = stringResource(R.string.profile_username)
+    val copiedMessage = stringResource(R.string.profile_username_copied, name)
+    if (accounts == null) {
+        Text(
             text = name,
-            clipLabel = stringResource(R.string.profile_username),
-            copiedMessage = stringResource(R.string.profile_username_copied, name)
+            style = style,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = modifier.copyOnLongPress(text = name, clipLabel = clipLabel, copiedMessage = copiedMessage)
         )
-    )
+        return
+    }
+    var expanded by remember { mutableStateOf(false) }
+    val haptic = rememberHapticFeedback()
+    val arrowColor = MaterialTheme.colorScheme.onBackground
+    Box(modifier = modifier) {
+        Text(
+            // The joiner keeps the arrow on the name's last line when a long name wraps.
+            text = buildAnnotatedString {
+                append(name)
+                append('⁠')
+                appendInlineContent(NAME_SWITCH_ARROW)
+            },
+            inlineContent = mapOf(
+                NAME_SWITCH_ARROW to InlineTextContent(
+                    Placeholder(width = 1.em, height = 1.em, placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = arrowColor,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            ),
+            style = style,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .copyOnLongPress(
+                    text = name,
+                    clipLabel = clipLabel,
+                    copiedMessage = copiedMessage,
+                    onClickLabel = stringResource(R.string.account_switch),
+                    role = Role.Button
+                ) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    expanded = true
+                }
+        )
+        AccountMenu(expanded = expanded, accounts = accounts, onDismiss = { expanded = false })
+    }
 }
+
+private const val NAME_SWITCH_ARROW = "account_switch_arrow"
 
 /**
  * Everything under the display name: level + donator badges, the mutual-follow chip, moderator role
@@ -514,9 +567,8 @@ fun ProfileIdentityDetails(
 }
 
 /**
- * The header action buttons: edit / notifications (+ optional account switch) on your own profile,
- * follow / message on others'. The caller positions the [Row] (the compact header overlaps it on the
- * banner seam; the wide identity pane stacks it under the meta).
+ * The header action buttons: Edit profile and notifications on your own profile, Follow and Message
+ * on others'. The caller positions the [Row].
  */
 @Composable
 fun ProfileActionButtons(
@@ -528,83 +580,24 @@ fun ProfileActionButtons(
     onEditProfileClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     unreadNotificationCount: Int,
-    showAccountSwitcher: Boolean,
-    onAccountSwitchClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    onShareClick: (() -> Unit)? = null
+    modifier: Modifier = Modifier
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
     ) {
-        if (isOwnProfile && onShareClick != null) {
-            val labelPadding = PaddingValues(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+        val labelPadding = PaddingValues(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+        if (isOwnProfile) {
             FilledTonalButton(onClick = onEditProfileClick, contentPadding = labelPadding) {
                 Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.size(8.dp))
                 ButtonLabel(stringResource(R.string.profile_edit))
             }
-            OutlinedButton(onClick = onShareClick, contentPadding = labelPadding) {
-                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.size(8.dp))
-                ButtonLabel(stringResource(R.string.action_share))
-            }
-        } else if (isOwnProfile) {
-            if (showAccountSwitcher) {
-                FilledTonalIconButton(
-                    onClick = onAccountSwitchClick,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SwapHoriz,
-                        contentDescription = stringResource(R.string.account_switch),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-            FilledTonalIconButton(
-                onClick = onEditProfileClick,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = stringResource(R.string.profile_edit),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            FilledTonalIconButton(
-                onClick = onNotificationsClick,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.size(48.dp)
-            ) {
-                if (unreadNotificationCount > 0) {
-                    val openLabel = stringResource(R.string.notifications_open)
-                    val countLabel = unreadCountAccessibilityLabel(unreadNotificationCount)
-                    BadgedBox(
-                        badge = {
-                            Badge {
-                                Text(formatBadgeCount(unreadNotificationCount))
-                            }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "$openLabel, $countLabel",
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = stringResource(R.string.notifications_open),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+            OutlinedIconButton(onClick = onNotificationsClick) {
+                NotificationsIcon(unreadNotificationCount)
             }
         } else {
-            val labelPadding = PaddingValues(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
             if (isFollowing) {
                 FilledTonalButton(
                     onClick = onFollowClick,
@@ -632,6 +625,22 @@ fun ProfileActionButtons(
                 ButtonLabel(stringResource(R.string.profile_message))
             }
         }
+    }
+}
+
+/** The bell with the unread count on it, which TalkBack reads out with the button. */
+@Composable
+private fun NotificationsIcon(unreadNotificationCount: Int) {
+    if (unreadNotificationCount > 0) {
+        BadgedBox(badge = { Badge { Text(formatBadgeCount(unreadNotificationCount)) } }) {
+            Icon(
+                imageVector = Icons.Outlined.Notifications,
+                contentDescription = stringResource(R.string.notifications_open) + ", " +
+                    unreadCountAccessibilityLabel(unreadNotificationCount)
+            )
+        }
+    } else {
+        Icon(Icons.Outlined.Notifications, contentDescription = stringResource(R.string.notifications_open))
     }
 }
 
@@ -710,26 +719,13 @@ private fun boldNumbers(text: String, vararg numbers: String): AnnotatedString =
     }
 }
 
+/** Settings, the one control left over your own profile's banner or band. */
 @Composable
 internal fun ProfileOwnTopBar(
-    name: String,
-    avatarUrl: String?,
     onBanner: Boolean,
-    showAccountSwitcher: Boolean,
-    onAccountSwitchClick: () -> Unit,
-    unreadNotificationCount: Int,
-    onNotificationsClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val chrome = if (onBanner) {
-        IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = Color.Black.copy(alpha = 0.4f),
-            contentColor = Color.White
-        )
-    } else {
-        IconButtonDefaults.iconButtonColors()
-    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -737,52 +733,95 @@ internal fun ProfileOwnTopBar(
             .height(64.dp)
             .padding(start = 16.dp, end = 8.dp)
     ) {
-        Surface(
-            color = if (onBanner) Color.Black.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceContainerHighest,
-            contentColor = if (onBanner) Color.White else MaterialTheme.colorScheme.onSurface,
-            shape = CircleShape,
-            onClick = onAccountSwitchClick,
-            enabled = showAccountSwitcher
-        ) {
+        Spacer(modifier = Modifier.weight(1f))
+        ProfileSettingsButton(onBanner = onBanner, onClick = onSettingsClick)
+    }
+}
+
+/**
+ * Your own profile once the header has scrolled away. The name switches accounts here too, with the
+ * same menu as the name in the header.
+ */
+@Composable
+internal fun ProfileOwnDockedBar(
+    name: String,
+    avatarUrl: String?,
+    accounts: ProfileAccounts?,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val haptic = rememberHapticFeedback()
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .padding(start = 8.dp, end = 8.dp)
+    ) {
+        Box(modifier = Modifier.weight(1f)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .height(40.dp)
-                    .padding(start = 4.dp, end = if (showAccountSwitcher) 8.dp else 14.dp)
+                    .clip(CircleShape)
+                    .copyOnLongPress(
+                        text = name,
+                        clipLabel = stringResource(R.string.profile_username),
+                        copiedMessage = stringResource(R.string.profile_username_copied, name),
+                        onClickLabel = accounts?.let { stringResource(R.string.account_switch) },
+                        role = accounts?.let { Role.Button }
+                    ) {
+                        if (accounts != null) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            expanded = true
+                        }
+                    }
+                    .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
             ) {
                 UserAvatar(contentDescription = null, size = 32.dp, url = avatarUrl)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = name, style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                if (showAccountSwitcher) {
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (accounts != null) {
                     Icon(
-                        imageVector = Icons.Default.ExpandMore,
-                        contentDescription = stringResource(R.string.account_switch),
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier
                             .padding(start = 4.dp)
-                            .size(20.dp)
+                            .size(24.dp)
                     )
                 }
             }
-        }
-        Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = onNotificationsClick, colors = chrome) {
-            if (unreadNotificationCount > 0) {
-                BadgedBox(badge = { Badge { Text(formatBadgeCount(unreadNotificationCount)) } }) {
-                    Icon(
-                        Icons.Outlined.Notifications,
-                        contentDescription = stringResource(R.string.notifications_open) + ", " +
-                            unreadCountAccessibilityLabel(unreadNotificationCount)
-                    )
-                }
-            } else {
-                Icon(Icons.Outlined.Notifications, contentDescription = stringResource(R.string.notifications_open))
+            if (accounts != null) {
+                AccountMenu(expanded = expanded, accounts = accounts, onDismiss = { expanded = false })
             }
         }
-        val settingsDot = rememberActiveWhatsNew().any { it.place == WhatsNewItem.Place.SETTINGS }
-        IconButton(onClick = onSettingsClick, colors = chrome) {
-            BadgedBox(badge = { if (settingsDot) Badge() }) {
-                Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.settings))
-            }
+        Spacer(modifier = Modifier.width(8.dp))
+        ProfileSettingsButton(onBanner = false, onClick = onSettingsClick)
+    }
+}
+
+@Composable
+private fun ProfileSettingsButton(onBanner: Boolean, onClick: () -> Unit) {
+    val colors = if (onBanner) {
+        IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = Color.Black.copy(alpha = 0.4f),
+            contentColor = Color.White
+        )
+    } else {
+        IconButtonDefaults.iconButtonColors()
+    }
+    val settingsDot = rememberActiveWhatsNew().any { it.place == WhatsNewItem.Place.SETTINGS }
+    IconButton(onClick = onClick, colors = colors) {
+        BadgedBox(badge = { if (settingsDot) Badge() }) {
+            Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.settings))
         }
     }
 }

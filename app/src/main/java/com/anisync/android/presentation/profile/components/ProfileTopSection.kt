@@ -31,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,8 +43,6 @@ import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.ProfileTabsButtonGroup
 import com.anisync.android.presentation.profile.sections.BioPreview
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
-import com.anisync.android.util.AniListUrls
-import com.anisync.android.util.ShareUtils
 
 // Hoisted static layout constants to prevent reallocation. The avatar size is shared with the wide
 // identity pane (see ProfileIdentity.kt).
@@ -72,8 +69,7 @@ fun ProfileTopSection(
     unreadNotificationCount: Int = 0,
     topActionIcon: ImageVector = Icons.Default.Settings,
     onTopActionClick: () -> Unit = onSettingsClick,
-    showAccountSwitcher: Boolean = false,
-    onAccountSwitchClick: () -> Unit = {},
+    accounts: ProfileAccounts? = null,
     onBackClick: (() -> Unit)? = null,
     followingTotal: Int? = null,
     followersTotal: Int? = null,
@@ -86,18 +82,8 @@ fun ProfileTopSection(
     val avatarTop = if (band) headerHeight + 8.dp else headerHeight - ProfileAvatarHalfSize
     val actionsTop = if (band) headerHeight + 64.dp else headerHeight + 8.dp
     val identityTop = if (band) headerHeight + 116.dp else headerHeight + 60.dp
-    val context = LocalContext.current
     val ownTopBar: @Composable (Boolean) -> Unit = { onBanner ->
-        ProfileOwnTopBar(
-            name = profile.name,
-            avatarUrl = profile.avatarUrl,
-            onBanner = onBanner,
-            showAccountSwitcher = showAccountSwitcher,
-            onAccountSwitchClick = onAccountSwitchClick,
-            unreadNotificationCount = unreadNotificationCount,
-            onNotificationsClick = onNotificationsClick,
-            onSettingsClick = onSettingsClick
-        )
+        ProfileOwnTopBar(onBanner = onBanner, onSettingsClick = onSettingsClick)
     }
 
     Box(modifier = modifier.fillMaxWidth()) {
@@ -160,6 +146,7 @@ fun ProfileTopSection(
                 followingTotal = followingTotal,
                 followersTotal = followersTotal,
                 onPeopleClick = onPeopleClick,
+                accounts = accounts,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -198,11 +185,6 @@ fun ProfileTopSection(
             onEditProfileClick = onEditProfileClick,
             onNotificationsClick = onNotificationsClick,
             unreadNotificationCount = unreadNotificationCount,
-            showAccountSwitcher = showAccountSwitcher,
-            onAccountSwitchClick = onAccountSwitchClick,
-            onShareClick = {
-                ShareUtils.shareText(context, "${profile.name}\n${AniListUrls.userUrl(profile.name)}")
-            },
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .offset(y = actionsTop)
