@@ -127,6 +127,9 @@ private const val NameHandoffPoint = 0.5f
  */
 private const val IdentityFadeOutPoint = 0.62f
 
+/** T1 lays the Overview out in two 388dp columns, which needs about this much pane. */
+private val OverviewColumnsMinWidth = 720.dp
+
 private val PROFILE_FRACTION_ANCHORS = listOf(0.26f, 0.32f, 0.40f)
 private const val PROFILE_MIN_FRACTION = 0.24f
 private const val PROFILE_MAX_FRACTION = 0.46f
@@ -819,6 +822,7 @@ private fun ProfileTabPane(
 
         val showShareFab = uiState.showsShareFab(profile)
         val comparison = rememberListComparison(uiState, isOwnProfile)
+        val overviewColumns = maxWidth >= OverviewColumnsMinWidth
         Column(modifier = Modifier.fillMaxSize()) {
             val pageCollapsed by remember(listState) {
                 derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
@@ -866,7 +870,8 @@ private fun ProfileTabPane(
                         studioColumns = studioColumns,
                         statsColumns = statsColumns,
                         onOpenRecap = onOpenRecap,
-                        comparison = comparison
+                        comparison = comparison,
+                        overviewColumns = overviewColumns
                     )
                 }
             }

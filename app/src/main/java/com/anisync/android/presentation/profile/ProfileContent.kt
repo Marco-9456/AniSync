@@ -11,6 +11,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -104,7 +105,10 @@ import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
 import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.presentation.util.profileGridColumns
-import com.anisync.android.presentation.profile.sections.ProfileOverviewSection
+import com.anisync.android.presentation.profile.sections.OverviewBlocks
+import com.anisync.android.presentation.profile.sections.OverviewColumnA
+import com.anisync.android.presentation.profile.sections.OverviewColumnB
+import com.anisync.android.presentation.profile.sections.profileOverviewBlocks
 import com.anisync.android.presentation.profile.sections.ActivityFilterRail
 import com.anisync.android.presentation.profile.sections.FavoritesFilterRail
 import com.anisync.android.presentation.profile.sections.MediaStatusRail
@@ -720,85 +724,70 @@ internal fun LazyListScope.profileSelectedTabContent(
     statsColumns: Int,
     onOpenRecap: (String) -> Unit = {},
     onStatsViewSelected: (StatsView) -> Unit = { onAction(ProfileAction.SelectStatsView(it)) },
-    comparison: ListComparison? = null
+    comparison: ListComparison? = null,
+    /** A pane wide enough for T1's two Overview columns. */
+    overviewColumns: Boolean = false
 ) {
     when (uiState.selectedTab) {
         ProfileTab.OVERVIEW -> {
-            if (isOwnProfile) {
-                item(key = "overview_composer", contentType = "activity_composer") {
-                    StatusComposerCard(
-                        avatarUrl = profile.avatarUrl,
-                        onClick = { onAction(ProfileAction.SetStatusComposerVisible(true)) }
-                    )
-                }
-                if (profile.bannerUrl == null) {
-                    item(key = "overview_picture_prompt", contentType = "overview_prompt") {
-                        PicturePrompt()
+            val blocks = OverviewBlocks(
+                profile = profile,
+                activityHistory = uiState.statsData?.activityHistory.orEmpty(),
+                watching = uiState.userAnimeList
+                    .filter { it.status == LibraryStatus.CURRENT || it.status == LibraryStatus.REPEATING }
+                    .distinctBy { it.mediaId }
+                    .sortedByDescending { it.updatedAt ?: 0L },
+                latestReview = uiState.reviews.firstOrNull(),
+                titleLanguage = uiState.titleLanguage,
+                viewerId = uiState.viewerId,
+                onNavigateToTab = { onAction(ProfileAction.SelectTab(it)) },
+                onOpenFavorites = {
+                    onAction(ProfileAction.SelectFavoritesFilter(it))
+                    onAction(ProfileAction.SelectTab(ProfileTab.FAVORITES))
+                },
+                onMediaClick = onMediaClick,
+                onCharacterClick = onCharacterClick,
+                onStaffClick = onStaffClick,
+                onUserClick = onUserClick,
+                onActivityClick = onActivityClick,
+                onLastReplyClick = onLastReplyClick,
+                onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
+                onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
+                onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
+                onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
+                onOpenWatching = {
+                    onAction(ProfileAction.SelectAnimeStatus(LibraryStatus.CURRENT))
+                    onAction(ProfileAction.SelectTab(ProfileTab.ANIME))
+                },
+                onOpenReviews = {
+                    onAction(ProfileAction.SelectTab(ProfileTab.ACTIVITY))
+                    onAction(ProfileAction.SelectActivityFilter(ProfileActivityFilter.REVIEWS))
+                },
+                onReviewClick = { onAction(ProfileAction.SelectReview(it)) }
+            )
+            // The composer and the picture prompt on your own profile, how your lists meet theirs on
+            // someone else's.
+            val lead: @Composable () -> Unit = {
+                OverviewLead(profile = profile, uiState = uiState, isOwnProfile = isOwnProfile, comparison = comparison, onAction = onAction)
+            }
+            if (overviewColumns && !blocks.isEmpty) {
+                item(key = "overview_columns", contentType = "overview_columns") {
+                    // Each block keeps its own 16dp margins, so the columns overlap by one margin
+                    // and the cards meet across a 16dp gap.
+                    Row(horizontalArrangement = Arrangement.spacedBy((-16).dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            lead()
+                            OverviewColumnA(blocks)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            OverviewColumnB(blocks)
+                        }
                     }
                 }
-            }
-            if (!isOwnProfile && comparison == null && uiState.isUserAnimeListLoading && uiState.viewerEntries.isNotEmpty()) {
-                item(key = "overview_compare", contentType = "overview_compare") {
-                    OverviewCompareCardLoading(
-                        ownerName = profile.name,
-                        yourAvatar = uiState.viewerAvatarUrl,
-                        theirAvatar = profile.avatarUrl,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                }
-            }
-            if (comparison != null && comparison.sharedCount > 0) {
-                item(key = "overview_compare", contentType = "overview_compare") {
-                    OverviewCompareCard(
-                        comparison = comparison,
-                        ownerName = profile.name,
-                        yourAvatar = uiState.viewerAvatarUrl,
-                        theirAvatar = profile.avatarUrl,
-                        onCompare = { onAction(ProfileAction.SelectTab(ProfileTab.COMPARE)) },
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                }
-            }
-            item(key = "tab_overview", contentType = "overview") {
-                ProfileOverviewSection(
-                    profile = profile,
-                    activityHistory = uiState.statsData?.activityHistory.orEmpty(),
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    onNavigateToTab = { onAction(ProfileAction.SelectTab(it)) },
-                    onOpenFavorites = {
-                        onAction(ProfileAction.SelectFavoritesFilter(it))
-                        onAction(ProfileAction.SelectTab(ProfileTab.FAVORITES))
-                    },
-                    onMediaClick = onMediaClick,
-                    onCharacterClick = onCharacterClick,
-                    onStaffClick = onStaffClick,
-                    onUserClick = onUserClick,
-                    onActivityClick = onActivityClick,
-                    onLastReplyClick = onLastReplyClick,
-                    onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
-                    onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
-                    onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
-                    onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
-                    viewerId = uiState.viewerId,
-                    watching = remember(uiState.userAnimeList) {
-                        uiState.userAnimeList
-                            .filter { it.status == LibraryStatus.CURRENT || it.status == LibraryStatus.REPEATING }
-                            .distinctBy { it.mediaId }
-                            .sortedByDescending { it.updatedAt ?: 0L }
-                    },
-                    latestReview = uiState.reviews.firstOrNull(),
-                    titleLanguage = uiState.titleLanguage,
-                    onOpenWatching = {
-                        onAction(ProfileAction.SelectAnimeStatus(LibraryStatus.CURRENT))
-                        onAction(ProfileAction.SelectTab(ProfileTab.ANIME))
-                    },
-                    onOpenReviews = {
-                        onAction(ProfileAction.SelectTab(ProfileTab.ACTIVITY))
-                        onAction(ProfileAction.SelectActivityFilter(ProfileActivityFilter.REVIEWS))
-                    },
-                    onReviewClick = { onAction(ProfileAction.SelectReview(it)) }
-                )
+                item(key = "overview_end", contentType = "overview_end") { Spacer(modifier = Modifier.height(16.dp)) }
+            } else {
+                item(key = "overview_lead", contentType = "overview_lead") { lead() }
+                profileOverviewBlocks(blocks)
             }
         }
 
@@ -954,6 +943,43 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onOpenRecap = onOpenRecap,
                 onRetryStats = { onAction(ProfileAction.RetryStats) },
                 onRetryRecaps = { onAction(ProfileAction.RetryRecaps) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun OverviewLead(
+    profile: UserProfile,
+    uiState: ProfileUiState,
+    isOwnProfile: Boolean,
+    comparison: ListComparison?,
+    onAction: (ProfileAction) -> Unit
+) {
+    Column {
+        if (isOwnProfile) {
+            StatusComposerCard(
+                avatarUrl = profile.avatarUrl,
+                onClick = { onAction(ProfileAction.SetStatusComposerVisible(true)) }
+            )
+            if (profile.bannerUrl == null) PicturePrompt()
+        }
+        if (!isOwnProfile && comparison == null && uiState.isUserAnimeListLoading && uiState.viewerEntries.isNotEmpty()) {
+            OverviewCompareCardLoading(
+                ownerName = profile.name,
+                yourAvatar = uiState.viewerAvatarUrl,
+                theirAvatar = profile.avatarUrl,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+        if (comparison != null && comparison.sharedCount > 0) {
+            OverviewCompareCard(
+                comparison = comparison,
+                ownerName = profile.name,
+                yourAvatar = uiState.viewerAvatarUrl,
+                theirAvatar = profile.avatarUrl,
+                onCompare = { onAction(ProfileAction.SelectTab(ProfileTab.COMPARE)) },
+                modifier = Modifier.padding(top = 16.dp)
             )
         }
     }
