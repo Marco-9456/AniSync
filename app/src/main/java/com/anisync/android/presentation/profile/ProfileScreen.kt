@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.profile.components.ProfileLoadingSkeleton
+import com.anisync.android.presentation.profile.components.UnfollowDialog
 import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.util.AniListUrls
 
@@ -222,20 +223,10 @@ fun ProfileScreen(
     }
 
     if (uiState.isUnfollowConfirmVisible && profile != null) {
-        AppAlertDialog(
-            onDismissRequest = { viewModel.onAction(ProfileAction.DismissUnfollow) },
-            title = { Text(stringResource(R.string.profile_unfollow_title, profile.name)) },
-            text = { Text(stringResource(R.string.profile_unfollow_body, profile.name)) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.onAction(ProfileAction.ConfirmUnfollow) }) {
-                    Text(stringResource(R.string.profile_unfollow_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.onAction(ProfileAction.DismissUnfollow) }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
+        UnfollowDialog(
+            name = profile.name,
+            onConfirm = { viewModel.onAction(ProfileAction.ConfirmUnfollow) },
+            onDismiss = { viewModel.onAction(ProfileAction.DismissUnfollow) }
         )
     }
 

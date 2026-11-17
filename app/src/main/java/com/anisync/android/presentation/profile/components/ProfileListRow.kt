@@ -231,10 +231,10 @@ private fun yourLine(yours: LibraryEntry, theirs: LibraryEntry, mediaType: Media
 }
 
 @Composable
-private fun progressText(progress: Int, total: Int?, mediaType: MediaType): String {
+internal fun progressText(progress: Int, total: Int?, mediaType: MediaType): String {
     val manga = mediaType == MediaType.MANGA
-    return if ((total ?: 0) > 0) {
-        stringResource(if (manga) R.string.profile_chapter_of else R.string.profile_episode_of, progress, total!!)
+    return if (total != null && total > 0) {
+        stringResource(if (manga) R.string.profile_chapter_of else R.string.profile_episode_of, progress, total)
     } else {
         stringResource(if (manga) R.string.profile_chapter else R.string.profile_episode, progress)
     }

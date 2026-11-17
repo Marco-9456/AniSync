@@ -26,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.SocialUser
-import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.SegmentedTabGroup
 import com.anisync.android.presentation.components.UserAvatar
@@ -52,6 +50,7 @@ import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.profile.PeopleOrder
 import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.profile.ProfileUiState
+import com.anisync.android.presentation.profile.components.UnfollowDialog
 import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.presentation.util.rememberCopyToClipboard
@@ -254,23 +253,13 @@ internal fun PersonRow(
     }
 
     if (confirmUnfollow) {
-        AppAlertDialog(
-            onDismissRequest = { confirmUnfollow = false },
-            title = { Text(stringResource(R.string.profile_unfollow_title, user.name)) },
-            text = { Text(stringResource(R.string.profile_unfollow_body, user.name)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmUnfollow = false
-                    onToggleFollow()
-                }) {
-                    Text(stringResource(R.string.profile_unfollow_confirm))
-                }
+        UnfollowDialog(
+            name = user.name,
+            onConfirm = {
+                confirmUnfollow = false
+                onToggleFollow()
             },
-            dismissButton = {
-                TextButton(onClick = { confirmUnfollow = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
+            onDismiss = { confirmUnfollow = false }
         )
     }
 }

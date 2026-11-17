@@ -47,10 +47,8 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.EmptyState
-import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.MediaPosterCard
 import com.anisync.android.presentation.components.MediaPosterCardDefaults
-import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
@@ -351,11 +349,10 @@ private fun LazyListScope.sharedSection(
 ) {
     if (titles.isEmpty()) return
     item(key = "${key}_header") {
-        SectionHeader(
+        OverviewHeader(
             title = stringResource(titleRes),
-            subtitle = pluralStringResourceOrDefault(R.plurals.profile_favorites_count_titles, titles.size, titles.size.toString()),
-            level = HeaderLevel.Section,
-            padding = PaddingValues(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp)
+            onAction = null,
+            subtitle = pluralStringResourceOrDefault(R.plurals.profile_favorites_count_titles, titles.size, titles.size.toString())
         )
     }
     val shown = if (expanded) titles else titles.take(COMPARE_PREVIEW)
@@ -401,11 +398,10 @@ private fun PosterShelf(
     prefix: String
 ) {
     Column {
-        SectionHeader(
+        OverviewHeader(
             title = title,
-            subtitle = pluralStringResourceOrDefault(R.plurals.profile_favorites_count_titles, items.size, items.size.toString()),
-            level = HeaderLevel.Section,
-            padding = PaddingValues(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp)
+            onAction = null,
+            subtitle = pluralStringResourceOrDefault(R.plurals.profile_favorites_count_titles, items.size, items.size.toString())
         )
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),

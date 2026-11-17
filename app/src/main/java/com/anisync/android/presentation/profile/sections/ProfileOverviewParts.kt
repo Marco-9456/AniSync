@@ -34,14 +34,13 @@ import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.HeaderLevel
 import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.profile.components.ActivityUpdateRow
+import com.anisync.android.presentation.profile.components.progressText
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
-import com.anisync.android.util.getTitle
-import java.time.Instant
-import java.time.ZoneId
-import java.time.ZoneOffset
 import com.anisync.android.ui.theme.ExpressiveShapes
+import com.anisync.android.util.getTitle
+import java.time.ZoneId
 
 private val CoverWidth = 112.dp
 private val CoverHeight = 160.dp
@@ -80,8 +79,8 @@ internal fun WatchingRow(
                     .bouncyClickable(onClick = { onMediaClick(entry.mediaId) }, onClickLabel = entry.getTitle(titleLanguage))
             ) {
                 Cover(entry, CoverWidth, CoverHeight)
-                if ((total ?: 0) > 0) {
-                    FlatProgress(fraction = entry.progress.toFloat() / total!!, modifier = Modifier.padding(top = 6.dp))
+                if (total != null && total > 0) {
+                    FlatProgress(fraction = entry.progress.toFloat() / total, modifier = Modifier.padding(top = 6.dp))
                 }
                 Text(
                     text = entry.getTitle(titleLanguage),
@@ -92,7 +91,11 @@ internal fun WatchingRow(
                     modifier = Modifier.padding(top = 6.dp)
                 )
                 Text(
-                    text = progressText(entry.progress, total, manga),
+                    text = if (entry.progress == 0) {
+                        stringResource(R.string.profile_watching_not_started)
+                    } else {
+                        progressText(entry.progress, total, if (manga) MediaType.MANGA else MediaType.ANIME)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -101,13 +104,6 @@ internal fun WatchingRow(
             }
         }
     }
-}
-
-@Composable
-private fun progressText(progress: Int, total: Int?, manga: Boolean): String = when {
-    progress == 0 -> stringResource(R.string.profile_watching_not_started)
-    (total ?: 0) > 0 -> stringResource(if (manga) R.string.profile_chapter_of else R.string.profile_episode_of, progress, total!!)
-    else -> stringResource(if (manga) R.string.profile_chapter else R.string.profile_episode, progress)
 }
 
 @Composable
@@ -214,9 +210,7 @@ internal fun FavouritePosterRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 6.dp)
                 )
-                val year = entry.mediaStartDate?.let { Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).year }
-                val format = entry.format?.toLabel()
-                val detail = listOfNotNull(format, year?.toString()).joinToString(" · ")
+                val detail = listOfNotNull(entry.format?.toLabel(), entry.releaseYear?.toString()).joinToString(" · ")
                 if (detail.isNotEmpty()) {
                     Text(
                         text = detail,
