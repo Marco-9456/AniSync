@@ -918,8 +918,8 @@
     <string name="widget_time_in_days">Em %1$dd%2$dh</string>
     <string name="widget_time_in_hours">Em %1$dh%2$dmin</string>
     <string name="widget_time_in_minutes">Em %1$d min</string>
-    <string name="widget_time_short_days">%1$d d</string>
-    <string name="widget_time_short_hours">%1$d h</string>
+    <string name="widget_time_short_days">%1$dd</string>
+    <string name="widget_time_short_hours">%1$dh</string>
     <string name="widget_time_short_minutes">%1$d min</string>
     <string name="widget_up_next_empty_title">Nada de novo por aqui</string>
     <string name="widget_up_next_empty_body">Nada da sua lista de próximos lançamentos</string>
@@ -1260,7 +1260,7 @@
     <string name="time_ago_just_now">agora</string>
     <string name="time_ago_minutes">%1$d min atrás</string>
     <string name="time_ago_hours">%1$d h atrás</string>
-    <string name="time_ago_days">%1$d d atrás</string>
+    <string name="time_ago_days">%1$dd atrás</string>
     <string name="time_ago_weeks">%1$d sem. atrás</string>
     <string name="time_ago_months">%1$d mes. atrás</string>
     <string name="time_ago_years">%1$d a. atrás</string>
@@ -1972,7 +1972,7 @@
     <string name="stats_read_detail_own">Equivale a %1$s capítulos por dia desde que você entrou no AniList em %2$s.</string>
     <string name="stats_read_detail_other">Equivale a %1$s capítulos por dia desde que o usuário entrou no AniList em %2$s.</string>
     <string name="stats_per_day_hm">%1$dh%2$dmin</string>
-    <string name="stats_per_day_h">%1$d h</string>
+    <string name="stats_per_day_h">%1$dh</string>
     <string name="stats_header_their_lists">Listas do usuário</string>
     <string name="stats_header_formats">Formatos</string>
     <string name="stats_header_episode_length">Tamanho do episódio</string>
