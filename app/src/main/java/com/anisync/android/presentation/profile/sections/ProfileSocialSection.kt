@@ -103,11 +103,26 @@ fun LazyListScope.profileSocialTab(
         ProfileSocialTab.FORUM_COMMENTS -> uiState.commentsHasNextPage
     }
 
-    val isOwn = uiState.viewerOwnsProfile
     when (selectedTab) {
-        ProfileSocialTab.FOLLOWING -> renderSocialUsers(uiState.socialFollowing, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore, userColumns, uiState.viewerId, onToggleFollow, ownerName = uiState.profile?.name.orEmpty(), isOwn = isOwn)
-        ProfileSocialTab.FOLLOWERS -> renderSocialUsers(uiState.socialFollowers, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore, userColumns, uiState.viewerId, onToggleFollow, onRemoveFollower, ownerName = uiState.profile?.name.orEmpty(), isOwn = isOwn)
-        ProfileSocialTab.MUTUALS -> renderSocialUsers(uiState.socialMutuals, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore, userColumns, uiState.viewerId, onToggleFollow, ownerName = uiState.profile?.name.orEmpty(), isOwn = isOwn)
+        ProfileSocialTab.FOLLOWING, ProfileSocialTab.FOLLOWERS, ProfileSocialTab.MUTUALS -> renderSocialUsers(
+            users = when (selectedTab) {
+                ProfileSocialTab.FOLLOWERS -> uiState.socialFollowers
+                ProfileSocialTab.MUTUALS -> uiState.socialMutuals
+                else -> uiState.socialFollowing
+            },
+            selectedTab = selectedTab,
+            modifier = modifier,
+            onUserClick = onUserClick,
+            hasNextPage = hasNextPage,
+            isPaginating = isPaginating,
+            onLoadMore = onLoadMore,
+            userColumns = userColumns,
+            viewerId = uiState.viewerId,
+            onToggleFollow = onToggleFollow,
+            onRemoveUser = if (selectedTab == ProfileSocialTab.FOLLOWERS) onRemoveFollower else null,
+            ownerName = uiState.profile?.name.orEmpty(),
+            isOwn = uiState.viewerOwnsProfile
+        )
         ProfileSocialTab.FORUM_THREADS -> {
             if (uiState.socialThreads.isEmpty()) {
                 item(key = "social_threads_empty") {
@@ -244,7 +259,8 @@ private fun LazyListScope.renderSocialUsers(
         }
     } else {
         // Rows are wide, so a wide pane fits two side by side at most.
-        val rowItems = users.chunked((userColumns / 3).coerceIn(1, 2))
+        val columns = (userColumns / 3).coerceIn(1, 2)
+        val rowItems = users.chunked(columns)
         item(key = "social_top_spacer") { Spacer(modifier = Modifier.height(4.dp)) }
 
         itemsIndexed(
@@ -271,7 +287,7 @@ private fun LazyListScope.renderSocialUsers(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                repeat((userColumns / 3).coerceIn(1, 2) - row.size) {
+                repeat(columns - row.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }

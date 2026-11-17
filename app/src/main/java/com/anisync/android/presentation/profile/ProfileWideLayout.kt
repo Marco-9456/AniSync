@@ -596,32 +596,35 @@ private fun ProfileTabPane(
         val comparison = rememberListComparison(uiState, isOwnProfile)
         val overviewColumns = maxWidth >= OverviewColumnsMinWidth
         val bottomPadding = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
-        val content: LazyListScope.() -> Unit = {
-            profileSelectedTabContent(
-                profile = profile,
-                uiState = uiState,
-                isOwnProfile = isOwnProfile,
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-                onAction = onAction,
-                onMediaClick = onMediaClick,
-                onCharacterClick = onCharacterClick,
-                onStaffClick = onStaffClick,
-                onVoiceActorClick = onVoiceActorClick,
-                onStudioClick = onStudioClick,
-                onUserClick = onUserClick,
-                onThreadClick = onThreadClick,
-                onCommentClick = onCommentClick,
-                onActivityClick = onActivityClick,
-                onLastReplyClick = onLastReplyClick,
-                portraitColumns = portraitColumns,
-                studioColumns = studioColumns,
-                statsColumns = statsColumns,
-                onOpenRecap = onOpenRecap,
-                comparison = comparison,
-                overviewColumns = overviewColumns
-            )
-        }
+        fun LazyListScope.tabContent(
+            gridColumns: Int = studioColumns,
+            rowColumns: Int = statsColumns,
+            twoColumnOverview: Boolean = overviewColumns
+        ) = profileSelectedTabContent(
+            profile = profile,
+            uiState = uiState,
+            isOwnProfile = isOwnProfile,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            onAction = onAction,
+            onMediaClick = onMediaClick,
+            onCharacterClick = onCharacterClick,
+            onStaffClick = onStaffClick,
+            onVoiceActorClick = onVoiceActorClick,
+            onStudioClick = onStudioClick,
+            onUserClick = onUserClick,
+            onThreadClick = onThreadClick,
+            onCommentClick = onCommentClick,
+            onActivityClick = onActivityClick,
+            onLastReplyClick = onLastReplyClick,
+            portraitColumns = portraitColumns,
+            studioColumns = gridColumns,
+            statsColumns = rowColumns,
+            onOpenRecap = onOpenRecap,
+            comparison = comparison,
+            overviewColumns = twoColumnOverview
+        )
+        val content: LazyListScope.() -> Unit = { tabContent() }
         if (uiState.selectedTab.isPage) {
             ProfilePage(
                 uiState = uiState,
@@ -638,32 +641,8 @@ private fun ProfileTabPane(
                 listState = listState,
                 bottomPadding = bottomPadding,
                 onAction = onAction,
-                rowsContent = { gridColumns ->
-                    profileSelectedTabContent(
-                        profile = profile,
-                        uiState = uiState,
-                        isOwnProfile = isOwnProfile,
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        onAction = onAction,
-                        onMediaClick = onMediaClick,
-                        onCharacterClick = onCharacterClick,
-                        onStaffClick = onStaffClick,
-                        onVoiceActorClick = onVoiceActorClick,
-                        onStudioClick = onStudioClick,
-                        onUserClick = onUserClick,
-                        onThreadClick = onThreadClick,
-                        onCommentClick = onCommentClick,
-                        onActivityClick = onActivityClick,
-                        onLastReplyClick = onLastReplyClick,
-                        portraitColumns = portraitColumns,
-                        studioColumns = gridColumns,
-                        // One row of titles beside the panel, as in T2.
-                        statsColumns = 1,
-                        onOpenRecap = onOpenRecap,
-                        comparison = comparison
-                    )
-                }
+                // One row of titles beside the panel, as in T2.
+                rowsContent = { gridColumns -> tabContent(gridColumns, rowColumns = 1, twoColumnOverview = false) }
             )
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
