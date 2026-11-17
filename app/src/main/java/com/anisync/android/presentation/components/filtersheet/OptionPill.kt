@@ -110,7 +110,7 @@ fun OptionPill(
     }
 }
 
-/** [options] as [OptionPill]s two to a row, a lone last option keeping half the width. */
+/** [options] as [OptionPill]s [columns] to a row, a short last row keeping each pill's width. */
 @Composable
 fun <T> OptionPillGrid(
     options: List<T>,
@@ -121,13 +121,14 @@ fun <T> OptionPillGrid(
     horizontalPadding: Dp = 16.dp,
     idleColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     role: Role = Role.RadioButton,
-    count: (T) -> String? = { null }
+    count: (T) -> String? = { null },
+    columns: Int = 2
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        options.chunked(2).forEach { pair ->
+        options.chunked(columns).forEach { pair ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -145,7 +146,7 @@ fun <T> OptionPillGrid(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                if (pair.size == 1) Spacer(Modifier.weight(1f))
+                repeat(columns - pair.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
