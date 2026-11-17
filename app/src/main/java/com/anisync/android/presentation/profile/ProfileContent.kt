@@ -64,6 +64,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.data.WhatsNewItem
@@ -76,6 +77,7 @@ import com.anisync.android.presentation.components.TabRequestEffect
 import com.anisync.android.presentation.components.shareFabBottomInset
 import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.AppPullToRefreshBox
+import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.LocalPullRefreshOffset
 import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.WhatsNewDot
@@ -372,7 +374,6 @@ fun ProfileContent(
             onStatsViewSelected = onStatsViewSelected,
             onFilterAction = onPageAction,
             onListQueryChange = onListQueryChange,
-            onClosePage = { onAction(ProfileAction.ClosePage) },
             showListSearch = false,
             rails = rails,
             // Only one copy draws the rails, so the two never pull at the same scroll.
@@ -425,41 +426,18 @@ fun ProfileContent(
     }
     if (uiState.selectedTab.isPage) {
         val pageListState = rememberSaveable(uiState.pageListKey(), saver = LazyListState.Saver) { LazyListState() }
-        val pageCollapsed by remember(pageListState) { derivedStateOf { pageListState.canScrollBackward } }
         val whatsNewStore = LocalWhatsNew.current
         LaunchedEffect(uiState.selectedTab) {
             if (uiState.selectedTab == ProfileTab.COMPARE) whatsNewStore.markSeen(WhatsNewItem.PROFILE_COMPARE)
         }
         Box(modifier = modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Surface(color = MaterialTheme.colorScheme.background) {
-                    Box(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-                        ProfileTabStrip(
-                            uiState = uiState,
-                            onTabSelected = onTabSelected,
-                            onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
-                            onStatsViewSelected = onStatsViewSelected,
-                            onFilterAction = onAction,
-                            onListQueryChange = onListQueryChange,
-                            onClosePage = { onAction(ProfileAction.ClosePage) },
-                            pageCollapsed = pageCollapsed
-                        )
-                    }
-                }
-                AppPullToRefreshBox(
-                    isRefreshing = uiState.isRefreshing,
-                    onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    LazyColumn(
-                        state = pageListState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = bottomPadding)
-                    ) {
-                        tabContent()
-                    }
-                }
-            }
+            ProfilePage(
+                uiState = uiState,
+                listState = pageListState,
+                bottomPadding = bottomPadding,
+                onAction = onAction,
+                content = tabContent
+            )
             if (showShareFab) ProfileShareFab(uiState, onShareStats = shareStats, onShareFavourites = shareFavourites)
         }
     } else {
@@ -1130,43 +1108,78 @@ private fun pageTitle(uiState: ProfileUiState): String {
     }
 }
 
+/**
+ * People, Favourites and Compare open over the profile on the app's collapsing bar, the one the
+ * Discover sections and the media grids use, with the page's rail pinned under it.
+ */
 @Composable
-private fun ProfilePageBar(title: String, onBack: () -> Unit, collapsed: Boolean) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .height(64.dp)
-                .padding(start = 4.dp)
+internal fun ProfilePage(
+    uiState: ProfileUiState,
+    listState: LazyListState,
+    bottomPadding: Dp,
+    onAction: (ProfileAction) -> Unit,
+    modifier: Modifier = Modifier,
+    /** Zero in the wide pane, which already sits below the status bar. */
+    topInset: Dp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
+    content: LazyListScope.() -> Unit
+) {
+    CollapsingTopBarScaffold(
+        title = pageTitle(uiState),
+        onBackClick = { onAction(ProfileAction.ClosePage) },
+        modifier = modifier,
+        scrollableState = listState,
+        scrolledContainerColor = MaterialTheme.colorScheme.background,
+        topInset = topInset,
+        belowBar = { ProfilePageRail(uiState = uiState, onFilterAction = onAction) }
+    ) { topContentPadding ->
+        AppPullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
+            modifier = Modifier.fillMaxSize(),
+            topInset = topContentPadding
         ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-            }
-            AnimatedVisibility(visible = collapsed, enter = fadeIn(), exit = fadeOut()) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 8.dp, end = 16.dp)
-                )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(top = topContentPadding, bottom = bottomPadding)
+            ) {
+                content()
             }
         }
-        AnimatedVisibility(
-            visible = !collapsed,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineLarge.emphasis(),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 36.dp, bottom = 12.dp)
+    }
+}
+
+/** A page's own rail: which favourites, which people, or which list is compared. */
+@Composable
+private fun ProfilePageRail(uiState: ProfileUiState, onFilterAction: (ProfileAction) -> Unit) {
+    when (uiState.selectedTab) {
+        ProfileTab.FAVORITES -> {
+            val profile = uiState.profile
+            val own = uiState.viewerId != null && uiState.viewerId == profile?.id
+            FavoritesFilterRail(
+                selected = uiState.selectedFavoritesFilter,
+                count = when (uiState.selectedFavoritesFilter) {
+                    ProfileFavoritesFilter.ANIME -> profile?.favoriteAnime?.size
+                    ProfileFavoritesFilter.MANGA -> profile?.favoriteMangaOverview?.size
+                    ProfileFavoritesFilter.CHARACTERS -> profile?.favoriteCharactersOverview?.size
+                    ProfileFavoritesFilter.STAFF -> profile?.favoriteStaffOverview?.size
+                    ProfileFavoritesFilter.STUDIOS -> profile?.favoriteStudiosOverview?.size
+                } ?: 0,
+                ownerName = if (own) null else profile?.name,
+                onSelect = { onFilterAction(ProfileAction.SelectFavoritesFilter(it)) }
             )
         }
+        ProfileTab.SOCIAL -> PeopleSwitcher(
+            uiState = uiState,
+            onSelect = { onFilterAction(ProfileAction.SelectSocialTab(it)) },
+            onOrderSelected = { onFilterAction(ProfileAction.SelectPeopleOrder(it)) }
+        )
+        ProfileTab.COMPARE -> MediaTypeToggle(
+            selected = uiState.compareType,
+            onSelect = { onFilterAction(ProfileAction.SelectCompareType(it)) },
+            modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 8.dp)
+        )
+        else -> Unit
     }
 }
 
@@ -1180,8 +1193,6 @@ internal fun ProfileTabStrip(
     onFilterAction: (ProfileAction) -> Unit,
     modifier: Modifier = Modifier,
     onListQueryChange: (String) -> Unit = { onFilterAction(ProfileAction.SetListQuery(it)) },
-    onClosePage: () -> Unit = { onFilterAction(ProfileAction.ClosePage) },
-    pageCollapsed: Boolean = false,
     onListBack: (() -> Unit)? = null,
     /** The phone draws the list's search in the docked bar instead, above this strip. */
     showListSearch: Boolean = true,
@@ -1203,15 +1214,11 @@ internal fun ProfileTabStrip(
                 onBack = onListBack
             )
         }
-        if (uiState.selectedTab.isPage) {
-            ProfilePageBar(title = pageTitle(uiState), onBack = onClosePage, collapsed = pageCollapsed)
-        } else {
-            ProfileTabsButtonGroup(
-                selectedTab = uiState.selectedTab,
-                lastListTab = uiState.lastListTab,
-                onTabSelected = onTabSelected
-            )
-        }
+        ProfileTabsButtonGroup(
+            selectedTab = uiState.selectedTab,
+            lastListTab = uiState.lastListTab,
+            onTabSelected = onTabSelected
+        )
         val railTab = uiState.selectedTab == ProfileTab.STATS || uiState.selectedTab == ProfileTab.ACTIVITY || onLists
         if (railPlaceholder && railTab) {
             ProfileRailPlaceholder()
@@ -1257,33 +1264,7 @@ internal fun ProfileTabStrip(
                     scroll = railScrolls.scroll(if (manga) "lists_manga" else "lists_anime")
                 )
             }
-            ProfileTab.FAVORITES -> {
-                val profile = uiState.profile
-                val own = uiState.viewerId != null && uiState.viewerId == profile?.id
-                FavoritesFilterRail(
-                    selected = uiState.selectedFavoritesFilter,
-                    count = when (uiState.selectedFavoritesFilter) {
-                        ProfileFavoritesFilter.ANIME -> profile?.favoriteAnime?.size
-                        ProfileFavoritesFilter.MANGA -> profile?.favoriteMangaOverview?.size
-                        ProfileFavoritesFilter.CHARACTERS -> profile?.favoriteCharactersOverview?.size
-                        ProfileFavoritesFilter.STAFF -> profile?.favoriteStaffOverview?.size
-                        ProfileFavoritesFilter.STUDIOS -> profile?.favoriteStudiosOverview?.size
-                    } ?: 0,
-                    ownerName = if (own) null else profile?.name,
-                    onSelect = { onFilterAction(ProfileAction.SelectFavoritesFilter(it)) }
-                )
-            }
-            ProfileTab.SOCIAL -> PeopleSwitcher(
-                uiState = uiState,
-                onSelect = { onFilterAction(ProfileAction.SelectSocialTab(it)) },
-                onOrderSelected = { onFilterAction(ProfileAction.SelectPeopleOrder(it)) }
-            )
-            ProfileTab.COMPARE -> MediaTypeToggle(
-                selected = uiState.compareType,
-                onSelect = { onFilterAction(ProfileAction.SelectCompareType(it)) },
-                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
-            )
-            ProfileTab.OVERVIEW -> Unit
+            else -> Unit
         }
     }
 }

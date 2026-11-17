@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -823,56 +824,64 @@ private fun ProfileTabPane(
         val showShareFab = uiState.showsShareFab(profile)
         val comparison = rememberListComparison(uiState, isOwnProfile)
         val overviewColumns = maxWidth >= OverviewColumnsMinWidth
-        Column(modifier = Modifier.fillMaxSize()) {
-            val pageCollapsed by remember(listState) {
-                derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0 }
-            }
-            ProfileTabStrip(
+        val bottomPadding = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
+        val content: LazyListScope.() -> Unit = {
+            profileSelectedTabContent(
+                profile = profile,
                 uiState = uiState,
-                onTabSelected = { onAction(ProfileAction.SelectTab(it)) },
-                onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
-                onStatsViewSelected = { onAction(ProfileAction.SelectStatsView(it)) },
-                onFilterAction = onAction,
-                modifier = Modifier.fillMaxWidth(),
-                pageCollapsed = pageCollapsed
+                isOwnProfile = isOwnProfile,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                onAction = onAction,
+                onMediaClick = onMediaClick,
+                onCharacterClick = onCharacterClick,
+                onStaffClick = onStaffClick,
+                onVoiceActorClick = onVoiceActorClick,
+                onStudioClick = onStudioClick,
+                onUserClick = onUserClick,
+                onThreadClick = onThreadClick,
+                onCommentClick = onCommentClick,
+                onActivityClick = onActivityClick,
+                onLastReplyClick = onLastReplyClick,
+                portraitColumns = portraitColumns,
+                studioColumns = studioColumns,
+                statsColumns = statsColumns,
+                onOpenRecap = onOpenRecap,
+                comparison = comparison,
+                overviewColumns = overviewColumns
             )
-
-            AppPullToRefreshBox(
-                isRefreshing = uiState.isRefreshing,
-                onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
-                modifier = Modifier.fillMaxSize()
-            ) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        bottom = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
-                    )
+        }
+        if (uiState.selectedTab.isPage) {
+            ProfilePage(
+                uiState = uiState,
+                listState = listState,
+                bottomPadding = bottomPadding,
+                onAction = onAction,
+                topInset = 0.dp,
+                content = content
+            )
+        } else {
+            Column(modifier = Modifier.fillMaxSize()) {
+                ProfileTabStrip(
+                    uiState = uiState,
+                    onTabSelected = { onAction(ProfileAction.SelectTab(it)) },
+                    onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
+                    onStatsViewSelected = { onAction(ProfileAction.SelectStatsView(it)) },
+                    onFilterAction = onAction,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                AppPullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
+                    onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    profileSelectedTabContent(
-                        profile = profile,
-                        uiState = uiState,
-                        isOwnProfile = isOwnProfile,
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        onAction = onAction,
-                        onMediaClick = onMediaClick,
-                        onCharacterClick = onCharacterClick,
-                        onStaffClick = onStaffClick,
-                        onVoiceActorClick = onVoiceActorClick,
-                        onStudioClick = onStudioClick,
-                        onUserClick = onUserClick,
-                        onThreadClick = onThreadClick,
-                        onCommentClick = onCommentClick,
-                        onActivityClick = onActivityClick,
-                        onLastReplyClick = onLastReplyClick,
-                        portraitColumns = portraitColumns,
-                        studioColumns = studioColumns,
-                        statsColumns = statsColumns,
-                        onOpenRecap = onOpenRecap,
-                        comparison = comparison,
-                        overviewColumns = overviewColumns
-                    )
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = bottomPadding)
+                    ) {
+                        content()
+                    }
                 }
             }
         }
