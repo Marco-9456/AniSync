@@ -183,6 +183,7 @@ class ProfileViewModel @Inject constructor(
         val peopleFetched: Map<PeopleList, Map<PeopleSort, List<PersonStat>>> = emptyMap(),
         val isEditProfileDialogVisible: Boolean = false,
         val isBiographySheetVisible: Boolean = false,
+        val ownActivitiesFailed: Boolean = false,
         val selectedReview: com.anisync.android.domain.MediaReview? = null,
         val isMessageComposerVisible: Boolean = false,
         val isSendingMessage: Boolean = false,
@@ -697,6 +698,7 @@ class ProfileViewModel @Inject constructor(
             peopleFetched = local.peopleFetched,
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
             isBiographySheetVisible = local.isBiographySheetVisible,
+            isActivityFailed = local.ownActivitiesFailed || withFavorites.profile?.activitiesFailed == true,
             selectedReview = local.selectedReview,
             isMessageComposerVisible = local.isMessageComposerVisible,
             isSendingMessage = local.isSendingMessage,
@@ -1355,7 +1357,10 @@ class ProfileViewModel @Inject constructor(
     ): com.anisync.android.domain.ProfileRefreshTimings? {
         ownProfileError.value = null
         return when (val result = profileRepository.refreshProfileTimed("", forceNetwork = forceNetwork)) {
-            is Result.Success -> result.data
+            is Result.Success -> {
+                localState.update { it.copy(ownActivitiesFailed = result.data.activitiesFailed) }
+                result.data
+            }
             is Result.Error -> {
                 Log.w("AniSyncPerf", "profile.load failed code=${result.code} msg=${result.message}")
                 // A rate limit is not an error screen. The block ends by itself, RateLimitNotice

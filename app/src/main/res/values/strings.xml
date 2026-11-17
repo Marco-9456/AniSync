@@ -1445,6 +1445,8 @@
     <string name="profile_list_score_and_up">%1$s and up</string>
     <string name="profile_list_nothing_matches">Nothing matches</string>
     <string name="profile_list_nothing_matches_body">No title on this list fits the search and filters.</string>
+    <string name="profile_activity_failed">Activity did not load</string>
+    <string name="profile_activity_failed_body">AniList had a problem answering. Your lists and stats still work, only this tab is missing.</string>
     <string name="profile_list_failed">The list did not load</string>
     <string name="profile_list_failed_body">AniList did not send it. Try again in a moment.</string>
     <string name="profile_list_empty_other">%1$s has nothing in %2$s.</string>

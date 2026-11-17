@@ -809,7 +809,9 @@ internal fun LazyListScope.profileSelectedTabContent(
                     { onAction(ProfileAction.SetStatusComposerVisible(true)) }
                 } else {
                     null
-                }
+                },
+                loadFailed = uiState.isActivityFailed,
+                onRetry = { onAction(ProfileAction.Refresh()) }
             )
         }
 

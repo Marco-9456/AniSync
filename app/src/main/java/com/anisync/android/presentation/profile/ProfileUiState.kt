@@ -133,6 +133,8 @@ data class ProfileUiState(
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
     val isAnimeListFailed: Boolean = false,
     val isMangaListFailed: Boolean = false,
+    /** The activities did not load, and nothing saved stands in for them. */
+    val isActivityFailed: Boolean = false,
     /** The viewer's recaps for Statistics, empty on anyone else's profile. */
     val recaps: com.anisync.android.presentation.recap.RecapsUiModel = com.anisync.android.presentation.recap.RecapsUiModel()
 )

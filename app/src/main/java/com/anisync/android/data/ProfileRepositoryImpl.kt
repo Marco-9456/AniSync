@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import kotlinx.coroutines.CancellationException
 import com.anisync.android.RemoveFollowerMutation
 import com.anisync.android.data.util.InflightTracker
 import com.anisync.android.GetFullUserProfileQuery
@@ -193,6 +194,7 @@ class ProfileRepositoryImpl @Inject constructor(
             val activitiesStart = SystemClock.elapsedRealtime()
             val rawActivities = mutableListOf<com.anisync.android.fragment.ActivityFields>()
             Trace.beginSection("AniSync.Profile.Query.UserActivities")
+            // A failure here costs the Activity tab only, so the profile still loads (X7).
             val activitiesResponse = try {
                 apolloClient.query(
                     GetUserActivitiesQuery(
@@ -202,13 +204,19 @@ class ProfileRepositoryImpl @Inject constructor(
                 )
                     .fetchPolicy(policy)
                     .execute()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("ProfileRepository", "Activities did not load", e)
+                null
             } finally {
                 Trace.endSection()
             }
-            activitiesResponse.data?.allActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-            activitiesResponse.data?.textActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-            activitiesResponse.data?.messageReceived?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-            activitiesResponse.data?.messageSent?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            val activitiesFailed = activitiesResponse?.data == null
+            activitiesResponse?.data?.allActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            activitiesResponse?.data?.textActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            activitiesResponse?.data?.messageReceived?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            activitiesResponse?.data?.messageSent?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
             val activitiesMs = SystemClock.elapsedRealtime() - activitiesStart
 
             val activities = rawActivities
@@ -346,7 +354,8 @@ class ProfileRepositoryImpl @Inject constructor(
                             com.anisync.android.domain.PreviousName(it, previous.createdAt?.toLong()?.times(1000))
                         }
                     }
-                    .orEmpty()
+                    .orEmpty(),
+                activitiesFailed = activitiesFailed
             )
 
             val timings = ProfileRefreshTimings(
@@ -357,7 +366,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 favoritesTotalMs = 0L,
                 favoritesFirstPageMs = 0L,
                 favoritesRestMs = 0L,
-                favoritesPageCount = 1
+                favoritesPageCount = 1,
+                activitiesFailed = activitiesFailed
             )
             profile to timings
         }
@@ -376,7 +386,14 @@ class ProfileRepositoryImpl @Inject constructor(
     ): Result<ProfileRefreshTimings> {
         return when (val result = fetchUserProfileTimed(username, forceNetwork)) {
             is Result.Success -> {
-                userProfileDao.insert(result.data.first.toEntity())
+                val profile = result.data.first
+                // Activities that did not load would otherwise replace the saved ones with nothing.
+                val kept = if (profile.activitiesFailed) {
+                    userProfileDao.get(profile.id)?.let { profile.copy(activities = it.activities) } ?: profile
+                } else {
+                    profile
+                }
+                userProfileDao.insert(kept.toEntity())
                 Result.Success(result.data.second)
             }
             is Result.Error -> result

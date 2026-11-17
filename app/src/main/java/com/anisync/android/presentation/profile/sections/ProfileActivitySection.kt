@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.automirrored.filled.PlaylistAddCheck
@@ -90,7 +92,9 @@ fun LazyListScope.profileActivityTab(
     isActivitiesPaginating: Boolean = false,
     onLoadMore: () -> Unit = {},
     modifier: Modifier = Modifier,
-    onCompose: (() -> Unit)? = null
+    onCompose: (() -> Unit)? = null,
+    loadFailed: Boolean = false,
+    onRetry: () -> Unit = {}
 ) {
     if (onCompose != null && (selectedFilter == ProfileActivityFilter.ALL || selectedFilter == ProfileActivityFilter.STATUS)) {
         item(key = "activity_composer", contentType = "activity_composer") {
@@ -105,7 +109,19 @@ fun LazyListScope.profileActivityTab(
         ProfileActivityFilter.REVIEWS, ProfileActivityFilter.THREADS, ProfileActivityFilter.COMMENTS -> emptyList()
     }
 
-    if (filteredActivities.isEmpty() && onCompose != null && selectedFilter == ProfileActivityFilter.STATUS) {
+    if (loadFailed && profile.activities.isEmpty()) {
+        item(key = "activity_failed", contentType = "empty") {
+            EmptyState(
+                icon = Icons.Outlined.ErrorOutline,
+                title = stringResource(R.string.profile_activity_failed),
+                description = stringResource(R.string.profile_activity_failed_body),
+                actionLabel = stringResource(R.string.profile_try_again),
+                actionIcon = Icons.Default.Refresh,
+                onAction = onRetry,
+                modifier = Modifier.height(360.dp)
+            )
+        }
+    } else if (filteredActivities.isEmpty() && onCompose != null && selectedFilter == ProfileActivityFilter.STATUS) {
         item(key = "activity_empty", contentType = "empty") {
             EmptyState(
                 icon = Icons.AutoMirrored.Filled.Chat,

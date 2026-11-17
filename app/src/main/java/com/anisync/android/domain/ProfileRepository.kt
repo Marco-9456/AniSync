@@ -13,7 +13,9 @@ data class ProfileRefreshTimings(
     val favoritesTotalMs: Long,
     val favoritesFirstPageMs: Long,
     val favoritesRestMs: Long,
-    val favoritesPageCount: Int
+    val favoritesPageCount: Int,
+    /** The follow-up activities request failed, so the profile kept the activities it had. */
+    val activitiesFailed: Boolean = false
 )
 
 /**

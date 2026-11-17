@@ -48,8 +48,9 @@ class ProfileRails {
 internal fun RevealSelectedChip(scroll: RailScroll, selected: Any, index: Int) {
     LaunchedEffect(scroll, selected) {
         if (scroll.revealed == selected) return@LaunchedEffect
-        scroll.revealed = selected
         if (index >= 0) scroll.state.revealChip(index)
+        // Marked only once it has finished, so a copy swapped out mid way leaves it to the next.
+        scroll.revealed = selected
     }
 }
 
