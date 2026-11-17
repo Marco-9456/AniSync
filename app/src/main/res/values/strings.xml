@@ -1468,7 +1468,6 @@
     <string name="profile_favorites_title_own">Your favorites</string>
     <string name="profile_favorites_order">in %1$s\'s order</string>
     <string name="profile_favorites_order_own">in your order</string>
-    <string name="profile_about">About</string>
     <string name="profile_about_title">About %1$s</string>
     <string name="profile_about_title_own">About you</string>
     <string name="profile_about_empty">Nothing written here yet</string>

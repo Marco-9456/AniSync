@@ -48,6 +48,7 @@ import com.anisync.android.presentation.profile.components.ProfileTabRail
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.util.getTitle
 import java.text.NumberFormat
+import com.anisync.android.ui.theme.ExpressiveShapes
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 fun LazyListScope.profileFavoritesTab(
@@ -253,7 +254,7 @@ private fun FavoritePortrait(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(12.dp)
+    val shape = ExpressiveShapes.mediaCover
     Column(
         modifier = modifier
             .clip(shape)

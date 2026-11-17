@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -61,12 +60,15 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
-fun LazyListScope.profileAboutPage(
+/** B1's About, the bio in full with the names and details AniList keeps beside it. */
+@Composable
+fun ProfileAboutContent(
     profile: UserProfile,
     isOwnProfile: Boolean,
-    onEditAbout: () -> Unit
+    onEditAbout: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    item(key = "about_bio", contentType = "about_bio") {
+    Column(modifier = modifier.fillMaxWidth()) {
         if (profile.about.isNullOrBlank()) {
             EmptyState(
                 icon = Icons.Default.Person,
@@ -75,7 +77,7 @@ fun LazyListScope.profileAboutPage(
                 actionLabel = if (isOwnProfile) stringResource(R.string.profile_about_write) else null,
                 actionIcon = if (isOwnProfile) Icons.Default.Edit else null,
                 onAction = if (isOwnProfile) onEditAbout else null,
-                modifier = Modifier.height(360.dp)
+                modifier = Modifier.height(320.dp)
             )
         } else {
             AsyncRichTextRenderer(
@@ -85,13 +87,7 @@ fun LazyListScope.profileAboutPage(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
         }
-    }
-    if (profile.previousNames.isNotEmpty()) {
-        item(key = "about_previous_names", contentType = "about_section") {
-            PreviousNames(profile)
-        }
-    }
-    item(key = "about_details", contentType = "about_section") {
+        if (profile.previousNames.isNotEmpty()) PreviousNames(profile)
         AboutDetails(profile)
     }
 }

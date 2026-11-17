@@ -56,6 +56,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -74,13 +75,15 @@ import com.anisync.android.presentation.components.TabRequestEffect
 import com.anisync.android.presentation.components.shareFabBottomInset
 import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.AppPullToRefreshBox
+import com.anisync.android.presentation.components.LocalPullRefreshOffset
 import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.WhatsNewDot
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.details.components.ReviewDetailsSheet
 import com.anisync.android.presentation.profile.components.DirectMessageInputSheet
-import com.anisync.android.presentation.profile.components.ProfileBioSheet
+import com.anisync.android.presentation.profile.components.ProfileAboutSheet
+import com.anisync.android.presentation.profile.components.ProfileBackdrop
 import com.anisync.android.presentation.profile.components.ProfileAccounts
 import com.anisync.android.presentation.profile.components.ProfileOwnDockedBar
 import com.anisync.android.presentation.profile.components.ProfileRailPlaceholder
@@ -93,7 +96,6 @@ import com.anisync.android.presentation.profile.sections.OverviewCompareCard
 import com.anisync.android.presentation.profile.sections.OverviewCompareCardLoading
 import com.anisync.android.presentation.profile.sections.PeopleSwitcher
 import com.anisync.android.presentation.profile.sections.StatusComposerCard
-import com.anisync.android.presentation.profile.sections.profileAboutPage
 import com.anisync.android.presentation.profile.sections.profileComparePage
 import com.anisync.android.presentation.profile.sections.rememberListComparison
 import com.anisync.android.presentation.share.cards.fitted
@@ -464,7 +466,18 @@ fun ProfileContent(
         modifier = Modifier
             .fillMaxSize()
             .onGloballyPositioned { contentTopWindow = it.boundsInWindow().top },
-        topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
+        topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding(),
+        // The list only pulls from its top, where the header's banner sits exactly over this one.
+        backdrop = {
+            val pullOffset = LocalPullRefreshOffset.current
+            ProfileBackdrop(
+                profile = profile,
+                isOwnProfile = isOwnProfile,
+                onSettingsClick = onSettingsClick,
+                onBackClick = onBackClick,
+                modifier = Modifier.graphicsLayer { alpha = if (pullOffset() > 0f) 1f else 0f }
+            )
+        }
     ) {
     LazyColumn(
         state = listState,
@@ -480,7 +493,7 @@ fun ProfileContent(
                     onAction(ProfileAction.SetEditProfileDialogVisible(true))
                 },
                 onShowBiography = {
-                    onAction(ProfileAction.SelectTab(ProfileTab.ABOUT))
+                    onAction(ProfileAction.SetBiographySheetVisible(true))
                 },
                 isFollowing = uiState.isFollowingUser,
                 isFollowerOfViewer = uiState.isFollowerOfViewer,
@@ -489,8 +502,6 @@ fun ProfileContent(
                 onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
                 onNotificationsClick = onNotificationsClick,
                 unreadNotificationCount = unreadNotificationCount,
-                topActionIcon = Icons.Default.Settings,
-                onTopActionClick = onSettingsClick,
                 accounts = accounts,
                 onBackClick = onBackClick,
                 followingTotal = uiState.followingTotal,
@@ -585,11 +596,14 @@ fun ProfileContent(
     }
 
     if (uiState.isBiographySheetVisible) {
-        ProfileBioSheet(
-            about = profile.about.orEmpty(),
-            onDismissRequest = {
+        ProfileAboutSheet(
+            profile = profile,
+            isOwnProfile = isOwnProfile,
+            onEditAbout = {
                 onAction(ProfileAction.SetBiographySheetVisible(false))
-            }
+                onAction(ProfileAction.SetEditProfileDialogVisible(true))
+            },
+            onDismissRequest = { onAction(ProfileAction.SetBiographySheetVisible(false)) }
         )
     }
 
@@ -923,12 +937,6 @@ internal fun LazyListScope.profileSelectedTabContent(
             onExpand = { onAction(ProfileAction.ExpandCompareSection(it)) }
         )
 
-        ProfileTab.ABOUT -> profileAboutPage(
-            profile = profile,
-            isOwnProfile = isOwnProfile,
-            onEditAbout = { onAction(ProfileAction.SetEditProfileDialogVisible(true)) }
-        )
-
         ProfileTab.STATS -> {
             item(key = "stats_top_gap") { Spacer(Modifier.height(8.dp)) }
             profileStatsTab(
@@ -1091,8 +1099,6 @@ private fun pageTitle(uiState: ProfileUiState): String {
             if (own) stringResource(R.string.profile_people_title_own) else stringResource(R.string.profile_people_title, name)
         ProfileTab.FAVORITES ->
             if (own) stringResource(R.string.profile_favorites_title_own) else stringResource(R.string.profile_favorites_title, name)
-        ProfileTab.ABOUT ->
-            if (own) stringResource(R.string.profile_about_title_own) else stringResource(R.string.profile_about_title, name)
         ProfileTab.COMPARE -> stringResource(R.string.profile_compare_title, name)
         else -> stringResource(uiState.selectedTab.titleRes)
     }
@@ -1251,7 +1257,7 @@ internal fun ProfileTabStrip(
                 onSelect = { onFilterAction(ProfileAction.SelectCompareType(it)) },
                 modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
             )
-            ProfileTab.OVERVIEW, ProfileTab.ABOUT -> Unit
+            ProfileTab.OVERVIEW -> Unit
         }
     }
 }

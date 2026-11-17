@@ -60,6 +60,7 @@ import com.anisync.android.presentation.profile.lists.ProfileListView
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.presentation.util.toListIcon
 import com.anisync.android.type.MediaType
+import com.anisync.android.ui.theme.ExpressiveShapes
 
 internal enum class ListChip(val status: LibraryStatus?) {
     ALL(null),
@@ -331,7 +332,7 @@ private fun ListRowPlaceholder() {
         Box(
             modifier = Modifier
                 .size(width = 56.dp, height = 80.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(ExpressiveShapes.mediaCover)
                 .background(block)
         )
         Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {

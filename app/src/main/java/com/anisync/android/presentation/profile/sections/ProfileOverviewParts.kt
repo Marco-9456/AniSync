@@ -41,12 +41,13 @@ import com.anisync.android.util.getTitle
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+import com.anisync.android.ui.theme.ExpressiveShapes
 
 private val CoverWidth = 112.dp
 private val CoverHeight = 160.dp
 private val PortraitWidth = 88.dp
 private val PortraitHeight = 124.dp
-private val CoverShape = RoundedCornerShape(12.dp)
+private val CoverShape = ExpressiveShapes.mediaCover
 
 @Composable
 internal fun OverviewHeader(title: String, onAction: (() -> Unit)?, subtitle: String? = null) {

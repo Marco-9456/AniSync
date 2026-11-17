@@ -230,10 +230,9 @@ enum class ProfileTab(@StringRes val titleRes: Int) {
     MANGA(R.string.media_type_manga),
     FAVORITES(R.string.section_favorites),
     SOCIAL(R.string.profile_page_people),
-    ABOUT(R.string.profile_about),
     COMPARE(R.string.profile_compare);
 
-    val isPage: Boolean get() = this == FAVORITES || this == SOCIAL || this == ABOUT || this == COMPARE
+    val isPage: Boolean get() = this == FAVORITES || this == SOCIAL || this == COMPARE
 }
 
 /** The views behind the Statistics rail's chips. Recaps only exists on the viewer's own profile. */

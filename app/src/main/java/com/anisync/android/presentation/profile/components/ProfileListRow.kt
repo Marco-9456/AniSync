@@ -54,6 +54,7 @@ import java.time.Instant
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import com.anisync.android.ui.theme.ExpressiveShapes
 
 /**
  * A title on someone's list: what it is, then their line (status, progress, score, when), then the
@@ -105,7 +106,7 @@ fun ProfileListRow(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(width = 56.dp, height = 80.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(ExpressiveShapes.mediaCover)
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             )
             Column(

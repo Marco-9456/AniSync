@@ -30,13 +30,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
+import com.anisync.android.presentation.components.LocalPullRefreshOffset
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.profile.ProfileTab
@@ -67,8 +69,6 @@ fun ProfileTopSection(
     onMessageClick: () -> Unit = {},
     onNotificationsClick: () -> Unit = {},
     unreadNotificationCount: Int = 0,
-    topActionIcon: ImageVector = Icons.Default.Settings,
-    onTopActionClick: () -> Unit = onSettingsClick,
     accounts: ProfileAccounts? = null,
     onBackClick: (() -> Unit)? = null,
     followingTotal: Int? = null,
@@ -76,59 +76,22 @@ fun ProfileTopSection(
     onPeopleClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val band = profile.bannerUrl == null
-    val headerHeight = if (band) statusBar + 64.dp else maxOf(BannerHeight, statusBar + 120.dp)
+    val headerHeight = profileBackdropHeight(band)
     val avatarTop = if (band) headerHeight + 8.dp else headerHeight - ProfileAvatarHalfSize
     val actionsTop = if (band) headerHeight + 64.dp else headerHeight + 8.dp
     val identityTop = if (band) headerHeight + 116.dp else headerHeight + 60.dp
-    val ownTopBar: @Composable (Boolean) -> Unit = { onBanner ->
-        ProfileOwnTopBar(onBanner = onBanner, onSettingsClick = onSettingsClick)
-    }
+    // A pull carries this copy down with the list, so it steps aside for the one held behind it.
+    val pullOffset = LocalPullRefreshOffset.current
 
     Box(modifier = modifier.fillMaxWidth()) {
-        if (band) {
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(headerHeight)
-            ) {
-                Box(modifier = Modifier.statusBarsPadding()) {
-                    if (isOwnProfile) {
-                        ownTopBar(false)
-                    } else {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(64.dp)
-                                .padding(horizontal = 4.dp)
-                        ) {
-                            if (onBackClick != null) BackTrailButton(onClick = onBackClick)
-                            Spacer(modifier = Modifier.weight(1f))
-                            ProfileMenuButton(
-                                name = profile.name,
-                                colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                    containerColor = Color.Transparent,
-                                    contentColor = MaterialTheme.colorScheme.onSurface
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-        } else {
-            ProfileBannerSurface(
-                profile = profile,
-                isOwnProfile = isOwnProfile,
-                topActionIcon = topActionIcon,
-                onTopActionClick = onTopActionClick,
-                height = headerHeight,
-                onBackClick = onBackClick,
-                ownTopBar = { ownTopBar(true) }
-            )
-        }
+        ProfileBackdrop(
+            profile = profile,
+            isOwnProfile = isOwnProfile,
+            onSettingsClick = onSettingsClick,
+            onBackClick = onBackClick,
+            modifier = Modifier.graphicsLayer { alpha = if (pullOffset() > 0f) 0f else 1f }
+        )
 
         Column(
             modifier = Modifier
@@ -191,6 +154,72 @@ fun ProfileTopSection(
                 .padding(end = 20.dp)
         )
     }
+}
+
+/**
+ * The banner, or the tonal band when there is none, with the controls that sit on it. The list
+ * draws one at the top of the header, and the pull to refresh holds a second one still behind the
+ * list while a pull carries everything from the avatar down.
+ */
+@Composable
+internal fun ProfileBackdrop(
+    profile: UserProfile,
+    isOwnProfile: Boolean,
+    onSettingsClick: () -> Unit,
+    onBackClick: (() -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    val band = profile.bannerUrl == null
+    val height = profileBackdropHeight(band)
+    if (band) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = modifier
+                .fillMaxWidth()
+                .height(height)
+        ) {
+            Box(modifier = Modifier.statusBarsPadding()) {
+                if (isOwnProfile) {
+                    ProfileOwnTopBar(onBanner = false, onSettingsClick = onSettingsClick)
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .padding(horizontal = 4.dp)
+                    ) {
+                        if (onBackClick != null) BackTrailButton(onClick = onBackClick)
+                        Spacer(modifier = Modifier.weight(1f))
+                        ProfileMenuButton(
+                            name = profile.name,
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        ProfileBannerSurface(
+            profile = profile,
+            isOwnProfile = isOwnProfile,
+            topActionIcon = Icons.Default.Settings,
+            onTopActionClick = onSettingsClick,
+            height = height,
+            onBackClick = onBackClick,
+            ownTopBar = { ProfileOwnTopBar(onBanner = true, onSettingsClick = onSettingsClick) },
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun profileBackdropHeight(band: Boolean): Dp {
+    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    return if (band) statusBar + 64.dp else maxOf(BannerHeight, statusBar + 120.dp)
 }
 
 /**
