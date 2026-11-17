@@ -115,7 +115,6 @@ import com.anisync.android.presentation.profile.sections.profileStatsTab
 import com.anisync.android.presentation.profile.lists.ProfileListFilterSheet
 import com.anisync.android.presentation.profile.lists.ProfileListSheet
 import com.anisync.android.presentation.profile.lists.ProfileListSortSheet
-import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.presentation.statistics.StatsRail
 import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.share.studio.ShareStudioSubject
@@ -530,7 +529,7 @@ fun ProfileContent(
         ) {
             Column(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
                 when {
-                    uiState.selectedTab == ProfileTab.ANIME || uiState.selectedTab == ProfileTab.MANGA ->
+                    uiState.selectedTab.isList ->
                         ProfileListSearchBar(
                             uiState = uiState,
                             onQueryChange = onListQueryChange,
@@ -576,7 +575,7 @@ fun ProfileContent(
         )
     }
 
-    val listEntries = if (uiState.selectedTab == ProfileTab.MANGA) uiState.userMangaList else uiState.userAnimeList
+    val listEntries = uiState.selectedListEntries
     val distinctListEntries = remember(listEntries) { listEntries.distinctBy { it.id } }
     when (uiState.listSheet) {
         ProfileListSheet.SORT -> ProfileListSortSheet(
@@ -587,11 +586,10 @@ fun ProfileContent(
         )
         ProfileListSheet.FILTERS -> ProfileListFilterSheet(
             entries = distinctListEntries,
-            status = if (uiState.selectedTab == ProfileTab.MANGA) uiState.selectedMangaStatus else uiState.selectedAnimeStatus,
+            status = uiState.selectedListStatus,
             tools = uiState.listTools,
             viewer = uiState.viewerEntries,
             titleLanguage = uiState.titleLanguage,
-            ownerScoreFormat = distinctListEntries.firstNotNullOfOrNull { it.scoreFormat } ?: ScoreFormat.POINT_100,
             isOwnProfile = isOwnProfile,
             onFiltersChange = { onAction(ProfileAction.SetListFilters(it)) },
             onDismiss = { onAction(ProfileAction.OpenListSheet(ProfileListSheet.NONE)) }
@@ -822,7 +820,7 @@ internal fun LazyListScope.profileSelectedTabContent(
 
         ProfileTab.ANIME, ProfileTab.MANGA -> {
             val manga = uiState.selectedTab == ProfileTab.MANGA
-            val entries = if (manga) uiState.userMangaList else uiState.userAnimeList
+            val entries = uiState.selectedListEntries
             // The rows are worked out off the main thread, so for a moment after the list arrives
             // they still describe the list before it. That moment waits rather than saying "0 titles"
             // or showing the other type's rows. A refresh keeps its old rows meanwhile.
@@ -832,7 +830,7 @@ internal fun LazyListScope.profileSelectedTabContent(
             profileMediaTab(
                 results = uiState.listResults,
                 tools = uiState.listTools,
-                selectedStatus = if (manga) uiState.selectedMangaStatus else uiState.selectedAnimeStatus,
+                selectedStatus = uiState.selectedListStatus,
                 hasEntries = entries.isNotEmpty() && !settling,
                 isLoading = settling || if (manga) uiState.isUserMangaListLoading else uiState.isUserAnimeListLoading,
                 loadFailed = if (manga) uiState.isMangaListFailed else uiState.isAnimeListFailed,
@@ -1083,7 +1081,7 @@ private fun SavedCopyNotice(onRetry: () -> Unit) {
 @Composable
 private fun pageTitle(uiState: ProfileUiState): String {
     val name = uiState.profile?.name.orEmpty()
-    val own = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
+    val own = uiState.viewerOwnsProfile
     return when (uiState.selectedTab) {
         ProfileTab.SOCIAL ->
             if (own) stringResource(R.string.profile_people_title_own) else stringResource(R.string.profile_people_title, name)
@@ -1141,7 +1139,7 @@ private fun ProfilePageRail(uiState: ProfileUiState, onFilterAction: (ProfileAct
     when (uiState.selectedTab) {
         ProfileTab.FAVORITES -> {
             val profile = uiState.profile
-            val own = uiState.viewerId != null && uiState.viewerId == profile?.id
+            val own = uiState.viewerOwnsProfile
             FavoritesFilterRail(
                 selected = uiState.selectedFavoritesFilter,
                 count = when (uiState.selectedFavoritesFilter) {
@@ -1190,7 +1188,7 @@ internal fun ProfileTabStrip(
 ) {
     val railScrolls = rails ?: remember { ProfileRails() }
     Column(modifier = modifier) {
-        val onLists = uiState.selectedTab == ProfileTab.ANIME || uiState.selectedTab == ProfileTab.MANGA
+        val onLists = uiState.selectedTab.isList
         if (onLists && showListSearch) {
             ProfileListSearchBar(
                 uiState = uiState,
@@ -1209,7 +1207,7 @@ internal fun ProfileTabStrip(
             ProfileRailPlaceholder()
         } else when (uiState.selectedTab) {
             ProfileTab.STATS -> {
-                val own = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
+                val own = uiState.viewerOwnsProfile
                 StatsRail(
                     statsType = uiState.selectedStatsType,
                     views = if (own) StatsView.entries else StatsView.entries.filter { it != StatsView.RECAPS },
@@ -1249,11 +1247,7 @@ internal fun ProfileListRail(
     val searching = uiState.listTools.query.isNotBlank()
     MediaStatusRail(
         itemsByStatus = if (manga) uiState.userMangaListByStatus else uiState.userAnimeListByStatus,
-        selectedStatus = when {
-            searching -> uiState.listTools.searchStatus
-            manga -> uiState.selectedMangaStatus
-            else -> uiState.selectedAnimeStatus
-        },
+        selectedStatus = if (searching) uiState.listTools.searchStatus else uiState.selectedListStatus,
         mediaType = if (manga) MediaType.MANGA else MediaType.ANIME,
         onStatusSelected = {
             onFilterAction(
@@ -1279,7 +1273,7 @@ internal fun ProfileListSearchBar(
     onBack: (() -> Unit)?
 ) {
     val manga = uiState.selectedTab == ProfileTab.MANGA
-    val own = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
+    val own = uiState.viewerOwnsProfile
     val name = uiState.profile?.name.orEmpty()
     ProfileListTopBar(
         query = uiState.listTools.query,
@@ -1307,10 +1301,8 @@ private fun ProfileUiState.phonePositionKey(): String = when {
     selectedTab.isPage -> PAGE_KEY_PREFIX + pageListKey()
     selectedTab == ProfileTab.STATS -> "STATS_${selectedStatsType.name}_${selectedStatsView.name}"
     selectedTab == ProfileTab.ACTIVITY -> "ACTIVITY_${selectedActivityFilter.name}"
-    selectedTab == ProfileTab.ANIME || selectedTab == ProfileTab.MANGA -> {
-        val status = if (listTools.query.isNotBlank()) listTools.searchStatus else {
-            if (selectedTab == ProfileTab.MANGA) selectedMangaStatus else selectedAnimeStatus
-        }
+    selectedTab.isList -> {
+        val status = if (listTools.query.isNotBlank()) listTools.searchStatus else selectedListStatus
         "${selectedTab.name}_${status?.name ?: "ALL"}"
     }
     else -> selectedTab.name
@@ -1318,7 +1310,7 @@ private fun ProfileUiState.phonePositionKey(): String = when {
 
 /** A search, sort, filter or view change starts the rows over from the top. */
 private fun ProfileUiState.phoneToolsKey(): Any? =
-    if (selectedTab == ProfileTab.ANIME || selectedTab == ProfileTab.MANGA) listTools.copy(searchStatus = null) else null
+    if (selectedTab.isList) listTools.copy(searchStatus = null) else null
 
 private fun String.isPageKey() = startsWith(PAGE_KEY_PREFIX)
 

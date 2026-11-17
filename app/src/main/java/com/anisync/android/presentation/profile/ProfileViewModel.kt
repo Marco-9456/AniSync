@@ -23,6 +23,8 @@ import com.anisync.android.domain.stats.summarizeScores
 import com.anisync.android.domain.stats.uncountedChanges
 import com.anisync.android.presentation.statistics.bucketActivityDays
 import com.anisync.android.domain.CachePolicy
+import com.anisync.android.domain.FavoriteKind
+import com.anisync.android.domain.FavoriteKindItems
 import com.anisync.android.domain.GenreStat
 import com.anisync.android.domain.PeopleList
 import com.anisync.android.domain.PeopleSort
@@ -72,6 +74,7 @@ import com.anisync.android.presentation.profile.lists.ProfileListSheet
 import com.anisync.android.presentation.profile.lists.ProfileListTools
 import com.anisync.android.presentation.profile.lists.ProfileListView
 import com.anisync.android.presentation.profile.lists.applyListTools
+import com.anisync.android.type.MediaType
 
 private val LIBRARY_STATUS_DISPLAY_ORDER = arrayOf(
     LibraryStatus.CURRENT,
@@ -172,7 +175,7 @@ class ProfileViewModel @Inject constructor(
         val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
         val peopleOrder: PeopleOrder = PeopleOrder.NEWEST,
         val isStatusComposerVisible: Boolean = false,
-        val compareType: com.anisync.android.type.MediaType = com.anisync.android.type.MediaType.ANIME,
+        val compareType: MediaType = MediaType.ANIME,
         val compareExpanded: Set<String> = emptySet(),
         val isPostingStatus: Boolean = false,
         val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
@@ -280,8 +283,8 @@ class ProfileViewModel @Inject constructor(
         val fullAnime: List<LibraryEntry>? = null,
         val isAnimeLoading: Boolean = false,
         val animeFetched: Boolean = false,
-        val kinds: Map<com.anisync.android.domain.FavoriteKind, com.anisync.android.domain.FavoriteKindItems> = emptyMap(),
-        val loadingKinds: Set<com.anisync.android.domain.FavoriteKind> = emptySet()
+        val kinds: Map<FavoriteKind, FavoriteKindItems> = emptyMap(),
+        val loadingKinds: Set<FavoriteKind> = emptySet()
     )
 
     private val favoritesState = MutableStateFlow(FavoritesState())
@@ -488,8 +491,8 @@ class ProfileViewModel @Inject constructor(
                         flowOf(emptyMap())
                     } else {
                         combine(
-                            libraryRepository.observeLibrary(name, com.anisync.android.type.MediaType.ANIME),
-                            libraryRepository.observeLibrary(name, com.anisync.android.type.MediaType.MANGA)
+                            libraryRepository.observeLibrary(name, MediaType.ANIME),
+                            libraryRepository.observeLibrary(name, MediaType.MANGA)
                         ) { anime, manga -> (anime + manga).associateBy { it.mediaId } }
                     }
                 }
@@ -665,10 +668,10 @@ class ProfileViewModel @Inject constructor(
                 visible.copy(
                     profile = p.copy(
                         favoriteAnime = favoritesOverlay.fullAnime ?: p.favoriteAnime,
-                        favoriteMangaOverview = kinds[com.anisync.android.domain.FavoriteKind.MANGA]?.manga ?: p.favoriteMangaOverview,
-                        favoriteCharactersOverview = kinds[com.anisync.android.domain.FavoriteKind.CHARACTERS]?.characters ?: p.favoriteCharactersOverview,
-                        favoriteStaffOverview = kinds[com.anisync.android.domain.FavoriteKind.STAFF]?.staff ?: p.favoriteStaffOverview,
-                        favoriteStudiosOverview = kinds[com.anisync.android.domain.FavoriteKind.STUDIOS]?.studios ?: p.favoriteStudiosOverview
+                        favoriteMangaOverview = kinds[FavoriteKind.MANGA]?.manga ?: p.favoriteMangaOverview,
+                        favoriteCharactersOverview = kinds[FavoriteKind.CHARACTERS]?.characters ?: p.favoriteCharactersOverview,
+                        favoriteStaffOverview = kinds[FavoriteKind.STAFF]?.staff ?: p.favoriteStaffOverview,
+                        favoriteStudiosOverview = kinds[FavoriteKind.STUDIOS]?.studios ?: p.favoriteStudiosOverview
                     )
                 )
             } ?: visible
@@ -858,7 +861,7 @@ class ProfileViewModel @Inject constructor(
                     it.copy(
                         selectedTab = action.tab,
                         pageReturnTab = if (action.tab.isPage && !it.selectedTab.isPage) it.selectedTab else it.pageReturnTab,
-                        lastListTab = if (action.tab == ProfileTab.ANIME || action.tab == ProfileTab.MANGA) action.tab else it.lastListTab,
+                        lastListTab = if (action.tab.isList) action.tab else it.lastListTab,
                         selectedSocialTab = socialTabFor(action.tab, it.selectedActivityFilter, it.selectedSocialTab)
                     )
                 }
@@ -1066,8 +1069,8 @@ class ProfileViewModel @Inject constructor(
         localState.update { it.copy(editingActivity = target) }
     }
 
-    private fun fetchListToCompare(type: com.anisync.android.type.MediaType) {
-        if (type == com.anisync.android.type.MediaType.MANGA) fetchUserMangaList() else fetchUserAnimeList()
+    private fun fetchListToCompare(type: MediaType) {
+        if (type == MediaType.MANGA) fetchUserMangaList() else fetchUserAnimeList()
     }
 
     private fun postStatus(text: String) {
@@ -1707,26 +1710,26 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun ProfileFavoritesFilter.kind(): com.anisync.android.domain.FavoriteKind? = when (this) {
+    private fun ProfileFavoritesFilter.kind(): FavoriteKind? = when (this) {
         ProfileFavoritesFilter.ANIME -> null
-        ProfileFavoritesFilter.MANGA -> com.anisync.android.domain.FavoriteKind.MANGA
-        ProfileFavoritesFilter.CHARACTERS -> com.anisync.android.domain.FavoriteKind.CHARACTERS
-        ProfileFavoritesFilter.STAFF -> com.anisync.android.domain.FavoriteKind.STAFF
-        ProfileFavoritesFilter.STUDIOS -> com.anisync.android.domain.FavoriteKind.STUDIOS
+        ProfileFavoritesFilter.MANGA -> FavoriteKind.MANGA
+        ProfileFavoritesFilter.CHARACTERS -> FavoriteKind.CHARACTERS
+        ProfileFavoritesFilter.STAFF -> FavoriteKind.STAFF
+        ProfileFavoritesFilter.STUDIOS -> FavoriteKind.STUDIOS
     }
 
     /** The profile carries one page of 25, so only a full page can hide more. */
-    private fun fetchFavoritesOfKind(kind: com.anisync.android.domain.FavoriteKind, forceRefresh: Boolean = false) {
+    private fun fetchFavoritesOfKind(kind: FavoriteKind, forceRefresh: Boolean = false) {
         val state = favoritesState.value
         if (kind in state.loadingKinds) return
         if (!forceRefresh && kind in state.kinds) return
         viewModelScope.launch {
             val profile = uiState.value.profile ?: uiState.map { it.profile }.filterNotNull().first()
             val shown = when (kind) {
-                com.anisync.android.domain.FavoriteKind.MANGA -> profile.favoriteMangaOverview.size
-                com.anisync.android.domain.FavoriteKind.CHARACTERS -> profile.favoriteCharactersOverview.size
-                com.anisync.android.domain.FavoriteKind.STAFF -> profile.favoriteStaffOverview.size
-                com.anisync.android.domain.FavoriteKind.STUDIOS -> profile.favoriteStudiosOverview.size
+                FavoriteKind.MANGA -> profile.favoriteMangaOverview.size
+                FavoriteKind.CHARACTERS -> profile.favoriteCharactersOverview.size
+                FavoriteKind.STAFF -> profile.favoriteStaffOverview.size
+                FavoriteKind.STUDIOS -> profile.favoriteStudiosOverview.size
             }
             if (!forceRefresh && shown < FAVORITES_PAGE_SIZE) return@launch
             favoritesState.update { it.copy(loadingKinds = it.loadingKinds + kind) }
@@ -1942,8 +1945,8 @@ class ProfileViewModel @Inject constructor(
     private suspend fun uncountedOnLists(stats: StatisticsUiModel): Pair<Int, Int> {
         fun Map<LibraryStatus, Int>.byStatus() = filterKeys { it != LibraryStatus.UNKNOWN }.mapKeys { it.key.name }
         fun List<StatusUiModel>.byStatus() = associate { it.status to it.count }
-        val anime = libraryRepository.countByStatus(com.anisync.android.type.MediaType.ANIME)
-        val manga = libraryRepository.countByStatus(com.anisync.android.type.MediaType.MANGA)
+        val anime = libraryRepository.countByStatus(MediaType.ANIME)
+        val manga = libraryRepository.countByStatus(MediaType.MANGA)
         return uncountedChanges(anime.byStatus(), stats.animeStats.statusDistribution.byStatus()) to
             (stats.mangaStats?.let { uncountedChanges(manga.byStatus(), it.statusDistribution.byStatus()) } ?: 0)
     }

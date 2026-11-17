@@ -33,6 +33,8 @@ import com.anisync.android.presentation.profile.lists.ProfileListResults
 import com.anisync.android.presentation.profile.lists.ProfileListSheet
 import com.anisync.android.presentation.profile.lists.ProfileListSort
 import com.anisync.android.presentation.profile.lists.ProfileListTools
+import com.anisync.android.type.MediaType
+import com.anisync.android.type.UserSort
 
 @Stable
 data class ProfileUiState(
@@ -56,7 +58,7 @@ data class ProfileUiState(
     val selectedMangaStatus: LibraryStatus? = LibraryStatus.CURRENT,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
     val isStatusComposerVisible: Boolean = false,
-    val compareType: com.anisync.android.type.MediaType = com.anisync.android.type.MediaType.ANIME,
+    val compareType: MediaType = MediaType.ANIME,
     val viewerAvatarUrl: String? = null,
     val compareExpanded: Set<String> = emptySet(),
     val isShowingSavedCopy: Boolean = false,
@@ -138,6 +140,15 @@ data class ProfileUiState(
     /** The viewer's recaps for Statistics, empty on anyone else's profile. */
     val recaps: com.anisync.android.presentation.recap.RecapsUiModel = com.anisync.android.presentation.recap.RecapsUiModel()
 )
+
+/** The viewer is on their own profile, also when they reached it through a link rather than the tab. */
+val ProfileUiState.viewerOwnsProfile: Boolean get() = viewerId != null && viewerId == profile?.id
+
+val ProfileUiState.selectedListEntries: List<LibraryEntry>
+    get() = if (selectedTab == ProfileTab.MANGA) userMangaList else userAnimeList
+
+val ProfileUiState.selectedListStatus: LibraryStatus?
+    get() = if (selectedTab == ProfileTab.MANGA) selectedMangaStatus else selectedAnimeStatus
 
 data class StatisticsUiModel(
     val animeStats: AnimeStatisticsUi,
@@ -235,6 +246,8 @@ enum class ProfileTab(@StringRes val titleRes: Int) {
     COMPARE(R.string.profile_compare);
 
     val isPage: Boolean get() = this == FAVORITES || this == SOCIAL || this == COMPARE
+
+    val isList: Boolean get() = this == ANIME || this == MANGA
 }
 
 /** The views behind the Statistics rail's chips. Recaps only exists on the viewer's own profile. */
@@ -289,12 +302,12 @@ enum class ProfileSocialTab(@StringRes val labelRes: Int) {
 
 /** [labelRes] names the order in its menu, [phraseRes] finishes the count line under the tabs. */
 @Immutable
-enum class PeopleOrder(@StringRes val labelRes: Int, @StringRes val phraseRes: Int, val sort: com.anisync.android.type.UserSort) {
-    NEWEST(R.string.profile_people_order_newest, R.string.profile_people_phrase_newest, com.anisync.android.type.UserSort.ID_DESC),
-    OLDEST(R.string.profile_people_order_oldest, R.string.profile_people_phrase_oldest, com.anisync.android.type.UserSort.ID),
-    NAME(R.string.profile_people_order_name, R.string.profile_people_phrase_name, com.anisync.android.type.UserSort.USERNAME),
-    WATCHED(R.string.profile_people_order_watched, R.string.profile_people_phrase_watched, com.anisync.android.type.UserSort.WATCHED_TIME_DESC),
-    READ(R.string.profile_people_order_read, R.string.profile_people_phrase_read, com.anisync.android.type.UserSort.CHAPTERS_READ_DESC)
+enum class PeopleOrder(@StringRes val labelRes: Int, @StringRes val phraseRes: Int, val sort: UserSort) {
+    NEWEST(R.string.profile_people_order_newest, R.string.profile_people_phrase_newest, UserSort.ID_DESC),
+    OLDEST(R.string.profile_people_order_oldest, R.string.profile_people_phrase_oldest, UserSort.ID),
+    NAME(R.string.profile_people_order_name, R.string.profile_people_phrase_name, UserSort.USERNAME),
+    WATCHED(R.string.profile_people_order_watched, R.string.profile_people_phrase_watched, UserSort.WATCHED_TIME_DESC),
+    READ(R.string.profile_people_order_read, R.string.profile_people_phrase_read, UserSort.CHAPTERS_READ_DESC)
 }
 
 @Immutable
@@ -324,7 +337,7 @@ sealed interface ProfileAction {
     data object ClosePage : ProfileAction
     data class AddToPlanning(val mediaId: Int) : ProfileAction
     data class SelectPeopleOrder(val order: PeopleOrder) : ProfileAction
-    data class TogglePersonFollow(val user: com.anisync.android.domain.SocialUser) : ProfileAction
+    data class TogglePersonFollow(val user: SocialUser) : ProfileAction
     data class SelectActivityFilter(val filter: ProfileActivityFilter) : ProfileAction
     data class SelectFavoritesFilter(val filter: ProfileFavoritesFilter) : ProfileAction
     data class SelectAnimeStatus(val status: LibraryStatus?) : ProfileAction
@@ -366,7 +379,7 @@ sealed interface ProfileAction {
     data class EditActivity(val activityId: Int) : ProfileAction
     data object DismissActivityEdit : ProfileAction
     data class SetStatusComposerVisible(val visible: Boolean) : ProfileAction
-    data class SelectCompareType(val type: com.anisync.android.type.MediaType) : ProfileAction
+    data class SelectCompareType(val type: MediaType) : ProfileAction
     data object RetrySocial : ProfileAction
     data class ExpandCompareSection(val key: String) : ProfileAction
     data object RetryReviews : ProfileAction

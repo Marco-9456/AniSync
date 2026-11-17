@@ -44,6 +44,7 @@ import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.components.shared.StatBadge
 import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.profile.ProfileUiState
+import com.anisync.android.presentation.profile.viewerOwnsProfile
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
@@ -102,7 +103,7 @@ fun LazyListScope.profileSocialTab(
         ProfileSocialTab.FORUM_COMMENTS -> uiState.commentsHasNextPage
     }
 
-    val isOwn = uiState.viewerId != null && uiState.viewerId == uiState.profile?.id
+    val isOwn = uiState.viewerOwnsProfile
     when (selectedTab) {
         ProfileSocialTab.FOLLOWING -> renderSocialUsers(uiState.socialFollowing, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore, userColumns, uiState.viewerId, onToggleFollow, ownerName = uiState.profile?.name.orEmpty(), isOwn = isOwn)
         ProfileSocialTab.FOLLOWERS -> renderSocialUsers(uiState.socialFollowers, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore, userColumns, uiState.viewerId, onToggleFollow, onRemoveFollower, ownerName = uiState.profile?.name.orEmpty(), isOwn = isOwn)

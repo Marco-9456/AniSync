@@ -39,6 +39,7 @@ import com.anisync.android.presentation.components.MediaPosterCard
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.StudioInfo
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.RailChip
@@ -63,7 +64,7 @@ fun LazyListScope.profileFavoritesTab(
     studioColumns: Int = 2,
     modifier: Modifier = Modifier,
     gridColumns: Int = 3,
-    titleLanguage: com.anisync.android.data.TitleLanguage = com.anisync.android.data.TitleLanguage.ROMAJI
+    titleLanguage: TitleLanguage = TitleLanguage.ROMAJI
 ) {
     when (selectedFilter) {
         ProfileFavoritesFilter.ANIME, ProfileFavoritesFilter.MANGA -> {

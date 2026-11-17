@@ -315,7 +315,6 @@ internal fun ProfileListFilterSheet(
     tools: ProfileListTools,
     viewer: Map<Int, LibraryEntry>,
     titleLanguage: TitleLanguage,
-    ownerScoreFormat: ScoreFormat,
     isOwnProfile: Boolean,
     onFiltersChange: (ProfileListFilters) -> Unit,
     onDismiss: () -> Unit
@@ -335,7 +334,7 @@ internal fun ProfileListFilterSheet(
             )
         }
     ) {
-        ProfileListFilterSections(entries, status, tools, viewer, titleLanguage, ownerScoreFormat, isOwnProfile, onFiltersChange)
+        ProfileListFilterSections(entries, status, tools, viewer, titleLanguage, isOwnProfile, onFiltersChange)
     }
 }
 
@@ -350,7 +349,6 @@ internal fun ProfileListFilterPanel(
     tools: ProfileListTools,
     viewer: Map<Int, LibraryEntry>,
     titleLanguage: TitleLanguage,
-    ownerScoreFormat: ScoreFormat,
     isOwnProfile: Boolean,
     onFiltersChange: (ProfileListFilters) -> Unit,
     modifier: Modifier = Modifier
@@ -384,7 +382,7 @@ internal fun ProfileListFilterPanel(
                     .padding(bottom = 16.dp)
             ) {
                 // The panel is narrow, so your list's choices take a row each, as in T2.
-                ProfileListFilterSections(entries, status, tools, viewer, titleLanguage, ownerScoreFormat, isOwnProfile, onFiltersChange, yourListColumns = 1)
+                ProfileListFilterSections(entries, status, tools, viewer, titleLanguage, isOwnProfile, onFiltersChange, yourListColumns = 1)
             }
         }
     }
@@ -398,12 +396,12 @@ private fun ProfileListFilterSections(
     tools: ProfileListTools,
     viewer: Map<Int, LibraryEntry>,
     titleLanguage: TitleLanguage,
-    ownerScoreFormat: ScoreFormat,
     isOwnProfile: Boolean,
     onFiltersChange: (ProfileListFilters) -> Unit,
     yourListColumns: Int = 2
 ) {
     val filters = tools.filters
+    val ownerScoreFormat = remember(entries) { entries.firstNotNullOfOrNull { it.scoreFormat } ?: ScoreFormat.POINT_100 }
     val formats = remember(entries) {
         entries.mapNotNull { it.format }.filter { it != MediaFormat.UNKNOWN__ }
             .groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.map { it.key }

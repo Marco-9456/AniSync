@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import com.anisync.android.presentation.profile.lists.ProfileListSheet
 import com.anisync.android.presentation.profile.lists.ProfileListFilterPanel
 import com.anisync.android.presentation.profile.components.ProfileRails
-import com.anisync.android.domain.ScoreFormat
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.width
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
@@ -414,16 +413,14 @@ private fun ProfileListsWithPanel(
                 }
             }
             if (panelShown) {
-                val manga = uiState.selectedTab == ProfileTab.MANGA
-                val entries = if (manga) uiState.userMangaList else uiState.userAnimeList
+                val entries = uiState.selectedListEntries
                 val distinct = remember(entries) { entries.distinctBy { it.id } }
                 ProfileListFilterPanel(
                     entries = distinct,
-                    status = if (manga) uiState.selectedMangaStatus else uiState.selectedAnimeStatus,
+                    status = uiState.selectedListStatus,
                     tools = uiState.listTools,
                     viewer = uiState.viewerEntries,
                     titleLanguage = uiState.titleLanguage,
-                    ownerScoreFormat = distinct.firstNotNullOfOrNull { it.scoreFormat } ?: ScoreFormat.POINT_100,
                     isOwnProfile = isOwnProfile,
                     onFiltersChange = { onAction(ProfileAction.SetListFilters(it)) },
                     modifier = Modifier
@@ -625,7 +622,6 @@ private fun ProfileTabPane(
                 overviewColumns = overviewColumns
             )
         }
-        val onLists = uiState.selectedTab == ProfileTab.ANIME || uiState.selectedTab == ProfileTab.MANGA
         if (uiState.selectedTab.isPage) {
             ProfilePage(
                 uiState = uiState,
@@ -635,7 +631,7 @@ private fun ProfileTabPane(
                 topInset = 0.dp,
                 content = content
             )
-        } else if (onLists && maxWidth >= ListFilterPanelMinWidth) {
+        } else if (uiState.selectedTab.isList && maxWidth >= ListFilterPanelMinWidth) {
             ProfileListsWithPanel(
                 uiState = uiState,
                 isOwnProfile = isOwnProfile,
