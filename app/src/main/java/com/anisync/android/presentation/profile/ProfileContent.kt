@@ -1198,7 +1198,9 @@ internal fun ProfileTabStrip(
     showListSearch: Boolean = true,
     rails: ProfileRails? = null,
     /** For the copy hidden under the docked strip, which keeps the rail's place without drawing it. */
-    railPlaceholder: Boolean = false
+    railPlaceholder: Boolean = false,
+    /** T2 draws the list's rail over the rows instead, beside the filter panel. */
+    showListRail: Boolean = true
 ) {
     val selectListTab: (MediaType) -> Unit = {
         onTabSelected(if (it == MediaType.MANGA) ProfileTab.MANGA else ProfileTab.ANIME)
@@ -1239,34 +1241,50 @@ internal fun ProfileTabStrip(
             ProfileTab.ACTIVITY -> ActivityFilterRail(uiState.selectedActivityFilter, railScrolls.scroll("activity")) {
                 onFilterAction(ProfileAction.SelectActivityFilter(it))
             }
-            ProfileTab.ANIME, ProfileTab.MANGA -> {
-                val manga = uiState.selectedTab == ProfileTab.MANGA
-                val searching = uiState.listTools.query.isNotBlank()
-                MediaStatusRail(
-                    itemsByStatus = if (manga) uiState.userMangaListByStatus else uiState.userAnimeListByStatus,
-                    selectedStatus = when {
-                        searching -> uiState.listTools.searchStatus
-                        manga -> uiState.selectedMangaStatus
-                        else -> uiState.selectedAnimeStatus
-                    },
-                    mediaType = if (manga) MediaType.MANGA else MediaType.ANIME,
-                    onStatusSelected = {
-                        onFilterAction(
-                            when {
-                                searching -> ProfileAction.SetListSearchStatus(it)
-                                manga -> ProfileAction.SelectMangaStatus(it)
-                                else -> ProfileAction.SelectAnimeStatus(it)
-                            }
-                        )
-                    },
-                    onMediaTypeSelected = selectListTab,
-                    searchCounts = if (searching) uiState.listResults.searchCounts.orEmpty() else null,
-                    scroll = railScrolls.scroll(if (manga) "lists_manga" else "lists_anime")
+            ProfileTab.ANIME, ProfileTab.MANGA -> if (showListRail) {
+                ProfileListRail(
+                    uiState = uiState,
+                    onFilterAction = onFilterAction,
+                    onTabSelected = onTabSelected,
+                    rails = railScrolls
                 )
             }
             else -> Unit
         }
     }
+}
+
+/** The list's status chips, with the anime and manga toggle pinned at their start. */
+@Composable
+internal fun ProfileListRail(
+    uiState: ProfileUiState,
+    onFilterAction: (ProfileAction) -> Unit,
+    onTabSelected: (ProfileTab) -> Unit,
+    rails: ProfileRails
+) {
+    val manga = uiState.selectedTab == ProfileTab.MANGA
+    val searching = uiState.listTools.query.isNotBlank()
+    MediaStatusRail(
+        itemsByStatus = if (manga) uiState.userMangaListByStatus else uiState.userAnimeListByStatus,
+        selectedStatus = when {
+            searching -> uiState.listTools.searchStatus
+            manga -> uiState.selectedMangaStatus
+            else -> uiState.selectedAnimeStatus
+        },
+        mediaType = if (manga) MediaType.MANGA else MediaType.ANIME,
+        onStatusSelected = {
+            onFilterAction(
+                when {
+                    searching -> ProfileAction.SetListSearchStatus(it)
+                    manga -> ProfileAction.SelectMangaStatus(it)
+                    else -> ProfileAction.SelectAnimeStatus(it)
+                }
+            )
+        },
+        onMediaTypeSelected = { onTabSelected(if (it == MediaType.MANGA) ProfileTab.MANGA else ProfileTab.ANIME) },
+        searchCounts = if (searching) uiState.listResults.searchCounts.orEmpty() else null,
+        scroll = rails.scroll(if (manga) "lists_manga" else "lists_anime")
+    )
 }
 
 /** The list's search, sort, filters and view, which docks above the tabs on Lists. */

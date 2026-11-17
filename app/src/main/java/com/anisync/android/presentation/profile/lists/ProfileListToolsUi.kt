@@ -31,6 +31,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -314,10 +320,90 @@ internal fun ProfileListFilterSheet(
     onFiltersChange: (ProfileListFilters) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val filters = tools.filters
     val matching = remember(entries, status, tools, viewer, titleLanguage) {
         applyListTools(entries, status, tools, viewer, titleLanguage).items.size
     }
+    FilterSheetScaffold(
+        title = stringResource(R.string.profile_list_filters),
+        onDismiss = onDismiss,
+        onReset = { onFiltersChange(ProfileListFilters()) },
+        resetEnabled = tools.filters.isActive,
+        footer = {
+            SheetFooterButton(
+                text = pluralStringResourceOrDefault(R.plurals.library_show_results, matching, matching),
+                onClick = onDismiss
+            )
+        }
+    ) {
+        ProfileListFilterSections(entries, status, tools, viewer, titleLanguage, ownerScoreFormat, isOwnProfile, onFiltersChange)
+    }
+}
+
+/**
+ * T2: the same filters beside the rows on a wide pane, applied as they are picked, so there is no
+ * sheet to open or results button to press.
+ */
+@Composable
+internal fun ProfileListFilterPanel(
+    entries: List<LibraryEntry>,
+    status: LibraryStatus?,
+    tools: ProfileListTools,
+    viewer: Map<Int, LibraryEntry>,
+    titleLanguage: TitleLanguage,
+    ownerScoreFormat: ScoreFormat,
+    isOwnProfile: Boolean,
+    onFiltersChange: (ProfileListFilters) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(28.dp),
+        modifier = modifier
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 12.dp, top = 12.dp, bottom = 4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.profile_list_filters),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = { onFiltersChange(ProfileListFilters()) }, enabled = tools.filters.isActive) {
+                    Text(stringResource(R.string.reset))
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 16.dp)
+            ) {
+                // The panel is narrow, so your list's choices take a row each, as in T2.
+                ProfileListFilterSections(entries, status, tools, viewer, titleLanguage, ownerScoreFormat, isOwnProfile, onFiltersChange, yourListColumns = 1)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ProfileListFilterSections(
+    entries: List<LibraryEntry>,
+    status: LibraryStatus?,
+    tools: ProfileListTools,
+    viewer: Map<Int, LibraryEntry>,
+    titleLanguage: TitleLanguage,
+    ownerScoreFormat: ScoreFormat,
+    isOwnProfile: Boolean,
+    onFiltersChange: (ProfileListFilters) -> Unit,
+    yourListColumns: Int = 2
+) {
+    val filters = tools.filters
     val formats = remember(entries) {
         entries.mapNotNull { it.format }.filter { it != MediaFormat.UNKNOWN__ }
             .groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.map { it.key }
@@ -335,18 +421,7 @@ internal fun ProfileListFilterSheet(
         }
     }
     val numbers = remember { NumberFormat.getIntegerInstance() }
-    FilterSheetScaffold(
-        title = stringResource(R.string.profile_list_filters),
-        onDismiss = onDismiss,
-        onReset = { onFiltersChange(ProfileListFilters()) },
-        resetEnabled = filters.isActive,
-        footer = {
-            SheetFooterButton(
-                text = pluralStringResourceOrDefault(R.plurals.library_show_results, matching, matching),
-                onClick = onDismiss
-            )
-        }
-    ) {
+    Column {
         if (!isOwnProfile) {
             SheetSectionLabel(stringResource(R.string.profile_list_your_list))
             Spacer(Modifier.height(8.dp))
@@ -355,7 +430,8 @@ internal fun ProfileListFilterSheet(
                 label = { stringResource(it.labelRes) },
                 isSelected = { it == filters.yourList },
                 onClick = { onFiltersChange(filters.copy(yourList = it)) },
-                count = { choice -> yourListCounts[choice]?.let(numbers::format) }
+                count = { choice -> yourListCounts[choice]?.let(numbers::format) },
+                columns = yourListColumns
             )
             Spacer(Modifier.height(12.dp))
         }

@@ -5,6 +5,12 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animate
 import androidx.compose.foundation.background
+import com.anisync.android.presentation.profile.lists.ProfileListSheet
+import com.anisync.android.presentation.profile.lists.ProfileListFilterPanel
+import com.anisync.android.presentation.profile.components.ProfileRails
+import com.anisync.android.domain.ScoreFormat
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.layout.width
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
@@ -92,6 +98,10 @@ private val WideGutterStart = 16.dp
 
 /** The tabs sit this far into their strip, and the banner card's top lines up with them. */
 private val TabsTopInset = 6.dp
+
+/** T2's filter panel, and the pane width from which it sits beside the rows. */
+private val ListFilterPanelWidth = 336.dp
+private val ListFilterPanelMinWidth = 720.dp
 
 /** T1 lays the Overview out in two 388dp columns, which needs about this much pane. */
 private val OverviewColumnsMinWidth = 720.dp
@@ -350,6 +360,87 @@ private fun ProfileIdentityColumn(
     }
 }
 
+/**
+ * T2: Lists on a wide pane. The tabs span the pane, and under them the rows keep the search and the
+ * status chips while the filters sit in a panel beside them. The search bar's filter button folds
+ * the panel away and back.
+ */
+@Composable
+private fun ProfileListsWithPanel(
+    uiState: ProfileUiState,
+    isOwnProfile: Boolean,
+    listState: LazyListState,
+    bottomPadding: Dp,
+    onAction: (ProfileAction) -> Unit,
+    rowsContent: LazyListScope.(gridColumns: Int) -> Unit
+) {
+    var panelShown by rememberSaveable { mutableStateOf(true) }
+    val rails = remember { ProfileRails() }
+    val onTabSelected: (ProfileTab) -> Unit = { onAction(ProfileAction.SelectTab(it)) }
+    Column(modifier = Modifier.fillMaxSize()) {
+        ProfileTabStrip(
+            uiState = uiState,
+            onTabSelected = onTabSelected,
+            onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
+            onStatsViewSelected = { onAction(ProfileAction.SelectStatsView(it)) },
+            onFilterAction = onAction,
+            showListSearch = false,
+            showListRail = false,
+            rails = rails,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Row(modifier = Modifier.fillMaxSize()) {
+            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                val gridColumns = profileGridColumns(baseMinSize = 240.dp, compactColumns = 2, availableWidth = maxWidth)
+                Column(modifier = Modifier.fillMaxSize()) {
+                    ProfileListSearchBar(
+                        uiState = uiState,
+                        onQueryChange = { onAction(ProfileAction.SetListQuery(it)) },
+                        onFilterAction = { action ->
+                            val opensFilters = action is ProfileAction.OpenListSheet && action.sheet == ProfileListSheet.FILTERS
+                            if (opensFilters) panelShown = !panelShown else onAction(action)
+                        },
+                        onBack = null
+                    )
+                    ProfileListRail(uiState = uiState, onFilterAction = onAction, onTabSelected = onTabSelected, rails = rails)
+                    AppPullToRefreshBox(
+                        isRefreshing = uiState.isRefreshing,
+                        onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = bottomPadding)
+                        ) {
+                            rowsContent(gridColumns)
+                        }
+                    }
+                }
+            }
+            if (panelShown) {
+                val manga = uiState.selectedTab == ProfileTab.MANGA
+                val entries = if (manga) uiState.userMangaList else uiState.userAnimeList
+                val distinct = remember(entries) { entries.distinctBy { it.id } }
+                ProfileListFilterPanel(
+                    entries = distinct,
+                    status = if (manga) uiState.selectedMangaStatus else uiState.selectedAnimeStatus,
+                    tools = uiState.listTools,
+                    viewer = uiState.viewerEntries,
+                    titleLanguage = uiState.titleLanguage,
+                    ownerScoreFormat = distinct.firstNotNullOfOrNull { it.scoreFormat } ?: ScoreFormat.POINT_100,
+                    isOwnProfile = isOwnProfile,
+                    onFiltersChange = { onAction(ProfileAction.SetListFilters(it)) },
+                    modifier = Modifier
+                        .width(ListFilterPanelWidth)
+                        .fillMaxHeight()
+                        .padding(end = 16.dp, top = 4.dp, bottom = 16.dp)
+                )
+            }
+        }
+    }
+}
+
 /** The first load on a wide window, in the same places as the identity column and the tab pane. */
 @Composable
 internal fun ProfileWideLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: Modifier = Modifier) {
@@ -539,6 +630,7 @@ private fun ProfileTabPane(
                 overviewColumns = overviewColumns
             )
         }
+        val onLists = uiState.selectedTab == ProfileTab.ANIME || uiState.selectedTab == ProfileTab.MANGA
         if (uiState.selectedTab.isPage) {
             ProfilePage(
                 uiState = uiState,
@@ -547,6 +639,40 @@ private fun ProfileTabPane(
                 onAction = onAction,
                 topInset = 0.dp,
                 content = content
+            )
+        } else if (onLists && maxWidth >= ListFilterPanelMinWidth) {
+            ProfileListsWithPanel(
+                uiState = uiState,
+                isOwnProfile = isOwnProfile,
+                listState = listState,
+                bottomPadding = bottomPadding,
+                onAction = onAction,
+                rowsContent = { gridColumns ->
+                    profileSelectedTabContent(
+                        profile = profile,
+                        uiState = uiState,
+                        isOwnProfile = isOwnProfile,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        onAction = onAction,
+                        onMediaClick = onMediaClick,
+                        onCharacterClick = onCharacterClick,
+                        onStaffClick = onStaffClick,
+                        onVoiceActorClick = onVoiceActorClick,
+                        onStudioClick = onStudioClick,
+                        onUserClick = onUserClick,
+                        onThreadClick = onThreadClick,
+                        onCommentClick = onCommentClick,
+                        onActivityClick = onActivityClick,
+                        onLastReplyClick = onLastReplyClick,
+                        portraitColumns = portraitColumns,
+                        studioColumns = gridColumns,
+                        // One row of titles beside the panel, as in T2.
+                        statsColumns = 1,
+                        onOpenRecap = onOpenRecap,
+                        comparison = comparison
+                    )
+                }
             )
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
