@@ -158,7 +158,7 @@ private fun CompareEyebrow(text: String, yourAvatar: String?, theirAvatar: Strin
 
 @Composable
 private fun CompareHero(comparison: ListComparison, ownerName: String, type: MediaType, too: Boolean = false) {
-    val numbers = NumberFormat.getIntegerInstance()
+    val numbers = remember { NumberFormat.getIntegerInstance() }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = numbers.format(comparison.sharedCount),
@@ -265,7 +265,7 @@ fun LazyListScope.profileComparePage(
 
 @Composable
 private fun CompareSummary(comparison: ListComparison, type: MediaType, ownerName: String, yourAvatar: String?, theirAvatar: String?) {
-    val numbers = NumberFormat.getIntegerInstance()
+    val numbers = remember { NumberFormat.getIntegerInstance() }
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(28.dp),

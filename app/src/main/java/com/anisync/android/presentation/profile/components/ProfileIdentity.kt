@@ -355,7 +355,7 @@ private fun ProfileDisplayName(name: String, modifier: Modifier = Modifier, acco
             // The joiner keeps the arrow on the name's last line when a long name wraps.
             text = buildAnnotatedString {
                 append(name)
-                append('⁠')
+                append('\u2060')
                 appendInlineContent(NAME_SWITCH_ARROW)
             },
             inlineContent = mapOf(
@@ -506,17 +506,14 @@ private fun ProfileIdentityDetails(
 
         val numbers = remember { NumberFormat.getIntegerInstance() }
         Spacer(modifier = Modifier.height(12.dp))
+        val anime = numbers.format(profile.animeCount)
+        val manga = numbers.format(profile.mangaCount)
+        val days = profile.daysWatched.toInt()
+        val daysText = numbers.format(days)
         val counts = listOf(
-            boldNumbers(stringResource(R.string.profile_count_anime, numbers.format(profile.animeCount)), numbers.format(profile.animeCount)),
-            boldNumbers(stringResource(R.string.profile_count_manga, numbers.format(profile.mangaCount)), numbers.format(profile.mangaCount)),
-            boldNumbers(
-                pluralStringResourceOrDefault(
-                    R.plurals.profile_days_watched,
-                    profile.daysWatched.toInt(),
-                    numbers.format(profile.daysWatched.toInt())
-                ),
-                numbers.format(profile.daysWatched.toInt())
-            )
+            boldNumbers(stringResource(R.string.profile_count_anime, anime), anime),
+            boldNumbers(stringResource(R.string.profile_count_manga, manga), manga),
+            boldNumbers(pluralStringResourceOrDefault(R.plurals.profile_days_watched, days, daysText), daysText)
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             counts.forEachIndexed { index, part ->
@@ -540,11 +537,9 @@ private fun ProfileIdentityDetails(
             ) {
                 Text(
                     text = if (followingTotal != null && followersTotal != null) {
-                        boldNumbers(
-                            stringResource(R.string.profile_people_counts, numbers.format(followingTotal), numbers.format(followersTotal)),
-                            numbers.format(followingTotal),
-                            numbers.format(followersTotal)
-                        )
+                        val following = numbers.format(followingTotal)
+                        val followers = numbers.format(followersTotal)
+                        boldNumbers(stringResource(R.string.profile_people_counts, following, followers), following, followers)
                     } else {
                         AnnotatedString(stringResource(R.string.profile_people))
                     },

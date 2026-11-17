@@ -200,7 +200,7 @@ private fun OverviewFavouriteKind(blocks: OverviewBlocks, kind: ProfileFavorites
                 FavouriteKindLabel(stringResource(R.string.profile_cast_characters))
                 FavouritePortraitRow(
                     items = profile.favoriteCharactersOverview.take(FAVOURITES_PER_KIND).map {
-                        Triple(it.id, it.imageUrl, it.nameUserPreferred to it.series?.getTitle(blocks.titleLanguage))
+                        FavouritePortrait(it.id, it.imageUrl, it.nameUserPreferred, it.series?.getTitle(blocks.titleLanguage))
                     },
                     onClick = blocks.onCharacterClick
                 )
@@ -209,7 +209,7 @@ private fun OverviewFavouriteKind(blocks: OverviewBlocks, kind: ProfileFavorites
                 FavouriteKindLabel(stringResource(R.string.profile_cast_staff))
                 FavouritePortraitRow(
                     items = profile.favoriteStaffOverview.take(FAVOURITES_PER_KIND).map {
-                        Triple(it.id, it.imageUrl, it.nameUserPreferred to it.primaryOccupations.firstOrNull())
+                        FavouritePortrait(it.id, it.imageUrl, it.nameUserPreferred, it.primaryOccupations.firstOrNull())
                     },
                     onClick = blocks.onStaffClick
                 )

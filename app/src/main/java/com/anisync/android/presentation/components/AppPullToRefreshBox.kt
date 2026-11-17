@@ -117,9 +117,8 @@ fun AppPullToRefreshBox(
                     .fillMaxSize()
                     .graphicsLayer { translationY = pullOffset() },
                 contentAlignment = contentAlignment,
-            ) {
-                content()
-            }
+                content = content,
+            )
         }
         PullIndicator(
             state = state,

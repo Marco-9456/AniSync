@@ -155,51 +155,51 @@ fun LazyListScope.profileActivityTab(
             val next = filteredActivities.getOrNull(index + 1)
             val joinsBelow = update && next?.isGroupedUpdate() == true && next.dayIn(zone) == day
             item(key = "activity_${activity.id}", contentType = if (update) "activity_update" else "activity_item") {
-            val canDelete = viewerId != null && (
-                activity.userId == viewerId ||
-                    (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId && !activity.isAuthorMod)
-            )
-            // Edit only on own TEXT or MESSAGE — never on server-derived MEDIA_LIST.
-            val canEdit = viewerId != null &&
-                activity.userId == viewerId &&
-                (activity.type == ActivityType.TEXT || activity.type == ActivityType.MESSAGE)
-            val cardLike = onLikeActivity?.let { cb -> { cb(activity.id) } }
-            val cardDelete = if (canDelete) {
-                onDeleteActivity?.let { cb -> { cb(activity.id) } }
-            } else null
-            val cardEdit = if (canEdit) {
-                onEditActivity?.let { cb -> { cb(activity.id) } }
-            } else null
+                val canDelete = viewerId != null && (
+                    activity.userId == viewerId ||
+                        (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId && !activity.isAuthorMod)
+                )
+                // Edit only on own TEXT or MESSAGE, never on server-derived MEDIA_LIST.
+                val canEdit = viewerId != null &&
+                    activity.userId == viewerId &&
+                    (activity.type == ActivityType.TEXT || activity.type == ActivityType.MESSAGE)
+                val cardLike = onLikeActivity?.let { cb -> { cb(activity.id) } }
+                val cardDelete = if (canDelete) {
+                    onDeleteActivity?.let { cb -> { cb(activity.id) } }
+                } else null
+                val cardEdit = if (canEdit) {
+                    onEditActivity?.let { cb -> { cb(activity.id) } }
+                } else null
 
-            if (update) {
-                // A day's updates join into one card.
-                ActivityUpdateRow(
-                    activity = activity,
-                    shape = updateRowShape(top = !joinsAbove, bottom = !joinsBelow),
-                    onClick = { onActivityClick(activity.id) },
-                    onMediaClick = onMediaClick,
-                    onLikeClick = cardLike,
-                    extraTop = if (joinsAbove) 0.dp else 4.dp,
-                    extraBottom = if (joinsBelow) 0.dp else 4.dp,
-                    modifier = modifier.padding(start = 16.dp, end = 16.dp, bottom = if (joinsBelow) 0.dp else 8.dp)
-                )
-            } else {
-                ActivityCard(
-                    activity = activity,
-                    onClick = { onActivityClick(activity.id) },
-                    modifier = modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
-                    onUserClick = onUserClick,
-                    onMediaClick = onMediaClick,
-                    onLastReplyClick = onLastReplyClick,
-                    onSubscribeClick = { onSubscribeClick(activity.id) },
-                    onLikeClick = cardLike,
-                    onDeleteClick = cardDelete,
-                    onEditClick = cardEdit,
-                    showAuthor = false,
-                    pinnedLabel = true,
-                    timeText = activityTime(activity)
-                )
-            }
+                if (update) {
+                    // A day's updates join into one card.
+                    ActivityUpdateRow(
+                        activity = activity,
+                        shape = updateRowShape(top = !joinsAbove, bottom = !joinsBelow),
+                        onClick = { onActivityClick(activity.id) },
+                        onMediaClick = onMediaClick,
+                        onLikeClick = cardLike,
+                        extraTop = if (joinsAbove) 0.dp else 4.dp,
+                        extraBottom = if (joinsBelow) 0.dp else 4.dp,
+                        modifier = modifier.padding(start = 16.dp, end = 16.dp, bottom = if (joinsBelow) 0.dp else 8.dp)
+                    )
+                } else {
+                    ActivityCard(
+                        activity = activity,
+                        onClick = { onActivityClick(activity.id) },
+                        modifier = modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                        onUserClick = onUserClick,
+                        onMediaClick = onMediaClick,
+                        onLastReplyClick = onLastReplyClick,
+                        onSubscribeClick = { onSubscribeClick(activity.id) },
+                        onLikeClick = cardLike,
+                        onDeleteClick = cardDelete,
+                        onEditClick = cardEdit,
+                        showAuthor = false,
+                        pinnedLabel = true,
+                        timeText = activityTime(activity)
+                    )
+                }
             }
         }
 

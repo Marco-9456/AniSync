@@ -227,8 +227,7 @@ fun ProfileLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: 
         ProfileWideLoadingSkeleton(name = name, onBackClick = onBackClick, modifier = modifier)
         return
     }
-    val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val headerHeight = maxOf(BannerHeight, statusBar + 120.dp)
+    val headerHeight = profileBackdropHeight(band = false)
     val block = MaterialTheme.colorScheme.surfaceContainerHigh
     val quiet = MaterialTheme.colorScheme.surfaceContainerLow
     Box(modifier = modifier.fillMaxSize()) {

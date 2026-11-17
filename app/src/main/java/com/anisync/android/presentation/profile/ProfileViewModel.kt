@@ -2158,14 +2158,13 @@ class ProfileViewModel @Inject constructor(
             when (val result = profileRepository.toggleFollow(user.id)) {
                 is Result.Success -> {
                     val following = result.data
-                    val flip: (List<com.anisync.android.domain.SocialUser>) -> List<com.anisync.android.domain.SocialUser> = { list ->
-                        list.map { if (it.id == user.id) it.copy(isFollowing = following) else it }
-                    }
+                    fun List<com.anisync.android.domain.SocialUser>.flipped() =
+                        map { if (it.id == user.id) it.copy(isFollowing = following) else it }
                     socialState.update {
                         it.copy(
-                            socialFollowing = flip(it.socialFollowing),
-                            socialFollowers = flip(it.socialFollowers),
-                            socialMutuals = flip(it.socialMutuals)
+                            socialFollowing = it.socialFollowing.flipped(),
+                            socialFollowers = it.socialFollowers.flipped(),
+                            socialMutuals = it.socialMutuals.flipped()
                         )
                     }
                 }

@@ -225,9 +225,11 @@ internal fun FavouritePosterRow(
     }
 }
 
+internal data class FavouritePortrait(val id: Int, val imageUrl: String?, val name: String, val detail: String?)
+
 @Composable
 internal fun FavouritePortraitRow(
-    items: List<Triple<Int, String?, Pair<String, String?>>>,
+    items: List<FavouritePortrait>,
     onClick: (Int) -> Unit
 ) {
     LazyRow(
@@ -235,8 +237,7 @@ internal fun FavouritePortraitRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.padding(bottom = 20.dp)
     ) {
-        items(items, key = { it.first }) { (id, image, text) ->
-            val (name, detail) = text
+        items(items, key = { it.id }) { (id, image, name, detail) ->
             Column(
                 modifier = Modifier
                     .width(PortraitWidth)
