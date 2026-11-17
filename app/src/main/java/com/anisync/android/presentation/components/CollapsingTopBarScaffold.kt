@@ -117,12 +117,17 @@ fun CollapsingTopBarScaffold(
      * the real one has scrolled underneath without the two ever showing at the same time.
      */
     heroTitle: Boolean = true,
+    /**
+     * The status bar the bar reserves and fills with its own colour. A pane that already sits below
+     * the status bar passes zero.
+     */
+    topInset: Dp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
     content: @Composable (topContentPadding: Dp) -> Unit,
 ) {
     val density = LocalDensity.current
 
     // The bar protects the status bar: it reserves the height and fills it with its own colour.
-    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val statusBarHeight = topInset
     val minTopBarHeight = 64.dp + statusBarHeight
     val maxTopBarHeight = if (heroTitle) {
         (if (title.length > 18) 200.dp else 170.dp) + statusBarHeight
@@ -280,6 +285,7 @@ fun CollapsingTopBarScaffold(
                 navigationIcon = navigationIcon,
                 actions = actions,
                 titleTrailing = titleTrailing,
+                topInset = topInset,
             )
 
             Box(
@@ -318,10 +324,11 @@ fun CollapsibleCommonTopBar(
     maxLines: Int = 2,
     expandedTitleStartPadding: Dp = 16.dp,
     collapsedTitleStartPadding: Dp = 68.dp,
+    topInset: Dp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
 ) {
     val density = LocalDensity.current
     // Every control in the bar starts below the status bar.
-    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val statusBarHeight = topInset
     val backgroundColor = androidx.compose.ui.graphics.lerp(
         containerColor,
         scrolledContainerColor,
