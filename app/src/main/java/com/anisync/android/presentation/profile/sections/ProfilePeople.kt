@@ -13,12 +13,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -35,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,11 +47,8 @@ import com.anisync.android.presentation.profile.PeopleOrder
 import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.profile.components.UnfollowDialog
-import com.anisync.android.presentation.util.openUrl
+import com.anisync.android.presentation.profile.components.UserLinkItems
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
-import com.anisync.android.presentation.util.rememberCopyToClipboard
-import com.anisync.android.util.AniListUrls
-import com.anisync.android.util.ShareUtils
 import java.text.NumberFormat
 
 private val PeopleTabs = listOf(ProfileSocialTab.FOLLOWING, ProfileSocialTab.FOLLOWERS, ProfileSocialTab.MUTUALS)
@@ -156,13 +149,6 @@ internal fun PersonRow(
     onRemove: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val copy = rememberCopyToClipboard()
-    val clipLabel = stringResource(R.string.profile_username)
-    val copiedMessage = stringResource(R.string.profile_username_copied, user.name)
-    val copyLabel = stringResource(R.string.profile_copy_username)
-    val shareLabel = stringResource(R.string.profile_share)
-    val openLabel = stringResource(R.string.profile_open_on_anilist)
     val removeLabel = stringResource(R.string.a11y_remove_follower)
     val unfollowLabel = stringResource(R.string.profile_unfollow_confirm)
     var menuOpen by remember { mutableStateOf(false) }
@@ -201,30 +187,7 @@ internal fun PersonRow(
                 Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.profile_person_menu, user.name))
             }
             Menu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                item(
-                    text = copyLabel,
-                    leadingIcon = Icons.Default.ContentCopy,
-                    onClick = {
-                        menuOpen = false
-                        copy(clipLabel, user.name, copiedMessage)
-                    }
-                )
-                item(
-                    text = shareLabel,
-                    leadingIcon = Icons.Default.Share,
-                    onClick = {
-                        menuOpen = false
-                        ShareUtils.shareText(context, "${user.name}\n${AniListUrls.userUrl(user.name)}")
-                    }
-                )
-                item(
-                    text = openLabel,
-                    leadingIcon = Icons.AutoMirrored.Filled.OpenInNew,
-                    onClick = {
-                        menuOpen = false
-                        openUrl(context, AniListUrls.userUrl(user.name))
-                    }
-                )
+                UserLinkItems(name = user.name, onClose = { menuOpen = false })
                 if (showFollow && user.isFollowing) {
                     gap()
                     item(

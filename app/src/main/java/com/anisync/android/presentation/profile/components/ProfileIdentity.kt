@@ -93,6 +93,7 @@ import com.anisync.android.presentation.components.bannerScrimBrush
 import com.anisync.android.presentation.components.bannerScrimHeight
 import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 import com.anisync.android.presentation.components.menu.Menu
+import com.anisync.android.presentation.components.menu.MenuScope
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.util.copyOnLongPress
@@ -239,12 +240,6 @@ internal fun ProfileMenuButton(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val copy = rememberCopyToClipboard()
-    val copiedMessage = stringResource(R.string.profile_username_copied, name)
-    val clipLabel = stringResource(R.string.profile_username)
-    val copyLabel = stringResource(R.string.profile_copy_username)
-    val shareLabel = stringResource(R.string.profile_share)
-    val openLabel = stringResource(R.string.profile_open_on_anilist)
     val reportLabel = stringResource(R.string.profile_report_on_anilist)
     var expanded by remember { mutableStateOf(false) }
     Box(modifier = modifier) {
@@ -257,30 +252,7 @@ internal fun ProfileMenuButton(
             Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.profile_menu))
         }
         Menu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            item(
-                text = copyLabel,
-                leadingIcon = Icons.Default.ContentCopy,
-                onClick = {
-                    expanded = false
-                    copy(clipLabel, name, copiedMessage)
-                }
-            )
-            item(
-                text = shareLabel,
-                leadingIcon = Icons.Default.Share,
-                onClick = {
-                    expanded = false
-                    ShareUtils.shareText(context, "$name\n${AniListUrls.userUrl(name)}")
-                }
-            )
-            item(
-                text = openLabel,
-                leadingIcon = Icons.AutoMirrored.Filled.OpenInNew,
-                onClick = {
-                    expanded = false
-                    openUrl(context, AniListUrls.userUrl(name))
-                }
-            )
+            UserLinkItems(name = name, onClose = { expanded = false })
             gap()
             item(
                 text = reportLabel,
@@ -292,6 +264,39 @@ internal fun ProfileMenuButton(
             )
         }
     }
+}
+
+/** Copy username, Share and Open on AniList, the items every menu about a person starts with. */
+@Composable
+internal fun MenuScope.UserLinkItems(name: String, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val copy = rememberCopyToClipboard()
+    val copiedMessage = stringResource(R.string.profile_username_copied, name)
+    val clipLabel = stringResource(R.string.profile_username)
+    item(
+        text = stringResource(R.string.profile_copy_username),
+        leadingIcon = Icons.Default.ContentCopy,
+        onClick = {
+            onClose()
+            copy(clipLabel, name, copiedMessage)
+        }
+    )
+    item(
+        text = stringResource(R.string.profile_share),
+        leadingIcon = Icons.Default.Share,
+        onClick = {
+            onClose()
+            ShareUtils.shareText(context, "$name\n${AniListUrls.userUrl(name)}")
+        }
+    )
+    item(
+        text = stringResource(R.string.profile_open_on_anilist),
+        leadingIcon = Icons.AutoMirrored.Filled.OpenInNew,
+        onClick = {
+            onClose()
+            openUrl(context, AniListUrls.userUrl(name))
+        }
+    )
 }
 
 /**
