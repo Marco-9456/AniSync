@@ -65,6 +65,8 @@ import com.anisync.android.presentation.profile.components.ActivityCard
 import com.anisync.android.presentation.profile.components.ActivityUpdateRow
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.profile.components.ProfileTabRail
+import com.anisync.android.presentation.profile.components.RailScroll
+import com.anisync.android.presentation.profile.components.rememberRailScroll
 import com.anisync.android.presentation.profile.components.updateRowShape
 import java.time.Instant
 import java.time.LocalDate
@@ -368,13 +370,17 @@ private val ComposerFormatIcons = listOf(
 
 /** The Activity tab's filters, docked with the profile tabs. */
 @Composable
-internal fun ActivityFilterRail(selected: ProfileActivityFilter, onSelect: (ProfileActivityFilter) -> Unit) {
+internal fun ActivityFilterRail(
+    selected: ProfileActivityFilter,
+    scroll: RailScroll = rememberRailScroll(),
+    onSelect: (ProfileActivityFilter) -> Unit
+) {
     val whatsNewStore = LocalWhatsNew.current
     val postsMoved = WhatsNewItem.PROFILE_POSTS_MOVED in rememberActiveWhatsNew()
     LaunchedEffect(selected) {
         if (!selected.isFeed) whatsNewStore.markSeen(WhatsNewItem.PROFILE_POSTS_MOVED)
     }
-    ProfileTabRail(ProfileActivityFilter.entries, selected) { filter, isSelected ->
+    ProfileTabRail(ProfileActivityFilter.entries, selected, scroll = scroll) { filter, isSelected ->
         RailChip(
             label = stringResource(filter.labelRes),
             icon = activityFilterIcon(filter),

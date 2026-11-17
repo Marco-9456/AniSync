@@ -50,6 +50,8 @@ import com.anisync.android.presentation.library.components.LibraryRailChip
 import com.anisync.android.presentation.profile.components.ProfileListGridCell
 import com.anisync.android.presentation.profile.components.ProfileListRow
 import com.anisync.android.presentation.profile.components.ProfileTabRail
+import com.anisync.android.presentation.profile.components.RailScroll
+import com.anisync.android.presentation.profile.components.rememberRailScroll
 import com.anisync.android.presentation.profile.lists.ProfileListFilters
 import com.anisync.android.presentation.profile.lists.ProfileListResults
 import com.anisync.android.presentation.profile.lists.ProfileListSummary
@@ -82,7 +84,8 @@ internal fun MediaStatusRail(
     mediaType: MediaType,
     onStatusSelected: (LibraryStatus?) -> Unit,
     onMediaTypeSelected: (MediaType) -> Unit,
-    searchCounts: Map<LibraryStatus, Int>? = null
+    searchCounts: Map<LibraryStatus, Int>? = null,
+    scroll: RailScroll = rememberRailScroll()
 ) {
     val showUnknown = itemsByStatus[LibraryStatus.UNKNOWN].orEmpty().isNotEmpty() ||
         selectedStatus == LibraryStatus.UNKNOWN
@@ -95,7 +98,8 @@ internal fun MediaStatusRail(
     ProfileTabRail(
         options = chips,
         selected = ListChip.entries.first { it.status == selectedStatus },
-        pinned = { MediaTypeToggle(selected = mediaType, onSelect = onMediaTypeSelected) }
+        pinned = { MediaTypeToggle(selected = mediaType, onSelect = onMediaTypeSelected) },
+        scroll = scroll
     ) { chip, selected ->
         LibraryRailChip(
             tab = chip.status?.let { LibraryTab.Standard(it) } ?: LibraryTab.All,

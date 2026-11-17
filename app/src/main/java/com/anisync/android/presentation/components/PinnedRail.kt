@@ -16,10 +16,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,11 +46,17 @@ fun PinnedRail(
     listState: LazyListState = rememberLazyListState(),
     /** Chip inset used until the pinned control has been measured. */
     pinnedInsetEstimate: Dp = 140.dp,
+    /**
+     * Where the measured inset is kept. A rail drawn again elsewhere passes the same holder, so its
+     * chips start where the other copy's did instead of at the estimate for a frame.
+     */
+    measuredInset: MutableState<Dp?>? = null,
     content: LazyListScope.() -> Unit
 ) {
     val background = MaterialTheme.colorScheme.background
     val density = LocalDensity.current
-    var pinnedInset by remember { mutableStateOf(if (pinned == null) 16.dp else pinnedInsetEstimate) }
+    val inset = measuredInset ?: remember { mutableStateOf<Dp?>(null) }
+    val pinnedInset = inset.value ?: if (pinned == null) 16.dp else pinnedInsetEstimate
     val height = ConnectedToggleDefaults.Height
 
     Box(modifier = modifier.fillMaxWidth().height(height)) {
@@ -70,7 +75,7 @@ fun PinnedRail(
         if (pinned != null) Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.onSizeChanged { size ->
-                pinnedInset = with(density) { size.width.toDp() }
+                inset.value = with(density) { size.width.toDp() }
             }
         ) {
             Row(
