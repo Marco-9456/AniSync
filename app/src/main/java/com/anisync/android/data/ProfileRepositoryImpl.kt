@@ -16,6 +16,7 @@ import com.anisync.android.data.local.toEntity
 import com.anisync.android.data.mapper.mapFuzzyDateToLong
 import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.util.safeApiCall
+import com.anisync.android.fragment.MediaCardFields
 import android.os.SystemClock
 import android.os.Trace
 import com.anisync.android.domain.CachePolicy
@@ -163,31 +164,7 @@ class ProfileRepositoryImpl @Inject constructor(
             // so a profile load/refresh costs a single request. Favourite cards show only objective
             // media fields (title / cover / type / release date) — matching AniList's own favourites,
             // which don't surface the viewer's list status/progress.
-            val favorites = user.favourites?.anime?.nodes?.filterNotNull()?.map { node ->
-                val m = node.mediaCardFields
-                LibraryEntry(
-                    id = 0,
-                    mediaId = m.id,
-                    titleRomaji = m.title?.romaji,
-                    titleEnglish = m.title?.english,
-                    titleNative = m.title?.native,
-                    titleUserPreferred = m.title?.userPreferred ?: "Unknown",
-                    coverUrl = m.coverImage?.large,
-                    cover = com.anisync.android.domain.CoverImage.of(
-                        m.coverImage?.medium,
-                        m.coverImage?.large,
-                        m.coverImage?.extraLarge
-                    ),
-                    progress = 0,
-                    totalEpisodes = m.episodes,
-                    totalChapters = m.chapters,
-                    totalVolumes = m.volumes,
-                    type = m.type,
-                    format = m.format,
-                    mediaStartDate = mapFuzzyDateToLong(m.startDate?.year, m.startDate?.month, m.startDate?.day),
-                    status = LibraryStatus.UNKNOWN
-                )
-            }.orEmpty()
+            val favorites = user.favourites?.anime?.nodes?.filterNotNull()?.map { it.mediaCardFields.toFavoriteEntry() }.orEmpty()
 
             // Activities are a follow-up rather than part of the profile response: together they
             // cost 611 against AniList's 500 query-complexity budget (see GetFullUserProfile).
@@ -255,27 +232,9 @@ class ProfileRepositoryImpl @Inject constructor(
 
             // Favorites already fetched in parallel with activities above.
 
-                    val overviewManga = user.favourites?.manga?.nodes?.filterNotNull()?.map { media ->
-                        val m = media.mediaCardFields
-                        com.anisync.android.domain.LibraryEntry(
-                            id = 0,
-                            mediaId = m.id,
-                            titleRomaji = m.title?.romaji,
-                            titleEnglish = m.title?.english,
-                            titleNative = m.title?.native,
-                            titleUserPreferred = m.title?.userPreferred ?: "Unknown",
-                            coverUrl = m.coverImage?.large,
-                            cover = com.anisync.android.domain.CoverImage.of(m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge),
-                            progress = 0,
-                            totalEpisodes = null,
-                            totalChapters = m.chapters,
-                            totalVolumes = m.volumes,
-                            type = m.type,
-                            format = m.format,
-                            mediaStartDate = mapFuzzyDateToLong(m.startDate?.year, m.startDate?.month, m.startDate?.day),
-                            status = com.anisync.android.domain.LibraryStatus.UNKNOWN
-                        )
-                    } ?: emptyList()
+            val overviewManga = user.favourites?.manga?.nodes?.filterNotNull()
+                ?.map { it.mediaCardFields.toFavoriteEntry(withEpisodes = false) }
+                ?: emptyList()
 
             // Favourite characters show thumb + name only (no role): a favourite has no single
             // canonical role, and AniList omits per-media role/VA under the favourites connection.
@@ -488,6 +447,26 @@ class ProfileRepositoryImpl @Inject constructor(
         val restMs: Long
     )
 
+    /** A favourite carries only the media's own fields, never anyone's list progress. */
+    private fun MediaCardFields.toFavoriteEntry(withEpisodes: Boolean = true): LibraryEntry = LibraryEntry(
+        id = 0,
+        mediaId = id,
+        titleRomaji = title?.romaji,
+        titleEnglish = title?.english,
+        titleNative = title?.native,
+        titleUserPreferred = title?.userPreferred ?: "Unknown",
+        coverUrl = coverImage?.large,
+        cover = com.anisync.android.domain.CoverImage.of(coverImage?.medium, coverImage?.large, coverImage?.extraLarge),
+        progress = 0,
+        totalEpisodes = if (withEpisodes) episodes else null,
+        totalChapters = chapters,
+        totalVolumes = volumes,
+        type = type,
+        format = format,
+        mediaStartDate = mapFuzzyDateToLong(startDate?.year, startDate?.month, startDate?.day),
+        status = LibraryStatus.UNKNOWN
+    )
+
     private data class FavoritesPage(val entries: List<LibraryEntry>, val lastPage: Int?)
 
     private suspend fun fetchFavoritesPage(
@@ -505,31 +484,7 @@ class ProfileRepositoryImpl @Inject constructor(
         val nodes = data?.nodes?.filterNotNull() ?: emptyList()
         val pageInfo = data?.pageInfo
 
-        val entries = nodes.map { node ->
-            val m = node.mediaCardFields
-            LibraryEntry(
-                id = 0,
-                mediaId = m.id,
-                titleRomaji = m.title?.romaji,
-                titleEnglish = m.title?.english,
-                titleNative = m.title?.native,
-                titleUserPreferred = m.title?.userPreferred ?: "Unknown",
-                coverUrl = m.coverImage?.large,
-                cover = com.anisync.android.domain.CoverImage.of(
-                    m.coverImage?.medium,
-                    m.coverImage?.large,
-                    m.coverImage?.extraLarge
-                ),
-                progress = 0,
-                totalEpisodes = m.episodes,
-                totalChapters = m.chapters,
-                totalVolumes = m.volumes,
-                type = m.type,
-                format = m.format,
-                mediaStartDate = mapFuzzyDateToLong(m.startDate?.year, m.startDate?.month, m.startDate?.day),
-                status = LibraryStatus.UNKNOWN
-            )
-        }
+        val entries = nodes.map { it.mediaCardFields.toFavoriteEntry() }
 
         return FavoritesPage(entries = entries, lastPage = pageInfo?.lastPage)
     }
@@ -585,27 +540,7 @@ class ProfileRepositoryImpl @Inject constructor(
                 val favourites = response.data?.User?.favourites ?: break
                 val hasNext = when (kind) {
                     com.anisync.android.domain.FavoriteKind.MANGA -> {
-                        favourites.manga?.nodes?.filterNotNull()?.forEach { node ->
-                            val m = node.mediaCardFields
-                            manga += LibraryEntry(
-                                id = 0,
-                                mediaId = m.id,
-                                titleRomaji = m.title?.romaji,
-                                titleEnglish = m.title?.english,
-                                titleNative = m.title?.native,
-                                titleUserPreferred = m.title?.userPreferred ?: "Unknown",
-                                coverUrl = m.coverImage?.large,
-                                cover = com.anisync.android.domain.CoverImage.of(m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge),
-                                progress = 0,
-                                totalEpisodes = null,
-                                totalChapters = m.chapters,
-                                totalVolumes = m.volumes,
-                                type = m.type,
-                                format = m.format,
-                                mediaStartDate = mapFuzzyDateToLong(m.startDate?.year, m.startDate?.month, m.startDate?.day),
-                                status = com.anisync.android.domain.LibraryStatus.UNKNOWN
-                            )
-                        }
+                        favourites.manga?.nodes?.filterNotNull()?.forEach { manga += it.mediaCardFields.toFavoriteEntry(withEpisodes = false) }
                         favourites.manga?.pageInfo?.hasNextPage == true
                     }
                     com.anisync.android.domain.FavoriteKind.CHARACTERS -> {
