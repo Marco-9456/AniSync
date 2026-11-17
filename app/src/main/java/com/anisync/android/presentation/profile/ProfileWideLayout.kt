@@ -3,16 +3,21 @@ package com.anisync.android.presentation.profile
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import com.anisync.android.presentation.components.AppCircularProgressIndicator
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +26,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
@@ -29,12 +35,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -43,90 +46,52 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
-import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.AppPullToRefreshBox
+import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.UserAvatar
-import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
+import com.anisync.android.presentation.components.navigation.BackTrailButton
+import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.profile.components.ProfileAccounts
 import com.anisync.android.presentation.profile.components.ProfileActionButtons
 import com.anisync.android.presentation.profile.components.ProfileAvatarHalfSize
 import com.anisync.android.presentation.profile.components.ProfileAvatarSize
 import com.anisync.android.presentation.profile.components.ProfileBannerSurface
-import com.anisync.android.presentation.profile.components.ProfileDisplayName
-import com.anisync.android.presentation.profile.components.ProfileIdentityDetails
+import com.anisync.android.presentation.profile.components.ProfileIdentityInfo
+import com.anisync.android.presentation.profile.components.ProfileMenuButton
+import com.anisync.android.presentation.profile.components.ProfileSettingsButton
 import com.anisync.android.presentation.profile.sections.rememberListComparison
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.PaneDragHandle
-import com.anisync.android.presentation.util.profileGridColumns
 import com.anisync.android.presentation.util.TwoPaneDefaults
 import com.anisync.android.presentation.util.TwoPaneRow
+import com.anisync.android.presentation.util.profileGridColumns
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
-// The wide profile reads as a dashboard: two resizable panes, identity + bio on the left under the
-// banner card with the avatar straddling its lower edge, the tab-switched content on the right.
-private val WideBannerHeight = 200.dp
+// T1: a 168dp banner card at the top of the identity column, level with the tabs beside it.
+private val WideBannerHeight = 168.dp
 
-// The overlay avatar's left edge lines up with the name below it.
-private val IdentityPanePadding = 20.dp
+/** Without a banner the column keeps only the controls that sat on it, in a row of this height. */
+private val WideChromeRowHeight = 48.dp
+
+// The banner card sits 8dp into the pane, its text and buttons 4dp, as in T1.
+private val WideBannerInset = 8.dp
+private val WideContentInset = 4.dp
 private val WideGutterStart = 16.dp
 
-// EXPERIMENTAL: let the shared banner shrink along with the identity header, which grows *both*
-// panes rather than only the bio's. Flip to false to drop that last stage and leave the banner the
-// fixed strip it used to be — nothing else needs touching.
-private const val COLLAPSE_BANNER_WITH_BIO = true
-private val WideBannerCollapsedHeight = 96.dp
-
-/** Gap between the banner's bottom edge and the display name once it has handed off to the banner. */
-private val BannerNameBottomInset = 16.dp
-
-/** Room kept clear on the banner's end side for the settings/share button the name must not reach. */
-private val BannerNameEndInset = 88.dp
-
-/**
- * Point within the name stage where the pane copy has finished fading and the banner copy takes
- * over. The two fades and the accessibility handoff all derive from this, so they cannot drift apart
- * and leave the name shown twice or not at all.
- */
-private const val NameHandoffPoint = 0.5f
-
-/**
- * Point within the identity stage where the avatar and the badge/meta block have finished fading.
- * They are invisible from here on, so this is also where they leave the accessibility tree — a
- * separate "fully collapsed" threshold would leave a window where TalkBack still reached them.
- */
-private const val IdentityFadeOutPoint = 0.62f
+/** The tabs sit this far into their strip, and the banner card's top lines up with them. */
+private val TabsTopInset = 6.dp
 
 /** T1 lays the Overview out in two 388dp columns, which needs about this much pane. */
 private val OverviewColumnsMinWidth = 720.dp
@@ -139,125 +104,8 @@ private fun nextProfileAnchor(fraction: Float): Float =
     PROFILE_FRACTION_ANCHORS.firstOrNull { it > fraction + 0.01f } ?: PROFILE_FRACTION_ANCHORS.first()
 
 /**
- * How far the profile header has collapsed as the inline bio scrolls, in pixels.
- *
- * The identity pane's fixed chrome costs ~260dp of a pane only ~370dp tall on a short tablet,
- * leaving the bio a ~110dp slot it can never grow out of. Scrolling the bio spends that chrome in
- * three stages, each of which hands its height to the bio:
- *
- *  1. the clearance the overlay avatar needs, plus the badge/meta block — the avatar fades out with it
- *  2. the display name's row, which hands off to a copy drawn over the banner where the avatar was
- *  3. the banner itself, down to [WideBannerCollapsedHeight] — experimental, see
- *     [COLLAPSE_BANNER_WITH_BIO], and the only stage that grows the *right* pane too
- *
- * The action buttons never move, so following or messaging is always one tap away, and the name is
- * never absent — it is either in the pane or on the banner.
- *
- * [collapsedPx] is written *synchronously* inside the nested-scroll callbacks, so the scroll this
- * reports as consumed always matches how far the header actually moved, exactly as
- * [com.anisync.android.presentation.components.CollapsingTopBarScaffold] does it.
- */
-@Stable
-private class BioCollapseState(density: Density) {
-    /** Height of the avatar-clearance spacer, the first thing to give way. */
-    val avatarClearancePx = with(density) { ProfileAvatarHalfSize.toPx() }
-
-    private val bannerHeightPx = with(density) { WideBannerHeight.toPx() }
-    private val bannerNameBottomInsetPx = with(density) { BannerNameBottomInset.toPx() }
-    private val bannerStagePx = with(density) {
-        if (COLLAPSE_BANNER_WITH_BIO) (WideBannerHeight - WideBannerCollapsedHeight).toPx() else 0f
-    }
-
-    /** Natural heights, measured rather than assumed — the badge row wraps and the name can too. */
-    var detailsHeightPx by mutableIntStateOf(0)
-    var nameHeightPx by mutableIntStateOf(0)
-    var bannerNameHeightPx by mutableIntStateOf(0)
-
-    var collapsedPx by mutableFloatStateOf(0f)
-        private set
-
-    private val identityStagePx: Float get() = avatarClearancePx + detailsHeightPx
-    private val nameStagePx: Float get() = nameHeightPx.toFloat()
-
-    val maxCollapsePx: Float get() = identityStagePx + nameStagePx + bannerStagePx
-
-    /** Stage boundaries, which double as the only positions the header is allowed to rest at. */
-    val stageAnchors: List<Float>
-        get() = listOf(0f, identityStagePx, identityStagePx + nameStagePx, maxCollapsePx)
-
-    private fun stageFraction(start: Float, span: Float): Float =
-        if (span <= 0f) 0f else ((collapsedPx - start) / span).coerceIn(0f, 1f)
-
-    val identityFraction: Float get() = stageFraction(0f, identityStagePx)
-    val nameFraction: Float get() = stageFraction(identityStagePx, nameStagePx)
-    val bannerFraction: Float get() = stageFraction(identityStagePx + nameStagePx, bannerStagePx)
-
-    /** Pixels to trim off the banner's bottom edge right now. */
-    val bannerTrimPx: Float get() = bannerFraction * bannerStagePx
-
-    /** Top of the banner-overlay name, tracking the banner's bottom edge as the banner shrinks. */
-    val bannerNameTopPx: Float
-        get() = bannerHeightPx - bannerTrimPx - bannerNameBottomInsetPx - bannerNameHeightPx
-
-    fun snapTo(value: Float) {
-        collapsedPx = value.coerceIn(0f, maxCollapsePx)
-    }
-
-    /**
-     * Applies a scroll [delta] to the header and returns how much of it the header absorbed, in the
-     * same sign convention the caller uses. Zero once the header is fully open or fully closed, which
-     * is what lets the bio take over the gesture.
-     *
-     * [bioOverflows] gates *collapsing* only: a bio that already fits has nothing to gain from the
-     * space, so a short one leaves the header alone entirely instead of stranding it above whitespace.
-     * Re-expanding is never gated, or a collapsed header could not be reopened once the bio fits.
-     */
-    fun consume(delta: Float, bioOverflows: Boolean): Float {
-        val max = maxCollapsePx
-        if (max <= 0f) return 0f
-        if (delta < 0f && !bioOverflows) return 0f
-        val next = (collapsedPx - delta).coerceIn(0f, max)
-        val consumed = collapsedPx - next
-        if (consumed != 0f) collapsedPx = next
-        return consumed
-    }
-}
-
-/**
- * Shrinks the node's reported height toward zero as [fraction] goes 0f..1f, sliding its content up
- * behind whatever sits above it and clipping the overflow.
- *
- * [fraction] is a lambda so the read lands in the layout pass instead of composition — the header
- * re-measures as the bio scrolls, but nothing recomposes.
- */
-private fun Modifier.collapseVertically(fraction: () -> Float) = this
-    .clipToBounds()
-    .layout { measurable, constraints ->
-        val placeable = measurable.measure(constraints)
-        val visible = (placeable.height * (1f - fraction().coerceIn(0f, 1f))).roundToInt()
-        layout(placeable.width, visible) {
-            placeable.place(0, visible - placeable.height)
-        }
-    }
-
-/**
- * Trims [amountPx] off the node's bottom edge with its top left anchored — the banner keeps showing
- * the top of the image, which is where its subject usually is, instead of sliding out of frame.
- *
- * Deliberately does not clip: the caller's rounded [TwoPaneDefaults.PaneShape] clip sits outside
- * this, so the corners re-round against the trimmed height rather than the natural one.
- */
-private fun Modifier.trimBottom(amountPx: () -> Float) = layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints)
-    val height = (placeable.height - amountPx()).roundToInt().coerceIn(0, placeable.height)
-    layout(placeable.width, height) { placeable.place(0, 0) }
-}
-
-/**
- * Expanded-width profile (M3 supporting-pane): a full-width banner over a resizable [TwoPaneRow] —
- * the **left** pane is the profile identity (avatar + name/badges/meta + action buttons + the bio
- * shown inline, replacing the compact "View Biography" sheet); the **right** pane carries the tab
- * group on top and shows the selected tab's content. Compact keeps the single-column profile.
+ * The profile on a wide window: the identity column on the left, which scrolls on its own, and the
+ * tabs with the open tab's content on the right. The two are resizable, the split kept in settings.
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -289,192 +137,6 @@ fun ProfileWideLayout(
     modifier: Modifier = Modifier,
     onBackClick: (() -> Unit)? = null
 ) {
-
-    // Owned here rather than in the identity pane because the overlay avatar below is drawn by this
-    // Box, and has to recede in step with the clearance disappearing underneath it.
-    //
-    // Keyed on the bio's presence as well as the profile: only the bio's scroll can re-expand the
-    // header, so a profile whose bio is edited away while collapsed would otherwise be stuck that way.
-    // Rebuilding the state hands it back fully expanded.
-    val density = LocalDensity.current
-    val hasBio = !profile.about.isNullOrBlank()
-    val collapse = remember(density, profile.id, hasBio) { BioCollapseState(density) }
-
-    // ST4 draws the profile flat on the page background, the identity column and the tab pane
-    // without cards around them. The resize handle stays between them. The banner is a card at the
-    // top of the identity column, so the tabs start at the top of the screen on the right.
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-            ProfileTwoPane(
-                profile = profile,
-                uiState = uiState,
-                isOwnProfile = isOwnProfile,
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-                onAction = onAction,
-                onNotificationsClick = onNotificationsClick,
-                unreadNotificationCount = unreadNotificationCount,
-                onMediaClick = onMediaClick,
-                onCharacterClick = onCharacterClick,
-                onStaffClick = onStaffClick,
-                onVoiceActorClick = onVoiceActorClick,
-                onStudioClick = onStudioClick,
-                onUserClick = onUserClick,
-                onThreadClick = onThreadClick,
-                onCommentClick = onCommentClick,
-                onActivityClick = onActivityClick,
-                onLastReplyClick = onLastReplyClick,
-                accounts = accounts,
-                onShareStats = onShareStats,
-                onShareFavourites = onShareFavourites,
-                statsColumns = statsColumns,
-                onOpenRecap = onOpenRecap,
-                collapse = collapse,
-                onSettingsClick = onSettingsClick,
-                onBackClick = onBackClick,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-            )
-    }
-}
-
-/**
- * The top of the identity column: the banner card, with the avatar straddling its lower edge and the
- * name's banner copy over it. Both overlays are drawn above the column so the avatar can cross the
- * seam between the banner and the text below it.
- */
-@Composable
-private fun BoxScope.IdentityPaneOverlays(profile: UserProfile, collapse: BioCollapseState) {
-        // Faded-out overlays must leave the accessibility tree too, or TalkBack still stops on things
-        // nobody can see — and with the name drawn twice during the handoff, only one copy may ever be
-        // readable. Thresholded through derivedStateOf so crossing one costs a single recomposition
-        // rather than one per frame.
-        val avatarHidden by remember(collapse) {
-            derivedStateOf { collapse.identityFraction >= IdentityFadeOutPoint }
-        }
-        val nameOnBanner by remember(collapse) {
-            derivedStateOf { collapse.nameFraction >= NameHandoffPoint }
-        }
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .offset(
-                    x = IdentityPanePadding,
-                    y = WideBannerHeight - ProfileAvatarHalfSize
-                )
-                .height(ProfileAvatarSize)
-                // Recedes into the banner as the identity header collapses: the pane's clearance is
-                // vanishing underneath it at the same rate, so it rides up with it and fades. All of
-                // it resolves in the draw pass, so a scrolling bio never recomposes the avatar.
-                .graphicsLayer {
-                    val collapsed = collapse.identityFraction
-                    val shrink = 1f - 0.3f * collapsed
-                    translationY = -collapse.avatarClearancePx * collapsed
-                    scaleX = shrink
-                    scaleY = shrink
-                    // Gone partway through the stage, so it has vacated the slot before the name lands.
-                    alpha = (1f - collapsed / IdentityFadeOutPoint).coerceIn(0f, 1f)
-                    transformOrigin = TransformOrigin(0f, 1f)
-                }
-                .then(if (avatarHidden) Modifier.clearAndSetSemantics {} else Modifier),
-            contentAlignment = Alignment.BottomStart
-        ) {
-            UserAvatar(
-                url = profile.avatarUrl,
-                contentDescription = stringResource(R.string.content_description_profile_avatar),
-                size = ProfileAvatarSize,
-                borderWidth = 2.dp,
-                framePadding = 3.dp,
-                isProfileHeader = true
-            )
-        }
-
-        // The name's destination: it leaves the pane in stage 2 and lands here, in the slot the
-        // avatar just vacated, riding the banner's bottom edge down as the banner itself shrinks.
-        // Drawn as an overlay for the same reason the avatar is — the pane's Surface would clip it.
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                // Width is settled by layout and only the moving y goes through offset: the name has
-                // to ellipsise against the banner's end inset, which a content-sized box drawn at an
-                // x offset would not do — a long name would run past the edge instead.
-                .fillMaxWidth()
-                .offset { IntOffset(0, collapse.bannerNameTopPx.roundToInt()) }
-                .padding(start = IdentityPanePadding, end = BannerNameEndInset)
-                // Picks up exactly where the in-pane copy finishes fading, so the two are never both
-                // visible and the name never blinks out between them.
-                .graphicsLayer {
-                    alpha = ((collapse.nameFraction - NameHandoffPoint) / (1f - NameHandoffPoint))
-                        .coerceIn(0f, 1f)
-                }
-                .onSizeChanged { collapse.bannerNameHeightPx = it.height }
-                .then(if (nameOnBanner) Modifier else Modifier.clearAndSetSemantics {})
-        ) {
-            BannerOverlayName(name = profile.name)
-        }
-}
-
-/**
- * The display name once it has moved onto the banner. Styled separately from [ProfileDisplayName]
- * rather than parameterised, because sitting on a photo changes every choice: white with a shadow so
- * it survives a light banner, and a single ellipsised line so a long name cannot run under the
- * share/settings button in the opposite corner.
- */
-@Composable
-private fun BannerOverlayName(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = name,
-        style = MaterialTheme.typography.displaySmall.copy(
-            fontWeight = FontWeight.ExtraBold,
-            shadow = Shadow(color = Color.Black.copy(alpha = 0.6f), blurRadius = 12f)
-        ),
-        color = Color.White,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-    )
-}
-
-/**
- * The resizable two-pane body — a near-clone of the calendar's `CalendarMonthTwoPane`: rounded cards
- * on a tinted gutter, a drag handle that resizes (snap on release / tap to cycle), the split
- * persisted to [com.anisync.android.data.AppSettings.paneProfileFraction].
- */
-@Composable
-private fun ProfileTwoPane(
-    profile: UserProfile,
-    uiState: ProfileUiState,
-    isOwnProfile: Boolean,
-    sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?,
-    onAction: (ProfileAction) -> Unit,
-    onNotificationsClick: () -> Unit,
-    unreadNotificationCount: Int,
-    onMediaClick: (Int) -> Unit,
-    onCharacterClick: (Int) -> Unit,
-    onStaffClick: (Int) -> Unit,
-    onVoiceActorClick: (Int) -> Unit,
-    onStudioClick: (Int) -> Unit,
-    onUserClick: (String) -> Unit,
-    onThreadClick: (threadId: Int, threadTitle: String) -> Unit,
-    onCommentClick: (threadId: Int, commentId: Int, threadTitle: String) -> Unit,
-    onActivityClick: (Int) -> Unit,
-    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit,
-    accounts: ProfileAccounts?,
-    onShareStats: () -> Unit,
-    onShareFavourites: () -> Unit,
-    statsColumns: Int,
-    onOpenRecap: (String) -> Unit,
-    collapse: BioCollapseState,
-    onSettingsClick: () -> Unit,
-    onBackClick: (() -> Unit)?,
-    modifier: Modifier = Modifier
-) {
     val appSettings = LocalAppSettings.current
     var leadingFraction by rememberSaveable { mutableFloatStateOf(appSettings.paneProfileFraction.value) }
     var rowWidthPx by remember { mutableIntStateOf(0) }
@@ -492,10 +154,14 @@ private fun ProfileTwoPane(
     val cycleLabel = stringResource(R.string.pane_resize_cycle)
     val resizeLabel = stringResource(R.string.pane_resize_handle)
 
+    // The profile sits flat on the page background, the identity column and the tab pane without
+    // cards around them. The resize handle stays between them.
     TwoPaneRow(
         leadingWeight = leadingFraction,
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
             .onSizeChanged { rowWidthPx = it.width },
         gutterColor = MaterialTheme.colorScheme.background,
         leadingColor = MaterialTheme.colorScheme.background,
@@ -518,42 +184,17 @@ private fun ProfileTwoPane(
             )
         },
         leading = {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    ProfileBannerSurface(
-                        profile = profile,
-                        isOwnProfile = isOwnProfile,
-                        topActionIcon = Icons.Default.Settings,
-                        onTopActionClick = onSettingsClick,
-                        height = WideBannerHeight,
-                        onBackClick = onBackClick,
-                        modifier = Modifier
-                            // Rounding sits outside the trim, so the corners re-round against the
-                            // collapsed height instead of being cut square.
-                            .clip(TwoPaneDefaults.PaneShape)
-                            .trimBottom { collapse.bannerTrimPx },
-                        shape = RectangleShape
-                    )
-                    ProfileIdentityPane(
-                        profile = profile,
-                        isOwnProfile = isOwnProfile,
-                        isFollowing = uiState.isFollowingUser,
-                        isFollowerOfViewer = uiState.isFollowerOfViewer,
-                        isFollowLoading = uiState.isFollowLoading,
-                        onFollowClick = { onAction(ProfileAction.ToggleFollow) },
-                        onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
-                        onEditProfileClick = { onAction(ProfileAction.SetEditProfileDialogVisible(true)) },
-                        onNotificationsClick = onNotificationsClick,
-                        unreadNotificationCount = unreadNotificationCount,
-                        accounts = accounts,
-                        collapse = collapse,
-                        followingTotal = uiState.followingTotal,
-                        followersTotal = uiState.followersTotal,
-                        onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) }
-                    )
-                }
-                IdentityPaneOverlays(profile = profile, collapse = collapse)
-            }
+            ProfileIdentityColumn(
+                profile = profile,
+                uiState = uiState,
+                isOwnProfile = isOwnProfile,
+                onAction = onAction,
+                onNotificationsClick = onNotificationsClick,
+                unreadNotificationCount = unreadNotificationCount,
+                accounts = accounts,
+                onSettingsClick = onSettingsClick,
+                onBackClick = onBackClick
+            )
         },
         trailing = {
             ProfileTabPane(
@@ -583,195 +224,242 @@ private fun ProfileTwoPane(
 }
 
 /**
- * Left pane: the identity header (name/badges/meta + action buttons; the avatar is drawn as an
- * overlay by [ProfileWideLayout] so it can overlap the banner) over the inline biography.
- *
- * The header is only half fixed. Scrolling the bio first collapses the avatar clearance and the
- * badge/meta block into nothing — see [BioCollapseState] — which roughly triples the bio's viewport
- * on a short tablet. The display name and the action buttons never move.
+ * T1's identity column: the banner card, the avatar on its lower edge with the actions beside it,
+ * then the name, the details and the whole bio. Your own profile without a banner (T3) has no
+ * band, only Settings above the avatar.
  */
 @Composable
-private fun ProfileIdentityPane(
+private fun ProfileIdentityColumn(
     profile: UserProfile,
+    uiState: ProfileUiState,
     isOwnProfile: Boolean,
-    isFollowing: Boolean,
-    isFollowerOfViewer: Boolean,
-    isFollowLoading: Boolean,
-    onFollowClick: () -> Unit,
-    onMessageClick: () -> Unit,
-    onEditProfileClick: () -> Unit,
+    onAction: (ProfileAction) -> Unit,
     onNotificationsClick: () -> Unit,
     unreadNotificationCount: Int,
     accounts: ProfileAccounts?,
-    collapse: BioCollapseState,
-    modifier: Modifier = Modifier,
-    followingTotal: Int? = null,
-    followersTotal: Int? = null,
-    onPeopleClick: (() -> Unit)? = null
+    onSettingsClick: () -> Unit,
+    onBackClick: (() -> Unit)?,
+    modifier: Modifier = Modifier
 ) {
-    val bioScrollState = rememberScrollState()
-    val detailsHidden by remember(collapse) {
-        derivedStateOf { collapse.identityFraction >= IdentityFadeOutPoint }
-    }
-    val nameOnBanner by remember(collapse) {
-        derivedStateOf { collapse.nameFraction >= NameHandoffPoint }
-    }
+    val hasBanner = profile.bannerUrl != null
+    val headerHeight = if (hasBanner) WideBannerHeight else WideChromeRowHeight
+    val avatarTop = if (hasBanner) headerHeight - ProfileAvatarHalfSize else headerHeight + 8.dp
+    val actionsTop = if (hasBanner) headerHeight + 8.dp else avatarTop + 56.dp
+    val identityTop = if (hasBanner) actionsTop + 52.dp else avatarTop + ProfileAvatarSize + 10.dp
 
-    Column(modifier = modifier.fillMaxSize()) {
-        // Clears the lower half of the overlay avatar that straddles the banner/pane seam. Collapses
-        // first, in step with the avatar fading out above it.
-        Spacer(
-            modifier = Modifier
-                .collapseVertically { collapse.identityFraction }
-                .height(ProfileAvatarHalfSize)
-        )
-
-        // Stage 2: the name folds up behind the pane's top edge while its banner counterpart fades
-        // in, so it reads as the name flying up into the slot the avatar left.
-        Box(
-            modifier = Modifier
-                .collapseVertically { collapse.nameFraction }
-                .graphicsLayer {
-                    alpha = (1f - collapse.nameFraction / NameHandoffPoint).coerceIn(0f, 1f)
-                }
-                .then(if (nameOnBanner) Modifier.clearAndSetSemantics {} else Modifier)
-        ) {
-            ProfileDisplayName(
-                name = profile.name,
-                accounts = accounts,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = IdentityPanePadding)
-                    .onSizeChanged { collapse.nameHeightPx = it.height }
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .collapseVertically { collapse.identityFraction }
-                // Faded out ahead of the height reaching zero so the text is gone before it would be
-                // sliced by the clip. Draw-phase read, so scrolling costs no recomposition.
-                .graphicsLayer {
-                    alpha = (1f - collapse.identityFraction / IdentityFadeOutPoint).coerceIn(0f, 1f)
-                }
-                .then(if (detailsHidden) Modifier.clearAndSetSemantics {} else Modifier)
-        ) {
-            ProfileIdentityDetails(
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(top = TabsTopInset)
+    ) {
+        if (hasBanner) {
+            ProfileBannerSurface(
                 profile = profile,
                 isOwnProfile = isOwnProfile,
-                viewerFollows = isFollowing,
-                followsViewer = isFollowerOfViewer,
-                followingTotal = followingTotal,
-                followersTotal = followersTotal,
-                onPeopleClick = onPeopleClick,
-                // Measured inside the collapsing wrapper, where the block still lays out at its
-                // natural height — the wrapper only changes what it reports to the Column.
+                topActionIcon = Icons.Default.Settings,
+                onTopActionClick = onSettingsClick,
+                height = WideBannerHeight,
+                onBackClick = onBackClick,
+                shape = TwoPaneDefaults.PaneShape,
+                insetChrome = false,
+                modifier = Modifier.padding(horizontal = WideBannerInset)
+            )
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = IdentityPanePadding)
-                    .onSizeChanged { collapse.detailsHeightPx = it.height }
-            )
+                    .height(WideChromeRowHeight)
+            ) {
+                if (!isOwnProfile && onBackClick != null) BackTrailButton(onClick = onBackClick)
+                Spacer(modifier = Modifier.weight(1f))
+                if (isOwnProfile) {
+                    ProfileSettingsButton(onBanner = false, onClick = onSettingsClick)
+                } else {
+                    ProfileMenuButton(
+                        name = profile.name,
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = Color.Transparent,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    )
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = identityTop)
+                .padding(horizontal = WideContentInset)
+                .padding(bottom = 24.dp)
+        ) {
+            ProfileIdentityInfo(
+                profile = profile,
+                isOwnProfile = isOwnProfile,
+                viewerFollows = uiState.isFollowingUser,
+                followsViewer = uiState.isFollowerOfViewer,
+                followingTotal = uiState.followingTotal,
+                followersTotal = uiState.followersTotal,
+                onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) },
+                accounts = accounts,
+                modifier = Modifier.fillMaxWidth()
+            )
+            // The column scrolls on its own, so the bio is there in full rather than cut short.
+            val about = profile.about
+            if (!about.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                AsyncRichTextRenderer(html = about, modifier = Modifier.fillMaxWidth())
+            }
+        }
+
+        // An unshaped avatar taller than wide may overflow upward rather than be cropped.
+        Box(
+            modifier = Modifier
+                .padding(start = WideBannerInset + 16.dp)
+                .offset(y = avatarTop)
+                .height(ProfileAvatarSize),
+            contentAlignment = Alignment.BottomStart
+        ) {
+            UserAvatar(
+                url = profile.avatarUrl,
+                contentDescription = stringResource(R.string.content_description_profile_avatar),
+                size = ProfileAvatarSize,
+                borderWidth = 2.dp,
+                framePadding = 3.dp,
+                isProfileHeader = true,
+                modifier = Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true)
+            )
+        }
 
         ProfileActionButtons(
             isOwnProfile = isOwnProfile,
-            isFollowing = isFollowing,
-            isFollowLoading = isFollowLoading,
-            onFollowClick = onFollowClick,
-            onMessageClick = onMessageClick,
-            onEditProfileClick = onEditProfileClick,
+            isFollowing = uiState.isFollowingUser,
+            isFollowLoading = uiState.isFollowLoading,
+            onFollowClick = { onAction(ProfileAction.ToggleFollow) },
+            onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
+            onEditProfileClick = { onAction(ProfileAction.SetEditProfileDialogVisible(true)) },
             onNotificationsClick = onNotificationsClick,
             unreadNotificationCount = unreadNotificationCount,
-            modifier = Modifier.padding(horizontal = IdentityPanePadding)
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(y = actionsTop)
+                .padding(end = WideContentInset)
         )
+    }
+}
 
-        val about = profile.about
-        if (!about.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(20.dp))
-            Box(modifier = Modifier.nestedScroll(rememberBioCollapseConnection(collapse, bioScrollState))) {
+/** The first load on a wide window, in the same places as the identity column and the tab pane. */
+@Composable
+internal fun ProfileWideLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: Modifier = Modifier) {
+    val block = MaterialTheme.colorScheme.surfaceContainerHigh
+    val quiet = MaterialTheme.colorScheme.surfaceContainerLow
+    TwoPaneRow(
+        leadingWeight = LocalAppSettings.current.paneProfileFraction.value,
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding(),
+        gutterColor = MaterialTheme.colorScheme.background,
+        leadingColor = MaterialTheme.colorScheme.background,
+        trailingColor = MaterialTheme.colorScheme.background,
+        gutterPadding = PaddingValues(start = WideGutterStart, top = 12.dp, end = 16.dp, bottom = 16.dp),
+        leading = {
+            Box(modifier = Modifier.fillMaxSize().padding(top = TabsTopInset)) {
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = WideBannerInset)
+                        .fillMaxWidth()
+                        .height(WideBannerHeight)
+                        .clip(TwoPaneDefaults.PaneShape)
+                        .background(block)
+                )
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(bioScrollState)
-                        .padding(horizontal = IdentityPanePadding)
+                        .padding(top = WideBannerHeight + 60.dp)
+                        .padding(horizontal = WideContentInset)
                 ) {
-                    AsyncRichTextRenderer(
-                        html = about,
-                        modifier = Modifier.fillMaxWidth()
+                    if (name != null) {
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    listOf(0.6f, 0.85f, 0.7f).forEach { fraction ->
+                        Box(
+                            modifier = Modifier
+                                .padding(bottom = 10.dp)
+                                .fillMaxWidth(fraction)
+                                .height(14.dp)
+                                .clip(CircleShape)
+                                .background(block)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(block)
                     )
-                    Spacer(modifier = Modifier.height(24.dp))
+                }
+                Box(
+                    modifier = Modifier
+                        .padding(start = WideBannerInset + 16.dp)
+                        .offset(y = WideBannerHeight - ProfileAvatarHalfSize)
+                        .size(ProfileAvatarSize)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(3.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                )
+                if (onBackClick != null) {
+                    BackTrailButton(
+                        onClick = onBackClick,
+                        modifier = Modifier.padding(start = WideBannerInset + 12.dp, top = 12.dp)
+                    )
                 }
             }
-            BioCollapseSettler(collapse = collapse, bioScrollState = bioScrollState)
-        }
-    }
-}
-
-/**
- * Nested-scroll wiring for the collapsing identity header: upward scroll folds the header away
- * before the bio moves at all, downward scroll re-opens it once the bio is back at its own top.
- * Returning zero at either end is what hands the gesture over to the bio.
- */
-@Composable
-private fun rememberBioCollapseConnection(
-    collapse: BioCollapseState,
-    bioScrollState: ScrollState
-): NestedScrollConnection = remember(collapse, bioScrollState) {
-    object : NestedScrollConnection {
-        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-            val delta = available.y
-            // Let the bio scroll back to its own top before the header starts re-expanding,
-            // otherwise the header pops open over content the reader is still in the middle of.
-            if (delta > 0f && bioScrollState.canScrollBackward) return Offset.Zero
-            val consumed = collapse.consume(delta, bioScrollState.maxValue > 0)
-            return if (consumed == 0f) Offset.Zero else Offset(0f, consumed)
-        }
-
-        override fun onPostScroll(
-            consumed: Offset,
-            available: Offset,
-            source: NestedScrollSource
-        ): Offset {
-            // Re-expand from whatever downward scroll is left once the bio has hit its top, which is
-            // what carries a fling through into the header.
-            if (available.y <= 0f) return Offset.Zero
-            val absorbed = collapse.consume(available.y, bioScrollState.maxValue > 0)
-            return if (absorbed == 0f) Offset.Zero else Offset(0f, absorbed)
-        }
-    }
-}
-
-/**
- * Settles the header onto the nearest stage boundary once the bio stops moving, the same
- * nearest-anchor rule the pane splitter uses. Resting mid-stage would strand the name half faded
- * between the pane and the banner, so the only valid rest positions are the stage edges.
- *
- * `collectLatest` cancels an in-flight settle the moment the reader grabs the bio again.
- */
-@Composable
-private fun BioCollapseSettler(collapse: BioCollapseState, bioScrollState: ScrollState) {
-    LaunchedEffect(collapse, bioScrollState) {
-        snapshotFlow { bioScrollState.isScrollInProgress }.collectLatest { scrolling ->
-            if (scrolling) return@collectLatest
-            if (collapse.maxCollapsePx <= 0f) return@collectLatest
-            val target = collapse.stageAnchors.minBy { abs(it - collapse.collapsedPx) }
-            if (collapse.collapsedPx != target) {
-                animate(
-                    initialValue = collapse.collapsedPx,
-                    targetValue = target,
-                    animationSpec = spring(stiffness = Spring.StiffnessMedium)
-                ) { value, _ -> collapse.snapTo(value) }
+        },
+        trailing = {
+            Column(modifier = Modifier.fillMaxSize()) {
+                ProfileTabsButtonGroup(selectedTab = ProfileTab.OVERVIEW, lastListTab = ProfileTab.ANIME, onTabSelected = {})
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(240.dp)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(quiet)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(320.dp)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(quiet)
+                    )
+                }
+                Box(modifier = Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
+                    AppCircularProgressIndicator()
+                }
             }
         }
-    }
+    )
 }
 
 /**
  * Right pane: the profile tab group on top (controls the pane), then the selected tab's content in
- * its own pull-to-refreshable [LazyColumn] — reusing [profileSelectedTabContent], the same per-tab
- * sections the compact profile uses.
+ * its own pull-to-refreshable [LazyColumn], reusing [profileSelectedTabContent], the same per-tab
+ * sections the compact profile uses. Pages open on the app's collapsing bar instead.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable

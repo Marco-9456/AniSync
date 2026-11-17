@@ -69,6 +69,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -134,8 +136,11 @@ fun ProfileBannerSurface(
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
     onBackClick: (() -> Unit)? = null,
-    ownTopBar: (@Composable () -> Unit)? = null
+    ownTopBar: (@Composable () -> Unit)? = null,
+    /** False for a card that does not reach the status bar, so its controls and scrim sit at its top. */
+    insetChrome: Boolean = true
 ) {
+    val chromeInset = if (insetChrome) Modifier.statusBarsPadding() else Modifier
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -173,12 +178,14 @@ fun ProfileBannerSurface(
 
         // The banner runs under the status bar, and its own gradient has faded too far by the time
         // it reaches the clock to carry the system icons.
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(bannerScrimHeight())
-                .background(bannerScrimBrush())
-        )
+        if (insetChrome) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(bannerScrimHeight())
+                    .background(bannerScrimBrush())
+            )
+        }
 
         val chromeColors = IconButtonDefaults.filledTonalIconButtonColors(
             containerColor = Color.Black.copy(alpha = 0.4f),
@@ -190,19 +197,19 @@ fun ProfileBannerSurface(
                 colors = chromeColors,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .statusBarsPadding()
+                    .then(chromeInset)
                     .padding(top = 12.dp, start = 12.dp)
             )
         }
         if (isOwnProfile && ownTopBar != null) {
-            Box(modifier = Modifier.align(Alignment.TopStart).statusBarsPadding()) { ownTopBar() }
+            Box(modifier = Modifier.align(Alignment.TopStart).then(chromeInset)) { ownTopBar() }
         } else if (isOwnProfile) {
             FilledTonalIconButton(
                 onClick = onTopActionClick,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(top = 16.dp, end = 16.dp)
+                    .then(chromeInset)
+                    .padding(top = 12.dp, end = 12.dp)
                     .size(48.dp),
                 shape = CircleShape,
                 colors = chromeColors
@@ -222,7 +229,7 @@ fun ProfileBannerSurface(
                 colors = chromeColors,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .statusBarsPadding()
+                    .then(chromeInset)
                     .padding(top = 12.dp, end = 12.dp)
             )
         }
@@ -375,6 +382,8 @@ fun ProfileDisplayName(name: String, modifier: Modifier = Modifier, accounts: Pr
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
+                // Read as the name alone, without the joiner and the arrow's placeholder.
+                .semantics { contentDescription = name }
                 .copyOnLongPress(
                     text = name,
                     clipLabel = clipLabel,
@@ -809,7 +818,7 @@ internal fun ProfileOwnDockedBar(
 }
 
 @Composable
-private fun ProfileSettingsButton(onBanner: Boolean, onClick: () -> Unit) {
+internal fun ProfileSettingsButton(onBanner: Boolean, onClick: () -> Unit) {
     val colors = if (onBanner) {
         IconButtonDefaults.filledTonalIconButtonColors(
             containerColor = Color.Black.copy(alpha = 0.4f),
