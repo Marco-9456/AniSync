@@ -6,14 +6,14 @@
         <item quantity="other">%d EPS PENDENTES</item>
     </plurals>
     <plurals name="time_days">
-        <item quantity="one">%d d</item>
-        <item quantity="many">%d d</item>
-        <item quantity="other">%d d</item>
+        <item quantity="one">%dd</item>
+        <item quantity="many">%dd</item>
+        <item quantity="other">%dd</item>
     </plurals>
     <plurals name="time_hours">
-        <item quantity="one">%d h</item>
-        <item quantity="many">%d h</item>
-        <item quantity="other">%d h</item>
+        <item quantity="one">%dh</item>
+        <item quantity="many">%dh</item>
+        <item quantity="other">%dh</item>
     </plurals>
     <plurals name="time_minutes">
         <item quantity="one">%d min</item>
