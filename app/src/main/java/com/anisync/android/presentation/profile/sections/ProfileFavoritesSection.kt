@@ -60,7 +60,6 @@ fun LazyListScope.profileFavoritesTab(
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
-    listColumns: Int = 1,
     studioColumns: Int = 2,
     modifier: Modifier = Modifier,
     gridColumns: Int = 3,

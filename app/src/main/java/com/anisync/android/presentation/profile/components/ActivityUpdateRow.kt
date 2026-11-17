@@ -61,7 +61,6 @@ internal fun ActivityUpdateRow(
         color = color,
         modifier = modifier.fillMaxWidth()
     ) {
-        // The like's own touch padding makes up the rest of the 16dp end margin.
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp + extraTop, bottom = 8.dp + extraBottom)

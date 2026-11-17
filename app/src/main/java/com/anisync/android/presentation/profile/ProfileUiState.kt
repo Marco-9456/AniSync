@@ -287,8 +287,8 @@ enum class ProfileSocialTab(@StringRes val labelRes: Int) {
     val isForum: Boolean get() = this == FORUM_THREADS || this == FORUM_COMMENTS
 }
 
-@Immutable
 /** [labelRes] names the order in its menu, [phraseRes] finishes the count line under the tabs. */
+@Immutable
 enum class PeopleOrder(@StringRes val labelRes: Int, @StringRes val phraseRes: Int, val sort: com.anisync.android.type.UserSort) {
     NEWEST(R.string.profile_people_order_newest, R.string.profile_people_phrase_newest, com.anisync.android.type.UserSort.ID_DESC),
     OLDEST(R.string.profile_people_order_oldest, R.string.profile_people_phrase_oldest, com.anisync.android.type.UserSort.ID),

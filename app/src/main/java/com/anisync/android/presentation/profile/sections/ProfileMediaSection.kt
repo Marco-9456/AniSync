@@ -31,7 +31,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
@@ -41,7 +40,6 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ScoreFormat
-import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.MediaTypeToggle
 import com.anisync.android.presentation.components.menu.Menu
@@ -281,7 +279,7 @@ fun LazyListScope.profileMediaTab(
                                     leadingIcon = LibraryStatus.PLANNING.toListIcon(),
                                     onClick = {
                                         menuOpen = false
-                                        onAddToPlanning?.invoke(item.mediaId)
+                                        onAddToPlanning(item.mediaId)
                                     }
                                 )
                             }

@@ -1,16 +1,10 @@
 package com.anisync.android.presentation.profile
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -35,7 +29,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,7 +56,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
@@ -128,12 +120,10 @@ import com.anisync.android.presentation.statistics.StatsRail
 import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.type.MediaType
-import com.anisync.android.ui.theme.emphasis
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.takeWhile
-import kotlinx.coroutines.launch
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberUpdatedState
@@ -144,12 +134,9 @@ import com.anisync.android.presentation.components.ScrollToTopOnRequest
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.withTimeoutOrNull
 
 @OptIn(
@@ -882,8 +869,6 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onCharacterClick = onCharacterClick,
                 onStaffClick = onStaffClick,
                 onStudioClick = onStudioClick,
-                // List rows are wide; 2-up is the most that stays legible (incl. the right pane).
-                listColumns = statsColumns.coerceAtMost(2),
                 studioColumns = studioColumns,
                 gridColumns = portraitColumns,
                 titleLanguage = uiState.titleLanguage
@@ -965,7 +950,6 @@ private fun OverviewLead(
     }
 }
 
-/** Statistics once it has loaded, outside Recaps, and Favorites on a non-empty anime or manga list float the share button. */
 internal fun ProfileUiState.showsShareFab(profile: UserProfile): Boolean = when (selectedTab) {
     ProfileTab.STATS -> statsData != null && selectedStatsView != StatsView.RECAPS
     ProfileTab.FAVORITES -> when (selectedFavoritesFilter) {
@@ -1204,9 +1188,6 @@ internal fun ProfileTabStrip(
     /** T2 draws the list's rail over the rows instead, beside the filter panel. */
     showListRail: Boolean = true
 ) {
-    val selectListTab: (MediaType) -> Unit = {
-        onTabSelected(if (it == MediaType.MANGA) ProfileTab.MANGA else ProfileTab.ANIME)
-    }
     val railScrolls = rails ?: remember { ProfileRails() }
     Column(modifier = modifier) {
         val onLists = uiState.selectedTab == ProfileTab.ANIME || uiState.selectedTab == ProfileTab.MANGA

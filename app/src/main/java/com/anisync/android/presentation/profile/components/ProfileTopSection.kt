@@ -1,7 +1,6 @@
 package com.anisync.android.presentation.profile.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -19,8 +18,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -47,8 +44,6 @@ import com.anisync.android.presentation.profile.ProfileWideLoadingSkeleton
 import com.anisync.android.presentation.profile.sections.BioPreview
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 
-// Hoisted static layout constants to prevent reallocation. The avatar size is shared with the wide
-// identity pane (see ProfileIdentity.kt).
 private val BannerHeight = 196.dp
 
 /**
@@ -207,8 +202,7 @@ internal fun ProfileBackdrop(
         ProfileBannerSurface(
             profile = profile,
             isOwnProfile = isOwnProfile,
-            topActionIcon = Icons.Default.Settings,
-            onTopActionClick = onSettingsClick,
+            onSettingsClick = onSettingsClick,
             height = height,
             onBackClick = onBackClick,
             ownTopBar = { ProfileOwnTopBar(onBanner = true, onSettingsClick = onSettingsClick) },

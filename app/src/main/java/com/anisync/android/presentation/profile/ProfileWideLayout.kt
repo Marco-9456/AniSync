@@ -38,8 +38,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -85,13 +83,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-// T1: a 168dp banner card at the top of the identity column, level with the tabs beside it.
 private val WideBannerHeight = 168.dp
 
 /** Without a banner the column keeps only the controls that sat on it, in a row of this height. */
 private val WideChromeRowHeight = 48.dp
 
-// The banner card sits 8dp into the pane, its text and buttons 4dp, as in T1.
 private val WideBannerInset = 8.dp
 private val WideContentInset = 4.dp
 private val WideGutterStart = 16.dp
@@ -267,8 +263,7 @@ private fun ProfileIdentityColumn(
             ProfileBannerSurface(
                 profile = profile,
                 isOwnProfile = isOwnProfile,
-                topActionIcon = Icons.Default.Settings,
-                onTopActionClick = onSettingsClick,
+                onSettingsClick = onSettingsClick,
                 height = WideBannerHeight,
                 onBackClick = onBackClick,
                 shape = TwoPaneDefaults.PaneShape,

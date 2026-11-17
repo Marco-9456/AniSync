@@ -523,7 +523,6 @@
     <string name="account_sign_in_failed">Couldn\'t sign in. Please try again.</string>
     <string name="account_remove_dialog_title">Remove account?</string>
     <string name="account_remove_dialog_message">%1$s will be removed from this device. You can sign in again at any time.</string>
-    <string name="account_sheet_title">Accounts</string>
     <string name="account_signed_in">Signed in</string>
     <string name="account_signed_in_with">Signed in · %1$s</string>
     <string name="account_switch_to">Switch to this account</string>

@@ -1707,12 +1707,6 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Loads the full favourite-anime list (all pages) on demand — triggered when the Favorites tab
-     * opens, or re-run on pull-to-refresh while it's active. The profile fetch only carries page 1,
-     * so this is the only place the favourites fan-out runs. Manga/characters/staff show their
-     * page-1 overview directly, so they need no lazy fetch.
-     */
     private fun ProfileFavoritesFilter.kind(): com.anisync.android.domain.FavoriteKind? = when (this) {
         ProfileFavoritesFilter.ANIME -> null
         ProfileFavoritesFilter.MANGA -> com.anisync.android.domain.FavoriteKind.MANGA
@@ -1747,6 +1741,10 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Loads the full favourite-anime list (all pages) on demand, when the Favorites tab opens or on
+     * a pull to refresh while it is open. The profile fetch only carries page 1.
+     */
     private fun fetchFullFavoriteAnime(forceRefresh: Boolean = false) {
         if (favoritesState.value.isAnimeLoading) return
         if (!forceRefresh && favoritesState.value.animeFetched) return

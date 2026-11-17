@@ -54,9 +54,6 @@ internal fun RevealSelectedChip(scroll: RailScroll, selected: Any, index: Int) {
     }
 }
 
-/** Every rail under the profile tabs is this tall, padding included. */
-private val ProfileRailHeight = ConnectedToggleDefaults.Height
-
 /** Holds a rail's place in the copy of the strip that is hidden under the docked one. */
 @Composable
 internal fun ProfileRailPlaceholder() {
@@ -64,7 +61,7 @@ internal fun ProfileRailPlaceholder() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 4.dp, bottom = 8.dp)
-            .height(ProfileRailHeight)
+            .height(ConnectedToggleDefaults.Height)
     )
 }
 

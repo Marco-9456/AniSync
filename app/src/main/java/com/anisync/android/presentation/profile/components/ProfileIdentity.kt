@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Notifications
@@ -39,7 +40,6 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -62,7 +62,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -110,11 +109,8 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Shared profile-header building blocks, extracted from [ProfileTopSection] (the compact header) so
- * the expanded two-pane layout (`ProfileWideLayout`) can reuse them. The compact and wide headers
- * differ only in arrangement (one overlapping card vs. a banner above a left identity pane); these
- * pieces — the banner surface, the identity info column, the action buttons, and the donator badges
- * — are identical in both, so they live here and are composed differently by each host.
+ * Header pieces shared by the phone header ([ProfileTopSection]) and the wide identity column
+ * (`ProfileWideLayout`), which arrange them each their own way.
  */
 
 /** Avatar diameter shared by the compact header overlay and the wide identity pane. */
@@ -130,8 +126,7 @@ val ProfileAvatarHalfSize = ProfileAvatarSize / 2
 fun ProfileBannerSurface(
     profile: UserProfile,
     isOwnProfile: Boolean,
-    topActionIcon: ImageVector,
-    onTopActionClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     height: Dp,
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
@@ -205,7 +200,7 @@ fun ProfileBannerSurface(
             Box(modifier = Modifier.align(Alignment.TopStart).then(chromeInset)) { ownTopBar() }
         } else if (isOwnProfile) {
             FilledTonalIconButton(
-                onClick = onTopActionClick,
+                onClick = onSettingsClick,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .then(chromeInset)
@@ -217,7 +212,7 @@ fun ProfileBannerSurface(
                 val showDot = rememberActiveWhatsNew().any { it.place == WhatsNewItem.Place.SETTINGS }
                 BadgedBox(badge = { if (showDot) Badge() }) {
                     Icon(
-                        imageVector = topActionIcon,
+                        imageVector = Icons.Default.Settings,
                         contentDescription = stringResource(R.string.settings),
                         modifier = Modifier.size(24.dp)
                     )
@@ -303,9 +298,6 @@ internal fun ProfileMenuButton(
  * The identity column: display name, donator badge, moderator role chips, and the
  * active/joined meta. Self-contained (no avatar or banner) so it drops into both the compact header
  * card and the wide identity pane.
- *
- * Composed from [ProfileDisplayName] and [ProfileIdentityDetails], which the wide pane also stacks
- * itself so it can collapse the details away under a pinned name as the bio scrolls.
  */
 @Composable
 fun ProfileIdentityInfo(
@@ -342,7 +334,7 @@ fun ProfileIdentityInfo(
  * either way.
  */
 @Composable
-fun ProfileDisplayName(name: String, modifier: Modifier = Modifier, accounts: ProfileAccounts? = null) {
+private fun ProfileDisplayName(name: String, modifier: Modifier = Modifier, accounts: ProfileAccounts? = null) {
     val style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold)
     val clipLabel = stringResource(R.string.profile_username)
     val copiedMessage = stringResource(R.string.profile_username_copied, name)
@@ -403,12 +395,11 @@ private const val NAME_SWITCH_ARROW = "account_switch_arrow"
 
 /**
  * Everything under the display name: level + donator badges, the mutual-follow chip, moderator role
- * chips, and the active/joined meta. Split out from [ProfileIdentityInfo] so the wide identity pane
- * can collapse this block on its own.
+ * chips, the active/joined meta, the counts and the way to People.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ProfileIdentityDetails(
+private fun ProfileIdentityDetails(
     profile: UserProfile,
     isOwnProfile: Boolean,
     modifier: Modifier = Modifier,
