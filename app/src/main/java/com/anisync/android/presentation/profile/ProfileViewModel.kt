@@ -485,9 +485,10 @@ class ProfileViewModel @Inject constructor(
                     if (name.isNullOrBlank()) {
                         flowOf(emptyMap())
                     } else {
+                        // Room re-runs both queries on any library write, the unchanged type included.
                         combine(
-                            libraryRepository.observeLibrary(name, MediaType.ANIME),
-                            libraryRepository.observeLibrary(name, MediaType.MANGA)
+                            libraryRepository.observeLibrary(name, MediaType.ANIME).distinctUntilChanged(),
+                            libraryRepository.observeLibrary(name, MediaType.MANGA).distinctUntilChanged()
                         ) { anime, manga -> (anime + manga).associateBy { it.mediaId } }
                     }
                 }

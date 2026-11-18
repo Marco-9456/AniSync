@@ -416,7 +416,9 @@ internal fun rememberListComparison(uiState: ProfileUiState, isOwnProfile: Boole
     val type = if (uiState.selectedTab == ProfileTab.COMPARE) uiState.compareType else MediaType.ANIME
     val enabled = !isOwnProfile && (uiState.selectedTab == ProfileTab.OVERVIEW || uiState.selectedTab == ProfileTab.COMPARE)
     val theirs = if (type == MediaType.MANGA) uiState.userMangaList else uiState.userAnimeList
-    return remember(theirs, uiState.viewerEntries, uiState.viewerScoreFormat, type, enabled) {
-        if (!enabled || theirs.isEmpty()) null else compareLists(theirs, uiState.viewerEntries.values, type, uiState.viewerScoreFormat)
+    // Kept across tab switches, so coming back to Overview does not compare the lists again.
+    val comparison = remember(theirs, uiState.viewerEntries, uiState.viewerScoreFormat, type) {
+        lazy(LazyThreadSafetyMode.NONE) { compareLists(theirs, uiState.viewerEntries.values, type, uiState.viewerScoreFormat) }
     }
+    return if (!enabled || theirs.isEmpty()) null else comparison.value
 }

@@ -140,8 +140,10 @@ fun applyListTools(
 }
 
 private fun LibraryEntry.matches(query: String): Boolean =
-    listOfNotNull(titleRomaji, titleEnglish, titleNative, titleUserPreferred)
-        .any { it.contains(query, ignoreCase = true) }
+    titleRomaji?.contains(query, ignoreCase = true) == true ||
+        titleEnglish?.contains(query, ignoreCase = true) == true ||
+        titleNative?.contains(query, ignoreCase = true) == true ||
+        titleUserPreferred.contains(query, ignoreCase = true)
 
 private fun LibraryEntry.passesScoreFloor(floor: Int?): Boolean {
     val score = scoreOutOf100()

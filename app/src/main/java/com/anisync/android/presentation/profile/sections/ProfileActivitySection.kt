@@ -142,18 +142,19 @@ fun LazyListScope.profileActivityTab(
         }
     } else {
         val zone = ZoneId.systemDefault()
+        val days = LongArray(filteredActivities.size) { filteredActivities[it].dayIn(zone) }
         filteredActivities.forEachIndexed { index, activity ->
-            val day = activity.dayIn(zone)
+            val day = days[index]
             val previous = filteredActivities.getOrNull(index - 1)
-            if (!activity.isPinned && (previous == null || previous.isPinned || previous.dayIn(zone) != day)) {
+            if (!activity.isPinned && (previous == null || previous.isPinned || days[index - 1] != day)) {
                 item(key = "activity_day_${index}_$day", contentType = "activity_day") {
                     ActivityDayHeader(day, start = 20.dp, top = 12.dp, bottom = 8.dp)
                 }
             }
             val update = activity.isGroupedUpdate()
-            val joinsAbove = update && previous?.isGroupedUpdate() == true && previous.dayIn(zone) == day
+            val joinsAbove = update && previous?.isGroupedUpdate() == true && days[index - 1] == day
             val next = filteredActivities.getOrNull(index + 1)
-            val joinsBelow = update && next?.isGroupedUpdate() == true && next.dayIn(zone) == day
+            val joinsBelow = update && next?.isGroupedUpdate() == true && days[index + 1] == day
             item(key = "activity_${activity.id}", contentType = if (update) "activity_update" else "activity_item") {
                 val canDelete = viewerId != null && (
                     activity.userId == viewerId ||
