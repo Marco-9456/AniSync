@@ -504,9 +504,9 @@ class ProfileViewModel @Inject constructor(
         appSettings.titleLanguage
     ) { lists, (tab, animeStatus, mangaStatus), tools, viewer, language ->
         when (tab) {
-            ProfileTab.ANIME -> applyListTools(lists.userAnimeList.distinctBy { it.id }, animeStatus, tools, viewer, language)
+            ProfileTab.ANIME -> applyListTools(lists.userAnimeList, animeStatus, tools, viewer, language)
                 .copy(source = lists.userAnimeList)
-            ProfileTab.MANGA -> applyListTools(lists.userMangaList.distinctBy { it.id }, mangaStatus, tools, viewer, language)
+            ProfileTab.MANGA -> applyListTools(lists.userMangaList, mangaStatus, tools, viewer, language)
                 .copy(source = lists.userMangaList)
             else -> ProfileListResults()
         }

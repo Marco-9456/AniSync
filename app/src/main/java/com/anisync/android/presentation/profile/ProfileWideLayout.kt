@@ -381,10 +381,8 @@ private fun ProfileListsWithPanel(
                 }
             }
             if (panelShown) {
-                val entries = uiState.selectedListEntries
-                val distinct = remember(entries) { entries.distinctBy { it.id } }
                 ProfileListFilterPanel(
-                    entries = distinct,
+                    entries = uiState.selectedListEntries,
                     status = uiState.selectedListStatus,
                     tools = uiState.listTools,
                     viewer = uiState.viewerEntries,

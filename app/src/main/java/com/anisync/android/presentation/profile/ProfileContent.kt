@@ -575,8 +575,6 @@ fun ProfileContent(
         )
     }
 
-    val listEntries = uiState.selectedListEntries
-    val distinctListEntries = remember(listEntries) { listEntries.distinctBy { it.id } }
     when (uiState.listSheet) {
         ProfileListSheet.SORT -> ProfileListSortSheet(
             tools = uiState.listTools,
@@ -585,7 +583,7 @@ fun ProfileContent(
             onDismiss = { onAction(ProfileAction.OpenListSheet(ProfileListSheet.NONE)) }
         )
         ProfileListSheet.FILTERS -> ProfileListFilterSheet(
-            entries = distinctListEntries,
+            entries = uiState.selectedListEntries,
             status = uiState.selectedListStatus,
             tools = uiState.listTools,
             viewer = uiState.viewerEntries,
