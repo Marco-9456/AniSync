@@ -143,7 +143,7 @@ internal fun updateRowShape(top: Boolean, bottom: Boolean): Shape = RoundedCorne
  * without a count, such as completed or dropped, keep AniList's wording.
  */
 @Composable
-internal fun updateAction(status: String?, progress: String?): String {
+private fun updateAction(status: String?, progress: String?): String {
     val verb = status?.trim()?.lowercase().orEmpty()
     val range = parseProgress(progress)
     val phrase = when {

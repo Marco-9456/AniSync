@@ -1,8 +1,5 @@
 package com.anisync.android.presentation.profile.sections
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -197,7 +194,6 @@ private fun CompareFact(icon: ImageVector, text: String) {
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 fun LazyListScope.profileComparePage(
     comparison: ListComparison?,
     isLoading: Boolean,
@@ -208,8 +204,6 @@ fun LazyListScope.profileComparePage(
     yourScoreFormat: ScoreFormat,
     titleLanguage: TitleLanguage,
     onMediaClick: (Int) -> Unit,
-    sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?,
     expanded: Set<String> = emptySet(),
     onExpand: (String) -> Unit = {}
 ) {
@@ -237,8 +231,8 @@ fun LazyListScope.profileComparePage(
     item(key = "compare_summary") {
         CompareSummary(comparison, type, ownerName, yourAvatar, theirAvatar)
     }
-    sharedSection("compare_both", R.string.profile_compare_both_scored, comparison.bothScored, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_both" in expanded, onExpand, yourAvatar, theirAvatar, ownerName)
-    sharedSection("compare_also", R.string.profile_compare_also_shared, comparison.alsoShared, yourScoreFormat, titleLanguage, type, onMediaClick, sharedTransitionScope, animatedVisibilityScope, "compare_also" in expanded, onExpand, yourAvatar, theirAvatar, ownerName)
+    sharedSection("compare_both", R.string.profile_compare_both_scored, comparison.bothScored, yourScoreFormat, titleLanguage, type, onMediaClick, "compare_both" in expanded, onExpand, yourAvatar, theirAvatar, ownerName)
+    sharedSection("compare_also", R.string.profile_compare_also_shared, comparison.alsoShared, yourScoreFormat, titleLanguage, type, onMediaClick, "compare_also" in expanded, onExpand, yourAvatar, theirAvatar, ownerName)
     if (comparison.theirTensNotYours.isNotEmpty()) {
         item(key = "compare_tens") {
             PosterShelf(
@@ -330,7 +324,6 @@ private fun MeanBox(mean: Double?, label: String, modifier: Modifier = Modifier)
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 private fun LazyListScope.sharedSection(
     key: String,
     titleRes: Int,
@@ -339,8 +332,6 @@ private fun LazyListScope.sharedSection(
     titleLanguage: TitleLanguage,
     type: MediaType,
     onMediaClick: (Int) -> Unit,
-    sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?,
     expanded: Boolean,
     onExpand: (String) -> Unit,
     yourAvatar: String?,
@@ -372,7 +363,7 @@ private fun LazyListScope.sharedSection(
                 ScoreVerdict.THEIRS_HIGHER -> stringResource(R.string.profile_compare_verdict_theirs, ownerName)
                 null -> null
             },
-            showDate = false,
+            dateSort = null,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
         )
     }

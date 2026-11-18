@@ -1,8 +1,5 @@
 package com.anisync.android.presentation.profile.sections
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,7 +57,7 @@ import com.anisync.android.presentation.util.toListIcon
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.ExpressiveShapes
 
-internal enum class ListChip(val status: LibraryStatus?) {
+private enum class ListChip(val status: LibraryStatus?) {
     ALL(null),
     CURRENT(LibraryStatus.CURRENT),
     REPEATING(LibraryStatus.REPEATING),
@@ -115,7 +112,6 @@ internal fun MediaStatusRail(
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 fun LazyListScope.profileMediaTab(
     results: ProfileListResults,
     tools: ProfileListTools,
@@ -133,8 +129,6 @@ fun LazyListScope.profileMediaTab(
     onOpenSort: () -> Unit,
     onClearFilters: () -> Unit,
     onRetry: () -> Unit,
-    sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?,
     transitionPrefix: String,
     listColumns: Int = 1,
     gridColumns: Int = 2,

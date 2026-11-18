@@ -1462,7 +1462,6 @@
     <string name="profile_count_manga">%1$s manga</string>
     <string name="profile_people">Following and followers</string>
     <string name="profile_add_to_planning">Add to Planning</string>
-    <string name="profile_page_people">People</string>
     <string name="profile_people_title">%1$s\'s people</string>
     <string name="profile_people_title_own">Your people</string>
     <string name="profile_favorites_title">%1$s\'s favorites</string>
@@ -1528,7 +1527,6 @@
     <string name="profile_picture_prompt_title">Add a picture and a banner</string>
     <string name="profile_picture_prompt_body">AniList keeps these. The button opens your AniList settings.</string>
     <string name="profile_picture_prompt_action">Open AniList settings</string>
-    <string name="profile_compare">Compare</string>
     <string name="profile_compare_title">You and %1$s</string>
     <string name="profile_compare_open">Compare lists</string>
     <string name="profile_compare_same_score">You gave %1$s the same score</string>

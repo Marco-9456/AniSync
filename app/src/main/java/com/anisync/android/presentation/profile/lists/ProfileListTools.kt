@@ -46,15 +46,9 @@ data class ProfileListFilters(
     /** Out of 100. [UNSCORED] keeps only unscored titles. */
     val scoreFloor: Int? = null
 ) {
-    val activeCount: Int
-        get() = listOf(
-            yourList != YourListFilter.ANY,
-            formats.isNotEmpty(),
-            genres.isNotEmpty() || excludedGenres.isNotEmpty(),
-            scoreFloor != null
-        ).count { it }
-
-    val isActive: Boolean get() = activeCount > 0
+    val isActive: Boolean
+        get() = yourList != YourListFilter.ANY || formats.isNotEmpty() || genres.isNotEmpty() ||
+            excludedGenres.isNotEmpty() || scoreFloor != null
 
     fun genreState(genre: String): TriState = when (genre) {
         in genres -> TriState.INCLUDED

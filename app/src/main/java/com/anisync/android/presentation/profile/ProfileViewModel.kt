@@ -474,7 +474,6 @@ class ProfileViewModel @Inject constructor(
 
     private val listTools = MutableStateFlow(ProfileListTools())
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     private val viewerLibrary: StateFlow<Map<Int, LibraryEntry>> =
         if (targetUsername.isNullOrBlank()) {
             MutableStateFlow(emptyMap())

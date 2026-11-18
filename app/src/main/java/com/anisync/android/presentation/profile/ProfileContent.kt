@@ -703,7 +703,7 @@ internal fun LazyListScope.profileSelectedTabContent(
                 latestReview = uiState.reviews.firstOrNull(),
                 titleLanguage = uiState.titleLanguage,
                 viewerId = uiState.viewerId,
-                onNavigateToTab = { onAction(ProfileAction.SelectTab(it)) },
+                onOpenActivity = { onAction(ProfileAction.SelectTab(ProfileTab.ACTIVITY)) },
                 onOpenFavorites = {
                     onAction(ProfileAction.SelectFavoritesFilter(it))
                     onAction(ProfileAction.SelectTab(ProfileTab.FAVORITES))
@@ -844,8 +844,6 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onOpenSort = { onAction(ProfileAction.OpenListSheet(ProfileListSheet.SORT)) },
                 onClearFilters = { onAction(ProfileAction.ClearListFilters) },
                 onRetry = { onAction(ProfileAction.RetryList) },
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
                 transitionPrefix = if (manga) "profile_manga" else "profile_anime",
                 // List rows are wide; 2-up is the most that stays legible (incl. the right pane).
                 listColumns = statsColumns.coerceAtMost(2),
@@ -883,8 +881,6 @@ internal fun LazyListScope.profileSelectedTabContent(
             yourScoreFormat = uiState.viewerScoreFormat,
             titleLanguage = uiState.titleLanguage,
             onMediaClick = onMediaClick,
-            sharedTransitionScope = sharedTransitionScope,
-            animatedVisibilityScope = animatedVisibilityScope,
             expanded = uiState.compareExpanded,
             onExpand = { onAction(ProfileAction.ExpandCompareSection(it)) }
         )
@@ -985,7 +981,7 @@ private fun ProfileTab.stripTab(): StripTab = when (this) {
     else -> StripTab.ACTIVITY
 }
 
-internal fun ProfileUiState.pageListKey(): String = when (selectedTab) {
+private fun ProfileUiState.pageListKey(): String = when (selectedTab) {
     ProfileTab.FAVORITES -> "FAVORITES_${selectedFavoritesFilter.name}"
     ProfileTab.SOCIAL -> "SOCIAL_${selectedSocialTab.name}"
     else -> selectedTab.name
@@ -1078,6 +1074,7 @@ private fun SavedCopyNotice(onRetry: () -> Unit) {
     }
 }
 
+/** Only the pages have a title: People, Favourites, and Compare in the last branch. */
 @Composable
 private fun pageTitle(uiState: ProfileUiState): String {
     val name = uiState.profile?.name.orEmpty()
@@ -1087,8 +1084,7 @@ private fun pageTitle(uiState: ProfileUiState): String {
             if (own) stringResource(R.string.profile_people_title_own) else stringResource(R.string.profile_people_title, name)
         ProfileTab.FAVORITES ->
             if (own) stringResource(R.string.profile_favorites_title_own) else stringResource(R.string.profile_favorites_title, name)
-        ProfileTab.COMPARE -> stringResource(R.string.profile_compare_title, name)
-        else -> stringResource(uiState.selectedTab.titleRes)
+        else -> stringResource(R.string.profile_compare_title, name)
     }
 }
 
@@ -1177,7 +1173,6 @@ internal fun ProfileTabStrip(
     onFilterAction: (ProfileAction) -> Unit,
     modifier: Modifier = Modifier,
     onListQueryChange: (String) -> Unit = { onFilterAction(ProfileAction.SetListQuery(it)) },
-    onListBack: (() -> Unit)? = null,
     /** The phone draws the list's search in the docked bar instead, above this strip. */
     showListSearch: Boolean = true,
     rails: ProfileRails? = null,
@@ -1194,7 +1189,7 @@ internal fun ProfileTabStrip(
                 uiState = uiState,
                 onQueryChange = onListQueryChange,
                 onFilterAction = onFilterAction,
-                onBack = onListBack
+                onBack = null
             )
         }
         ProfileTabsButtonGroup(

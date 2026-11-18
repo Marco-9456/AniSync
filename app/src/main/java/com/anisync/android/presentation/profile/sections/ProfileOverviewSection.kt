@@ -19,7 +19,6 @@ import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.profile.ProfileFavoritesFilter
-import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.components.ActivityCard
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.statistics.ActivityHistorySection
@@ -38,7 +37,7 @@ internal class OverviewBlocks(
     val latestReview: MediaReview?,
     val titleLanguage: TitleLanguage,
     val viewerId: Int?,
-    val onNavigateToTab: (ProfileTab) -> Unit,
+    val onOpenActivity: () -> Unit,
     val onOpenFavorites: (ProfileFavoritesFilter) -> Unit,
     val onMediaClick: (Int) -> Unit,
     val onCharacterClick: (Int) -> Unit,
@@ -169,7 +168,7 @@ private fun OverviewUpdates(blocks: OverviewBlocks) {
     Column {
         OverviewHeader(
             title = stringResource(R.string.section_recent_updates),
-            onAction = { blocks.onNavigateToTab(ProfileTab.ACTIVITY) }
+            onAction = blocks.onOpenActivity
         )
         RecentUpdatesCard(blocks.updates, blocks.onActivityClick, blocks.onMediaClick, blocks.onLikeActivity)
     }

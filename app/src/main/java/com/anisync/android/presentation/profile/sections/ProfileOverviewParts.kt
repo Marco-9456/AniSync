@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.anisync.android.R
@@ -78,7 +77,7 @@ internal fun WatchingRow(
                     .clip(CoverShape)
                     .bouncyClickable(onClick = { onMediaClick(entry.mediaId) }, onClickLabel = entry.getTitle(titleLanguage))
             ) {
-                Cover(entry, CoverWidth, CoverHeight)
+                Cover(entry)
                 if (total != null && total > 0) {
                     FlatProgress(fraction = entry.progress.toFloat() / total, modifier = Modifier.padding(top = 6.dp))
                 }
@@ -126,14 +125,14 @@ private fun FlatProgress(fraction: Float, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Cover(entry: LibraryEntry, width: Dp, height: Dp) {
+private fun Cover(entry: LibraryEntry) {
     AsyncImage(
         model = entry.cover.url() ?: entry.coverUrl,
         contentDescription = null,
         contentScale = ContentScale.Crop,
         modifier = Modifier
-            .width(width)
-            .height(height)
+            .width(CoverWidth)
+            .height(CoverHeight)
             .clip(CoverShape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
     )
@@ -201,7 +200,7 @@ internal fun FavouritePosterRow(
                     .clip(CoverShape)
                     .bouncyClickable(onClick = { onMediaClick(entry.mediaId) }, onClickLabel = entry.getTitle(titleLanguage))
             ) {
-                Cover(entry, CoverWidth, CoverHeight)
+                Cover(entry)
                 Text(
                     text = entry.getTitle(titleLanguage),
                     style = MaterialTheme.typography.labelLarge,

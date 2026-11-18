@@ -21,8 +21,6 @@ data class SharedTitle(val theirs: LibraryEntry, val yours: LibraryEntry) {
                 else -> ScoreVerdict.THEIRS_HIGHER
             }
         }
-
-    val sameScore: Boolean get() = verdict == ScoreVerdict.SAME
 }
 
 @Immutable
@@ -38,7 +36,7 @@ data class ListComparison(
 ) {
     val sharedCount: Int get() = bothScored.size + alsoShared.size
     val theirsNotYours: Int get() = theirCount - sharedCount
-    val sameScore: SharedTitle? get() = bothScored.firstOrNull { it.sameScore }
+    val sameScore: SharedTitle? get() = bothScored.firstOrNull { it.verdict == ScoreVerdict.SAME }
 }
 
 private const val TOP_SCORE = 99.5

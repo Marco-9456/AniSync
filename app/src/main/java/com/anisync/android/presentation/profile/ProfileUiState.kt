@@ -235,15 +235,15 @@ data class LengthUiModel(
 )
 
 @Immutable
-enum class ProfileTab(@StringRes val titleRes: Int) {
-    OVERVIEW(R.string.profile_tab_overview),
-    STATS(R.string.details_tab_stats),
-    ACTIVITY(R.string.profile_tab_activity),
-    ANIME(R.string.media_type_anime),
-    MANGA(R.string.media_type_manga),
-    FAVORITES(R.string.section_favorites),
-    SOCIAL(R.string.profile_page_people),
-    COMPARE(R.string.profile_compare);
+enum class ProfileTab {
+    OVERVIEW,
+    STATS,
+    ACTIVITY,
+    ANIME,
+    MANGA,
+    FAVORITES,
+    SOCIAL,
+    COMPARE;
 
     val isPage: Boolean get() = this == FAVORITES || this == SOCIAL || this == COMPARE
 

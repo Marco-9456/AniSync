@@ -72,11 +72,11 @@ fun ProfileListRow(
     yours: LibraryEntry? = null,
     yourAvatar: String? = null,
     yourScoreFormat: ScoreFormat = ScoreFormat.POINT_100,
-    dateSort: ProfileListSort = ProfileListSort.UPDATED,
+    /** The date their line ends on, none when null. */
+    dateSort: ProfileListSort? = ProfileListSort.UPDATED,
     onLongClick: (() -> Unit)? = null,
     /** Leads the facts line, which then leaves the length out to make room. */
-    factsLead: String? = null,
-    showDate: Boolean = true
+    factsLead: String? = null
 ) {
     val title = entry.getTitle(titleLanguage)
     val shape = RoundedCornerShape(16.dp)
@@ -133,7 +133,7 @@ fun ProfileListRow(
                 Spacer(modifier = Modifier.height(4.dp))
                 PersonLine(
                     avatar = ownerAvatar,
-                    text = theirLine(entry, mediaType, showStatus, dateSort.takeIf { showDate }),
+                    text = theirLine(entry, mediaType, showStatus, dateSort),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 entry.notes?.takeIf { it.isNotBlank() }?.let { note ->
@@ -282,7 +282,7 @@ fun ProfileListGridCell(
 }
 
 /** Numeric scores carry their scale, "8 / 10", stars and faces read on their own. */
-internal fun scoreOnScale(score: Double, format: ScoreFormat): String = when (format) {
+private fun scoreOnScale(score: Double, format: ScoreFormat): String = when (format) {
     ScoreFormat.POINT_10, ScoreFormat.POINT_10_DECIMAL -> formatScore(score, format) + " / 10"
     ScoreFormat.POINT_100 -> formatScore(score, format) + " / 100"
     else -> formatScore(score, format)
