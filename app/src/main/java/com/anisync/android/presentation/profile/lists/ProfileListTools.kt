@@ -84,7 +84,9 @@ data class ProfileListResults(
     /** While searching, how many matches each status holds, which is what the chips then count. */
     val searchCounts: Map<LibraryStatus, Int>? = null,
     /** On someone else's list, how many titles each your-list filter would leave. */
-    val yourListCounts: Map<YourListFilter, Int> = emptyMap()
+    val yourListCounts: Map<YourListFilter, Int> = emptyMap(),
+    /** The tab and chip these rows belong to, see [com.anisync.android.presentation.profile.contentKey]. */
+    val key: String? = null
 )
 
 internal fun LibraryEntry.scoreOutOf100(): Double? {

@@ -56,7 +56,11 @@ class ProfileListDeriver(private val comparesWithViewer: Boolean) {
             if (!key.sameAs(resultsKey)) {
                 resultsKey = key
                 val counts = if (comparesWithViewer) yourListCounts(key.entries, key.status, key.tools, viewer) else emptyMap()
-                results = applyListTools(key.entries, key.status, key.tools, viewer, language).copy(yourListCounts = counts)
+                val shownStatus = if (key.tools.query.isNotBlank()) key.tools.searchStatus else key.status
+                results = applyListTools(key.entries, key.status, key.tools, viewer, language).copy(
+                    yourListCounts = counts,
+                    key = "${listTab.name}_${shownStatus?.name ?: "ALL"}"
+                )
             }
         }
 

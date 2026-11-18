@@ -33,15 +33,24 @@ internal class ProfileListStates(saved: Map<String, Pair<Int, Int>> = emptyMap()
 internal fun rememberProfileListStates(): ProfileListStates =
     rememberSaveable(saver = ProfileListStates.Saver) { ProfileListStates() }
 
-/** What sits under the tabs: the tab with its chip, type or filter. Each keeps its own place. */
+/**
+ * What sits under the tabs: the tab with its chip, type or filter. Each keeps its own place.
+ *
+ * The list rows are worked out off the main thread, so a chip stays on the rows of the one before it
+ * until its own arrive. Shown against the shorter rows of another chip, its list would lose its
+ * place, and while Anime and Manga swap the placeholder gets a list of its own for the same reason.
+ */
 val ProfileUiState.contentKey: String
     get() = when (selectedTab) {
         ProfileTab.OVERVIEW -> selectedTab.name
         ProfileTab.STATS -> "STATS_${selectedStatsType.name}_${selectedStatsView.name}"
         ProfileTab.ACTIVITY -> "ACTIVITY_${selectedActivityFilter.name}"
-        ProfileTab.ANIME, ProfileTab.MANGA -> {
-            val status = if (listTools.query.isNotBlank()) listTools.searchStatus else selectedListStatus
-            "${selectedTab.name}_${status?.name ?: "ALL"}"
+        ProfileTab.ANIME, ProfileTab.MANGA -> when {
+            listSettling -> "${selectedTab.name}_SETTLING"
+            else -> listResults.key ?: run {
+                val status = if (listTools.query.isNotBlank()) listTools.searchStatus else selectedListStatus
+                "${selectedTab.name}_${status?.name ?: "ALL"}"
+            }
         }
         ProfileTab.FAVORITES -> "FAVORITES_${selectedFavoritesFilter.name}"
         ProfileTab.SOCIAL -> "SOCIAL_${selectedSocialTab.name}"

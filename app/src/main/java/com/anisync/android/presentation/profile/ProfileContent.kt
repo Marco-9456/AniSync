@@ -1017,12 +1017,15 @@ internal fun ProfileRefreshList(
         modifier = Modifier.fillMaxSize(),
         topInset = topPadding
     ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = topPadding, bottom = bottomPadding)
-        ) {
-            content()
+        // Each tab and chip gets a list of its own, as on the phone.
+        key(uiState.contentKey) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(top = topPadding, bottom = bottomPadding)
+            ) {
+                content()
+            }
         }
     }
 }
