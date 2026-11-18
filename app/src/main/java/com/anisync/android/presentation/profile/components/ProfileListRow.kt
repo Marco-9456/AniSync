@@ -179,7 +179,7 @@ private fun mediaFacts(entry: LibraryEntry, mediaType: MediaType, lead: String?)
         lead,
         entry.formatAndYear(),
         total?.takeIf { it > 0 && lead == null }?.let {
-            pluralStringResourceOrDefault(if (mediaType == MediaType.MANGA) R.plurals.stats_length_chapters else R.plurals.stats_length_episodes, it, it)
+            pluralStringResourceOrDefault(if (mediaType == MediaType.MANGA) R.plurals.profile_row_chapters else R.plurals.profile_row_episodes, it, it)
         }
     ).joinToString(" · ")
 }

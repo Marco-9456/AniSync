@@ -764,6 +764,7 @@
     <!-- Edit Profile Dialog -->
     <string name="edit_profile_title">Edit Profile</string>
     <string name="edit_profile_about_label">About</string>
+    <string name="edit_profile_about_section">About</string>
     <string name="profile_cast_characters">Characters</string>
     <string name="profile_cast_staff">Staff</string>
     <string name="section_recent_updates">Recent updates</string>
@@ -1421,11 +1422,15 @@
     <string name="profile_list_you">You</string>
     <string name="profile_list_sort_updated">Last updated</string>
     <string name="profile_list_sort_their_score">Their score</string>
+    <string name="profile_list_sort_score">Score</string>
     <string name="profile_list_sort_your_score">Your score</string>
+    <string name="profile_list_sort_title">Title</string>
     <string name="profile_list_sort_average_score">Average score</string>
+    <string name="profile_list_sort_release_date">Release date</string>
     <string name="profile_list_sort_added">Date added</string>
     <string name="profile_list_sort_started">Date started</string>
     <string name="profile_list_sort_finished">Date finished</string>
+    <string name="profile_list_sort_progress">Progress</string>
     <string name="profile_list_sort_rewatches">Rewatches</string>
     <string name="profile_list_on_your_list">On your list</string>
     <string name="profile_list_not_on_your_list">Not on your list</string>
@@ -1473,6 +1478,7 @@
     <string name="profile_previous_names_changed">Changed in %1$s</string>
     <string name="profile_details">Details</string>
     <string name="profile_username_hint">Username · long press to copy</string>
+    <string name="profile_read_more">Read more</string>
     <string name="profile_post_status">Post a status</string>
     <string name="profile_overview_watching">Watching</string>
     <string name="profile_row_finished">finished %1$s</string>
@@ -1495,6 +1501,8 @@
     <string name="profile_list_search_manga">Search %1$s\'s manga</string>
     <string name="profile_list_search_own_anime">Search your anime</string>
     <string name="profile_list_search_own_manga">Search your manga</string>
+    <string name="profile_list_clear_search">Clear search</string>
+    <string name="profile_list_sort">Sort</string>
     <string name="profile_list_score_floor_chip">%1$d and up</string>
     <string name="profile_order_updated">last updated first</string>
     <string name="profile_order_their_score">their score first</string>

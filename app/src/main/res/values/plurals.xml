@@ -376,6 +376,10 @@
         <item quantity="one">person</item>
         <item quantity="other">people</item>
     </plurals>
+    <plurals name="profile_list_titles">
+        <item quantity="one">%1$s title</item>
+        <item quantity="other">%1$s titles</item>
+    </plurals>
     <plurals name="profile_list_results_for">
         <item quantity="one">%1$s result for %2$s</item>
         <item quantity="other">%1$s results for %2$s</item>
@@ -387,6 +391,10 @@
     <plurals name="profile_people_count">
         <item quantity="one">%1$s person</item>
         <item quantity="other">%1$s people</item>
+    </plurals>
+    <plurals name="profile_favorites_count_titles">
+        <item quantity="one">%1$s title</item>
+        <item quantity="other">%1$s titles</item>
     </plurals>
     <plurals name="profile_favorites_count_characters">
         <item quantity="one">%1$s character</item>
@@ -431,6 +439,14 @@
     <plurals name="profile_compare_yours_not_theirs">
         <item quantity="one">You have %1$s that %2$s hasn\'t added</item>
         <item quantity="other">You have %1$s that %2$s hasn\'t added</item>
+    </plurals>
+    <plurals name="profile_row_episodes">
+        <item quantity="one">%d episode</item>
+        <item quantity="other">%d episodes</item>
+    </plurals>
+    <plurals name="profile_row_chapters">
+        <item quantity="one">%d chapter</item>
+        <item quantity="other">%d chapters</item>
     </plurals>
     <plurals name="profile_row_rewatched">
         <item quantity="one">rewatched once</item>
