@@ -143,7 +143,7 @@ private fun CompareCard(
 
 @Composable
 private fun CompareEyebrow(text: String, yourAvatar: String?, theirAvatar: String?) {
-    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    val locale = LocalConfiguration.current.locales[0]
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box {
             UserAvatar(contentDescription = null, size = 28.dp, url = yourAvatar)

@@ -47,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
@@ -405,8 +406,9 @@ private fun ProfileListsWithPanel(
 internal fun ProfileWideLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: Modifier = Modifier) {
     val block = MaterialTheme.colorScheme.surfaceContainerHigh
     val quiet = MaterialTheme.colorScheme.surfaceContainerLow
+    val leadingFraction by LocalAppSettings.current.paneProfileFraction.collectAsStateWithLifecycle()
     TwoPaneRow(
-        leadingWeight = LocalAppSettings.current.paneProfileFraction.value,
+        leadingWeight = leadingFraction,
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
