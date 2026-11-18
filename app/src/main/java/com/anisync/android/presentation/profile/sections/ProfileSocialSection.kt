@@ -58,10 +58,10 @@ fun LazyListScope.profileSocialTab(
     userColumns: Int = 3,
     /** Set on the viewer's own profile, where each follower carries a remove button. */
     onRemoveFollower: ((SocialUser) -> Unit)? = null,
-    selectedTab: ProfileSocialTab = uiState.selectedSocialTab,
     onToggleFollow: (SocialUser) -> Unit = {},
     onRetry: () -> Unit = {}
 ) {
+    val selectedTab = uiState.selectedSocialTab
 
     if (uiState.isSocialLoading) {
         item(key = "social_loading") {

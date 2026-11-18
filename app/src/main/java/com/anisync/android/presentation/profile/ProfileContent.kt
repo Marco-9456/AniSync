@@ -594,13 +594,9 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onLoadMore = { onAction(ProfileAction.LoadMoreReviews) },
                 onRetry = { onAction(ProfileAction.RetryReviews) }
             )
+            // Picking either filter also picks the matching forum list as the social tab.
             ProfileActivityFilter.THREADS, ProfileActivityFilter.COMMENTS -> profileSocialTab(
                 uiState = uiState,
-                selectedTab = if (uiState.selectedActivityFilter == ProfileActivityFilter.THREADS) {
-                    ProfileSocialTab.FORUM_THREADS
-                } else {
-                    ProfileSocialTab.FORUM_COMMENTS
-                },
                 onUserClick = onUserClick,
                 onThreadClick = onThreadClick,
                 onCommentClick = onCommentClick,
