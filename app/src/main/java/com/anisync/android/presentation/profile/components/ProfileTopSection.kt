@@ -35,6 +35,7 @@ import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.ProfileTabsButtonGroup
 import com.anisync.android.presentation.profile.ProfileWideLoadingSkeleton
+import com.anisync.android.presentation.profile.profileTwoPane
 import com.anisync.android.presentation.profile.sections.BioPreview
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 
@@ -208,7 +209,7 @@ internal fun profileBackdropHeight(band: Boolean): Dp {
  */
 @Composable
 fun ProfileLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: Modifier = Modifier) {
-    if (LocalAdaptiveInfo.current.supportsTwoPane) {
+    if (LocalAdaptiveInfo.current.profileTwoPane) {
         ProfileWideLoadingSkeleton(name = name, onBackClick = onBackClick, modifier = modifier)
         return
     }

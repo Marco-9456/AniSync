@@ -84,6 +84,7 @@ import com.anisync.android.presentation.profile.sections.PeopleSwitcher
 import com.anisync.android.presentation.profile.sections.StatusComposerCard
 import com.anisync.android.presentation.profile.sections.profileComparePage
 import com.anisync.android.presentation.share.cards.fitted
+import com.anisync.android.presentation.util.AdaptiveInfo
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.dashboardColumns
@@ -185,7 +186,7 @@ fun ProfileContent(
 
     BackHandler(enabled = uiState.selectedTab.isPage) { onAction(ProfileAction.ClosePage) }
 
-    if (LocalAdaptiveInfo.current.supportsTwoPane) {
+    if (LocalAdaptiveInfo.current.profileTwoPane) {
         ProfileWideLayout(
             profile = profile,
             uiState = uiState,
@@ -821,6 +822,13 @@ private fun OverviewLead(
         }
     }
 }
+
+/**
+ * T4 and T5 lay the profile out in two panes on an upright tablet and on a phone turned sideways, so
+ * it splits from a medium window, where the list-detail screens wait for a tablet at 840dp. Inside
+ * a detail pane it never splits again.
+ */
+internal val AdaptiveInfo.profileTwoPane: Boolean get() = !isPaneScoped && isMediumOrWider
 
 internal fun ProfileUiState.showsShareFab(profile: UserProfile): Boolean = when (selectedTab) {
     ProfileTab.STATS -> statsData != null && selectedStatsView != StatsView.RECAPS
