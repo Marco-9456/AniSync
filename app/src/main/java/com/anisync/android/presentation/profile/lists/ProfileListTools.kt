@@ -112,25 +112,13 @@ fun applyListTools(
 ): ProfileListResults {
     val query = tools.query.trim()
     val underChip = if (status == null) entries else entries.filter { it.status == status }
-    val filters = tools.filters
-    val passes = { entry: LibraryEntry ->
-        when (filters.yourList) {
-            YourListFilter.ANY -> true
-            YourListFilter.ON_YOUR_LIST -> entry.mediaId in viewer
-            YourListFilter.NOT_ON_YOUR_LIST -> entry.mediaId !in viewer
-        } &&
-            (filters.formats.isEmpty() || entry.format in filters.formats) &&
-            (filters.genres.isEmpty() || entry.genres.containsAll(filters.genres)) &&
-            entry.genres.none { it in filters.excludedGenres } &&
-            entry.passesScoreFloor(filters.scoreFloor)
-    }
     if (query.isEmpty()) {
         return ProfileListResults(
-            items = underChip.filter(passes).sortedFor(tools, viewer, titleLanguage),
+            items = underChip.filter { it.passes(tools.filters, viewer) }.sortedFor(tools, viewer, titleLanguage),
             inScope = underChip.size
         )
     }
-    val found = entries.filter { it.matches(query) && passes(it) }
+    val found = entries.filter { it.matches(query) && it.passes(tools.filters, viewer) }
     val shown = tools.searchStatus?.let { picked -> found.filter { it.status == picked } } ?: found
     return ProfileListResults(
         items = shown.sortedFor(tools, viewer, titleLanguage),
@@ -138,6 +126,30 @@ fun applyListTools(
         searchCounts = found.groupingBy { it.status }.eachCount()
     )
 }
+
+/** How many titles [applyListTools] would show, without putting them in order. */
+fun countListTools(
+    entries: List<LibraryEntry>,
+    status: LibraryStatus?,
+    tools: ProfileListTools,
+    viewer: Map<Int, LibraryEntry>
+): Int {
+    val query = tools.query.trim()
+    if (query.isEmpty()) return entries.count { (status == null || it.status == status) && it.passes(tools.filters, viewer) }
+    val picked = tools.searchStatus
+    return entries.count { (picked == null || it.status == picked) && it.matches(query) && it.passes(tools.filters, viewer) }
+}
+
+private fun LibraryEntry.passes(filters: ProfileListFilters, viewer: Map<Int, LibraryEntry>): Boolean =
+    when (filters.yourList) {
+        YourListFilter.ANY -> true
+        YourListFilter.ON_YOUR_LIST -> mediaId in viewer
+        YourListFilter.NOT_ON_YOUR_LIST -> mediaId !in viewer
+    } &&
+        (filters.formats.isEmpty() || format in filters.formats) &&
+        (filters.genres.isEmpty() || genres.containsAll(filters.genres)) &&
+        genres.none { it in filters.excludedGenres } &&
+        passesScoreFloor(filters.scoreFloor)
 
 private fun LibraryEntry.matches(query: String): Boolean =
     titleRomaji?.contains(query, ignoreCase = true) == true ||

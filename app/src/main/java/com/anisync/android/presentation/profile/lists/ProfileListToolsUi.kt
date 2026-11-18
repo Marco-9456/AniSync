@@ -319,9 +319,7 @@ internal fun ProfileListFilterSheet(
     onFiltersChange: (ProfileListFilters) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val matching = remember(entries, status, tools, viewer, titleLanguage) {
-        applyListTools(entries, status, tools, viewer, titleLanguage).items.size
-    }
+    val matching = remember(entries, status, tools, viewer) { countListTools(entries, status, tools, viewer) }
     FilterSheetScaffold(
         title = stringResource(R.string.profile_list_filters),
         onDismiss = onDismiss,
@@ -408,13 +406,12 @@ private fun ProfileListFilterSections(
     }
     val genres = remember(entries) { entries.flatMap { it.genres }.distinct().sorted() }
     // What each choice would leave with the other filters kept.
-    val yourListCounts = remember(entries, status, tools, viewer, titleLanguage, isOwnProfile) {
+    val yourListCounts = remember(entries, status, tools, viewer, isOwnProfile) {
         if (isOwnProfile) {
             emptyMap()
         } else {
             listOf(YourListFilter.ON_YOUR_LIST, YourListFilter.NOT_ON_YOUR_LIST).associateWith { choice ->
-                val narrowed = tools.copy(filters = filters.copy(yourList = choice))
-                applyListTools(entries, status, narrowed, viewer, titleLanguage).items.size
+                countListTools(entries, status, tools.copy(filters = filters.copy(yourList = choice)), viewer)
             }
         }
     }

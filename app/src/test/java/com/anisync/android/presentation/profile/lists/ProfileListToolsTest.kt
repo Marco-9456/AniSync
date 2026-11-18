@@ -138,6 +138,22 @@ class ProfileListToolsTest {
     }
 
     @Test
+    fun `the count matches the rows for every kind of narrowing`() {
+        val viewer = mapOf(horimiya.mediaId to horimiya)
+        val cases = listOf(
+            null to ProfileListTools(),
+            LibraryStatus.COMPLETED to ProfileListTools(),
+            LibraryStatus.CURRENT to ProfileListTools(query = "o"),
+            null to ProfileListTools(query = "o", searchStatus = LibraryStatus.COMPLETED),
+            null to ProfileListTools(filters = ProfileListFilters(yourList = YourListFilter.NOT_ON_YOUR_LIST, scoreFloor = 100)),
+            LibraryStatus.COMPLETED to ProfileListTools(filters = ProfileListFilters(excludedGenres = setOf("Romance"))),
+        )
+        cases.forEach { (status, tools) ->
+            assertEquals(run(status, tools, viewer).items.size, countListTools(all, status, tools, viewer))
+        }
+    }
+
+    @Test
     fun `floors follow the owner's scale`() {
         assertEquals(listOf(100, 90, 80, 70), scoreFloors(ScoreFormat.POINT_10))
         assertEquals(listOf(100, 80, 60), scoreFloors(ScoreFormat.POINT_5))
