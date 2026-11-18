@@ -3,6 +3,7 @@ package com.anisync.android.presentation.profile.sections
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -72,36 +73,27 @@ internal fun OverviewCompareCard(
     onCompare: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(28.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            CompareEyebrow(stringResource(R.string.profile_compare_title, ownerName), yourAvatar, theirAvatar)
-            Spacer(modifier = Modifier.height(14.dp))
-            CompareHero(comparison, ownerName, MediaType.ANIME)
-            comparison.sameScore?.let {
-                CompareFact(Icons.Outlined.CheckCircle, stringResource(R.string.profile_compare_same_score, it.theirs.titleUserPreferred))
-            }
-            if (comparison.theirTensNotYours.isNotEmpty()) {
-                val count = comparison.theirTensNotYours.size
-                CompareFact(
-                    Icons.Default.Star,
-                    pluralStringResourceOrDefault(R.plurals.profile_compare_their_tens, count, count.toString(), ownerName)
-                )
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-            FilledTonalButton(onClick = onCompare) {
-                Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null, modifier = Modifier.size(18.dp))
+    CompareCard(stringResource(R.string.profile_compare_title, ownerName), yourAvatar, theirAvatar, modifier) {
+        Spacer(modifier = Modifier.height(14.dp))
+        CompareHero(comparison, ownerName, MediaType.ANIME)
+        comparison.sameScore?.let {
+            CompareFact(Icons.Outlined.CheckCircle, stringResource(R.string.profile_compare_same_score, it.theirs.titleUserPreferred))
+        }
+        if (comparison.theirTensNotYours.isNotEmpty()) {
+            val count = comparison.theirTensNotYours.size
+            CompareFact(
+                Icons.Default.Star,
+                pluralStringResourceOrDefault(R.plurals.profile_compare_their_tens, count, count.toString(), ownerName)
+            )
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        FilledTonalButton(onClick = onCompare) {
+            Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.profile_compare_open))
+            if (WhatsNewItem.PROFILE_COMPARE in rememberActiveWhatsNew()) {
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.profile_compare_open))
-                if (WhatsNewItem.PROFILE_COMPARE in rememberActiveWhatsNew()) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    WhatsNewPill(WhatsNewItem.Kind.NEW)
-                }
+                WhatsNewPill(WhatsNewItem.Kind.NEW)
             }
         }
     }
@@ -115,6 +107,26 @@ internal fun OverviewCompareCardLoading(
     theirAvatar: String?,
     modifier: Modifier = Modifier
 ) {
+    CompareCard(stringResource(R.string.profile_compare_title, ownerName), yourAvatar, theirAvatar, modifier) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(176.dp)
+        ) {
+            AppCircularProgressIndicator()
+        }
+    }
+}
+
+@Composable
+private fun CompareCard(
+    eyebrow: String,
+    yourAvatar: String?,
+    theirAvatar: String?,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(28.dp),
@@ -123,15 +135,8 @@ internal fun OverviewCompareCardLoading(
             .padding(horizontal = 16.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            CompareEyebrow(stringResource(R.string.profile_compare_title, ownerName), yourAvatar, theirAvatar)
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(176.dp)
-            ) {
-                AppCircularProgressIndicator()
-            }
+            CompareEyebrow(eyebrow, yourAvatar, theirAvatar)
+            content()
         }
     }
 }
@@ -260,48 +265,40 @@ fun LazyListScope.profileComparePage(
 @Composable
 private fun CompareSummary(comparison: ListComparison, type: MediaType, ownerName: String, yourAvatar: String?, theirAvatar: String?) {
     val numbers = remember { NumberFormat.getIntegerInstance() }
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(28.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+    CompareCard(
+        eyebrow = stringResource(if (type == MediaType.MANGA) R.string.profile_compare_both_manga else R.string.profile_compare_both_anime),
+        yourAvatar = yourAvatar,
+        theirAvatar = theirAvatar,
+        modifier = Modifier.padding(vertical = 8.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            CompareEyebrow(
-                stringResource(if (type == MediaType.MANGA) R.string.profile_compare_both_manga else R.string.profile_compare_both_anime),
-                yourAvatar,
-                theirAvatar
+        Spacer(modifier = Modifier.height(14.dp))
+        CompareHero(comparison, ownerName, type, too = true)
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            MeanBox(comparison.yourMean, stringResource(R.string.profile_compare_your_mean), Modifier.weight(1f))
+            MeanBox(comparison.theirMean, stringResource(R.string.profile_compare_their_mean, ownerName), Modifier.weight(1f))
+        }
+        if (comparison.theirsNotYours > 0) {
+            CompareFact(
+                Icons.Outlined.PersonAdd,
+                pluralStringResourceOrDefault(
+                    if (type == MediaType.MANGA) R.plurals.profile_compare_theirs_not_yours_manga else R.plurals.profile_compare_theirs_not_yours_anime,
+                    comparison.theirsNotYours,
+                    ownerName,
+                    numbers.format(comparison.theirsNotYours)
+                )
             )
-            Spacer(modifier = Modifier.height(14.dp))
-            CompareHero(comparison, ownerName, type, too = true)
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MeanBox(comparison.yourMean, stringResource(R.string.profile_compare_your_mean), Modifier.weight(1f))
-                MeanBox(comparison.theirMean, stringResource(R.string.profile_compare_their_mean, ownerName), Modifier.weight(1f))
-            }
-            if (comparison.theirsNotYours > 0) {
-                CompareFact(
-                    Icons.Outlined.PersonAdd,
-                    pluralStringResourceOrDefault(
-                        if (type == MediaType.MANGA) R.plurals.profile_compare_theirs_not_yours_manga else R.plurals.profile_compare_theirs_not_yours_anime,
-                        comparison.theirsNotYours,
-                        ownerName,
-                        numbers.format(comparison.theirsNotYours)
-                    )
+        }
+        if (comparison.onlyYours.isNotEmpty()) {
+            CompareFact(
+                Icons.Outlined.Person,
+                pluralStringResourceOrDefault(
+                    R.plurals.profile_compare_yours_not_theirs,
+                    comparison.onlyYours.size,
+                    numbers.format(comparison.onlyYours.size),
+                    ownerName
                 )
-            }
-            if (comparison.onlyYours.isNotEmpty()) {
-                CompareFact(
-                    Icons.Outlined.Person,
-                    pluralStringResourceOrDefault(
-                        R.plurals.profile_compare_yours_not_theirs,
-                        comparison.onlyYours.size,
-                        numbers.format(comparison.onlyYours.size),
-                        ownerName
-                    )
-                )
-            }
+            )
         }
     }
 }

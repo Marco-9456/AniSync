@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,17 +24,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.LocalPullRefreshOffset
-import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.ProfileTabsButtonGroup
@@ -116,24 +110,12 @@ fun ProfileTopSection(
             }
         }
 
-        // An unshaped avatar taller than wide may overflow upward rather than be cropped.
-        Box(
+        ProfileHeaderAvatar(
+            url = profile.avatarUrl,
             modifier = Modifier
                 .padding(start = 16.dp)
                 .offset(y = avatarTop)
-                .height(ProfileAvatarSize),
-            contentAlignment = Alignment.BottomStart
-        ) {
-            UserAvatar(
-                url = profile.avatarUrl,
-                contentDescription = stringResource(R.string.content_description_profile_avatar),
-                size = ProfileAvatarSize,
-                borderWidth = 2.dp,
-                framePadding = 3.dp,
-                isProfileHeader = true,
-                modifier = Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true)
-            )
-        }
+        )
 
         ProfileActionButtons(
             isOwnProfile = isOwnProfile,
@@ -189,10 +171,7 @@ internal fun ProfileBackdrop(
                         Spacer(modifier = Modifier.weight(1f))
                         ProfileMenuButton(
                             name = profile.name,
-                            colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                containerColor = Color.Transparent,
-                                contentColor = MaterialTheme.colorScheme.onSurface
-                            )
+                            colors = bandChromeColors()
                         )
                     }
                 }

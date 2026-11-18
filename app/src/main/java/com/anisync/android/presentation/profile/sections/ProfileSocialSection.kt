@@ -13,9 +13,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
@@ -45,6 +43,7 @@ import com.anisync.android.presentation.forum.components.shared.StatBadge
 import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.profile.viewerOwnsProfile
+import com.anisync.android.presentation.profile.components.LoadFailedState
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.util.ShareUtils
 
@@ -80,14 +79,10 @@ fun LazyListScope.profileSocialTab(
 
     if (uiState.socialErrorMessage != null) {
         item(key = "social_error") {
-            EmptyState(
-                icon = Icons.Default.CloudOff,
+            LoadFailedState(
                 title = stringResource(R.string.forum_empty_failed_title),
                 description = uiState.socialErrorMessage,
-                actionLabel = stringResource(R.string.retry),
-                actionIcon = Icons.Default.Refresh,
-                onAction = onRetry,
-                modifier = Modifier.padding(top = 32.dp)
+                onRetry = onRetry
             )
         }
         return

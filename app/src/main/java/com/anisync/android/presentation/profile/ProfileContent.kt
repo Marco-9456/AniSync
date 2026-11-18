@@ -395,7 +395,7 @@ fun ProfileContent(
     }
 
     val showShareFab = uiState.showsShareFab(profile)
-    val bottomPadding = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
+    val bottomPadding = profileBottomPadding(showShareFab)
     val bottomPaddingPx = with(density) { bottomPadding.roundToPx() }
     LaunchedEffect(listState, bottomPaddingPx) {
         snapshotFlow {
@@ -1112,22 +1112,40 @@ internal fun ProfilePage(
         topInset = topInset,
         belowBar = { ProfilePageRail(uiState = uiState, onFilterAction = onAction) }
     ) { topContentPadding ->
-        AppPullToRefreshBox(
-            isRefreshing = uiState.isRefreshing,
-            onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
+        ProfileRefreshList(uiState, listState, bottomPadding, onAction, topPadding = topContentPadding, content = content)
+    }
+}
+
+/** A tab's or a page's list, which a pull refreshes the whole profile from. */
+@Composable
+internal fun ProfileRefreshList(
+    uiState: ProfileUiState,
+    listState: LazyListState,
+    bottomPadding: Dp,
+    onAction: (ProfileAction) -> Unit,
+    topPadding: Dp = 0.dp,
+    content: LazyListScope.() -> Unit
+) {
+    AppPullToRefreshBox(
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
+        modifier = Modifier.fillMaxSize(),
+        topInset = topPadding
+    ) {
+        LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
-            topInset = topContentPadding
+            contentPadding = PaddingValues(top = topPadding, bottom = bottomPadding)
         ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(top = topContentPadding, bottom = bottomPadding)
-            ) {
-                content()
-            }
+            content()
         }
     }
 }
+
+/** Clears the share button when one floats, otherwise the bottom navigation. */
+@Composable
+internal fun profileBottomPadding(showShareFab: Boolean): Dp =
+    if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
 
 /** A page's own rail: which favourites, which people, or which list is compared. */
 @Composable

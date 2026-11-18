@@ -31,14 +31,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,19 +49,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
-import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
-import com.anisync.android.presentation.components.UserAvatar
-import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
 import com.anisync.android.presentation.components.navigation.BackTrailButton
-import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.profile.components.ProfileAccounts
+import com.anisync.android.presentation.profile.components.ProfileHeaderAvatar
+import com.anisync.android.presentation.profile.components.bandChromeColors
 import com.anisync.android.presentation.profile.components.ProfileActionButtons
 import com.anisync.android.presentation.profile.components.ProfileAvatarHalfSize
 import com.anisync.android.presentation.profile.components.ProfileAvatarSize
@@ -73,7 +68,6 @@ import com.anisync.android.presentation.profile.components.ProfileMenuButton
 import com.anisync.android.presentation.profile.components.ProfileSettingsButton
 import com.anisync.android.presentation.profile.sections.rememberListComparison
 import com.anisync.android.presentation.util.LocalAppSettings
-import com.anisync.android.presentation.util.LocalMainNavBarInset
 import com.anisync.android.presentation.util.PaneDragHandle
 import com.anisync.android.presentation.util.TwoPaneDefaults
 import com.anisync.android.presentation.util.TwoPaneRow
@@ -283,10 +277,7 @@ private fun ProfileIdentityColumn(
                 } else {
                     ProfileMenuButton(
                         name = profile.name,
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        )
+                        colors = bandChromeColors()
                     )
                 }
             }
@@ -318,24 +309,12 @@ private fun ProfileIdentityColumn(
             }
         }
 
-        // An unshaped avatar taller than wide may overflow upward rather than be cropped.
-        Box(
+        ProfileHeaderAvatar(
+            url = profile.avatarUrl,
             modifier = Modifier
                 .padding(start = WideBannerInset + 16.dp)
                 .offset(y = avatarTop)
-                .height(ProfileAvatarSize),
-            contentAlignment = Alignment.BottomStart
-        ) {
-            UserAvatar(
-                url = profile.avatarUrl,
-                contentDescription = stringResource(R.string.content_description_profile_avatar),
-                size = ProfileAvatarSize,
-                borderWidth = 2.dp,
-                framePadding = 3.dp,
-                isProfileHeader = true,
-                modifier = Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true)
-            )
-        }
+        )
 
         ProfileActionButtons(
             isOwnProfile = isOwnProfile,
@@ -397,19 +376,7 @@ private fun ProfileListsWithPanel(
                         onBack = null
                     )
                     ProfileListRail(uiState = uiState, onFilterAction = onAction, onTabSelected = onTabSelected, rails = rails)
-                    AppPullToRefreshBox(
-                        isRefreshing = uiState.isRefreshing,
-                        onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = bottomPadding)
-                        ) {
-                            rowsContent(gridColumns)
-                        }
-                    }
+                    ProfileRefreshList(uiState, listState, bottomPadding, onAction) { rowsContent(gridColumns) }
                 }
             }
             if (panelShown) {
@@ -595,7 +562,7 @@ private fun ProfileTabPane(
         val showShareFab = uiState.showsShareFab(profile)
         val comparison = rememberListComparison(uiState, isOwnProfile)
         val overviewColumns = maxWidth >= OverviewColumnsMinWidth
-        val bottomPadding = if (showShareFab) shareFabClearance() else LocalMainNavBarInset.current + 48.dp
+        val bottomPadding = profileBottomPadding(showShareFab)
         fun LazyListScope.tabContent(
             gridColumns: Int = studioColumns,
             rowColumns: Int = statsColumns,
@@ -654,19 +621,7 @@ private fun ProfileTabPane(
                     onFilterAction = onAction,
                     modifier = Modifier.fillMaxWidth()
                 )
-                AppPullToRefreshBox(
-                    isRefreshing = uiState.isRefreshing,
-                    onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = bottomPadding)
-                    ) {
-                        content()
-                    }
-                }
+                ProfileRefreshList(uiState, listState, bottomPadding, onAction, content = content)
             }
         }
         // Kept out of the pull box, which carries everything inside it down with the finger.

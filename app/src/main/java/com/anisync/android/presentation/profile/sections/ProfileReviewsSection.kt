@@ -5,9 +5,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Refresh
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,9 +17,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.MediaReview
-import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.profile.ProfileUiState
+import com.anisync.android.presentation.profile.components.LoadFailedState
 
 fun LazyListScope.profileReviewsTab(
     uiState: ProfileUiState,
@@ -48,14 +45,10 @@ fun LazyListScope.profileReviewsTab(
 
     if (uiState.reviewsErrorMessage != null && uiState.reviews.isEmpty()) {
         item(key = "reviews_error") {
-            EmptyState(
-                icon = Icons.Default.CloudOff,
+            LoadFailedState(
                 title = stringResource(R.string.forum_empty_failed_title),
                 description = uiState.reviewsErrorMessage,
-                actionLabel = stringResource(R.string.retry),
-                actionIcon = Icons.Default.Refresh,
-                onAction = onRetry,
-                modifier = Modifier.padding(top = 32.dp)
+                onRetry = onRetry
             )
         }
         return

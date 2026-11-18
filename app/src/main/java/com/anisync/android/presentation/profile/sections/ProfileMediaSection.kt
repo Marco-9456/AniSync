@@ -16,9 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,6 +40,7 @@ import com.anisync.android.presentation.components.MediaTypeToggle
 import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.library.LibraryTab
 import com.anisync.android.presentation.library.components.LibraryRailChip
+import com.anisync.android.presentation.profile.components.LoadFailedState
 import com.anisync.android.presentation.profile.components.ProfileListGridCell
 import com.anisync.android.presentation.profile.components.ProfileListRow
 import com.anisync.android.presentation.profile.components.ProfileTabRail
@@ -155,14 +154,10 @@ fun LazyListScope.profileMediaTab(
     }
     if (loadFailed && !hasEntries) {
         item(key = "media_failed_$transitionPrefix", contentType = "empty") {
-            EmptyState(
-                icon = Icons.Default.CloudOff,
+            LoadFailedState(
                 title = stringResource(R.string.profile_list_failed),
                 description = stringResource(R.string.profile_list_failed_body),
-                actionLabel = stringResource(R.string.retry),
-                actionIcon = Icons.Default.Refresh,
-                onAction = onRetry,
-                modifier = Modifier.padding(top = 32.dp)
+                onRetry = onRetry
             )
         }
         return

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
@@ -62,6 +63,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -183,10 +185,7 @@ fun ProfileBannerSurface(
             )
         }
 
-        val chromeColors = IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = Color.Black.copy(alpha = 0.4f),
-            contentColor = Color.White
-        )
+        val chromeColors = bannerChromeColors()
         if (onBackClick != null) {
             BackTrailButton(
                 onClick = onBackClick,
@@ -587,12 +586,9 @@ fun ProfileActionButtons(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
     ) {
-        val labelPadding = PaddingValues(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
         if (isOwnProfile) {
-            FilledTonalButton(onClick = onEditProfileClick, contentPadding = labelPadding) {
-                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.size(8.dp))
-                ButtonLabel(stringResource(R.string.profile_edit))
+            FilledTonalButton(onClick = onEditProfileClick, contentPadding = LabelledButtonPadding) {
+                ButtonContent(Icons.Default.Edit, stringResource(R.string.profile_edit))
             }
             OutlinedIconButton(onClick = onNotificationsClick) {
                 NotificationsIcon(unreadNotificationCount)
@@ -602,27 +598,21 @@ fun ProfileActionButtons(
                 FilledTonalButton(
                     onClick = onFollowClick,
                     enabled = !isFollowLoading,
-                    contentPadding = labelPadding
+                    contentPadding = LabelledButtonPadding
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.size(8.dp))
-                    ButtonLabel(stringResource(R.string.profile_following))
+                    ButtonContent(Icons.Default.Check, stringResource(R.string.profile_following))
                 }
             } else {
                 Button(
                     onClick = onFollowClick,
                     enabled = !isFollowLoading,
-                    contentPadding = labelPadding
+                    contentPadding = LabelledButtonPadding
                 ) {
-                    Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.size(8.dp))
-                    ButtonLabel(stringResource(R.string.profile_follow))
+                    ButtonContent(Icons.Default.PersonAdd, stringResource(R.string.profile_follow))
                 }
             }
-            FilledTonalButton(onClick = onMessageClick, contentPadding = labelPadding) {
-                Icon(Icons.Default.Mail, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.size(8.dp))
-                ButtonLabel(stringResource(R.string.profile_message))
+            FilledTonalButton(onClick = onMessageClick, contentPadding = LabelledButtonPadding) {
+                ButtonContent(Icons.Default.Mail, stringResource(R.string.profile_message))
             }
         }
     }
@@ -697,14 +687,47 @@ private fun unreadCountAccessibilityLabel(count: Int): String =
         )
     }
 
+private val LabelledButtonPadding = PaddingValues(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+
 @Composable
-private fun ButtonLabel(text: String) {
+private fun ButtonContent(icon: ImageVector, text: String) {
+    Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+    Spacer(modifier = Modifier.size(8.dp))
     Text(
         text = text,
         maxLines = 1,
         softWrap = false,
         autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = 14.sp)
     )
+}
+
+@Composable
+private fun bannerChromeColors(): IconButtonColors = IconButtonDefaults.filledTonalIconButtonColors(
+    containerColor = Color.Black.copy(alpha = 0.4f),
+    contentColor = Color.White
+)
+
+/** The menu button where there is no banner to sit on, on the tonal band or above the wide column. */
+@Composable
+internal fun bandChromeColors(): IconButtonColors = IconButtonDefaults.filledTonalIconButtonColors(
+    containerColor = Color.Transparent,
+    contentColor = MaterialTheme.colorScheme.onSurface
+)
+
+/** Drawn from its bottom edge, so an unshaped avatar taller than wide overflows upward rather than be cropped. */
+@Composable
+internal fun ProfileHeaderAvatar(url: String?, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.height(ProfileAvatarSize), contentAlignment = Alignment.BottomStart) {
+        UserAvatar(
+            url = url,
+            contentDescription = stringResource(R.string.content_description_profile_avatar),
+            size = ProfileAvatarSize,
+            borderWidth = 2.dp,
+            framePadding = 3.dp,
+            isProfileHeader = true,
+            modifier = Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true)
+        )
+    }
 }
 
 private fun boldNumbers(text: String, vararg numbers: String): AnnotatedString = buildAnnotatedString {
@@ -810,14 +833,7 @@ internal fun ProfileOwnDockedBar(
 
 @Composable
 internal fun ProfileSettingsButton(onBanner: Boolean, onClick: () -> Unit) {
-    val colors = if (onBanner) {
-        IconButtonDefaults.filledTonalIconButtonColors(
-            containerColor = Color.Black.copy(alpha = 0.4f),
-            contentColor = Color.White
-        )
-    } else {
-        IconButtonDefaults.iconButtonColors()
-    }
+    val colors = if (onBanner) bannerChromeColors() else IconButtonDefaults.iconButtonColors()
     val settingsDot = rememberActiveWhatsNew().any { it.place == WhatsNewItem.Place.SETTINGS }
     IconButton(onClick = onClick, colors = colors) {
         BadgedBox(badge = { if (settingsDot) Badge() }) {
@@ -864,15 +880,12 @@ internal fun ProfileVisitBar(
         FilledTonalButton(
             onClick = onFollowClick,
             enabled = !isFollowLoading,
-            contentPadding = PaddingValues(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
+            contentPadding = LabelledButtonPadding
         ) {
-            Icon(
-                imageVector = if (isFollowing) Icons.Default.Check else Icons.Default.PersonAdd,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
+            ButtonContent(
+                icon = if (isFollowing) Icons.Default.Check else Icons.Default.PersonAdd,
+                text = stringResource(if (isFollowing) R.string.profile_following else R.string.profile_follow)
             )
-            Spacer(modifier = Modifier.size(8.dp))
-            ButtonLabel(stringResource(if (isFollowing) R.string.profile_following else R.string.profile_follow))
         }
         ProfileMenuButton(
             name = name,
