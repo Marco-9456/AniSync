@@ -403,13 +403,9 @@ class ProfileViewModel @Inject constructor(
                     if (lastLoadedTargetProfile == null) {
                         emit(ProfileUiState(isLoading = true))
                     }
-                    var fetched = profileRepository.fetchUserProfile(targetUsername, forceNetwork)
                     // A rate limit on the first visit keeps the loader up and asks again once it is over.
-                    repeat(MAX_RATE_LIMIT_WAITS) {
-                        if (lastLoadedTargetProfile != null) return@repeat
-                        val countdown = (fetched as? Result.Error)?.countdownSeconds ?: return@repeat
-                        delay((countdown + 1) * 1_000L)
-                        fetched = profileRepository.fetchUserProfile(targetUsername, forceNetwork)
+                    val fetched = retryAfterRateLimit(shouldWait = { lastLoadedTargetProfile == null }) {
+                        profileRepository.fetchUserProfile(targetUsername, forceNetwork)
                     }
                     when (val result = fetched) {
                         is Result.Success -> {
@@ -1744,6 +1740,21 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /** Waits out each rate limit AniList names and asks again, at most [MAX_RATE_LIMIT_WAITS] times. */
+    private suspend fun <T> retryAfterRateLimit(
+        shouldWait: () -> Boolean = { true },
+        call: suspend () -> Result<T>
+    ): Result<T> {
+        var result = call()
+        repeat(MAX_RATE_LIMIT_WAITS) {
+            if (!shouldWait()) return@repeat
+            val countdown = (result as? Result.Error)?.countdownSeconds ?: return@repeat
+            delay((countdown + 1) * 1_000L)
+            result = call()
+        }
+        return result
+    }
+
     /**
      * Loads the full favourite-anime list (all pages) on demand, when the Favorites tab opens or on
      * a pull to refresh while it is open. The profile fetch only carries page 1.
@@ -1786,12 +1797,7 @@ class ProfileViewModel @Inject constructor(
             // never revalidates on its own, so new activity never showed (#88).
             val policy = if (forceRefresh) CachePolicy.NetworkOnly else CachePolicy.NetworkFirst
             // A rate limit keeps the loader up and asks again once it is over, as the media page does.
-            var fetched = statisticsRepository.getUserStatistics(userId, policy)
-            repeat(MAX_RATE_LIMIT_WAITS) {
-                val countdown = (fetched as? Result.Error)?.countdownSeconds ?: return@repeat
-                delay((countdown + 1) * 1_000L)
-                fetched = statisticsRepository.getUserStatistics(userId, policy)
-            }
+            val fetched = retryAfterRateLimit { statisticsRepository.getUserStatistics(userId, policy) }
             when (val result = fetched) {
                 is Result.Success -> {
                     // Process data on default dispatcher
@@ -1916,12 +1922,7 @@ class ProfileViewModel @Inject constructor(
         if (!peopleInFlight.add(list to sort)) return
         viewModelScope.launch {
             try {
-                var result = statisticsRepository.getPeopleStatistics(userId, list, sort)
-                repeat(MAX_RATE_LIMIT_WAITS) {
-                    val countdown = (result as? Result.Error)?.countdownSeconds ?: return@repeat
-                    delay((countdown + 1) * 1_000L)
-                    result = statisticsRepository.getPeopleStatistics(userId, list, sort)
-                }
+                val result = retryAfterRateLimit { statisticsRepository.getPeopleStatistics(userId, list, sort) }
                 val people = (result as? Result.Success)?.data ?: return@launch
                 localState.update { state ->
                     val forList = state.peopleFetched[list].orEmpty() + (sort to people)
