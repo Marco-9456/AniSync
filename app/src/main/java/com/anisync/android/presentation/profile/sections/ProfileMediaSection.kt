@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -201,11 +200,12 @@ fun LazyListScope.profileMediaTab(
 
     val showStatus = if (tools.query.isNotBlank()) tools.searchStatus == null else selectedStatus == null
     if (tools.view == ProfileListView.GRID) {
-        itemsIndexed(
-            items = items.chunked(gridColumns),
-            key = { index, _ -> "media_grid_${transitionPrefix}_$index" },
-            contentType = { _, _ -> "media_grid_row" }
-        ) { _, row ->
+        items(
+            count = items.rowCount(gridColumns),
+            key = { index -> "media_grid_${transitionPrefix}_$index" },
+            contentType = { "media_grid_row" }
+        ) { index ->
+            val row = items.row(index, gridColumns)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -228,13 +228,14 @@ fun LazyListScope.profileMediaTab(
         return
     }
 
-    // Read-only list rows (#78), chunked into [listColumns] so wide windows fill the width instead
-    // of stretching one column.
-    itemsIndexed(
-        items = items.chunked(listColumns),
-        key = { index, _ -> "media_row_${transitionPrefix}_$index" },
-        contentType = { _, _ -> "media_list_row" }
-    ) { _, row ->
+    // Read-only list rows (#78), [listColumns] to a row so wide windows fill the width instead of
+    // stretching one column.
+    items(
+        count = items.rowCount(listColumns),
+        key = { index -> "media_row_${transitionPrefix}_$index" },
+        contentType = { "media_list_row" }
+    ) { index ->
+        val row = items.row(index, listColumns)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -282,6 +283,11 @@ fun LazyListScope.profileMediaTab(
         Spacer(modifier = Modifier.height(8.dp))
     }
 }
+
+private fun List<LibraryEntry>.rowCount(columns: Int): Int = (size + columns - 1) / columns
+
+private fun List<LibraryEntry>.row(index: Int, columns: Int): List<LibraryEntry> =
+    subList(index * columns, minOf(size, (index + 1) * columns))
 
 @Composable
 private fun emptyListMessage(
