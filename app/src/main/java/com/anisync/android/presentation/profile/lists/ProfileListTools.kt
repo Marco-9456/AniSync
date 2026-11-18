@@ -84,7 +84,9 @@ data class ProfileListResults(
     /** The list these were worked out from, compared by identity to tell stale results apart. */
     val source: List<LibraryEntry>? = null,
     /** While searching, how many matches each status holds, which is what the chips then count. */
-    val searchCounts: Map<LibraryStatus, Int>? = null
+    val searchCounts: Map<LibraryStatus, Int>? = null,
+    /** On someone else's list, how many titles each your-list filter would leave. */
+    val yourListCounts: Map<YourListFilter, Int> = emptyMap()
 )
 
 internal fun LibraryEntry.scoreOutOf100(): Double? {
@@ -139,6 +141,17 @@ fun countListTools(
     val picked = tools.searchStatus
     return entries.count { (picked == null || it.status == picked) && it.matches(query) && it.passes(tools.filters, viewer) }
 }
+
+/** What each your-list choice would leave, with the other filters kept. */
+fun yourListCounts(
+    entries: List<LibraryEntry>,
+    status: LibraryStatus?,
+    tools: ProfileListTools,
+    viewer: Map<Int, LibraryEntry>
+): Map<YourListFilter, Int> =
+    listOf(YourListFilter.ON_YOUR_LIST, YourListFilter.NOT_ON_YOUR_LIST).associateWith { choice ->
+        countListTools(entries, status, tools.copy(filters = tools.filters.copy(yourList = choice)), viewer)
+    }
 
 private fun LibraryEntry.passes(filters: ProfileListFilters, viewer: Map<Int, LibraryEntry>): Boolean =
     when (filters.yourList) {
