@@ -381,8 +381,9 @@ class MainActivity : AppCompatActivity() {
                                 // A fresh NavController handles the activity's intent again, which
                                 // reopened the last link instead of the new account's start screen.
                                 val launchEpoch = remember { sessionEpoch }
-                                remember(sessionEpoch) {
+                                val builtAtEpoch = remember(sessionEpoch) {
                                     if (sessionEpoch != launchEpoch) intent = Intent(intent).setData(null)
+                                    sessionEpoch
                                 }
 
                                 // Both libraries have to exist locally for the list indicators to be
@@ -401,8 +402,8 @@ class MainActivity : AppCompatActivity() {
                                 if (onboardingActive) {
                                     OnboardingScreen()
                                 } else if (isLoggedIn) {
-                                    key(sessionEpoch) {
-                                        MainScreen(builtAtEpoch = sessionEpoch)
+                                    key(builtAtEpoch) {
+                                        MainScreen(builtAtEpoch = builtAtEpoch)
                                     }
                                 } else {
                                     LoginScreen()
