@@ -1,8 +1,5 @@
 package com.anisync.android.presentation.profile.components
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -15,14 +12,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.anisync.android.presentation.components.ConnectedToggleDefaults
 import com.anisync.android.presentation.components.PinnedRail
 import com.anisync.android.presentation.components.revealChip
 
-/**
- * A rail's sideways scroll, held outside the rail. The profile draws its strip twice, in the page and
- * docked under the bar, and both copies have to stay where the reader left them.
- */
+/** A rail's sideways scroll, held outside the rail so a tab's chips come back where they were left. */
 @Stable
 class RailScroll internal constructor(val state: LazyListState) {
     internal var revealed: Any? = null
@@ -41,28 +34,17 @@ class ProfileRails {
 }
 
 /**
- * Brings the selected chip into view when the selection changes. A copy of the rail coming back
- * into the page keeps whatever the reader scrolled to.
+ * Brings the selected chip into view when the selection changes. A rail coming back with its tab
+ * keeps whatever the reader scrolled to.
  */
 @Composable
 internal fun RevealSelectedChip(scroll: RailScroll, selected: Any, index: Int) {
     LaunchedEffect(scroll, selected) {
         if (scroll.revealed == selected) return@LaunchedEffect
         if (index >= 0) scroll.state.revealChip(index)
-        // Marked only once it has finished, so a copy swapped out mid way leaves it to the next.
+        // Marked only once it has finished, so a rail that leaves mid way finishes it when it returns.
         scroll.revealed = selected
     }
-}
-
-/** Holds a rail's place in the copy of the strip that is hidden under the docked one. */
-@Composable
-internal fun ProfileRailPlaceholder() {
-    Spacer(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 4.dp, bottom = 8.dp)
-            .height(ConnectedToggleDefaults.Height)
-    )
 }
 
 /**

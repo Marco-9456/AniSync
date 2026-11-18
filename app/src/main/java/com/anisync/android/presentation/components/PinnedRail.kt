@@ -47,8 +47,8 @@ fun PinnedRail(
     /** Chip inset used until the pinned control has been measured. */
     pinnedInsetEstimate: Dp = 140.dp,
     /**
-     * Where the measured inset is kept. A rail drawn again elsewhere passes the same holder, so its
-     * chips start where the other copy's did instead of at the estimate for a frame.
+     * Where the measured inset is kept. A rail that leaves and comes back passes the same holder, so
+     * its chips start where they were instead of at the estimate for a frame.
      */
     measuredInset: MutableState<Dp?>? = null,
     content: LazyListScope.() -> Unit

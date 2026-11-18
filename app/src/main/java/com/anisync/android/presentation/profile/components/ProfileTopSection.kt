@@ -191,7 +191,7 @@ internal fun ProfileBackdrop(
 }
 
 @Composable
-private fun profileBackdropHeight(band: Boolean): Dp {
+internal fun profileBackdropHeight(band: Boolean): Dp {
     val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     return if (band) statusBar + 64.dp else maxOf(BannerHeight, statusBar + 120.dp)
 }

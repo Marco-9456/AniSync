@@ -39,20 +39,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -81,7 +74,6 @@ import com.anisync.android.presentation.profile.components.ProfileAboutSheet
 import com.anisync.android.presentation.profile.components.ProfileBackdrop
 import com.anisync.android.presentation.profile.components.ProfileAccounts
 import com.anisync.android.presentation.profile.components.ProfileOwnDockedBar
-import com.anisync.android.presentation.profile.components.ProfileRailPlaceholder
 import com.anisync.android.presentation.profile.components.ProfileRails
 import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.profile.components.ProfileVisitBar
@@ -117,24 +109,15 @@ import com.anisync.android.presentation.statistics.StatsRail
 import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.share.studio.ShareStudioSubject
 import com.anisync.android.type.MediaType
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.takeWhile
-import androidx.compose.foundation.interaction.DragInteraction
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.rememberUpdatedState
-import kotlin.math.abs
-import kotlin.math.roundToInt
-import androidx.compose.foundation.lazy.rememberLazyListState
-import com.anisync.android.presentation.components.ScrollToTopOnRequest
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.key
+import com.anisync.android.presentation.profile.components.profileBackdropHeight
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.saveable.rememberSaveable
-import kotlinx.coroutines.withTimeoutOrNull
 
 @OptIn(
     ExperimentalFoundationApi::class,
@@ -237,133 +220,36 @@ fun ProfileContent(
     val portraitColumns = profileGridColumns(baseMinSize = 150.dp)
     val studioColumns = profileGridColumns(baseMinSize = 240.dp, compactColumns = 2)
 
-    // The banner runs under the status bar, so the tab strip can't be a stickyHeader: that docks at
-    // the list's top edge, which is behind the clock. Instead the strip is a real in-list item and a
-    // pinned copy takes over once it reaches the bar, the same swap the media-detail tabs use.
+    // Every tab docks under a bar of the same height below the status bar, the list's search on
+    // Lists and whose profile this is on the others.
     val statusBarInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val density = LocalDensity.current
-    val dockPx = with(density) { statusBarInset.roundToPx() }.toFloat()
-    // Every tab docks under a bar of the same height, the list's search on Lists and whose profile
-    // this is on the others. Only the pinned copy has it, so the strip docks that much lower.
-    val dockTarget by rememberUpdatedState((dockPx + with(density) { ProfileDockBarHeight.toPx() }).roundToInt())
-    var contentTopWindow by remember { mutableFloatStateOf(0f) }
-    var inlineTabsTopWindow by remember { mutableFloatStateOf(Float.MAX_VALUE) }
-    val listState = rememberLazyListState()
-    ScrollToTopOnRequest(scrollToTopRequest, listState)
-    val tabsIndex by rememberUpdatedState(if (uiState.isShowingSavedCopy) 2 else 1)
-    // Coming back to the page below the tabs never lays the in-list strip out, so its top is never
-    // measured and the pinned copy goes by the list's position instead.
-    val tabsDocked by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex > tabsIndex ||
-                inlineTabsTopWindow <= contentTopWindow + dockTarget
-        }
-    }
-    // Both copies of the strip share each rail's sideways scroll.
+    val dockTarget = with(density) { (statusBarInset + ProfileDockBarHeight).roundToPx() }
+    val header = rememberProfileHeaderState()
+    val listStates = rememberProfileListStates()
+    val contentKey = uiState.contentKey
+    val listState = listStates.of(contentKey)
     val rails = remember { ProfileRails() }
 
-    val dockStrip: suspend () -> Unit = { listState.scrollToItem(tabsIndex, -dockTarget) }
-    var dockHold by remember { mutableStateOf(DockHold(0, active = false)) }
-    val requestDock: suspend () -> Unit = {
-        dockStrip()
-        dockHold = dockHold.next(active = true)
-    }
-    TabRequestEffect(dockRequest) {
-        // The list ignores the scroll back by the status bar until it has been laid out once.
-        snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > tabsIndex }
-        requestDock()
-    }
-    // The header above a docked strip keeps settling after a dock, a bio measuring itself, so the
-    // strip is put back at the top until the reader first drags the page.
-    LaunchedEffect(dockHold) {
-        if (!dockHold.active) return@LaunchedEffect
-        val dragged = async { listState.interactionSource.interactions.first { it is DragInteraction.Start } }
-        withTimeoutOrNull(20_000) {
-            // A change mid scroll is looked at again once the scroll ends.
-            snapshotFlow {
-                val info = listState.layoutInfo
-                DockProbe(
-                    stripOffset = info.visibleItemsInfo.firstOrNull { it.key == PROFILE_TABS_KEY }?.offset,
-                    itemCount = info.totalItemsCount,
-                    contentEnd = info.visibleItemsInfo.lastOrNull()?.let { it.offset + it.size },
-                    scrolling = listState.isScrollInProgress,
-                    target = dockTarget
-                )
-            }
-                .takeWhile { !dragged.isCompleted }
-                .collect { probe ->
-                    val offset = probe.stripOffset
-                    if (!probe.scrolling && (offset == null || abs(offset - probe.target) > 1)) dockStrip()
+    TabRequestEffect(scrollToTopRequest) {
+        coroutineScope {
+            launch {
+                if (listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0) {
+                    listState.animateScrollToItem(0)
                 }
-        }
-        dragged.cancel()
-    }
-
-    // A short tab, a few posts or an empty state, leaves too little below the strip for it to reach
-    // the top, so the list ends in just enough blank space to dock. Picking a tab or a chip also
-    // holds a screen of it until the reader next drags, so content that arrives shorter than what
-    // it replaced never pulls the page down.
-    var tabFillerPx by remember { mutableIntStateOf(0) }
-    var holdFillerPx by remember { mutableIntStateOf(0) }
-    LaunchedEffect(listState) {
-        listState.interactionSource.interactions.collect { if (it is DragInteraction.Start) holdFillerPx = 0 }
-    }
-    val onPageAction: (ProfileAction) -> Unit = { action ->
-        holdFillerPx = listState.layoutInfo.viewportSize.height
-        onAction(action)
-    }
-
-    // Picking a tab or a chip never moves the page by itself. Under a docked strip the new content
-    // starts at its top, or where it was left, in the same frame it first draws.
-    val positionKey = uiState.phonePositionKey()
-    val toolsKey = uiState.phoneToolsKey()
-    val switches = remember { ContentSwitches(positionKey, toolsKey) }
-    SideEffect {
-        val tabChanged = switches.positionKey != positionKey
-        if (!tabChanged && switches.toolsKey == toolsKey) return@SideEffect
-        val leaving = switches.positionKey
-        switches.positionKey = positionKey
-        switches.toolsKey = toolsKey
-        // A page draws its own list, and the profile comes back exactly where it was.
-        if (leaving.isPageKey() || positionKey.isPageKey()) return@SideEffect
-        if (tabChanged) {
-            if (tabsDocked) {
-                switches.saved[leaving] = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
-            } else {
-                switches.saved.remove(leaving)
             }
-        }
-        if (!tabsDocked) return@SideEffect
-        val saved = if (tabChanged) switches.saved[positionKey] else null
-        // A place the reader left is theirs, so a hold still running from an earlier dock stops.
-        if (saved != null) {
-            listState.requestScrollToItem(saved.first, saved.second)
-            dockHold = dockHold.next(active = false)
-        } else {
-            listState.requestScrollToItem(tabsIndex, -dockTarget)
-            dockHold = dockHold.next(active = true)
+            header.animateExpand()
         }
     }
+    TabRequestEffect(dockRequest) { header.dock() }
+    // Picking a tab or a chip never moves the page, so only a docked strip keeps each one's place.
+    ProfileListPlacement(uiState, listState, keepsPlace = { header.docked })
 
-    val onTabSelected: (ProfileTab) -> Unit = { onPageAction(ProfileAction.SelectTab(it)) }
+    val onTabSelected: (ProfileTab) -> Unit = { onAction(ProfileAction.SelectTab(it)) }
     val onStatsViewSelected: (StatsView) -> Unit = { view ->
-        if (view != uiState.selectedStatsView) onPageAction(ProfileAction.SelectStatsView(view))
+        if (view != uiState.selectedStatsView) onAction(ProfileAction.SelectStatsView(view))
     }
-    val onListQueryChange: (String) -> Unit = { onPageAction(ProfileAction.SetListQuery(it)) }
-    val tabStrip: @Composable (inList: Boolean) -> Unit = { inList ->
-        ProfileTabStrip(
-            uiState = uiState,
-            onTabSelected = onTabSelected,
-            onStatsTypeSelected = { onPageAction(ProfileAction.SelectStatsType(it)) },
-            onStatsViewSelected = onStatsViewSelected,
-            onFilterAction = onPageAction,
-            onListQueryChange = onListQueryChange,
-            showListSearch = false,
-            rails = rails,
-            // Only one copy draws the rails, so the two never pull at the same scroll.
-            railPlaceholder = inList && tabsDocked
-        )
-    }
+    val onListQueryChange: (String) -> Unit = { onAction(ProfileAction.SetListQuery(it)) }
     val tabContent: LazyListScope.() -> Unit = {
         profileSelectedTabContent(
             profile = profile,
@@ -371,7 +257,7 @@ fun ProfileContent(
             isOwnProfile = isOwnProfile,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
-            onAction = onPageAction,
+            onAction = onAction,
             onMediaClick = onMediaClick,
             onCharacterClick = onCharacterClick,
             onStaffClick = onStaffClick,
@@ -392,22 +278,7 @@ fun ProfileContent(
 
     val showShareFab = uiState.showsShareFab(profile)
     val bottomPadding = profileBottomPadding(showShareFab)
-    val bottomPaddingPx = with(density) { bottomPadding.roundToPx() }
-    LaunchedEffect(listState, bottomPaddingPx) {
-        snapshotFlow {
-            val info = listState.layoutInfo
-            val strip = info.visibleItemsInfo.firstOrNull { it.key == PROFILE_TABS_KEY } ?: return@snapshotFlow null
-            val below = info.visibleItemsInfo.filter { it.index > strip.index && it.key != PROFILE_FILLER_KEY }
-            val lastContentIndex = info.totalItemsCount - 2
-            if ((below.lastOrNull()?.index ?: strip.index) < lastContentIndex) return@snapshotFlow 0
-            val viewport = info.viewportEndOffset - info.viewportStartOffset
-            (viewport - dockTarget - strip.size - below.sumOf { it.size } - bottomPaddingPx).coerceAtLeast(0)
-        }
-            .filterNotNull()
-            .collect { tabFillerPx = it }
-    }
     if (uiState.selectedTab.isPage) {
-        val pageListState = rememberSaveable(uiState.pageListKey(), saver = LazyListState.Saver) { LazyListState() }
         val whatsNewStore = LocalWhatsNew.current
         LaunchedEffect(uiState.selectedTab) {
             if (uiState.selectedTab == ProfileTab.COMPARE) whatsNewStore.markSeen(WhatsNewItem.PROFILE_COMPARE)
@@ -415,7 +286,7 @@ fun ProfileContent(
         Box(modifier = modifier.fillMaxSize()) {
             ProfilePage(
                 uiState = uiState,
-                listState = pageListState,
+                listState = listState,
                 bottomPadding = bottomPadding,
                 onAction = onAction,
                 content = tabContent
@@ -427,11 +298,9 @@ fun ProfileContent(
     AppPullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
         onRefresh = rememberRateLimitedRefresh { onAction(ProfileAction.Refresh()) },
-        modifier = Modifier
-            .fillMaxSize()
-            .onGloballyPositioned { contentTopWindow = it.boundsInWindow().top },
+        modifier = Modifier.fillMaxSize(),
         topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding(),
-        // The list only pulls from its top, where the header's banner sits exactly over this one.
+        // The page only pulls from its top, where the header's banner sits exactly over this one.
         backdrop = {
             val pullOffset = LocalPullRefreshOffset.current
             ProfileBackdrop(
@@ -443,70 +312,69 @@ fun ProfileContent(
             )
         }
     ) {
-    LazyColumn(
-        state = listState,
+    ProfileCollapsingLayout(
+        state = header,
+        listState = listState,
+        dockTargetPx = dockTarget,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = bottomPadding)
-    ) {
-        item(key = "profile_header", contentType = "header") {
-            ProfileTopSection(
-                profile = profile,
-                isOwnProfile = isOwnProfile,
-                onSettingsClick = onSettingsClick,
-                onEditProfileClick = {
-                    onAction(ProfileAction.SetEditProfileDialogVisible(true))
-                },
-                onShowBiography = {
-                    onAction(ProfileAction.SetBiographySheetVisible(true))
-                },
-                isFollowing = uiState.isFollowingUser,
-                isFollowerOfViewer = uiState.isFollowerOfViewer,
-                isFollowLoading = uiState.isFollowLoading,
-                onFollowClick = { onAction(ProfileAction.ToggleFollow) },
-                onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
-                onNotificationsClick = onNotificationsClick,
-                unreadNotificationCount = unreadNotificationCount,
-                accounts = accounts,
-                onBackClick = onBackClick,
-                followingTotal = uiState.followingTotal,
-                followersTotal = uiState.followersTotal,
-                onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) }
-            )
-        }
-
-        if (uiState.isShowingSavedCopy) {
-            item(key = "profile_saved_copy", contentType = "notice") {
-                SavedCopyNotice(onRetry = { onAction(ProfileAction.Refresh()) })
+        header = {
+            Column {
+                ProfileTopSection(
+                    profile = profile,
+                    isOwnProfile = isOwnProfile,
+                    onSettingsClick = onSettingsClick,
+                    onEditProfileClick = {
+                        onAction(ProfileAction.SetEditProfileDialogVisible(true))
+                    },
+                    onShowBiography = {
+                        onAction(ProfileAction.SetBiographySheetVisible(true))
+                    },
+                    isFollowing = uiState.isFollowingUser,
+                    isFollowerOfViewer = uiState.isFollowerOfViewer,
+                    isFollowLoading = uiState.isFollowLoading,
+                    onFollowClick = { onAction(ProfileAction.ToggleFollow) },
+                    onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
+                    onNotificationsClick = onNotificationsClick,
+                    unreadNotificationCount = unreadNotificationCount,
+                    accounts = accounts,
+                    onBackClick = onBackClick,
+                    followingTotal = uiState.followingTotal,
+                    followersTotal = uiState.followersTotal,
+                    onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) }
+                )
+                if (uiState.isShowingSavedCopy) SavedCopyNotice(onRetry = { onAction(ProfileAction.Refresh()) })
+            }
+        },
+        strip = {
+            Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxWidth()) {
+                ProfileTabStrip(
+                    uiState = uiState,
+                    onTabSelected = onTabSelected,
+                    onStatsTypeSelected = { onAction(ProfileAction.SelectStatsType(it)) },
+                    onStatsViewSelected = onStatsViewSelected,
+                    onFilterAction = onAction,
+                    onListQueryChange = onListQueryChange,
+                    showListSearch = false,
+                    rails = rails
+                )
+            }
+        },
+        content = {
+            key(contentKey) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = bottomPadding),
+                    content = tabContent
+                )
             }
         }
+    )
 
-        item(key = PROFILE_TABS_KEY, contentType = "tabs") {
-            Surface(
-                color = MaterialTheme.colorScheme.background,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onGloballyPositioned { inlineTabsTopWindow = it.boundsInWindow().top }
-            ) {
-                tabStrip(true)
-            }
-        }
-
-        tabContent()
-
-        item(key = PROFILE_FILLER_KEY, contentType = "filler") {
-            Spacer(modifier = Modifier.height(with(LocalDensity.current) { maxOf(tabFillerPx, holdFillerPx).toDp() }))
-        }
-    }
-
-    val statusScrimFrom = with(LocalDensity.current) {
-        (if (profile.bannerUrl == null) 56.dp else (196.dp - statusBarInset).coerceAtLeast(120.dp) - 8.dp).toPx()
-    }
-    val showStatusScrim by remember(statusScrimFrom) {
-        derivedStateOf {
-            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > statusScrimFrom
-        }
-    }
-    if (showStatusScrim && !tabsDocked) {
+    val docked by remember(header) { derivedStateOf { header.docked } }
+    val statusScrimFrom = with(density) { (profileBackdropHeight(profile.bannerUrl == null) - statusBarInset - 8.dp).toPx() }
+    val showStatusScrim by remember(header, statusScrimFrom) { derivedStateOf { header.collapsed > statusScrimFrom } }
+    if (showStatusScrim && !docked) {
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -516,20 +384,20 @@ fun ProfileContent(
         )
     }
 
-    if (tabsDocked) {
+    if (docked) {
         Surface(
             color = MaterialTheme.colorScheme.background,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
         ) {
-            Column(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+            Box(modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
                 when {
                     uiState.selectedTab.isList ->
                         ProfileListSearchBar(
                             uiState = uiState,
                             onQueryChange = onListQueryChange,
-                            onFilterAction = onPageAction,
+                            onFilterAction = onAction,
                             onBack = onBackClick
                         )
                     isOwnProfile -> ProfileOwnDockedBar(
@@ -547,7 +415,6 @@ fun ProfileContent(
                         onFollowClick = { onAction(ProfileAction.ToggleFollow) }
                     )
                 }
-                tabStrip(false)
             }
         }
     }
@@ -965,12 +832,6 @@ private fun ProfileTab.stripTab(): StripTab = when (this) {
     else -> StripTab.ACTIVITY
 }
 
-private fun ProfileUiState.pageListKey(): String = when (selectedTab) {
-    ProfileTab.FAVORITES -> "FAVORITES_${selectedFavoritesFilter.name}"
-    ProfileTab.SOCIAL -> "SOCIAL_${selectedSocialTab.name}"
-    else -> selectedTab.name
-}
-
 /** Avatar and banner only change on the website, so the prompt hands off to AniList's settings. */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -1178,8 +1039,6 @@ internal fun ProfileTabStrip(
     /** The phone draws the list's search in the docked bar instead, above this strip. */
     showListSearch: Boolean = true,
     rails: ProfileRails? = null,
-    /** For the copy hidden under the docked strip, which keeps the rail's place without drawing it. */
-    railPlaceholder: Boolean = false,
     /** T2 draws the list's rail over the rows instead, beside the filter panel. */
     showListRail: Boolean = true
 ) {
@@ -1199,10 +1058,7 @@ internal fun ProfileTabStrip(
             lastListTab = uiState.lastListTab,
             onTabSelected = onTabSelected
         )
-        val railTab = uiState.selectedTab == ProfileTab.STATS || uiState.selectedTab == ProfileTab.ACTIVITY || onLists
-        if (railPlaceholder && railTab) {
-            ProfileRailPlaceholder()
-        } else when (uiState.selectedTab) {
+        when (uiState.selectedTab) {
             ProfileTab.STATS -> {
                 val own = uiState.viewerOwnsProfile
                 StatsRail(
@@ -1289,46 +1145,6 @@ internal fun ProfileListSearchBar(
         onBack = onBack
     )
 }
-
-private const val PROFILE_TABS_KEY = "profile_tabs"
-private const val PROFILE_FILLER_KEY = "profile_tab_filler"
-
-/** What sits under the strip: a tab and its chip, each of which keeps its own place in the page. */
-private fun ProfileUiState.phonePositionKey(): String = when {
-    selectedTab.isPage -> PAGE_KEY_PREFIX + pageListKey()
-    selectedTab == ProfileTab.STATS -> "STATS_${selectedStatsType.name}_${selectedStatsView.name}"
-    selectedTab == ProfileTab.ACTIVITY -> "ACTIVITY_${selectedActivityFilter.name}"
-    selectedTab.isList -> {
-        val status = if (listTools.query.isNotBlank()) listTools.searchStatus else selectedListStatus
-        "${selectedTab.name}_${status?.name ?: "ALL"}"
-    }
-    else -> selectedTab.name
-}
-
-/** A search, sort, filter or view change starts the rows over from the top. */
-private fun ProfileUiState.phoneToolsKey(): Any? =
-    if (selectedTab.isList) listTools.copy(searchStatus = null) else null
-
-private fun String.isPageKey() = startsWith(PAGE_KEY_PREFIX)
-
-private const val PAGE_KEY_PREFIX = "page_"
-
-private class ContentSwitches(var positionKey: String, var toolsKey: Any?) {
-    val saved = mutableMapOf<String, Pair<Int, Int>>()
-}
-
-/** Each dock gets a new one, which restarts or, when inactive, stops the hold on the strip. */
-private data class DockHold(val id: Int, val active: Boolean) {
-    fun next(active: Boolean) = DockHold(id + 1, active)
-}
-
-private data class DockProbe(
-    val stripOffset: Int?,
-    val itemCount: Int,
-    val contentEnd: Int?,
-    val scrolling: Boolean,
-    val target: Int
-)
 
 /** The bar the strip docks under, the identity bar or the list's search. */
 private val ProfileDockBarHeight = 64.dp
