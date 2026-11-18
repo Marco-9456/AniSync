@@ -21,6 +21,13 @@ fun formatMonthYear(month: YearMonth, locale: Locale): String {
     return month.format(DateTimeFormatter.ofPattern(pattern, locale))
 }
 
+/** The locale's grouped whole numbers, "31,207", built again only when the locale changes. */
+@Composable
+fun rememberIntegerFormat(): NumberFormat {
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(locale) { NumberFormat.getIntegerInstance(locale) }
+}
+
 /** `pluralStringResource` with the fallback of [getQuantityStringOrDefault]. */
 @Composable
 @ReadOnlyComposable
