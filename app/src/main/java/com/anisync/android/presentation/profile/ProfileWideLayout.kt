@@ -46,7 +46,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
@@ -60,7 +63,6 @@ import com.anisync.android.presentation.profile.components.ProfileHeaderAvatar
 import com.anisync.android.presentation.profile.components.bandChromeColors
 import com.anisync.android.presentation.profile.components.ProfileActionButtons
 import com.anisync.android.presentation.profile.components.ProfileAvatarHalfSize
-import com.anisync.android.presentation.profile.components.ProfileAvatarSize
 import com.anisync.android.presentation.profile.components.ProfileBannerSurface
 import com.anisync.android.presentation.profile.components.ProfileCardSettingsButton
 import com.anisync.android.presentation.profile.components.bannerChromeColors
@@ -68,6 +70,7 @@ import com.anisync.android.presentation.profile.components.ProfileIdentityInfo
 import com.anisync.android.presentation.profile.components.ProfileMenuButton
 import com.anisync.android.presentation.profile.components.ProfileSettingsButton
 import com.anisync.android.presentation.profile.sections.ProfileAboutExtras
+import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.PaneDragHandle
 import com.anisync.android.presentation.util.TwoPaneDefaults
@@ -78,6 +81,16 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 private val WideBannerHeight = 168.dp
+
+/** T4's card is 140dp on a 312dp column, and T5's short window takes 120dp. */
+private const val WideBannerAspect = 0.43f
+private val WideBannerMinHeight = 120.dp
+
+/** The least room between the avatar and the actions for the two to share a row. */
+private val WideActionsGap = 12.dp
+
+/** T4's identity pane, the narrowest that holds the banner card, the avatar and the actions. */
+private val IdentityPaneMinWidth = 344.dp
 
 /** Without a banner the column keeps only the controls that sat on it, in a row of this height. */
 private val WideChromeRowHeight = 48.dp
@@ -139,6 +152,7 @@ fun ProfileWideLayout(
 ) {
     val appSettings = LocalAppSettings.current
     var leadingFraction by rememberSaveable { mutableFloatStateOf(appSettings.paneProfileFraction.value) }
+    val density = LocalDensity.current
     var rowWidthPx by remember { mutableIntStateOf(0) }
 
     val scope = rememberCoroutineScope()
@@ -162,8 +176,9 @@ fun ProfileWideLayout(
                 modifier = Modifier.fillMaxHeight(),
                 onDelta = { delta ->
                     if (rowWidthPx > 0) {
+                        val narrowest = identityMinFraction(with(density) { rowWidthPx.toDp() })
                         leadingFraction = (leadingFraction + delta / rowWidthPx)
-                            .coerceIn(PROFILE_MIN_FRACTION, PROFILE_MAX_FRACTION)
+                            .coerceIn(maxOf(PROFILE_MIN_FRACTION, narrowest), PROFILE_MAX_FRACTION)
                     }
                 },
                 onDragStarted = { settleJob?.cancel() },
@@ -222,21 +237,27 @@ private fun ProfileTwoPaneRow(
     leading: @Composable () -> Unit,
     trailing: @Composable () -> Unit
 ) {
-    TwoPaneRow(
-        leadingWeight = leadingWeight,
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding(),
-        gutterColor = MaterialTheme.colorScheme.background,
-        leadingColor = MaterialTheme.colorScheme.background,
-        trailingColor = MaterialTheme.colorScheme.background,
-        gutterPadding = PaddingValues(start = WideGutterStart, top = 12.dp, end = 16.dp, bottom = 16.dp),
-        handle = handle,
-        leading = leading,
-        trailing = trailing
-    )
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        TwoPaneRow(
+            leadingWeight = leadingWeight.coerceAtLeast(identityMinFraction(maxWidth)),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .statusBarsPadding(),
+            gutterColor = MaterialTheme.colorScheme.background,
+            leadingColor = MaterialTheme.colorScheme.background,
+            trailingColor = MaterialTheme.colorScheme.background,
+            gutterPadding = PaddingValues(start = WideGutterStart, top = 12.dp, end = 16.dp, bottom = 16.dp),
+            handle = handle,
+            leading = leading,
+            trailing = trailing
+        )
+    }
 }
+
+/** On an upright tablet or a phone on its side the saved split would squeeze the identity column. */
+private fun identityMinFraction(rowWidth: Dp): Float =
+    (IdentityPaneMinWidth / (rowWidth - WideGutterStart - 32.dp)).coerceIn(0f, PROFILE_MAX_FRACTION)
 
 /**
  * T1's identity column: the banner card, the avatar on its lower edge with the actions beside it,
@@ -257,102 +278,131 @@ private fun ProfileIdentityColumn(
     modifier: Modifier = Modifier
 ) {
     val hasBanner = profile.bannerUrl != null
-    val headerHeight = if (hasBanner) WideBannerHeight else WideChromeRowHeight
-    val avatarTop = if (hasBanner) headerHeight - ProfileAvatarHalfSize else headerHeight + 8.dp
-    val actionsTop = if (hasBanner) headerHeight + 8.dp else avatarTop + 56.dp
-    val identityTop = if (hasBanner) actionsTop + 52.dp else avatarTop + ProfileAvatarSize + 10.dp
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(top = TabsTopInset)
-    ) {
-        if (hasBanner) {
-            ProfileBannerSurface(
-                profile = profile,
-                height = WideBannerHeight,
-                onBackClick = onBackClick,
-                shape = TwoPaneDefaults.PaneShape,
-                statusScrim = false,
-                endControl = {
-                    if (isOwnProfile) {
-                        ProfileCardSettingsButton(onClick = onSettingsClick)
+    val compactHeight = LocalAdaptiveInfo.current.isCompactHeight
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // T1's card shrinks with a narrower column as T4's does, and a short window takes T5's.
+        val bannerHeight = if (compactHeight) {
+            WideBannerMinHeight
+        } else {
+            ((maxWidth - WideBannerInset * 2) * WideBannerAspect).coerceIn(WideBannerMinHeight, WideBannerHeight)
+        }
+        Layout(
+            contents = listOf(
+                {
+                    if (hasBanner) {
+                        ProfileBannerSurface(
+                            profile = profile,
+                            height = bannerHeight,
+                            onBackClick = onBackClick,
+                            shape = TwoPaneDefaults.PaneShape,
+                            statusScrim = false,
+                            endControl = {
+                                if (isOwnProfile) {
+                                    ProfileCardSettingsButton(onClick = onSettingsClick)
+                                } else {
+                                    ProfileMenuButton(name = profile.name, colors = bannerChromeColors())
+                                }
+                            },
+                            modifier = Modifier.padding(horizontal = WideBannerInset)
+                        )
                     } else {
-                        ProfileMenuButton(name = profile.name, colors = bannerChromeColors())
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(WideChromeRowHeight)
+                        ) {
+                            if (!isOwnProfile && onBackClick != null) BackTrailButton(onClick = onBackClick)
+                            Spacer(modifier = Modifier.weight(1f))
+                            if (isOwnProfile) {
+                                ProfileSettingsButton(onBanner = false, onClick = onSettingsClick)
+                            } else {
+                                ProfileMenuButton(
+                                    name = profile.name,
+                                    colors = bandChromeColors()
+                                )
+                            }
+                        }
                     }
                 },
-                modifier = Modifier.padding(horizontal = WideBannerInset)
-            )
-        } else {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(WideChromeRowHeight)
-            ) {
-                if (!isOwnProfile && onBackClick != null) BackTrailButton(onClick = onBackClick)
-                Spacer(modifier = Modifier.weight(1f))
-                if (isOwnProfile) {
-                    ProfileSettingsButton(onBanner = false, onClick = onSettingsClick)
-                } else {
-                    ProfileMenuButton(
-                        name = profile.name,
-                        colors = bandChromeColors()
+                { ProfileHeaderAvatar(url = profile.avatarUrl) },
+                {
+                    ProfileActionButtons(
+                        isOwnProfile = isOwnProfile,
+                        isFollowing = uiState.isFollowingUser,
+                        isFollowLoading = uiState.isFollowLoading,
+                        onFollowClick = { onAction(ProfileAction.ToggleFollow) },
+                        onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
+                        onEditProfileClick = { onAction(ProfileAction.SetEditProfileDialogVisible(true)) },
+                        onNotificationsClick = onNotificationsClick,
+                        unreadNotificationCount = unreadNotificationCount
                     )
+                },
+                {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = WideContentInset)
+                            .padding(bottom = 24.dp)
+                    ) {
+                        ProfileIdentityInfo(
+                            profile = profile,
+                            isOwnProfile = isOwnProfile,
+                            viewerFollows = uiState.isFollowingUser,
+                            followsViewer = uiState.isFollowerOfViewer,
+                            followingTotal = uiState.followingTotal,
+                            followersTotal = uiState.followersTotal,
+                            onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) },
+                            accounts = accounts,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        // The column scrolls on its own, so the bio is there in full rather than cut
+                        // short, with what the phone's About sheet keeps under it.
+                        val about = profile.about
+                        if (!about.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            AsyncRichTextRenderer(html = about, modifier = Modifier.fillMaxWidth())
+                        }
+                        ProfileAboutExtras(profile = profile, horizontalPadding = 0.dp)
+                    }
                 }
-            }
-        }
-
-        Column(
+            ),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = identityTop)
-                .padding(horizontal = WideContentInset)
-                .padding(bottom = 24.dp)
-        ) {
-            ProfileIdentityInfo(
-                profile = profile,
-                isOwnProfile = isOwnProfile,
-                viewerFollows = uiState.isFollowingUser,
-                followsViewer = uiState.isFollowerOfViewer,
-                followingTotal = uiState.followingTotal,
-                followersTotal = uiState.followersTotal,
-                onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) },
-                accounts = accounts,
-                modifier = Modifier.fillMaxWidth()
-            )
-            // The column scrolls on its own, so the bio is there in full rather than cut short, with
-            // what the phone's About sheet keeps under it.
-            val about = profile.about
-            if (!about.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                AsyncRichTextRenderer(html = about, modifier = Modifier.fillMaxWidth())
+                .verticalScroll(rememberScrollState())
+                .padding(top = TabsTopInset)
+        ) { (top, avatar, actions, body), constraints ->
+            val width = constraints.maxWidth
+            val loose = Constraints(maxWidth = width)
+            val topPlaceable = top.first().measure(Constraints.fixedWidth(width))
+            val avatarPlaceable = avatar.first().measure(loose)
+            val actionsPlaceable = actions.first().measure(loose)
+            val bodyPlaceable = body.first().measure(Constraints.fixedWidth(width))
+
+            val header = topPlaceable.height
+            val avatarStart = (WideBannerInset + 16.dp).roundToPx()
+            val actionsEnd = WideContentInset.roundToPx()
+            val avatarTop = if (hasBanner) header - ProfileAvatarHalfSize.roundToPx() else header + 8.dp.roundToPx()
+            val avatarBottom = avatarTop + avatarPlaceable.height
+            // T1 sets the actions beside the avatar, T4 and T5 under it once the column is too narrow for both.
+            val beside = avatarStart + avatarPlaceable.width + WideActionsGap.roundToPx() + actionsPlaceable.width + actionsEnd <= width
+            val actionsTop = when {
+                !beside -> avatarBottom + 12.dp.roundToPx()
+                hasBanner -> header + 8.dp.roundToPx()
+                else -> avatarTop + 56.dp.roundToPx()
             }
-            ProfileAboutExtras(profile = profile, horizontalPadding = 0.dp)
+            val identityTop = when {
+                !beside -> actionsTop + actionsPlaceable.height + 12.dp.roundToPx()
+                hasBanner -> actionsTop + 52.dp.roundToPx()
+                else -> avatarBottom + 10.dp.roundToPx()
+            }
+            layout(width, identityTop + bodyPlaceable.height) {
+                topPlaceable.place(0, 0)
+                bodyPlaceable.place(0, identityTop)
+                avatarPlaceable.place(avatarStart, avatarTop)
+                actionsPlaceable.place(width - actionsEnd - actionsPlaceable.width, actionsTop)
+            }
         }
-
-        ProfileHeaderAvatar(
-            url = profile.avatarUrl,
-            modifier = Modifier
-                .padding(start = WideBannerInset + 16.dp)
-                .offset(y = avatarTop)
-        )
-
-        ProfileActionButtons(
-            isOwnProfile = isOwnProfile,
-            isFollowing = uiState.isFollowingUser,
-            isFollowLoading = uiState.isFollowLoading,
-            onFollowClick = { onAction(ProfileAction.ToggleFollow) },
-            onMessageClick = { onAction(ProfileAction.ShowMessageComposer) },
-            onEditProfileClick = { onAction(ProfileAction.SetEditProfileDialogVisible(true)) },
-            onNotificationsClick = onNotificationsClick,
-            unreadNotificationCount = unreadNotificationCount,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(y = actionsTop)
-                .padding(end = WideContentInset)
-        )
     }
 }
 
