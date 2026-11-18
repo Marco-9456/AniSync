@@ -549,6 +549,9 @@ internal fun LazyListScope.profileSelectedTabContent(
     /** A pane wide enough for T1's two Overview columns. */
     overviewColumns: Boolean = false
 ) {
+    // A list keeps its first visible item where it is, and an empty first block is skipped over, so
+    // one that fills in later, the comparison once both lists are in, would open above the screen.
+    item(key = "tab_top", contentType = "tab_top") { TabTopAnchor() }
     when (uiState.selectedTab) {
         ProfileTab.OVERVIEW -> {
             val blocks = OverviewBlocks(
@@ -830,6 +833,11 @@ private fun ProfileTab.stripTab(): StripTab = when (this) {
     ProfileTab.ANIME, ProfileTab.MANGA -> StripTab.LISTS
     ProfileTab.STATS -> StripTab.STATS
     else -> StripTab.ACTIVITY
+}
+
+@Composable
+private fun TabTopAnchor() {
+    Spacer(modifier = Modifier.fillMaxWidth().height(with(LocalDensity.current) { 1.toDp() }))
 }
 
 /** Avatar and banner only change on the website, so the prompt hands off to AniList's settings. */
