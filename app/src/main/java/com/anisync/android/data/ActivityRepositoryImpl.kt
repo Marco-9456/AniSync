@@ -283,6 +283,7 @@ class ActivityRepositoryImpl @Inject constructor(
                 replyCount = l.replyCount,
                 siteUrl = l.siteUrl,
                 isMessage = false,
+                isListUpdate = true,
                 isPrivate = false,
                 isSubscribed = l.isSubscribed == true,
                 authorId = l.user?.id ?: 0,

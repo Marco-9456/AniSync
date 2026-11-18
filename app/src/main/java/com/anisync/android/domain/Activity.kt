@@ -24,6 +24,8 @@ data class ActivityDetail(
     val replyCount: Int,
     val siteUrl: String?,
     val isMessage: Boolean,
+    /** A list update, which AniList writes from the list rather than the user. */
+    val isListUpdate: Boolean = false,
     val isPrivate: Boolean,
     val isSubscribed: Boolean = false,
     val authorId: Int,
