@@ -33,7 +33,7 @@ fun EditProfileSheet(
         isSubmitEnabled = { body -> !isSaving && body != about },
         header = {
             Text(
-                text = stringResource(R.string.edit_profile_about_section),
+                text = stringResource(R.string.edit_profile_about_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 4.dp)

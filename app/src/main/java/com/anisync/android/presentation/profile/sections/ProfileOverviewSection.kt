@@ -153,7 +153,7 @@ private fun OverviewWatching(blocks: OverviewBlocks) {
         OverviewHeader(
             title = stringResource(R.string.profile_overview_watching),
             subtitle = pluralStringResourceOrDefault(
-                R.plurals.profile_favorites_count_titles,
+                R.plurals.stats_titles,
                 blocks.watching.size,
                 blocks.watching.size.toString()
             ),

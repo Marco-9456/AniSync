@@ -340,7 +340,7 @@ private fun LazyListScope.sharedSection(
         OverviewHeader(
             title = stringResource(titleRes),
             onAction = null,
-            subtitle = pluralStringResourceOrDefault(R.plurals.profile_favorites_count_titles, titles.size, titles.size.toString())
+            subtitle = pluralStringResourceOrDefault(R.plurals.stats_titles, titles.size, titles.size.toString())
         )
     }
     val shown = if (expanded) titles else titles.take(COMPARE_PREVIEW)
@@ -389,7 +389,7 @@ private fun PosterShelf(
         OverviewHeader(
             title = title,
             onAction = null,
-            subtitle = pluralStringResourceOrDefault(R.plurals.profile_favorites_count_titles, items.size, items.size.toString())
+            subtitle = pluralStringResourceOrDefault(R.plurals.stats_titles, items.size, items.size.toString())
         )
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),

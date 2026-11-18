@@ -188,7 +188,7 @@ internal fun FavoritesFilterRail(
             val numbers = remember { NumberFormat.getIntegerInstance() }
             val amount = pluralStringResourceOrDefault(
                 when (selected) {
-                    ProfileFavoritesFilter.ANIME, ProfileFavoritesFilter.MANGA -> R.plurals.profile_favorites_count_titles
+                    ProfileFavoritesFilter.ANIME, ProfileFavoritesFilter.MANGA -> R.plurals.stats_titles
                     ProfileFavoritesFilter.CHARACTERS -> R.plurals.profile_favorites_count_characters
                     ProfileFavoritesFilter.STAFF -> R.plurals.profile_favorites_count_staff
                     ProfileFavoritesFilter.STUDIOS -> R.plurals.profile_favorites_count_studios

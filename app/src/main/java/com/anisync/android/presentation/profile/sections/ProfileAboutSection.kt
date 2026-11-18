@@ -251,7 +251,7 @@ internal fun BioPreview(about: String, onOpen: () -> Unit, modifier: Modifier = 
             { Box(modifier = Modifier.background(Brush.verticalGradient(listOf(container.copy(alpha = 0f), container)))) },
             {
                 FilledTonalButton(onClick = onOpen) {
-                    Text(stringResource(R.string.profile_read_more), style = MaterialTheme.typography.labelLarge.emphasis())
+                    Text(stringResource(R.string.synopsis_read_more), style = MaterialTheme.typography.labelLarge.emphasis())
                 }
             }
         ),

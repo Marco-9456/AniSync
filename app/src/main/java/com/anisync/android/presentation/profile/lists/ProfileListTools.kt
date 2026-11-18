@@ -16,14 +16,14 @@ enum class ProfileListSort(@StringRes val labelRes: Int) {
     UPDATED(R.string.profile_list_sort_updated),
     THEIR_SCORE(R.string.profile_list_sort_their_score),
     YOUR_SCORE(R.string.profile_list_sort_your_score),
-    TITLE(R.string.profile_list_sort_title),
+    TITLE(R.string.sort_title),
     AVERAGE_SCORE(R.string.profile_list_sort_average_score),
     POPULARITY(R.string.sort_popularity),
-    RELEASE_DATE(R.string.profile_list_sort_release_date),
+    RELEASE_DATE(R.string.sort_release_date),
     ADDED(R.string.profile_list_sort_added),
     STARTED(R.string.profile_list_sort_started),
     FINISHED(R.string.profile_list_sort_finished),
-    PROGRESS(R.string.profile_list_sort_progress),
+    PROGRESS(R.string.sort_progress),
     REWATCHES(R.string.profile_list_sort_rewatches)
 }
 

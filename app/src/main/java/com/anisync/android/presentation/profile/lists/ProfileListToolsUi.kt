@@ -149,7 +149,7 @@ internal fun ProfileListTopBar(
                     text = ""
                     onQueryChange("")
                 }) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.profile_list_clear_search))
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear_search))
                 }
             }
             IconButton(onClick = onToggleView) {
@@ -161,7 +161,7 @@ internal fun ProfileListTopBar(
                 )
             }
             IconButton(onClick = onOpenSort) {
-                Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = stringResource(R.string.profile_list_sort))
+                Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = stringResource(R.string.sort))
             }
             IconButton(onClick = onOpenFilters) {
                 BadgedBox(badge = { if (filtersActive) Badge() }) {
@@ -187,7 +187,7 @@ internal fun ProfileListSummary(
     val amount = when {
         query.isNotEmpty() -> pluralStringResourceOrDefault(R.plurals.profile_list_results_for, count, numbers.format(count), query)
         tools.filters.isActive -> stringResource(R.string.profile_list_count_of, numbers.format(count), numbers.format(results.inScope))
-        else -> pluralStringResourceOrDefault(R.plurals.profile_list_titles, count, numbers.format(count))
+        else -> pluralStringResourceOrDefault(R.plurals.stats_titles, count, numbers.format(count))
     }
     val text = stringResource(R.string.profile_people_summary, amount, orderPhrase(tools, isOwnProfile))
     val filters = tools.filters
@@ -282,7 +282,7 @@ private fun orderPhrase(tools: ProfileListTools, isOwnProfile: Boolean): String 
 
 @Composable
 internal fun sortLabel(sort: ProfileListSort, isOwnProfile: Boolean): String =
-    stringResource(if (isOwnProfile && sort == ProfileListSort.THEIR_SCORE) R.string.profile_list_sort_score else sort.labelRes)
+    stringResource(if (isOwnProfile && sort == ProfileListSort.THEIR_SCORE) R.string.sort_score else sort.labelRes)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -463,7 +463,7 @@ private fun ProfileListFilterSections(
             }
             Spacer(Modifier.height(12.dp))
         }
-        SheetSectionLabel(stringResource(if (isOwnProfile) R.string.profile_list_sort_score else R.string.profile_list_sort_their_score))
+        SheetSectionLabel(stringResource(if (isOwnProfile) R.string.sort_score else R.string.profile_list_sort_their_score))
         Spacer(Modifier.height(8.dp))
         OptionPillGrid(
             options = listOf<Int?>(null) + scoreFloors(ownerScoreFormat) + ProfileListFilters.UNSCORED,
