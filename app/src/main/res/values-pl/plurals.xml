@@ -450,4 +450,46 @@
         <item quantity="many">Zachowano %1$s miesięcy, %2$s. Wyczyszczone podsumowania zostaną odbudowane z AniList, gdy je otworzysz</item>
         <item quantity="other">Zachowano %1$s miesięcy, %2$s. Wyczyszczone podsumowania zostaną odbudowane z AniList, gdy je otworzysz</item>
     </plurals>
+    <plurals name="profile_favorites_count_studios">
+        <item quantity="one">%1$s studio</item>
+        <item quantity="few">%1$s studia</item>
+        <item quantity="many">%1$s studiów</item>
+        <item quantity="other">%1$s studiów</item>
+    </plurals>
+    <plurals name="profile_compare_theirs_not_yours_anime">
+        <item quantity="one">%1$s ma %2$s anime którego ty nie dodałeś</item>
+        <item quantity="few">%1$s ma %2$s anime których ty nie dodałeś</item>
+        <item quantity="many">%1$s ma %2$s anime których ty nie dodałeś</item>
+        <item quantity="other">%1$s ma %2$s anime których ty nie dodałeś</item>
+    </plurals>
+    <plurals name="profile_compare_theirs_not_yours_manga">
+        <item quantity="one">%1$s ma %2$s mangę której ty nie dodałeś</item>
+        <item quantity="few">%1$s ma %2$s mangi których ty nie dodałeś</item>
+        <item quantity="many">%1$s ma %2$s mang których ty nie dodałeś</item>
+        <item quantity="other">%1$s ma %2$s mang których ty nie dodałeś</item>
+    </plurals>
+    <plurals name="profile_row_episodes">
+        <item quantity="one">%d odcinek</item>
+        <item quantity="few">%d odcinki</item>
+        <item quantity="many">%d odcinków</item>
+        <item quantity="other">%d odcinków</item>
+    </plurals>
+    <plurals name="profile_row_chapters">
+        <item quantity="one">%d rozdział</item>
+        <item quantity="few">%d rozdziały</item>
+        <item quantity="many">%d rozdziałów</item>
+        <item quantity="other">%d rozdziałów</item>
+    </plurals>
+    <plurals name="profile_row_rewatched">
+        <item quantity="one">obejrzano ponownie raz</item>
+        <item quantity="few">obejrzano ponownie %d razy</item>
+        <item quantity="many">obejrzano ponownie %d razy</item>
+        <item quantity="other">obejrzano ponownie %d razy</item>
+    </plurals>
+    <plurals name="profile_row_reread">
+        <item quantity="one">przeczytano ponownie raz</item>
+        <item quantity="few">przeczytano ponownie %d razy</item>
+        <item quantity="many">przeczytano ponownie %d razy</item>
+        <item quantity="other">przeczytano ponownie %d razy</item>
+    </plurals>
 </resources>
