@@ -173,35 +173,12 @@ query GetFullUserProfile(
       }
       characters(page: 1, perPage: 25) {
         nodes {
-          id
-          name {
-            userPreferred
-          }
-          image {
-            large
-          }
-          media(sort: [POPULARITY_DESC], perPage: 1) {
-            nodes {
-              title {
-                romaji
-                english
-                native
-                userPreferred
-              }
-            }
-          }
+          ...FavoriteCharacterFields
         }
       }
       staff(page: 1, perPage: 25) {
         nodes {
-          id
-          name {
-            userPreferred
-          }
-          image {
-            large
-          }
-          primaryOccupations
+          ...FavoriteStaffFields
         }
       }
       studios(page: 1, perPage: 25) {
@@ -646,23 +623,7 @@ query GetUserFavoriteKind(
           hasNextPage
         }
         nodes {
-          id
-          name {
-            userPreferred
-          }
-          image {
-            large
-          }
-          media(sort: [POPULARITY_DESC], perPage: 1) {
-            nodes {
-              title {
-                romaji
-                english
-                native
-                userPreferred
-              }
-            }
-          }
+          ...FavoriteCharacterFields
         }
       }
       staff(page: $page, perPage: 25) @include(if: $staff) {
@@ -670,14 +631,7 @@ query GetUserFavoriteKind(
           hasNextPage
         }
         nodes {
-          id
-          name {
-            userPreferred
-          }
-          image {
-            large
-          }
-          primaryOccupations
+          ...FavoriteStaffFields
         }
       }
       studios(page: $page, perPage: 25) @include(if: $studios) {
@@ -691,6 +645,37 @@ query GetUserFavoriteKind(
       }
     }
   }
+}
+
+fragment FavoriteCharacterFields on Character {
+  id
+  name {
+    userPreferred
+  }
+  image {
+    large
+  }
+  media(sort: [POPULARITY_DESC], perPage: 1) {
+    nodes {
+      title {
+        romaji
+        english
+        native
+        userPreferred
+      }
+    }
+  }
+}
+
+fragment FavoriteStaffFields on Staff {
+  id
+  name {
+    userPreferred
+  }
+  image {
+    large
+  }
+  primaryOccupations
 }
 
 query GetUserPeopleCounts($userId: Int!) {

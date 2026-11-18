@@ -16,6 +16,8 @@ import com.anisync.android.data.local.toEntity
 import com.anisync.android.data.mapper.mapFuzzyDateToLong
 import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.util.safeApiCall
+import com.anisync.android.fragment.FavoriteCharacterFields
+import com.anisync.android.fragment.FavoriteStaffFields
 import com.anisync.android.fragment.MediaCardFields
 import android.os.SystemClock
 import android.os.Trace
@@ -228,43 +230,13 @@ class ProfileRepositoryImpl @Inject constructor(
                 ?.map { it.mediaCardFields.toFavoriteEntry(withEpisodes = false) }
                 ?: emptyList()
 
-            // Favourite characters show thumb + name only (no role): a favourite has no single
-            // canonical role, and AniList omits per-media role/VA under the favourites connection.
-            val overviewCharacters = user.favourites?.characters?.nodes?.filterNotNull()?.map { char ->
-                com.anisync.android.domain.CharacterInfo(
-                    id = char.id ?: 0,
-                    nameFull = char.name?.userPreferred ?: "Unknown",
-                    nameNative = null,
-                    nameUserPreferred = char.name?.userPreferred ?: "Unknown",
-                    imageUrl = char.image?.large,
-                    role = "",
-                    series = char.media?.nodes?.firstOrNull()?.title?.let {
-                        com.anisync.android.domain.TitleSet(it.romaji, it.english, it.native, it.userPreferred)
-                    }
-                )
-            } ?: emptyList()
+            val overviewCharacters = user.favourites?.characters?.nodes?.filterNotNull()
+                ?.map { it.favoriteCharacterFields.toFavoriteCharacter() }
+                ?: emptyList()
 
-            val overviewStaff = user.favourites?.staff?.nodes?.filterNotNull()?.map { staff ->
-                com.anisync.android.domain.StaffDetails(
-                    id = staff.id ?: 0,
-                    name = staff.name?.userPreferred ?: "Unknown",
-                    nativeName = null,
-                    nameUserPreferred = staff.name?.userPreferred ?: "Unknown",
-                    imageUrl = staff.image?.large,
-                    description = null,
-                    gender = null,
-                    age = null,
-                    bloodType = null,
-                    dateOfBirth = null,
-                    dateOfDeath = null,
-                    favourites = null,
-                    language = null,
-                    primaryOccupations = staff.primaryOccupations?.filterNotNull() ?: emptyList(),
-                    yearsActive = emptyList(),
-                    homeTown = null,
-                    voicedCharacters = emptyList()
-                )
-            } ?: emptyList()
+            val overviewStaff = user.favourites?.staff?.nodes?.filterNotNull()
+                ?.map { it.favoriteStaffFields.toFavoriteStaff() }
+                ?: emptyList()
 
             val overviewStudios = user.favourites?.studios?.nodes?.filterNotNull()?.map { studio ->
                 com.anisync.android.domain.StudioInfo(
@@ -457,6 +429,40 @@ class ProfileRepositoryImpl @Inject constructor(
         status = LibraryStatus.UNKNOWN
     )
 
+    // A favourite character has no single role, and AniList leaves role and voice actor out of the
+    // favourites connection, so the tile shows the picture, the name and their best known series.
+    private fun FavoriteCharacterFields.toFavoriteCharacter() = com.anisync.android.domain.CharacterInfo(
+        id = id,
+        nameFull = name?.userPreferred ?: "Unknown",
+        nameNative = null,
+        nameUserPreferred = name?.userPreferred ?: "Unknown",
+        imageUrl = image?.large,
+        role = "",
+        series = media?.nodes?.firstOrNull()?.title?.let {
+            com.anisync.android.domain.TitleSet(it.romaji, it.english, it.native, it.userPreferred)
+        }
+    )
+
+    private fun FavoriteStaffFields.toFavoriteStaff() = com.anisync.android.domain.StaffDetails(
+        id = id,
+        name = name?.userPreferred ?: "Unknown",
+        nativeName = null,
+        nameUserPreferred = name?.userPreferred ?: "Unknown",
+        imageUrl = image?.large,
+        description = null,
+        gender = null,
+        age = null,
+        bloodType = null,
+        dateOfBirth = null,
+        dateOfDeath = null,
+        favourites = null,
+        language = null,
+        primaryOccupations = primaryOccupations?.filterNotNull() ?: emptyList(),
+        yearsActive = emptyList(),
+        homeTown = null,
+        voicedCharacters = emptyList()
+    )
+
     private data class FavoritesPage(val entries: List<LibraryEntry>, val lastPage: Int?)
 
     private suspend fun fetchFavoritesPage(
@@ -534,43 +540,11 @@ class ProfileRepositoryImpl @Inject constructor(
                         favourites.manga?.pageInfo?.hasNextPage == true
                     }
                     com.anisync.android.domain.FavoriteKind.CHARACTERS -> {
-                        favourites.characters?.nodes?.filterNotNull()?.forEach { char ->
-                            characters += com.anisync.android.domain.CharacterInfo(
-                                id = char.id,
-                                nameFull = char.name?.userPreferred ?: "Unknown",
-                                nameNative = null,
-                                nameUserPreferred = char.name?.userPreferred ?: "Unknown",
-                                imageUrl = char.image?.large,
-                                role = "",
-                                series = char.media?.nodes?.firstOrNull()?.title?.let {
-                                    com.anisync.android.domain.TitleSet(it.romaji, it.english, it.native, it.userPreferred)
-                                }
-                            )
-                        }
+                        favourites.characters?.nodes?.filterNotNull()?.forEach { characters += it.favoriteCharacterFields.toFavoriteCharacter() }
                         favourites.characters?.pageInfo?.hasNextPage == true
                     }
                     com.anisync.android.domain.FavoriteKind.STAFF -> {
-                        favourites.staff?.nodes?.filterNotNull()?.forEach { member ->
-                            staff += com.anisync.android.domain.StaffDetails(
-                                id = member.id,
-                                name = member.name?.userPreferred ?: "Unknown",
-                                nativeName = null,
-                                nameUserPreferred = member.name?.userPreferred ?: "Unknown",
-                                imageUrl = member.image?.large,
-                                description = null,
-                                gender = null,
-                                age = null,
-                                bloodType = null,
-                                dateOfBirth = null,
-                                dateOfDeath = null,
-                                favourites = null,
-                                language = null,
-                                primaryOccupations = member.primaryOccupations?.filterNotNull() ?: emptyList(),
-                                yearsActive = emptyList(),
-                                homeTown = null,
-                                voicedCharacters = emptyList()
-                            )
-                        }
+                        favourites.staff?.nodes?.filterNotNull()?.forEach { staff += it.favoriteStaffFields.toFavoriteStaff() }
                         favourites.staff?.pageInfo?.hasNextPage == true
                     }
                     com.anisync.android.domain.FavoriteKind.STUDIOS -> {
