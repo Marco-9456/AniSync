@@ -158,7 +158,7 @@ internal fun ProfileBackdrop(
         ) {
             Box(modifier = Modifier.statusBarsPadding()) {
                 if (isOwnProfile) {
-                    ProfileOwnTopBar(onBanner = false, onSettingsClick = onSettingsClick)
+                    ProfileOwnTopBar(onSettingsClick = onSettingsClick)
                 } else {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -180,11 +180,17 @@ internal fun ProfileBackdrop(
     } else {
         ProfileBannerSurface(
             profile = profile,
-            isOwnProfile = isOwnProfile,
-            onSettingsClick = onSettingsClick,
             height = height,
             onBackClick = onBackClick,
-            ownTopBar = { ProfileOwnTopBar(onBanner = true, onSettingsClick = onSettingsClick) },
+            // Settings on your own banner sits where the docked bar has it.
+            chromeHeight = if (isOwnProfile) 64.dp else 72.dp,
+            endControl = {
+                if (isOwnProfile) {
+                    ProfileSettingsButton(onBanner = true, onClick = onSettingsClick)
+                } else {
+                    ProfileMenuButton(name = profile.name, colors = bannerChromeColors())
+                }
+            },
             modifier = modifier
         )
     }

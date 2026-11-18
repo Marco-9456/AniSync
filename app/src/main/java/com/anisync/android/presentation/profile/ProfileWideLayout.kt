@@ -62,6 +62,8 @@ import com.anisync.android.presentation.profile.components.ProfileActionButtons
 import com.anisync.android.presentation.profile.components.ProfileAvatarHalfSize
 import com.anisync.android.presentation.profile.components.ProfileAvatarSize
 import com.anisync.android.presentation.profile.components.ProfileBannerSurface
+import com.anisync.android.presentation.profile.components.ProfileCardSettingsButton
+import com.anisync.android.presentation.profile.components.bannerChromeColors
 import com.anisync.android.presentation.profile.components.ProfileIdentityInfo
 import com.anisync.android.presentation.profile.components.ProfileMenuButton
 import com.anisync.android.presentation.profile.components.ProfileSettingsButton
@@ -268,12 +270,17 @@ private fun ProfileIdentityColumn(
         if (hasBanner) {
             ProfileBannerSurface(
                 profile = profile,
-                isOwnProfile = isOwnProfile,
-                onSettingsClick = onSettingsClick,
                 height = WideBannerHeight,
                 onBackClick = onBackClick,
                 shape = TwoPaneDefaults.PaneShape,
-                insetChrome = false,
+                statusScrim = false,
+                endControl = {
+                    if (isOwnProfile) {
+                        ProfileCardSettingsButton(onClick = onSettingsClick)
+                    } else {
+                        ProfileMenuButton(name = profile.name, colors = bannerChromeColors())
+                    }
+                },
                 modifier = Modifier.padding(horizontal = WideBannerInset)
             )
         } else {

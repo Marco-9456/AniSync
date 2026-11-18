@@ -123,24 +123,22 @@ val ProfileAvatarSize = 100.dp
 val ProfileAvatarHalfSize = ProfileAvatarSize / 2
 
 /**
- * The full-width cover banner: the user's banner image with a top/bottom scrim and the top-end
- * action button (settings on your own profile, a menu on others'). [height] lets the compact header
- * use its taller banner while the wide layout uses a shorter strip.
+ * The user's banner image with a top and bottom scrim, back at its start and [endControl] at its
+ * end. [height] lets the phone header use its taller banner while the wide column uses a card.
  */
 @Composable
 fun ProfileBannerSurface(
     profile: UserProfile,
-    isOwnProfile: Boolean,
-    onSettingsClick: () -> Unit,
     height: Dp,
+    endControl: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     shape: Shape = RectangleShape,
     onBackClick: (() -> Unit)? = null,
-    ownTopBar: (@Composable () -> Unit)? = null,
-    /** False for a card that does not reach the status bar, so its controls and scrim sit at its top. */
-    insetChrome: Boolean = true
+    /** The controls' row, which keeps them as far from its sides as from its top. */
+    chromeHeight: Dp = 72.dp,
+    /** False for a card that does not reach the status bar, which has no system icons to carry. */
+    statusScrim: Boolean = true
 ) {
-    val chromeInset = if (insetChrome) Modifier.statusBarsPadding() else Modifier
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -178,7 +176,7 @@ fun ProfileBannerSurface(
 
         // The banner runs under the status bar, and its own gradient has faded too far by the time
         // it reaches the clock to carry the system icons.
-        if (insetChrome) {
+        if (statusScrim) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -187,47 +185,39 @@ fun ProfileBannerSurface(
             )
         }
 
-        val chromeColors = bannerChromeColors()
-        if (onBackClick != null) {
-            BackTrailButton(
-                onClick = onBackClick,
-                colors = chromeColors,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .then(chromeInset)
-                    .padding(top = 12.dp, start = 12.dp)
-            )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .statusBarsPadding()
+                .fillMaxWidth()
+                .height(chromeHeight)
+                .padding(horizontal = (chromeHeight - ChromeButtonSize) / 2)
+        ) {
+            if (onBackClick != null) BackTrailButton(onClick = onBackClick, colors = bannerChromeColors())
+            Spacer(modifier = Modifier.weight(1f))
+            endControl()
         }
-        if (isOwnProfile && ownTopBar != null) {
-            Box(modifier = Modifier.align(Alignment.TopStart).then(chromeInset)) { ownTopBar() }
-        } else if (isOwnProfile) {
-            FilledTonalIconButton(
-                onClick = onSettingsClick,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .then(chromeInset)
-                    .padding(top = 12.dp, end = 12.dp)
-                    .size(48.dp),
-                shape = CircleShape,
-                colors = chromeColors
-            ) {
-                val showDot = rememberActiveWhatsNew().any { it.place == WhatsNewItem.Place.SETTINGS }
-                BadgedBox(badge = { if (showDot) Badge() }) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = stringResource(R.string.settings),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-        } else {
-            ProfileMenuButton(
-                name = profile.name,
-                colors = chromeColors,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .then(chromeInset)
-                    .padding(top = 12.dp, end = 12.dp)
+    }
+}
+
+/** Every control on the banner takes a 48dp touch target. */
+private val ChromeButtonSize = 48.dp
+
+/** Settings on the wide column's banner card, a filled button with the What's new dot. */
+@Composable
+internal fun ProfileCardSettingsButton(onClick: () -> Unit) {
+    FilledTonalIconButton(
+        onClick = onClick,
+        modifier = Modifier.size(ChromeButtonSize),
+        shape = CircleShape,
+        colors = bannerChromeColors()
+    ) {
+        val showDot = rememberActiveWhatsNew().any { it.place == WhatsNewItem.Place.SETTINGS }
+        BadgedBox(badge = { if (showDot) Badge() }) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = stringResource(R.string.settings),
+                modifier = Modifier.size(24.dp)
             )
         }
     }
@@ -702,7 +692,7 @@ private fun ButtonContent(icon: ImageVector, text: String) {
 }
 
 @Composable
-private fun bannerChromeColors(): IconButtonColors = IconButtonDefaults.filledTonalIconButtonColors(
+internal fun bannerChromeColors(): IconButtonColors = IconButtonDefaults.filledTonalIconButtonColors(
     containerColor = Color.Black.copy(alpha = 0.4f),
     contentColor = Color.White
 )
@@ -745,7 +735,6 @@ private fun boldNumbers(text: String, vararg numbers: String): AnnotatedString =
 /** Settings, the one control left over your own profile's banner or band. */
 @Composable
 internal fun ProfileOwnTopBar(
-    onBanner: Boolean,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -757,7 +746,7 @@ internal fun ProfileOwnTopBar(
             .padding(start = 16.dp, end = 8.dp)
     ) {
         Spacer(modifier = Modifier.weight(1f))
-        ProfileSettingsButton(onBanner = onBanner, onClick = onSettingsClick)
+        ProfileSettingsButton(onBanner = false, onClick = onSettingsClick)
     }
 }
 
