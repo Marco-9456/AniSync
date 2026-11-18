@@ -55,6 +55,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.ActivityType
+import com.anisync.android.domain.canDelete
+import com.anisync.android.domain.canEdit
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.LocalWhatsNew
@@ -156,19 +158,11 @@ fun LazyListScope.profileActivityTab(
             val next = filteredActivities.getOrNull(index + 1)
             val joinsBelow = update && next?.isGroupedUpdate() == true && days[index + 1] == day
             item(key = "activity_${activity.id}", contentType = if (update) "activity_update" else "activity_item") {
-                val canDelete = viewerId != null && (
-                    activity.userId == viewerId ||
-                        (activity.type == ActivityType.MESSAGE && activity.recipientId == viewerId && !activity.isAuthorMod)
-                )
-                // Edit only on own TEXT or MESSAGE, never on server-derived MEDIA_LIST.
-                val canEdit = viewerId != null &&
-                    activity.userId == viewerId &&
-                    (activity.type == ActivityType.TEXT || activity.type == ActivityType.MESSAGE)
                 val cardLike = onLikeActivity?.let { cb -> { cb(activity.id) } }
-                val cardDelete = if (canDelete) {
+                val cardDelete = if (activity.canDelete(viewerId)) {
                     onDeleteActivity?.let { cb -> { cb(activity.id) } }
                 } else null
-                val cardEdit = if (canEdit) {
+                val cardEdit = if (activity.canEdit(viewerId)) {
                     onEditActivity?.let { cb -> { cb(activity.id) } }
                 } else null
 

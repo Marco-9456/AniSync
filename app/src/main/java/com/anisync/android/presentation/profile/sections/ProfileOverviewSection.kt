@@ -14,6 +14,8 @@ import com.anisync.android.R
 import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.ActivityHistoryDay
 import com.anisync.android.domain.ActivityType
+import com.anisync.android.domain.canDelete
+import com.anisync.android.domain.canEdit
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.domain.UserProfile
@@ -128,8 +130,8 @@ internal fun OverviewColumnB(blocks: OverviewBlocks) {
 @Composable
 private fun OverviewPinned(blocks: OverviewBlocks) {
     val pinned = blocks.pinned ?: return
-    val canDelete = blocks.viewerId != null && pinned.userId == blocks.viewerId
-    val canEdit = canDelete && pinned.type == ActivityType.TEXT
+    val canDelete = pinned.canDelete(blocks.viewerId)
+    val canEdit = pinned.canEdit(blocks.viewerId)
     ActivityCard(
         activity = pinned,
         onClick = { blocks.onActivityClick(pinned.id) },

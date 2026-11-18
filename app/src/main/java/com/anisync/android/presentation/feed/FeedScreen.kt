@@ -45,6 +45,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.domain.ActivityType
+import com.anisync.android.domain.canDelete
+import com.anisync.android.domain.canEdit
 import com.anisync.android.domain.ContentLimits
 import com.anisync.android.domain.FeedFilter
 import com.anisync.android.domain.FeedScope
@@ -254,21 +256,15 @@ fun FeedScreen(
 
                                 is FeedItem.Single -> {
                                     val activity = item.activity
-                                    val isOwner = uiState.viewerId != null &&
-                                        activity.userId == uiState.viewerId
                                     val cardLike: () -> Unit = {
                                         viewModel.onAction(FeedAction.ToggleLike(activity.id))
                                     }
-                                    val cardDelete: (() -> Unit)? = if (isOwner) {
+                                    val cardDelete: (() -> Unit)? = if (activity.canDelete(uiState.viewerId)) {
                                         { viewModel.onAction(FeedAction.DeleteActivity(activity.id)) }
                                     } else null
-                                    // Edit only on own TEXT or MESSAGE activities — never on
-                                    // server-derived MEDIA_LIST entries.
-                                    val cardEdit: (() -> Unit)? =
-                                        if (isOwner && (activity.type == ActivityType.TEXT ||
-                                                activity.type == ActivityType.MESSAGE)) {
-                                            { viewModel.onAction(FeedAction.EditActivity(activity.id)) }
-                                        } else null
+                                    val cardEdit: (() -> Unit)? = if (activity.canEdit(uiState.viewerId)) {
+                                        { viewModel.onAction(FeedAction.EditActivity(activity.id)) }
+                                    } else null
 
                                     ActivityCard(
                                         activity = activity,

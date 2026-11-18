@@ -66,6 +66,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
+import com.anisync.android.domain.canDelete
+import com.anisync.android.domain.canEdit
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
 import com.anisync.android.presentation.components.DonatorBadge
 import com.anisync.android.presentation.components.DonatorBadgePlacement
@@ -263,18 +265,8 @@ fun ActivityDetailScreen(
                         }
                     }
                     val activity = uiState.activity
-                    val viewerId = uiState.viewerId
-                    // Edit allowed on own TextActivity OR own outgoing MessageActivity. Never on
-                    // ListActivity (status updates / progress are derived, not authored).
-                    val isOwnAuthored = activity != null && viewerId != null &&
-                        activity.authorId == viewerId
-                    val canEdit = isOwnAuthored && (
-                        !activity!!.isMessage || activity.recipientId != viewerId
-                    )
-                    val canDelete = activity != null && viewerId != null && (
-                        activity.authorId == viewerId ||
-                            (activity.isMessage && activity.recipientId == viewerId && !activity.isAuthorMod)
-                    )
+                    val canEdit = activity?.canEdit(uiState.viewerId) == true
+                    val canDelete = activity?.canDelete(uiState.viewerId) == true
                     if (canDelete || canEdit) {
                         Box {
                             IconButton(onClick = { showOverflow = true }) {
