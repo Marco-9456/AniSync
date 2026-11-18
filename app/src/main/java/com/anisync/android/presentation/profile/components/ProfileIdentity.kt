@@ -66,6 +66,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -99,6 +100,7 @@ import com.anisync.android.presentation.components.menu.MenuScope
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.util.copyOnLongPress
+import com.anisync.android.presentation.util.formatMonthYear
 import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.presentation.util.rememberCopyToClipboard
@@ -107,9 +109,9 @@ import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
 import java.text.NumberFormat
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.time.Instant
+import java.time.YearMonth
+import java.time.ZoneId
 
 /**
  * Header pieces shared by the phone header ([ProfileTopSection]) and the wide identity column
@@ -413,11 +415,9 @@ private fun ProfileIdentityDetails(
     followersTotal: Int? = null,
     onPeopleClick: (() -> Unit)? = null
 ) {
-    val joinedDate = remember(profile.createdAt) {
-        profile.createdAt?.let {
-            val sdf = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
-            sdf.format(Date(it))
-        }
+    val locale = LocalConfiguration.current.locales[0]
+    val joinedDate = remember(profile.createdAt, locale) {
+        profile.createdAt?.let { formatMonthYear(YearMonth.from(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())), locale) }
     }
 
     Column(modifier = modifier) {

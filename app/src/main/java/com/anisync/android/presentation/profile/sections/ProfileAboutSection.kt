@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -49,16 +50,16 @@ import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 import com.anisync.android.presentation.util.copyOnLongPress
+import com.anisync.android.presentation.util.formatMonthYear
 import com.anisync.android.presentation.util.openUrl
 import com.anisync.android.presentation.util.rememberCopyToClipboard
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.util.AniListUrls
 import java.text.DateFormat
 import java.time.Instant
+import java.time.YearMonth
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Date
-import java.util.Locale
 
 /** B1's About, the bio in full with the names and details AniList keeps beside it. */
 @Composable
@@ -123,10 +124,10 @@ private fun AboutHeading(title: String, subtitle: String? = null) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PreviousNames(profile: UserProfile) {
+    val locale = LocalConfiguration.current.locales[0]
     val latest = profile.previousNames.mapNotNull { it.changedAt }.maxOrNull()
     val changed = latest?.let {
-        val month = DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault())
-            .format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()))
+        val month = formatMonthYear(YearMonth.from(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())), locale)
         stringResource(R.string.profile_previous_names_changed, month)
     }
     Column {
@@ -165,7 +166,8 @@ private fun AboutDetails(profile: UserProfile) {
     val clipLabel = stringResource(R.string.profile_username)
     val copiedMessage = stringResource(R.string.profile_username_copied, profile.name)
     val url = AniListUrls.userUrl(profile.name)
-    val dates = remember { DateFormat.getDateInstance(DateFormat.LONG) }
+    val locale = LocalConfiguration.current.locales[0]
+    val dates = remember(locale) { DateFormat.getDateInstance(DateFormat.LONG, locale) }
     Column {
         AboutHeading(stringResource(R.string.profile_details))
         Surface(
