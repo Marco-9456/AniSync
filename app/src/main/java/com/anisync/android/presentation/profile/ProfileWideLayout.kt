@@ -536,19 +536,10 @@ private fun ProfileTabPane(
     // Column counts come from the pane, not the window: this pane is a fraction of the window wide,
     // and a window-derived count budgets for space it does not have, squeezing every cell.
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        // The tabs never scroll here, so each Statistics view and each filter simply keeps a list
-        // state of its own.
-        val listStateKey = when (uiState.selectedTab) {
-            ProfileTab.STATS -> uiState.selectedStatsView.name
-            ProfileTab.ACTIVITY -> "ACTIVITY_${uiState.selectedActivityFilter.name}"
-            ProfileTab.ANIME -> "ANIME_${uiState.selectedAnimeStatus?.name ?: "ALL"}"
-            ProfileTab.MANGA -> "MANGA_${uiState.selectedMangaStatus?.name ?: "ALL"}"
-            ProfileTab.FAVORITES -> "FAVORITES_${uiState.selectedFavoritesFilter.name}"
-            ProfileTab.SOCIAL -> "SOCIAL_${uiState.selectedSocialTab.name}"
-            ProfileTab.COMPARE -> "COMPARE_${uiState.compareType.name}"
-            ProfileTab.OVERVIEW -> uiState.selectedTab.name
-        }
-        val listState = rememberSaveable(listStateKey, saver = LazyListState.Saver) { LazyListState() }
+        // The tabs never scroll here, so every tab and chip keeps its own place.
+        val listStates = rememberProfileListStates()
+        val listState = listStates.of(uiState.contentKey)
+        ProfileListPlacement(uiState, listState, keepsPlace = { true })
         val portraitColumns = profileGridColumns(baseMinSize = 150.dp, availableWidth = maxWidth)
         val studioColumns = profileGridColumns(
             baseMinSize = 240.dp,
