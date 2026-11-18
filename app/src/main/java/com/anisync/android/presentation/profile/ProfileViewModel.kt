@@ -554,7 +554,6 @@ class ProfileViewModel @Inject constructor(
         val social: SocialState,
         val reviews: ReviewsState,
         val stats: StatsState,
-        val favorites: FavoritesState,
     )
 
     /** Edits made here, laid over AniList's activity feed until the server agrees. */
@@ -563,19 +562,18 @@ class ProfileViewModel @Inject constructor(
         val likes: Map<Int, Pair<Boolean, Int>>,
         val deleted: Set<Int>,
         val edited: Map<Int, com.anisync.android.domain.UserActivity>,
-        val pagination: ActivityPaginationState,
+        val appended: List<com.anisync.android.domain.UserActivity>,
     )
 
     /** What depends on who is looking rather than on whose profile it is. */
     private class ViewerParts(
         val viewerId: Int?,
         val unreadCount: Int,
-        val adultOptions: Pair<Boolean, Boolean>,
         val recaps: com.anisync.android.presentation.recap.RecapsUiModel,
         val avatarUrl: String?,
     )
 
-    private val sections = combine(socialState, reviewsState, statsState, favoritesState, ::Sections)
+    private val sections = combine(socialState, reviewsState, statsState, ::Sections)
 
     private val sectionsAndLists = combine(sections, listParts, ::Pair)
 
@@ -584,49 +582,33 @@ class ProfileViewModel @Inject constructor(
         activityLikeOverrides,
         deletedActivityIds,
         editedActivities,
-        activityPaginationState,
+        activityPaginationState.map { it.appended }.distinctUntilChanged { old, new -> old === new },
         ::FeedOverlays,
     )
 
-    private val viewerParts = combine(
-        viewerIdFlow,
-        notificationBadgeStore.unreadCount,
-        adultActivityOptions,
-        recapsState,
-        accountManager.activeAccount.map { it?.avatarUrl }.distinctUntilChanged(),
-        ::ViewerParts
-    )
-
-    val uiState: StateFlow<ProfileUiState> = combine(
+    /**
+     * The profile as it shows: older activity pages folded in, edits made here laid over, other
+     * people's 18+ updates dropped and the full favourites swapped in. Only these inputs rework it,
+     * so a keystroke in the list search or a tab switch leaves the activities alone.
+     */
+    private val shownProfile = combine(
         profileState,
-        localState,
-        sectionsAndLists,
         feedOverlays,
-        viewerParts,
-    ) { remote, local, partsAndLists, overlays, viewer ->
-        val (parts, lists) = partsAndLists
-        val social = parts.social
-        val reviews = parts.reviews
-        val stats = parts.stats
-        val mediaLists = lists.snapshot.lists
-        val derived = lists.snapshot.derived
-        val favoritesOverlay = parts.favorites
+        adultActivityOptions,
+        viewerIdFlow,
+        favoritesState,
+    ) { remote, overlays, (showAdultContent, showOthersAdultActivity), viewerId, favoritesOverlay ->
         val subOverrides = overlays.subscriptions
         val likeOverrides = overlays.likes
         val deletedIds = overlays.deleted
         val edited = overlays.edited
-        val pagination = overlays.pagination
-        val viewerId = viewer.viewerId
-        val unreadCount = viewer.unreadCount
-        val (showAdultContent, showOthersAdultActivity) = viewer.adultOptions
-        val recaps = viewer.recaps
 
         // Fold lazily-loaded older activity pages into the profile's initial feed
         // (deduped, newest-first) before overlays apply, so a like/subscribe/delete
         // also patches an appended item. No-op until the user paginates.
-        val mergedRemote = if (remote.profile != null && pagination.appended.isNotEmpty()) {
+        val mergedRemote = if (remote.profile != null && overlays.appended.isNotEmpty()) {
             val p = remote.profile
-            val merged = (p.activities + pagination.appended)
+            val merged = (p.activities + overlays.appended)
                 .distinctBy { it.id }
                 .sortedWith(
                     compareByDescending<com.anisync.android.domain.UserActivity> { it.isPinned }
@@ -676,7 +658,7 @@ class ProfileViewModel @Inject constructor(
 
         // Swap in the lazily-loaded full favourite-anime list once available; until then the page-1
         // preview carried by the profile fetch stands.
-        val withFavorites = visible.profile
+        visible.profile
             ?.takeIf { favoritesOverlay.fullAnime != null || favoritesOverlay.kinds.isNotEmpty() }
             ?.let { p ->
                 val kinds = favoritesOverlay.kinds
@@ -690,8 +672,31 @@ class ProfileViewModel @Inject constructor(
                     )
                 )
             } ?: visible
+    }
 
-        withFavorites.copy(
+    private val viewerParts = combine(
+        viewerIdFlow,
+        notificationBadgeStore.unreadCount,
+        recapsState,
+        accountManager.activeAccount.map { it?.avatarUrl }.distinctUntilChanged(),
+        ::ViewerParts
+    )
+
+    val uiState: StateFlow<ProfileUiState> = combine(
+        shownProfile,
+        localState,
+        sectionsAndLists,
+        activityPaginationState,
+        viewerParts,
+    ) { shown, local, partsAndLists, pagination, viewer ->
+        val (parts, lists) = partsAndLists
+        val social = parts.social
+        val reviews = parts.reviews
+        val stats = parts.stats
+        val mediaLists = lists.snapshot.lists
+        val derived = lists.snapshot.derived
+
+        shown.copy(
             isRefreshing = local.isRefreshing,
             isFollowingUser = local.isFollowingUser,
             isFollowerOfViewer = local.isFollowerOfViewer,
@@ -772,9 +777,9 @@ class ProfileViewModel @Inject constructor(
             userMangaList = mediaLists.userMangaList,
             mangaStatusCounts = mediaLists.mangaStatusCounts,
             isUserMangaListLoading = mediaLists.isUserMangaListLoading,
-            viewerId = viewerId,
-            unreadNotificationCount = unreadCount,
-            recaps = recaps,
+            viewerId = viewer.viewerId,
+            unreadNotificationCount = viewer.unreadCount,
+            recaps = viewer.recaps,
             viewerAvatarUrl = viewer.avatarUrl,
             activitiesHasNextPage = pagination.hasNextPage,
             isActivitiesPaginating = pagination.isPaginating
