@@ -155,19 +155,24 @@ private fun LibraryEntry.passesScoreFloor(floor: Int?): Boolean {
     }
 }
 
+private class SortRow(val entry: LibraryEntry, val title: String, val key: Double?)
+
+/** Keys are worked out once per title, not on both sides of every comparison. */
 private fun List<LibraryEntry>.sortedFor(
     tools: ProfileListTools,
     viewer: Map<Int, LibraryEntry>,
     titleLanguage: TitleLanguage
 ): List<LibraryEntry> {
-    val byTitle = compareBy<LibraryEntry> { it.getTitle(titleLanguage).lowercase() }
+    val byTitle = compareBy<SortRow> { it.title }
     if (tools.sort == ProfileListSort.TITLE) {
-        return if (tools.ascending) sortedWith(byTitle) else sortedWith(byTitle.reversed())
+        val rows = map { SortRow(it, it.getTitle(titleLanguage).lowercase(), null) }
+        return rows.sortedWith(if (tools.ascending) byTitle else byTitle.reversed()).map { it.entry }
     }
-    val (keyed, blank) = partition { it.sortKey(tools.sort, viewer) != null }
-    val byKey = compareBy<LibraryEntry> { it.sortKey(tools.sort, viewer) }
+    val rows = map { SortRow(it, it.getTitle(titleLanguage).lowercase(), it.sortKey(tools.sort, viewer)) }
+    val (keyed, blank) = rows.partition { it.key != null }
+    val byKey = compareBy<SortRow> { it.key }
     val ordered = keyed.sortedWith((if (tools.ascending) byKey else byKey.reversed()).then(byTitle))
-    return ordered + blank.sortedWith(byTitle)
+    return (ordered + blank.sortedWith(byTitle)).map { it.entry }
 }
 
 private fun LibraryEntry.sortKey(sort: ProfileListSort, viewer: Map<Int, LibraryEntry>): Double? = when (sort) {
