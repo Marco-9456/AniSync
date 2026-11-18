@@ -346,8 +346,6 @@ class ProfileViewModel @Inject constructor(
     private val linkTab: String? = savedStateHandle.get<String>("tab")
     private val linkSection: String? = savedStateHandle.get<String>("section")
 
-    val targetName: String? get() = targetUsername
-
     private val targetUsername: String? = savedStateHandle.get<String>("username")
         ?.let(Uri::decode)
         ?.trim()
@@ -370,17 +368,17 @@ class ProfileViewModel @Inject constructor(
      * nothing for the active account. The observed profile flow can only emit null in that state,
      * so without this the screen would sit on a spinner with no way out (#115).
      */
-    private val ownProfileError = MutableStateFlow<Int?>(null)
+    private val ownProfileFailed = MutableStateFlow(false)
 
     /** Whether Room currently holds a profile for the active account. Read by [loadOwnProfile]. */
     @Volatile
     private var hasCachedOwnProfile = false
 
     private val profileState = if (targetUsername.isNullOrBlank()) {
-        combine(getProfileUseCase(), ownProfileError) { profileResult, errorRes ->
+        combine(getProfileUseCase(), ownProfileFailed) { profileResult, failed ->
             when {
                 profileResult != null -> ProfileUiState(isLoading = false, profile = profileResult)
-                errorRes != null -> ProfileUiState(isLoading = false, loadErrorRes = errorRes)
+                failed -> ProfileUiState(isLoading = false)
                 else -> ProfileUiState(isLoading = true)
             }
         }
@@ -421,9 +419,9 @@ class ProfileViewModel @Inject constructor(
                                 emit(ProfileUiState(isLoading = false, profile = cached, isShowingSavedCopy = offline))
                             } else if (result.code == 404 || result.message.contains("not found", ignoreCase = true)) {
                                 // AniList answers 404 for a private account as well as a missing one.
-                                emit(ProfileUiState(isLoading = false, loadErrorRes = R.string.profile_user_unavailable))
+                                emit(ProfileUiState(isLoading = false, loadFailure = ProfileLoadFailure.UNAVAILABLE))
                             } else if (offline) {
-                                emit(ProfileUiState(isLoading = false, loadErrorRes = R.string.profile_offline_never_saved))
+                                emit(ProfileUiState(isLoading = false, loadFailure = ProfileLoadFailure.NEVER_SAVED))
                             } else {
                                 emit(ProfileUiState(isLoading = false, errorMessage = result.message))
                             }
@@ -699,6 +697,7 @@ class ProfileViewModel @Inject constructor(
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
             isBiographySheetVisible = local.isBiographySheetVisible,
             isActivityFailed = local.activitiesFailed,
+            targetName = targetUsername,
             selectedReview = local.selectedReview,
             isMessageComposerVisible = local.isMessageComposerVisible,
             isSendingMessage = local.isSendingMessage,
@@ -760,7 +759,7 @@ class ProfileViewModel @Inject constructor(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Lazily,
-        initialValue = ProfileUiState(isLoading = true)
+        initialValue = ProfileUiState(isLoading = true, targetName = targetUsername)
     )
 
     init {
@@ -1355,7 +1354,7 @@ class ProfileViewModel @Inject constructor(
     private suspend fun loadOwnProfile(
         forceNetwork: Boolean
     ): com.anisync.android.domain.ProfileRefreshTimings? {
-        ownProfileError.value = null
+        ownProfileFailed.value = false
         return when (val result = profileRepository.refreshProfileTimed("", forceNetwork = forceNetwork)) {
             is Result.Success -> {
                 localState.update { it.copy(activitiesFailed = result.data.activitiesFailed) }
@@ -1366,9 +1365,7 @@ class ProfileViewModel @Inject constructor(
                 // A rate limit is not an error screen. The block ends by itself, RateLimitNotice
                 // carries the countdown, and the skeleton stays until the retry lands, the same way
                 // the details screen waits one out.
-                if (!hasCachedOwnProfile && result.code != 429) {
-                    ownProfileError.value = R.string.profile_unknown_error
-                }
+                if (!hasCachedOwnProfile && result.code != 429) ownProfileFailed.value = true
                 null
             }
         }

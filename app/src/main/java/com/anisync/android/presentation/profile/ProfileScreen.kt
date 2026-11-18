@@ -128,22 +128,21 @@ fun ProfileScreen(
         ) {
             val profile = uiState.profile
             val errorText = uiState.errorMessage
-                ?: uiState.loadErrorRes?.let { stringResource(it) }
             when {
                 uiState.isLoading && profile == null -> {
-                    ProfileLoadingSkeleton(name = viewModel.targetName, onBackClick = onBackClick)
+                    ProfileLoadingSkeleton(name = uiState.targetName, onBackClick = onBackClick)
                 }
 
-                uiState.loadErrorRes == R.string.profile_user_unavailable && profile == null -> {
-                    ProfileUnavailable(name = viewModel.targetName, onBackClick = onBackClick)
+                uiState.loadFailure == ProfileLoadFailure.UNAVAILABLE && profile == null -> {
+                    ProfileUnavailable(name = uiState.targetName, onBackClick = onBackClick)
                 }
 
-                uiState.loadErrorRes == R.string.profile_offline_never_saved && profile == null -> {
-                    ProfileStateFrame(name = viewModel.targetName, onBackClick = onBackClick) {
+                uiState.loadFailure == ProfileLoadFailure.NEVER_SAVED && profile == null -> {
+                    ProfileStateFrame(name = uiState.targetName, onBackClick = onBackClick) {
                         EmptyState(
                             icon = Icons.Default.CloudOff,
                             title = stringResource(R.string.profile_offline_title),
-                            description = viewModel.targetName?.let { stringResource(R.string.profile_offline_never_saved_named, it) }
+                            description = uiState.targetName?.let { stringResource(R.string.profile_offline_never_saved_named, it) }
                                 ?: stringResource(R.string.profile_offline_never_saved),
                             actionLabel = stringResource(R.string.profile_try_again),
                             actionIcon = Icons.Default.Refresh,
