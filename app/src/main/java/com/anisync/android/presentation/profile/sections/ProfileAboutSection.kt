@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.UserProfile
@@ -88,14 +89,22 @@ fun ProfileAboutContent(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
         }
-        if (profile.previousNames.isNotEmpty()) PreviousNames(profile)
-        AboutDetails(profile)
+        ProfileAboutExtras(profile)
+    }
+}
+
+/** What AniList keeps beside the bio: the names the profile went by, then its details. */
+@Composable
+fun ProfileAboutExtras(profile: UserProfile, modifier: Modifier = Modifier, horizontalPadding: Dp = 16.dp) {
+    Column(modifier = modifier) {
+        if (profile.previousNames.isNotEmpty()) PreviousNames(profile, horizontalPadding)
+        AboutDetails(profile, horizontalPadding)
     }
 }
 
 @Composable
-private fun AboutHeading(title: String, subtitle: String? = null) {
-    Row(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 12.dp)) {
+private fun AboutHeading(title: String, horizontalPadding: Dp, subtitle: String? = null) {
+    Row(modifier = Modifier.padding(start = horizontalPadding, end = horizontalPadding, top = 24.dp, bottom = 12.dp)) {
         Surface(
             color = MaterialTheme.colorScheme.primary,
             shape = RoundedCornerShape(2.dp),
@@ -123,7 +132,7 @@ private fun AboutHeading(title: String, subtitle: String? = null) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PreviousNames(profile: UserProfile) {
+private fun PreviousNames(profile: UserProfile, horizontalPadding: Dp) {
     val locale = LocalConfiguration.current.locales[0]
     val latest = profile.previousNames.mapNotNull { it.changedAt }.maxOrNull()
     val changed = latest?.let {
@@ -131,11 +140,11 @@ private fun PreviousNames(profile: UserProfile) {
         stringResource(R.string.profile_previous_names_changed, month)
     }
     Column {
-        AboutHeading(stringResource(R.string.profile_previous_names), changed)
+        AboutHeading(stringResource(R.string.profile_previous_names), horizontalPadding, changed)
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.padding(horizontal = horizontalPadding)
         ) {
             profile.previousNames.forEach { previous ->
                 Surface(
@@ -160,7 +169,7 @@ private fun PreviousNames(profile: UserProfile) {
 }
 
 @Composable
-private fun AboutDetails(profile: UserProfile) {
+private fun AboutDetails(profile: UserProfile, horizontalPadding: Dp) {
     val context = LocalContext.current
     val copy = rememberCopyToClipboard()
     val clipLabel = stringResource(R.string.profile_username)
@@ -169,11 +178,11 @@ private fun AboutDetails(profile: UserProfile) {
     val locale = LocalConfiguration.current.locales[0]
     val dates = remember(locale) { DateFormat.getDateInstance(DateFormat.LONG, locale) }
     Column {
-        AboutHeading(stringResource(R.string.profile_details))
+        AboutHeading(stringResource(R.string.profile_details), horizontalPadding)
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.padding(horizontal = horizontalPadding)
         ) {
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 profile.createdAt?.let {

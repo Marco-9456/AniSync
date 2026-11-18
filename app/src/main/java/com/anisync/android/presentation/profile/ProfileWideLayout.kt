@@ -67,6 +67,7 @@ import com.anisync.android.presentation.profile.components.bannerChromeColors
 import com.anisync.android.presentation.profile.components.ProfileIdentityInfo
 import com.anisync.android.presentation.profile.components.ProfileMenuButton
 import com.anisync.android.presentation.profile.components.ProfileSettingsButton
+import com.anisync.android.presentation.profile.sections.ProfileAboutExtras
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.PaneDragHandle
 import com.anisync.android.presentation.util.TwoPaneDefaults
@@ -321,12 +322,14 @@ private fun ProfileIdentityColumn(
                 accounts = accounts,
                 modifier = Modifier.fillMaxWidth()
             )
-            // The column scrolls on its own, so the bio is there in full rather than cut short.
+            // The column scrolls on its own, so the bio is there in full rather than cut short, with
+            // what the phone's About sheet keeps under it.
             val about = profile.about
             if (!about.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 AsyncRichTextRenderer(html = about, modifier = Modifier.fillMaxWidth())
             }
+            ProfileAboutExtras(profile = profile, horizontalPadding = 0.dp)
         }
 
         ProfileHeaderAvatar(
