@@ -35,7 +35,7 @@ query GetUserLibrary($userId: Int, $username: String, $type: MediaType!) {
           format
           status
           genres
-          averageScore
+          averageScore: weightedScore
           popularity
           nextAiringEpisode {
             episode
