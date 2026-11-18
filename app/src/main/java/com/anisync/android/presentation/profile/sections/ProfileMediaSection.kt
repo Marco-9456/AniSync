@@ -74,7 +74,7 @@ private enum class ListChip(val status: LibraryStatus?) {
  */
 @Composable
 internal fun MediaStatusRail(
-    itemsByStatus: Map<LibraryStatus, List<LibraryEntry>>,
+    statusCounts: Map<LibraryStatus, Int>,
     selectedStatus: LibraryStatus?,
     mediaType: MediaType,
     onStatusSelected: (LibraryStatus?) -> Unit,
@@ -82,14 +82,13 @@ internal fun MediaStatusRail(
     searchCounts: Map<LibraryStatus, Int>? = null,
     scroll: RailScroll = rememberRailScroll()
 ) {
-    val showUnknown = itemsByStatus[LibraryStatus.UNKNOWN].orEmpty().isNotEmpty() ||
-        selectedStatus == LibraryStatus.UNKNOWN
+    val showUnknown = (statusCounts[LibraryStatus.UNKNOWN] ?: 0) > 0 || selectedStatus == LibraryStatus.UNKNOWN
     val chips = if (searchCounts != null) {
         ListChip.entries.filter { it.status == null || it.status == selectedStatus || (searchCounts[it.status] ?: 0) > 0 }
     } else {
         ListChip.entries.filter { it != ListChip.UNKNOWN || showUnknown }
     }
-    val loaded = itemsByStatus.isNotEmpty()
+    val loaded = statusCounts.isNotEmpty()
     ProfileTabRail(
         options = chips,
         selected = ListChip.entries.first { it.status == selectedStatus },
@@ -102,8 +101,8 @@ internal fun MediaStatusRail(
             count = when {
                 searchCounts != null -> if (chip.status == null) searchCounts.values.sum() else searchCounts[chip.status] ?: 0
                 !loaded -> null
-                chip.status == null -> itemsByStatus.values.sumOf { it.size }
-                else -> itemsByStatus[chip.status]?.size
+                chip.status == null -> statusCounts.values.sum()
+                else -> statusCounts[chip.status]
             },
             selected = selected,
             onClick = { onStatusSelected(chip.status) }

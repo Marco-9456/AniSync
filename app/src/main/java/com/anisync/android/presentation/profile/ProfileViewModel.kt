@@ -255,12 +255,12 @@ class ProfileViewModel @Inject constructor(
 
     private data class MediaListState(
         val userAnimeList: List<LibraryEntry> = emptyList(),
-        val userAnimeListByStatus: Map<LibraryStatus, List<LibraryEntry>> = emptyMap(),
+        val animeStatusCounts: Map<LibraryStatus, Int> = emptyMap(),
         val isUserAnimeListLoading: Boolean = false,
         val hasFetchedAnimeList: Boolean = false,
         val lastAnimeListFetchAtMs: Long = 0L,
         val userMangaList: List<LibraryEntry> = emptyList(),
-        val userMangaListByStatus: Map<LibraryStatus, List<LibraryEntry>> = emptyMap(),
+        val mangaStatusCounts: Map<LibraryStatus, Int> = emptyMap(),
         val isUserMangaListLoading: Boolean = false,
         val hasFetchedMangaList: Boolean = false,
         val lastMangaListFetchAtMs: Long = 0L,
@@ -744,10 +744,10 @@ class ProfileViewModel @Inject constructor(
             statsErrorMessage = stats.statsErrorMessage,
             statsRateLimited = stats.statsRateLimited,
             userAnimeList = mediaLists.userAnimeList,
-            userAnimeListByStatus = mediaLists.userAnimeListByStatus,
+            animeStatusCounts = mediaLists.animeStatusCounts,
             isUserAnimeListLoading = mediaLists.isUserAnimeListLoading,
             userMangaList = mediaLists.userMangaList,
-            userMangaListByStatus = mediaLists.userMangaListByStatus,
+            mangaStatusCounts = mediaLists.mangaStatusCounts,
             isUserMangaListLoading = mediaLists.isUserMangaListLoading,
             viewerId = viewerId,
             unreadNotificationCount = unreadCount,
@@ -1997,12 +1997,12 @@ class ProfileViewModel @Inject constructor(
 
             when (val result = profileRepository.getUserAnimeList(username)) {
                 is Result.Success -> {
-                    val grouped = groupEntriesByStatus(result.data)
+                    val counts = statusCounts(result.data)
                     mediaListState.update {
                         it.copy(
                             isUserAnimeListLoading = false,
                             userAnimeList = result.data,
-                            userAnimeListByStatus = grouped,
+                            animeStatusCounts = counts,
                             hasFetchedAnimeList = true,
                             lastAnimeListFetchAtMs = System.currentTimeMillis()
                         )
@@ -2029,12 +2029,12 @@ class ProfileViewModel @Inject constructor(
 
             when (val result = profileRepository.getUserMangaList(username)) {
                 is Result.Success -> {
-                    val grouped = groupEntriesByStatus(result.data)
+                    val counts = statusCounts(result.data)
                     mediaListState.update {
                         it.copy(
                             isUserMangaListLoading = false,
                             userMangaList = result.data,
-                            userMangaListByStatus = grouped,
+                            mangaStatusCounts = counts,
                             hasFetchedMangaList = true,
                             lastMangaListFetchAtMs = System.currentTimeMillis()
                         )
@@ -2219,16 +2219,12 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    private fun groupEntriesByStatus(entries: List<LibraryEntry>): Map<LibraryStatus, List<LibraryEntry>> {
-        val grouped = entries.groupBy { it.status }
-        val ordered = LinkedHashMap<LibraryStatus, List<LibraryEntry>>(LIBRARY_STATUS_DISPLAY_ORDER.size + 1)
-        for (status in LIBRARY_STATUS_DISPLAY_ORDER) {
-            ordered[status] = grouped[status].orEmpty()
-        }
-        val unknownItems = grouped[LibraryStatus.UNKNOWN].orEmpty()
-        if (unknownItems.isNotEmpty()) {
-            ordered[LibraryStatus.UNKNOWN] = unknownItems
-        }
+    /** Every status once the list has loaded, Unknown only when something has it. */
+    private fun statusCounts(entries: List<LibraryEntry>): Map<LibraryStatus, Int> {
+        val counts = entries.groupingBy { it.status }.eachCount()
+        val ordered = LinkedHashMap<LibraryStatus, Int>(LIBRARY_STATUS_DISPLAY_ORDER.size + 1)
+        for (status in LIBRARY_STATUS_DISPLAY_ORDER) ordered[status] = counts[status] ?: 0
+        counts[LibraryStatus.UNKNOWN]?.let { ordered[LibraryStatus.UNKNOWN] = it }
         return ordered
     }
 

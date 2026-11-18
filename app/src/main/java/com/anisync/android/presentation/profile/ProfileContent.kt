@@ -1259,7 +1259,7 @@ internal fun ProfileListRail(
     val manga = uiState.selectedTab == ProfileTab.MANGA
     val searching = uiState.listTools.query.isNotBlank()
     MediaStatusRail(
-        itemsByStatus = if (manga) uiState.userMangaListByStatus else uiState.userAnimeListByStatus,
+        statusCounts = if (manga) uiState.mangaStatusCounts else uiState.animeStatusCounts,
         selectedStatus = if (searching) uiState.listTools.searchStatus else uiState.selectedListStatus,
         mediaType = if (manga) MediaType.MANGA else MediaType.ANIME,
         onStatusSelected = {
