@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 
@@ -82,6 +83,20 @@ object MediaPosterCardDefaults {
         val metaHeight = maxOf(MetaLineHeight.toDp(), StarSize)
         coverHeight + CoverToTextGap + titleHeight + TitleToMetaGap + metaHeight
     }
+
+    /** One piece of the line under the title, the value emphasised and its label in the quieter colour. */
+    @Composable
+    fun MetaText(text: String, emphasized: Boolean = false) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            fontSize = 13.sp,
+            lineHeight = MetaLineHeight,
+            fontWeight = if (emphasized) FontWeight.Bold else FontWeight.SemiBold,
+            color = if (emphasized) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
+    }
 }
 
 /**
@@ -102,7 +117,9 @@ fun MediaPosterCard(
     transitionPrefix: String = TransitionKeys.DISCOVER,
     listStatus: LibraryStatus? = LocalLibraryStatuses.current[item.mediaId],
     sharedTransitionScope: SharedTransitionScope? = null,
-    animatedVisibilityScope: AnimatedVisibilityScope? = null
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    /** Replaces the type and average score under the title, laid out with [MediaPosterCardDefaults.MetaText]. */
+    meta: (@Composable RowScope.() -> Unit)? = null
 ) {
     val title = item.getTitle(titleLanguage)
     val spatialSpec = if (sharedTransitionScope != null) AppMotion.rememberSpatialSpec() else null
@@ -199,22 +216,17 @@ fun MediaPosterCard(
                 modifier = titleModifier
             )
 
-            Row(
+            if (meta != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    content = meta
+                )
+            } else Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                item.format?.let { format ->
-                    Text(
-                        text = format.toLabel(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 13.sp,
-
-                        lineHeight = MetaLineHeight,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
-                    )
-                }
+                item.format?.let { format -> MediaPosterCardDefaults.MetaText(format.toLabel()) }
 
                 item.averageScore?.let { score ->
                     if (item.format != null) {
@@ -234,16 +246,7 @@ fun MediaPosterCard(
                         tint = StarGold,
                         modifier = Modifier.size(15.dp)
                     )
-                    Text(
-                        text = String.format(Locale.US, "%.1f", score / 10.0),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 13.sp,
-
-                        lineHeight = MetaLineHeight,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1
-                    )
+                    MediaPosterCardDefaults.MetaText(String.format(Locale.US, "%.1f", score / 10.0), emphasized = true)
                 }
             }
         }

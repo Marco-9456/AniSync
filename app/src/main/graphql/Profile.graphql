@@ -130,6 +130,10 @@ query GetFullUserProfile(
     donatorBadge
     moderatorRoles
     createdAt
+    previousNames {
+      name
+      createdAt
+    }
     statistics {
       anime {
         count
@@ -175,6 +179,16 @@ query GetFullUserProfile(
           }
           image {
             large
+          }
+          media(sort: [POPULARITY_DESC], perPage: 1) {
+            nodes {
+              title {
+                romaji
+                english
+                native
+                userPreferred
+              }
+            }
           }
         }
       }
@@ -392,18 +406,19 @@ mutation UpdateAbout($about: String) {
     about(asHtml: true)
   }
 }
-query GetUserSocialData($userId: Int!, $page: Int = 1) {
+query GetUserSocialData($userId: Int!, $page: Int = 1, $sort: [UserSort] = [ID_DESC]) {
   following: Page(page: $page, perPage: 25) {
     pageInfo {
       hasNextPage
       total
     }
-    following(userId: $userId) {
+    following(userId: $userId, sort: $sort) {
       id
       name
       avatar {
         large
       }
+      isFollowing
     }
   }
   followers: Page(page: $page, perPage: 25) {
@@ -411,12 +426,13 @@ query GetUserSocialData($userId: Int!, $page: Int = 1) {
       hasNextPage
       total
     }
-    followers(userId: $userId) {
+    followers(userId: $userId, sort: $sort) {
       id
       name
       avatar {
         large
       }
+      isFollowing
     }
   }
   mutuals: Page(page: $page, perPage: 25) {
@@ -424,12 +440,13 @@ query GetUserSocialData($userId: Int!, $page: Int = 1) {
       hasNextPage
       total
     }
-    mutualFollowers(userId: $userId) {
+    mutualFollowers(userId: $userId, sort: $sort) {
       id
       name
       avatar {
         large
       }
+      isFollowing
     }
   }
   threads: Page(page: $page, perPage: 15) {
@@ -601,6 +618,96 @@ query GetUserDayActivities($userId: Int, $from: Int!, $to: Int!, $perPage: Int =
       type_in: [ANIME_LIST, MANGA_LIST, TEXT]
     ) {
       ...ActivityFields
+    }
+  }
+}
+
+query GetUserFavoriteKind(
+  $userId: Int
+  $page: Int
+  $manga: Boolean = false
+  $characters: Boolean = false
+  $staff: Boolean = false
+  $studios: Boolean = false
+) {
+  User(id: $userId) {
+    id
+    favourites {
+      manga(page: $page, perPage: 25) @include(if: $manga) {
+        pageInfo {
+          hasNextPage
+        }
+        nodes {
+          ...MediaCardFields
+        }
+      }
+      characters(page: $page, perPage: 25) @include(if: $characters) {
+        pageInfo {
+          hasNextPage
+        }
+        nodes {
+          id
+          name {
+            userPreferred
+          }
+          image {
+            large
+          }
+          media(sort: [POPULARITY_DESC], perPage: 1) {
+            nodes {
+              title {
+                romaji
+                english
+                native
+                userPreferred
+              }
+            }
+          }
+        }
+      }
+      staff(page: $page, perPage: 25) @include(if: $staff) {
+        pageInfo {
+          hasNextPage
+        }
+        nodes {
+          id
+          name {
+            userPreferred
+          }
+          image {
+            large
+          }
+          primaryOccupations
+        }
+      }
+      studios(page: $page, perPage: 25) @include(if: $studios) {
+        pageInfo {
+          hasNextPage
+        }
+        nodes {
+          id
+          name
+        }
+      }
+    }
+  }
+}
+
+query GetUserPeopleCounts($userId: Int!) {
+  following: Page(perPage: 1) {
+    pageInfo {
+      total
+    }
+    following(userId: $userId) {
+      id
+    }
+  }
+  followers: Page(perPage: 1) {
+    pageInfo {
+      total
+    }
+    followers(userId: $userId) {
+      id
     }
   }
 }

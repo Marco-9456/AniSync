@@ -140,7 +140,17 @@ data class CharacterInfo(
      * preview list, populated by the paged [GetMediaCharacters] fetch). The Characters
      * tab groups these by [VoiceActor.language] to drive the language filter (#83 follow-up).
      */
-    val voiceActors: List<VoiceActor> = emptyList()
+    val voiceActors: List<VoiceActor> = emptyList(),
+    /** The series a favourite character is best known from. Favourites only. */
+    val series: TitleSet? = null
+)
+
+@Serializable
+data class TitleSet(
+    val romaji: String? = null,
+    val english: String? = null,
+    val native: String? = null,
+    val userPreferred: String? = null
 )
 
 @Serializable

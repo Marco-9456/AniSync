@@ -342,7 +342,7 @@ private fun MenuItemRow(entry: MenuEntry.Item, index: Int, count: Int) {
         onClick = entry.onClick,
         text = { Text(entry.text, maxLines = entry.maxLines, overflow = TextOverflow.Ellipsis) },
         shapes = MenuDefaults.itemShape(index, count),
-        leadingIcon = entry.leadingIcon?.let { icon ->
+        leadingIcon = entry.leading ?: entry.leadingIcon?.let { icon ->
             { Icon(imageVector = icon, contentDescription = null) }
         },
         trailingContent = entry.trailingLabel?.let { trailing ->
@@ -372,7 +372,9 @@ interface MenuScope {
         destructive: Boolean = false,
         enabled: Boolean = true,
         selected: Boolean = false,
-        maxLines: Int = Int.MAX_VALUE
+        maxLines: Int = Int.MAX_VALUE,
+        /** Drawn in place of [leadingIcon], for a leading image such as an avatar. */
+        leading: (@Composable () -> Unit)? = null
     )
 
     fun divider()
@@ -398,7 +400,8 @@ private sealed interface MenuEntry {
         val destructive: Boolean,
         val enabled: Boolean,
         val selected: Boolean,
-        val maxLines: Int
+        val maxLines: Int,
+        val leading: (@Composable () -> Unit)?
     ) : MenuEntry
 
     data object Divider : MenuEntry
@@ -419,7 +422,8 @@ private class MenuScopeImpl : MenuScope {
         destructive: Boolean,
         enabled: Boolean,
         selected: Boolean,
-        maxLines: Int
+        maxLines: Int,
+        leading: (@Composable () -> Unit)?
     ) {
         groups.last().add(
             MenuEntry.Item(
@@ -431,7 +435,8 @@ private class MenuScopeImpl : MenuScope {
                 destructive = destructive,
                 enabled = enabled,
                 selected = selected,
-                maxLines = maxLines
+                maxLines = maxLines,
+                leading = leading
             )
         )
     }

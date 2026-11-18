@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
@@ -20,12 +21,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.anisync.android.presentation.util.bouncyClickable
 
 private val PillShape = RoundedCornerShape(22.dp)
@@ -42,7 +45,9 @@ fun OptionPill(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     idleColor: Color = MaterialTheme.colorScheme.surfaceContainer,
-    role: Role = Role.RadioButton
+    role: Role = Role.RadioButton,
+    count: String? = null,
+    leadingIcon: ImageVector? = null
 ) {
     Surface(
         color = if (selected) MaterialTheme.colorScheme.secondaryContainer else idleColor,
@@ -56,6 +61,15 @@ fun OptionPill(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (leadingIcon != null) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+            }
             // The label takes the slack so the tick lands on the pill's trailing edge.
             Text(
                 text = label,
@@ -67,8 +81,22 @@ fun OptionPill(
                 },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                autoSize = TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = 16.sp),
                 modifier = Modifier.weight(1f)
             )
+            if (count != null) {
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = count,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (selected) {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    maxLines = 1
+                )
+            }
             if (selected) {
                 Spacer(Modifier.width(8.dp))
                 Icon(
@@ -82,7 +110,7 @@ fun OptionPill(
     }
 }
 
-/** [options] as [OptionPill]s two to a row, a lone last option keeping half the width. */
+/** [options] as [OptionPill]s [columns] to a row, a short last row keeping each pill's width. */
 @Composable
 fun <T> OptionPillGrid(
     options: List<T>,
@@ -92,13 +120,15 @@ fun <T> OptionPillGrid(
     modifier: Modifier = Modifier,
     horizontalPadding: Dp = 16.dp,
     idleColor: Color = MaterialTheme.colorScheme.surfaceContainer,
-    role: Role = Role.RadioButton
+    role: Role = Role.RadioButton,
+    count: (T) -> String? = { null },
+    columns: Int = 2
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        options.chunked(2).forEach { pair ->
+        options.chunked(columns).forEach { pair ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -112,10 +142,11 @@ fun <T> OptionPillGrid(
                         onClick = { onClick(option) },
                         idleColor = idleColor,
                         role = role,
+                        count = count(option),
                         modifier = Modifier.weight(1f)
                     )
                 }
-                if (pair.size == 1) Spacer(Modifier.weight(1f))
+                repeat(columns - pair.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }

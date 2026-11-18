@@ -124,6 +124,7 @@ fun <T> SegmentedTabGroup(
                     fontWeight = labelWeight,
                     // An equal share can be narrower than the word, so it shrinks rather than wraps.
                     maxLines = 1,
+                    modifier = if (fillEqually) Modifier.weight(1f, fill = false) else Modifier,
                     autoSize = if (fillEqually) {
                         TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = labelStyle.fontSize)
                     } else {

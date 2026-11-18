@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -30,6 +31,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import com.anisync.android.domain.ContentLimits
 import com.anisync.android.presentation.components.AppAlertDialog
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
@@ -91,7 +94,8 @@ fun RichTextInputSheet(
     isSubmitEnabled: (body: String) -> Boolean = {
         ContentLimits.characterCount(it.trim()) in minLength..maxLength
     },
-    bottomBarLeading: (@Composable RowScope.() -> Unit)? = null
+    bottomBarLeading: (@Composable RowScope.() -> Unit)? = null,
+    header: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val bodyState = rememberSaveable(prefillBody, saver = TextFieldState.Saver) {
         TextFieldState(prefillBody.orEmpty())
@@ -202,6 +206,8 @@ fun RichTextInputSheet(
                 if (replyingToLabel != null) {
                     ReplyingToChip(replyingToLabel)
                 }
+
+                header?.invoke(this)
 
                 Spacer(Modifier.height(8.dp))
 
@@ -363,13 +369,18 @@ private fun HeaderRow(
         TextButton(onClick = onCancel) {
             Text(
                 text = stringResource(R.string.cancel),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
             )
         }
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
         )
         if (showPreviewToggle) {
             TextButton(
@@ -381,6 +392,7 @@ private fun HeaderRow(
                     text = stringResource(
                         if (isPreviewMode) R.string.write else R.string.preview
                     ),
+                    maxLines = 1,
                     fontWeight = FontWeight.SemiBold,
                     color = if (!isPreviewEnabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     else MaterialTheme.colorScheme.primary

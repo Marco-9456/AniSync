@@ -1,5 +1,6 @@
 package com.anisync.android.data
 
+import kotlinx.coroutines.CancellationException
 import com.anisync.android.RemoveFollowerMutation
 import com.anisync.android.data.util.InflightTracker
 import com.anisync.android.GetFullUserProfileQuery
@@ -15,6 +16,7 @@ import com.anisync.android.data.local.toEntity
 import com.anisync.android.data.mapper.mapFuzzyDateToLong
 import com.anisync.android.data.mapper.toDomainStatus
 import com.anisync.android.data.util.safeApiCall
+import com.anisync.android.fragment.MediaCardFields
 import android.os.SystemClock
 import android.os.Trace
 import com.anisync.android.domain.CachePolicy
@@ -162,37 +164,14 @@ class ProfileRepositoryImpl @Inject constructor(
             // so a profile load/refresh costs a single request. Favourite cards show only objective
             // media fields (title / cover / type / release date) — matching AniList's own favourites,
             // which don't surface the viewer's list status/progress.
-            val favorites = user.favourites?.anime?.nodes?.filterNotNull()?.map { node ->
-                val m = node.mediaCardFields
-                LibraryEntry(
-                    id = 0,
-                    mediaId = m.id,
-                    titleRomaji = m.title?.romaji,
-                    titleEnglish = m.title?.english,
-                    titleNative = m.title?.native,
-                    titleUserPreferred = m.title?.userPreferred ?: "Unknown",
-                    coverUrl = m.coverImage?.large,
-                    cover = com.anisync.android.domain.CoverImage.of(
-                        m.coverImage?.medium,
-                        m.coverImage?.large,
-                        m.coverImage?.extraLarge
-                    ),
-                    progress = 0,
-                    totalEpisodes = m.episodes,
-                    totalChapters = m.chapters,
-                    totalVolumes = m.volumes,
-                    type = m.type,
-                    format = m.format,
-                    mediaStartDate = mapFuzzyDateToLong(m.startDate?.year, m.startDate?.month, m.startDate?.day),
-                    status = LibraryStatus.UNKNOWN
-                )
-            }.orEmpty()
+            val favorites = user.favourites?.anime?.nodes?.filterNotNull()?.map { it.mediaCardFields.toFavoriteEntry() }.orEmpty()
 
             // Activities are a follow-up rather than part of the profile response: together they
             // cost 611 against AniList's 500 query-complexity budget (see GetFullUserProfile).
             val activitiesStart = SystemClock.elapsedRealtime()
             val rawActivities = mutableListOf<com.anisync.android.fragment.ActivityFields>()
             Trace.beginSection("AniSync.Profile.Query.UserActivities")
+            // A failure here costs the Activity tab only, so the profile still loads (X7).
             val activitiesResponse = try {
                 apolloClient.query(
                     GetUserActivitiesQuery(
@@ -202,13 +181,19 @@ class ProfileRepositoryImpl @Inject constructor(
                 )
                     .fetchPolicy(policy)
                     .execute()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("ProfileRepository", "Activities did not load", e)
+                null
             } finally {
                 Trace.endSection()
             }
-            activitiesResponse.data?.allActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-            activitiesResponse.data?.textActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-            activitiesResponse.data?.messageReceived?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
-            activitiesResponse.data?.messageSent?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            val activitiesFailed = activitiesResponse?.data == null
+            activitiesResponse?.data?.allActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            activitiesResponse?.data?.textActivities?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            activitiesResponse?.data?.messageReceived?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
+            activitiesResponse?.data?.messageSent?.activities?.filterNotNull()?.forEach { rawActivities.add(it.activityFields) }
             val activitiesMs = SystemClock.elapsedRealtime() - activitiesStart
 
             val activities = rawActivities
@@ -247,27 +232,9 @@ class ProfileRepositoryImpl @Inject constructor(
 
             // Favorites already fetched in parallel with activities above.
 
-                    val overviewManga = user.favourites?.manga?.nodes?.filterNotNull()?.map { media ->
-                        val m = media.mediaCardFields
-                        com.anisync.android.domain.LibraryEntry(
-                            id = 0,
-                            mediaId = m.id,
-                            titleRomaji = m.title?.romaji,
-                            titleEnglish = m.title?.english,
-                            titleNative = m.title?.native,
-                            titleUserPreferred = m.title?.userPreferred ?: "Unknown",
-                            coverUrl = m.coverImage?.large,
-                            cover = com.anisync.android.domain.CoverImage.of(m.coverImage?.medium, m.coverImage?.large, m.coverImage?.extraLarge),
-                            progress = 0,
-                            totalEpisodes = null,
-                            totalChapters = m.chapters,
-                            totalVolumes = m.volumes,
-                            type = m.type,
-                            format = m.format,
-                            mediaStartDate = mapFuzzyDateToLong(m.startDate?.year, m.startDate?.month, m.startDate?.day),
-                            status = com.anisync.android.domain.LibraryStatus.UNKNOWN
-                        )
-                    } ?: emptyList()
+            val overviewManga = user.favourites?.manga?.nodes?.filterNotNull()
+                ?.map { it.mediaCardFields.toFavoriteEntry(withEpisodes = false) }
+                ?: emptyList()
 
             // Favourite characters show thumb + name only (no role): a favourite has no single
             // canonical role, and AniList omits per-media role/VA under the favourites connection.
@@ -278,7 +245,10 @@ class ProfileRepositoryImpl @Inject constructor(
                     nameNative = null,
                     nameUserPreferred = char.name?.userPreferred ?: "Unknown",
                     imageUrl = char.image?.large,
-                    role = ""
+                    role = "",
+                    series = char.media?.nodes?.firstOrNull()?.title?.let {
+                        com.anisync.android.domain.TitleSet(it.romaji, it.english, it.native, it.userPreferred)
+                    }
                 )
             } ?: emptyList()
 
@@ -336,7 +306,15 @@ class ProfileRepositoryImpl @Inject constructor(
                 donatorTier = user.donatorTier ?: 0,
                 donatorBadge = user.donatorBadge,
                 moderatorRoles = user.moderatorRoles?.filterNotNull()?.map { it.name } ?: emptyList(),
-                createdAt = user.createdAt?.toLong()?.times(1000)
+                createdAt = user.createdAt?.toLong()?.times(1000),
+                previousNames = user.previousNames?.filterNotNull()
+                    ?.mapNotNull { previous ->
+                        previous.name?.takeIf { it.isNotBlank() }?.let {
+                            com.anisync.android.domain.PreviousName(it, previous.createdAt?.toLong()?.times(1000))
+                        }
+                    }
+                    .orEmpty(),
+                activitiesFailed = activitiesFailed
             )
 
             val timings = ProfileRefreshTimings(
@@ -347,7 +325,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 favoritesTotalMs = 0L,
                 favoritesFirstPageMs = 0L,
                 favoritesRestMs = 0L,
-                favoritesPageCount = 1
+                favoritesPageCount = 1,
+                activitiesFailed = activitiesFailed
             )
             profile to timings
         }
@@ -366,7 +345,14 @@ class ProfileRepositoryImpl @Inject constructor(
     ): Result<ProfileRefreshTimings> {
         return when (val result = fetchUserProfileTimed(username, forceNetwork)) {
             is Result.Success -> {
-                userProfileDao.insert(result.data.first.toEntity())
+                val profile = result.data.first
+                // Activities that did not load would otherwise replace the saved ones with nothing.
+                val kept = if (profile.activitiesFailed) {
+                    userProfileDao.get(profile.id)?.let { profile.copy(activities = it.activities) } ?: profile
+                } else {
+                    profile
+                }
+                userProfileDao.insert(kept.toEntity())
                 Result.Success(result.data.second)
             }
             is Result.Error -> result
@@ -461,6 +447,26 @@ class ProfileRepositoryImpl @Inject constructor(
         val restMs: Long
     )
 
+    /** A favourite carries only the media's own fields, never anyone's list progress. */
+    private fun MediaCardFields.toFavoriteEntry(withEpisodes: Boolean = true): LibraryEntry = LibraryEntry(
+        id = 0,
+        mediaId = id,
+        titleRomaji = title?.romaji,
+        titleEnglish = title?.english,
+        titleNative = title?.native,
+        titleUserPreferred = title?.userPreferred ?: "Unknown",
+        coverUrl = coverImage?.large,
+        cover = com.anisync.android.domain.CoverImage.of(coverImage?.medium, coverImage?.large, coverImage?.extraLarge),
+        progress = 0,
+        totalEpisodes = if (withEpisodes) episodes else null,
+        totalChapters = chapters,
+        totalVolumes = volumes,
+        type = type,
+        format = format,
+        mediaStartDate = mapFuzzyDateToLong(startDate?.year, startDate?.month, startDate?.day),
+        status = LibraryStatus.UNKNOWN
+    )
+
     private data class FavoritesPage(val entries: List<LibraryEntry>, val lastPage: Int?)
 
     private suspend fun fetchFavoritesPage(
@@ -478,31 +484,7 @@ class ProfileRepositoryImpl @Inject constructor(
         val nodes = data?.nodes?.filterNotNull() ?: emptyList()
         val pageInfo = data?.pageInfo
 
-        val entries = nodes.map { node ->
-            val m = node.mediaCardFields
-            LibraryEntry(
-                id = 0,
-                mediaId = m.id,
-                titleRomaji = m.title?.romaji,
-                titleEnglish = m.title?.english,
-                titleNative = m.title?.native,
-                titleUserPreferred = m.title?.userPreferred ?: "Unknown",
-                coverUrl = m.coverImage?.large,
-                cover = com.anisync.android.domain.CoverImage.of(
-                    m.coverImage?.medium,
-                    m.coverImage?.large,
-                    m.coverImage?.extraLarge
-                ),
-                progress = 0,
-                totalEpisodes = m.episodes,
-                totalChapters = m.chapters,
-                totalVolumes = m.volumes,
-                type = m.type,
-                format = m.format,
-                mediaStartDate = mapFuzzyDateToLong(m.startDate?.year, m.startDate?.month, m.startDate?.day),
-                status = LibraryStatus.UNKNOWN
-            )
-        }
+        val entries = nodes.map { it.mediaCardFields.toFavoriteEntry() }
 
         return FavoritesPage(entries = entries, lastPage = pageInfo?.lastPage)
     }
@@ -516,16 +498,122 @@ class ProfileRepositoryImpl @Inject constructor(
             }
         }
 
+    override suspend fun getPeopleCounts(userId: Int): Result<Pair<Int?, Int?>> =
+        dedupe("people-counts:$userId") {
+            safeApiCall {
+                val response = apolloClient.query(com.anisync.android.GetUserPeopleCountsQuery(userId = userId))
+                    .fetchPolicy(FetchPolicy.NetworkFirst)
+                    .execute()
+                if (response.hasErrors()) {
+                    throw Exception(response.errors?.first()?.message ?: "Unknown API Error")
+                }
+                val data = response.data ?: throw Exception("Empty response data")
+                data.following?.pageInfo?.total to data.followers?.pageInfo?.total
+            }
+        }
+
+    override suspend fun getFavoritesOfKind(
+        userId: Int,
+        kind: com.anisync.android.domain.FavoriteKind,
+        policy: CachePolicy
+    ): Result<com.anisync.android.domain.FavoriteKindItems> = dedupe("favorites:$userId:$kind:$policy") {
+        safeApiCall {
+            val manga = mutableListOf<LibraryEntry>()
+            val characters = mutableListOf<com.anisync.android.domain.CharacterInfo>()
+            val staff = mutableListOf<com.anisync.android.domain.StaffDetails>()
+            val studios = mutableListOf<com.anisync.android.domain.StudioInfo>()
+            var page = 1
+            while (page <= MAX_FAVORITE_PAGES) {
+                val response = apolloClient.query(
+                    com.anisync.android.GetUserFavoriteKindQuery(
+                        userId = Optional.present(userId),
+                        page = Optional.present(page),
+                        manga = Optional.present(kind == com.anisync.android.domain.FavoriteKind.MANGA),
+                        characters = Optional.present(kind == com.anisync.android.domain.FavoriteKind.CHARACTERS),
+                        staff = Optional.present(kind == com.anisync.android.domain.FavoriteKind.STAFF),
+                        studios = Optional.present(kind == com.anisync.android.domain.FavoriteKind.STUDIOS)
+                    )
+                ).fetchPolicy(policy.toFetchPolicy()).execute()
+                if (response.hasErrors()) {
+                    throw Exception(response.errors?.first()?.message ?: "Unknown API Error")
+                }
+                val favourites = response.data?.User?.favourites ?: break
+                val hasNext = when (kind) {
+                    com.anisync.android.domain.FavoriteKind.MANGA -> {
+                        favourites.manga?.nodes?.filterNotNull()?.forEach { manga += it.mediaCardFields.toFavoriteEntry(withEpisodes = false) }
+                        favourites.manga?.pageInfo?.hasNextPage == true
+                    }
+                    com.anisync.android.domain.FavoriteKind.CHARACTERS -> {
+                        favourites.characters?.nodes?.filterNotNull()?.forEach { char ->
+                            characters += com.anisync.android.domain.CharacterInfo(
+                                id = char.id,
+                                nameFull = char.name?.userPreferred ?: "Unknown",
+                                nameNative = null,
+                                nameUserPreferred = char.name?.userPreferred ?: "Unknown",
+                                imageUrl = char.image?.large,
+                                role = "",
+                                series = char.media?.nodes?.firstOrNull()?.title?.let {
+                                    com.anisync.android.domain.TitleSet(it.romaji, it.english, it.native, it.userPreferred)
+                                }
+                            )
+                        }
+                        favourites.characters?.pageInfo?.hasNextPage == true
+                    }
+                    com.anisync.android.domain.FavoriteKind.STAFF -> {
+                        favourites.staff?.nodes?.filterNotNull()?.forEach { member ->
+                            staff += com.anisync.android.domain.StaffDetails(
+                                id = member.id,
+                                name = member.name?.userPreferred ?: "Unknown",
+                                nativeName = null,
+                                nameUserPreferred = member.name?.userPreferred ?: "Unknown",
+                                imageUrl = member.image?.large,
+                                description = null,
+                                gender = null,
+                                age = null,
+                                bloodType = null,
+                                dateOfBirth = null,
+                                dateOfDeath = null,
+                                favourites = null,
+                                language = null,
+                                primaryOccupations = member.primaryOccupations?.filterNotNull() ?: emptyList(),
+                                yearsActive = emptyList(),
+                                homeTown = null,
+                                voicedCharacters = emptyList()
+                            )
+                        }
+                        favourites.staff?.pageInfo?.hasNextPage == true
+                    }
+                    com.anisync.android.domain.FavoriteKind.STUDIOS -> {
+                        favourites.studios?.nodes?.filterNotNull()?.forEach { studio ->
+                            studios += com.anisync.android.domain.StudioInfo(id = studio.id, name = studio.name)
+                        }
+                        favourites.studios?.pageInfo?.hasNextPage == true
+                    }
+                }
+                if (!hasNext) break
+                page++
+            }
+            com.anisync.android.domain.FavoriteKindItems(
+                manga = manga.distinctBy { it.mediaId },
+                characters = characters.distinctBy { it.id },
+                staff = staff.distinctBy { it.id },
+                studios = studios.distinctBy { it.id }
+            )
+        }
+    }
+
     override suspend fun getSocialData(
         userId: Int,
         page: Int,
-        policy: CachePolicy
-    ): Result<com.anisync.android.domain.UserSocialPage> = dedupe("social:$userId:$page:$policy") {
+        policy: CachePolicy,
+        sort: com.anisync.android.type.UserSort?
+    ): Result<com.anisync.android.domain.UserSocialPage> = dedupe("social:$userId:$page:$policy:$sort") {
         safeApiCall {
             val response = apolloClient.query(
                 com.anisync.android.GetUserSocialDataQuery(
                     userId = userId,
-                    page = Optional.present(page)
+                    page = Optional.present(page),
+                    sort = Optional.presentIfNotNull(sort?.let { listOf(it) })
                 )
             )
             .fetchPolicy(policy.toFetchPolicy())
@@ -541,7 +629,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 com.anisync.android.domain.SocialUser(
                     id = it.id,
                     name = it.name,
-                    avatarUrl = it.avatar?.large
+                    avatarUrl = it.avatar?.large,
+                    isFollowing = it.isFollowing == true
                 )
             } ?: emptyList()
 
@@ -549,7 +638,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 com.anisync.android.domain.SocialUser(
                     id = it.id,
                     name = it.name,
-                    avatarUrl = it.avatar?.large
+                    avatarUrl = it.avatar?.large,
+                    isFollowing = it.isFollowing == true
                 )
             } ?: emptyList()
 
@@ -557,7 +647,8 @@ class ProfileRepositoryImpl @Inject constructor(
                 com.anisync.android.domain.SocialUser(
                     id = it.id,
                     name = it.name,
-                    avatarUrl = it.avatar?.large
+                    avatarUrl = it.avatar?.large,
+                    isFollowing = it.isFollowing == true
                 )
             } ?: emptyList()
 
@@ -869,7 +960,13 @@ class ProfileRepositoryImpl @Inject constructor(
                             createdAt = entry.createdAt?.toLong()?.times(1000L),
                             customLists = if (isCustom) listOf(listName) else emptyList(),
                             isPrivate = entry.`private` ?: false,
-                            hiddenFromStatusLists = entry.hiddenFromStatusLists ?: false
+                            hiddenFromStatusLists = entry.hiddenFromStatusLists ?: false,
+                            genres = media?.genres?.filterNotNull().orEmpty(),
+                            mediaStartDate = mapFuzzyDateToLong(media?.startDate?.year, media?.startDate?.month, media?.startDate?.day),
+                            startedAt = mapFuzzyDateToLong(entry.startedAt?.year, entry.startedAt?.month, entry.startedAt?.day),
+                            completedAt = mapFuzzyDateToLong(entry.completedAt?.year, entry.completedAt?.month, entry.completedAt?.day),
+                            averageScore = media?.averageScore,
+                            popularity = media?.popularity
                         )
                     } else if (isCustom && !existing.customLists.contains(listName)) {
                         entryMap[entryId] = existing.copy(customLists = existing.customLists + listName)
@@ -905,3 +1002,6 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 }
+
+/** Stops a runaway loop. Forty pages is a thousand favourites. */
+private const val MAX_FAVORITE_PAGES = 40

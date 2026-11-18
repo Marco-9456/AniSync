@@ -110,6 +110,7 @@ internal fun ActivityListCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     ActivityProgressLine(activity = activity)
+                    if (!showAuthor) ActivityTime(activity)
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -215,13 +216,18 @@ private fun ActivityAuthorLine(activity: UserActivity, onUserClick: (String) -> 
                 .weight(1f, fill = false)
                 .clickable { activity.userName?.let(onUserClick) }
         )
-        Text(
-            text = formatRelativeTimeSeconds(LocalResources.current, activity.timestamp / 1000L),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            maxLines = 1
-        )
+        ActivityTime(activity)
     }
+}
+
+@Composable
+private fun ActivityTime(activity: UserActivity) {
+    Text(
+        text = formatRelativeTimeSeconds(LocalResources.current, activity.timestamp / 1000L),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        maxLines = 1
+    )
 }
 
 /** "Watched episode 5", with the number in the accent the rest of the app uses for progress. */

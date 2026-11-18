@@ -1,6 +1,5 @@
 package com.anisync.android.presentation.profile.sections
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,18 +13,12 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Handshake
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PersonRemove
-import androidx.compose.material.icons.filled.RateReview
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
-import com.anisync.android.data.WhatsNewItem
+import androidx.compose.ui.platform.LocalContext
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
@@ -35,34 +28,24 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import com.anisync.android.presentation.components.LocalWhatsNew
-import com.anisync.android.presentation.components.WhatsNewPill
-import com.anisync.android.presentation.components.rememberActiveWhatsNew
-import com.anisync.android.presentation.util.bouncyCombinedClickable
-import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
 import com.anisync.android.domain.SocialThreadComment
 import com.anisync.android.domain.parser.RichTextPlainText
 import com.anisync.android.domain.SocialUser
-import com.anisync.android.presentation.components.RailChip
+import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.forum.components.ForumThreadCard
 import com.anisync.android.presentation.forum.components.shared.AuthorRow
 import com.anisync.android.presentation.forum.components.shared.StatBadge
 import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.profile.ProfileUiState
+import com.anisync.android.presentation.profile.viewerOwnsProfile
+import com.anisync.android.presentation.profile.components.LoadFailedState
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
-import com.anisync.android.presentation.profile.components.ProfileTabRail
+import com.anisync.android.util.ShareUtils
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun LazyListScope.profileSocialTab(
@@ -74,9 +57,11 @@ fun LazyListScope.profileSocialTab(
     onLoadMore: () -> Unit = {},
     userColumns: Int = 3,
     /** Set on the viewer's own profile, where each follower carries a remove button. */
-    onRemoveFollower: ((SocialUser) -> Unit)? = null
+    onRemoveFollower: ((SocialUser) -> Unit)? = null,
+    selectedTab: ProfileSocialTab = uiState.selectedSocialTab,
+    onToggleFollow: (SocialUser) -> Unit = {},
+    onRetry: () -> Unit = {}
 ) {
-    val selectedTab = uiState.selectedSocialTab
 
     if (uiState.isSocialLoading) {
         item(key = "social_loading") {
@@ -94,18 +79,11 @@ fun LazyListScope.profileSocialTab(
 
     if (uiState.socialErrorMessage != null) {
         item(key = "social_error") {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = uiState.socialErrorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center
-                )
-            }
+            LoadFailedState(
+                title = stringResource(R.string.forum_empty_failed_title),
+                description = uiState.socialErrorMessage,
+                onRetry = onRetry
+            )
         }
         return
     }
@@ -120,9 +98,25 @@ fun LazyListScope.profileSocialTab(
     }
 
     when (selectedTab) {
-        ProfileSocialTab.FOLLOWING -> renderSocialUsers(uiState.socialFollowing, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore, userColumns)
-        ProfileSocialTab.FOLLOWERS -> renderSocialUsers(uiState.socialFollowers, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore, userColumns, onRemoveFollower)
-        ProfileSocialTab.MUTUALS -> renderSocialUsers(uiState.socialMutuals, selectedTab, modifier, onUserClick, hasNextPage, isPaginating, onLoadMore, userColumns)
+        ProfileSocialTab.FOLLOWING, ProfileSocialTab.FOLLOWERS, ProfileSocialTab.MUTUALS -> renderSocialUsers(
+            users = when (selectedTab) {
+                ProfileSocialTab.FOLLOWERS -> uiState.socialFollowers
+                ProfileSocialTab.MUTUALS -> uiState.socialMutuals
+                else -> uiState.socialFollowing
+            },
+            selectedTab = selectedTab,
+            modifier = modifier,
+            onUserClick = onUserClick,
+            hasNextPage = hasNextPage,
+            isPaginating = isPaginating,
+            onLoadMore = onLoadMore,
+            userColumns = userColumns,
+            viewerId = uiState.viewerId,
+            onToggleFollow = onToggleFollow,
+            onRemoveUser = if (selectedTab == ProfileSocialTab.FOLLOWERS) onRemoveFollower else null,
+            ownerName = uiState.profile?.name.orEmpty(),
+            isOwn = uiState.viewerOwnsProfile
+        )
         ProfileSocialTab.FORUM_THREADS -> {
             if (uiState.socialThreads.isEmpty()) {
                 item(key = "social_threads_empty") {
@@ -216,19 +210,52 @@ private fun LazyListScope.renderSocialUsers(
     isPaginating: Boolean,
     onLoadMore: () -> Unit,
     userColumns: Int,
-    onRemoveUser: ((SocialUser) -> Unit)? = null
+    viewerId: Int?,
+    onToggleFollow: (SocialUser) -> Unit,
+    onRemoveUser: ((SocialUser) -> Unit)? = null,
+    ownerName: String = "",
+    isOwn: Boolean = false
 ) {
     if (users.isEmpty()) {
         item(key = "social_users_empty") {
-            Spacer(modifier = Modifier.height(16.dp))
-            PlaceholderTabContent(
-                message = stringResource(R.string.profile_social_placeholder, stringResource(selectedTab.labelRes)),
-                modifier = modifier
+            val context = LocalContext.current
+            val (title, body) = when (selectedTab) {
+                ProfileSocialTab.FOLLOWERS -> if (isOwn) {
+                    stringResource(R.string.profile_people_empty_followers_own) to stringResource(R.string.profile_people_empty_followers_own_body)
+                } else {
+                    stringResource(R.string.profile_people_empty_followers, ownerName) to stringResource(R.string.profile_people_empty_body)
+                }
+                ProfileSocialTab.MUTUALS -> if (isOwn) {
+                    stringResource(R.string.profile_people_empty_mutual_own) to stringResource(R.string.profile_people_empty_mutual_own_body)
+                } else {
+                    stringResource(R.string.profile_people_empty_mutual, ownerName) to stringResource(R.string.profile_people_empty_body)
+                }
+                else -> if (isOwn) {
+                    stringResource(R.string.profile_people_empty_following_own) to stringResource(R.string.profile_people_empty_following_own_body)
+                } else {
+                    stringResource(R.string.profile_people_empty_following, ownerName) to stringResource(R.string.profile_people_empty_body)
+                }
+            }
+            val shareable = isOwn && selectedTab == ProfileSocialTab.FOLLOWERS && ownerName.isNotBlank()
+            EmptyState(
+                icon = Icons.Default.Groups,
+                title = title,
+                description = body,
+                actionLabel = if (shareable) stringResource(R.string.profile_people_share_own) else null,
+                actionIcon = if (shareable) Icons.Default.Share else null,
+                onAction = if (shareable) {
+                    { ShareUtils.shareUser(context, ownerName) }
+                } else {
+                    null
+                },
+                modifier = modifier.height(360.dp)
             )
         }
     } else {
-        val rowItems = users.chunked(userColumns)
-        item(key = "social_top_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
+        // Rows are wide, so a wide pane fits two side by side at most.
+        val columns = (userColumns / 3).coerceIn(1, 2)
+        val rowItems = users.chunked(columns)
+        item(key = "social_top_spacer") { Spacer(modifier = Modifier.height(4.dp)) }
 
         itemsIndexed(
             items = rowItems,
@@ -245,128 +272,23 @@ private fun LazyListScope.renderSocialUsers(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 row.forEach { user ->
-                    Box(modifier = Modifier.weight(1f)) {
-                        SocialUserItem(
-                            user = user,
-                            onClick = { onUserClick(user.name) },
-                            modifier = Modifier.fillMaxWidth(),
-                            onRemove = onRemoveUser?.let { { it(user) } }
-                        )
-                    }
+                    PersonRow(
+                        user = user,
+                        showFollow = viewerId != null && user.id != viewerId,
+                        onClick = { onUserClick(user.name) },
+                        onToggleFollow = { onToggleFollow(user) },
+                        onRemove = onRemoveUser?.let { { it(user) } },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-                repeat(userColumns - row.size) {
+                repeat(columns - row.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
         if (isPaginating) {
             item(key = "social_users_paginating") { PaginatingSpinner() }
         }
-    }
-}
-
-/** Only the user lists carry a total; the forum tabs page without one. */
-/** The Social tab's lists with their counts, docked with the profile tabs. */
-@Composable
-internal fun SocialTabRail(uiState: ProfileUiState, onSelect: (ProfileSocialTab) -> Unit) {
-    val selectedTab = uiState.selectedSocialTab
-    val whatsNewStore = LocalWhatsNew.current
-    val mutualsNew = WhatsNewItem.PROFILE_MUTUALS in rememberActiveWhatsNew()
-    LaunchedEffect(selectedTab) {
-        if (selectedTab == ProfileSocialTab.MUTUALS) whatsNewStore.markSeen(WhatsNewItem.PROFILE_MUTUALS)
-    }
-    ProfileTabRail(ProfileSocialTab.entries, selectedTab) { tab, selected ->
-        RailChip(
-            label = stringResource(tab.labelRes),
-            icon = socialTabIcon(tab),
-            selected = selected,
-            onClick = { onSelect(tab) },
-            count = socialTabCount(uiState, tab),
-            badge = if (tab == ProfileSocialTab.MUTUALS && mutualsNew) {
-                { WhatsNewPill(WhatsNewItem.Kind.NEW) }
-            } else {
-                null
-            }
-        )
-    }
-}
-
-private fun socialTabCount(uiState: ProfileUiState, tab: ProfileSocialTab): Int? = when (tab) {
-    ProfileSocialTab.FOLLOWING -> uiState.followingTotal
-    ProfileSocialTab.FOLLOWERS -> uiState.followersTotal
-    ProfileSocialTab.MUTUALS -> uiState.mutualsTotal
-    ProfileSocialTab.FORUM_THREADS, ProfileSocialTab.FORUM_COMMENTS -> null
-}
-
-private fun socialTabIcon(tab: ProfileSocialTab): ImageVector {
-    return when (tab) {
-        ProfileSocialTab.FOLLOWING -> Icons.Default.Person
-        ProfileSocialTab.FOLLOWERS -> Icons.Default.Groups
-        ProfileSocialTab.MUTUALS -> Icons.Default.Handshake
-        ProfileSocialTab.FORUM_THREADS -> Icons.Default.RateReview
-        ProfileSocialTab.FORUM_COMMENTS -> Icons.Default.ChatBubbleOutline
-    }
-}
-
-@Composable
-private fun SocialUserItem(
-    user: SocialUser,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    onRemove: (() -> Unit)? = null
-) {
-    val imageShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
-
-    Column(
-        horizontalAlignment = Alignment.Start,
-        modifier = modifier
-            .clip(imageShape)
-            .bouncyCombinedClickable(
-                onClick = onClick,
-                onLongClick = onRemove,
-                role = Role.Button,
-                onClickLabel = user.name,
-                onLongClickLabel = stringResource(R.string.a11y_remove_follower)
-            )
-            .padding(bottom = dimensionResource(R.dimen.spacing_small))
-    ) {
-        Box {
-            AsyncImage(
-                model = user.avatarUrl,
-                contentDescription = user.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .height(dimensionResource(R.dimen.character_image_height))
-                    .fillMaxWidth()
-                    .clip(imageShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-            if (onRemove != null) {
-                FilledTonalIconButton(
-                    onClick = onRemove,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(6.dp)
-                        .size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PersonRemove,
-                        contentDescription = stringResource(R.string.a11y_remove_follower_named, user.name),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
-        Text(
-            text = user.name,
-            style = MaterialTheme.typography.labelMedium.emphasis(),
-            textAlign = TextAlign.Start,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.primary
-        )
     }
 }
 

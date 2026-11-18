@@ -7,8 +7,10 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,35 +19,37 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import com.anisync.android.presentation.components.MediaPosterCard
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.R
-import com.anisync.android.domain.LibraryEntry
-import com.anisync.android.domain.StaffDetails
-import com.anisync.android.domain.StaffInfo
+import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.StudioInfo
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.RailChip
-import com.anisync.android.presentation.details.CastListCard
-import com.anisync.android.presentation.details.StaffListCard
 import com.anisync.android.presentation.profile.ProfileFavoritesFilter
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
-import com.anisync.android.presentation.profile.components.ProfileMediaListCard
 import com.anisync.android.presentation.profile.components.ProfileTabRail
 import com.anisync.android.presentation.util.bouncyClickable
-import com.anisync.android.type.MediaType
+import com.anisync.android.util.getTitle
+import java.text.NumberFormat
+import com.anisync.android.ui.theme.ExpressiveShapes
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 fun LazyListScope.profileFavoritesTab(
@@ -57,75 +61,67 @@ fun LazyListScope.profileFavoritesTab(
     onCharacterClick: (Int) -> Unit = {},
     onStaffClick: (Int) -> Unit = {},
     onStudioClick: (Int) -> Unit = {},
-    listColumns: Int = 1,
     studioColumns: Int = 2,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    gridColumns: Int = 3,
+    titleLanguage: TitleLanguage = TitleLanguage.ROMAJI
 ) {
     when (selectedFilter) {
-        ProfileFavoritesFilter.ANIME -> {
-            profileFavoritesMediaList(
-                items = profile.favoriteAnime,
-                mediaType = MediaType.ANIME,
-                emptyMessageRes = R.string.profile_placeholder_anime,
-                onMediaClick = onMediaClick,
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-                transitionPrefix = "fav_anime",
-                listColumns = listColumns,
+        ProfileFavoritesFilter.ANIME, ProfileFavoritesFilter.MANGA -> {
+            val anime = selectedFilter == ProfileFavoritesFilter.ANIME
+            val items = if (anime) profile.favoriteAnime else profile.favoriteMangaOverview
+            favoritesGrid(
+                items = items,
+                keyPrefix = if (anime) "fav_anime" else "fav_manga",
+                columns = gridColumns,
+                emptyMessage = if (anime) R.string.profile_placeholder_anime else R.string.profile_placeholder_manga,
+                key = { it.mediaId },
                 modifier = modifier
-            )
-        }
-
-        ProfileFavoritesFilter.MANGA -> {
-            profileFavoritesMediaList(
-                items = profile.favoriteMangaOverview,
-                mediaType = MediaType.MANGA,
-                emptyMessageRes = R.string.profile_placeholder_manga,
-                onMediaClick = onMediaClick,
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = animatedVisibilityScope,
-                transitionPrefix = "fav_manga",
-                listColumns = listColumns,
-                modifier = modifier
-            )
-        }
-
-        ProfileFavoritesFilter.CHARACTERS -> {
-            // Portrait + name only — a global favourite has no single role, and AniList omits
-            // per-media role/VA on the favourites path.
-            profileFavoritesPersonList(
-                items = profile.favoriteCharactersOverview,
-                keyPrefix = "characters",
-                idOf = { it.id },
-                modifier = modifier
-            ) { character ->
-                CastListCard(
-                    character = character,
-                    voiceActor = null,
-                    onClick = { onCharacterClick(character.id) },
-                    onVoiceActorClick = {},
+            ) { entry, cellModifier ->
+                MediaPosterCard(
+                    item = entry,
+                    onClick = { onMediaClick(entry.mediaId) },
+                    titleLanguage = titleLanguage,
+                    transitionPrefix = if (anime) "fav_anime" else "fav_manga",
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    modifier = cellModifier
                 )
             }
         }
 
-        ProfileFavoritesFilter.STAFF -> {
-            profileFavoritesPersonList(
-                items = profile.favoriteStaffOverview,
-                keyPrefix = "staff",
-                idOf = { it.id },
-                modifier = modifier
-            ) { member ->
-                StaffListCard(
-                    staff = member.toStaffInfo(),
-                    onClick = { onStaffClick(member.id) },
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-            }
+        ProfileFavoritesFilter.CHARACTERS -> favoritesGrid(
+            items = profile.favoriteCharactersOverview,
+            keyPrefix = "fav_characters",
+            columns = gridColumns,
+            emptyMessage = R.string.profile_placeholder_favorites,
+            key = { it.id },
+            modifier = modifier
+        ) { character, cellModifier ->
+            FavoritePortrait(
+                imageUrl = character.imageUrl,
+                name = character.nameUserPreferred,
+                detail = character.series?.getTitle(titleLanguage),
+                onClick = { onCharacterClick(character.id) },
+                modifier = cellModifier
+            )
+        }
+
+        ProfileFavoritesFilter.STAFF -> favoritesGrid(
+            items = profile.favoriteStaffOverview,
+            keyPrefix = "fav_staff",
+            columns = gridColumns,
+            emptyMessage = R.string.profile_placeholder_favorites,
+            key = { it.id },
+            modifier = modifier
+        ) { member, cellModifier ->
+            FavoritePortrait(
+                imageUrl = member.imageUrl,
+                name = member.nameUserPreferred,
+                detail = member.primaryOccupations.firstOrNull(),
+                onClick = { onStaffClick(member.id) },
+                modifier = cellModifier
+            )
         }
 
         ProfileFavoritesFilter.STUDIOS -> {
@@ -172,65 +168,70 @@ fun LazyListScope.profileFavoritesTab(
     }
 }
 
-/** The Favorites tab's categories, docked with the profile tabs. */
 @Composable
-internal fun FavoritesFilterRail(selected: ProfileFavoritesFilter, onSelect: (ProfileFavoritesFilter) -> Unit) {
-    ProfileTabRail(ProfileFavoritesFilter.entries, selected) { filter, isSelected ->
-        RailChip(
-            label = stringResource(filter.labelRes),
-            icon = favoritesFilterIcon(filter),
-            selected = isSelected,
-            onClick = { onSelect(filter) }
-        )
+internal fun FavoritesFilterRail(
+    selected: ProfileFavoritesFilter,
+    count: Int,
+    ownerName: String?,
+    onSelect: (ProfileFavoritesFilter) -> Unit
+) {
+    Column {
+        ProfileTabRail(ProfileFavoritesFilter.entries, selected) { filter, isSelected ->
+            RailChip(
+                label = stringResource(filter.labelRes),
+                icon = favoritesFilterIcon(filter),
+                selected = isSelected,
+                onClick = { onSelect(filter) }
+            )
+        }
+        if (count > 0) {
+            val numbers = remember { NumberFormat.getIntegerInstance() }
+            val amount = pluralStringResourceOrDefault(
+                when (selected) {
+                    ProfileFavoritesFilter.ANIME, ProfileFavoritesFilter.MANGA -> R.plurals.profile_favorites_count_titles
+                    ProfileFavoritesFilter.CHARACTERS -> R.plurals.profile_favorites_count_characters
+                    ProfileFavoritesFilter.STAFF -> R.plurals.profile_favorites_count_staff
+                    ProfileFavoritesFilter.STUDIOS -> R.plurals.profile_favorites_count_studios
+                },
+                count,
+                numbers.format(count)
+            )
+            val order = if (ownerName == null) {
+                stringResource(R.string.profile_favorites_order_own)
+            } else {
+                stringResource(R.string.profile_favorites_order, ownerName)
+            }
+            Text(
+                text = stringResource(R.string.profile_people_summary, amount, order),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+            )
+        }
     }
 }
 
-private fun favoritesFilterIcon(filter: ProfileFavoritesFilter): ImageVector {
-    return when (filter) {
-        ProfileFavoritesFilter.ANIME -> Icons.Default.Tv
-        ProfileFavoritesFilter.MANGA -> Icons.AutoMirrored.Filled.MenuBook
-        ProfileFavoritesFilter.CHARACTERS -> Icons.Default.Person
-        ProfileFavoritesFilter.STAFF -> Icons.Default.Group
-        ProfileFavoritesFilter.STUDIOS -> Icons.Default.Business
-    }
-}
-
-/**
- * List rows for the favourites Anime/Manga sub-tabs, reusing [ProfileMediaListCard] in favourites
- * mode (`showViewerListData = false`): cover, title, type, and release year only — no viewer list
- * status/score/progress, which AniList doesn't surface for favourites. Chunked into [listColumns]
- * so wide windows fill the width (1-up on phones, up to 2-up on tablets).
- */
-@OptIn(ExperimentalSharedTransitionApi::class)
-private fun LazyListScope.profileFavoritesMediaList(
-    items: List<LibraryEntry>,
-    mediaType: MediaType,
-    @StringRes emptyMessageRes: Int,
-    onMediaClick: (Int) -> Unit,
-    sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?,
-    transitionPrefix: String,
-    listColumns: Int,
-    modifier: Modifier = Modifier
+private fun <T> LazyListScope.favoritesGrid(
+    items: List<T>,
+    keyPrefix: String,
+    columns: Int,
+    @StringRes emptyMessage: Int,
+    key: (T) -> Int,
+    modifier: Modifier,
+    cell: @Composable (T, Modifier) -> Unit
 ) {
     if (items.isEmpty()) {
-        item(key = "fav_media_empty_$transitionPrefix", contentType = "empty") {
+        item(key = "${keyPrefix}_empty", contentType = "empty") {
             Spacer(modifier = Modifier.height(16.dp))
-            PlaceholderTabContent(
-                message = stringResource(emptyMessageRes),
-                modifier = modifier
-            )
+            PlaceholderTabContent(message = stringResource(emptyMessage), modifier = modifier)
         }
         return
     }
-
-    val rowItems = items.chunked(listColumns)
-    item(key = "fav_media_top_spacer_$transitionPrefix") { Spacer(modifier = Modifier.height(16.dp)) }
-
+    item(key = "${keyPrefix}_top") { Spacer(modifier = Modifier.height(8.dp)) }
     itemsIndexed(
-        items = rowItems,
-        key = { index, _ -> "fav_media_row_${transitionPrefix}_$index" },
-        contentType = { _, _ -> "fav_media_row" }
+        items = items.chunked(columns),
+        key = { _, row -> "${keyPrefix}_row_${key(row.first())}" },
+        contentType = { _, _ -> "fav_grid_row" }
     ) { _, row ->
         Row(
             modifier = Modifier
@@ -238,69 +239,67 @@ private fun LazyListScope.profileFavoritesMediaList(
                 .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            row.forEach { entry ->
-                Box(modifier = Modifier.weight(1f)) {
-                    ProfileMediaListCard(
-                        entry = entry,
-                        mediaType = mediaType,
-                        onClick = { onMediaClick(entry.mediaId) },
-                        // Favourites: show type + release year only (no viewer list status/score/progress).
-                        showViewerListData = false,
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        transitionPrefix = transitionPrefix
-                    )
-                }
-            }
-            repeat(listColumns - row.size) {
-                Spacer(modifier = Modifier.weight(1f))
-            }
+            row.forEach { cell(it, Modifier.weight(1f)) }
+            repeat(columns - row.size) { Spacer(modifier = Modifier.weight(1f)) }
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
-/**
- * Single-column list rows for the favourites Characters / Staff sub-tabs, reusing the Media Details
- * cast/staff cards ([card]). [idOf] keys each row; [keyPrefix] namespaces the item keys.
- */
-private fun <T> LazyListScope.profileFavoritesPersonList(
-    items: List<T>,
-    keyPrefix: String,
-    idOf: (T) -> Int,
-    modifier: Modifier,
-    card: @Composable (T) -> Unit
+@Composable
+private fun FavoritePortrait(
+    imageUrl: String?,
+    name: String,
+    detail: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    if (items.isEmpty()) {
-        item(key = "fav_empty_$keyPrefix", contentType = "empty") {
-            Spacer(modifier = Modifier.height(16.dp))
-            PlaceholderTabContent(
-                message = stringResource(R.string.profile_placeholder_favorites),
-                modifier = modifier
+    val shape = ExpressiveShapes.mediaCover
+    Column(
+        modifier = modifier
+            .clip(shape)
+            .bouncyClickable(onClick = onClick, onClickLabel = name, clipShape = shape)
+    ) {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.72f)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        )
+        Text(
+            text = name,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 6.dp)
+        )
+        if (!detail.isNullOrBlank()) {
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 6.dp)
             )
         }
-        return
     }
-
-    item(key = "fav_top_spacer_$keyPrefix") { Spacer(modifier = Modifier.height(16.dp)) }
-    items(
-        count = items.size,
-        key = { i -> "fav_${keyPrefix}_${idOf(items[i])}" },
-        contentType = { "fav_person_row" }
-    ) { i -> card(items[i]) }
-    item(key = "fav_bottom_spacer_$keyPrefix") { Spacer(modifier = Modifier.height(12.dp)) }
 }
 
-/** Adapt a favourited [StaffDetails] to the [StaffInfo] the shared [StaffListCard] renders. */
-private fun StaffDetails.toStaffInfo(): StaffInfo = StaffInfo(
-    id = id,
-    nameFull = name,
-    nameNative = nativeName,
-    nameUserPreferred = nameUserPreferred,
-    imageUrl = imageUrl,
-    role = "",
-    primaryOccupations = primaryOccupations
-)
+private fun favoritesFilterIcon(filter: ProfileFavoritesFilter): ImageVector {
+    return when (filter) {
+        ProfileFavoritesFilter.ANIME -> Icons.Default.Tv
+        ProfileFavoritesFilter.MANGA -> Icons.AutoMirrored.Filled.MenuBook
+        ProfileFavoritesFilter.CHARACTERS -> Icons.Default.Face
+        ProfileFavoritesFilter.STAFF -> Icons.Default.Badge
+        ProfileFavoritesFilter.STUDIOS -> Icons.Default.Business
+    }
+}
 
 @Composable
 private fun StudioItem(

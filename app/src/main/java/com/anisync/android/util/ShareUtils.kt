@@ -227,4 +227,11 @@ object ShareUtils {
         val url = AniListUrls.studioUrl(studioId)
         shareText(context, "$name\n$url")
     }
+
+    /**
+     * Shares a user's profile using Android's share sheet.
+     */
+    fun shareUser(context: Context, name: String) {
+        shareText(context, "$name\n${AniListUrls.userUrl(name)}")
+    }
 }

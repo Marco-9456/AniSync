@@ -444,7 +444,7 @@ private fun FormatTeaserCard(teaser: FormatTeaser, isOwnProfile: Boolean, onClic
     val locale = LocalConfiguration.current.locales[0]
     val total = teaser.shares.sumOf { it.second }.coerceAtLeast(1)
     val first = teaser.shares.firstOrNull()
-    val title = if (teaser.isManga) R.string.stats_view_how_you_read else R.string.stats_view_how_you_watch
+    val title = howTheyWatchRes(teaser.isManga, isOwnProfile)
     Teaser(title = stringResource(title), onClick = onClick) {
         if (first != null) {
             // TV, OVA and ONA take the frame's 40sp. A longer name steps down, and the share moves

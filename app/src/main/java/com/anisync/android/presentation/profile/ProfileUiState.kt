@@ -26,6 +26,15 @@ import com.anisync.android.domain.stats.ActivityInsights
 import com.anisync.android.domain.stats.Eras
 import com.anisync.android.domain.stats.ScoreSummary
 import com.anisync.android.domain.stats.summarizeScores
+import com.anisync.android.domain.ScoreFormat
+import com.anisync.android.data.TitleLanguage
+import com.anisync.android.presentation.profile.lists.ProfileListFilters
+import com.anisync.android.presentation.profile.lists.ProfileListResults
+import com.anisync.android.presentation.profile.lists.ProfileListSheet
+import com.anisync.android.presentation.profile.lists.ProfileListSort
+import com.anisync.android.presentation.profile.lists.ProfileListTools
+import com.anisync.android.type.MediaType
+import com.anisync.android.type.UserSort
 
 @Stable
 data class ProfileUiState(
@@ -40,11 +49,21 @@ data class ProfileUiState(
     val isFollowerOfViewer: Boolean = false,
     val isFollowLoading: Boolean = false,
     val selectedTab: ProfileTab = ProfileTab.OVERVIEW,
+    val lastListTab: ProfileTab = ProfileTab.ANIME,
     val selectedActivityFilter: ProfileActivityFilter = ProfileActivityFilter.ALL,
     val selectedFavoritesFilter: ProfileFavoritesFilter = ProfileFavoritesFilter.ANIME,
-    val selectedAnimeStatus: LibraryStatus = LibraryStatus.CURRENT,
-    val selectedMangaStatus: LibraryStatus = LibraryStatus.CURRENT,
+    /** The Anime list's chip, null for All. */
+    val selectedAnimeStatus: LibraryStatus? = LibraryStatus.CURRENT,
+    /** The Manga list's chip, null for All. */
+    val selectedMangaStatus: LibraryStatus? = LibraryStatus.CURRENT,
     val selectedSocialTab: ProfileSocialTab = ProfileSocialTab.FOLLOWING,
+    val isStatusComposerVisible: Boolean = false,
+    val compareType: MediaType = MediaType.ANIME,
+    val viewerAvatarUrl: String? = null,
+    val compareExpanded: Set<String> = emptySet(),
+    val isShowingSavedCopy: Boolean = false,
+    val isPostingStatus: Boolean = false,
+    val peopleOrder: PeopleOrder = PeopleOrder.NEWEST,
     val selectedStatsType: ProfileStatsType = ProfileStatsType.ANIME,
     val selectedStatsView: StatsView = StatsView.OVERVIEW,
     val genreSort: GenreSort = GenreSort.TITLES,
@@ -106,9 +125,30 @@ data class ProfileUiState(
     val isSavingActivityEdit: Boolean = false,
     /** The follower the viewer asked to remove, awaiting the confirm dialog. */
     val followerToRemove: SocialUser? = null,
+    val isSavingAbout: Boolean = false,
+    val isUnfollowConfirmVisible: Boolean = false,
+    val listSheet: ProfileListSheet = ProfileListSheet.NONE,
+    val listTools: ProfileListTools = ProfileListTools(),
+    val listResults: ProfileListResults = ProfileListResults(),
+    val viewerEntries: Map<Int, LibraryEntry> = emptyMap(),
+    val viewerScoreFormat: ScoreFormat = ScoreFormat.POINT_100,
+    val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,
+    val isAnimeListFailed: Boolean = false,
+    val isMangaListFailed: Boolean = false,
+    /** The activities did not load, and nothing saved stands in for them. */
+    val isActivityFailed: Boolean = false,
     /** The viewer's recaps for Statistics, empty on anyone else's profile. */
     val recaps: com.anisync.android.presentation.recap.RecapsUiModel = com.anisync.android.presentation.recap.RecapsUiModel()
 )
+
+/** The viewer is on their own profile, also when they reached it through a link rather than the tab. */
+val ProfileUiState.viewerOwnsProfile: Boolean get() = viewerId != null && viewerId == profile?.id
+
+val ProfileUiState.selectedListEntries: List<LibraryEntry>
+    get() = if (selectedTab == ProfileTab.MANGA) userMangaList else userAnimeList
+
+val ProfileUiState.selectedListStatus: LibraryStatus?
+    get() = if (selectedTab == ProfileTab.MANGA) selectedMangaStatus else selectedAnimeStatus
 
 data class StatisticsUiModel(
     val animeStats: AnimeStatisticsUi,
@@ -195,15 +235,19 @@ data class LengthUiModel(
 )
 
 @Immutable
-enum class ProfileTab(@StringRes val titleRes: Int) {
-    OVERVIEW(R.string.profile_tab_overview),
-    STATS(R.string.statistics_title),
-    ACTIVITY(R.string.profile_tab_activity),
-    ANIME(R.string.media_type_anime),
-    MANGA(R.string.media_type_manga),
-    FAVORITES(R.string.section_favorites),
-    SOCIAL(R.string.profile_tab_social),
-    REVIEWS(R.string.section_reviews)
+enum class ProfileTab {
+    OVERVIEW,
+    STATS,
+    ACTIVITY,
+    ANIME,
+    MANGA,
+    FAVORITES,
+    SOCIAL,
+    COMPARE;
+
+    val isPage: Boolean get() = this == FAVORITES || this == SOCIAL || this == COMPARE
+
+    val isList: Boolean get() = this == ANIME || this == MANGA
 }
 
 /** The views behind the Statistics rail's chips. Recaps only exists on the viewer's own profile. */
@@ -234,9 +278,15 @@ enum class ProfileFavoritesFilter(@StringRes val labelRes: Int) {
 @Immutable
 enum class ProfileActivityFilter(@StringRes val labelRes: Int) {
     ALL(R.string.profile_activity_all),
-    STATUS(R.string.profile_activity_status),
+    LISTS(R.string.profile_activity_updates),
+    STATUS(R.string.profile_activity_statuses),
     MESSAGES(R.string.profile_activity_messages),
-    LISTS(R.string.profile_activity_lists)
+    REVIEWS(R.string.section_reviews),
+    THREADS(R.string.profile_activity_threads),
+    COMMENTS(R.string.profile_activity_comments);
+
+    /** Reviews and forum posts are not in the activity feed, they load from their own queries. */
+    val isFeed: Boolean get() = this == ALL || this == STATUS || this == MESSAGES || this == LISTS
 }
 
 @Immutable
@@ -245,7 +295,19 @@ enum class ProfileSocialTab(@StringRes val labelRes: Int) {
     FOLLOWERS(R.string.profile_social_followers),
     MUTUALS(R.string.profile_social_mutuals),
     FORUM_THREADS(R.string.profile_social_forum_threads),
-    FORUM_COMMENTS(R.string.profile_social_forum_comments)
+    FORUM_COMMENTS(R.string.profile_social_forum_comments);
+
+    val isForum: Boolean get() = this == FORUM_THREADS || this == FORUM_COMMENTS
+}
+
+/** [labelRes] names the order in its menu, [phraseRes] finishes the count line under the tabs. */
+@Immutable
+enum class PeopleOrder(@StringRes val labelRes: Int, @StringRes val phraseRes: Int, val sort: UserSort) {
+    NEWEST(R.string.profile_people_order_newest, R.string.profile_people_phrase_newest, UserSort.ID_DESC),
+    OLDEST(R.string.profile_people_order_oldest, R.string.profile_people_phrase_oldest, UserSort.ID),
+    NAME(R.string.profile_people_order_name, R.string.profile_people_phrase_name, UserSort.USERNAME),
+    WATCHED(R.string.profile_people_order_watched, R.string.profile_people_phrase_watched, UserSort.WATCHED_TIME_DESC),
+    READ(R.string.profile_people_order_read, R.string.profile_people_phrase_read, UserSort.CHAPTERS_READ_DESC)
 }
 
 @Immutable
@@ -268,12 +330,26 @@ sealed interface ProfileAction {
     /** The first recap build gave up, start it again. */
     data object RetryRecaps : ProfileAction
     data object ToggleFollow : ProfileAction
+    data object ConfirmUnfollow : ProfileAction
+    data object DismissUnfollow : ProfileAction
     data class UpdateAbout(val about: String) : ProfileAction
     data class SelectTab(val tab: ProfileTab) : ProfileAction
+    data object ClosePage : ProfileAction
+    data class AddToPlanning(val mediaId: Int) : ProfileAction
+    data class SelectPeopleOrder(val order: PeopleOrder) : ProfileAction
+    data class TogglePersonFollow(val user: SocialUser) : ProfileAction
     data class SelectActivityFilter(val filter: ProfileActivityFilter) : ProfileAction
     data class SelectFavoritesFilter(val filter: ProfileFavoritesFilter) : ProfileAction
-    data class SelectAnimeStatus(val status: LibraryStatus) : ProfileAction
-    data class SelectMangaStatus(val status: LibraryStatus) : ProfileAction
+    data class SelectAnimeStatus(val status: LibraryStatus?) : ProfileAction
+    data class SelectMangaStatus(val status: LibraryStatus?) : ProfileAction
+    data class SetListQuery(val query: String) : ProfileAction
+    data class SetListSearchStatus(val status: LibraryStatus?) : ProfileAction
+    data class SetListSort(val sort: ProfileListSort, val ascending: Boolean) : ProfileAction
+    data class SetListFilters(val filters: ProfileListFilters) : ProfileAction
+    data object ClearListFilters : ProfileAction
+    data object ToggleListView : ProfileAction
+    data class OpenListSheet(val sheet: ProfileListSheet) : ProfileAction
+    data object RetryList : ProfileAction
     data class SelectSocialTab(val tab: ProfileSocialTab) : ProfileAction
     data class SelectStatsType(val type: ProfileStatsType) : ProfileAction
     data class SelectStatsView(val view: StatsView) : ProfileAction
@@ -302,6 +378,12 @@ sealed interface ProfileAction {
     data class DeleteActivity(val activityId: Int) : ProfileAction
     data class EditActivity(val activityId: Int) : ProfileAction
     data object DismissActivityEdit : ProfileAction
+    data class SetStatusComposerVisible(val visible: Boolean) : ProfileAction
+    data class SelectCompareType(val type: MediaType) : ProfileAction
+    data object RetrySocial : ProfileAction
+    data class ExpandCompareSection(val key: String) : ProfileAction
+    data object RetryReviews : ProfileAction
+    data class PostStatus(val text: String) : ProfileAction
     data class SubmitActivityEdit(val text: String) : ProfileAction
     data object ConsumeActivitySnackbar : ProfileAction
 }

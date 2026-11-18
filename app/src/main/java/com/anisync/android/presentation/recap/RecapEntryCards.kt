@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -565,15 +566,26 @@ private fun YearBars(months: List<Int>, modifier: Modifier) {
     val scheme = MaterialTheme.colorScheme
     val max = months.maxOrNull()?.coerceAtLeast(1) ?: 1
     val busiest = months.indexOf(months.maxOrNull())
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.4.dp), verticalAlignment = Alignment.Bottom) {
-        months.forEachIndexed { index, episodes ->
-            Box(
-                Modifier
-                    .width(11.dp)
-                    .height((52f * episodes / max).coerceAtLeast(5f).dp)
-                    .clip(RoundedCornerShape(5.5.dp))
-                    .background(if (index == busiest) scheme.primary else scheme.secondaryContainer)
-            )
+    BoxWithConstraints(modifier) {
+        // Twelve bars at full size need about 200dp, so from November they narrow to fit the tile.
+        val count = months.size.coerceAtLeast(1)
+        val bar = minOf(11.dp, maxWidth / (count + (count - 1) * BarGapRatio))
+        Row(
+            Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(bar * BarGapRatio),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            months.forEachIndexed { index, episodes ->
+                Box(
+                    Modifier
+                        .width(bar)
+                        .height((52f * episodes / max).coerceAtLeast(5f).dp)
+                        .clip(RoundedCornerShape(bar / 2))
+                        .background(if (index == busiest) scheme.primary else scheme.secondaryContainer)
+                )
+            }
         }
     }
 }
+
+private const val BarGapRatio = 6.4f / 11f

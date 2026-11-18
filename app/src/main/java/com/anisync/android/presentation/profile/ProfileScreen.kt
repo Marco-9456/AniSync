@@ -4,26 +4,30 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import android.content.Intent
 import android.net.Uri
 import android.os.SystemClock
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import com.anisync.android.presentation.navigation.ShareStudio
 import com.anisync.android.presentation.components.AppAlertDialog
-import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,9 +38,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.anisync.android.R
 import com.anisync.android.presentation.components.ErrorState
 import com.anisync.android.presentation.components.ProfileColorThemeOverride
-import com.anisync.android.presentation.components.richtext.RichTextInputScreen
 import com.anisync.android.presentation.login.AniListAuth
-import com.anisync.android.presentation.profile.components.AccountSwitcherSheet
+import com.anisync.android.presentation.profile.components.EditProfileSheet
+import com.anisync.android.presentation.profile.components.ProfileAccounts
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.ui.unit.dp
+import com.anisync.android.presentation.components.EmptyState
+import com.anisync.android.presentation.components.navigation.BackTrailButton
+import com.anisync.android.presentation.profile.components.ProfileLoadingSkeleton
+import com.anisync.android.presentation.profile.components.UnfollowDialog
+import com.anisync.android.presentation.util.openUrl
+import com.anisync.android.util.AniListUrls
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -56,9 +71,11 @@ fun ProfileScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     onNavigateToSettings: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
+    onManageAccounts: (() -> Unit)? = null,
     isOwnProfile: Boolean = true,
     onShareCard: (ShareStudio) -> Unit = {},
     onOpenRecap: (String) -> Unit = {},
+    onBackClick: (() -> Unit)? = null,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,7 +84,17 @@ fun ProfileScreen(
     val context = LocalContext.current
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val activeAccountId by viewModel.activeAccountId.collectAsStateWithLifecycle()
-    var showAccountSwitcherSheet by remember { mutableStateOf(false) }
+    val unreadNotificationCount = uiState.unreadNotificationCount
+    val profileAccounts = remember(accounts, activeAccountId, unreadNotificationCount, onManageAccounts, viewModel) {
+        ProfileAccounts(
+            accounts = accounts,
+            activeAccountId = activeAccountId,
+            unreadNotificationCount = unreadNotificationCount,
+            onSwitch = viewModel::switchAccount,
+            onAddAccount = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AniListAuth.AUTH_URL))) },
+            onManageAccounts = onManageAccounts
+        )
+    }.takeIf { isOwnProfile }
 
     // Cooldown-gated ON_RESUME refresh. Notification badge no longer needs a
     // separate refresh — it rides on GetUserProfile via @include directive.
@@ -104,11 +131,24 @@ fun ProfileScreen(
                 ?: uiState.loadErrorRes?.let { stringResource(it) }
             when {
                 uiState.isLoading && profile == null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AppCircularProgressIndicator()
+                    ProfileLoadingSkeleton(name = viewModel.targetName, onBackClick = onBackClick)
+                }
+
+                uiState.loadErrorRes == R.string.profile_user_unavailable && profile == null -> {
+                    ProfileUnavailable(name = viewModel.targetName, onBackClick = onBackClick)
+                }
+
+                uiState.loadErrorRes == R.string.profile_offline_never_saved && profile == null -> {
+                    ProfileStateFrame(name = viewModel.targetName, onBackClick = onBackClick) {
+                        EmptyState(
+                            icon = Icons.Default.CloudOff,
+                            title = stringResource(R.string.profile_offline_title),
+                            description = viewModel.targetName?.let { stringResource(R.string.profile_offline_never_saved_named, it) }
+                                ?: stringResource(R.string.profile_offline_never_saved),
+                            actionLabel = stringResource(R.string.profile_try_again),
+                            actionIcon = Icons.Default.Refresh,
+                            onAction = { viewModel.onAction(ProfileAction.Refresh()) }
+                        )
                     }
                 }
 
@@ -148,10 +188,10 @@ fun ProfileScreen(
                         onLastReplyClick = { activityId, replyId ->
                             onLastReplyClick(activityId, replyId, profileColor)
                         },
-                        showAccountSwitcher = isOwnProfile && accounts.size > 1,
-                        onAccountSwitchClick = { showAccountSwitcherSheet = true },
+                        accounts = profileAccounts,
                         onShareCard = onShareCard,
-                        onOpenRecap = onOpenRecap
+                        onOpenRecap = onOpenRecap,
+                        onBackClick = onBackClick
                     )
                 }
 
@@ -172,24 +212,21 @@ fun ProfileScreen(
 
     val profile = uiState.profile
     if (profile != null && uiState.isEditProfileDialogVisible && isOwnProfile) {
-        RichTextInputScreen(
-            title = stringResource(R.string.edit_profile_title),
-            placeholder = stringResource(R.string.edit_profile_about_label),
+        EditProfileSheet(
             // Edit the raw markdown source; only fall back to the rendered HTML when no raw bio is
             // cached yet (e.g. a pre-v19 row before its first refresh) so we never save HTML back.
-            initialBody = profile.aboutMarkdown?.takeUnless { it.isBlank() }
-                ?: profile.about.orEmpty(),
-            isSubmitting = false,
-            submitLabel = stringResource(R.string.save),
-            minLength = 0,
-            maxLength = 65_000,
-            onSubmit = { about ->
-                viewModel.onAction(ProfileAction.UpdateAbout(about))
-                viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false))
-            },
-            onDismiss = {
-                viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false))
-            }
+            about = profile.aboutMarkdown?.takeUnless { it.isBlank() } ?: profile.about.orEmpty(),
+            isSaving = uiState.isSavingAbout,
+            onSave = { about -> viewModel.onAction(ProfileAction.UpdateAbout(about)) },
+            onDismiss = { viewModel.onAction(ProfileAction.SetEditProfileDialogVisible(false)) }
+        )
+    }
+
+    if (uiState.isUnfollowConfirmVisible && profile != null) {
+        UnfollowDialog(
+            name = profile.name,
+            onConfirm = { viewModel.onAction(ProfileAction.ConfirmUnfollow) },
+            onDismiss = { viewModel.onAction(ProfileAction.DismissUnfollow) }
         )
     }
 
@@ -213,20 +250,49 @@ fun ProfileScreen(
             }
         )
     }
+}
 
-    if (showAccountSwitcherSheet) {
-        AccountSwitcherSheet(
-            accounts = accounts,
-            activeAccountId = activeAccountId,
-            onSwitch = { id ->
-                showAccountSwitcherSheet = false
-                viewModel.switchAccount(id)
-            },
-            onAddAccount = {
-                showAccountSwitcherSheet = false
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AniListAuth.AUTH_URL)))
-            },
-            onDismiss = { showAccountSwitcherSheet = false }
+/** AniList answers a private profile and a deleted one with the same 404, so the copy covers both. */
+@Composable
+private fun ProfileUnavailable(name: String?, onBackClick: (() -> Unit)?) {
+    val context = LocalContext.current
+    ProfileStateFrame(name = name, onBackClick = onBackClick) {
+        EmptyState(
+            icon = Icons.Outlined.Lock,
+            title = stringResource(R.string.profile_unavailable_title),
+            description = name?.let { stringResource(R.string.profile_unavailable_body, it) }
+                ?: stringResource(R.string.profile_user_unavailable),
+            actionLabel = name?.let { stringResource(R.string.profile_open_on_anilist) },
+            actionIcon = name?.let { Icons.AutoMirrored.Filled.OpenInNew },
+            onAction = name?.let { { openUrl(context, AniListUrls.userUrl(it)) } }
         )
+    }
+}
+
+/** A profile that cannot show: the bar says whose it was, the block below says why. */
+@Composable
+private fun ProfileStateFrame(name: String?, onBackClick: (() -> Unit)?, content: @Composable () -> Unit) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .height(64.dp)
+                    .padding(start = 4.dp, end = 16.dp)
+            ) {
+                if (onBackClick != null) BackTrailButton(onClick = onBackClick)
+                if (name != null) {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        modifier = Modifier.padding(start = if (onBackClick != null) 4.dp else 12.dp)
+                    )
+                }
+            }
+        }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { content() }
     }
 }

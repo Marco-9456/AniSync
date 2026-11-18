@@ -19,13 +19,15 @@ import com.anisync.android.R
 import com.anisync.android.domain.MediaReview
 import com.anisync.android.presentation.components.ReviewCard
 import com.anisync.android.presentation.profile.ProfileUiState
+import com.anisync.android.presentation.profile.components.LoadFailedState
 
 fun LazyListScope.profileReviewsTab(
     uiState: ProfileUiState,
     modifier: Modifier = Modifier,
     onUserClick: (String) -> Unit = {},
     onReviewClick: (MediaReview) -> Unit = {},
-    onLoadMore: () -> Unit = {}
+    onLoadMore: () -> Unit = {},
+    onRetry: () -> Unit = {}
 ) {
     if (uiState.isReviewsLoading && uiState.reviews.isEmpty()) {
         item(key = "reviews_loading") {
@@ -43,18 +45,11 @@ fun LazyListScope.profileReviewsTab(
 
     if (uiState.reviewsErrorMessage != null && uiState.reviews.isEmpty()) {
         item(key = "reviews_error") {
-            Box(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = uiState.reviewsErrorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center
-                )
-            }
+            LoadFailedState(
+                title = stringResource(R.string.forum_empty_failed_title),
+                description = uiState.reviewsErrorMessage,
+                onRetry = onRetry
+            )
         }
         return
     }

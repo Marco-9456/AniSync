@@ -2,7 +2,6 @@ package com.anisync.android.presentation.statistics
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesomeMotion
@@ -13,7 +12,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -21,9 +19,11 @@ import com.anisync.android.R
 import com.anisync.android.presentation.components.MediaTypeToggle
 import com.anisync.android.presentation.components.PinnedRail
 import com.anisync.android.presentation.components.RailChip
-import com.anisync.android.presentation.components.revealChip
 import com.anisync.android.presentation.profile.ProfileStatsType
 import com.anisync.android.presentation.profile.StatsView
+import com.anisync.android.presentation.profile.components.RailScroll
+import com.anisync.android.presentation.profile.components.RevealSelectedChip
+import com.anisync.android.presentation.profile.components.rememberRailScroll
 import com.anisync.android.type.MediaType
 
 /**
@@ -38,12 +38,10 @@ fun StatsRail(
     onTypeSelected: (ProfileStatsType) -> Unit,
     onViewSelected: (StatsView) -> Unit,
     modifier: Modifier = Modifier,
+    isOwnProfile: Boolean = true,
+    scroll: RailScroll = rememberRailScroll(),
 ) {
-    val listState = rememberLazyListState()
-    LaunchedEffect(selectedView) {
-        val index = views.indexOf(selectedView)
-        if (index >= 0) listState.revealChip(index)
-    }
+    RevealSelectedChip(scroll, selectedView, views.indexOf(selectedView))
     PinnedRail(
         pinned = {
             MediaTypeToggle(
@@ -51,12 +49,13 @@ fun StatsRail(
                 onSelect = { onTypeSelected(if (it == MediaType.MANGA) ProfileStatsType.MANGA else ProfileStatsType.ANIME) },
             )
         },
-        listState = listState,
+        listState = scroll.state,
+        measuredInset = scroll.pinnedInset,
         modifier = modifier,
     ) {
         items(views, key = { it.name }) { view ->
             RailChip(
-                label = stringResource(view.labelRes(statsType)),
+                label = stringResource(view.labelRes(statsType, isOwnProfile)),
                 icon = view.icon(statsType),
                 selected = view == selectedView,
                 onClick = { onViewSelected(view) },
@@ -66,15 +65,22 @@ fun StatsRail(
 }
 
 @StringRes
-internal fun StatsView.labelRes(statsType: ProfileStatsType): Int = when (this) {
+internal fun StatsView.labelRes(statsType: ProfileStatsType, isOwnProfile: Boolean): Int = when (this) {
     StatsView.OVERVIEW -> R.string.profile_tab_overview
     StatsView.RECAPS -> R.string.settings_recaps
     StatsView.ACTIVITY -> R.string.profile_tab_activity
     StatsView.TASTE -> R.string.stats_view_taste
-    StatsView.HOW_YOU_WATCH ->
-        if (statsType == ProfileStatsType.MANGA) R.string.stats_view_how_you_read else R.string.stats_view_how_you_watch
+    StatsView.HOW_YOU_WATCH -> howTheyWatchRes(statsType == ProfileStatsType.MANGA, isOwnProfile)
     StatsView.ERAS -> R.string.stats_view_eras
     StatsView.PEOPLE -> R.string.stats_view_people
+}
+
+@StringRes
+internal fun howTheyWatchRes(manga: Boolean, isOwnProfile: Boolean): Int = when {
+    isOwnProfile && manga -> R.string.stats_view_how_you_read
+    isOwnProfile -> R.string.stats_view_how_you_watch
+    manga -> R.string.stats_view_how_they_read
+    else -> R.string.stats_view_how_they_watch
 }
 
 private fun StatsView.icon(statsType: ProfileStatsType): ImageVector = when (this) {
