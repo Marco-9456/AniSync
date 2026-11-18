@@ -49,7 +49,7 @@ import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.profile.components.UnfollowDialog
 import com.anisync.android.presentation.profile.components.UserLinkItems
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
-import java.text.NumberFormat
+import com.anisync.android.presentation.util.rememberIntegerFormat
 
 private val PeopleTabs = listOf(ProfileSocialTab.FOLLOWING, ProfileSocialTab.FOLLOWERS, ProfileSocialTab.MUTUALS)
 
@@ -65,7 +65,7 @@ internal fun PeopleSwitcher(
         whatsNewStore.markSeen(WhatsNewItem.PROFILE_PEOPLE_MOVED)
         if (selected == ProfileSocialTab.MUTUALS) whatsNewStore.markSeen(WhatsNewItem.PROFILE_MUTUALS)
     }
-    val numbers = remember { NumberFormat.getIntegerInstance() }
+    val numbers = rememberIntegerFormat()
     Column(modifier = Modifier.fillMaxWidth()) {
         SegmentedTabGroup(
             options = PeopleTabs,

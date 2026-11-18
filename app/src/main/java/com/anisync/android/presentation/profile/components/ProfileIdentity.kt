@@ -108,10 +108,10 @@ import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
-import java.text.NumberFormat
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
+import com.anisync.android.presentation.util.rememberIntegerFormat
 
 /**
  * Header pieces shared by the phone header ([ProfileTopSection]) and the wide identity column
@@ -508,7 +508,7 @@ private fun ProfileIdentityDetails(
             )
         }
 
-        val numbers = remember { NumberFormat.getIntegerInstance() }
+        val numbers = rememberIntegerFormat()
         Spacer(modifier = Modifier.height(12.dp))
         val anime = numbers.format(profile.animeCount)
         val manga = numbers.format(profile.mangaCount)

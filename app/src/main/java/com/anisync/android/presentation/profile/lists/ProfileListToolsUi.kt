@@ -73,7 +73,7 @@ import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaFormat
-import java.text.NumberFormat
+import com.anisync.android.presentation.util.rememberIntegerFormat
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -179,7 +179,7 @@ internal fun ProfileListSummary(
     onRemoveFilter: (ProfileListFilters) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val numbers = remember { NumberFormat.getIntegerInstance() }
+    val numbers = rememberIntegerFormat()
     val count = results.items.size
     val query = tools.query.trim()
     val amount = when {
@@ -397,7 +397,7 @@ private fun ProfileListFilterSections(
             .groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.map { it.key }
     }
     val genres = remember(entries) { entries.flatMap { it.genres }.distinct().sorted() }
-    val numbers = remember { NumberFormat.getIntegerInstance() }
+    val numbers = rememberIntegerFormat()
     Column {
         if (!isOwnProfile) {
             SheetSectionLabel(stringResource(R.string.profile_list_your_list))

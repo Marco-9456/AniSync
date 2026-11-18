@@ -59,8 +59,8 @@ import com.anisync.android.presentation.util.formatAndYear
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.LocalExpressiveTypography
-import java.text.NumberFormat
 import java.util.Locale
+import com.anisync.android.presentation.util.rememberIntegerFormat
 
 @Composable
 internal fun OverviewCompareCard(
@@ -158,7 +158,7 @@ private fun CompareEyebrow(text: String, yourAvatar: String?, theirAvatar: Strin
 
 @Composable
 private fun CompareHero(comparison: ListComparison, ownerName: String, type: MediaType, too: Boolean = false) {
-    val numbers = remember { NumberFormat.getIntegerInstance() }
+    val numbers = rememberIntegerFormat()
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = numbers.format(comparison.sharedCount),
@@ -262,7 +262,7 @@ fun LazyListScope.profileComparePage(
 
 @Composable
 private fun CompareSummary(comparison: ListComparison, type: MediaType, ownerName: String, yourAvatar: String?, theirAvatar: String?) {
-    val numbers = remember { NumberFormat.getIntegerInstance() }
+    val numbers = rememberIntegerFormat()
     CompareCard(
         eyebrow = stringResource(if (type == MediaType.MANGA) R.string.profile_compare_both_manga else R.string.profile_compare_both_anime),
         yourAvatar = yourAvatar,

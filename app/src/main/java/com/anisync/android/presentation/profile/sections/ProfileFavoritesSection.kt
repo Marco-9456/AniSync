@@ -48,8 +48,8 @@ import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.profile.components.ProfileTabRail
 import com.anisync.android.presentation.util.bouncyClickable
 import com.anisync.android.util.getTitle
-import java.text.NumberFormat
 import com.anisync.android.ui.theme.ExpressiveShapes
+import com.anisync.android.presentation.util.rememberIntegerFormat
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 fun LazyListScope.profileFavoritesTab(
@@ -185,7 +185,7 @@ internal fun FavoritesFilterRail(
             )
         }
         if (count > 0) {
-            val numbers = remember { NumberFormat.getIntegerInstance() }
+            val numbers = rememberIntegerFormat()
             val amount = pluralStringResourceOrDefault(
                 when (selected) {
                     ProfileFavoritesFilter.ANIME, ProfileFavoritesFilter.MANGA -> R.plurals.profile_favorites_count_titles
