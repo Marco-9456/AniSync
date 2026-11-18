@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import com.anisync.android.presentation.components.MediaPosterCard
 import com.anisync.android.presentation.components.MediaPosterCardDefaults
 import com.anisync.android.presentation.components.NoteBottomSheet
@@ -187,6 +188,7 @@ private fun mediaFacts(entry: LibraryEntry, mediaType: MediaType, lead: String?)
 @Composable
 private fun theirLine(entry: LibraryEntry, mediaType: MediaType, showStatus: Boolean, dateSort: ProfileListSort?): String {
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
+    val dates = rowDates(LocalConfiguration.current.locales[0])
     val parts = buildList {
         if (showStatus) add(entry.status.toLabel(mediaType))
         if (entry.status == LibraryStatus.CURRENT || entry.status == LibraryStatus.PAUSED ||
@@ -199,11 +201,11 @@ private fun theirLine(entry: LibraryEntry, mediaType: MediaType, showStatus: Boo
             add(pluralStringResourceOrDefault(if (mediaType == MediaType.MANGA) R.plurals.profile_row_reread else R.plurals.profile_row_rewatched, entry.rewatches, entry.rewatches))
         }
         when (dateSort) {
-            ProfileListSort.UPDATED -> entry.updatedAt?.let { add(stringResource(R.string.profile_row_updated, shortDate(it, fuzzy = false))) }
-            ProfileListSort.STARTED -> entry.startedAt?.let { add(stringResource(R.string.profile_row_started, shortDate(it, fuzzy = true))) }
-            ProfileListSort.ADDED -> entry.createdAt?.let { add(stringResource(R.string.profile_row_added, shortDate(it, fuzzy = false))) }
+            ProfileListSort.UPDATED -> entry.updatedAt?.let { add(stringResource(R.string.profile_row_updated, dates.format(it, fuzzy = false))) }
+            ProfileListSort.STARTED -> entry.startedAt?.let { add(stringResource(R.string.profile_row_started, dates.format(it, fuzzy = true))) }
+            ProfileListSort.ADDED -> entry.createdAt?.let { add(stringResource(R.string.profile_row_added, dates.format(it, fuzzy = false))) }
             null -> Unit
-            else -> entry.completedAt?.let { add(stringResource(R.string.profile_row_finished, shortDate(it, fuzzy = true))) }
+            else -> entry.completedAt?.let { add(stringResource(R.string.profile_row_finished, dates.format(it, fuzzy = true))) }
         }
     }
     return parts.joinToString(" · ")
@@ -240,17 +242,23 @@ internal fun progressText(progress: Int, total: Int?, mediaType: MediaType): Str
     }
 }
 
-/** List dates (started, finished) are stored as midnight UTC, so they are read back in UTC. */
-private fun shortDate(millis: Long, fuzzy: Boolean): String {
-    val zone = if (fuzzy) TimeZone.getTimeZone("UTC") else TimeZone.getDefault()
-    val year = Instant.ofEpochMilli(millis).atZone(zone.toZoneId()).year
-    val format = if (year == Instant.now().atZone(zone.toZoneId()).year) {
-        SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(Locale.getDefault(), "MMMd"), Locale.getDefault())
-    } else {
-        DateFormat.getDateInstance(DateFormat.MEDIUM)
+/** One set of row date formats per locale, shared by every row. Rows compose on the main thread only. */
+private val rowDateFormats = HashMap<Locale, RowDates>()
+
+private fun rowDates(locale: Locale): RowDates = rowDateFormats.getOrPut(locale) { RowDates(locale) }
+
+private class RowDates(locale: Locale) {
+    private val thisYear = SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale, "MMMd"), locale)
+    private val otherYear = DateFormat.getDateInstance(DateFormat.MEDIUM, locale)
+
+    /** List dates (started, finished) are stored as midnight UTC, so they are read back in UTC. */
+    fun format(millis: Long, fuzzy: Boolean): String {
+        val zone = if (fuzzy) TimeZone.getTimeZone("UTC") else TimeZone.getDefault()
+        val year = Instant.ofEpochMilli(millis).atZone(zone.toZoneId()).year
+        val format = if (year == Instant.now().atZone(zone.toZoneId()).year) thisYear else otherYear
+        format.timeZone = zone
+        return format.format(Date(millis))
     }
-    format.timeZone = zone
-    return format.format(Date(millis))
 }
 
 /** The app's poster card, with the owner's score where the community average usually sits. */

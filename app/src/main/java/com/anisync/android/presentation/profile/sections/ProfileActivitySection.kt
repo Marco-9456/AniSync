@@ -76,6 +76,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.Date
 
 fun LazyListScope.profileActivityTab(
@@ -269,11 +270,7 @@ internal fun ActivityDayHeader(epochDay: Long, start: Dp = 32.dp, top: Dp = 16.d
     val label = when (day) {
         today -> stringResource(R.string.feed_day_today)
         today.minusDays(1) -> stringResource(R.string.feed_day_yesterday)
-        else -> {
-            val skeleton = if (day.year == today.year) "EEEEMMMd" else "EEEEMMMdyyyy"
-            val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton)
-            DateTimeFormatter.ofPattern(pattern, locale).format(day)
-        }
+        else -> dayHeaderFormat(locale, withYear = day.year != today.year).format(day)
     }
     Text(
         text = label,
@@ -281,6 +278,14 @@ internal fun ActivityDayHeader(epochDay: Long, start: Dp = 32.dp, top: Dp = 16.d
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = start, end = 16.dp, top = top, bottom = bottom)
     )
+}
+
+/** The day headers' formats per locale, shared by every header. Headers compose on the main thread only. */
+private val dayHeaderFormats = HashMap<Pair<Locale, Boolean>, DateTimeFormatter>()
+
+private fun dayHeaderFormat(locale: Locale, withYear: Boolean): DateTimeFormatter = dayHeaderFormats.getOrPut(locale to withYear) {
+    val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, if (withYear) "EEEEMMMdyyyy" else "EEEEMMMd")
+    DateTimeFormatter.ofPattern(pattern, locale)
 }
 
 /**
