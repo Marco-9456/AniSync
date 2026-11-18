@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.anisync.android.R
@@ -71,36 +72,23 @@ internal fun WatchingRow(
         items(entries, key = { it.mediaId }) { entry ->
             val manga = entry.type == MediaType.MANGA
             val total = if (manga) entry.totalChapters else entry.totalEpisodes
-            Column(
-                modifier = Modifier
-                    .width(CoverWidth)
-                    .clip(CoverShape)
-                    .bouncyClickable(onClick = { onMediaClick(entry.mediaId) }, onClickLabel = entry.getTitle(titleLanguage))
-            ) {
-                Cover(entry)
-                if (total != null && total > 0) {
-                    FlatProgress(fraction = entry.progress.toFloat() / total, modifier = Modifier.padding(top = 6.dp))
+            OverviewTile(
+                imageUrl = entry.cover.url() ?: entry.coverUrl,
+                name = entry.getTitle(titleLanguage),
+                detail = if (entry.progress == 0) {
+                    stringResource(R.string.profile_watching_not_started)
+                } else {
+                    progressText(entry.progress, total, if (manga) MediaType.MANGA else MediaType.ANIME)
+                },
+                width = CoverWidth,
+                height = CoverHeight,
+                onClick = { onMediaClick(entry.mediaId) },
+                belowImage = if (total != null && total > 0) {
+                    { FlatProgress(fraction = entry.progress.toFloat() / total, modifier = Modifier.padding(top = 6.dp)) }
+                } else {
+                    null
                 }
-                Text(
-                    text = entry.getTitle(titleLanguage),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
-                Text(
-                    text = if (entry.progress == 0) {
-                        stringResource(R.string.profile_watching_not_started)
-                    } else {
-                        progressText(entry.progress, total, if (manga) MediaType.MANGA else MediaType.ANIME)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
+            )
         }
     }
 }
@@ -124,18 +112,53 @@ private fun FlatProgress(fraction: Float, modifier: Modifier = Modifier) {
     }
 }
 
+/** A shelf tile: the picture, what sits under it if anything, the name and one line about it. */
 @Composable
-private fun Cover(entry: LibraryEntry) {
-    AsyncImage(
-        model = entry.cover.url() ?: entry.coverUrl,
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
+private fun OverviewTile(
+    imageUrl: String?,
+    name: String,
+    detail: String?,
+    width: Dp,
+    height: Dp,
+    onClick: () -> Unit,
+    belowImage: (@Composable () -> Unit)? = null
+) {
+    Column(
         modifier = Modifier
-            .width(CoverWidth)
-            .height(CoverHeight)
+            .width(width)
             .clip(CoverShape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-    )
+            .bouncyClickable(onClick = onClick, onClickLabel = name)
+    ) {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .width(width)
+                .height(height)
+                .clip(CoverShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        )
+        belowImage?.invoke()
+        Text(
+            text = name,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 6.dp)
+        )
+        if (!detail.isNullOrBlank()) {
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+    }
 }
 
 @Composable
@@ -194,32 +217,14 @@ internal fun FavouritePosterRow(
         modifier = Modifier.padding(bottom = 20.dp)
     ) {
         items(entries, key = { it.mediaId }) { entry ->
-            Column(
-                modifier = Modifier
-                    .width(CoverWidth)
-                    .clip(CoverShape)
-                    .bouncyClickable(onClick = { onMediaClick(entry.mediaId) }, onClickLabel = entry.getTitle(titleLanguage))
-            ) {
-                Cover(entry)
-                Text(
-                    text = entry.getTitle(titleLanguage),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
-                val detail = entry.formatAndYear()
-                if (detail != null) {
-                    Text(
-                        text = detail,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
-            }
+            OverviewTile(
+                imageUrl = entry.cover.url() ?: entry.coverUrl,
+                name = entry.getTitle(titleLanguage),
+                detail = entry.formatAndYear(),
+                width = CoverWidth,
+                height = CoverHeight,
+                onClick = { onMediaClick(entry.mediaId) }
+            )
         }
     }
 }
@@ -237,41 +242,14 @@ internal fun FavouritePortraitRow(
         modifier = Modifier.padding(bottom = 20.dp)
     ) {
         items(items, key = { it.id }) { (id, image, name, detail) ->
-            Column(
-                modifier = Modifier
-                    .width(PortraitWidth)
-                    .clip(CoverShape)
-                    .bouncyClickable(onClick = { onClick(id) }, onClickLabel = name)
-            ) {
-                AsyncImage(
-                    model = image,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .width(PortraitWidth)
-                        .height(PortraitHeight)
-                        .clip(CoverShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                )
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
-                if (!detail.isNullOrBlank()) {
-                    Text(
-                        text = detail,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
-            }
+            OverviewTile(
+                imageUrl = image,
+                name = name,
+                detail = detail,
+                width = PortraitWidth,
+                height = PortraitHeight,
+                onClick = { onClick(id) }
+            )
         }
     }
 }
