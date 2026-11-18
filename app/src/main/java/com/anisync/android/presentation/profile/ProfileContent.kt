@@ -250,6 +250,9 @@ fun ProfileContent(
         if (view != uiState.selectedStatsView) onAction(ProfileAction.SelectStatsView(view))
     }
     val onListQueryChange: (String) -> Unit = { onAction(ProfileAction.SetListQuery(it)) }
+    val overviewBlocks = rememberOverviewBlocks(
+        profile, uiState, onAction, onMediaClick, onCharacterClick, onStaffClick, onUserClick, onActivityClick, onLastReplyClick
+    )
     val tabContent: LazyListScope.() -> Unit = {
         profileSelectedTabContent(
             profile = profile,
@@ -272,7 +275,8 @@ fun ProfileContent(
             studioColumns = studioColumns,
             statsColumns = statsColumns,
             onOpenRecap = onOpenRecap,
-            onStatsViewSelected = onStatsViewSelected
+            onStatsViewSelected = onStatsViewSelected,
+            overviewBlocks = overviewBlocks
         )
     }
 
@@ -546,6 +550,7 @@ internal fun LazyListScope.profileSelectedTabContent(
     statsColumns: Int,
     onOpenRecap: (String) -> Unit = {},
     onStatsViewSelected: (StatsView) -> Unit = { onAction(ProfileAction.SelectStatsView(it)) },
+    overviewBlocks: OverviewBlocks,
     /** A pane wide enough for T1's two Overview columns. */
     overviewColumns: Boolean = false
 ) {
@@ -554,38 +559,7 @@ internal fun LazyListScope.profileSelectedTabContent(
     item(key = "tab_top", contentType = "tab_top") { TabTopAnchor() }
     when (uiState.selectedTab) {
         ProfileTab.OVERVIEW -> {
-            val blocks = OverviewBlocks(
-                profile = profile,
-                activityHistory = uiState.statsData?.activityHistory.orEmpty(),
-                watching = uiState.watching,
-                latestReview = uiState.reviews.firstOrNull(),
-                titleLanguage = uiState.titleLanguage,
-                viewerId = uiState.viewerId,
-                onOpenActivity = { onAction(ProfileAction.SelectTab(ProfileTab.ACTIVITY)) },
-                onOpenFavorites = {
-                    onAction(ProfileAction.SelectFavoritesFilter(it))
-                    onAction(ProfileAction.SelectTab(ProfileTab.FAVORITES))
-                },
-                onMediaClick = onMediaClick,
-                onCharacterClick = onCharacterClick,
-                onStaffClick = onStaffClick,
-                onUserClick = onUserClick,
-                onActivityClick = onActivityClick,
-                onLastReplyClick = onLastReplyClick,
-                onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
-                onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
-                onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
-                onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
-                onOpenWatching = {
-                    onAction(ProfileAction.SelectAnimeStatus(LibraryStatus.CURRENT))
-                    onAction(ProfileAction.SelectTab(ProfileTab.ANIME))
-                },
-                onOpenReviews = {
-                    onAction(ProfileAction.SelectTab(ProfileTab.ACTIVITY))
-                    onAction(ProfileAction.SelectActivityFilter(ProfileActivityFilter.REVIEWS))
-                },
-                onReviewClick = { onAction(ProfileAction.SelectReview(it)) }
-            )
+            val blocks = overviewBlocks
             // The composer and the picture prompt on your own profile, how your lists meet theirs on
             // someone else's.
             val lead: @Composable () -> Unit = {
@@ -758,6 +732,60 @@ internal fun LazyListScope.profileSelectedTabContent(
                 onRetryRecaps = { onAction(ProfileAction.RetryRecaps) }
             )
         }
+    }
+}
+
+/** The Overview's blocks, built again only when what they show or open changes. */
+@Composable
+internal fun rememberOverviewBlocks(
+    profile: UserProfile,
+    uiState: ProfileUiState,
+    onAction: (ProfileAction) -> Unit,
+    onMediaClick: (Int) -> Unit,
+    onCharacterClick: (Int) -> Unit,
+    onStaffClick: (Int) -> Unit,
+    onUserClick: (String) -> Unit,
+    onActivityClick: (Int) -> Unit,
+    onLastReplyClick: (activityId: Int, replyId: Int) -> Unit
+): OverviewBlocks {
+    val activityHistory = uiState.statsData?.activityHistory.orEmpty()
+    val latestReview = uiState.reviews.firstOrNull()
+    return remember(
+        profile, activityHistory, uiState.watching, latestReview, uiState.titleLanguage, uiState.viewerId,
+        onAction, onMediaClick, onCharacterClick, onStaffClick, onUserClick, onActivityClick, onLastReplyClick
+    ) {
+        OverviewBlocks(
+            profile = profile,
+            activityHistory = activityHistory,
+            watching = uiState.watching,
+            latestReview = latestReview,
+            titleLanguage = uiState.titleLanguage,
+            viewerId = uiState.viewerId,
+            onOpenActivity = { onAction(ProfileAction.SelectTab(ProfileTab.ACTIVITY)) },
+            onOpenFavorites = {
+                onAction(ProfileAction.SelectFavoritesFilter(it))
+                onAction(ProfileAction.SelectTab(ProfileTab.FAVORITES))
+            },
+            onMediaClick = onMediaClick,
+            onCharacterClick = onCharacterClick,
+            onStaffClick = onStaffClick,
+            onUserClick = onUserClick,
+            onActivityClick = onActivityClick,
+            onLastReplyClick = onLastReplyClick,
+            onSubscribeClick = { onAction(ProfileAction.ToggleActivitySubscription(it)) },
+            onLikeActivity = { onAction(ProfileAction.ToggleActivityLike(it)) },
+            onDeleteActivity = { onAction(ProfileAction.DeleteActivity(it)) },
+            onEditActivity = { onAction(ProfileAction.EditActivity(it)) },
+            onOpenWatching = {
+                onAction(ProfileAction.SelectAnimeStatus(LibraryStatus.CURRENT))
+                onAction(ProfileAction.SelectTab(ProfileTab.ANIME))
+            },
+            onOpenReviews = {
+                onAction(ProfileAction.SelectTab(ProfileTab.ACTIVITY))
+                onAction(ProfileAction.SelectActivityFilter(ProfileActivityFilter.REVIEWS))
+            },
+            onReviewClick = { onAction(ProfileAction.SelectReview(it)) }
+        )
     }
 }
 

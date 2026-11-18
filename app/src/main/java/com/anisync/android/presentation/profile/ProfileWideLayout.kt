@@ -550,6 +550,9 @@ private fun ProfileTabPane(
         val showShareFab = uiState.showsShareFab(profile)
         val overviewColumns = maxWidth >= OverviewColumnsMinWidth
         val bottomPadding = profileBottomPadding(showShareFab)
+        val overviewBlocks = rememberOverviewBlocks(
+            profile, uiState, onAction, onMediaClick, onCharacterClick, onStaffClick, onUserClick, onActivityClick, onLastReplyClick
+        )
         fun LazyListScope.tabContent(
             gridColumns: Int = studioColumns,
             rowColumns: Int = statsColumns,
@@ -575,6 +578,7 @@ private fun ProfileTabPane(
             studioColumns = gridColumns,
             statsColumns = rowColumns,
             onOpenRecap = onOpenRecap,
+            overviewBlocks = overviewBlocks,
             overviewColumns = twoColumnOverview
         )
         val content: LazyListScope.() -> Unit = { tabContent() }
