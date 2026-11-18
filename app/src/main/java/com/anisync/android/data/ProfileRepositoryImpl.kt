@@ -23,6 +23,7 @@ import com.anisync.android.domain.CachePolicy
 import com.anisync.android.domain.FollowState
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
+import com.anisync.android.domain.LoadedProfile
 import com.anisync.android.domain.ProfileRefreshTimings
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
@@ -79,17 +80,8 @@ class ProfileRepositoryImpl @Inject constructor(
             .map { entity -> entity?.toDomain() }
     }
 
-    override suspend fun fetchUserProfile(username: String, forceNetwork: Boolean): Result<UserProfile> {
-        return when (val r = fetchUserProfileTimed(username, forceNetwork)) {
-            is Result.Success -> Result.Success(r.data.first)
-            is Result.Error -> r
-        }
-    }
-
-    private suspend fun fetchUserProfileTimed(
-        username: String,
-        forceNetwork: Boolean
-    ): Result<Pair<UserProfile, ProfileRefreshTimings>> = dedupe("profile:${username}:$forceNetwork") {
+    override suspend fun fetchUserProfile(username: String, forceNetwork: Boolean): Result<LoadedProfile> =
+        dedupe("profile:${username}:$forceNetwork") {
         safeApiCall {
             val isOwnProfile = username.isBlank()
 
@@ -313,8 +305,7 @@ class ProfileRepositoryImpl @Inject constructor(
                             com.anisync.android.domain.PreviousName(it, previous.createdAt?.toLong()?.times(1000))
                         }
                     }
-                    .orEmpty(),
-                activitiesFailed = activitiesFailed
+                    .orEmpty()
             )
 
             val timings = ProfileRefreshTimings(
@@ -325,10 +316,9 @@ class ProfileRepositoryImpl @Inject constructor(
                 favoritesTotalMs = 0L,
                 favoritesFirstPageMs = 0L,
                 favoritesRestMs = 0L,
-                favoritesPageCount = 1,
-                activitiesFailed = activitiesFailed
+                favoritesPageCount = 1
             )
-            profile to timings
+            LoadedProfile(profile, activitiesFailed, timings)
         }
     }
 
@@ -342,18 +332,18 @@ class ProfileRepositoryImpl @Inject constructor(
     override suspend fun refreshProfileTimed(
         username: String,
         forceNetwork: Boolean
-    ): Result<ProfileRefreshTimings> {
-        return when (val result = fetchUserProfileTimed(username, forceNetwork)) {
+    ): Result<LoadedProfile> {
+        return when (val result = fetchUserProfile(username, forceNetwork)) {
             is Result.Success -> {
-                val profile = result.data.first
+                val loaded = result.data
                 // Activities that did not load would otherwise replace the saved ones with nothing.
-                val kept = if (profile.activitiesFailed) {
-                    userProfileDao.get(profile.id)?.let { profile.copy(activities = it.activities) } ?: profile
+                val kept = if (loaded.activitiesFailed) {
+                    userProfileDao.get(loaded.profile.id)?.let { loaded.profile.copy(activities = it.activities) } ?: loaded.profile
                 } else {
-                    profile
+                    loaded.profile
                 }
                 userProfileDao.insert(kept.toEntity())
-                Result.Success(result.data.second)
+                Result.Success(loaded.copy(profile = kept))
             }
             is Result.Error -> result
         }

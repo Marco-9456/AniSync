@@ -186,7 +186,7 @@ class ProfileViewModel @Inject constructor(
         val peopleFetched: Map<PeopleList, Map<PeopleSort, List<PersonStat>>> = emptyMap(),
         val isEditProfileDialogVisible: Boolean = false,
         val isBiographySheetVisible: Boolean = false,
-        val ownActivitiesFailed: Boolean = false,
+        val activitiesFailed: Boolean = false,
         val selectedReview: com.anisync.android.domain.MediaReview? = null,
         val isMessageComposerVisible: Boolean = false,
         val isSendingMessage: Boolean = false,
@@ -409,8 +409,9 @@ class ProfileViewModel @Inject constructor(
                     }
                     when (val result = fetched) {
                         is Result.Success -> {
-                            lastLoadedTargetProfile = result.data
-                            emit(ProfileUiState(isLoading = false, profile = result.data))
+                            lastLoadedTargetProfile = result.data.profile
+                            localState.update { it.copy(activitiesFailed = result.data.activitiesFailed) }
+                            emit(ProfileUiState(isLoading = false, profile = result.data.profile))
                         }
                         is Result.Error -> {
                             val cached = lastLoadedTargetProfile
@@ -697,7 +698,7 @@ class ProfileViewModel @Inject constructor(
             peopleFetched = local.peopleFetched,
             isEditProfileDialogVisible = local.isEditProfileDialogVisible,
             isBiographySheetVisible = local.isBiographySheetVisible,
-            isActivityFailed = local.ownActivitiesFailed || withFavorites.profile?.activitiesFailed == true,
+            isActivityFailed = local.activitiesFailed,
             selectedReview = local.selectedReview,
             isMessageComposerVisible = local.isMessageComposerVisible,
             isSendingMessage = local.isSendingMessage,
@@ -1357,8 +1358,8 @@ class ProfileViewModel @Inject constructor(
         ownProfileError.value = null
         return when (val result = profileRepository.refreshProfileTimed("", forceNetwork = forceNetwork)) {
             is Result.Success -> {
-                localState.update { it.copy(ownActivitiesFailed = result.data.activitiesFailed) }
-                result.data
+                localState.update { it.copy(activitiesFailed = result.data.activitiesFailed) }
+                result.data.timings
             }
             is Result.Error -> {
                 Log.w("AniSyncPerf", "profile.load failed code=${result.code} msg=${result.message}")

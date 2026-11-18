@@ -13,9 +13,14 @@ data class ProfileRefreshTimings(
     val favoritesTotalMs: Long,
     val favoritesFirstPageMs: Long,
     val favoritesRestMs: Long,
-    val favoritesPageCount: Int,
-    /** The follow-up activities request failed, so the profile kept the activities it had. */
-    val activitiesFailed: Boolean = false
+    val favoritesPageCount: Int
+)
+
+/** A profile and whether its activities, which come from a second request, failed to load with it. */
+data class LoadedProfile(
+    val profile: UserProfile,
+    val activitiesFailed: Boolean,
+    val timings: ProfileRefreshTimings
 )
 
 /**
@@ -64,13 +69,13 @@ interface ProfileRepository {
     /**
      * Same as [refreshProfile] but also returns per-phase timings.
      */
-    suspend fun refreshProfileTimed(username: String, forceNetwork: Boolean = true): Result<ProfileRefreshTimings>
+    suspend fun refreshProfileTimed(username: String, forceNetwork: Boolean = true): Result<LoadedProfile>
 
     /**
      * Fetch user profile without saving it to the local cache. [forceNetwork]
      * behaves the same as in [refreshProfile].
      */
-    suspend fun fetchUserProfile(username: String, forceNetwork: Boolean = true): Result<UserProfile>
+    suspend fun fetchUserProfile(username: String, forceNetwork: Boolean = true): Result<LoadedProfile>
 
     /**
      * Update user's about section.

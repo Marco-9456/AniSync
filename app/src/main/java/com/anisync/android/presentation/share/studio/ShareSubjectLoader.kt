@@ -23,6 +23,7 @@ import com.anisync.android.presentation.recap.RecapPreviewStore
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.ProfileRepository
 import com.anisync.android.domain.Result
+import com.anisync.android.domain.map
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.StaffDetails
 import com.anisync.android.domain.StatisticsRepository
@@ -289,7 +290,7 @@ class ShareSubjectLoader @Inject constructor(
             return Result.Success(profileRepository.observeProfile().first() ?: viewer)
         }
         val name = route.userName ?: return NOTHING
-        return profileRepository.fetchUserProfile(name, forceNetwork = false)
+        return profileRepository.fetchUserProfile(name, forceNetwork = false).map { it.profile }
     }
 
     /**

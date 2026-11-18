@@ -34,9 +34,7 @@ data class UserProfile(
     val donatorBadge: String? = null,
     val moderatorRoles: List<String> = emptyList(),
     val createdAt: Long? = null,
-    val previousNames: List<PreviousName> = emptyList(),
-    /** The activities come from a second request, which can fail while the profile itself loads. */
-    val activitiesFailed: Boolean = false
+    val previousNames: List<PreviousName> = emptyList()
 )
 
 @Immutable
