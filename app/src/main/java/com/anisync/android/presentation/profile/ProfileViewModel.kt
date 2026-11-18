@@ -68,12 +68,12 @@ import com.anisync.android.domain.observeTab
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import com.anisync.android.presentation.profile.lists.ProfileListDeriver
 import com.anisync.android.presentation.profile.lists.ProfileListFilters
-import com.anisync.android.presentation.profile.lists.ProfileListResults
+import com.anisync.android.presentation.profile.lists.ProfileListsDerived
 import com.anisync.android.presentation.profile.lists.ProfileListSheet
 import com.anisync.android.presentation.profile.lists.ProfileListTools
 import com.anisync.android.presentation.profile.lists.ProfileListView
-import com.anisync.android.presentation.profile.lists.applyListTools
 import com.anisync.android.type.MediaType
 
 private val LIBRARY_STATUS_DISPLAY_ORDER = arrayOf(
@@ -496,25 +496,45 @@ class ProfileViewModel @Inject constructor(
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
         }
 
-    private val listResults = combine(
+    private data class ListSlice(
+        val tab: ProfileTab,
+        val animeStatus: LibraryStatus?,
+        val mangaStatus: LibraryStatus?,
+        val compareType: MediaType
+    )
+
+    /** The owner's lists with what is worked out from them, in one emission so the two never disagree. */
+    private class ListSnapshot(val lists: MediaListState, val derived: ProfileListsDerived)
+
+    private val listDeriver = ProfileListDeriver(comparesWithViewer = !targetUsername.isNullOrBlank())
+
+    private val listSnapshot = combine(
         mediaListState,
-        localState.map { Triple(it.selectedTab, it.selectedAnimeStatus, it.selectedMangaStatus) }.distinctUntilChanged(),
+        localState.map { ListSlice(it.selectedTab, it.selectedAnimeStatus, it.selectedMangaStatus, it.compareType) }.distinctUntilChanged(),
         listTools,
         viewerLibrary,
-        appSettings.titleLanguage
-    ) { lists, (tab, animeStatus, mangaStatus), tools, viewer, language ->
-        when (tab) {
-            ProfileTab.ANIME -> applyListTools(lists.userAnimeList, animeStatus, tools, viewer, language)
-                .copy(source = lists.userAnimeList)
-            ProfileTab.MANGA -> applyListTools(lists.userMangaList, mangaStatus, tools, viewer, language)
-                .copy(source = lists.userMangaList)
-            else -> ProfileListResults()
-        }
+        combine(appSettings.titleLanguage, appSettings.userScoreFormat, ::Pair)
+    ) { lists, slice, tools, viewer, (language, yourFormat) ->
+        ListSnapshot(
+            lists = lists,
+            derived = listDeriver.derive(
+                anime = lists.userAnimeList,
+                manga = lists.userMangaList,
+                tab = slice.tab,
+                animeStatus = slice.animeStatus,
+                mangaStatus = slice.mangaStatus,
+                compareType = slice.compareType,
+                tools = tools,
+                viewer = viewer,
+                language = language,
+                yourFormat = yourFormat
+            )
+        )
     }.flowOn(Dispatchers.Default)
 
     private class ListParts(
         val tools: ProfileListTools,
-        val results: ProfileListResults,
+        val snapshot: ListSnapshot,
         val viewer: Map<Int, LibraryEntry>,
         val viewerScoreFormat: com.anisync.android.domain.ScoreFormat,
         val titleLanguage: com.anisync.android.data.TitleLanguage,
@@ -522,7 +542,7 @@ class ProfileViewModel @Inject constructor(
 
     private val listParts = combine(
         listTools,
-        listResults,
+        listSnapshot,
         viewerLibrary,
         appSettings.userScoreFormat,
         appSettings.titleLanguage,
@@ -534,7 +554,6 @@ class ProfileViewModel @Inject constructor(
         val social: SocialState,
         val reviews: ReviewsState,
         val stats: StatsState,
-        val mediaLists: MediaListState,
         val favorites: FavoritesState,
     )
 
@@ -556,7 +575,7 @@ class ProfileViewModel @Inject constructor(
         val avatarUrl: String?,
     )
 
-    private val sections = combine(socialState, reviewsState, statsState, mediaListState, favoritesState, ::Sections)
+    private val sections = combine(socialState, reviewsState, statsState, favoritesState, ::Sections)
 
     private val sectionsAndLists = combine(sections, listParts, ::Pair)
 
@@ -589,7 +608,8 @@ class ProfileViewModel @Inject constructor(
         val social = parts.social
         val reviews = parts.reviews
         val stats = parts.stats
-        val mediaLists = parts.mediaLists
+        val mediaLists = lists.snapshot.lists
+        val derived = lists.snapshot.derived
         val favoritesOverlay = parts.favorites
         val subOverrides = overlays.subscriptions
         val likeOverrides = overlays.likes
@@ -710,7 +730,10 @@ class ProfileViewModel @Inject constructor(
             isUnfollowConfirmVisible = local.isUnfollowConfirmVisible,
             listSheet = local.listSheet,
             listTools = lists.tools,
-            listResults = lists.results,
+            listResults = derived.results,
+            listSettling = local.selectedTab.isList && derived.resultsTab != local.selectedTab,
+            comparison = derived.comparison,
+            watching = derived.watching,
             viewerEntries = lists.viewer,
             viewerScoreFormat = lists.viewerScoreFormat,
             titleLanguage = lists.titleLanguage,

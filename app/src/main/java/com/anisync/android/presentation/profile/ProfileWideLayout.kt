@@ -67,7 +67,6 @@ import com.anisync.android.presentation.profile.components.ProfileBannerSurface
 import com.anisync.android.presentation.profile.components.ProfileIdentityInfo
 import com.anisync.android.presentation.profile.components.ProfileMenuButton
 import com.anisync.android.presentation.profile.components.ProfileSettingsButton
-import com.anisync.android.presentation.profile.sections.rememberListComparison
 import com.anisync.android.presentation.util.LocalAppSettings
 import com.anisync.android.presentation.util.PaneDragHandle
 import com.anisync.android.presentation.util.TwoPaneDefaults
@@ -383,10 +382,8 @@ private fun ProfileListsWithPanel(
             if (panelShown) {
                 ProfileListFilterPanel(
                     entries = uiState.selectedListEntries,
-                    status = uiState.selectedListStatus,
                     tools = uiState.listTools,
-                    viewer = uiState.viewerEntries,
-                    titleLanguage = uiState.titleLanguage,
+                    results = uiState.listResults,
                     isOwnProfile = isOwnProfile,
                     onFiltersChange = { onAction(ProfileAction.SetListFilters(it)) },
                     modifier = Modifier
@@ -560,7 +557,6 @@ private fun ProfileTabPane(
         )
 
         val showShareFab = uiState.showsShareFab(profile)
-        val comparison = rememberListComparison(uiState, isOwnProfile)
         val overviewColumns = maxWidth >= OverviewColumnsMinWidth
         val bottomPadding = profileBottomPadding(showShareFab)
         fun LazyListScope.tabContent(
@@ -588,7 +584,6 @@ private fun ProfileTabPane(
             studioColumns = gridColumns,
             statsColumns = rowColumns,
             onOpenRecap = onOpenRecap,
-            comparison = comparison,
             overviewColumns = twoColumnOverview
         )
         val content: LazyListScope.() -> Unit = { tabContent() }

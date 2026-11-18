@@ -85,14 +85,12 @@ import com.anisync.android.presentation.profile.components.ProfileRailPlaceholde
 import com.anisync.android.presentation.profile.components.ProfileRails
 import com.anisync.android.presentation.profile.components.ProfileTopSection
 import com.anisync.android.presentation.profile.components.ProfileVisitBar
-import com.anisync.android.presentation.profile.lists.ListComparison
 import com.anisync.android.presentation.profile.lists.ProfileListTopBar
 import com.anisync.android.presentation.profile.sections.OverviewCompareCard
 import com.anisync.android.presentation.profile.sections.OverviewCompareCardLoading
 import com.anisync.android.presentation.profile.sections.PeopleSwitcher
 import com.anisync.android.presentation.profile.sections.StatusComposerCard
 import com.anisync.android.presentation.profile.sections.profileComparePage
-import com.anisync.android.presentation.profile.sections.rememberListComparison
 import com.anisync.android.presentation.share.cards.fitted
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalMainNavBarInset
@@ -366,7 +364,6 @@ fun ProfileContent(
             railPlaceholder = inList && tabsDocked
         )
     }
-    val comparison = rememberListComparison(uiState, isOwnProfile)
     val tabContent: LazyListScope.() -> Unit = {
         profileSelectedTabContent(
             profile = profile,
@@ -389,8 +386,7 @@ fun ProfileContent(
             studioColumns = studioColumns,
             statsColumns = statsColumns,
             onOpenRecap = onOpenRecap,
-            onStatsViewSelected = onStatsViewSelected,
-            comparison = comparison
+            onStatsViewSelected = onStatsViewSelected
         )
     }
 
@@ -584,10 +580,8 @@ fun ProfileContent(
         )
         ProfileListSheet.FILTERS -> ProfileListFilterSheet(
             entries = uiState.selectedListEntries,
-            status = uiState.selectedListStatus,
             tools = uiState.listTools,
-            viewer = uiState.viewerEntries,
-            titleLanguage = uiState.titleLanguage,
+            results = uiState.listResults,
             isOwnProfile = isOwnProfile,
             onFiltersChange = { onAction(ProfileAction.SetListFilters(it)) },
             onDismiss = { onAction(ProfileAction.OpenListSheet(ProfileListSheet.NONE)) }
@@ -685,7 +679,6 @@ internal fun LazyListScope.profileSelectedTabContent(
     statsColumns: Int,
     onOpenRecap: (String) -> Unit = {},
     onStatsViewSelected: (StatsView) -> Unit = { onAction(ProfileAction.SelectStatsView(it)) },
-    comparison: ListComparison? = null,
     /** A pane wide enough for T1's two Overview columns. */
     overviewColumns: Boolean = false
 ) {
@@ -694,10 +687,7 @@ internal fun LazyListScope.profileSelectedTabContent(
             val blocks = OverviewBlocks(
                 profile = profile,
                 activityHistory = uiState.statsData?.activityHistory.orEmpty(),
-                watching = uiState.userAnimeList
-                    .filter { it.status == LibraryStatus.CURRENT || it.status == LibraryStatus.REPEATING }
-                    .distinctBy { it.mediaId }
-                    .sortedByDescending { it.updatedAt ?: 0L },
+                watching = uiState.watching,
                 latestReview = uiState.reviews.firstOrNull(),
                 titleLanguage = uiState.titleLanguage,
                 viewerId = uiState.viewerId,
@@ -729,7 +719,7 @@ internal fun LazyListScope.profileSelectedTabContent(
             // The composer and the picture prompt on your own profile, how your lists meet theirs on
             // someone else's.
             val lead: @Composable () -> Unit = {
-                OverviewLead(profile = profile, uiState = uiState, isOwnProfile = isOwnProfile, comparison = comparison, onAction = onAction)
+                OverviewLead(profile = profile, uiState = uiState, isOwnProfile = isOwnProfile, onAction = onAction)
             }
             if (overviewColumns && !blocks.isEmpty) {
                 item(key = "overview_columns", contentType = "overview_columns") {
@@ -819,12 +809,8 @@ internal fun LazyListScope.profileSelectedTabContent(
         ProfileTab.ANIME, ProfileTab.MANGA -> {
             val manga = uiState.selectedTab == ProfileTab.MANGA
             val entries = uiState.selectedListEntries
-            // The rows are worked out off the main thread, so for a moment after the list arrives
-            // they still describe the list before it. That moment waits rather than saying "0 titles"
-            // or showing the other type's rows. A refresh keeps its old rows meanwhile.
-            val source = uiState.listResults.source
-            val settling = source !== entries &&
-                (source.isNullOrEmpty() || source === (if (manga) uiState.userAnimeList else uiState.userMangaList))
+            // Switching between Anime and Manga waits for the rows rather than showing the other type's.
+            val settling = uiState.listSettling
             profileMediaTab(
                 results = uiState.listResults,
                 tools = uiState.listTools,
@@ -870,7 +856,7 @@ internal fun LazyListScope.profileSelectedTabContent(
         }
 
         ProfileTab.COMPARE -> profileComparePage(
-            comparison = comparison,
+            comparison = uiState.comparison,
             isLoading = if (uiState.compareType == MediaType.MANGA) uiState.isUserMangaListLoading else uiState.isUserAnimeListLoading,
             type = uiState.compareType,
             ownerName = profile.name,
@@ -910,9 +896,9 @@ private fun OverviewLead(
     profile: UserProfile,
     uiState: ProfileUiState,
     isOwnProfile: Boolean,
-    comparison: ListComparison?,
     onAction: (ProfileAction) -> Unit
 ) {
+    val comparison = uiState.comparison
     Column {
         if (isOwnProfile) {
             StatusComposerCard(

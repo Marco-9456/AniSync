@@ -28,6 +28,7 @@ import com.anisync.android.domain.stats.ScoreSummary
 import com.anisync.android.domain.stats.summarizeScores
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.data.TitleLanguage
+import com.anisync.android.presentation.profile.lists.ListComparison
 import com.anisync.android.presentation.profile.lists.ProfileListFilters
 import com.anisync.android.presentation.profile.lists.ProfileListResults
 import com.anisync.android.presentation.profile.lists.ProfileListSheet
@@ -131,6 +132,12 @@ data class ProfileUiState(
     val listSheet: ProfileListSheet = ProfileListSheet.NONE,
     val listTools: ProfileListTools = ProfileListTools(),
     val listResults: ProfileListResults = ProfileListResults(),
+    /** The rows are still being worked out for the list tab just picked, so they belong to the other one. */
+    val listSettling: Boolean = false,
+    /** How the owner's list meets the viewer's, on someone else's Overview and Compare. */
+    val comparison: ListComparison? = null,
+    /** What the owner is watching, for Overview. */
+    val watching: List<LibraryEntry> = emptyList(),
     val viewerEntries: Map<Int, LibraryEntry> = emptyMap(),
     val viewerScoreFormat: ScoreFormat = ScoreFormat.POINT_100,
     val titleLanguage: TitleLanguage = TitleLanguage.ROMAJI,

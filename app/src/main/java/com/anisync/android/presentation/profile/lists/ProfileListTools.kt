@@ -81,8 +81,6 @@ data class ProfileListTools(
 data class ProfileListResults(
     val items: List<LibraryEntry> = emptyList(),
     val inScope: Int = 0,
-    /** The list these were worked out from, compared by identity to tell stale results apart. */
-    val source: List<LibraryEntry>? = null,
     /** While searching, how many matches each status holds, which is what the chips then count. */
     val searchCounts: Map<LibraryStatus, Int>? = null,
     /** On someone else's list, how many titles each your-list filter would leave. */

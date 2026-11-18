@@ -59,9 +59,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
-import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.LibraryEntry
-import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.ScoreFormat
 import com.anisync.android.domain.formatScore
 import com.anisync.android.domain.max
@@ -311,15 +309,13 @@ internal fun ProfileListSortSheet(
 @Composable
 internal fun ProfileListFilterSheet(
     entries: List<LibraryEntry>,
-    status: LibraryStatus?,
     tools: ProfileListTools,
-    viewer: Map<Int, LibraryEntry>,
-    titleLanguage: TitleLanguage,
+    results: ProfileListResults,
     isOwnProfile: Boolean,
     onFiltersChange: (ProfileListFilters) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val matching = remember(entries, status, tools, viewer) { countListTools(entries, status, tools, viewer) }
+    val matching = results.items.size
     FilterSheetScaffold(
         title = stringResource(R.string.profile_list_filters),
         onDismiss = onDismiss,
@@ -332,7 +328,7 @@ internal fun ProfileListFilterSheet(
             )
         }
     ) {
-        ProfileListFilterSections(entries, status, tools, viewer, titleLanguage, isOwnProfile, onFiltersChange)
+        ProfileListFilterSections(entries, tools, results.yourListCounts, isOwnProfile, onFiltersChange)
     }
 }
 
@@ -343,10 +339,8 @@ internal fun ProfileListFilterSheet(
 @Composable
 internal fun ProfileListFilterPanel(
     entries: List<LibraryEntry>,
-    status: LibraryStatus?,
     tools: ProfileListTools,
-    viewer: Map<Int, LibraryEntry>,
-    titleLanguage: TitleLanguage,
+    results: ProfileListResults,
     isOwnProfile: Boolean,
     onFiltersChange: (ProfileListFilters) -> Unit,
     modifier: Modifier = Modifier
@@ -380,7 +374,7 @@ internal fun ProfileListFilterPanel(
                     .padding(bottom = 16.dp)
             ) {
                 // The panel is narrow, so your list's choices take a row each, as in T2.
-                ProfileListFilterSections(entries, status, tools, viewer, titleLanguage, isOwnProfile, onFiltersChange, yourListColumns = 1)
+                ProfileListFilterSections(entries, tools, results.yourListCounts, isOwnProfile, onFiltersChange, yourListColumns = 1)
             }
         }
     }
@@ -390,10 +384,8 @@ internal fun ProfileListFilterPanel(
 @Composable
 private fun ProfileListFilterSections(
     entries: List<LibraryEntry>,
-    status: LibraryStatus?,
     tools: ProfileListTools,
-    viewer: Map<Int, LibraryEntry>,
-    titleLanguage: TitleLanguage,
+    yourListCounts: Map<YourListFilter, Int>,
     isOwnProfile: Boolean,
     onFiltersChange: (ProfileListFilters) -> Unit,
     yourListColumns: Int = 2
@@ -405,16 +397,6 @@ private fun ProfileListFilterSections(
             .groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.map { it.key }
     }
     val genres = remember(entries) { entries.flatMap { it.genres }.distinct().sorted() }
-    // What each choice would leave with the other filters kept.
-    val yourListCounts = remember(entries, status, tools, viewer, isOwnProfile) {
-        if (isOwnProfile) {
-            emptyMap()
-        } else {
-            listOf(YourListFilter.ON_YOUR_LIST, YourListFilter.NOT_ON_YOUR_LIST).associateWith { choice ->
-                countListTools(entries, status, tools.copy(filters = filters.copy(yourList = choice)), viewer)
-            }
-        }
-    }
     val numbers = remember { NumberFormat.getIntegerInstance() }
     Column {
         if (!isOwnProfile) {

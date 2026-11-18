@@ -50,8 +50,6 @@ import com.anisync.android.presentation.components.MediaPosterCardDefaults
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.WhatsNewPill
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
-import com.anisync.android.presentation.profile.ProfileTab
-import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.profile.components.ProfileListRow
 import com.anisync.android.presentation.profile.lists.ListComparison
 import com.anisync.android.presentation.profile.lists.ScoreVerdict
@@ -409,16 +407,4 @@ private fun PosterShelf(
             }
         }
     }
-}
-
-@Composable
-internal fun rememberListComparison(uiState: ProfileUiState, isOwnProfile: Boolean): ListComparison? {
-    val type = if (uiState.selectedTab == ProfileTab.COMPARE) uiState.compareType else MediaType.ANIME
-    val enabled = !isOwnProfile && (uiState.selectedTab == ProfileTab.OVERVIEW || uiState.selectedTab == ProfileTab.COMPARE)
-    val theirs = if (type == MediaType.MANGA) uiState.userMangaList else uiState.userAnimeList
-    // Kept across tab switches, so coming back to Overview does not compare the lists again.
-    val comparison = remember(theirs, uiState.viewerEntries, uiState.viewerScoreFormat, type) {
-        lazy(LazyThreadSafetyMode.NONE) { compareLists(theirs, uiState.viewerEntries.values, type, uiState.viewerScoreFormat) }
-    }
-    return if (!enabled || theirs.isEmpty()) null else comparison.value
 }
