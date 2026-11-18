@@ -51,6 +51,8 @@ enum class WidthSizeClass { COMPACT, MEDIUM, EXPANDED, LARGE }
  * @param isCompactHeight whether the window height is compact (< 480dp per M3), e.g. a phone in
  *   landscape. A navigation rail needs vertical room for its destinations; M3 says compact-height
  *   windows use the navigation bar instead (the rail "may result in a compact height").
+ * @param isPaneScoped whether this describes a detail pane rather than the window, see
+ *   [forContainerWidth].
  */
 @Immutable
 data class AdaptiveInfo(
@@ -60,6 +62,7 @@ data class AdaptiveInfo(
     val pagePadding: Dp,
     val isTabletDevice: Boolean = false,
     val isCompactHeight: Boolean = false,
+    val isPaneScoped: Boolean = false,
 ) {
     val isCompact: Boolean get() = widthClass == WidthSizeClass.COMPACT
     val isMediumOrWider: Boolean get() = widthClass != WidthSizeClass.COMPACT
@@ -161,6 +164,7 @@ fun AdaptiveInfo.forContainerWidth(width: Dp): AdaptiveInfo {
     return copy(
         widthClass = containerClass,
         paneCount = 1,
+        isPaneScoped = true,
         contentMaxWidth = contentMaxWidthFor(containerClass),
         pagePadding = pagePaddingFor(containerClass),
     )
