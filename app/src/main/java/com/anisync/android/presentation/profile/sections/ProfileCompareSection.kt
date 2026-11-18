@@ -211,7 +211,7 @@ fun LazyListScope.profileComparePage(
     onExpand: (String) -> Unit = {}
 ) {
     if (comparison == null || isLoading) {
-        item(key = "compare_loading") {
+        item(key = "compare_loading", contentType = "compare_loading") {
             Box(modifier = Modifier
                 .fillMaxWidth()
                 .padding(32.dp), contentAlignment = Alignment.Center) {
@@ -221,7 +221,7 @@ fun LazyListScope.profileComparePage(
         return
     }
     if (comparison.yourCount == 0) {
-        item(key = "compare_empty") {
+        item(key = "compare_empty", contentType = "compare_empty") {
             EmptyState(
                 icon = Icons.Default.Groups,
                 title = stringResource(R.string.profile_compare_nothing),
@@ -231,13 +231,13 @@ fun LazyListScope.profileComparePage(
         }
         return
     }
-    item(key = "compare_summary") {
+    item(key = "compare_summary", contentType = "compare_summary") {
         CompareSummary(comparison, type, ownerName, yourAvatar, theirAvatar)
     }
     sharedSection("compare_both", R.string.profile_compare_both_scored, comparison.bothScored, yourScoreFormat, titleLanguage, type, onMediaClick, "compare_both" in expanded, onExpand, yourAvatar, theirAvatar, ownerName)
     sharedSection("compare_also", R.string.profile_compare_also_shared, comparison.alsoShared, yourScoreFormat, titleLanguage, type, onMediaClick, "compare_also" in expanded, onExpand, yourAvatar, theirAvatar, ownerName)
     if (comparison.theirTensNotYours.isNotEmpty()) {
-        item(key = "compare_tens") {
+        item(key = "compare_tens", contentType = "compare_shelf") {
             PosterShelf(
                 title = stringResource(R.string.profile_compare_their_tens_title, ownerName),
                 items = comparison.theirTensNotYours,
@@ -248,7 +248,7 @@ fun LazyListScope.profileComparePage(
         }
     }
     if (comparison.onlyYours.isNotEmpty()) {
-        item(key = "compare_only_yours") {
+        item(key = "compare_only_yours", contentType = "compare_shelf") {
             PosterShelf(
                 title = stringResource(R.string.profile_compare_only_yours),
                 items = comparison.onlyYours,
@@ -334,7 +334,7 @@ private fun LazyListScope.sharedSection(
     ownerName: String
 ) {
     if (titles.isEmpty()) return
-    item(key = "${key}_header") {
+    item(key = "${key}_header", contentType = "compare_header") {
         OverviewHeader(
             title = stringResource(titleRes),
             onAction = null,
@@ -342,7 +342,7 @@ private fun LazyListScope.sharedSection(
         )
     }
     val shown = if (expanded) titles else titles.take(COMPARE_PREVIEW)
-    items(shown, key = { "${key}_${it.theirs.mediaId}" }) { shared ->
+    items(shown, key = { "${key}_${it.theirs.mediaId}" }, contentType = { "compare_row" }) { shared ->
         ProfileListRow(
             entry = shared.theirs,
             mediaType = type,
@@ -363,7 +363,7 @@ private fun LazyListScope.sharedSection(
         )
     }
     if (shown.size < titles.size) {
-        item(key = "${key}_more") {
+        item(key = "${key}_more", contentType = "compare_more") {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 FilledTonalButton(onClick = { onExpand(key) }, modifier = Modifier.padding(top = 8.dp)) {
                     Text(stringResource(R.string.profile_compare_show_all, titles.size))
