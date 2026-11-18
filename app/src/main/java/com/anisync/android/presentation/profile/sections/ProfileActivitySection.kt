@@ -70,7 +70,6 @@ import com.anisync.android.presentation.profile.components.ActivityUpdateRow
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
 import com.anisync.android.presentation.profile.components.ProfileTabRail
 import com.anisync.android.presentation.profile.components.RailScroll
-import com.anisync.android.presentation.profile.components.rememberRailScroll
 import com.anisync.android.presentation.profile.components.updateRowShape
 import java.time.Instant
 import java.time.LocalDate
@@ -263,7 +262,7 @@ private fun activityTime(activity: UserActivity): String {
 }
 
 @Composable
-internal fun ActivityDayHeader(epochDay: Long, start: Dp = 32.dp, top: Dp = 16.dp, bottom: Dp = 6.dp) {
+internal fun ActivityDayHeader(epochDay: Long, start: Dp, top: Dp = 16.dp, bottom: Dp = 6.dp) {
     val locale = LocalConfiguration.current.locales[0]
     val today = LocalDate.now()
     val day = LocalDate.ofEpochDay(epochDay)
@@ -388,7 +387,7 @@ private val ComposerFormatIcons = listOf(
 @Composable
 internal fun ActivityFilterRail(
     selected: ProfileActivityFilter,
-    scroll: RailScroll = rememberRailScroll(),
+    scroll: RailScroll,
     onSelect: (ProfileActivityFilter) -> Unit
 ) {
     val whatsNewStore = LocalWhatsNew.current

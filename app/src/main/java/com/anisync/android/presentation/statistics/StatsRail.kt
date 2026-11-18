@@ -23,7 +23,6 @@ import com.anisync.android.presentation.profile.ProfileStatsType
 import com.anisync.android.presentation.profile.StatsView
 import com.anisync.android.presentation.profile.components.RailScroll
 import com.anisync.android.presentation.profile.components.RevealSelectedChip
-import com.anisync.android.presentation.profile.components.rememberRailScroll
 import com.anisync.android.type.MediaType
 
 /**
@@ -37,9 +36,9 @@ fun StatsRail(
     selectedView: StatsView,
     onTypeSelected: (ProfileStatsType) -> Unit,
     onViewSelected: (StatsView) -> Unit,
+    isOwnProfile: Boolean,
+    scroll: RailScroll,
     modifier: Modifier = Modifier,
-    isOwnProfile: Boolean = true,
-    scroll: RailScroll = rememberRailScroll(),
 ) {
     RevealSelectedChip(scroll, selectedView, views.indexOf(selectedView))
     PinnedRail(

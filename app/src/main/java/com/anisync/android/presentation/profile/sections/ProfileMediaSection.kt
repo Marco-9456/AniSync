@@ -44,7 +44,6 @@ import com.anisync.android.presentation.profile.components.ProfileListGridCell
 import com.anisync.android.presentation.profile.components.ProfileListRow
 import com.anisync.android.presentation.profile.components.ProfileTabRail
 import com.anisync.android.presentation.profile.components.RailScroll
-import com.anisync.android.presentation.profile.components.rememberRailScroll
 import com.anisync.android.presentation.profile.lists.ProfileListFilters
 import com.anisync.android.presentation.profile.lists.ProfileListResults
 import com.anisync.android.presentation.profile.lists.ProfileListSummary
@@ -79,7 +78,7 @@ internal fun MediaStatusRail(
     onStatusSelected: (LibraryStatus?) -> Unit,
     onMediaTypeSelected: (MediaType) -> Unit,
     searchCounts: Map<LibraryStatus, Int>? = null,
-    scroll: RailScroll = rememberRailScroll()
+    scroll: RailScroll
 ) {
     val showUnknown = (statusCounts[LibraryStatus.UNKNOWN] ?: 0) > 0 || selectedStatus == LibraryStatus.UNKNOWN
     val chips = if (searchCounts != null) {
