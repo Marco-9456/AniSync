@@ -286,7 +286,7 @@ internal fun MenuScope.UserLinkItems(name: String, onClose: () -> Unit) {
         leadingIcon = Icons.Default.Share,
         onClick = {
             onClose()
-            ShareUtils.shareText(context, "$name\n${AniListUrls.userUrl(name)}")
+            ShareUtils.shareUser(context, name)
         }
     )
     item(

@@ -35,7 +35,7 @@ import com.anisync.android.presentation.components.SectionHeader
 import com.anisync.android.presentation.profile.components.ActivityUpdateRow
 import com.anisync.android.presentation.profile.components.progressText
 import com.anisync.android.presentation.util.bouncyClickable
-import com.anisync.android.presentation.util.toLabel
+import com.anisync.android.presentation.util.formatAndYear
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.ExpressiveShapes
 import com.anisync.android.util.getTitle
@@ -209,8 +209,8 @@ internal fun FavouritePosterRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 6.dp)
                 )
-                val detail = listOfNotNull(entry.format?.toLabel(), entry.releaseYear?.toString()).joinToString(" · ")
-                if (detail.isNotEmpty()) {
+                val detail = entry.formatAndYear()
+                if (detail != null) {
                     Text(
                         text = detail,
                         style = MaterialTheme.typography.bodySmall,

@@ -46,7 +46,6 @@ import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.profile.ProfileUiState
 import com.anisync.android.presentation.profile.viewerOwnsProfile
 import com.anisync.android.presentation.profile.components.PlaceholderTabContent
-import com.anisync.android.util.AniListUrls
 import com.anisync.android.util.ShareUtils
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -250,7 +249,7 @@ private fun LazyListScope.renderSocialUsers(
                 actionLabel = if (shareable) stringResource(R.string.profile_people_share_own) else null,
                 actionIcon = if (shareable) Icons.Default.Share else null,
                 onAction = if (shareable) {
-                    { ShareUtils.shareText(context, "$ownerName\n${AniListUrls.userUrl(ownerName)}") }
+                    { ShareUtils.shareUser(context, ownerName) }
                 } else {
                     null
                 },

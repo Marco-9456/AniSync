@@ -226,18 +226,7 @@ fun MediaPosterCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                item.format?.let { format ->
-                    Text(
-                        text = format.toLabel(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 13.sp,
-
-                        lineHeight = MetaLineHeight,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
-                    )
-                }
+                item.format?.let { format -> MediaPosterCardDefaults.MetaText(format.toLabel()) }
 
                 item.averageScore?.let { score ->
                     if (item.format != null) {
@@ -257,16 +246,7 @@ fun MediaPosterCard(
                         tint = StarGold,
                         modifier = Modifier.size(15.dp)
                     )
-                    Text(
-                        text = String.format(Locale.US, "%.1f", score / 10.0),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 13.sp,
-
-                        lineHeight = MetaLineHeight,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1
-                    )
+                    MediaPosterCardDefaults.MetaText(String.format(Locale.US, "%.1f", score / 10.0), emphasized = true)
                 }
             }
         }

@@ -45,6 +45,7 @@ import com.anisync.android.domain.url
 import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.profile.lists.ProfileListSort
 import com.anisync.android.presentation.util.bouncyCombinedClickable
+import com.anisync.android.presentation.util.formatAndYear
 import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import com.anisync.android.util.getTitle
@@ -176,8 +177,7 @@ private fun mediaFacts(entry: LibraryEntry, mediaType: MediaType, lead: String?)
     val total = if (mediaType == MediaType.MANGA) entry.totalChapters else entry.totalEpisodes
     return listOfNotNull(
         lead,
-        entry.format?.toLabel(),
-        entry.releaseYear?.toString(),
+        entry.formatAndYear(),
         total?.takeIf { it > 0 && lead == null }?.let {
             pluralStringResourceOrDefault(if (mediaType == MediaType.MANGA) R.plurals.profile_row_chapters else R.plurals.profile_row_episodes, it, it)
         }
@@ -262,7 +262,7 @@ fun ProfileListGridCell(
     modifier: Modifier = Modifier,
     showYourStatus: Boolean = true
 ) {
-    val facts = listOfNotNull(entry.format?.toLabel(), entry.releaseYear?.toString()).joinToString(" · ")
+    val facts = entry.formatAndYear()
     val score = entry.score?.takeIf { it > 0.0 }?.let { scoreOnScale(it, entry.scoreFormat ?: ScoreFormat.POINT_100) }
     MediaPosterCard(
         item = entry,
@@ -272,9 +272,9 @@ fun ProfileListGridCell(
         transitionPrefix = TransitionKeys.PROFILE,
         listStatus = if (showYourStatus) LocalLibraryStatuses.current[entry.mediaId] else null,
         meta = {
-            if (facts.isNotEmpty()) MediaPosterCardDefaults.MetaText(facts)
+            if (facts != null) MediaPosterCardDefaults.MetaText(facts)
             if (score != null) {
-                if (facts.isNotEmpty()) MediaPosterCardDefaults.MetaText("·")
+                if (facts != null) MediaPosterCardDefaults.MetaText("·")
                 MediaPosterCardDefaults.MetaText(score, emphasized = true)
             }
         }

@@ -56,8 +56,8 @@ import com.anisync.android.presentation.profile.lists.ListComparison
 import com.anisync.android.presentation.profile.lists.ScoreVerdict
 import com.anisync.android.presentation.profile.lists.SharedTitle
 import com.anisync.android.presentation.profile.lists.compareLists
+import com.anisync.android.presentation.util.formatAndYear
 import com.anisync.android.presentation.util.pluralStringResourceOrDefault
-import com.anisync.android.presentation.util.toLabel
 import com.anisync.android.type.MediaType
 import com.anisync.android.ui.theme.LocalExpressiveTypography
 import java.text.NumberFormat
@@ -399,7 +399,7 @@ private fun PosterShelf(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(items, key = { it.mediaId }) { entry ->
-                val facts = listOfNotNull(entry.format?.toLabel(), entry.releaseYear?.toString()).joinToString(" · ")
+                val facts = entry.formatAndYear()
                 MediaPosterCard(
                     item = entry,
                     onClick = { onMediaClick(entry.mediaId) },
@@ -407,7 +407,7 @@ private fun PosterShelf(
                     transitionPrefix = prefix,
                     listStatus = null,
                     modifier = Modifier.width(112.dp),
-                    meta = { if (facts.isNotEmpty()) MediaPosterCardDefaults.MetaText(facts) }
+                    meta = { if (facts != null) MediaPosterCardDefaults.MetaText(facts) }
                 )
             }
         }
