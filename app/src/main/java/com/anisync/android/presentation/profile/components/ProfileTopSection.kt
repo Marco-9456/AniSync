@@ -217,32 +217,10 @@ fun ProfileLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: 
                 .background(block)
         )
         Column(modifier = Modifier.padding(top = headerHeight + 60.dp)) {
-            if (name != null) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(horizontal = 20.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            listOf(0.55f, 0.75f, 0.57f).forEach { fraction ->
-                Box(
-                    modifier = Modifier
-                        .padding(start = 20.dp, bottom = 10.dp)
-                        .fillMaxWidth(fraction)
-                        .height(14.dp)
-                        .clip(CircleShape)
-                        .background(block)
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .padding(start = 20.dp, end = 20.dp, top = 8.dp)
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(block)
+            IdentityPlaceholder(
+                name = name,
+                lineFractions = listOf(0.55f, 0.75f, 0.57f),
+                modifier = Modifier.padding(horizontal = 20.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             ProfileTabsButtonGroup(selectedTab = ProfileTab.OVERVIEW, lastListTab = ProfileTab.ANIME, onTabSelected = {})
@@ -258,16 +236,10 @@ fun ProfileLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: 
                 AppCircularProgressIndicator()
             }
         }
-        Box(
+        AvatarPlaceholder(
             modifier = Modifier
                 .padding(start = 16.dp)
                 .offset(y = headerHeight - ProfileAvatarHalfSize)
-                .size(ProfileAvatarSize)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.background)
-                .padding(3.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
         )
         if (onBackClick != null) {
             BackTrailButton(
@@ -279,4 +251,52 @@ fun ProfileLoadingSkeleton(name: String?, onBackClick: (() -> Unit)?, modifier: 
             )
         }
     }
+}
+
+/** Who the profile belongs to while it loads: the name the link gave, three detail lines and the bio. */
+@Composable
+internal fun IdentityPlaceholder(name: String?, lineFractions: List<Float>, modifier: Modifier = Modifier) {
+    val block = MaterialTheme.colorScheme.surfaceContainerHigh
+    Column(modifier = modifier) {
+        if (name != null) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        lineFractions.forEach { fraction ->
+            Box(
+                modifier = Modifier
+                    .padding(bottom = 10.dp)
+                    .fillMaxWidth(fraction)
+                    .height(14.dp)
+                    .clip(CircleShape)
+                    .background(block)
+            )
+        }
+        Box(
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .fillMaxWidth()
+                .height(120.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(block)
+        )
+    }
+}
+
+/** The avatar's place while the profile loads, ringed in the page colour like the real one. */
+@Composable
+internal fun AvatarPlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(ProfileAvatarSize)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.background)
+            .padding(3.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+    )
 }

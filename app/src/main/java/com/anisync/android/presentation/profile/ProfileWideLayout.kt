@@ -11,12 +11,8 @@ import com.anisync.android.presentation.profile.components.ProfileRails
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.width
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
-import androidx.compose.material3.Text
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -58,6 +54,8 @@ import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AsyncRichTextRenderer
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.profile.components.ProfileAccounts
+import com.anisync.android.presentation.profile.components.AvatarPlaceholder
+import com.anisync.android.presentation.profile.components.IdentityPlaceholder
 import com.anisync.android.presentation.profile.components.ProfileHeaderAvatar
 import com.anisync.android.presentation.profile.components.bandChromeColors
 import com.anisync.android.presentation.profile.components.ProfileActionButtons
@@ -153,19 +151,9 @@ fun ProfileWideLayout(
     val cycleLabel = stringResource(R.string.pane_resize_cycle)
     val resizeLabel = stringResource(R.string.pane_resize_handle)
 
-    // The profile sits flat on the page background, the identity column and the tab pane without
-    // cards around them. The resize handle stays between them.
-    TwoPaneRow(
+    ProfileTwoPaneRow(
         leadingWeight = leadingFraction,
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
-            .onSizeChanged { rowWidthPx = it.width },
-        gutterColor = MaterialTheme.colorScheme.background,
-        leadingColor = MaterialTheme.colorScheme.background,
-        trailingColor = MaterialTheme.colorScheme.background,
-        gutterPadding = PaddingValues(start = WideGutterStart, top = 12.dp, end = 16.dp, bottom = 16.dp),
+        modifier = modifier.onSizeChanged { rowWidthPx = it.width },
         handle = {
             PaneDragHandle(
                 modifier = Modifier.fillMaxHeight(),
@@ -219,6 +207,31 @@ fun ProfileWideLayout(
                 onOpenRecap = onOpenRecap
             )
         }
+    )
+}
+
+/** The profile's panes sit flat on the page background, the identity column and the tabs without cards around them. */
+@Composable
+private fun ProfileTwoPaneRow(
+    leadingWeight: Float,
+    modifier: Modifier = Modifier,
+    handle: (@Composable () -> Unit)? = null,
+    leading: @Composable () -> Unit,
+    trailing: @Composable () -> Unit
+) {
+    TwoPaneRow(
+        leadingWeight = leadingWeight,
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding(),
+        gutterColor = MaterialTheme.colorScheme.background,
+        leadingColor = MaterialTheme.colorScheme.background,
+        trailingColor = MaterialTheme.colorScheme.background,
+        gutterPadding = PaddingValues(start = WideGutterStart, top = 12.dp, end = 16.dp, bottom = 16.dp),
+        handle = handle,
+        leading = leading,
+        trailing = trailing
     )
 }
 
@@ -402,16 +415,9 @@ internal fun ProfileWideLoadingSkeleton(name: String?, onBackClick: (() -> Unit)
     val block = MaterialTheme.colorScheme.surfaceContainerHigh
     val quiet = MaterialTheme.colorScheme.surfaceContainerLow
     val leadingFraction by LocalAppSettings.current.paneProfileFraction.collectAsStateWithLifecycle()
-    TwoPaneRow(
+    ProfileTwoPaneRow(
         leadingWeight = leadingFraction,
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding(),
-        gutterColor = MaterialTheme.colorScheme.background,
-        leadingColor = MaterialTheme.colorScheme.background,
-        trailingColor = MaterialTheme.colorScheme.background,
-        gutterPadding = PaddingValues(start = WideGutterStart, top = 12.dp, end = 16.dp, bottom = 16.dp),
+        modifier = modifier,
         leading = {
             Box(modifier = Modifier.fillMaxSize().padding(top = TabsTopInset)) {
                 Box(
@@ -422,48 +428,17 @@ internal fun ProfileWideLoadingSkeleton(name: String?, onBackClick: (() -> Unit)
                         .clip(TwoPaneDefaults.PaneShape)
                         .background(block)
                 )
-                Column(
+                IdentityPlaceholder(
+                    name = name,
+                    lineFractions = listOf(0.6f, 0.85f, 0.7f),
                     modifier = Modifier
                         .padding(top = WideBannerHeight + 60.dp)
                         .padding(horizontal = WideContentInset)
-                ) {
-                    if (name != null) {
-                        Text(
-                            text = name,
-                            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    listOf(0.6f, 0.85f, 0.7f).forEach { fraction ->
-                        Box(
-                            modifier = Modifier
-                                .padding(bottom = 10.dp)
-                                .fillMaxWidth(fraction)
-                                .height(14.dp)
-                                .clip(CircleShape)
-                                .background(block)
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .padding(top = 8.dp)
-                            .fillMaxWidth()
-                            .height(120.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(block)
-                    )
-                }
-                Box(
+                )
+                AvatarPlaceholder(
                     modifier = Modifier
                         .padding(start = WideBannerInset + 16.dp)
                         .offset(y = WideBannerHeight - ProfileAvatarHalfSize)
-                        .size(ProfileAvatarSize)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.background)
-                        .padding(3.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 )
                 if (onBackClick != null) {
                     BackTrailButton(
