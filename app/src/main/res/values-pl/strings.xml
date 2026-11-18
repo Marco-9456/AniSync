@@ -2018,7 +2018,7 @@
     <string name="share_duration_list">%1$s, %2$s</string>
     <string name="share_fav_rank_item">%1$d. %2$s</string>
     <string name="session_expired_switched">Sesja użytkownika %1$s wygasłam, więc AniSync przełączył się na %2$s. Aby znowu korzystać z %1$s, zaloguj się prze przełącznik kont w twoim profilu.</string>
-    <string name="notification_kind_status">Zmiana statusu</string>
+    <string name="notification_kind_status">zmiana statusu</string>
     <string name="notification_kind_status_indefinite">zmianie statusu</string>
     <string name="notification_episode_one_available">Odcinek 1 jest teraz dostępny</string>
     <string name="notifications_item_submission_fallback">Twoje zgłoszenie</string>
@@ -2215,4 +2215,9 @@
     <string name="forum_start_discussion">Rozpocznij dyskusję na ten temat</string>
     <string name="library_filter_airing_status">Status nadawania</string>
     <string name="library_no_custom_lists">Nie masz jeszcze własne listy. Stwórz ją w Zarządzaj listami.</string>
+    <string name="notification_episode_aired">Wyemitowano odcinek %1$d</string>
+    <string name="notification_episode_one_airs_at">Odcinek 1 wychodzi %1$s o %2$s</string>
+    <string name="filter_publishing_status">Status publikacji</string>
+    <string name="whats_new_general_notice">Kiedyś znajdowało się w Wygląd i odczucia.</string>
+    <string name="recap_habits_eyebrow">Jak oglądałeś</string>
 </resources>
