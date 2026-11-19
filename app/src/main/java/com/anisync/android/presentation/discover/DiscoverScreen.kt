@@ -1040,7 +1040,8 @@ private fun SearchResultsContent(
         // A preset can open on a category before anything is typed, and the rail says so.
         if (state.hasSearchResults || category != ResultCategory.ALL) {
             SearchResultsRail(
-                modifier = Modifier.padding(bottom = 8.dp),
+                // Without the filter bar above it, the rail keeps the bar's distance from the divider.
+                modifier = Modifier.padding(top = if (category.hasMediaFilters()) 0.dp else 16.dp, bottom = 8.dp),
                 categories = state.railCategories,
                 activeCategory = category,
                 isGrid = isGrid,
