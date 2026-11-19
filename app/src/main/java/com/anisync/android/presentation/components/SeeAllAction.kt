@@ -63,3 +63,28 @@ fun SeeAllAction(
         )
     }
 }
+
+/** See all's pill without the chevron, for a header action that stays on the screen. */
+@Composable
+fun HeaderAction(
+    label: String,
+    description: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.primary,
+        maxLines = 1,
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .bouncyClickable(onClick = onClick, clipShape = RoundedCornerShape(50))
+            .semantics {
+                role = Role.Button
+                contentDescription = description
+            }
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+    )
+}

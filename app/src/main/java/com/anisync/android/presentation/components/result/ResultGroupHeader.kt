@@ -20,14 +20,16 @@ import com.anisync.android.presentation.components.SeeAllAction
 
 /**
  * The header over a run of results or library rows: the group's name, how many it holds where
- * that is known, and a See all where the run is only a preview of a longer list.
+ * that is known, and a See all where the run is only a preview of a longer list. [action] takes
+ * See all's place for a header whose action is something else.
  */
 @Composable
 fun ResultGroupHeader(
     title: String,
     modifier: Modifier = Modifier,
     count: Int? = null,
-    onSeeAll: (() -> Unit)? = null
+    onSeeAll: (() -> Unit)? = null,
+    action: (@Composable () -> Unit)? = null
 ) {
     Row(
         modifier = modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
@@ -61,6 +63,9 @@ fun ResultGroupHeader(
         if (onSeeAll != null) {
             Spacer(Modifier.width(10.dp))
             SeeAllAction(sectionTitle = title, onClick = onSeeAll)
+        } else if (action != null) {
+            Spacer(Modifier.width(10.dp))
+            action()
         }
     }
 }
