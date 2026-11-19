@@ -2392,4 +2392,12 @@
     <string name="recap_of_days">na %1$s</string>
     <string name="recap_settings_show_adult_desc">Tytuły dla dorosłych są zawsze liczone. To również pokazuje ich nazwy, okładki i muzykę</string>
     <string name="recap_settings_show_adult_on">Włączone kiedy treści dla dorosłych są włączone w ustawieniach AniList</string>
+    <string name="search_recent_title">Ostatnie wyszukiwania</string>
+    <string name="search_recent_clear_all">Wyczyść wszystko</string>
+    <string name="a11y_search_recent_clear_all">Wyczyść ostanie wyszukiwania</string>
+    <string name="a11y_action_search_again">Szukaj ponownie</string>
+    <string name="cd_search_recent_remove">Usuń %1$s z historii wyszukiwania</string>
+    <string name="settings_search_history">Historia wyszukiwania</string>
+    <string name="settings_search_history_desc">Zachowaj swoje ostanie wyszukiwania w Odkrywaj, Biblioteka i Forum. Wyłączając wyczyścisz historię</string>
+    <string name="settings_section_search">Szukaj</string>
 </resources>
