@@ -2,6 +2,7 @@ package com.anisync.android.presentation.discover
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.anisync.android.data.SearchSurface
 import com.anisync.android.domain.ADULT_GENRES
 import com.anisync.android.domain.AdultMode
 import com.anisync.android.domain.AiringEpisode
@@ -84,6 +85,15 @@ class DiscoverViewModel @Inject constructor(
         observeViewMode()
         observeSearchLaunchRequests()
         observeTabReselect()
+        observeRecentSearches()
+    }
+
+    private fun observeRecentSearches() {
+        viewModelScope.launch {
+            appSettings.recentSearches(SearchSurface.DISCOVER).collect { recent ->
+                _uiState.update { it.copy(recentSearches = recent) }
+            }
+        }
     }
 
     /** The bottom bar's reselect gestures: scroll back to the top, or open the search overlay. */
@@ -179,6 +189,11 @@ class DiscoverViewModel @Inject constructor(
             is DiscoverAction.LoadTaxonomy -> loadTaxonomyIfNeeded()
             is DiscoverAction.OnViewModeChange -> appSettings.setDiscoverSearchViewMode(action.mode)
             is DiscoverAction.OnCategoryChange -> onCategoryChange(action.category)
+            is DiscoverAction.SaveRecentSearch ->
+                appSettings.addRecentSearch(SearchSurface.DISCOVER, action.query)
+            is DiscoverAction.RemoveRecentSearch ->
+                appSettings.removeRecentSearch(SearchSurface.DISCOVER, action.query)
+            is DiscoverAction.ClearRecentSearches -> appSettings.clearRecentSearches(SearchSurface.DISCOVER)
             is DiscoverAction.ReorderSections -> reorderSections(action.order)
             is DiscoverAction.SetSectionVisible -> setSectionVisible(action.section, action.visible)
             is DiscoverAction.ResetSectionOrder -> resetSectionOrder()
@@ -229,6 +244,7 @@ class DiscoverViewModel @Inject constructor(
         val currentState = _uiState.value
         _uiState.update { currentState.copy(searchQuery = query) }
         searchTrigger.value = SearchTriggerState(query, currentState.searchFilters.hashCode())
+        appSettings.addRecentSearch(SearchSurface.DISCOVER, query)
     }
 
     /**

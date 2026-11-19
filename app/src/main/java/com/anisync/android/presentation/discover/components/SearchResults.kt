@@ -109,6 +109,16 @@ class SearchResultActions(
     val onUser: (String) -> Unit
 )
 
+/** The same destinations, each running [first] on the way. */
+fun SearchResultActions.beforeEach(first: () -> Unit) = SearchResultActions(
+    onMedia = { first(); onMedia(it) },
+    onAddToList = { first(); onAddToList(it) },
+    onCharacter = { first(); onCharacter(it) },
+    onStaff = { first(); onStaff(it) },
+    onStudio = { first(); onStudio(it) },
+    onUser = { first(); onUser(it) }
+)
+
 /**
  * Discover's search results.
  *

@@ -135,6 +135,7 @@ data class DiscoverUiState(
     val viewMode: DiscoverViewMode = DiscoverViewMode.LIST,
     val activeCategory: ResultCategory = ResultCategory.ALL,
     val searchPaging: SearchPaging = SearchPaging(),
+    val recentSearches: List<String> = emptyList(),
     /**
      * Monotonic counter bumped when an external screen asks Discover to open its
      * search overlay with preset filters (see DiscoverSearchLauncher). The screen
@@ -193,6 +194,11 @@ sealed interface DiscoverAction {
     data object LoadTaxonomy : DiscoverAction
     data class OnViewModeChange(val mode: DiscoverViewMode) : DiscoverAction
     data class OnCategoryChange(val category: ResultCategory) : DiscoverAction
+
+    /** Something was done with a result, so the query that found it is worth keeping. */
+    data class SaveRecentSearch(val query: String) : DiscoverAction
+    data class RemoveRecentSearch(val query: String) : DiscoverAction
+    data object ClearRecentSearches : DiscoverAction
 
     /** Reorder sheet: the full visible-plus-hidden order for the current tab. */
     data class ReorderSections(val order: List<DiscoverSection>) : DiscoverAction
