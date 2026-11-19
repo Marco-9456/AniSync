@@ -216,4 +216,34 @@
     <plurals name="recap_started_count">
         <item quantity="other">同時你還看上了 %1$s 部</item>
     </plurals>
+    <plurals name="profile_list_titles">
+        <item quantity="other">%1$s 部作品</item>
+    </plurals>
+    <plurals name="profile_days_watched">
+        <item quantity="other">共看了 %1$s 天</item>
+    </plurals>
+    <plurals name="profile_favorites_count_titles">
+        <item quantity="other">%1$s 部作品</item>
+    </plurals>
+    <plurals name="profile_favorites_count_characters">
+        <item quantity="other">%1$s 個角色</item>
+    </plurals>
+    <plurals name="profile_favorites_count_staff">
+        <item quantity="other">%1$s 位工作人員</item>
+    </plurals>
+    <plurals name="profile_favorites_count_studios">
+        <item quantity="other">%1$s 個工作室</item>
+    </plurals>
+    <plurals name="profile_row_episodes">
+        <item quantity="other">%d 集</item>
+    </plurals>
+    <plurals name="profile_row_chapters">
+        <item quantity="other">%d 章</item>
+    </plurals>
+    <plurals name="profile_row_rewatched">
+        <item quantity="other">重看了 %d 次</item>
+    </plurals>
+    <plurals name="profile_row_reread">
+        <item quantity="other">重讀了 %d 次</item>
+    </plurals>
 </resources>
