@@ -236,7 +236,14 @@ class LibraryViewModel @Inject constructor(
                 }
             }
 
-            is LibraryAction.OnSearchQueryChange -> setSearchQuery(action.query)
+            is LibraryAction.OnSearchQueryChange -> {
+                val state = _uiState.value
+                // Clearing a search that found something keeps it, as searching it again would.
+                if (action.query.isEmpty() && state.searchMatches.isNotEmpty()) {
+                    appSettings.addRecentSearch(SearchSurface.LIBRARY, state.searchQuery)
+                }
+                setSearchQuery(action.query)
+            }
 
             is LibraryAction.OnSearch -> {
                 setSearchQuery(action.query)

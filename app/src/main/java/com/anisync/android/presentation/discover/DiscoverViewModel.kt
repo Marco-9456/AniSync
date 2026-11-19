@@ -239,6 +239,10 @@ class DiscoverViewModel @Inject constructor(
 
     private fun onSearchQueryChange(query: String) {
         val currentState = _uiState.value
+        // Clearing a search that found something keeps it, as searching it again would.
+        if (query.isEmpty() && currentState.hasSearchResults) {
+            appSettings.addRecentSearch(SearchSurface.DISCOVER, lastRunTrigger.query)
+        }
         _uiState.update { currentState.copy(searchQuery = query) }
         searchTrigger.value = SearchTriggerState(query, currentState.searchFilters.hashCode())
     }
