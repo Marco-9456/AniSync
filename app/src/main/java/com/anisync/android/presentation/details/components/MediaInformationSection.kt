@@ -142,7 +142,7 @@ fun MediaInformationSection(
                     modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium)),
                     verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
                 ) {
-                    infoItems.chunked(2).forEach { rowItems ->
+                    factRows(infoItems) { it.wide }.forEach { rowItems ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
@@ -153,7 +153,7 @@ fun MediaInformationSection(
                             }
                             // An odd count leaves the last cell in its own column rather than
                             // stretching it across both.
-                            if (rowItems.size == 1) Spacer(modifier = Modifier.weight(1f))
+                            if (rowItems.size == 1 && !rowItems[0].wide) Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }
@@ -214,9 +214,9 @@ private fun FactCell(item: InfoItem, modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    // A date range or a long studio name wraps instead of being cut, which is what
-                    // lets every fact keep to half the card and the two columns stay even.
-                    maxLines = 2,
+                    // A long studio name wraps instead of being cut, which is what lets every fact
+                    // keep to half the card and the two columns stay even.
+                    maxLines = if (item.wide) Int.MAX_VALUE else 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
@@ -291,8 +291,36 @@ private data class InfoItem(
     val iconTint: Color,
     val isStatus: Boolean = false,
     val showChevron: Boolean = false,
+    /** Takes a row of its own. Half the card on a 360dp phone cannot hold even one full date. */
+    val wide: Boolean = false,
     val onClick: (() -> Unit)? = null
 )
+
+/**
+ * Pairs the facts into rows of two. A wide fact waits for the pair it interrupts to fill, then
+ * takes the next row alone, so no half row is left empty in the middle of the grid.
+ */
+internal fun <T : Any> factRows(items: List<T>, isWide: (T) -> Boolean): List<List<T>> {
+    val rows = mutableListOf<List<T>>()
+    val waiting = mutableListOf<T>()
+    var open: T? = null
+    for (item in items) {
+        when {
+            isWide(item) && open == null -> rows += listOf(item)
+            isWide(item) -> waiting += item
+            open == null -> open = item
+            else -> {
+                rows += listOf(open, item)
+                open = null
+                waiting.forEach { rows += listOf(it) }
+                waiting.clear()
+            }
+        }
+    }
+    open?.let { rows += listOf(it) }
+    waiting.forEach { rows += listOf(it) }
+    return rows
+}
 
 /**
  * A community ranking as an info pill: rank number as the bold value under the
@@ -436,10 +464,14 @@ private fun buildInfoItems(
     }
 
     // 5. Aired Date (Start - End)
-    val airedDateValue = when {
-        details.startDate != null && details.endDate != null -> "${details.startDate} - ${details.endDate}"
-        details.startDate != null -> details.startDate
-        else -> null
+    val startDate = details.startDate
+    val endDate = details.endDate
+    val isDateRange = startDate != null && endDate != null
+    val airedDateValue = if (startDate != null && endDate != null) {
+        // A range that has to wrap breaks at the dash, never inside a date.
+        "${startDate.keptTogether()} - ${endDate.keptTogether()}"
+    } else {
+        startDate
     }
     airedDateValue?.let { aired ->
         items.add(
@@ -448,6 +480,7 @@ private fun buildInfoItems(
                 label = stringResource(R.string.stat_aired),
                 value = aired,
                 iconTint = MaterialTheme.colorScheme.primary,
+                wide = isDateRange
             )
         )
     }
@@ -495,6 +528,8 @@ private fun buildInfoItems(
 
     return items
 }
+
+private fun String.keptTogether(): String = replace(' ', '\u00A0')
 
 @Composable
 private fun InfoPill(
