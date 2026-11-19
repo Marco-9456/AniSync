@@ -281,6 +281,13 @@ class AppSettings @Inject constructor(
     private val _backTrailEnabled = MutableStateFlow(prefs.getBoolean(KEY_BACK_TRAIL, true))
     val backTrailEnabled: StateFlow<Boolean> = _backTrailEnabled.asStateFlow()
 
+    private val _searchHistoryEnabled = MutableStateFlow(prefs.getBoolean(KEY_SEARCH_HISTORY, true))
+    val searchHistoryEnabled: StateFlow<Boolean> = _searchHistoryEnabled.asStateFlow()
+
+    private val recentSearchLists = SearchSurface.entries.associateWith { surface ->
+        MutableStateFlow(readStringList(surface.recentSearchesKey()))
+    }
+
     private fun readNavBarStyle(): NavBarStyle {
         val name = runCatching { prefs.getString(KEY_NAV_BAR_STYLE, null) }.getOrNull()
         return runCatching { NavBarStyle.valueOf(name ?: NavBarStyle.ANCHORED.name) }
@@ -1034,6 +1041,43 @@ class AppSettings @Inject constructor(
         _backTrailEnabled.value = enabled
         prefs.edit().putBoolean(KEY_BACK_TRAIL, enabled).apply()
     }
+
+    /** Off also forgets what is already kept, so turning it back on starts empty. */
+    fun setSearchHistoryEnabled(enabled: Boolean) {
+        _searchHistoryEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_SEARCH_HISTORY, enabled).apply()
+        if (!enabled) SearchSurface.entries.forEach(::clearRecentSearches)
+    }
+
+    fun recentSearches(surface: SearchSurface): StateFlow<List<String>> =
+        recentSearchLists.getValue(surface).asStateFlow()
+
+    fun addRecentSearch(surface: SearchSurface, query: String) {
+        if (!_searchHistoryEnabled.value) return
+        editRecentSearches(surface) { it.withRecentSearch(query) }
+    }
+
+    fun removeRecentSearch(surface: SearchSurface, query: String) {
+        editRecentSearches(surface) { it - query }
+    }
+
+    fun clearRecentSearches(surface: SearchSurface) {
+        editRecentSearches(surface) { emptyList() }
+    }
+
+    private fun editRecentSearches(surface: SearchSurface, change: (List<String>) -> List<String>) {
+        val flow = recentSearchLists.getValue(surface)
+        val updated = change(flow.value)
+        if (updated == flow.value) return
+        flow.value = updated
+        prefs.edit().putString(surface.recentSearchesKey(), Json.encodeToString(updated)).apply()
+    }
+
+    private fun SearchSurface.recentSearchesKey(): String = when (this) {
+        SearchSurface.DISCOVER -> KEY_RECENT_SEARCHES_DISCOVER
+        SearchSurface.LIBRARY -> KEY_RECENT_SEARCHES_LIBRARY
+        SearchSurface.FORUM -> KEY_RECENT_SEARCHES_FORUM
+    }
     
     /**
      * Enable or disable notifications.
@@ -1540,6 +1584,10 @@ companion object {
         private const val KEY_NAV_BAR_CORNER_RADIUS = "nav_bar_corner_radius"
         private const val KEY_NAV_BAR_DOUBLE_TAP_SEARCH = "nav_bar_double_tap_search"
         private const val KEY_BACK_TRAIL = "back_trail"
+        private const val KEY_SEARCH_HISTORY = "search_history"
+        private const val KEY_RECENT_SEARCHES_DISCOVER = "recent_searches_discover"
+        private const val KEY_RECENT_SEARCHES_LIBRARY = "recent_searches_library"
+        private const val KEY_RECENT_SEARCHES_FORUM = "recent_searches_forum"
 
         const val MIN_NAV_BAR_CORNER_RADIUS = 0f
         const val MAX_NAV_BAR_CORNER_RADIUS = 36f
