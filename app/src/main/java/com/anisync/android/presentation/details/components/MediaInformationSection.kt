@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -51,12 +52,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
 import com.anisync.android.domain.MediaDetails
@@ -138,22 +145,24 @@ fun MediaInformationSection(
                     .fillMaxWidth()
                     .padding(horizontal = dimensionResource(R.dimen.spacing_large))
             ) {
-                Column(
-                    modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium)),
-                    verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
-                ) {
-                    factRows(infoItems) { it.wide }.forEach { rowItems ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
-                            verticalAlignment = Alignment.Top
-                        ) {
-                            rowItems.forEach { item ->
-                                FactCell(item = item, modifier = Modifier.weight(1f))
+                BoxWithConstraints(modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium))) {
+                    val gap = dimensionResource(R.dimen.spacing_medium)
+                    val halfTextWidth = (maxWidth - gap) / 2 - FactIconSize - dimensionResource(R.dimen.spacing_normal)
+                    val facts = widenWhatHalfCannotHold(infoItems, halfTextWidth)
+                    Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+                        factRows(facts) { it.wide }.forEach { rowItems ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(gap),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                rowItems.forEach { item ->
+                                    FactCell(item = item, modifier = Modifier.weight(1f))
+                                }
+                                // An odd count leaves the last cell in its own column rather than
+                                // stretching it across both.
+                                if (rowItems.size == 1 && !rowItems[0].wide) Spacer(modifier = Modifier.weight(1f))
                             }
-                            // An odd count leaves the last cell in its own column rather than
-                            // stretching it across both.
-                            if (rowItems.size == 1 && !rowItems[0].wide) Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }
@@ -182,7 +191,7 @@ private fun FactCell(item: InfoItem, modifier: Modifier = Modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(FactIconSize)
                     .background(item.iconTint.copy(alpha = 0.14f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -211,11 +220,8 @@ private fun FactCell(item: InfoItem, modifier: Modifier = Modifier) {
                 )
                 Text(
                     text = item.value,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
+                    style = factValueStyle(),
                     color = MaterialTheme.colorScheme.onSurface,
-                    // A long studio name wraps instead of being cut, which is what lets every fact
-                    // keep to half the card and the two columns stay even.
                     maxLines = if (item.wide) Int.MAX_VALUE else 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -295,6 +301,36 @@ private data class InfoItem(
     val wide: Boolean = false,
     val onClick: (() -> Unit)? = null
 )
+
+private val FactIconSize = 32.dp
+
+@Composable
+private fun factValueStyle(): TextStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+
+/**
+ * Widens every fact that half the card would cut after two lines or break inside a word, the way
+ * a long hashtag such as #VINLAND_SAGA broke on a phone.
+ */
+@Composable
+private fun widenWhatHalfCannotHold(items: List<InfoItem>, halfTextWidth: Dp): List<InfoItem> {
+    val measurer = rememberTextMeasurer()
+    val style = factValueStyle()
+    val widthPx = with(LocalDensity.current) { halfTextWidth.roundToPx() }
+    val values = items.map { it.value }
+    val overflowing = remember(values, widthPx, style) {
+        values.filterNot { it.fitsInHalf(measurer, style, widthPx) }.toSet()
+    }
+    return items.map { if (!it.wide && it.value in overflowing) it.copy(wide = true) else it }
+}
+
+private fun String.fitsInHalf(measurer: TextMeasurer, style: TextStyle, widthPx: Int): Boolean {
+    if (widthPx <= 0) return true
+    val wordTooLong = split(' ').any { word ->
+        measurer.measure(word, style, softWrap = false, maxLines = 1).size.width > widthPx
+    }
+    return !wordTooLong &&
+        measurer.measure(this, style, constraints = Constraints(maxWidth = widthPx)).lineCount <= 2
+}
 
 /**
  * Pairs the facts into rows of two. A wide fact waits for the pair it interrupts to fill, then
