@@ -34,16 +34,16 @@ import com.anisync.android.presentation.components.result.ResultGroupHeader
 import com.anisync.android.presentation.util.bouncyClickable
 
 /**
- * What an empty search field offers: the searches run before, newest first. A tap runs one again,
- * a row's cross forgets it and Clear all forgets them all. Rows tile at the results' width on a
- * wide window.
+ * The searches run before, newest first. A tap runs one again, a row's cross forgets it and Clear
+ * all forgets them all. A list narrowed to what is being typed passes no [onClearAll], since it
+ * would clear more than it shows. Rows tile at the results' width on a wide window.
  */
 @Composable
 fun RecentSearches(
     searches: List<String>,
     onSearch: (String) -> Unit,
     onRemove: (String) -> Unit,
-    onClearAll: () -> Unit,
+    onClearAll: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     LazyVerticalGrid(
@@ -56,12 +56,14 @@ fun RecentSearches(
             ResultGroupHeader(
                 title = stringResource(R.string.search_recent_title),
                 modifier = Modifier.padding(horizontal = 16.dp),
-                action = {
-                    HeaderAction(
-                        label = stringResource(R.string.search_recent_clear_all),
-                        description = stringResource(R.string.a11y_search_recent_clear_all),
-                        onClick = onClearAll
-                    )
+                action = onClearAll?.let { clearAll ->
+                    {
+                        HeaderAction(
+                            label = stringResource(R.string.search_recent_clear_all),
+                            description = stringResource(R.string.a11y_search_recent_clear_all),
+                            onClick = clearAll
+                        )
+                    }
                 }
             )
         }
