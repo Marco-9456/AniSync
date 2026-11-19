@@ -45,7 +45,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -63,7 +62,7 @@ import com.anisync.android.presentation.components.shareFabBottomInset
 import com.anisync.android.presentation.components.shareFabClearance
 import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.CollapsingTopBarScaffold
-import com.anisync.android.presentation.components.LocalPullRefreshOffset
+import com.anisync.android.presentation.components.shownWhilePulled
 import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.WhatsNewDot
 import com.anisync.android.presentation.components.alert.rememberRateLimitedRefresh
@@ -307,13 +306,12 @@ fun ProfileContent(
         topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding(),
         // The page only pulls from its top, where the header's banner sits exactly over this one.
         backdrop = {
-            val pullOffset = LocalPullRefreshOffset.current
             ProfileBackdrop(
                 profile = profile,
                 isOwnProfile = isOwnProfile,
                 onSettingsClick = onSettingsClick,
                 onBackClick = onBackClick,
-                modifier = Modifier.graphicsLayer { alpha = if (pullOffset() > 0f) 1f else 0f }
+                modifier = Modifier.shownWhilePulled()
             )
         }
     ) {

@@ -50,6 +50,24 @@ import kotlinx.coroutines.launch
 val LocalPullRefreshOffset = staticCompositionLocalOf<() -> Float> { { 0f } }
 
 /**
+ * For a banner a pull would carry down with the content. It steps aside for its copy in the
+ * [AppPullToRefreshBox] backdrop, marked [shownWhilePulled], which stays where it is. A pull only
+ * starts with the content at its top, where the two sit exactly over each other.
+ */
+@Composable
+fun Modifier.hiddenWhilePulled(): Modifier {
+    val pullOffset = LocalPullRefreshOffset.current
+    return graphicsLayer { alpha = if (pullOffset() > 0f) 0f else 1f }
+}
+
+/** For the backdrop copy of a banner marked [hiddenWhilePulled], seen only while a pull is under way. */
+@Composable
+fun Modifier.shownWhilePulled(): Modifier {
+    val pullOffset = LocalPullRefreshOffset.current
+    return graphicsLayer { alpha = if (pullOffset() > 0f) 1f else 0f }
+}
+
+/**
  * Pull to refresh with the Material 3 Expressive loading indicator.
  *
  * A pull only starts when the finger lands with the content already at its top, so a swipe that

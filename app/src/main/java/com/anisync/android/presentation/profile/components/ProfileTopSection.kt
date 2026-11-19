@@ -24,13 +24,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
-import com.anisync.android.presentation.components.LocalPullRefreshOffset
+import com.anisync.android.presentation.components.hiddenWhilePulled
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.ProfileTabsButtonGroup
@@ -72,8 +71,6 @@ fun ProfileTopSection(
     val avatarTop = if (band) headerHeight + 8.dp else headerHeight - ProfileAvatarHalfSize
     val actionsTop = if (band) headerHeight + 64.dp else headerHeight + 8.dp
     val identityTop = if (band) headerHeight + 116.dp else headerHeight + 60.dp
-    // A pull carries this copy down with the list, so it steps aside for the one held behind it.
-    val pullOffset = LocalPullRefreshOffset.current
 
     Box(modifier = modifier.fillMaxWidth()) {
         ProfileBackdrop(
@@ -81,7 +78,7 @@ fun ProfileTopSection(
             isOwnProfile = isOwnProfile,
             onSettingsClick = onSettingsClick,
             onBackClick = onBackClick,
-            modifier = Modifier.graphicsLayer { alpha = if (pullOffset() > 0f) 0f else 1f }
+            modifier = Modifier.hiddenWhilePulled()
         )
 
         Column(
