@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
+import com.anisync.android.data.SearchSurface
 import com.anisync.android.data.network.RequestPriority
 import com.anisync.android.data.network.withRequestPriority
 import com.anisync.android.domain.DetailsRepository
@@ -178,6 +179,10 @@ class LibraryViewModel @Inject constructor(
             _uiState.update { it.copy(isGridView = isGrid) }
         }.launchIn(viewModelScope)
 
+        appSettings.recentSearches(SearchSurface.LIBRARY).onEach { recent ->
+            _uiState.update { it.copy(recentSearches = recent) }
+        }.launchIn(viewModelScope)
+
         // Turning adult content off drops any adult tag still selected, the same as Search does, so
         // a filter the sheet no longer shows cannot keep narrowing the list.
         appSettings.showAdultContent.onEach { show ->
@@ -231,14 +236,11 @@ class LibraryViewModel @Inject constructor(
                 }
             }
 
-            is LibraryAction.OnSearchQueryChange -> {
-                _uiState.update {
-                    it.copy(
-                        searchQuery = action.query,
-                        // A blank query resets the category chips back to "All".
-                        activeSearchCategory = if (action.query.isBlank()) LIBRARY_ALL_TAB_ID else it.activeSearchCategory
-                    )
-                }
+            is LibraryAction.OnSearchQueryChange -> setSearchQuery(action.query)
+
+            is LibraryAction.OnSearch -> {
+                setSearchQuery(action.query)
+                appSettings.addRecentSearch(SearchSurface.LIBRARY, action.query)
             }
 
             is LibraryAction.OnSearchCategoryChange -> {
@@ -250,6 +252,12 @@ class LibraryViewModel @Inject constructor(
                 // the UI falls back to "All" if that list has no matches for the current query.
                 _uiState.update { it.copy(activeSearchCategory = action.currentTabId) }
             }
+
+            is LibraryAction.SaveRecentSearch ->
+                appSettings.addRecentSearch(SearchSurface.LIBRARY, action.query)
+            is LibraryAction.RemoveRecentSearch ->
+                appSettings.removeRecentSearch(SearchSurface.LIBRARY, action.query)
+            is LibraryAction.ClearRecentSearches -> appSettings.clearRecentSearches(SearchSurface.LIBRARY)
 
             is LibraryAction.IncrementProgress -> updateProgress(action.mediaId, 1)
             is LibraryAction.DecrementProgress -> updateProgress(action.mediaId, -1)
@@ -683,6 +691,16 @@ class LibraryViewModel @Inject constructor(
         if (!hasLoadedInitially) {
             hasLoadedInitially = true
             refresh()
+        }
+    }
+
+    private fun setSearchQuery(query: String) {
+        _uiState.update {
+            it.copy(
+                searchQuery = query,
+                // A blank query resets the category chips back to "All".
+                activeSearchCategory = if (query.isBlank()) LIBRARY_ALL_TAB_ID else it.activeSearchCategory
+            )
         }
     }
 

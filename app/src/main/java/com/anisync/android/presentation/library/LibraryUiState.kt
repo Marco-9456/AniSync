@@ -101,6 +101,7 @@ data class LibraryUiState(
     val isAscending: Boolean = true,
     val isRefreshing: Boolean = false,
     val searchQuery: String = "",
+    val recentSearches: List<String> = emptyList(),
     /** Bumped when the Library tab is reselected, asking the open list to scroll to the top. */
     val scrollToTopRequest: Long = 0L,
     /** Bumped when the tab is double-tapped, asking the search bar to expand. */
@@ -191,6 +192,14 @@ sealed interface LibraryAction {
     data class OnSearchQueryChange(val query: String) : LibraryAction
     data class OnSearchCategoryChange(val categoryId: String) : LibraryAction
     data class OnSearchOpened(val currentTabId: String) : LibraryAction
+
+    /** The search key or a recent search: matches now, past the typing pause, and keeps the query. */
+    data class OnSearch(val query: String) : LibraryAction
+
+    /** Something was done with a match, so the query that found it is worth keeping. */
+    data class SaveRecentSearch(val query: String) : LibraryAction
+    data class RemoveRecentSearch(val query: String) : LibraryAction
+    data object ClearRecentSearches : LibraryAction
     data class IncrementProgress(val mediaId: Int) : LibraryAction
     data class DecrementProgress(val mediaId: Int) : LibraryAction
     data class EditEntry(val entry: LibraryEntry) : LibraryAction

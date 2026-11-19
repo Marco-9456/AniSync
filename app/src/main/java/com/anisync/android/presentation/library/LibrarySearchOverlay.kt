@@ -27,6 +27,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.LocalWhatsNew
 import com.anisync.android.presentation.components.PinnedRail
+import com.anisync.android.presentation.components.RecentSearches
 import com.anisync.android.presentation.components.ViewModeToggle
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
 import com.anisync.android.presentation.components.revealChip
@@ -102,6 +103,9 @@ internal fun LibrarySearchOverlay(
     onResultClick: (Int) -> Unit,
     onIncrement: (Int) -> Unit,
     onEdit: (LibraryEntry) -> Unit,
+    onRecentSearch: (String) -> Unit,
+    onRemoveRecentSearch: (String) -> Unit,
+    onClearRecentSearches: () -> Unit,
     modifier: Modifier = Modifier,
     resultsModifier: Modifier = Modifier
 ) {
@@ -140,8 +144,17 @@ internal fun LibrarySearchOverlay(
                     onClearFilters = onClearFilters
                 )
 
-            // Nothing typed and nothing filtered: keep the overlay empty, as Discover does.
-            uiState.searchMatches.isEmpty() -> Box(Modifier.fillMaxSize())
+            // Nothing typed and nothing filtered: the recent searches, or nothing, as in Discover.
+            uiState.searchMatches.isEmpty() -> if (uiState.recentSearches.isNotEmpty()) {
+                RecentSearches(
+                    searches = uiState.recentSearches,
+                    onSearch = onRecentSearch,
+                    onRemove = onRemoveRecentSearch,
+                    onClearAll = onClearRecentSearches
+                )
+            } else {
+                Box(Modifier.fillMaxSize())
+            }
 
             else -> {
                 LibrarySearchRail(
