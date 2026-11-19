@@ -124,18 +124,14 @@ import com.anisync.android.domain.MainTab
 import com.anisync.android.presentation.util.LocalRailFabState
 import com.anisync.android.presentation.util.SetRailFab
 import com.anisync.android.presentation.util.bouncyClickable
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.milliseconds
 import com.anisync.android.presentation.components.ScrollToTopOnRequest
 import com.anisync.android.presentation.components.ExpandSearchOnRequest
 
 @OptIn(
     ExperimentalMaterial3Api::class,
-    ExperimentalMaterial3ExpressiveApi::class,
-    FlowPreview::class
+    ExperimentalMaterial3ExpressiveApi::class
 )
 @Composable
 fun ForumScreen(
@@ -236,7 +232,6 @@ fun ForumScreen(
 
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
-            .debounce(300.milliseconds)
             .collect { viewModel.onAction(ForumAction.OnSearchQueryChange(it)) }
     }
 
@@ -591,7 +586,7 @@ fun ForumScreen(
     val searchFilters = uiState.searchFilters
     val searchActive = searchFilters.query.trim().length >= 2 || searchFilters.hasActiveFilters
     val fieldCollapse = rememberSearchFieldCollapse(searchBarState)
-    val hasSearchResults = searchActive && uiState.searchResults.isNotEmpty()
+    val hasSearchResults = searchActive && uiState.searchResults.isNotEmpty() && !uiState.isTypingSearch
     LaunchedEffect(fieldCollapse, hasSearchResults) {
         if (!hasSearchResults) fieldCollapse.expand()
     }
@@ -634,32 +629,41 @@ fun ForumScreen(
                 )
             }
 
+            val typing = uiState.isTypingSearch
+            val runRecentSearch: (String) -> Unit = { query ->
+                textFieldState.setTextAndPlaceCursorAtEnd(query)
+                focusManager.clearFocus()
+                viewModel.onAction(ForumAction.OnSearch(query))
+            }
             when {
                 uiState.isSearching && uiState.searchResults.isEmpty() -> Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) { AppCircularProgressIndicator() }
 
-                uiState.searchError != null && uiState.searchResults.isEmpty() -> EmptyState(
+                typing && uiState.matchingRecentSearches.isNotEmpty() -> RecentSearches(
+                    searches = uiState.matchingRecentSearches,
+                    onSearch = runRecentSearch,
+                    onRemove = { viewModel.onAction(ForumAction.RemoveRecentSearch(it)) },
+                    onClearAll = null
+                )
+
+                !typing && uiState.searchError != null && uiState.searchResults.isEmpty() -> EmptyState(
                     icon = Icons.Outlined.CloudOff,
                     title = stringResource(R.string.forum_empty_failed_title),
                     description = stringResource(R.string.forum_empty_failed_desc),
                     animationKey = uiState.searchError
                 )
 
-                !searchActive && searchFilters.query.isEmpty() && uiState.recentSearches.isNotEmpty() ->
+                !typing && !searchActive && searchFilters.query.isEmpty() && uiState.recentSearches.isNotEmpty() ->
                     RecentSearches(
                         searches = uiState.recentSearches,
-                        onSearch = { query ->
-                            textFieldState.setTextAndPlaceCursorAtEnd(query)
-                            focusManager.clearFocus()
-                            viewModel.onAction(ForumAction.OnSearch(query))
-                        },
+                        onSearch = runRecentSearch,
                         onRemove = { viewModel.onAction(ForumAction.RemoveRecentSearch(it)) },
                         onClearAll = { viewModel.onAction(ForumAction.ClearRecentSearches) }
                     )
 
-                !searchActive -> Box(
+                typing || !searchActive -> Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {

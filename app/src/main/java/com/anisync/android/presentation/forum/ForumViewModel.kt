@@ -315,14 +315,17 @@ class ForumViewModel @Inject constructor(
             is ForumAction.ToggleSubscribeThread -> toggleSubscribe(action.thread)
 
             // ---- Advanced search ----
-            is ForumAction.OnSearchQueryChange -> updateFilters { it.copy(query = action.query) }
+            // Typing waits for the search key. Emptying the field searches for nothing at once.
+            is ForumAction.OnSearchQueryChange ->
+                if (action.query.isEmpty()) onSearch(action.query)
+                else _uiState.update { it.copy(searchInput = action.query) }
             is ForumAction.OnSearch -> onSearch(action.query)
             is ForumAction.RemoveRecentSearch ->
                 appSettings.removeRecentSearch(SearchSurface.FORUM, action.query)
             is ForumAction.ClearRecentSearches -> appSettings.clearRecentSearches(SearchSurface.FORUM)
             is ForumAction.LoadMoreSearch -> loadMoreSearch()
             is ForumAction.ClearSearchFilters ->
-                _uiState.update { it.copy(searchFilters = ForumSearchFilters(query = it.searchFilters.query)) }
+                _uiState.update { it.copy(searchFilters = ForumSearchFilters(query = it.searchInput)) }
 
             is ForumAction.OnSortChange -> updateFilters { it.copy(sort = action.sort) }
             is ForumAction.OnCategoryFilterChange -> updateFilters { it.copy(category = action.category) }
@@ -653,8 +656,9 @@ class ForumViewModel @Inject constructor(
     // ADVANCED SEARCH (overlay)
     // =========================================================================
 
+    /** A filter narrows what is typed, so changing one runs the search for it as well. */
     private fun updateFilters(transform: (ForumSearchFilters) -> ForumSearchFilters) {
-        _uiState.update { it.copy(searchFilters = transform(it.searchFilters)) }
+        _uiState.update { it.copy(searchFilters = transform(it.searchFilters).copy(query = it.searchInput)) }
     }
 
     private fun onSearch(query: String) {
@@ -664,7 +668,11 @@ class ForumViewModel @Inject constructor(
             // Spinning from the tap, since the request waits out the debounce and until then an
             // empty result list reads as nothing matching.
             val startsSearch = filters.shouldSearch() && filters != state.searchFilters
-            state.copy(searchFilters = filters, isSearching = state.isSearching || startsSearch)
+            state.copy(
+                searchInput = query,
+                searchFilters = filters,
+                isSearching = state.isSearching || startsSearch
+            )
         }
     }
 

@@ -99,6 +99,8 @@ data class ForumUiState(
     val actionSheetThread: ForumThread? = null,
 
     // --- Advanced search overlay state (independent of the hub list) ---
+    /** What is in the search field. It reaches [searchFilters] once the search key is pressed. */
+    val searchInput: String = "",
     val searchFilters: ForumSearchFilters = ForumSearchFilters(),
     val searchResults: ImmutableList<ForumThread> = persistentListOf(),
     val isSearching: Boolean = false,
@@ -134,6 +136,14 @@ data class ForumUiState(
             hubFilters.author != null,
             hubFilters.subscribedOnly
         ).count { it }
+
+    /** Text typed since the last search, which runs once the search key is pressed. */
+    val isTypingSearch: Boolean
+        get() = searchInput.isNotEmpty() && searchInput != searchFilters.query
+
+    /** The recent searches holding what is being typed, to pick one instead of finishing it. */
+    val matchingRecentSearches: List<String>
+        get() = searchInput.trim().let { typed -> recentSearches.filter { it.contains(typed, ignoreCase = true) } }
 
     /** True when the hub needs the search endpoint rather than the plain overview query. */
     val hubNeedsSearch: Boolean
@@ -207,7 +217,7 @@ sealed interface ForumAction {
     data object ResetOverviewOrder : ForumAction
 
     // --- Advanced search ---
-    /** Text typed into the search bar; debounced into a thread search. */
+    /** Text typed into the search bar, searched for once the search key is pressed. */
     data class OnSearchQueryChange(val query: String) : ForumAction
 
     /** The search key or a recent search: searches now, past the typing pause, and keeps the query. */
