@@ -1717,7 +1717,6 @@ fun PageHeaderSection(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
 
     // --- Transition Keys ---
     val coverKey = remember(details.id) { TransitionKeys.cover(sourceScreen, details.id) }
@@ -1732,12 +1731,54 @@ fun PageHeaderSection(
     // --- UI Constants ---
     val spatialSpec = AppMotion.rememberSpatialSpec()
     val coverShape = RoundedCornerShape(dimensionResource(R.dimen.corner_radius_large))
-    val themeBackground = MaterialTheme.colorScheme.background
 
     // --- Data Preparation ---
     val displayTitle = remember(details, titleLanguage) { details.getTitle(titleLanguage) }
     val formattedScore = remember(details.score) { details.score?.asTenPointScore() }
 
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(headerHeight(details))
+    ) {
+        HeaderBanner(details = details, onBannerClick = onBannerClick)
+
+        // Content Row (Cover + Title + Metadata)
+        ContentRow(
+            details = details,
+            displayTitle = displayTitle,
+            formattedScore = formattedScore,
+            coverKey = coverKey,
+            titleKey = titleKey,
+            cacheKey = cacheKey,
+            coverShape = coverShape,
+            spatialSpec = spatialSpec,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            onCoverClick = onCoverClick,
+            onScoreClick = onScoreClick
+        )
+    }
+}
+
+/**
+ * Nothing to show means no banner rather than the cover stretched across the top as a stand-in, so
+ * the header shrinks to the cover and the title. It carries the status-bar height so the artwork
+ * fills it and the rest stays put.
+ */
+@Composable
+private fun headerHeight(details: MediaDetails): Dp =
+    statusBarInset() + if (details.headerBanner != null) 330.dp else 250.dp
+
+/** What the header draws behind the cover and the title: the banner, its trailer chip and its fade. */
+@Composable
+private fun HeaderBanner(
+    details: MediaDetails,
+    modifier: Modifier = Modifier,
+    onBannerClick: () -> Unit = {}
+) {
+    val uriHandler = LocalUriHandler.current
+    val themeBackground = MaterialTheme.colorScheme.background
     val bannerModel = remember(details) { details.headerBanner }
 
     // Calculate if we need a custom crop ratio
@@ -1746,15 +1787,12 @@ fun PageHeaderSection(
         bannerModel != null && bannerModel == details.trailer?.thumbnail
     }
 
-    // The header carries the status-bar height so the artwork fills it and the rest stays put.
     val topInset = statusBarInset()
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            // Nothing to show means no banner rather than the cover stretched across the top as a
-            // stand-in, so the header shrinks to the cover and the title.
-            .height(topInset + if (bannerModel != null) 330.dp else 250.dp)
+            .height(headerHeight(details))
     ) {
         // 1. Banner Image Layer. Only real artwork opens the viewer: the trailer thumbnail that
         // stands in for a missing banner isn't in the viewer's list.
@@ -1799,22 +1837,6 @@ fun PageHeaderSection(
         if (bannerModel != null) {
             BannerGradients(themeBackground = themeBackground)
         }
-
-        // 4. Content Row (Cover + Title + Metadata)
-        ContentRow(
-            details = details,
-            displayTitle = displayTitle,
-            formattedScore = formattedScore,
-            coverKey = coverKey,
-            titleKey = titleKey,
-            cacheKey = cacheKey,
-            coverShape = coverShape,
-            spatialSpec = spatialSpec,
-            sharedTransitionScope = sharedTransitionScope,
-            animatedVisibilityScope = animatedVisibilityScope,
-            onCoverClick = onCoverClick,
-            onScoreClick = onScoreClick
-        )
     }
 }
 
