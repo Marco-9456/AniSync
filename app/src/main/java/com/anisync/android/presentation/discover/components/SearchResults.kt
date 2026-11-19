@@ -40,6 +40,7 @@ import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.ResultCategory
 import com.anisync.android.domain.SearchResult
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
+import com.anisync.android.presentation.components.OnSearchSurface
 import com.anisync.android.presentation.components.PinnedRail
 import com.anisync.android.presentation.components.RailChip
 import com.anisync.android.presentation.components.revealChip
@@ -82,18 +83,20 @@ fun SearchResultsRail(
     LaunchedEffect(selectedIndex) {
         if (selectedIndex >= 0) listState.revealChip(selectedIndex)
     }
-    PinnedRail(
-        pinned = { ViewModeToggle(isGrid = isGrid, onGridChange = onGridChange) },
-        listState = listState,
-        modifier = modifier
-    ) {
-        items(categories, key = { it.name }) { category ->
-            RailChip(
-                label = category.label(),
-                icon = category.icon(),
-                selected = category == activeCategory,
-                onClick = { onCategoryChange(category) }
-            )
+    OnSearchSurface {
+        PinnedRail(
+            pinned = { ViewModeToggle(isGrid = isGrid, onGridChange = onGridChange) },
+            listState = listState,
+            modifier = modifier
+        ) {
+            items(categories, key = { it.name }) { category ->
+                RailChip(
+                    label = category.label(),
+                    icon = category.icon(),
+                    selected = category == activeCategory,
+                    onClick = { onCategoryChange(category) }
+                )
+            }
         }
     }
 }

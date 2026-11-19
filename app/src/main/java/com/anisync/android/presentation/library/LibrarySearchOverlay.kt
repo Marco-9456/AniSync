@@ -26,6 +26,7 @@ import com.anisync.android.data.WhatsNewItem
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.presentation.components.LocalWhatsNew
+import com.anisync.android.presentation.components.OnSearchSurface
 import com.anisync.android.presentation.components.PinnedRail
 import com.anisync.android.presentation.components.RecentSearches
 import com.anisync.android.presentation.components.ViewModeToggle
@@ -188,19 +189,21 @@ private fun LibrarySearchRail(
     LaunchedEffect(selectedIndex) {
         if (selectedIndex >= 0) listState.revealChip(selectedIndex)
     }
-    PinnedRail(
-        pinned = { ViewModeToggle(isGrid = uiState.isGridView, onGridChange = onGridChange) },
-        listState = listState,
-        modifier = Modifier.padding(bottom = 8.dp)
-    ) {
-        items(view.categories, key = { it.first.toId() }) { (tab, count) ->
-            LibraryRailChip(
-                tab = tab,
-                mediaType = uiState.mediaType,
-                count = count,
-                selected = tab == view.active,
-                onClick = { onCategoryChange(tab.toId()) }
-            )
+    OnSearchSurface {
+        PinnedRail(
+            pinned = { ViewModeToggle(isGrid = uiState.isGridView, onGridChange = onGridChange) },
+            listState = listState,
+            modifier = Modifier.padding(bottom = 8.dp)
+        ) {
+            items(view.categories, key = { it.first.toId() }) { (tab, count) ->
+                LibraryRailChip(
+                    tab = tab,
+                    mediaType = uiState.mediaType,
+                    count = count,
+                    selected = tab == view.active,
+                    onClick = { onCategoryChange(tab.toId()) }
+                )
+            }
         }
     }
 }

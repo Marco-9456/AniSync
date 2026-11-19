@@ -946,8 +946,6 @@ private fun DiscoverSearchOverlay(
     EmbeddedFullScreenSearchBar(
         state = searchBarState,
         anchor = searchAnchor,
-        // On background rather than surfaceContainerHigh, so the result cards keep their contrast.
-        colors = SearchBarDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
         inputField = {
             SearchInputField(
                 searchBarState = searchBarState,
@@ -964,7 +962,7 @@ private fun DiscoverSearchOverlay(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .then(fieldCollapse.content(topInset, MaterialTheme.colorScheme.background))
+                .then(fieldCollapse.content(topInset, SearchBarDefaults.colors().containerColor))
         ) {
             // Characters, staff, users and studios are found by name alone, so the media
             // filters would have nothing to narrow there.

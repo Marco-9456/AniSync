@@ -684,8 +684,6 @@ fun LibraryScreen(
     EmbeddedFullScreenSearchBar(
         state = searchBarState,
         anchor = searchAnchor,
-        // On background rather than surfaceContainerHigh, so the cards keep their contrast.
-        colors = SearchBarDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
         inputField = {
             Box(modifier = fieldCollapse.field, propagateMinConstraints = true) { inputField() }
         }
@@ -694,7 +692,7 @@ fun LibraryScreen(
         LibrarySearchOverlay(
             modifier = fieldCollapse.content(
                 topInset = WindowInsets.safeDrawing.getTop(LocalDensity.current),
-                background = MaterialTheme.colorScheme.background
+                background = SearchBarDefaults.colors().containerColor
             ),
             resultsModifier = Modifier.nestedScroll(fieldCollapse.nestedScrollConnection),
             uiState = uiState,

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBarColors
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarState
@@ -88,6 +89,24 @@ class SearchBarAnchor {
 
 fun Modifier.searchBarAnchor(anchor: SearchBarAnchor): Modifier =
     onGloballyPositioned { anchor.coordinates = it }
+
+/**
+ * The expanded search sits on surfaceContainerHigh, three surface steps over the page a rail is
+ * drawn against, so every surface role inside moves up as far and each layer keeps its contrast.
+ */
+@Composable
+fun OnSearchSurface(content: @Composable () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val raised = remember(scheme) {
+        scheme.copy(
+            background = scheme.surfaceContainerHigh,
+            surfaceContainerLow = scheme.surfaceContainerHighest,
+            surfaceContainer = scheme.surfaceContainerHighest,
+            surfaceContainerHigh = scheme.surfaceContainerHighest
+        )
+    }
+    MaterialTheme(colorScheme = raised, content = content)
+}
 
 /** Keeps what the expanded bar covers away from screen readers, as the dialog window used to. */
 @OptIn(ExperimentalMaterial3Api::class)
