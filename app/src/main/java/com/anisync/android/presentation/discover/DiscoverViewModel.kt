@@ -393,7 +393,8 @@ class DiscoverViewModel @Inject constructor(
                                 searchAnime = emptyList(),
                                 searchManga = emptyList(),
                                 groupedResults = GroupedSearchResults(),
-                                isSearching = false
+                                isSearching = false,
+                                searchError = null
                             )
                         }
                         return@collectLatest
