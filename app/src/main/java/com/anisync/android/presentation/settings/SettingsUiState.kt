@@ -32,6 +32,7 @@ sealed interface SettingsAction {
     data class SetNavBarShowLabels(val show: Boolean) : SettingsAction
     data class SetNavBarDoubleTapSearch(val enabled: Boolean) : SettingsAction
     data class SetBackTrailEnabled(val enabled: Boolean) : SettingsAction
+    data class SetSearchHistoryEnabled(val enabled: Boolean) : SettingsAction
     data class SetNavBarCornerRadius(val radius: Float) : SettingsAction
     data class SetAvatarShape(val shape: AvatarShape) : SettingsAction
     data class SetAvatarBackgroundEnabled(val enabled: Boolean) : SettingsAction

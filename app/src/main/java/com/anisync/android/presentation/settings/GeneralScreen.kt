@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ManageSearch
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayCircle
@@ -59,7 +60,7 @@ import com.anisync.android.presentation.util.LocalAppSettings
 
 /**
  * Settings that change how the app behaves rather than how it looks: where it opens, the lock,
- * tab gestures, haptics, language, and which streaming service links point to.
+ * tab gestures, haptics, search history, language, and which streaming service links point to.
  */
 @Composable
 fun GeneralScreen(
@@ -73,6 +74,7 @@ fun GeneralScreen(
     // are already at their arity ceiling, and this is a single value with a single writer.
     val startScreen by LocalAppSettings.current.startScreen.collectAsStateWithLifecycle()
     val backTrailEnabled by LocalAppSettings.current.backTrailEnabled.collectAsStateWithLifecycle()
+    val searchHistoryEnabled by LocalAppSettings.current.searchHistoryEnabled.collectAsStateWithLifecycle()
 
     var showStartScreenSheet by rememberSaveable { mutableStateOf(false) }
     var showStreamingServiceSheet by rememberSaveable { mutableStateOf(false) }
@@ -106,9 +108,13 @@ fun GeneralScreen(
     val whatsNew = rememberActiveWhatsNew()
     // Read once on entry so the pill stays up for the visit that clears it.
     val showBackTrailNew = remember { WhatsNewItem.GENERAL_BACK_TRAIL in whatsNewStore.active.value }
+    val showSearchHistoryNew = remember {
+        WhatsNewItem.GENERAL_SEARCH_HISTORY in whatsNewStore.active.value
+    }
     LaunchedEffect(Unit) {
         whatsNewStore.markSeen(WhatsNewItem.SETTINGS_GENERAL)
         whatsNewStore.markSeen(WhatsNewItem.GENERAL_BACK_TRAIL)
+        whatsNewStore.markSeen(WhatsNewItem.GENERAL_SEARCH_HISTORY)
     }
 
     SettingsScreenScaffold(
@@ -166,6 +172,22 @@ fun GeneralScreen(
                 title = stringResource(R.string.setting_haptic_feedback),
                 checked = uiState.hapticEnabled,
                 onCheckedChange = { viewModel.onAction(SettingsAction.SetHapticEnabled(it)) }
+            )
+        }
+
+        SettingsSectionLabel(stringResource(R.string.settings_section_search))
+        SettingsGroup {
+            SwitchSettingsItem(
+                icon = Icons.AutoMirrored.Filled.ManageSearch,
+                title = stringResource(R.string.settings_search_history),
+                subtitle = stringResource(R.string.settings_search_history_desc),
+                checked = searchHistoryEnabled,
+                onCheckedChange = { viewModel.onAction(SettingsAction.SetSearchHistoryEnabled(it)) },
+                titleBadge = if (showSearchHistoryNew) {
+                    { WhatsNewPill(WhatsNewItem.Kind.NEW) }
+                } else {
+                    null
+                }
             )
         }
 
