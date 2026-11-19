@@ -74,8 +74,16 @@ class DiscoverViewModel @Inject constructor(
         val query: String = "",
         val filterHash: Int = 0,
         /** Tells the Studios chip apart from a cleared search, which carries the same query and filters. */
-        val browsingStudios: Boolean = false
-    )
+        val browsingStudios: Boolean = false,
+        /** The search key or a recent search, which skip the pause that waits for typing to stop. */
+        val submitted: Boolean = false
+    ) {
+        fun isSameSearch(other: SearchTriggerState): Boolean =
+            copy(submitted = false) == other.copy(submitted = false)
+    }
+
+    /** The search the results on screen came from. */
+    private var lastRunTrigger = SearchTriggerState()
 
     init {
         observeSectionOrder()
@@ -242,8 +250,13 @@ class DiscoverViewModel @Inject constructor(
 
     private fun onSearch(query: String) {
         val currentState = _uiState.value
-        _uiState.update { currentState.copy(searchQuery = query) }
-        searchTrigger.value = SearchTriggerState(query, currentState.searchFilters.hashCode())
+        val trigger = SearchTriggerState(query, currentState.searchFilters.hashCode(), submitted = true)
+        val submitted = currentState.copy(searchQuery = query)
+        // Spinning from the tap, since the request only starts a moment later and until then an
+        // empty result list reads as No results.
+        val startsSearch = submitted.shouldSearch() && !trigger.isSameSearch(lastRunTrigger)
+        _uiState.update { submitted.copy(isSearching = submitted.isSearching || startsSearch) }
+        searchTrigger.value = trigger
         appSettings.addRecentSearch(SearchSurface.DISCOVER, query)
     }
 
@@ -366,9 +379,10 @@ class DiscoverViewModel @Inject constructor(
     private fun observeSearchQuery() {
         viewModelScope.launch {
             searchTrigger
-                .debounce(350L)
-                .distinctUntilChanged()
+                .debounce { if (it.submitted) 0L else 350L }
+                .distinctUntilChanged { old, new -> old.isSameSearch(new) }
                 .collectLatest { trigger ->
+                    lastRunTrigger = trigger
                     val currentState = _uiState.value
                     val query = currentState.searchQuery
                     val filters = currentState.searchFilters
