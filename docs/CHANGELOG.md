@@ -11,15 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Search History** - Discover, Library and Forum search each remember the last ten things you searched for and list them while the search field is empty. A tap runs one again, the cross beside it forgets it, and Clear all forgets the lot. A search is kept once you press the search key or do something with one of its results. A switch under General turns it off, which also clears what was kept. (#174)
+- **Search History** - Discover, Library and Forum search each remember the last ten things you searched for. They are listed while the search field is empty, and as you type, the ones holding what you typed stay listed. A tap runs one again, the cross beside it forgets it, and Clear all forgets the lot. A search is kept when you press the search key or pick a recent one. A switch under General turns it off, which also clears what was kept. (#174)
 - **Support AniSync** - Donate is now Support AniSync, in Settings and in About. One button buys a coffee on Ko-fi with GitHub Sponsors beside it, and a thank-you wall lists everyone who has left a tip on either, newest first. Starring, translating, reporting a bug and sharing the app sit below, for anyone who would rather help that way.
 
 ### Changed
 
+- **Search** - Discover and Forum search now wait for the search key instead of searching while you type, which spends far fewer of AniList's requests. Library still filters your list as you type.
 - **Support Card** - The tip card only asks after a feature update, at most once every three months and never in the app's first two weeks. Instead of opening over the app at launch it waits for a list edit to reach AniList, and it rises above the navigation bar. Two Not now answers in a row turn it off, as does the new Support reminders switch.
 
 ### Fixed
 
+- **Profile About** - A short About on a profile lost the first letter of its top and bottom lines to the rounded corners around it.
 - **Search Screens** - Discover and Library search now sit on the same surface as Forum search. Picking a category without filters, such as Users, no longer leaves its row of categories pressed against the line under the search field.
 - **Supporter List** - The list of supporters was always empty, because it only read current GitHub sponsorships. Tips left on Ko-fi now show up too.
 - **Building Recaps** - While Statistics built your first recaps it showed nothing but a spinner, for minutes on a long list, which looked stuck. It now says that the first build reads every list update since January of last year and that AniList's pace limit makes this take a few minutes, with a bar for how far back it has read. A build the phone stops part way carries on from what it had already read the next time, and one that fails waits on a Retry button instead of starting over on its own. (#187)
