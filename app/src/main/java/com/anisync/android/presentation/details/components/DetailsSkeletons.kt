@@ -32,6 +32,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
+import com.anisync.android.presentation.components.hiddenWhilePulled
 import com.anisync.android.presentation.util.shimmerEffect
 
 /**
@@ -42,15 +43,6 @@ import com.anisync.android.presentation.util.shimmerEffect
 fun DetailsSkeletonContent(
     @Suppress("UNUSED_PARAMETER") onBackClick: () -> Unit // Kept for API compatibility, TopAppBar now handles the back button
 ) {
-    val themeBackground = MaterialTheme.colorScheme.background
-
-    // Cache the gradient brush to avoid recreating it on every recomposition
-    val bottomScrimBrush = remember(themeBackground) {
-        Brush.verticalGradient(
-            colors = listOf(Color.Transparent, themeBackground)
-        )
-    }
-
     // Cache common shapes to prevent repeated allocations
     val smallShape = remember { RoundedCornerShape(4.dp) }
     val mediumShape = remember { RoundedCornerShape(12.dp) }
@@ -88,32 +80,7 @@ fun DetailsSkeletonContent(
                     .fillMaxWidth()
                     .height(topInset + 330.dp)
             ) {
-                // Banner Image Layer
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(topInset + 220.dp)
-                        .shimmerEffect()
-                )
-
-                // Gradient Overlays (Visual integration)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 100.dp) // Starts fading before the solid block
-                        .background(bottomScrimBrush)
-                )
-
-                // Solid background block for the text area
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp)
-                        .align(Alignment.BottomCenter)
-                        .background(themeBackground)
-                )
+                DetailsSkeletonBanner(Modifier.hiddenWhilePulled())
 
                 // Content Row (Cover + Title + Metadata)
                 Row(
@@ -293,6 +260,54 @@ fun DetailsSkeletonContent(
                 }
             }
         }
+    }
+}
+
+/** The skeleton's banner and its fade into the page, which a pull holds still like the real one. */
+@Composable
+fun DetailsSkeletonBanner(modifier: Modifier = Modifier) {
+    val themeBackground = MaterialTheme.colorScheme.background
+
+    // Cache the gradient brush to avoid recreating it on every recomposition
+    val bottomScrimBrush = remember(themeBackground) {
+        Brush.verticalGradient(
+            colors = listOf(Color.Transparent, themeBackground)
+        )
+    }
+
+    // Matches the real header, which carries the status-bar height.
+    val topInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(topInset + 330.dp)
+    ) {
+        // Banner Image Layer
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(topInset + 220.dp)
+                .shimmerEffect()
+        )
+
+        // Gradient Overlays (Visual integration)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 100.dp) // Starts fading before the solid block
+                .background(bottomScrimBrush)
+        )
+
+        // Solid background block for the text area
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .align(Alignment.BottomCenter)
+                .background(themeBackground)
+        )
     }
 }
 

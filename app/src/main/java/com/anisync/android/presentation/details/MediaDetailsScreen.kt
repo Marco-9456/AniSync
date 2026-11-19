@@ -146,6 +146,7 @@ import com.anisync.android.presentation.components.UserAvatar
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.details.components.CharacterItem
 import com.anisync.android.presentation.details.components.ContentMetadataSection
+import com.anisync.android.presentation.details.components.DetailsSkeletonBanner
 import com.anisync.android.presentation.details.components.DetailsSkeletonContent
 import com.anisync.android.presentation.details.components.ExpandableSynopsis
 import com.anisync.android.presentation.details.components.ExternalLinksSection
@@ -508,12 +509,13 @@ fun MediaDetailsScreen(
                         topInset = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding(),
                         backdrop = {
                             when (val state = uiState) {
+                                is DetailsUiState.Loading -> DetailsSkeletonBanner(Modifier.shownWhilePulled())
                                 is DetailsUiState.Success -> HeaderBanner(
                                     details = state.details,
                                     painter = bannerPainter,
                                     modifier = Modifier.shownWhilePulled()
                                 )
-                                else -> Unit
+                                is DetailsUiState.Error -> Unit
                             }
                         }
                     ) {
