@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Search History** - Discover, Library and Forum search each remember the last ten things you searched for and list them while the search field is empty. A tap runs one again, the cross beside it forgets it, and Clear all forgets the lot. A search is kept once you press the search key or do something with one of its results. A switch under General turns it off, which also clears what was kept. (#174)
 - **Support AniSync** - Donate is now Support AniSync, in Settings and in About. One button buys a coffee on Ko-fi with GitHub Sponsors beside it, and a thank-you wall lists everyone who has left a tip on either, newest first. Starring, translating, reporting a bug and sharing the app sit below, for anyone who would rather help that way.
 
 ### Changed
