@@ -1261,6 +1261,11 @@
     <string name="search_header_users">Users</string>
     <string name="search_header_studios">Studios</string>
     <string name="search_result_studio">Studio</string>
+    <string name="search_recent_title">Recent searches</string>
+    <string name="search_recent_clear_all">Clear all</string>
+    <string name="a11y_search_recent_clear_all">Clear all recent searches</string>
+    <string name="a11y_action_search_again">Search again</string>
+    <string name="cd_search_recent_remove">Remove %1$s from recent searches</string>
     <string name="empty_no_items">No items found</string>
     <string name="all">All</string>
     <!-- Details Screens -->
