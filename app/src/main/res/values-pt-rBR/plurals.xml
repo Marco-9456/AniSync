@@ -455,4 +455,109 @@
         <item quantity="many">pessoas</item>
         <item quantity="other">pessoas</item>
     </plurals>
+    <plurals name="profile_list_titles">
+        <item quantity="one">%1$s título</item>
+        <item quantity="many">%1$s títulos</item>
+        <item quantity="other">%1$s títulos</item>
+    </plurals>
+    <plurals name="profile_list_results_for">
+        <item quantity="one">%1$s resultado para %2$s</item>
+        <item quantity="many">%1$s resultados para %2$s</item>
+        <item quantity="other">%1$s resultados para %2$s</item>
+    </plurals>
+    <plurals name="profile_days_watched">
+        <item quantity="one">%1$s dia assistido</item>
+        <item quantity="many">%1$s dias assistidos</item>
+        <item quantity="other">%1$s dias assistidos</item>
+    </plurals>
+    <plurals name="profile_people_count">
+        <item quantity="one">%1$s pessoa</item>
+        <item quantity="many">%1$s pessoas</item>
+        <item quantity="other">%1$s pessoas</item>
+    </plurals>
+    <plurals name="profile_favorites_count_titles">
+        <item quantity="one">%1$s título</item>
+        <item quantity="many">%1$s títulos</item>
+        <item quantity="other">%1$s títulos</item>
+    </plurals>
+    <plurals name="profile_favorites_count_characters">
+        <item quantity="one">%1$s personagem</item>
+        <item quantity="many">%1$s personagens</item>
+        <item quantity="other">%1$s personagens</item>
+    </plurals>
+    <plurals name="profile_favorites_count_staff">
+        <item quantity="one">%1$s membro da equipe</item>
+        <item quantity="many">%1$s membros da equipe</item>
+        <item quantity="other">%1$s membros da equipe</item>
+    </plurals>
+    <plurals name="profile_favorites_count_studios">
+        <item quantity="one">%1$s estúdio</item>
+        <item quantity="many">%1$s estúdios</item>
+        <item quantity="other">%1$s estúdios</item>
+    </plurals>
+    <plurals name="profile_compare_shared_anime">
+        <item quantity="one">do seu %1$s anime está na lista de %2$s</item>
+        <item quantity="many">dos seus %1$s animes estão na lista de %2$s</item>
+        <item quantity="other">dos seus %1$s animes estão na lista de %2$s</item>
+    </plurals>
+    <plurals name="profile_compare_shared_manga">
+        <item quantity="one">do seu %1$s mangá está na lista de %2$s</item>
+        <item quantity="many">dos seus %1$s mangás estão na lista de %2$s</item>
+        <item quantity="other">dos seus %1$s mangás estão na lista de %2$s</item>
+    </plurals>
+    <plurals name="profile_compare_shared_anime_too">
+        <item quantity="one">do seu %1$s anime também está na lista de %2$s</item>
+        <item quantity="many">dos seus %1$s animes também estão na lista de %2$s</item>
+        <item quantity="other">dos seus %1$s animes também estão na lista de %2$s</item>
+    </plurals>
+    <plurals name="profile_compare_shared_manga_too">
+        <item quantity="one">do seu %1$s mangá também está na lista de %2$s</item>
+        <item quantity="many">dos seus %1$s mangás também estão na lista de %2$s</item>
+        <item quantity="other">dos seus %1$s mangás também estão na lista de %2$s</item>
+    </plurals>
+    <plurals name="profile_compare_their_tens">
+        <item quantity="one">%1$s título que %2$s deu nota 10 não está na sua lista ainda</item>
+        <item quantity="many">%1$s títulos que %2$s deu nota 10 não estão na sua lista ainda</item>
+        <item quantity="other">%1$s títulos que %2$s deu nota 10 não estão na sua lista ainda</item>
+    </plurals>
+    <plurals name="profile_compare_theirs_not_yours_anime">
+        <item quantity="one">%1$s tem %2$s anime que você não adicionou</item>
+        <item quantity="many">%1$s tem %2$s animes que você não adicionou</item>
+        <item quantity="other">%1$s tem %2$s animes que você não adicionou</item>
+    </plurals>
+    <plurals name="profile_compare_theirs_not_yours_manga">
+        <item quantity="one">%1$s tem %2$s mangá que você não adicionou</item>
+        <item quantity="many">%1$s tem %2$s mangás que você não adicionou</item>
+        <item quantity="other">%1$s tem %2$s mangás que você não adicionou</item>
+    </plurals>
+    <plurals name="profile_compare_yours_not_theirs">
+        <item quantity="one">Você tem %1$s que %2$s não tem adicionado</item>
+        <item quantity="many">Você tem %1$s que %2$s não tem adicionados</item>
+        <item quantity="other">Você tem %1$s que %2$s não tem adicionados</item>
+    </plurals>
+    <plurals name="profile_row_episodes">
+        <item quantity="one">%d episódio</item>
+        <item quantity="many">%d episódios</item>
+        <item quantity="other">%d episódios</item>
+    </plurals>
+    <plurals name="profile_row_chapters">
+        <item quantity="one">%d capítulo</item>
+        <item quantity="many">%d capítulos</item>
+        <item quantity="other">%d capítulos</item>
+    </plurals>
+    <plurals name="profile_row_rewatched">
+        <item quantity="one">reassistido uma vez</item>
+        <item quantity="many">reassistido %d vezes</item>
+        <item quantity="other">reassistido %d vezes</item>
+    </plurals>
+    <plurals name="profile_row_reread">
+        <item quantity="one">relido uma vez</item>
+        <item quantity="many">relido %d vezes</item>
+        <item quantity="other">relido %d vezes</item>
+    </plurals>
+    <plurals name="account_new_notifications">
+        <item quantity="one">%d nova notificação</item>
+        <item quantity="many">%d novas notificações</item>
+        <item quantity="other">%d novas notificações</item>
+    </plurals>
 </resources>
