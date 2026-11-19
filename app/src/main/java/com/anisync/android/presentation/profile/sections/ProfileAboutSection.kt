@@ -34,7 +34,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
@@ -43,6 +47,8 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
@@ -268,7 +274,7 @@ internal fun BioPreview(about: String, onOpen: () -> Unit, modifier: Modifier = 
         ),
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(BioPreviewShape)
             .clickable(onClick = onOpen)
     ) { (card, text, fade, button), constraints ->
         val width = constraints.maxWidth
@@ -293,3 +299,18 @@ internal fun BioPreview(about: String, onOpen: () -> Unit, modifier: Modifier = 
 
 private val BioPreviewHeight = 148.dp
 private val BioShortLimit = 88.dp
+
+/**
+ * Rounded as the card. A bio short enough to read as plain text starts at the box's very edge,
+ * where the corners would cut its first letters, so it keeps square bounds.
+ */
+private object BioPreviewShape : Shape {
+    private val card = RoundedCornerShape(24.dp)
+
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
+        if (size.height > with(density) { BioShortLimit.roundToPx() }) {
+            card.createOutline(size, layoutDirection, density)
+        } else {
+            Outline.Rectangle(size.toRect())
+        }
+}
