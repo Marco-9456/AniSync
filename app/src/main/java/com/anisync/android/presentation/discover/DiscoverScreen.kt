@@ -128,7 +128,6 @@ import com.anisync.android.presentation.discover.components.FilterId
 import com.anisync.android.presentation.discover.components.SearchFilterChipBar
 import com.anisync.android.presentation.discover.components.SearchFilterSheetHost
 import com.anisync.android.presentation.discover.components.SearchResultActions
-import com.anisync.android.presentation.discover.components.beforeEach
 import com.anisync.android.presentation.discover.components.SearchResultsRail
 import com.anisync.android.presentation.settings.components.InfoNotice
 
@@ -1150,7 +1149,6 @@ private fun SearchResults(
     modifier: Modifier = Modifier,
     selected: SearchTarget? = null
 ) {
-    val query = state.searchQuery
     com.anisync.android.presentation.discover.components.SearchResults(
         activeCategory = state.activeCategory,
         isGrid = isGrid,
@@ -1159,7 +1157,7 @@ private fun SearchResults(
         grouped = state.groupedResults,
         paging = state.searchPaging,
         titleLanguage = titleLanguage,
-        actions = actions.beforeEach { onAction(DiscoverAction.SaveRecentSearch(query)) },
+        actions = actions,
         onShowAll = { onAction(DiscoverAction.OnCategoryChange(it)) },
         onLoadMore = { onAction(DiscoverAction.LoadMoreResults) },
         modifier = modifier,

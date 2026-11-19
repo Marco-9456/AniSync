@@ -197,8 +197,6 @@ class DiscoverViewModel @Inject constructor(
             is DiscoverAction.LoadTaxonomy -> loadTaxonomyIfNeeded()
             is DiscoverAction.OnViewModeChange -> appSettings.setDiscoverSearchViewMode(action.mode)
             is DiscoverAction.OnCategoryChange -> onCategoryChange(action.category)
-            is DiscoverAction.SaveRecentSearch ->
-                appSettings.addRecentSearch(SearchSurface.DISCOVER, action.query)
             is DiscoverAction.RemoveRecentSearch ->
                 appSettings.removeRecentSearch(SearchSurface.DISCOVER, action.query)
             is DiscoverAction.ClearRecentSearches -> appSettings.clearRecentSearches(SearchSurface.DISCOVER)
@@ -239,10 +237,6 @@ class DiscoverViewModel @Inject constructor(
 
     private fun onSearchQueryChange(query: String) {
         val currentState = _uiState.value
-        // Clearing a search that found something keeps it, as searching it again would.
-        if (query.isEmpty() && currentState.hasSearchResults) {
-            appSettings.addRecentSearch(SearchSurface.DISCOVER, lastRunTrigger.query)
-        }
         _uiState.update { currentState.copy(searchQuery = query) }
         searchTrigger.value = SearchTriggerState(query, currentState.searchFilters.hashCode())
     }

@@ -191,31 +191,25 @@ fun ForumScreen(
             Unit
         }
     }
-    val saveRecentSearch: () -> Unit = remember(viewModel, textFieldState) {
-        { viewModel.onAction(ForumAction.SaveRecentSearch(textFieldState.text.toString())) }
-    }
     // What a result opens goes over the search, which stays open for back to return to. Dropping
     // focus keeps the keyboard closed when it does.
     val onSearchThreadClick: (Int, String) -> Unit =
-        remember(onThreadClick, focusManager, saveRecentSearch) {
+        remember(onThreadClick, focusManager) {
             { threadId, threadTitle ->
-                saveRecentSearch()
                 focusManager.clearFocus()
                 onThreadClick(threadId, threadTitle)
             }
         }
     val onSearchCommentClick: (Int, Int) -> Unit =
-        remember(onThreadCommentClick, focusManager, saveRecentSearch) {
+        remember(onThreadCommentClick, focusManager) {
             { threadId, commentId ->
-                saveRecentSearch()
                 focusManager.clearFocus()
                 onThreadCommentClick(threadId, commentId)
             }
         }
     val onSearchUserClick: (String) -> Unit =
-        remember(onUserClick, focusManager, saveRecentSearch) {
+        remember(onUserClick, focusManager) {
             { userName ->
-                saveRecentSearch()
                 focusManager.clearFocus()
                 onUserClick(userName)
             }
@@ -721,10 +715,7 @@ fun ForumScreen(
                             onClick = { onSearchThreadClick(thread.id, thread.title) },
                             onUserClick = onSearchUserClick,
                             isSaved = thread.id in uiState.savedThreadIds,
-                            onSaveClick = {
-                                saveRecentSearch()
-                                viewModel.onAction(ForumAction.ToggleSaveThread(thread))
-                            },
+                            onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
                             onOverflowClick = {
                                 viewModel.onAction(ForumAction.OpenThreadActions(thread))
                             },

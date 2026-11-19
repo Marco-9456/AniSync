@@ -196,8 +196,6 @@ sealed interface LibraryAction {
     /** The search key or a recent search: matches now, past the typing pause, and keeps the query. */
     data class OnSearch(val query: String) : LibraryAction
 
-    /** Something was done with a match, so the query that found it is worth keeping. */
-    data class SaveRecentSearch(val query: String) : LibraryAction
     data class RemoveRecentSearch(val query: String) : LibraryAction
     data object ClearRecentSearches : LibraryAction
     data class IncrementProgress(val mediaId: Int) : LibraryAction

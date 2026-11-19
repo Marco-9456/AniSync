@@ -319,15 +319,10 @@ fun LibraryScreen(
         }
     }
 
-    val saveRecentSearch: () -> Unit = remember(viewModel, textFieldState) {
-        { viewModel.onAction(LibraryAction.SaveRecentSearch(textFieldState.text.toString())) }
-    }
-
     // The result opens over the search, which stays open for back to return to. Dropping focus
     // keeps the keyboard closed when it does.
-    val onSearchResultClick: (Int) -> Unit = remember(onMediaClick, focusManager, saveRecentSearch) {
+    val onSearchResultClick: (Int) -> Unit = remember(onMediaClick, focusManager) {
         { id ->
-            saveRecentSearch()
             focusManager.clearFocus()
             onMediaClick(id)
         }
@@ -703,8 +698,8 @@ fun LibraryScreen(
             onCategoryChange = { viewModel.onAction(LibraryAction.OnSearchCategoryChange(it)) },
             onGridChange = { viewModel.onAction(LibraryAction.SetGridView(it)) },
             onResultClick = onSearchResultClick,
-            onIncrement = { saveRecentSearch(); handleIncrement(it) },
-            onEdit = { saveRecentSearch(); handleEdit(it) },
+            onIncrement = handleIncrement,
+            onEdit = handleEdit,
             onRecentSearch = { query ->
                 textFieldState.setTextAndPlaceCursorAtEnd(query)
                 focusManager.clearFocus()

@@ -213,8 +213,6 @@ sealed interface ForumAction {
     /** The search key or a recent search: searches now, past the typing pause, and keeps the query. */
     data class OnSearch(val query: String) : ForumAction
 
-    /** Something was done with a result, so the query that found it is worth keeping. */
-    data class SaveRecentSearch(val query: String) : ForumAction
     data class RemoveRecentSearch(val query: String) : ForumAction
     data object ClearRecentSearches : ForumAction
     data object LoadMoreSearch : ForumAction

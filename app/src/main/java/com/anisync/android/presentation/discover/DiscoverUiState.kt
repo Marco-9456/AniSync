@@ -195,8 +195,6 @@ sealed interface DiscoverAction {
     data class OnViewModeChange(val mode: DiscoverViewMode) : DiscoverAction
     data class OnCategoryChange(val category: ResultCategory) : DiscoverAction
 
-    /** Something was done with a result, so the query that found it is worth keeping. */
-    data class SaveRecentSearch(val query: String) : DiscoverAction
     data class RemoveRecentSearch(val query: String) : DiscoverAction
     data object ClearRecentSearches : DiscoverAction
 

@@ -315,16 +315,8 @@ class ForumViewModel @Inject constructor(
             is ForumAction.ToggleSubscribeThread -> toggleSubscribe(action.thread)
 
             // ---- Advanced search ----
-            is ForumAction.OnSearchQueryChange -> {
-                val state = _uiState.value
-                // Clearing a search that found something keeps it, as searching it again would.
-                if (action.query.isEmpty() && state.searchResults.isNotEmpty()) {
-                    appSettings.addRecentSearch(SearchSurface.FORUM, state.searchFilters.query)
-                }
-                updateFilters { it.copy(query = action.query) }
-            }
+            is ForumAction.OnSearchQueryChange -> updateFilters { it.copy(query = action.query) }
             is ForumAction.OnSearch -> onSearch(action.query)
-            is ForumAction.SaveRecentSearch -> appSettings.addRecentSearch(SearchSurface.FORUM, action.query)
             is ForumAction.RemoveRecentSearch ->
                 appSettings.removeRecentSearch(SearchSurface.FORUM, action.query)
             is ForumAction.ClearRecentSearches -> appSettings.clearRecentSearches(SearchSurface.FORUM)
