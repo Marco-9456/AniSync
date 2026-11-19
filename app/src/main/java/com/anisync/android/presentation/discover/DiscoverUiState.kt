@@ -124,6 +124,8 @@ data class DiscoverUiState(
     val hiddenSections: Set<DiscoverSection> = emptySet(),
     val isRefreshing: Boolean = false,
     val searchQuery: String = "",
+    /** What the results on screen were searched for. Typing waits for the search key. */
+    val submittedQuery: String = "",
     val isSearchActive: Boolean = false,
     val searchAnime: List<LibraryEntry> = emptyList(),
     val searchManga: List<LibraryEntry> = emptyList(),
@@ -155,6 +157,14 @@ data class DiscoverUiState(
 
     val hasSearchResults: Boolean
         get() = searchAnime.isNotEmpty() || searchManga.isNotEmpty() || !groupedResults.isEmpty
+
+    /** Text typed since the last search, which runs once the search key is pressed. */
+    val isTyping: Boolean
+        get() = searchQuery.isNotEmpty() && searchQuery != submittedQuery
+
+    /** The recent searches holding what is being typed, to pick one instead of finishing it. */
+    val matchingRecentSearches: List<String>
+        get() = searchQuery.trim().let { typed -> recentSearches.filter { it.contains(typed, ignoreCase = true) } }
 
     /**
      * The rail's categories: All, every category with results, and the one a preset opened on even

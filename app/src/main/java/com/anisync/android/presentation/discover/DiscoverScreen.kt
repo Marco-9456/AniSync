@@ -937,7 +937,7 @@ private fun DiscoverSearchOverlay(
     val fieldCollapse = rememberSearchFieldCollapse(searchBarState)
     // A spinner, an error or an empty result has nothing to scroll, so nothing else could bring
     // the field back.
-    val hasResultList = state.hasSearchResults && !state.isSearching && state.searchError == null
+    val hasResultList = state.hasSearchResults && !state.isSearching && state.searchError == null && !state.isTyping
     LaunchedEffect(fieldCollapse, hasResultList) {
         if (!hasResultList) fieldCollapse.expand()
     }
@@ -1035,7 +1035,7 @@ private fun SearchResultsContent(
     val isGrid = state.viewMode == com.anisync.android.data.DiscoverViewMode.GRID
     Column(modifier = Modifier.fillMaxSize()) {
         // A preset can open on a category before anything is typed, and the rail says so.
-        if (state.hasSearchResults || category != ResultCategory.ALL) {
+        if (!state.isTyping && (state.hasSearchResults || category != ResultCategory.ALL)) {
             SearchResultsRail(
                 // Without the filter bar above it, the rail keeps the bar's distance from the divider.
                 modifier = Modifier.padding(top = if (category.hasMediaFilters()) 0.dp else 16.dp, bottom = 8.dp),
@@ -1057,6 +1057,15 @@ private fun SearchResultsContent(
             when {
                 state.isSearching -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     AppCircularProgressIndicator()
+                }
+
+                state.isTyping -> if (state.matchingRecentSearches.isNotEmpty()) {
+                    RecentSearches(
+                        searches = state.matchingRecentSearches,
+                        onSearch = onRecentSearch,
+                        onRemove = { onAction(DiscoverAction.RemoveRecentSearch(it)) },
+                        onClearAll = null
+                    )
                 }
 
                 state.searchError != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

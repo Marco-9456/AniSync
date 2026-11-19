@@ -135,6 +135,7 @@ class DiscoverViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 searchQuery = "",
+                submittedQuery = "",
                 searchFilters = filters,
                 activeCategory = category,
                 searchOverlayRequest = it.searchOverlayRequest + 1
@@ -235,10 +236,12 @@ class DiscoverViewModel @Inject constructor(
         loadDiscoveryData(isRefresh = true)
     }
 
+    /**
+     * Typing waits for the search key. Emptying the field searches for nothing at once, which
+     * clears the results.
+     */
     private fun onSearchQueryChange(query: String) {
-        val currentState = _uiState.value
-        _uiState.update { currentState.copy(searchQuery = query) }
-        searchTrigger.value = SearchTriggerState(query, currentState.searchFilters.hashCode())
+        if (query.isEmpty()) onSearch(query) else _uiState.update { it.copy(searchQuery = query) }
     }
 
     private fun onSearchActiveChange(active: Boolean) {
@@ -247,13 +250,14 @@ class DiscoverViewModel @Inject constructor(
     }
 
     private fun onSearch(query: String) {
-        val currentState = _uiState.value
-        val trigger = SearchTriggerState(query, currentState.searchFilters.hashCode(), submitted = true)
-        val submitted = currentState.copy(searchQuery = query)
-        // Spinning from the tap, since the request only starts a moment later and until then an
-        // empty result list reads as No results.
-        val startsSearch = submitted.shouldSearch() && !trigger.isSameSearch(lastRunTrigger)
-        _uiState.update { submitted.copy(isSearching = submitted.isSearching || startsSearch) }
+        val trigger = SearchTriggerState(query, _uiState.value.searchFilters.hashCode(), submitted = true)
+        _uiState.update { state ->
+            val submitted = state.copy(searchQuery = query, submittedQuery = query)
+            // Spinning from the tap, since the request only starts a moment later and until then an
+            // empty result list reads as No results.
+            val startsSearch = submitted.shouldSearch() && !trigger.isSameSearch(lastRunTrigger)
+            submitted.copy(isSearching = state.isSearching || startsSearch)
+        }
         searchTrigger.value = trigger
         appSettings.addRecentSearch(SearchSurface.DISCOVER, query)
     }
@@ -351,9 +355,10 @@ class DiscoverViewModel @Inject constructor(
         }
     }
 
+    /** A filter narrows what is typed, so changing one runs the search for it as well. */
     private fun updateFilters(filters: SearchFilters) {
         val currentState = _uiState.value
-        _uiState.update { currentState.copy(searchFilters = filters) }
+        _uiState.update { it.copy(searchFilters = filters, submittedQuery = it.searchQuery) }
         searchTrigger.value = SearchTriggerState(currentState.searchQuery, filters.hashCode())
     }
 
