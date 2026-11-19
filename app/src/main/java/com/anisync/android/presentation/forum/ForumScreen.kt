@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -96,6 +97,7 @@ import com.anisync.android.presentation.components.AppPullToRefreshBox
 import com.anisync.android.presentation.components.EmptyState
 import com.anisync.android.presentation.components.EmbeddedFullScreenSearchBar
 import com.anisync.android.presentation.components.HideKeyboardOnCollapse
+import com.anisync.android.presentation.components.RecentSearches
 import com.anisync.android.presentation.components.SearchBarAnchor
 import com.anisync.android.presentation.components.coveredBySearch
 import com.anisync.android.presentation.components.searchBarAnchor
@@ -189,25 +191,31 @@ fun ForumScreen(
             Unit
         }
     }
+    val saveRecentSearch: () -> Unit = remember(viewModel, textFieldState) {
+        { viewModel.onAction(ForumAction.SaveRecentSearch(textFieldState.text.toString())) }
+    }
     // What a result opens goes over the search, which stays open for back to return to. Dropping
     // focus keeps the keyboard closed when it does.
     val onSearchThreadClick: (Int, String) -> Unit =
-        remember(onThreadClick, focusManager) {
+        remember(onThreadClick, focusManager, saveRecentSearch) {
             { threadId, threadTitle ->
+                saveRecentSearch()
                 focusManager.clearFocus()
                 onThreadClick(threadId, threadTitle)
             }
         }
     val onSearchCommentClick: (Int, Int) -> Unit =
-        remember(onThreadCommentClick, focusManager) {
+        remember(onThreadCommentClick, focusManager, saveRecentSearch) {
             { threadId, commentId ->
+                saveRecentSearch()
                 focusManager.clearFocus()
                 onThreadCommentClick(threadId, commentId)
             }
         }
     val onSearchUserClick: (String) -> Unit =
-        remember(onUserClick, focusManager) {
+        remember(onUserClick, focusManager, saveRecentSearch) {
             { userName ->
+                saveRecentSearch()
                 focusManager.clearFocus()
                 onUserClick(userName)
             }
@@ -254,7 +262,10 @@ fun ForumScreen(
                 modifier = if (expanded) Modifier else Modifier.fillMaxWidth(),
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
-                onSearch = { keyboardController?.hide() },
+                onSearch = {
+                    viewModel.onAction(ForumAction.OnSearch(textFieldState.text.toString()))
+                    keyboardController?.hide()
+                },
                 // One line always: at a raised font scale a wrapping placeholder takes the whole
                 // bar with it and the bar's height starts depending on the wording.
                 placeholder = {
@@ -642,6 +653,18 @@ fun ForumScreen(
                     animationKey = uiState.searchError
                 )
 
+                !searchActive && searchFilters.query.isEmpty() && uiState.recentSearches.isNotEmpty() ->
+                    RecentSearches(
+                        searches = uiState.recentSearches,
+                        onSearch = { query ->
+                            textFieldState.setTextAndPlaceCursorAtEnd(query)
+                            focusManager.clearFocus()
+                            viewModel.onAction(ForumAction.OnSearch(query))
+                        },
+                        onRemove = { viewModel.onAction(ForumAction.RemoveRecentSearch(it)) },
+                        onClearAll = { viewModel.onAction(ForumAction.ClearRecentSearches) }
+                    )
+
                 !searchActive -> Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -698,7 +721,10 @@ fun ForumScreen(
                             onClick = { onSearchThreadClick(thread.id, thread.title) },
                             onUserClick = onSearchUserClick,
                             isSaved = thread.id in uiState.savedThreadIds,
-                            onSaveClick = { viewModel.onAction(ForumAction.ToggleSaveThread(thread)) },
+                            onSaveClick = {
+                                saveRecentSearch()
+                                viewModel.onAction(ForumAction.ToggleSaveThread(thread))
+                            },
                             onOverflowClick = {
                                 viewModel.onAction(ForumAction.OpenThreadActions(thread))
                             },

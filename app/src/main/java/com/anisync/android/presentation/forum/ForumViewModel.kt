@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.R
 import com.anisync.android.data.AppSettings
+import com.anisync.android.data.SearchSurface
 import com.anisync.android.domain.ForumRepository
 import com.anisync.android.domain.ForumSearchFilters
 import com.anisync.android.domain.ForumThread
@@ -119,6 +120,15 @@ class ForumViewModel @Inject constructor(
         loadSavedIds()
         observeForumSearch()
         observeThreadEvents()
+        observeRecentSearches()
+    }
+
+    private fun observeRecentSearches() {
+        viewModelScope.launch {
+            appSettings.recentSearches(SearchSurface.FORUM).collect { recent ->
+                _uiState.update { it.copy(recentSearches = recent.toPersistentList()) }
+            }
+        }
     }
 
     /**
@@ -306,6 +316,11 @@ class ForumViewModel @Inject constructor(
 
             // ---- Advanced search ----
             is ForumAction.OnSearchQueryChange -> updateFilters { it.copy(query = action.query) }
+            is ForumAction.OnSearch -> onSearch(action.query)
+            is ForumAction.SaveRecentSearch -> appSettings.addRecentSearch(SearchSurface.FORUM, action.query)
+            is ForumAction.RemoveRecentSearch ->
+                appSettings.removeRecentSearch(SearchSurface.FORUM, action.query)
+            is ForumAction.ClearRecentSearches -> appSettings.clearRecentSearches(SearchSurface.FORUM)
             is ForumAction.LoadMoreSearch -> loadMoreSearch()
             is ForumAction.ClearSearchFilters ->
                 _uiState.update { it.copy(searchFilters = ForumSearchFilters(query = it.searchFilters.query)) }
@@ -641,6 +656,17 @@ class ForumViewModel @Inject constructor(
 
     private fun updateFilters(transform: (ForumSearchFilters) -> ForumSearchFilters) {
         _uiState.update { it.copy(searchFilters = transform(it.searchFilters)) }
+    }
+
+    private fun onSearch(query: String) {
+        appSettings.addRecentSearch(SearchSurface.FORUM, query)
+        _uiState.update { state ->
+            val filters = state.searchFilters.copy(query = query)
+            // Spinning from the tap, since the request waits out the debounce and until then an
+            // empty result list reads as nothing matching.
+            val startsSearch = filters.shouldSearch() && filters != state.searchFilters
+            state.copy(searchFilters = filters, isSearching = state.isSearching || startsSearch)
+        }
     }
 
     /**

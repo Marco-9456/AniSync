@@ -106,6 +106,7 @@ data class ForumUiState(
     val searchCurrentPage: Int = 1,
     val searchIsPaginating: Boolean = false,
     val searchError: String? = null,
+    val recentSearches: ImmutableList<String> = persistentListOf(),
 
     // --- Media picker substate (the Media filter sheet) ---
     val mediaPickerType: MediaType = MediaType.ANIME,
@@ -208,6 +209,14 @@ sealed interface ForumAction {
     // --- Advanced search ---
     /** Text typed into the search bar; debounced into a thread search. */
     data class OnSearchQueryChange(val query: String) : ForumAction
+
+    /** The search key or a recent search: searches now, past the typing pause, and keeps the query. */
+    data class OnSearch(val query: String) : ForumAction
+
+    /** Something was done with a result, so the query that found it is worth keeping. */
+    data class SaveRecentSearch(val query: String) : ForumAction
+    data class RemoveRecentSearch(val query: String) : ForumAction
+    data object ClearRecentSearches : ForumAction
     data object LoadMoreSearch : ForumAction
     data object ClearSearchFilters : ForumAction
     data class OnSortChange(val sort: ThreadSortOption) : ForumAction
