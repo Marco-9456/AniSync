@@ -256,9 +256,7 @@ private fun FavoritePortrait(
 ) {
     val shape = ExpressiveShapes.mediaCover
     Column(
-        modifier = modifier
-            .clip(shape)
-            .bouncyClickable(onClick = onClick, onClickLabel = name, clipShape = shape)
+        modifier = modifier.bouncyClickable(onClick = onClick, onClickLabel = name)
     ) {
         AsyncImage(
             model = imageUrl,

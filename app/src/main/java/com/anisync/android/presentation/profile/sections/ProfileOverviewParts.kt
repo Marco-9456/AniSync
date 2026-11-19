@@ -126,7 +126,6 @@ private fun OverviewTile(
     Column(
         modifier = Modifier
             .width(width)
-            .clip(CoverShape)
             .bouncyClickable(onClick = onClick, onClickLabel = name)
     ) {
         AsyncImage(
