@@ -388,6 +388,14 @@
         <item quantity="one">%1$s day watched</item>
         <item quantity="other">%1$s days watched</item>
     </plurals>
+    <plurals name="profile_metric_days">
+        <item quantity="one">Day</item>
+        <item quantity="other">Days</item>
+    </plurals>
+    <plurals name="profile_previous_names_count">
+        <item quantity="one">%1$d previous name</item>
+        <item quantity="other">%1$d previous names</item>
+    </plurals>
     <plurals name="profile_people_count">
         <item quantity="one">%1$s person</item>
         <item quantity="other">%1$s people</item>

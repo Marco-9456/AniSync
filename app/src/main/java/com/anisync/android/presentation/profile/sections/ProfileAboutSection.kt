@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ContentCopy
@@ -23,7 +25,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,21 +36,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.HorizontalAlignmentLine
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.anisync.android.R
@@ -59,7 +61,9 @@ import com.anisync.android.presentation.components.formatRelativeTimeSeconds
 import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.formatMonthYear
 import com.anisync.android.presentation.util.openUrl
+import com.anisync.android.presentation.util.pluralStringResourceOrDefault
 import com.anisync.android.presentation.util.rememberCopyToClipboard
+import com.anisync.android.presentation.util.rememberHapticFeedback
 import com.anisync.android.ui.theme.emphasis
 import com.anisync.android.util.AniListUrls
 import java.text.DateFormat
@@ -255,62 +259,210 @@ private fun DetailRow(
     }
 }
 
+/**
+ * Semi-connected Bio card: a preview bubble above a floating menu-item bar carrying About metadata
+ * and Read more / Open. When the bio is empty, only the standalone About bar renders so previous
+ * names and profile details stay reachable.
+ */
 @Composable
-internal fun BioPreview(about: String, onOpen: () -> Unit, modifier: Modifier = Modifier) {
-    val container = MaterialTheme.colorScheme.surfaceContainerLow
-    // A bio of a few lines reads as plain text, a longer one is cut short on a card. Decided while
-    // measuring, so the header never draws at one height and then settles at another: that jump
-    // moved everything under it each time the header scrolled back into view.
-    Layout(
-        contents = listOf(
-            { Box(modifier = Modifier.background(container)) },
-            { AsyncRichTextRenderer(html = about, modifier = Modifier.fillMaxWidth()) },
-            { Box(modifier = Modifier.background(Brush.verticalGradient(listOf(container.copy(alpha = 0f), container)))) },
-            {
-                FilledTonalButton(onClick = onOpen) {
-                    Text(stringResource(R.string.profile_read_more), style = MaterialTheme.typography.labelLarge.emphasis())
-                }
-            }
-        ),
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(BioPreviewShape)
-            .clickable(onClick = onOpen)
-    ) { (card, text, fade, button), constraints ->
+internal fun BioPreview(
+    about: String?,
+    previousNamesCount: Int,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (about.isNullOrBlank()) {
+        BioAboutBar(
+            previousNamesCount = previousNamesCount,
+            truncated = false,
+            standalone = true,
+            onClick = onOpen,
+            modifier = modifier
+        )
+        return
+    }
+
+    // Decided in a single measure pass so the header never draws at one height and settles at
+    // another when scrolling back into view.
+    SubcomposeLayout(modifier = modifier.fillMaxWidth()) { constraints ->
         val width = constraints.maxWidth
-        val inset = 16.dp.roundToPx()
-        val body = text.first().measure(Constraints(maxWidth = (width - 2 * inset).coerceAtLeast(0)))
-        if (body.height <= BioShortLimit.roundToPx()) {
-            return@Layout layout(width, body.height) { body.placeRelative(0, 0) }
-        }
-        val height = BioPreviewHeight.roundToPx()
-        val cardPlaceable = card.first().measure(Constraints.fixed(width, height))
-        val fadePlaceable = fade.first().measure(Constraints.fixed(width, 72.dp.roundToPx()))
-        val buttonPlaceable = button.first().measure(Constraints())
-        val margin = 12.dp.roundToPx()
-        layout(width, height) {
-            cardPlaceable.placeRelative(0, 0)
-            body.placeRelative(inset, 14.dp.roundToPx())
-            fadePlaceable.placeRelative(0, height - fadePlaceable.height)
-            buttonPlaceable.placeRelative(width - buttonPlaceable.width - margin, height - buttonPlaceable.height - margin)
+        val gapPx = BioBubbleGap.roundToPx()
+
+        val previewPlaceable = subcompose(BioSlot.Preview) {
+            BioPreviewBubble(about = about, onOpen = onOpen)
+        }.first().measure(Constraints.fixedWidth(width))
+
+        val isTruncated = previewPlaceable[BioTruncatedLine] == 1
+
+        val footerPlaceable = subcompose(BioSlot.Footer) {
+            BioAboutBar(
+                previousNamesCount = previousNamesCount,
+                truncated = isTruncated,
+                standalone = false,
+                onClick = onOpen
+            )
+        }.first().measure(Constraints.fixedWidth(width))
+
+        layout(width, previewPlaceable.height + gapPx + footerPlaceable.height) {
+            previewPlaceable.placeRelative(0, 0)
+            footerPlaceable.placeRelative(0, previewPlaceable.height + gapPx)
         }
     }
 }
 
-private val BioPreviewHeight = 148.dp
-private val BioShortLimit = 88.dp
+private enum class BioSlot { Preview, Footer }
 
-/**
- * Rounded as the card. A bio short enough to read as plain text starts at the box's very edge,
- * where the corners would cut its first letters, so it keeps square bounds.
- */
-private object BioPreviewShape : Shape {
-    private val card = RoundedCornerShape(24.dp)
+private val BioTruncatedLine = HorizontalAlignmentLine(::minOf)
+private val BioPreviewHeight = 128.dp
+private val BioFadeHeight = 56.dp
+private val BioBubbleGap = 4.dp
+private val BioOuterRadius = 20.dp
+private val BioInnerRadius = 6.dp
+private val BioTopBubbleShape = RoundedCornerShape(
+    topStart = BioOuterRadius,
+    topEnd = BioOuterRadius,
+    bottomStart = BioInnerRadius,
+    bottomEnd = BioInnerRadius
+)
+private val BioBottomBubbleShape = RoundedCornerShape(
+    topStart = BioInnerRadius,
+    topEnd = BioInnerRadius,
+    bottomStart = BioOuterRadius,
+    bottomEnd = BioOuterRadius
+)
+private val BioStandaloneShape = RoundedCornerShape(BioOuterRadius)
 
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
-        if (size.height > with(density) { BioShortLimit.roundToPx() }) {
-            card.createOutline(size, layoutDirection, density)
+@Composable
+private fun BioPreviewBubble(about: String, onOpen: () -> Unit) {
+    val container = MaterialTheme.colorScheme.surfaceContainerLow
+    val haptic = rememberHapticFeedback()
+    Layout(
+        contents = listOf(
+            { AsyncRichTextRenderer(html = about, modifier = Modifier.fillMaxWidth()) },
+            {
+                Box(
+                    modifier = Modifier.background(
+                        Brush.verticalGradient(listOf(container.copy(alpha = 0f), container))
+                    )
+                )
+            }
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(BioTopBubbleShape)
+            .background(container)
+            .clickable(role = Role.Button) {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onOpen()
+            }
+    ) { (bodyMeasurables, fadeMeasurables), constraints ->
+        val width = constraints.maxWidth
+        val horizontalInset = 16.dp.roundToPx()
+        val verticalInset = 14.dp.roundToPx()
+        val maxHeight = BioPreviewHeight.roundToPx()
+
+        val body = bodyMeasurables.first().measure(
+            Constraints(maxWidth = (width - 2 * horizontalInset).coerceAtLeast(0))
+        )
+        val naturalHeight = body.height + 2 * verticalInset
+        val truncated = naturalHeight > maxHeight
+        val height = if (truncated) maxHeight else naturalHeight
+        val fade = if (truncated) {
+            fadeMeasurables.first().measure(Constraints.fixed(width, BioFadeHeight.roundToPx()))
         } else {
-            Outline.Rectangle(size.toRect())
+            null
         }
+
+        layout(width, height, alignmentLines = mapOf(BioTruncatedLine to if (truncated) 1 else 0)) {
+            body.placeRelative(horizontalInset, verticalInset)
+            fade?.placeRelative(0, height - fade.height)
+        }
+    }
+}
+
+@Composable
+private fun BioAboutBar(
+    previousNamesCount: Int,
+    truncated: Boolean,
+    standalone: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptic = rememberHapticFeedback()
+    val aboutLabel = stringResource(R.string.profile_about_label)
+    val subtitle = if (previousNamesCount > 0) {
+        pluralStringResourceOrDefault(R.plurals.profile_previous_names_count, previousNamesCount, previousNamesCount)
+    } else {
+        stringResource(R.string.profile_bio_details)
+    }
+    val actionLabel = stringResource(if (truncated) R.string.profile_read_more else R.string.profile_bio_open)
+    val titleStyle = MaterialTheme.typography.labelLarge
+    val metaStyle = MaterialTheme.typography.bodyMedium
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Surface(
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            onClick()
+        },
+        shape = if (standalone) BioStandaloneShape else BioBottomBubbleShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 48.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    tint = onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(titleStyle.toSpanStyle().copy(color = onSurface)) {
+                            append(aboutLabel)
+                        }
+                        withStyle(metaStyle.toSpanStyle().copy(color = onSurfaceVariant)) {
+                            append("  ·  ")
+                            append(subtitle)
+                        }
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Text(
+                    text = actionLabel,
+                    style = MaterialTheme.typography.labelLarge.emphasis(),
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    softWrap = false
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
 }

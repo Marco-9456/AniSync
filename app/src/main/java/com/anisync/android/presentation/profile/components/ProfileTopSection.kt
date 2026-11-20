@@ -31,6 +31,7 @@ import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.AppCircularProgressIndicator
 import com.anisync.android.presentation.components.hiddenWhilePulled
 import com.anisync.android.presentation.components.navigation.BackTrailButton
+import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.profile.ProfileTab
 import com.anisync.android.presentation.profile.ProfileTabsButtonGroup
 import com.anisync.android.presentation.profile.ProfileWideLoadingSkeleton
@@ -63,7 +64,10 @@ fun ProfileTopSection(
     onBackClick: (() -> Unit)? = null,
     followingTotal: Int? = null,
     followersTotal: Int? = null,
-    onPeopleClick: (() -> Unit)? = null,
+    onAnimeClick: (() -> Unit)? = null,
+    onMangaClick: (() -> Unit)? = null,
+    onStatsClick: (() -> Unit)? = null,
+    onPeopleClick: ((ProfileSocialTab?) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val band = profile.bannerUrl == null
@@ -96,16 +100,20 @@ fun ProfileTopSection(
                 followsViewer = isFollowerOfViewer,
                 followingTotal = followingTotal,
                 followersTotal = followersTotal,
+                onAnimeClick = onAnimeClick,
+                onMangaClick = onMangaClick,
+                onStatsClick = onStatsClick,
                 onPeopleClick = onPeopleClick,
                 accounts = accounts,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            val about = profile.about
-            if (!about.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                BioPreview(about = about, onOpen = onShowBiography)
-            }
+            Spacer(modifier = Modifier.height(12.dp))
+            BioPreview(
+                about = profile.about,
+                previousNamesCount = profile.previousNames.size,
+                onOpen = onShowBiography
+            )
         }
 
         ProfileHeaderAvatar(

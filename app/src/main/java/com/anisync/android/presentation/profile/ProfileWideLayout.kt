@@ -352,7 +352,13 @@ private fun ProfileIdentityColumn(
                             followsViewer = uiState.isFollowerOfViewer,
                             followingTotal = uiState.followingTotal,
                             followersTotal = uiState.followersTotal,
-                            onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) },
+                            onAnimeClick = { onAction(ProfileAction.SelectTab(ProfileTab.ANIME)) },
+                            onMangaClick = { onAction(ProfileAction.SelectTab(ProfileTab.MANGA)) },
+                            onStatsClick = { onAction(ProfileAction.SelectTab(ProfileTab.STATS)) },
+                            onPeopleClick = { socialTab ->
+                                if (socialTab != null) onAction(ProfileAction.SelectSocialTab(socialTab))
+                                onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL))
+                            },
                             accounts = accounts,
                             modifier = Modifier.fillMaxWidth()
                         )

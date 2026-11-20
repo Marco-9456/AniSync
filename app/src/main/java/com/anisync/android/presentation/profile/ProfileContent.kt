@@ -343,7 +343,13 @@ fun ProfileContent(
                     onBackClick = onBackClick,
                     followingTotal = uiState.followingTotal,
                     followersTotal = uiState.followersTotal,
-                    onPeopleClick = { onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL)) }
+                    onAnimeClick = { onAction(ProfileAction.SelectTab(ProfileTab.ANIME)) },
+                    onMangaClick = { onAction(ProfileAction.SelectTab(ProfileTab.MANGA)) },
+                    onStatsClick = { onAction(ProfileAction.SelectTab(ProfileTab.STATS)) },
+                    onPeopleClick = { socialTab ->
+                        if (socialTab != null) onAction(ProfileAction.SelectSocialTab(socialTab))
+                        onAction(ProfileAction.SelectTab(ProfileTab.SOCIAL))
+                    }
                 )
                 if (uiState.isShowingSavedCopy) SavedCopyNotice(onRetry = { onAction(ProfileAction.Refresh()) })
             }

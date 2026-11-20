@@ -1473,6 +1473,7 @@
     <string name="profile_favorites_title_own">Your favorites</string>
     <string name="profile_favorites_order">in %1$s\'s order</string>
     <string name="profile_favorites_order_own">in your order</string>
+    <string name="profile_about_label">About</string>
     <string name="profile_about_title">About %1$s</string>
     <string name="profile_about_title_own">About you</string>
     <string name="profile_about_empty">Nothing written here yet</string>
@@ -1482,8 +1483,10 @@
     <string name="profile_previous_names">Previous names</string>
     <string name="profile_previous_names_changed">Changed in %1$s</string>
     <string name="profile_details">Details</string>
+    <string name="profile_bio_details">Profile details</string>
     <string name="profile_username_hint">Username · long press to copy</string>
     <string name="profile_read_more">Read more</string>
+    <string name="profile_bio_open">Open</string>
     <string name="profile_post_status">Post a status</string>
     <string name="profile_overview_watching">Watching</string>
     <string name="profile_row_finished">finished %1$s</string>

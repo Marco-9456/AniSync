@@ -1,15 +1,17 @@
 package com.anisync.android.presentation.profile.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -71,12 +73,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -91,7 +92,7 @@ import com.anisync.android.domain.UserProfile
 import com.anisync.android.presentation.components.DonatorBadge
 import com.anisync.android.presentation.components.DonatorBadgePlacement
 import com.anisync.android.presentation.components.UserAvatar
-import com.anisync.android.presentation.components.WhatsNewPill
+import com.anisync.android.presentation.components.WhatsNewDot
 import com.anisync.android.presentation.components.bannerScrimBrush
 import com.anisync.android.presentation.components.bannerScrimHeight
 import com.anisync.android.presentation.components.formatRelativeTimeSeconds
@@ -99,6 +100,7 @@ import com.anisync.android.presentation.components.menu.Menu
 import com.anisync.android.presentation.components.menu.MenuScope
 import com.anisync.android.presentation.components.navigation.BackTrailButton
 import com.anisync.android.presentation.components.rememberActiveWhatsNew
+import com.anisync.android.presentation.profile.ProfileSocialTab
 import com.anisync.android.presentation.util.copyOnLongPress
 import com.anisync.android.presentation.util.formatMonthYear
 import com.anisync.android.presentation.util.openUrl
@@ -306,7 +308,10 @@ fun ProfileIdentityInfo(
     followsViewer: Boolean = false,
     followingTotal: Int? = null,
     followersTotal: Int? = null,
-    onPeopleClick: (() -> Unit)? = null,
+    onAnimeClick: (() -> Unit)? = null,
+    onMangaClick: (() -> Unit)? = null,
+    onStatsClick: (() -> Unit)? = null,
+    onPeopleClick: ((ProfileSocialTab?) -> Unit)? = null,
     /** On your own profile the name opens the accounts on this device. */
     accounts: ProfileAccounts? = null
 ) {
@@ -319,6 +324,9 @@ fun ProfileIdentityInfo(
             followsViewer = followsViewer,
             followingTotal = followingTotal,
             followersTotal = followersTotal,
+            onAnimeClick = onAnimeClick,
+            onMangaClick = onMangaClick,
+            onStatsClick = onStatsClick,
             onPeopleClick = onPeopleClick
         )
     }
@@ -403,7 +411,10 @@ private fun ProfileIdentityDetails(
     followsViewer: Boolean = false,
     followingTotal: Int? = null,
     followersTotal: Int? = null,
-    onPeopleClick: (() -> Unit)? = null
+    onAnimeClick: (() -> Unit)? = null,
+    onMangaClick: (() -> Unit)? = null,
+    onStatsClick: (() -> Unit)? = null,
+    onPeopleClick: ((ProfileSocialTab?) -> Unit)? = null
 ) {
     val locale = LocalConfiguration.current.locales[0]
     val joinedDate = remember(profile.createdAt, locale) {
@@ -498,58 +509,222 @@ private fun ProfileIdentityDetails(
             )
         }
 
-        val numbers = rememberIntegerFormat()
         Spacer(modifier = Modifier.height(12.dp))
-        val anime = numbers.format(profile.animeCount)
-        val manga = numbers.format(profile.mangaCount)
-        val days = profile.daysWatched.toInt()
-        val daysText = numbers.format(days)
-        val counts = listOf(
-            boldNumbers(stringResource(R.string.profile_count_anime, anime), anime),
-            boldNumbers(stringResource(R.string.profile_count_manga, manga), manga),
-            boldNumbers(pluralStringResourceOrDefault(R.plurals.profile_days_watched, days, daysText), daysText)
+        ProfileMetricStrip(
+            animeCount = profile.animeCount,
+            mangaCount = profile.mangaCount,
+            daysWatched = profile.daysWatched.toInt(),
+            followingTotal = followingTotal,
+            followersTotal = followersTotal,
+            onAnimeClick = onAnimeClick,
+            onMangaClick = onMangaClick,
+            onStatsClick = onStatsClick,
+            onPeopleClick = onPeopleClick
         )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            counts.forEachIndexed { index, part ->
-                Text(
-                    text = if (index < counts.lastIndex) part + AnnotatedString("  ·") else part,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    softWrap = false
-                )
-            }
+    }
+}
+
+private val MetricOuterRadius = 20.dp
+private val MetricInnerRadius = 6.dp
+private val MetricTileGap = 4.dp
+private val MetricLeadingShape = RoundedCornerShape(
+    topStart = MetricOuterRadius,
+    bottomStart = MetricOuterRadius,
+    topEnd = MetricInnerRadius,
+    bottomEnd = MetricInnerRadius
+)
+private val MetricMiddleShape = RoundedCornerShape(MetricInnerRadius)
+private val MetricTrailingShape = RoundedCornerShape(
+    topStart = MetricInnerRadius,
+    bottomStart = MetricInnerRadius,
+    topEnd = MetricOuterRadius,
+    bottomEnd = MetricOuterRadius
+)
+
+/**
+ * Four semi-connected tiles for Anime, Manga, Days watched, and People.
+ * Each tile opens its corresponding tab or page.
+ */
+@Composable
+private fun ProfileMetricStrip(
+    animeCount: Int,
+    mangaCount: Int,
+    daysWatched: Int,
+    followingTotal: Int?,
+    followersTotal: Int?,
+    onAnimeClick: (() -> Unit)?,
+    onMangaClick: (() -> Unit)?,
+    onStatsClick: (() -> Unit)?,
+    onPeopleClick: ((ProfileSocialTab?) -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    val numbers = rememberIntegerFormat()
+    val anime = numbers.format(animeCount)
+    val manga = numbers.format(mangaCount)
+    val days = numbers.format(daysWatched)
+
+    val showPeople = onPeopleClick != null
+    val showFollowing = followersTotal != null && followersTotal == 0 && (followingTotal ?: 0) > 0
+    val peopleValue = when {
+        showFollowing -> numbers.format(followingTotal ?: 0)
+        followersTotal != null -> numbers.format(followersTotal)
+        followingTotal != null -> numbers.format(followingTotal)
+        else -> "-"
+    }
+    val peopleLabel = stringResource(
+        if (showFollowing || (followersTotal == null && followingTotal != null)) {
+            R.string.profile_social_following
+        } else {
+            R.string.profile_social_followers
         }
-        if (onPeopleClick != null) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+    )
+    val peopleTargetTab = when {
+        showFollowing || (followersTotal == null && followingTotal != null) -> ProfileSocialTab.FOLLOWING
+        followersTotal != null -> ProfileSocialTab.FOLLOWERS
+        else -> null
+    }
+    val peopleDescription = if (followingTotal != null && followersTotal != null) {
+        stringResource(
+            R.string.profile_people_counts,
+            numbers.format(followingTotal),
+            numbers.format(followersTotal)
+        )
+    } else {
+        stringResource(R.string.profile_people)
+    }
+    val showPeopleBadge = showPeople && WhatsNewItem.PROFILE_PEOPLE_MOVED in rememberActiveWhatsNew()
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(MetricTileGap)
+    ) {
+        ProfileMetricTile(
+            value = anime,
+            label = stringResource(R.string.media_type_anime),
+            contentDescription = stringResource(R.string.profile_count_anime, anime),
+            shape = MetricLeadingShape,
+            onClick = onAnimeClick,
+            modifier = Modifier.weight(1f)
+        )
+        ProfileMetricTile(
+            value = manga,
+            label = stringResource(R.string.media_type_manga),
+            contentDescription = stringResource(R.string.profile_count_manga, manga),
+            shape = MetricMiddleShape,
+            onClick = onMangaClick,
+            modifier = Modifier.weight(1f)
+        )
+        ProfileMetricTile(
+            value = days,
+            label = pluralStringResourceOrDefault(R.plurals.profile_metric_days, daysWatched),
+            contentDescription = pluralStringResourceOrDefault(R.plurals.profile_days_watched, daysWatched, days),
+            shape = if (showPeople) MetricMiddleShape else MetricTrailingShape,
+            onClick = onStatsClick,
+            modifier = Modifier.weight(1f)
+        )
+        if (showPeople) {
+            ProfileMetricTile(
+                value = peopleValue,
+                label = peopleLabel,
+                contentDescription = peopleDescription,
+                shape = MetricTrailingShape,
+                trailingArrow = true,
+                showBadge = showPeopleBadge,
+                onClick = { onPeopleClick(peopleTargetTab) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileMetricTile(
+    value: String,
+    label: String,
+    contentDescription: String,
+    shape: Shape,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    trailingArrow: Boolean = false,
+    showBadge: Boolean = false
+) {
+    val haptic = rememberHapticFeedback()
+    val valueStyle = MaterialTheme.typography.titleMedium.copy(
+        fontSize = 18.sp,
+        lineHeight = 22.sp,
+        fontWeight = FontWeight.W700,
+        fontFeatureSettings = "tnum"
+    )
+    val labelStyle = MaterialTheme.typography.labelMedium
+
+    Surface(
+        onClick = {
+            if (onClick != null) {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
+        },
+        enabled = onClick != null,
+        shape = shape,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = modifier
+            .fillMaxHeight()
+            .semantics { this.contentDescription = contentDescription }
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = 62.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
                 modifier = Modifier
-                    .padding(top = 4.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(role = Role.Button, onClick = onPeopleClick)
-                    .padding(vertical = 6.dp)
+                    .fillMaxWidth()
+                    .clearAndSetSemantics {}
+                    .padding(horizontal = 6.dp, vertical = 10.dp)
             ) {
                 Text(
-                    text = if (followingTotal != null && followersTotal != null) {
-                        val following = numbers.format(followingTotal)
-                        val followers = numbers.format(followersTotal)
-                        boldNumbers(stringResource(R.string.profile_people_counts, following, followers), following, followers)
-                    } else {
-                        AnnotatedString(stringResource(R.string.profile_people))
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = value,
+                    style = valueStyle,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    softWrap = false,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = 18.sp)
                 )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
-                if (WhatsNewItem.PROFILE_PEOPLE_MOVED in rememberActiveWhatsNew()) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    WhatsNewPill(WhatsNewItem.Kind.MOVED)
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = label,
+                        style = labelStyle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.weight(1f, fill = false),
+                        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = labelStyle.fontSize)
+                    )
+                    if (trailingArrow) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
                 }
+            }
+            if (showBadge) {
+                WhatsNewDot(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 8.dp, end = 10.dp)
+                )
             }
         }
     }
@@ -717,18 +892,6 @@ internal fun ProfileHeaderAvatar(url: String?, modifier: Modifier = Modifier) {
             isProfileHeader = true,
             modifier = Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true)
         )
-    }
-}
-
-private fun boldNumbers(text: String, vararg numbers: String): AnnotatedString = buildAnnotatedString {
-    append(text)
-    var from = 0
-    numbers.forEach { number ->
-        val at = text.indexOf(number, from)
-        if (at >= 0) {
-            addStyle(SpanStyle(fontWeight = FontWeight.Bold), at, at + number.length)
-            from = at + number.length
-        }
     }
 }
 
