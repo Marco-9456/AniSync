@@ -137,12 +137,15 @@ fun KeepBackFromCovered(state: SearchBarState, content: @Composable () -> Unit) 
  * and back from it landed on the screen behind the search. Drawn here, the search is part of the
  * screen: a result covers it, and back uncovers it with its query, results and scroll position as
  * they were. The field takes focus when the user opens the search, not when the search comes back.
+ *
+ * Without an [anchor] there is no collapsed bar to return to, so the search is a page of its own:
+ * back leaves the page through the navigation host, and no navigation bar sits under it to hide.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun EmbeddedFullScreenSearchBar(
     state: SearchBarState,
-    anchor: SearchBarAnchor,
+    anchor: SearchBarAnchor?,
     inputField: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     colors: SearchBarColors = SearchBarDefaults.colors(),
@@ -161,7 +164,7 @@ fun EmbeddedFullScreenSearchBar(
     var firstBackEvent by remember { mutableStateOf<BackEventCompat?>(null) }
     var lastBackEvent by remember { mutableStateOf<BackEventCompat?>(null) }
 
-    PredictiveBackHandler(enabled = state.targetValue == SearchBarValue.Expanded) { events ->
+    PredictiveBackHandler(enabled = anchor != null && state.targetValue == SearchBarValue.Expanded) { events ->
         try {
             events.collect { event ->
                 if (firstBackEvent == null) firstBackEvent = event
@@ -192,7 +195,7 @@ fun EmbeddedFullScreenSearchBar(
     val navBarSuppressor = LocalMainNavBarSuppressor.current
     val entryId = (LocalLifecycleOwner.current as? NavBackStackEntry)?.id
     val adaptive = LocalAdaptiveInfo.current
-    val hidesBottomBar = adaptive.isCompact || adaptive.isCompactHeight
+    val hidesBottomBar = anchor != null && (adaptive.isCompact || adaptive.isCompactHeight)
     DisposableEffect(navBarSuppressor, entryId, hidesBottomBar) {
         if (hidesBottomBar && entryId != null) navBarSuppressor?.hideOn(entryId)
         onDispose {
@@ -263,7 +266,7 @@ fun EmbeddedFullScreenSearchBar(
     ) { measurables, constraints ->
         val progress = state.progress
         val backProgress = lastBackEvent.easedProgress()
-        val collapsedSize = anchor.coordinates?.takeIf { it.isAttached }?.size
+        val collapsedSize = anchor?.coordinates?.takeIf { it.isAttached }?.size
         val collapsedWidth = collapsedSize?.width?.takeIf { it != 0 }
             ?: CollapsedMinWidth.roundToPx()
         val collapsedHeight = collapsedSize?.height?.takeIf { it != 0 }
@@ -297,7 +300,7 @@ fun EmbeddedFullScreenSearchBar(
         )
 
         layout(constraints.maxWidth, constraints.maxHeight) {
-            val collapsed = anchor.coordinates?.takeIf { it.isAttached }?.let { source ->
+            val collapsed = anchor?.coordinates?.takeIf { it.isAttached }?.let { source ->
                 coordinates?.localBoundingBoxOf(source, clipBounds = false)?.roundToIntRect()
             } ?: IntRect.Zero
             val margin = BackMinMargin.roundToPx()
