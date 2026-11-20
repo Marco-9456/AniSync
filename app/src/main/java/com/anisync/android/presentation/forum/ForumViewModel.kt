@@ -679,7 +679,7 @@ class ForumViewModel @Inject constructor(
     /**
      * Drives the search list off filter changes: debounced, deduped by value, and
      * latest-wins so rapid typing/filter taps cancel the in-flight request rather
-     * than queueing requests. Mirrors DiscoverViewModel.observeSearchQuery.
+     * than queueing requests. Mirrors DiscoverSearchViewModel.observeSearchQuery.
      */
     @OptIn(FlowPreview::class)
     private fun observeForumSearch() {

@@ -87,7 +87,7 @@ class SearchFiltersUiTest {
 
     @Test
     fun `the rail lists all, every category with results, and the one a preset opened on`() {
-        val state = DiscoverUiState(
+        val state = DiscoverSearchUiState(
             searchAnime = listOf(entry(1)),
             groupedResults = GroupedSearchResults(
                 users = listOf(SearchResult.UserResult(id = 7, displayName = "fan", imageUrl = null))
@@ -103,8 +103,8 @@ class SearchFiltersUiTest {
     @Test
     fun `the footer counts the titles in the category on screen`() {
         val totals = SearchTotals(anime = 120, manga = 30)
-        assertEquals(150, DiscoverUiState(searchTotals = totals).matchingTitles)
-        assertEquals(120, DiscoverUiState(searchTotals = totals, activeCategory = ResultCategory.ANIME).matchingTitles)
-        assertEquals(30, DiscoverUiState(searchTotals = totals, activeCategory = ResultCategory.MANGA).matchingTitles)
+        assertEquals(150, DiscoverSearchUiState(searchTotals = totals).matchingTitles)
+        assertEquals(120, DiscoverSearchUiState(searchTotals = totals, activeCategory = ResultCategory.ANIME).matchingTitles)
+        assertEquals(30, DiscoverSearchUiState(searchTotals = totals, activeCategory = ResultCategory.MANGA).matchingTitles)
     }
 }

@@ -642,7 +642,7 @@ class MediaDetailsViewModel @Inject constructor(
     /**
      * Ask the Discover tab to open its search overlay with [filters] preset, on the
      * [type] the title belongs to. Ranking cards and genre/tag chips route through
-     * this. MainScreen handles the tab switch; DiscoverViewModel applies and
+     * this. MainScreen handles the tab switch; DiscoverSearchViewModel applies and
      * consumes the request.
      */
     fun openDiscoverSearch(

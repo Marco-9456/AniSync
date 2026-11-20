@@ -15,11 +15,11 @@ import javax.inject.Singleton
  *
  * Two independent readers react to a request, over two separate flows:
  * - MainScreen collects [navigationRequests] to switch to the Discover tab. A
- *   buffered SharedFlow, NOT the state itself: when DiscoverViewModel is already
+ *   buffered SharedFlow, NOT the state itself: when DiscoverSearchViewModel is already
  *   alive it consumes [pending] within microseconds, and a conflated StateFlow
  *   would drop the non-null value before MainScreen's collector ever saw it
  *   (observed: filters applied but no tab switch).
- * - DiscoverViewModel reads [pending] for the filters, applies them and asks the
+ * - DiscoverSearchViewModel reads [pending] for the filters, applies them and asks the
  *   screen to expand the search overlay, then [consume]s the request. State (not
  *   an event) so a request made before Discover ever composed isn't lost.
  */

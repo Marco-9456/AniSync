@@ -2,52 +2,11 @@ package com.anisync.android.presentation.discover
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import com.anisync.android.data.DiscoverViewMode
 import com.anisync.android.domain.AiringEpisode
 import com.anisync.android.domain.DiscoverSection
-import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.LibraryEntry
 import com.anisync.android.domain.MediaReview
-import com.anisync.android.domain.ResultCategory
-import com.anisync.android.domain.SearchFilters
-import com.anisync.android.presentation.discover.components.BrowseChip
 import com.anisync.android.type.MediaType
-
-/**
- * How many titles match in each media half, across every page. A category preview shows three of
- * them, and a filter sheet's footer says how many a filter leaves.
- */
-@Immutable
-data class SearchTotals(val anime: Int = 0, val manga: Int = 0)
-
-/**
- * Pagination bookkeeping for the universal search. Media buckets page
- * independently; the four entity buckets ride one shared request (and thus one
- * shared page counter), each keeping its own hasNext flag.
- */
-@Stable
-data class SearchPaging(
-    val animePage: Int = 1,
-    val animeHasNext: Boolean = false,
-    val mangaPage: Int = 1,
-    val mangaHasNext: Boolean = false,
-    val entitiesPage: Int = 1,
-    val charactersHasNext: Boolean = false,
-    val staffHasNext: Boolean = false,
-    val usersHasNext: Boolean = false,
-    val studiosHasNext: Boolean = false,
-    val isLoadingMore: Boolean = false
-) {
-    fun hasNextFor(category: ResultCategory): Boolean = when (category) {
-        ResultCategory.ANIME -> animeHasNext
-        ResultCategory.MANGA -> mangaHasNext
-        ResultCategory.CHARACTERS -> charactersHasNext
-        ResultCategory.STAFF -> staffHasNext
-        ResultCategory.USERS -> usersHasNext
-        ResultCategory.STUDIOS -> studiosHasNext
-        ResultCategory.ALL -> false
-    }
-}
 
 /**
  * One rail's own load state.
@@ -123,26 +82,7 @@ data class DiscoverUiState(
     /** Rails switched off for this tab, kept so the reorder sheet can list them. */
     val hiddenSections: Set<DiscoverSection> = emptySet(),
     val isRefreshing: Boolean = false,
-    val searchQuery: String = "",
-    /** What the results on screen were searched for. Typing waits for the search key. */
-    val submittedQuery: String = "",
-    val isSearchActive: Boolean = false,
-    val searchAnime: List<LibraryEntry> = emptyList(),
-    val searchManga: List<LibraryEntry> = emptyList(),
-    val groupedResults: GroupedSearchResults = GroupedSearchResults(),
-    val searchTotals: SearchTotals = SearchTotals(),
-    val isSearching: Boolean = false,
-    val searchFilters: SearchFilters = SearchFilters(),
-    val searchError: String? = null,
-    val viewMode: DiscoverViewMode = DiscoverViewMode.LIST,
-    val activeCategory: ResultCategory = ResultCategory.ALL,
-    val searchPaging: SearchPaging = SearchPaging(),
-    val recentSearches: List<String> = emptyList(),
-    /**
-     * Monotonic counter bumped when an external screen asks Discover to open its
-     * search overlay with preset filters (see DiscoverSearchLauncher). The screen
-     * reacts to changes by clearing the query field and expanding the search bar.
-     */
+    /** Bumped when the Discover tab is tapped twice, asking the screen to open its search. */
     val searchOverlayRequest: Long = 0L,
     /** Bumped when the Discover tab is reselected, asking the list to scroll back to the top. */
     val scrollToTopRequest: Long = 0L
@@ -154,67 +94,16 @@ data class DiscoverUiState(
      */
     val hasNothingToShow: Boolean
         get() = !feeds.isInitialLoad && sectionOrder.none { feeds.of(it).items.isNotEmpty() }
-
-    val hasSearchResults: Boolean
-        get() = searchAnime.isNotEmpty() || searchManga.isNotEmpty() || !groupedResults.isEmpty
-
-    /** Text typed since the last search, which runs once the search key is pressed. */
-    val isTyping: Boolean
-        get() = searchQuery.isNotEmpty() && searchQuery != submittedQuery
-
-    /** The recent searches holding what is being typed, to pick one instead of finishing it. */
-    val matchingRecentSearches: List<String>
-        get() = searchQuery.trim().let { typed -> recentSearches.filter { it.contains(typed, ignoreCase = true) } }
-
-    /**
-     * The rail's categories: All, every category with results, and the one a preset opened on even
-     * before its results arrive, so the rail already says what is being searched.
-     */
-    val railCategories: List<ResultCategory>
-        get() = ResultCategory.entries.filter { category ->
-            category == ResultCategory.ALL || category == activeCategory || when (category) {
-                ResultCategory.ANIME -> searchAnime.isNotEmpty()
-                ResultCategory.MANGA -> searchManga.isNotEmpty()
-                ResultCategory.CHARACTERS -> groupedResults.characters.isNotEmpty()
-                ResultCategory.STAFF -> groupedResults.staff.isNotEmpty()
-                ResultCategory.USERS -> groupedResults.users.isNotEmpty()
-                ResultCategory.STUDIOS -> groupedResults.studios.isNotEmpty()
-                ResultCategory.ALL -> true
-            }
-        }
-
-    /** Titles the filters leave in the category on screen, for a filter sheet's footer. */
-    val matchingTitles: Int
-        get() = when (activeCategory) {
-            ResultCategory.ANIME -> searchTotals.anime
-            ResultCategory.MANGA -> searchTotals.manga
-            else -> searchTotals.anime + searchTotals.manga
-        }
 }
 
 sealed interface DiscoverAction {
     data class OnMediaTypeChange(val type: MediaType) : DiscoverAction
     data object Refresh : DiscoverAction
-    data class OnSearchQueryChange(val query: String) : DiscoverAction
-    data class OnSearchActiveChange(val active: Boolean) : DiscoverAction
-    data class OnSearch(val query: String) : DiscoverAction
-    data object LoadMoreResults : DiscoverAction
-    data class UpdateFilters(val filters: SearchFilters) : DiscoverAction
-    data object ClearFilters : DiscoverAction
-    data object LoadTaxonomy : DiscoverAction
-    data class OnViewModeChange(val mode: DiscoverViewMode) : DiscoverAction
-    data class OnCategoryChange(val category: ResultCategory) : DiscoverAction
-
-    data class RemoveRecentSearch(val query: String) : DiscoverAction
-    data object ClearRecentSearches : DiscoverAction
 
     /** Reorder sheet: the full visible-plus-hidden order for the current tab. */
     data class ReorderSections(val order: List<DiscoverSection>) : DiscoverAction
     data class SetSectionVisible(val section: DiscoverSection, val visible: Boolean) : DiscoverAction
     data object ResetSectionOrder : DiscoverAction
-
-    /** A browse chip in the header rail. Schedule is handled by the screen, not the viewmodel. */
-    data class OnBrowseChip(val chip: BrowseChip) : DiscoverAction
 
     /** Spotlight's list button: put the title straight on Planning without leaving Discover. */
     data class AddToPlanning(val mediaId: Int) : DiscoverAction

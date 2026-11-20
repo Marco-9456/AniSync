@@ -156,6 +156,7 @@ fun DiscoverScreen(
     onRecentReviewsSeeAllClick: (MediaType) -> Unit = {},
     onNavigateToCalendar: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onSearchAction: (DiscoverSearchAction) -> Unit,
     viewModel: DiscoverViewModel = hiltViewModel(),
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope
@@ -257,35 +258,7 @@ fun DiscoverScreen(
     var showOverflow by remember { mutableStateOf(false) }
     var showReorderSheet by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(textFieldState) {
-        snapshotFlow { textFieldState.text.toString() }
-            .collect { viewModel.onAction(DiscoverAction.OnSearchQueryChange(it)) }
-    }
-
-    // External preset-filter search request (ranking cards, genre/tag chips on media
-    // details): the viewmodel has already applied the filters; clear the query field
-    // and open the overlay so the filtered results are what the user lands on.
-    // The expand animation can be cancelled while the tab-switch transition is still
-    // settling (the effect often fires on the destination's very first frame), so
-    // keep nudging until the bar actually reports Expanded.
-    // The request counter lives in the ViewModel and survives tab switches, while this
-    // composition (and its LaunchedEffect) is recreated on every return to Discover —
-    // so remember the last consumed request in saveable state, or the relaunched effect
-    // would keep re-opening the overlay on every re-entry for as long as the ViewModel lives.
-    val searchOverlayRequest = uiState.searchOverlayRequest
-    var consumedSearchOverlayRequest by rememberSaveable { mutableLongStateOf(0L) }
-    LaunchedEffect(searchOverlayRequest) {
-        if (searchOverlayRequest > consumedSearchOverlayRequest) {
-            consumedSearchOverlayRequest = searchOverlayRequest
-            textFieldState.clearText()
-            var attempts = 0
-            while (searchBarState.currentValue != SearchBarValue.Expanded && attempts < 10) {
-                runCatching { searchBarState.animateToExpanded() }
-                attempts++
-                if (searchBarState.currentValue != SearchBarValue.Expanded) delay(100)
-            }
-        }
-    }
+    OpenSearchOnRequest(uiState.searchOverlayRequest, searchBarState, textFieldState)
 
     val onRefresh: () -> Unit =
         rememberRateLimitedRefresh { viewModel.onAction(DiscoverAction.Refresh) }
@@ -316,7 +289,7 @@ fun DiscoverScreen(
                         mediaType = currentMediaType,
                         coroutineScope = coroutineScope,
                         overflowExpanded = showOverflow,
-                        onSearch = { viewModel.onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
+                        onSearch = { onSearchAction(DiscoverSearchAction.OnSearch(textFieldState.text.toString())) },
                         onMediaTypeChange = { viewModel.onAction(DiscoverAction.OnMediaTypeChange(it)) },
                         onOverflowClick = { showOverflow = true },
                         onOverflowDismiss = { showOverflow = false },
@@ -326,7 +299,7 @@ fun DiscoverScreen(
                         onOpenSettings = onNavigateToSettings,
                         onBrowseChip = { chip ->
                             if (chip == BrowseChip.SCHEDULE) onNavigateToCalendar()
-                            else viewModel.onAction(DiscoverAction.OnBrowseChip(chip))
+                            else onSearchAction(DiscoverSearchAction.OnBrowseChip(chip, currentMediaType))
                         }
                     )
                 }
@@ -374,7 +347,8 @@ fun DiscoverScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DiscoverSearch(
-    viewModel: DiscoverViewModel,
+    viewModel: DiscoverSearchViewModel,
+    mediaType: MediaType,
     searchBarState: SearchBarState,
     textFieldState: TextFieldState,
     searchAnchor: SearchBarAnchor,
@@ -392,6 +366,12 @@ internal fun DiscoverSearch(
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
 
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }
+            .collect { viewModel.onAction(DiscoverSearchAction.OnSearchQueryChange(it)) }
+    }
+    OpenSearchOnRequest(uiState.presetRequest, searchBarState, textFieldState)
+
     // Dropping focus first keeps the keyboard closed when the search comes back.
     val open: (() -> Unit) -> Unit = { navigate ->
         focusManager.clearFocus()
@@ -400,6 +380,7 @@ internal fun DiscoverSearch(
 
     DiscoverSearchOverlay(
         state = uiState,
+        mediaType = mediaType,
         searchBarState = searchBarState,
         searchAnchor = searchAnchor,
         textFieldState = textFieldState,
@@ -411,13 +392,40 @@ internal fun DiscoverSearch(
         onAction = viewModel::onAction,
         actions = SearchResultActions(
             onMedia = { id -> open { onMediaClick(id) } },
-            onAddToList = { viewModel.onAction(DiscoverAction.AddToPlanning(it)) },
+            onAddToList = { viewModel.onAction(DiscoverSearchAction.AddToPlanning(it)) },
             onCharacter = { id -> open { onCharacterClick(id) } },
             onStaff = { id -> open { onStaffClick(id) } },
             onStudio = { id -> open { onStudioClick(id) } },
             onUser = { name -> open { onUserClick(name) } }
         )
     )
+}
+
+/**
+ * Clears the field and opens the search on each new [request], a counter that outlives this screen.
+ * The last one handled is saved, or every return to the screen would open the search again. The
+ * expand animation can be cancelled while a tab switch settles, so it keeps asking until the bar
+ * reports Expanded.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OpenSearchOnRequest(
+    request: Long,
+    searchBarState: SearchBarState,
+    textFieldState: TextFieldState
+) {
+    var handled by rememberSaveable { mutableLongStateOf(0L) }
+    LaunchedEffect(request) {
+        if (request <= handled) return@LaunchedEffect
+        handled = request
+        textFieldState.clearText()
+        var attempts = 0
+        while (searchBarState.currentValue != SearchBarValue.Expanded && attempts < 10) {
+            runCatching { searchBarState.animateToExpanded() }
+            attempts++
+            if (searchBarState.currentValue != SearchBarValue.Expanded) delay(100)
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -918,7 +926,8 @@ private fun LibraryEntry.catalogueMarker(): String? {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DiscoverSearchOverlay(
-    state: DiscoverUiState,
+    state: DiscoverSearchUiState,
+    mediaType: MediaType,
     searchBarState: SearchBarState,
     searchAnchor: SearchBarAnchor,
     textFieldState: TextFieldState,
@@ -927,7 +936,7 @@ private fun DiscoverSearchOverlay(
     showAdultContent: Boolean,
     coroutineScope: CoroutineScope,
     navController: NavHostController?,
-    onAction: (DiscoverAction) -> Unit,
+    onAction: (DiscoverSearchAction) -> Unit,
     actions: SearchResultActions
 ) {
     var openedFilter by remember { mutableStateOf<FilterId?>(null) }
@@ -949,9 +958,9 @@ private fun DiscoverSearchOverlay(
             SearchInputField(
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
-                mediaType = state.mediaType,
+                mediaType = mediaType,
                 coroutineScope = coroutineScope,
-                onSearch = { onAction(DiscoverAction.OnSearch(textFieldState.text.toString())) },
+                onSearch = { onAction(DiscoverSearchAction.OnSearch(textFieldState.text.toString())) },
                 modifier = fieldCollapse.field
             )
         }
@@ -970,10 +979,10 @@ private fun DiscoverSearchOverlay(
                     filters = state.searchFilters,
                     category = category,
                     onChipTap = { filterId ->
-                        onAction(DiscoverAction.LoadTaxonomy)
+                        onAction(DiscoverSearchAction.LoadTaxonomy)
                         openedFilter = filterId
                     },
-                    onClear = { onAction(DiscoverAction.ClearFilters) }
+                    onClear = { onAction(DiscoverSearchAction.ClearFilters) }
                 )
             }
             if (WhatsNewItem.DISCOVER_SEARCH_FILTERS in rememberActiveWhatsNew()) {
@@ -993,7 +1002,7 @@ private fun DiscoverSearchOverlay(
                 onRecentSearch = { query ->
                     textFieldState.setTextAndPlaceCursorAtEnd(query)
                     focusManager.clearFocus()
-                    onAction(DiscoverAction.OnSearch(query))
+                    onAction(DiscoverSearchAction.OnSearch(query))
                 },
                 resultsModifier = Modifier.nestedScroll(fieldCollapse.nestedScrollConnection)
             )
@@ -1012,7 +1021,7 @@ private fun DiscoverSearchOverlay(
             genres = taxonomy.genres,
             tags = taxonomy.tags,
             showAdultContent = showAdultContent,
-            onFiltersChange = { onAction(DiscoverAction.UpdateFilters(it)) },
+            onFiltersChange = { onAction(DiscoverSearchAction.UpdateFilters(it)) },
             onDismiss = { openedFilter = null }
         )
     }
@@ -1023,10 +1032,10 @@ private fun ResultCategory.hasMediaFilters(): Boolean =
 
 @Composable
 private fun SearchResultsContent(
-    state: DiscoverUiState,
+    state: DiscoverSearchUiState,
     navController: NavHostController?,
     titleLanguage: com.anisync.android.data.TitleLanguage,
-    onAction: (DiscoverAction) -> Unit,
+    onAction: (DiscoverSearchAction) -> Unit,
     actions: SearchResultActions,
     onRecentSearch: (String) -> Unit,
     resultsModifier: Modifier = Modifier
@@ -1042,10 +1051,10 @@ private fun SearchResultsContent(
                 categories = state.railCategories,
                 activeCategory = category,
                 isGrid = isGrid,
-                onCategoryChange = { onAction(DiscoverAction.OnCategoryChange(it)) },
+                onCategoryChange = { onAction(DiscoverSearchAction.OnCategoryChange(it)) },
                 onGridChange = { grid ->
                     onAction(
-                        DiscoverAction.OnViewModeChange(
+                        DiscoverSearchAction.OnViewModeChange(
                             if (grid) com.anisync.android.data.DiscoverViewMode.GRID
                             else com.anisync.android.data.DiscoverViewMode.LIST
                         )
@@ -1063,7 +1072,7 @@ private fun SearchResultsContent(
                     RecentSearches(
                         searches = state.matchingRecentSearches,
                         onSearch = onRecentSearch,
-                        onRemove = { onAction(DiscoverAction.RemoveRecentSearch(it)) },
+                        onRemove = { onAction(DiscoverSearchAction.RemoveRecentSearch(it)) },
                         onClearAll = null
                     )
                 }
@@ -1090,14 +1099,14 @@ private fun SearchResultsContent(
                     state.searchQuery.isNotEmpty() || state.searchFilters.hasActiveFilters ->
                         DiscoverNoResultsState(
                             hasFilters = state.searchFilters.hasNarrowingFilters,
-                            onClearFilters = { onAction(DiscoverAction.ClearFilters) }
+                            onClearFilters = { onAction(DiscoverSearchAction.ClearFilters) }
                         )
 
                     state.recentSearches.isNotEmpty() -> RecentSearches(
                         searches = state.recentSearches,
                         onSearch = onRecentSearch,
-                        onRemove = { onAction(DiscoverAction.RemoveRecentSearch(it)) },
-                        onClearAll = { onAction(DiscoverAction.ClearRecentSearches) }
+                        onRemove = { onAction(DiscoverSearchAction.RemoveRecentSearch(it)) },
+                        onClearAll = { onAction(DiscoverSearchAction.ClearRecentSearches) }
                     )
                 }
 
@@ -1150,11 +1159,11 @@ private fun SearchResultsContent(
 
 @Composable
 private fun SearchResults(
-    state: DiscoverUiState,
+    state: DiscoverSearchUiState,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     isGrid: Boolean,
     actions: SearchResultActions,
-    onAction: (DiscoverAction) -> Unit,
+    onAction: (DiscoverSearchAction) -> Unit,
     modifier: Modifier = Modifier,
     selected: SearchTarget? = null
 ) {
@@ -1167,8 +1176,8 @@ private fun SearchResults(
         paging = state.searchPaging,
         titleLanguage = titleLanguage,
         actions = actions,
-        onShowAll = { onAction(DiscoverAction.OnCategoryChange(it)) },
-        onLoadMore = { onAction(DiscoverAction.LoadMoreResults) },
+        onShowAll = { onAction(DiscoverSearchAction.OnCategoryChange(it)) },
+        onLoadMore = { onAction(DiscoverSearchAction.LoadMoreResults) },
         modifier = modifier,
         selected = selected
     )

@@ -11,11 +11,14 @@ import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
@@ -90,12 +93,15 @@ fun DiscoverListDetail(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     viewModel: DiscoverViewModel = hiltViewModel(),
+    searchViewModel: DiscoverSearchViewModel = hiltViewModel(),
 ) {
     // Held here rather than in the feed: on expanded widths the search covers both panes.
     val searchBarState = rememberSearchBarState()
     val searchAnchor = remember { SearchBarAnchor() }
-    val initialQuery = rememberSaveable { viewModel.uiState.value.searchQuery }
+    val initialQuery = rememberSaveable { searchViewModel.uiState.value.searchQuery }
     val textFieldState = rememberTextFieldState(initialText = initialQuery)
+    val discoverState = viewModel.uiState.collectAsStateWithLifecycle()
+    val mediaType by remember { derivedStateOf { discoverState.value.mediaType } }
 
     val feed: @Composable (
         onMediaClick: (Int, String) -> Unit,
@@ -115,6 +121,7 @@ fun DiscoverListDetail(
             },
             onNavigateToCalendar = { navController.navigate(Calendar) },
             onNavigateToSettings = { navController.navigate(Settings) },
+            onSearchAction = searchViewModel::onAction,
             viewModel = viewModel,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
@@ -136,7 +143,8 @@ fun DiscoverListDetail(
         }
 
         DiscoverSearch(
-            viewModel = viewModel,
+            viewModel = searchViewModel,
+            mediaType = mediaType,
             searchBarState = searchBarState,
             textFieldState = textFieldState,
             searchAnchor = searchAnchor,

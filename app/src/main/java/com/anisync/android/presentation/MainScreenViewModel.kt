@@ -43,7 +43,7 @@ class MainScreenViewModel @Inject constructor(
 
     /**
      * "Open Discover search with preset filters" navigation triggers. MainScreen
-     * switches to the Discover tab on each emission; DiscoverViewModel separately
+     * switches to the Discover tab on each emission; DiscoverSearchViewModel separately
      * applies and consumes the filters themselves.
      */
     val discoverSearchNavigations: kotlinx.coroutines.flow.SharedFlow<Unit> =

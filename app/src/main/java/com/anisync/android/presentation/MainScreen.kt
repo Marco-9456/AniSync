@@ -229,7 +229,7 @@ fun MainScreen(
         }
     }
     // "Open Discover search with preset filters" (ranking cards, genre/tag chips on
-    // media details): switch to the Discover tab; DiscoverViewModel picks the request
+    // media details): switch to the Discover tab; DiscoverSearchViewModel picks the request
     // up from the same launcher, applies the filters and expands the search overlay.
     LaunchedEffect(navController) {
         // Routes the launcher pop below stops at — the five main tab roots.
