@@ -123,6 +123,9 @@ import com.anisync.android.data.TitleLanguage
 import com.anisync.android.domain.ForumThread
 import com.anisync.android.domain.LibraryStatus
 import com.anisync.android.domain.MediaDetails
+import com.anisync.android.domain.MediaRanking
+import com.anisync.android.domain.MediaRankingType
+import com.anisync.android.domain.SearchSortColumn
 import com.anisync.android.domain.coverageEpisodeCount
 import com.anisync.android.domain.MediaFollowingEntry
 import com.anisync.android.domain.url
@@ -170,6 +173,7 @@ import com.anisync.android.presentation.details.components.WEIGHTED_SCORE_THREAD
 import com.anisync.android.presentation.details.components.StaffItem
 import com.anisync.android.presentation.details.components.mediaStatsTabContent
 import com.anisync.android.presentation.library.components.ScoreOnCompleteSheet
+import com.anisync.android.presentation.navigation.PresetSearch
 import com.anisync.android.presentation.navigation.TrailKind
 import com.anisync.android.presentation.navigation.TrailLabel
 import com.anisync.android.presentation.util.AppMotion
@@ -213,6 +217,7 @@ fun MediaDetailsScreen(
     onStartDiscussion: (mediaId: Int, title: String, coverUrl: String?, coverColor: String?) -> Unit,
     onUserClick: (String) -> Unit = {},
     onShareCard: (mediaId: Int, coverColor: String?) -> Unit = { _, _ -> },
+    onOpenSearch: (PresetSearch) -> Unit = {},
     onTrailLabel: (TrailLabel) -> Unit = {},
     navigationIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
     viewModel: MediaDetailsViewModel = hiltViewModel(),
@@ -547,22 +552,13 @@ fun MediaDetailsScreen(
                                     onEnsureStatsLoaded = viewModel::ensureStatsLoaded,
                                     onRetryStats = viewModel::retryStats,
                                     onRankingClick = { ranking ->
-                                        viewModel.openDiscoverSearch(
-                                            rankingSearchFilters(ranking),
-                                            state.details.type
-                                        )
+                                        onOpenSearch(ranking.presetSearch(state.details.type))
                                     },
                                     onGenreClick = { genre ->
-                                        viewModel.openDiscoverSearch(
-                                            com.anisync.android.domain.SearchFilters(genresIncluded = setOf(genre)),
-                                            state.details.type
-                                        )
+                                        onOpenSearch(PresetSearch(searchMediaType(state.details.type), genre = genre))
                                     },
                                     onTagClick = { tag ->
-                                        viewModel.openDiscoverSearch(
-                                            com.anisync.android.domain.SearchFilters(tagsIncluded = setOf(tag.name)),
-                                            state.details.type
-                                        )
+                                        onOpenSearch(PresetSearch(searchMediaType(state.details.type), tag = tag.name))
                                     },
                                     onRelationClick = navigateToRelationDetails,
                                     onCharacterClick = navigateToCharacterDetails,
@@ -2241,34 +2237,22 @@ private fun MetadataSeparator() {
     )
 }
 
-// ---------------------------------------------------------------------------
-// Discover-search preset for ranking cards
-// ---------------------------------------------------------------------------
+// --- Search presets ---
+
+/** A genre, tag or ranking searches titles of the same type as the one it was tapped on. */
+private fun searchMediaType(type: com.anisync.android.type.MediaType?): String =
+    if (type == com.anisync.android.type.MediaType.MANGA) "MANGA" else "ANIME"
 
 /**
- * Filters matching what AniList's site opens when a ranking card is clicked:
- * the ranking's sort (score/popularity), plus the season/year for seasonal and
- * yearly ranks. The title's own type picks the category it opens on.
+ * What AniList's site opens when a ranking card is clicked: titles ordered by the ranking's column,
+ * within its season and year for a seasonal or yearly rank.
  */
-private fun rankingSearchFilters(
-    ranking: com.anisync.android.domain.MediaRanking
-): com.anisync.android.domain.SearchFilters = com.anisync.android.domain.SearchFilters(
-    sort = com.anisync.android.domain.SearchSort(
-        when (ranking.type) {
-            com.anisync.android.domain.MediaRankingType.RATED ->
-                com.anisync.android.domain.SearchSortColumn.SCORE
-            com.anisync.android.domain.MediaRankingType.POPULAR ->
-                com.anisync.android.domain.SearchSortColumn.POPULARITY
-        }
-    ),
-    yearRange = if (!ranking.allTime && ranking.year != null) {
-        com.anisync.android.domain.IntRangeFilter(min = ranking.year, max = ranking.year)
-    } else {
-        com.anisync.android.domain.IntRangeFilter()
-    },
-    season = if (!ranking.allTime) {
-        ranking.season?.let { name ->
-            com.anisync.android.type.MediaSeason.knownEntries.firstOrNull { it.name == name }
-        }
-    } else null
+internal fun MediaRanking.presetSearch(mediaType: com.anisync.android.type.MediaType?): PresetSearch = PresetSearch(
+    mediaType = searchMediaType(mediaType),
+    sort = when (type) {
+        MediaRankingType.RATED -> SearchSortColumn.SCORE
+        MediaRankingType.POPULAR -> SearchSortColumn.POPULARITY
+    }.name,
+    season = season.takeUnless { allTime },
+    year = year.takeUnless { allTime } ?: 0
 )

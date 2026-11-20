@@ -59,6 +59,7 @@ import com.anisync.android.presentation.navigation.StudioDetails
 import com.anisync.android.presentation.navigation.TwoPaneListDetailScaffold
 import com.anisync.android.presentation.navigation.UserProfile
 import com.anisync.android.presentation.navigation.WriteReview
+import com.anisync.android.presentation.navigation.navigateSafely
 import com.anisync.android.presentation.profile.ProfileScreen
 import com.anisync.android.presentation.util.LocalAdaptiveInfo
 import com.anisync.android.presentation.util.LocalPaneIsRoot
@@ -269,6 +270,7 @@ private fun NotificationDetailPane(
                         navController.navigate(CreateThread(mId, t, cover.orEmpty(), color))
                     },
                     onUserClick = navigateUser,
+                    onOpenSearch = { navController.navigateSafely(it) },
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this,
                 )

@@ -508,6 +508,7 @@ internal fun NavGraphBuilder.mediaPaneGraph(
                 navController.navigate(CreateThread(mId, t, cover.orEmpty(), color))
             },
             onUserClick = { navController.navigateSafely(UserProfile(it)) },
+            onOpenSearch = { navController.navigateSafely(it) },
             onTrailLabel = backStackEntry::recordTrailLabel,
             sharedTransitionScope = sharedScope,
             animatedVisibilityScope = this,

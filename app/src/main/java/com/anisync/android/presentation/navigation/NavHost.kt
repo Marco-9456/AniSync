@@ -706,6 +706,7 @@ fun AniSyncNavHost(
                     onShareCard = { id, coverColor ->
                         navController.navigate(ShareStudio(ShareStudioSubject.MEDIA.name, id, coverColor = coverColor))
                     },
+                    onOpenSearch = { navController.navigateSafely(it) },
                     onTrailLabel = backStackEntry::recordTrailLabel,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
