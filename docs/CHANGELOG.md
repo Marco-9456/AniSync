@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Search From A Title** - Tapping a genre, tag or ranking on a title's page jumped to Discover and left the title behind, so back landed on Discover. The search now opens on a page of its own over the title, and back returns to the title as you left it. (#190)
+- **Most Popular Ranking** - The Most Popular All Time ranking on a title's page opened a search showing only your recent searches. It now lists the most popular titles.
 - **Profile About** - A short About on a profile lost the first letter of its top and bottom lines to the rounded corners around it.
 - **Search Screens** - Discover and Library search now sit on the same surface as Forum search. Picking a category without filters, such as Users, no longer leaves its row of categories pressed against the line under the search field.
 - **Supporter List** - The list of supporters was always empty, because it only read current GitHub sponsorships. Tips left on Ko-fi now show up too.
