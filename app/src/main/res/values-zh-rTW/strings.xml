@@ -1932,7 +1932,6 @@
     <string name="profile_favorites_order_own">在你的清單中</string>
     <string name="profile_about_title_own">關於你</string>
     <string name="profile_about_empty">在你下筆之前，這塊地就一直先空著了…</string>
-    <string name="profile_about_empty_own"></string>
     <string name="profile_username_hint">用戶名 · 長按複製</string>
     <string name="profile_read_more">想看看更多！</string>
     <string name="profile_post_status">發布狀態</string>
@@ -1964,5 +1963,4 @@
     <string name="settings_section_search">搜尋</string>
     <string name="search_recent_title">近期搜尋</string>
     <string name="search_recent_clear_all">全部清除</string>
-    <string name="statistics_activity_day_posted"></string>
 </resources>
