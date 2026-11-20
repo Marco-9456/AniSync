@@ -35,19 +35,10 @@ class MainScreenViewModel @Inject constructor(
     val toastManager: ToastManager,
     /** Drives the rate limit notice and the pull-to-refresh gates. */
     val rateLimitMonitor: RateLimitMonitor,
-    private val tabReselectBus: TabReselectBus,
-    searchLauncher: com.anisync.android.domain.DiscoverSearchLauncher
+    private val tabReselectBus: TabReselectBus
 ) : ViewModel() {
 
     val unreadNotificationCount: StateFlow<Int> = notificationBadgeStore.unreadCount
-
-    /**
-     * "Open Discover search with preset filters" navigation triggers. MainScreen
-     * switches to the Discover tab on each emission; DiscoverSearchViewModel separately
-     * applies and consumes the filters themselves.
-     */
-    val discoverSearchNavigations: kotlinx.coroutines.flow.SharedFlow<Unit> =
-        searchLauncher.navigationRequests
 
     val navBarStyle: StateFlow<NavBarStyle> = appSettings.navBarStyle
     val navBarShowLabels: StateFlow<Boolean> = appSettings.navBarShowLabels

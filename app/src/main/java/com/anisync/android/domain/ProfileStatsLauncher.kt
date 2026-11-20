@@ -8,8 +8,8 @@ import javax.inject.Singleton
 
 /**
  * Asks the viewer's own profile to open on Statistics, from a page that cannot reach its state,
- * such as the last page of a recap. A pending flag rather than an event, for the reason
- * [DiscoverSearchLauncher] keeps state: the profile may not exist yet when the request is made.
+ * such as the last page of a recap. A pending flag rather than an event, since the profile may not
+ * exist yet when the request is made.
  */
 @Singleton
 class ProfileStatsLauncher @Inject constructor() {

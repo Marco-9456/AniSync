@@ -37,9 +37,8 @@ data class TabRequest(val tab: MainTab? = null, val id: Long = 0L) {
  *
  * The bar lives in MainScreen while the scroll position and the search bar live inside each tab's
  * own screen, so neither side can reach the other directly. Requests are monotonic counters rather
- * than events, for the same reason [DiscoverSearchLauncher] keeps state: a tab's ViewModel may not
- * be collecting at the moment the gesture lands, and a counter read late still says what to do
- * where a dropped event would say nothing.
+ * than events, since a tab's ViewModel may not be collecting at the moment the gesture lands, and a
+ * counter read late still says what to do where a dropped event would say nothing.
  */
 @Singleton
 class TabReselectBus @Inject constructor() {
@@ -60,8 +59,7 @@ class TabReselectBus @Inject constructor() {
  * them. Pass no [onSearch] for a tab that has nothing to search.
  *
  * The callbacks take no argument on purpose: each tab keeps its own counter and bumps it, rather
- * than adopting the bus id. Discover's search counter already has a second source in
- * [DiscoverSearchLauncher], and two sequences writing one field would let it run backwards.
+ * than adopting the bus id.
  */
 fun TabReselectBus.observeTab(
     tab: MainTab,

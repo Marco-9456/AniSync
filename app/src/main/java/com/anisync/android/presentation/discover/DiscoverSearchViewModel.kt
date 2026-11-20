@@ -8,7 +8,6 @@ import com.anisync.android.data.SearchSurface
 import com.anisync.android.domain.ADULT_GENRES
 import com.anisync.android.domain.AdultMode
 import com.anisync.android.domain.DetailsRepository
-import com.anisync.android.domain.DiscoverSearchLauncher
 import com.anisync.android.domain.GroupedSearchResults
 import com.anisync.android.domain.IntRangeFilter
 import com.anisync.android.domain.LibraryEntry
@@ -46,7 +45,6 @@ class DiscoverSearchViewModel @Inject constructor(
     private val searchRepository: SearchRepository,
     private val detailsRepository: DetailsRepository,
     private val appSettings: AppSettings,
-    private val searchLauncher: DiscoverSearchLauncher,
     private val toastManager: ToastManager
 ) : ViewModel() {
 
@@ -80,7 +78,6 @@ class DiscoverSearchViewModel @Inject constructor(
         observeSearchQuery()
         observeAdultContent()
         observeViewMode()
-        observeSearchLaunchRequests()
         observeRecentSearches()
         savedStateHandle.presetSearch()?.let { openPresetSearch(it.toFilters(), it.category) }
     }
@@ -94,22 +91,9 @@ class DiscoverSearchViewModel @Inject constructor(
     }
 
     /**
-     * External "open search with these filters" requests (ranking cards, genre/tag
-     * chips on media details). Applies the preset over a blank query, fires the search,
-     * and bumps [DiscoverSearchUiState.presetRequest] so the screen expands the search
-     * overlay. The launcher keeps the request as state, so one made before Discover ever
-     * composed isn't dropped.
+     * Applies a preset over a blank query, fires the search, and bumps
+     * [DiscoverSearchUiState.presetRequest] so the screen opens the search on it.
      */
-    private fun observeSearchLaunchRequests() {
-        viewModelScope.launch {
-            searchLauncher.pending.collect { request ->
-                if (request == null) return@collect
-                searchLauncher.consume()
-                openPresetSearch(request.filters, request.category)
-            }
-        }
-    }
-
     private fun openPresetSearch(filters: SearchFilters, category: ResultCategory) {
         _uiState.update {
             it.copy(
@@ -402,8 +386,7 @@ class DiscoverSearchViewModel @Inject constructor(
 
     /**
      * A browse chip is a saved search. Rather than inventing a browse screen per axis, each chip
-     * applies the filters that describe it and opens the search overlay on the results, which is
-     * the same path the genre and tag chips on media details already take.
+     * applies the filters that describe it and opens the search overlay on the results.
      *
      * Schedule is the exception and never reaches here: the screen sends it to the airing calendar.
      */

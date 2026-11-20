@@ -56,7 +56,6 @@ class MediaDetailsViewModel @Inject constructor(
     private val appSettings: AppSettings,
     private val toastManager: com.anisync.android.presentation.components.alert.ToastManager,
     private val forumRepository: ForumRepository,
-    private val discoverSearchLauncher: com.anisync.android.domain.DiscoverSearchLauncher,
     private val artworkSchemes: MediaArtworkSchemes,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -637,26 +636,6 @@ class MediaDetailsViewModel @Inject constructor(
             }
             castLoading = false
         }
-    }
-
-    /**
-     * Ask the Discover tab to open its search overlay with [filters] preset, on the
-     * [type] the title belongs to. Ranking cards and genre/tag chips route through
-     * this. MainScreen handles the tab switch; DiscoverSearchViewModel applies and
-     * consumes the request.
-     */
-    fun openDiscoverSearch(
-        filters: com.anisync.android.domain.SearchFilters,
-        type: com.anisync.android.type.MediaType?
-    ) {
-        discoverSearchLauncher.launch(
-            filters,
-            if (type == com.anisync.android.type.MediaType.MANGA) {
-                com.anisync.android.domain.ResultCategory.MANGA
-            } else {
-                com.anisync.android.domain.ResultCategory.ANIME
-            }
-        )
     }
 
     /** Fetch the community stats the first time the Stats tab is opened. */

@@ -63,8 +63,8 @@ data class DiscoverSearchUiState(
     val searchPaging: SearchPaging = SearchPaging(),
     val recentSearches: List<String> = emptyList(),
     /**
-     * Bumped each time a preset opens, from a browse chip or from another screen (see
-     * DiscoverSearchLauncher). The screen clears the field and opens the search on it.
+     * Bumped each time a preset opens, from a browse chip or as a search page opens. The screen
+     * clears the field and opens the search on it.
      */
     val presetRequest: Long = 0L
 ) {
