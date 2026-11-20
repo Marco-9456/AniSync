@@ -1107,7 +1107,7 @@ private fun SearchResultsContent(
                 }
 
                 !state.hasSearchResults -> when {
-                    state.searchQuery.isNotEmpty() || state.searchFilters.hasActiveFilters ->
+                    state.searchQuery.isNotEmpty() || state.searchFilters.hasActiveFilters || state.listsWhenEmpty ->
                         DiscoverNoResultsState(
                             hasFilters = state.searchFilters.hasNarrowingFilters,
                             onClearFilters = { onAction(DiscoverSearchAction.ClearFilters) }

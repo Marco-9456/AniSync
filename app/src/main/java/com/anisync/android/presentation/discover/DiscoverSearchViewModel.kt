@@ -51,7 +51,9 @@ class DiscoverSearchViewModel @Inject constructor(
     val titleLanguage = appSettings.titleLanguage
     val showAdultContent = appSettings.showAdultContent
 
-    private val _uiState = MutableStateFlow(DiscoverSearchUiState())
+    private val preset = savedStateHandle.presetSearch()
+
+    private val _uiState = MutableStateFlow(DiscoverSearchUiState(listsWhenEmpty = preset?.sort != null))
     val uiState: StateFlow<DiscoverSearchUiState> = _uiState.asStateFlow()
 
     private val _taxonomy = MutableStateFlow(SearchTaxonomy())
@@ -79,7 +81,7 @@ class DiscoverSearchViewModel @Inject constructor(
         observeAdultContent()
         observeViewMode()
         observeRecentSearches()
-        savedStateHandle.presetSearch()?.let { openPresetSearch(it.toFilters(), it.category) }
+        preset?.let { openPresetSearch(it.toFilters(), it.category) }
     }
 
     private fun observeRecentSearches() {
@@ -445,7 +447,8 @@ class DiscoverSearchViewModel @Inject constructor(
     private fun DiscoverSearchUiState.shouldSearch(): Boolean =
         searchQuery.trim().length >= MIN_SEARCH_QUERY_LENGTH ||
             searchFilters.hasActiveFilters ||
-            isBrowsingStudios()
+            isBrowsingStudios() ||
+            (listsWhenEmpty && searchQuery.isBlank())
 
     private fun DiscoverSearchUiState.isBrowsingStudios(): Boolean =
         activeCategory == ResultCategory.STUDIOS && searchQuery.isBlank()

@@ -66,7 +66,13 @@ data class DiscoverSearchUiState(
      * Bumped each time a preset opens, from a browse chip or as a search page opens. The screen
      * clears the field and opens the search on it.
      */
-    val presetRequest: Long = 0L
+    val presetRequest: Long = 0L,
+    /**
+     * Lists titles with nothing typed or filtered, where an empty search shows recent searches. A
+     * page opened on a ranking does, since a ranking of all time by popularity asks for nothing
+     * but the default order.
+     */
+    val listsWhenEmpty: Boolean = false
 ) {
     val hasSearchResults: Boolean
         get() = searchAnime.isNotEmpty() || searchManga.isNotEmpty() || !groupedResults.isEmpty
