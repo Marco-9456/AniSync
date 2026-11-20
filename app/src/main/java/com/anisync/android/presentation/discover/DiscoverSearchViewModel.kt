@@ -196,7 +196,7 @@ class DiscoverSearchViewModel @Inject constructor(
 
     /**
      * Appends the next page of the active category's results. Media buckets page
-     * independently; the four entity buckets share one request/page counter, so
+     * independently, while the four entity buckets share one request/page counter, so
      * paging one entity category also grows the other three. Studios listed before
      * a name is typed page alone. A fresh search (new
      * trigger) resets the paging state wholesale, which implicitly invalidates any
@@ -456,8 +456,8 @@ class DiscoverSearchViewModel @Inject constructor(
 
 /**
  * Minimum query length before a text-driven search fires. Single-character queries
- * match almost everything and just burn rate-limit budget; filters can still drive
- * a search with a shorter/blank query.
+ * match almost everything and just burn rate-limit budget. Filters can still drive
+ * a search with a shorter or blank query.
  */
 private const val MIN_SEARCH_QUERY_LENGTH = 2
 

@@ -19,8 +19,8 @@ data class SearchTotals(val anime: Int = 0, val manga: Int = 0)
 
 /**
  * Pagination bookkeeping for the universal search. Media buckets page
- * independently; the four entity buckets ride one shared request (and thus one
- * shared page counter), each keeping its own hasNext flag.
+ * independently, while the four entity buckets ride one shared request (and thus
+ * one shared page counter), each keeping its own hasNext flag.
  */
 @Stable
 data class SearchPaging(
