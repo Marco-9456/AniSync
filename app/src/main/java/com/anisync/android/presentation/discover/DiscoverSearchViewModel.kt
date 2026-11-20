@@ -1,5 +1,6 @@
 package com.anisync.android.presentation.discover
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.anisync.android.data.AppSettings
@@ -41,6 +42,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DiscoverSearchViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val searchRepository: SearchRepository,
     private val detailsRepository: DetailsRepository,
     private val appSettings: AppSettings,
@@ -80,6 +82,7 @@ class DiscoverSearchViewModel @Inject constructor(
         observeViewMode()
         observeSearchLaunchRequests()
         observeRecentSearches()
+        savedStateHandle.presetSearch()?.let { openPresetSearch(it.toFilters(), it.category) }
     }
 
     private fun observeRecentSearches() {

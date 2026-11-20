@@ -51,7 +51,9 @@ import com.anisync.android.presentation.details.StudioMediaGridScreen
 import com.anisync.android.presentation.discover.DiscoverListDetail
 import com.anisync.android.presentation.discover.DiscoverScreen
 import com.anisync.android.presentation.discover.FavoritesGridScreen
+import com.anisync.android.presentation.discover.PresetSearchScreen
 import com.anisync.android.presentation.discover.SectionGridScreen
+import com.anisync.android.presentation.discover.resultType
 import com.anisync.android.presentation.feed.CreateStatusScreen
 import com.anisync.android.presentation.feed.FeedListDetail
 import com.anisync.android.presentation.feed.FeedScreen
@@ -91,6 +93,7 @@ import com.anisync.android.presentation.settings.UpdatesScreen
 import com.anisync.android.presentation.util.AniLinkCallbacks
 import com.anisync.android.presentation.util.LocalAniLinkCallbacks
 import com.anisync.android.presentation.util.LocalMainNavBarInset
+import com.anisync.android.presentation.util.TransitionKeys
 
 // =============================================================================
 // TAB ORDER HELPER
@@ -1044,6 +1047,25 @@ fun AniSyncNavHost(
                         animatedVisibilityScope = this
                     )
                 }
+            }
+
+            composable<PresetSearch>(
+                enterTransition = { sharedAxisZEnter() },
+                exitTransition = { sharedAxisZExit() },
+                popEnterTransition = { sharedAxisZPopEnter() },
+                popExitTransition = { sharedAxisZPopExit() }
+            ) { backStackEntry ->
+                val route: PresetSearch = backStackEntry.toRoute()
+                PresetSearchScreen(
+                    mediaType = route.resultType,
+                    navController = navController,
+                    onBackClick = { navController.popBackStack() },
+                    onMediaClick = { onMediaClick(it, TransitionKeys.DISCOVER) },
+                    onCharacterClick = { navController.navigate(CharacterDetails(it)) },
+                    onStaffClick = { navController.navigate(StaffDetails(it)) },
+                    onStudioClick = { navController.navigate(StudioDetails(it)) },
+                    onUserClick = navigateToUserProfile
+                )
             }
 
             // =================================================================

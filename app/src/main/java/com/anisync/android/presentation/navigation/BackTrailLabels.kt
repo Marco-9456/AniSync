@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.RateReview
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.TextFields
@@ -114,6 +115,7 @@ internal fun NavBackStackEntry.toTrailNode(): TrailNode {
         destination.hasRoute<SectionGrid>() -> toRoute<SectionGrid>().let {
             "section:${it.sectionType}:${it.mediaType}"
         }
+        destination.hasRoute<PresetSearch>() -> "search:${toRoute<PresetSearch>()}"
         destination.hasRoute<ForumThreadDetail>() -> "thread:${toRoute<ForumThreadDetail>().threadId}"
         destination.hasRoute<ForumCategoryBrowse>() ->
             "forum_category:${toRoute<ForumCategoryBrowse>().categoryId}"
@@ -183,6 +185,9 @@ internal fun NavBackStackEntry.trailRow(): TrailRow {
             TrailRow(Icons.Outlined.AccountCircle, toRoute<UserProfile>().username)
         destination.hasRoute<SectionGrid>() ->
             TrailRow(Icons.Outlined.GridView, toRoute<SectionGrid>().sectionTitle)
+        destination.hasRoute<PresetSearch>() -> toRoute<PresetSearch>().let { route ->
+            kindRow(Icons.Outlined.Search, route.tag ?: route.genre, stringResource(R.string.search))
+        }
         else -> screenRow(destination)
     }
 }

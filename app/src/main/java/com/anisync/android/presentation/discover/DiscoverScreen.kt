@@ -343,6 +343,8 @@ fun DiscoverScreen(
 /**
  * The expanded search, kept open while a result is on screen so back returns to it. A result opens
  * over it the way any page opens over the screen it came from.
+ *
+ * A search that is a page of its own has no [searchAnchor], and its arrow leaves through [onBack].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -351,13 +353,14 @@ internal fun DiscoverSearch(
     mediaType: MediaType,
     searchBarState: SearchBarState,
     textFieldState: TextFieldState,
-    searchAnchor: SearchBarAnchor,
+    searchAnchor: SearchBarAnchor?,
     navController: NavHostController,
     onMediaClick: (Int) -> Unit,
     onCharacterClick: (Int) -> Unit,
     onStaffClick: (Int) -> Unit,
     onStudioClick: (Int) -> Unit,
-    onUserClick: (String) -> Unit
+    onUserClick: (String) -> Unit,
+    onBack: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val titleLanguage by viewModel.titleLanguage.collectAsStateWithLifecycle()
@@ -389,6 +392,7 @@ internal fun DiscoverSearch(
         showAdultContent = showAdultContent,
         coroutineScope = coroutineScope,
         navController = navController,
+        onBack = onBack,
         onAction = viewModel::onAction,
         actions = SearchResultActions(
             onMedia = { id -> open { onMediaClick(id) } },
@@ -523,6 +527,7 @@ private fun SearchInputField(
     coroutineScope: CoroutineScope,
     onSearch: () -> Unit,
     modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null,
     collapsedTrailing: (@Composable () -> Unit)? = null
 ) {
     val isExpanded = searchBarState.currentValue == SearchBarValue.Expanded
@@ -574,9 +579,13 @@ private fun SearchInputField(
         leadingIcon = {
             if (isExpanded) {
                 IconButton(onClick = {
-                    focusManager.clearFocus()
-                    keyboardController?.hide()
-                    coroutineScope.launch { searchBarState.animateToCollapsed() }
+                    if (onBack != null) {
+                        onBack()
+                    } else {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        coroutineScope.launch { searchBarState.animateToCollapsed() }
+                    }
                 }) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
@@ -929,13 +938,14 @@ private fun DiscoverSearchOverlay(
     state: DiscoverSearchUiState,
     mediaType: MediaType,
     searchBarState: SearchBarState,
-    searchAnchor: SearchBarAnchor,
+    searchAnchor: SearchBarAnchor?,
     textFieldState: TextFieldState,
     titleLanguage: com.anisync.android.data.TitleLanguage,
     taxonomy: SearchTaxonomy,
     showAdultContent: Boolean,
     coroutineScope: CoroutineScope,
     navController: NavHostController?,
+    onBack: (() -> Unit)?,
     onAction: (DiscoverSearchAction) -> Unit,
     actions: SearchResultActions
 ) {
@@ -961,7 +971,8 @@ private fun DiscoverSearchOverlay(
                 mediaType = mediaType,
                 coroutineScope = coroutineScope,
                 onSearch = { onAction(DiscoverSearchAction.OnSearch(textFieldState.text.toString())) },
-                modifier = fieldCollapse.field
+                modifier = fieldCollapse.field,
+                onBack = onBack
             )
         }
     ) {

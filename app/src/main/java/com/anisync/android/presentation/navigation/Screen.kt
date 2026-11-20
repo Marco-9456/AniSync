@@ -114,6 +114,26 @@ data class SectionGrid(
 )
 
 /**
+ * Discover search on a page of its own, opened on a preset from a title's page: one of its genres,
+ * one of its tags or one of its rankings. It opens over the title, so back returns there.
+ * @param mediaType "ANIME" or "MANGA", the results it opens on
+ * @param genre A genre every result has
+ * @param tag A tag every result has
+ * @param sort A [com.anisync.android.domain.SearchSortColumn] name the results are ordered by
+ * @param season An AniList season name, for a seasonal ranking
+ * @param year The year a ranking covers, or 0 for one of all time
+ */
+@Serializable
+data class PresetSearch(
+    val mediaType: String,
+    val genre: String? = null,
+    val tag: String? = null,
+    val sort: String? = null,
+    val season: String? = null,
+    val year: Int = 0
+)
+
+/**
  * Grid screen for displaying all related media.
  * @param mediaId The ID of the media
  * @param mediaTitle The title of the media (for display in app bar)
