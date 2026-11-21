@@ -148,19 +148,39 @@ class RecapBuilderTest {
 
     @Test
     fun `titles tied on the biggest day are all named, adult ones only when shown`() {
+        val nightShow = title(15, "Night Show", "TV", 24, 24, listOf("Ecchi"), adult = true)
         val tie = records + listOf(
             anime(5, "watched episode", "16 - 39", at(9, 29, 10)),
             anime(4, "rewatched episode", "1 - 4", at(9, 29, 11)),
             anime(6, "rewatched episode", "1 - 6", at(9, 29, 12)),
             anime(9, "watched episode", "383 - 406", at(9, 29, 13)),
-            anime(6, "watched episode", "1 - 24", at(9, 29, 14)),
+            anime(15, "watched episode", "1 - 24", at(9, 29, 14)),
         )
-        val hidden = buildRecap(september, tie, media, RecapSettings(), zone)!!.biggestDay
+        val hidden = buildRecap(september, tie, media + (15 to nightShow), RecapSettings(), zone)!!.biggestDay
         assertEquals(LocalDate.of(2026, 9, 29), hidden.date)
         assertEquals(24, hidden.leadingEpisodes)
         assertEquals(listOf(5, 9), hidden.leaders)
-        val shown = buildRecap(september, tie, media, RecapSettings(showAdult = true), zone)!!.biggestDay
-        assertEquals(listOf(5, 6, 9), shown.leaders)
+        val shown = buildRecap(september, tie, media + (15 to nightShow), RecapSettings(showAdult = true), zone)!!.biggestDay
+        assertEquals(listOf(5, 9, 15), shown.leaders)
+    }
+
+    @Test
+    fun `a title merged and saved twice counts each episode once`() {
+        val vermeil = title(16, "Kinsou no Vermeil", "TV", 12, 24, listOf("Fantasy"))
+        val chain = listOf("1 - 3", "1 - 4", "1 - 4", "1 - 9", "1 - 11").mapIndexed { index, progress ->
+            anime(16, "watched episode", progress, at(9, 10, 10 + index))
+        } + listOf(
+            anime(16, "watched episode", "12", at(9, 11)),
+            anime(16, "watched episode", "12", at(9, 11)),
+            anime(16, "completed", null, at(9, 11, 21)),
+            anime(16, "completed", null, at(9, 11, 21)),
+        )
+        val recap = buildRecap(september, chain, media + (16 to vermeil), RecapSettings(), zone)!!
+        assertEquals(12, recap.episodes)
+        assertEquals(1..12, recap.ranked.single().watched)
+        assertEquals(1, recap.started)
+        assertEquals(1, recap.finished)
+        assertEquals(7, recap.updates)
     }
 
     @Test

@@ -129,13 +129,14 @@ class RecapRepositoryTest {
     @Test
     fun `a year added up from its months is cut where the months were`() = runTest {
         env.nowMillis = at(2026, 1, 2, 12) * 1000
-        remote.activities += activity(7, 30, "watched episode", "3 - 4", at(2025, 1, 1, 1))
+        remote.media += title(40, "Monster", episodes = 74)
+        remote.activities += activity(7, 40, "watched episode", "1 - 2", at(2025, 1, 1, 1))
         repository.backfill()
         dao.rows.remove(1 to "2025")
         // The phone moves to UTC-5, where 01:00 on 1 January at UTC+3 is still 2024.
         env.zone = ZoneOffset.ofHours(-5)
         val year = (repository.getRecap(RecapPeriod.Year(2025)) as Result.Success).data!!.recap
-        assertEquals("four episodes of Pluto and four of Frieren", 8, year.episodes)
+        assertEquals("two episodes each of Monster and Pluto, four of Frieren", 8, year.episodes)
     }
 
     @Test

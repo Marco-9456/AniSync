@@ -27,7 +27,7 @@ const val MINUTES_PER_CHAPTER = 5
  * Builds the recap for [period] from list activity, or null when no anime episode counts in it,
  * since a month without activity gets no recap.
  *
- * [records] may reach back before the period so completions can see what was logged earlier.
+ * [records] may reach back before the period, so each title carries on from where it stood.
  * Episodes and minutes include adult titles, but unless [RecapSettings.showAdult] is on they are
  * never named, ranked or shown in genres and studios.
  *

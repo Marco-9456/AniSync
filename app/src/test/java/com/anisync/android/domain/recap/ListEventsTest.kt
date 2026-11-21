@@ -87,6 +87,65 @@ class ListEventsTest {
     }
 
     @Test
+    fun `an update AniList kept after merging it adds only the episodes past it`() {
+        val events = countEvents(
+            listOf(
+                anime(1, "watched episode", "1 - 3", at = 10),
+                anime(2, "watched episode", "1 - 4", at = 20),
+                anime(3, "watched episode", "1 - 4", at = 30),
+                anime(4, "watched episode", "1 - 9", at = 40),
+                anime(5, "watched episode", "1 - 11", at = 50),
+                anime(6, "watched episode", "12", at = 60),
+                anime(7, "watched episode", "12", at = 60),
+                anime(8, "completed", null, at = 70),
+                anime(9, "completed", null, at = 70),
+            )
+        ) { 12 }
+        assertEquals(listOf(3, 1, 0, 5, 2, 1, 0), events.map { it.units })
+        assertEquals(listOf(1..3, 4..4, null, 5..9, 10..11, 12..12, null), events.map { it.range })
+    }
+
+    @Test
+    fun `a save logged twice counts once`() {
+        val events = countEvents(
+            listOf(anime(1, "watched episode", "1 - 4", at = 10), anime(2, "watched episode", "1 - 4", at = 10))
+        ) { 12 }
+        assertEquals(listOf(4), events.map { it.units })
+    }
+
+    @Test
+    fun `going back to an earlier episode and on again adds nothing`() {
+        val events = countEvents(
+            listOf(
+                anime(1, "watched episode", "9", at = 10),
+                anime(2, "watched episode", "3", at = 20),
+                anime(3, "watched episode", "9", at = 30),
+                anime(4, "watched episode", "10", at = 40),
+            )
+        ) { 12 }
+        assertEquals(listOf(1, 0, 0, 1), events.map { it.units })
+    }
+
+    @Test
+    fun `every rewatch counts from the start`() {
+        val events = countEvents(
+            listOf(
+                anime(1, "rewatched episode", "1 - 6", at = 10),
+                anime(2, "rewatched", null, at = 20),
+                anime(3, "rewatched episode", "1 - 6", at = 30),
+                anime(4, "rewatched", null, at = 40),
+            )
+        ) { 6 }
+        assertEquals(listOf(6, 0, 6, 0), events.map { it.units })
+    }
+
+    @Test
+    fun `episode zero counts nothing`() {
+        val events = countEvents(listOf(anime(1, "watched episode", "0", at = 10), anime(2, "completed", null, at = 20))) { 12 }
+        assertEquals(listOf(0, 12), events.map { it.units })
+    }
+
+    @Test
     fun `planning, pausing and dropping count nothing`() {
         val events = countEvents(
             listOf(
