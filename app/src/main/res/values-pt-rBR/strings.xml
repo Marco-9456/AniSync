@@ -1619,7 +1619,7 @@
     <string name="forum_action_subscribe_sub">Notifica você a cada nova resposta</string>
     <string name="forum_action_save">Salvar</string>
     <string name="forum_action_unsave">Remover dos salvos</string>
-    <string name="forum_action_save_sub">Mantem localmente, legível offline</string>
+    <string name="forum_action_save_sub">Mantém localmente, legível offline</string>
     <string name="forum_action_share">Compartilhar</string>
     <string name="forum_action_copy_link">Copiar link</string>
     <string name="forum_action_open_anilist">Abrir no AniList</string>
@@ -2120,7 +2120,7 @@
     <string name="share_background_gradient">Gradiente</string>
     <string name="share_background_solid">Sólido</string>
     <string name="share_background_clear">Limpo</string>
-    <string name="share_background_clear_note">\"Limpo\" mantem os cantos transparentes, e troca para o tamanho de cartão.</string>
+    <string name="share_background_clear_note">\"Limpo\" mantém os cantos transparentes, e troca para o tamanho de Cartão.</string>
     <string name="share_dim">Escurecer</string>
     <string name="share_swatch_app">App</string>
     <string name="share_swatch_profile">Perfil</string>
@@ -2552,4 +2552,12 @@
     <string name="stats_view_how_they_watch">Como o usuário assiste</string>
     <string name="stats_view_how_they_read">Como o usuário lê</string>
     <string name="a11y_action_more_actions">Mais ações</string>
+    <string name="search_recent_title">Buscas recentes</string>
+    <string name="search_recent_clear_all">Limpar tudo</string>
+    <string name="a11y_search_recent_clear_all">Limpar todas as buscas recentes</string>
+    <string name="a11y_action_search_again">Buscar novamente</string>
+    <string name="cd_search_recent_remove">Remover %1$s das buscas recentes</string>
+    <string name="settings_search_history">Histórico de buscas</string>
+    <string name="settings_search_history_desc">Mantém suas buscas recentes em Descobrir, Biblioteca e Fórum. Desligar essa opção limpa o histórico</string>
+    <string name="settings_section_search">Buscar</string>
 </resources>
