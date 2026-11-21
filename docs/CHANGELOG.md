@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Recap Episode Counts** - A recap could count the same episodes more than once, so a 12-episode series showed 33. AniList sometimes keeps an update after merging it into a longer one, or logs one save as two, and the recap added up all of them. Each episode of a title now counts once, and progress logged after a title was completed counts as a rewatch, so it only shows with Count rewatches on. Recaps already on the phone are counted again. (#191)
 - **Search From A Title** - Tapping a genre, tag or ranking on a title's page jumped to Discover and left the title behind, so back landed on Discover. The search now opens on a page of its own over the title, and back returns to the title as you left it. (#190)
 - **Most Popular Ranking** - The Most Popular All Time ranking on a title's page opened a search showing only your recent searches. It now lists the most popular titles.
 - **Profile About** - A short About on a profile lost the first letter of its top and bottom lines to the rounded corners around it.
