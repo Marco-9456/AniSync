@@ -42,15 +42,8 @@ private fun statusKind(status: String?): StatusKind {
 /** True for an activity that can add episodes or chapters. Plans, pauses and drops never do. */
 fun isCountable(status: String?): Boolean = statusKind(status) != StatusKind.OTHER
 
-/**
- * True for an activity that moves where a title's progress stands: a readable range, or a
- * completion. The last one before a period is all a completion inside it needs to see.
- */
-internal fun ListActivityRecord.movesProgress(): Boolean = when (statusKind(status)) {
-    StatusKind.PROGRESS, StatusKind.REPEAT_PROGRESS -> parseProgress(progress) != null
-    StatusKind.COMPLETED, StatusKind.REPEAT_COMPLETED -> true
-    StatusKind.OTHER -> false
-}
+/** The order [countEvents] reads activities in. */
+internal val recordOrder = compareBy<ListActivityRecord>({ it.createdAt }, { it.id })
 
 /**
  * The range a progress string covers. AniList logs one update as "5" and merges consecutive ones
@@ -87,17 +80,24 @@ fun countEvents(
     totalUnits: (mediaId: Int) -> Int?,
 ): List<CountedEvent> {
     val titles = HashMap<Int, TitleCount>()
-    return records.sortedWith(compareBy({ it.createdAt }, { it.id })).mapNotNull { record ->
+    return records.sortedWith(recordOrder).mapNotNull { record ->
         titles.getOrPut(record.mediaId, ::TitleCount).count(record, totalUnits(record.mediaId)?.takeIf { it > 0 })
     }
 }
 
-/** Where the count of one title stands. */
-private class TitleCount {
+/** Where the count of one title stands, and the activities that put it there. */
+internal class TitleCount {
     private var finished = false
     private var reach: Int? = null
     private var rewatchReach: Int? = null
     private var previous: ListActivityRecord? = null
+    private var finishedBy: ListActivityRecord? = null
+    private var reachedBy: ListActivityRecord? = null
+    private var rewatchReachedBy: ListActivityRecord? = null
+
+    /** The activities a later period needs to carry on counting from here. */
+    val standing: List<ListActivityRecord>
+        get() = listOfNotNull(if (finished) finishedBy else reachedBy, rewatchReachedBy)
 
     /** What [record] adds, or null when it is no update that counts at all. */
     fun count(record: ListActivityRecord, total: Int?): CountedEvent? {
@@ -126,7 +126,13 @@ private class TitleCount {
             ?: return record.toEvent(units = 1, range = null, isRepeat = rewatch, isCompletion = false)
         val counted = if (rewatch) rewatchReach else reach
         if (counted == null || range.last > counted) {
-            if (rewatch) rewatchReach = range.last else reach = range.last
+            if (rewatch) {
+                rewatchReach = range.last
+                rewatchReachedBy = record
+            } else {
+                reach = range.last
+                reachedBy = record
+            }
         }
         val fresh = maxOf(range.first, (counted ?: 0) + 1)..range.last
         return record.toEvent(units = fresh.units, range = fresh.takeUnless { it.isEmpty() }, isRepeat = rewatch, isCompletion = false)
@@ -135,8 +141,14 @@ private class TitleCount {
     private fun finish(record: ListActivityRecord, total: Int?, rewatch: Boolean): CountedEvent {
         val counted = if (rewatch) rewatchReach else reach
         val rest = if (counted != null && total != null) (counted + 1)..total else null
-        if (rewatch) rewatchReach = null
-        finished = true
+        if (rewatch) {
+            rewatchReach = null
+            rewatchReachedBy = null
+        }
+        if (!finished) {
+            finished = true
+            finishedBy = record
+        }
         return record.toEvent(
             units = rest?.units ?: 1,
             range = if (rest != null) rest.takeUnless { it.isEmpty() } else total?.let { it..it },

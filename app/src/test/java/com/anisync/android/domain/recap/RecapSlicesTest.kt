@@ -46,10 +46,33 @@ class RecapSlicesTest {
     }
 
     @Test
-    fun `only the last activity that moved a title comes from before`() {
+    fun `only what decides where a title stood comes from before`() {
         val slice = sliceForPeriod(september, zone, history)
         val earlier = slice.filter { it.createdAt < september.window(zone).from }
         assertEquals(listOf(4 to "120 - 134", 1 to "2"), earlier.map { it.mediaId to it.progress })
+    }
+
+    @Test
+    fun `a slice keeps the furthest episode, a finish and a rewatch in progress`() {
+        val history = listOf(
+            record(3, "watched episode", "1 - 3", at(8, 1)),
+            record(3, "watched episode", "1 - 9", at(8, 2)),
+            record(3, "watched episode", "4", at(8, 3)),
+            record(1, "watched episode", "1 - 4", at(8, 4)),
+            record(1, "completed", null, at(8, 5)),
+            record(1, "rewatched episode", "1 - 2", at(8, 6)),
+            record(3, "watched episode", "10", at(9, 1)),
+            record(1, "watched episode", "1 - 3", at(9, 2)),
+        )
+        val slice = sliceForPeriod(september, zone, history)
+        val earlier = slice.filter { it.createdAt < september.window(zone).from }
+        assertEquals(listOf(3 to "1 - 9", 1 to null, 1 to "1 - 2"), earlier.map { it.mediaId to it.progress })
+        for (countRepeats in listOf(false, true)) {
+            val settings = RecapSettings(countRepeats = countRepeats)
+            assertEquals(buildRecap(september, history, media, settings, zone), buildRecap(september, slice, media, settings, zone))
+        }
+        assertEquals(1, buildRecap(september, slice, media, RecapSettings(), zone)!!.episodes)
+        assertEquals(2, buildRecap(september, slice, media, RecapSettings(countRepeats = true), zone)!!.episodes)
     }
 
     @Test
