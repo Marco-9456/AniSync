@@ -127,6 +127,36 @@ class ListEventsTest {
     }
 
     @Test
+    fun `progress after a completion is a rewatch`() {
+        val events = countEvents(
+            listOf(
+                anime(1, "watched episode", "1 - 12", at = 10),
+                anime(2, "completed", null, at = 20),
+                anime(3, "watched episode", "1 - 3", at = 30),
+                anime(4, "completed", null, at = 40),
+            )
+        ) { 12 }
+        assertEquals(listOf(12, 0, 3, 9), events.map { it.units })
+        assertEquals(listOf(false, false, true, true), events.map { it.isRepeat })
+        assertEquals(listOf(false, true, false, true), events.map { it.isCompletion })
+    }
+
+    @Test
+    fun `a completion saved again with nothing rewatched counts nothing`() {
+        val events = countEvents(
+            listOf(
+                anime(1, "watched episode", "1 - 12", at = 10),
+                anime(2, "completed", null, at = 20),
+                anime(3, "completed", null, at = 30),
+            )
+        ) { 12 }
+        val again = events.last()
+        assertEquals(0, again.units)
+        assertFalse(again.isCompletion)
+        assertFalse(again.isRepeat)
+    }
+
+    @Test
     fun `every rewatch counts from the start`() {
         val events = countEvents(
             listOf(

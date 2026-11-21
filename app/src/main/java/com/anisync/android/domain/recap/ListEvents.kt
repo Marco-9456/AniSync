@@ -77,6 +77,9 @@ fun parseProgress(progress: String?): IntRange? {
  * episode, or a one-episode title). Without a known count that one has no range, so it is neither
  * a start nor an episode a theme song can be matched to. [totalUnits] is the title's episode or
  * chapter count.
+ *
+ * A completion ends the first watch. Progress logged after it is a rewatch, whatever AniList called
+ * it, and a completion with nothing rewatched since is the same finish saved again.
  * Pass every activity known before the period too, so the period can see where each title stood.
  */
 fun countEvents(
@@ -91,6 +94,7 @@ fun countEvents(
 
 /** Where the count of one title stands. */
 private class TitleCount {
+    private var finished = false
     private var reach: Int? = null
     private var rewatchReach: Int? = null
     private var previous: ListActivityRecord? = null
@@ -105,9 +109,13 @@ private class TitleCount {
         previous = record
         if (sentTwice) return null
         return when (kind) {
-            StatusKind.PROGRESS -> watch(record, rewatch = false)
+            StatusKind.PROGRESS -> watch(record, rewatch = finished)
             StatusKind.REPEAT_PROGRESS -> watch(record, rewatch = true)
-            StatusKind.COMPLETED -> finish(record, total, rewatch = false)
+            StatusKind.COMPLETED -> when {
+                !finished -> finish(record, total, rewatch = false)
+                rewatchReach != null -> finish(record, total, rewatch = true)
+                else -> record.toEvent(units = 0, range = null, isRepeat = false, isCompletion = false)
+            }
             StatusKind.REPEAT_COMPLETED -> finish(record, total, rewatch = true)
             StatusKind.OTHER -> null
         }
@@ -127,7 +135,8 @@ private class TitleCount {
     private fun finish(record: ListActivityRecord, total: Int?, rewatch: Boolean): CountedEvent {
         val counted = if (rewatch) rewatchReach else reach
         val rest = if (counted != null && total != null) (counted + 1)..total else null
-        if (rewatch) rewatchReach = null else if (total != null) reach = maxOf(counted ?: 0, total)
+        if (rewatch) rewatchReach = null
+        finished = true
         return record.toEvent(
             units = rest?.units ?: 1,
             range = if (rest != null) rest.takeUnless { it.isEmpty() } else total?.let { it..it },
