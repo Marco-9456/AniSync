@@ -2560,4 +2560,7 @@
     <string name="settings_search_history">Histórico de buscas</string>
     <string name="settings_search_history_desc">Mantém suas buscas recentes em Descobrir, Biblioteca e Fórum. Desligar essa opção limpa o histórico</string>
     <string name="settings_section_search">Buscar</string>
+    <string name="profile_about_label">Sobre</string>
+    <string name="profile_bio_details">Detalhes do perfil</string>
+    <string name="profile_bio_open">Abrir</string>
 </resources>
