@@ -1990,7 +1990,7 @@
     <string name="profile_order_updated">按更新時間排序</string>
     <string name="profile_people_empty_mutual_own_body">與你互相關注的人會在這裡展示</string>
     <string name="profile_row_no_score">暫未評分</string>
-    <string name="profile_compare_their_tens_title">你清單上沒有，但 %1$s 打了滿分的作品</string>
+    <string name="profile_compare_their_tens_title">你清單上沒有，但 %1$s 打了滿分</string>
     <string name="profile_compare_nothing_body">你清單的項目跟 %1$s 的項目會並列在這~</string>
     <string name="message_composer_hint_to">寫給 %1$s 的訊息</string>
     <string name="message_composer_visibility">閱讀權限</string>
@@ -2003,4 +2003,12 @@
     <string name="profile_message">訊息</string>
     <string name="message_composer_private_explain">只有你與 %1$s 能查看具體內容，他人只能在 %1$s 的主頁看到一則動態</string>
     <string name="message_composer_public_explain">任何人皆可在 %1$s 的主頁上查看</string>
+    <string name="profile_copy_username">複製用戶名</string>
+    <string name="profile_share">分享此主頁</string>
+    <string name="profile_report_on_anilist">在 AniList 上檢舉或封鎖</string>
+    <string name="profile_about_label">關於</string>
+    <string name="profile_activity_threads">帖子</string>
+    <string name="profile_activity_comments">評論</string>
+    <string name="profile_list_you">自己</string>
+    <string name="stats_view_how_they_watch">觀看方式</string>
 </resources>
