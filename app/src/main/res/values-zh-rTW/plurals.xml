@@ -267,4 +267,7 @@
     <plurals name="profile_compare_theirs_not_yours_manga">
         <item quantity="other">%1$s 共有 %2$s 部漫畫沒在你的清單上</item>
     </plurals>
+    <plurals name="profile_people_count">
+        <item quantity="other">共 %1$s 人</item>
+    </plurals>
 </resources>
