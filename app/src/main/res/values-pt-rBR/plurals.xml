@@ -560,4 +560,14 @@
         <item quantity="many">%d novas notificações</item>
         <item quantity="other">%d novas notificações</item>
     </plurals>
+    <plurals name="profile_metric_days">
+        <item quantity="one">Dia</item>
+        <item quantity="many">Dias</item>
+        <item quantity="other">Dias</item>
+    </plurals>
+    <plurals name="profile_previous_names_count">
+        <item quantity="one">%1$d nome anterior</item>
+        <item quantity="many">%1$d nomes anteriores</item>
+        <item quantity="other">%1$d nomes anteriores</item>
+    </plurals>
 </resources>
