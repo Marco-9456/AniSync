@@ -246,4 +246,25 @@
     <plurals name="profile_row_reread">
         <item quantity="other">重讀了 %d 次</item>
     </plurals>
+    <plurals name="profile_metric_days">
+        <item quantity="other">天數</item>
+    </plurals>
+    <plurals name="profile_compare_shared_anime">
+        <item quantity="other">部你的動畫在 %2$s 的清單上（你的動畫清單共有 %1$s 部）</item>
+    </plurals>
+    <plurals name="profile_compare_shared_anime_too">
+        <item quantity="other">部動畫也同在 %2$s 的清單上（你的動畫清單共有 %1$s 部）</item>
+    </plurals>
+    <plurals name="profile_compare_theirs_not_yours_anime">
+        <item quantity="other">%1$s 共有 %2$s 部動畫沒在你的清單上</item>
+    </plurals>
+    <plurals name="profile_compare_yours_not_theirs">
+        <item quantity="other">你共有 %1$s 部動畫沒在 %2$s 的清單上</item>
+    </plurals>
+    <plurals name="profile_compare_their_tens">
+        <item quantity="other">%1$s 部被 %2$s 打滿分的作品沒在你的清單上</item>
+    </plurals>
+    <plurals name="profile_compare_theirs_not_yours_manga">
+        <item quantity="other">%1$s 共有 %2$s 部漫畫沒在你的清單上</item>
+    </plurals>
 </resources>
