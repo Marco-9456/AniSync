@@ -2400,4 +2400,15 @@
     <string name="settings_search_history">Historia wyszukiwania</string>
     <string name="settings_search_history_desc">Zachowaj swoje ostanie wyszukiwania w Odkrywaj, Biblioteka i Forum. Wyłączając wyczyścisz historię</string>
     <string name="settings_section_search">Szukaj</string>
+    <string name="message_composer_public_explain">Każdy kto wejdzie na profil %1$s, zobaczy to w aktywnościach.</string>
+    <string name="message_composer_private_explain">Tylko ty i %1$s możecie czytać. Natomiast na profilu %1$s, każdy może zobaczyć aktywność.</string>
+    <string name="message_composer_send_public">Opublikuj na ich profilu</string>
+    <string name="profile_bio_details">Szczegóły profilu</string>
+    <string name="profile_bio_open">Otwórz</string>
+    <string name="recap_settings_show_adult">Wyświetlaj tytuły dla dorosłych</string>
+    <string name="recap_settings_time">Czas powiadomienia</string>
+    <string name="recap_settings_stored_empty">Brak. Podsumowanie jest budowane z AniList po pierwszym otworzeniu</string>
+    <string name="share_stats_genres_title">%1$s – gatunki</string>
+    <string name="share_stats_by_titles_watched">Po obejrzanych tytułach</string>
+    <string name="share_stats_by_titles_read">Po przeczytanych tytułach</string>
 </resources>
