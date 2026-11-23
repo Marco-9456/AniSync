@@ -492,4 +492,40 @@
         <item quantity="many">przeczytano ponownie %d razy</item>
         <item quantity="other">przeczytano ponownie %d razy</item>
     </plurals>
+    <plurals name="profile_list_titles">
+        <item quantity="one">%1$s tytuł</item>
+        <item quantity="few">%1$s tytuły</item>
+        <item quantity="many">%1$s tytułów</item>
+        <item quantity="other">%1$s tytułów</item>
+    </plurals>
+    <plurals name="profile_metric_days">
+        <item quantity="one">Dzień</item>
+        <item quantity="few">Dni</item>
+        <item quantity="many">Dni</item>
+        <item quantity="other">Dni</item>
+    </plurals>
+    <plurals name="profile_people_count">
+        <item quantity="one">%1$s osoba</item>
+        <item quantity="few">%1$s osoby</item>
+        <item quantity="many">%1$s osób</item>
+        <item quantity="other">%1$s osób</item>
+    </plurals>
+    <plurals name="profile_favorites_count_titles">
+        <item quantity="one">%1$s tytuł</item>
+        <item quantity="few">%1$s tytuły</item>
+        <item quantity="many">%1$s tytułów</item>
+        <item quantity="other">%1$s tytułów</item>
+    </plurals>
+    <plurals name="profile_favorites_count_characters">
+        <item quantity="one">%1$s postać</item>
+        <item quantity="few">%1$s postacie</item>
+        <item quantity="many">%1$s postaci</item>
+        <item quantity="other">%1$s postaci</item>
+    </plurals>
+    <plurals name="account_new_notifications">
+        <item quantity="one">%d nowe powiadomienie</item>
+        <item quantity="few">%d nowe powiadomienia</item>
+        <item quantity="many">%d nowych powiadomień</item>
+        <item quantity="other">%d nowych powiadomień</item>
+    </plurals>
 </resources>
