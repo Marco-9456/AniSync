@@ -2411,4 +2411,21 @@
     <string name="share_stats_genres_title">%1$s – gatunki</string>
     <string name="share_stats_by_titles_watched">Po obejrzanych tytułach</string>
     <string name="share_stats_by_titles_read">Po przeczytanych tytułach</string>
+    <string name="library_filter_exclude_hint">Kliknij, aby uwzględnić. Kliknij ponownie, aby wykluczyć. Przytrzymaj, aby wykluczyć.</string>
+    <string name="library_empty_planning_desc">Zapisz co to planujesz obejrzeć, pojawi się tutaj w kolejce.</string>
+    <string name="library_empty_planning_desc_manga">Zapisz co to planujesz przeczytać, pojawi się tutaj w kolejce.</string>
+    <string name="library_empty_paused_title">Nic nie wstrzymano</string>
+    <string name="library_empty_paused_desc">Tytuł które odstawisz na później czekają tu aż do nich wrócisz.</string>
+    <string name="library_empty_completed_desc">Tytuły które ukończyłeś są tu zachowane z twoją oceną.</string>
+    <string name="library_empty_dropped_desc">Tytuły które porzucasz trafiają tutaj.</string>
+    <string name="a11y_filter_included">Uwzględnione</string>
+    <string name="a11y_filter_excluded">Wykluczone</string>
+    <string name="tag_picker_included">%1$d uwzględniano</string>
+    <string name="tag_picker_excluded">%1$d wykluczono</string>
+    <string name="tag_picker_included_excluded">%1$d wykluczono · %2$d uwzględniono</string>
+    <string name="tag_picker_empty">Brak dostępnych tagów</string>
+    <string name="tag_picker_no_match">Żadne tagi nie pasują do \"%1$s\"</string>
+    <string name="whats_new_library_filters">Filtry przeniesiono z przycisku sortowania tutaj. Możesz teraz filtrować po tagach i wykluczać gatunki.</string>
+    <string name="dev_tools_reset_whats_new">Resetuj co nowego</string>
+    <string name="dev_tools_reset_whats_new_subtitle">Pokazuję wszystkie znaczniki Nowe i Przeniesiono ponownie, tak jak po aktualizacji</string>
 </resources>
