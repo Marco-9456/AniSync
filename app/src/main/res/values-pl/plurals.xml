@@ -528,4 +528,16 @@
         <item quantity="many">%d nowych powiadomień</item>
         <item quantity="other">%d nowych powiadomień</item>
     </plurals>
+    <plurals name="profile_compare_shared_anime">
+        <item quantity="one">z twoich %1$s anime jest na liście %2$s</item>
+        <item quantity="few">z twoich %1$s anime są na liście %2$s</item>
+        <item quantity="many">z twoich %1$s anime jest na liście %2$s</item>
+        <item quantity="other">z twoich %1$s anime jest na liście %2$s</item>
+    </plurals>
+    <plurals name="profile_compare_shared_manga">
+        <item quantity="one">z twoich %1$s mang jest na liście %2$s</item>
+        <item quantity="few">z twoich %1$s mang są na liście %2$s</item>
+        <item quantity="many">z twoich %1$s mang jest na liście %2$s</item>
+        <item quantity="other">z twoich %1$s mang jest na liście %2$s</item>
+    </plurals>
 </resources>
