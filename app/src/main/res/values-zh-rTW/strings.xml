@@ -2011,4 +2011,6 @@
     <string name="profile_activity_comments">評論</string>
     <string name="profile_list_you">自己</string>
     <string name="stats_view_how_they_watch">觀看方式</string>
+    <string name="profile_list_empty_title">這兒暫時空空的…</string>
+    <string name="profile_list_empty_own">%1$s清單裡目前啥也沒有</string>
 </resources>
