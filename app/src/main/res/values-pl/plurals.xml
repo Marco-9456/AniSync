@@ -540,4 +540,70 @@
         <item quantity="many">z twoich %1$s mang jest na liście %2$s</item>
         <item quantity="other">z twoich %1$s mang jest na liście %2$s</item>
     </plurals>
+    <plurals name="recap_of_your_episodes">
+        <item quantity="one">%1$s z twojego %2$s odcinka</item>
+        <item quantity="few">%1$s z twoich %2$s odcinków</item>
+        <item quantity="many">%1$s z twoich %2$s odcinków</item>
+        <item quantity="other">%1$s z twoich %2$s odcinków</item>
+    </plurals>
+    <plurals name="recap_quietest_month">
+        <item quantity="one">%1$s był najcichszym miesiącem, %2$s odcinek.</item>
+        <item quantity="few">%1$s był najcichszym miesiącem, %2$s odcinki.</item>
+        <item quantity="many">%1$s był najcichszym miesiącem, %2$s odcinków.</item>
+        <item quantity="other">%1$s był najcichszym miesiącem, %2$s odcinków.</item>
+    </plurals>
+    <plurals name="recap_episodes_so_far">
+        <item quantity="one">%1$s odcinek, jak dotąd.</item>
+        <item quantity="few">%1$s odcinki, jak dotąd.</item>
+        <item quantity="many">%1$s odcinków, jak dotąd.</item>
+        <item quantity="other">%1$s odcinków, jak dotąd.</item>
+    </plurals>
+    <plurals name="recap_episodes_so_far_short">
+        <item quantity="one">%1$s odcinek, jak dotąd</item>
+        <item quantity="few">%1$s odcinki, jak dotąd</item>
+        <item quantity="many">%1$s odcinków, jak dotąd</item>
+        <item quantity="other">%1$s odcinków, jak dotąd</item>
+    </plurals>
+    <plurals name="recap_finished_so_far">
+        <item quantity="one">%1$s ukończony tytuł, jak dotąd.</item>
+        <item quantity="few">%1$s ukończone tytuły, jak dotąd.</item>
+        <item quantity="many">%1$s ukończonych tytułów, jak dotąd.</item>
+        <item quantity="other">%1$s ukończonych tytułów, jak dotąd.</item>
+    </plurals>
+    <plurals name="profile_list_results_for">
+        <item quantity="one">%1$s wynik dla %2$s</item>
+        <item quantity="few">%1$s wyniki dla %2$s</item>
+        <item quantity="many">%1$s wyników dla %2$s</item>
+        <item quantity="other">%1$s wyników dla %2$s</item>
+    </plurals>
+    <plurals name="profile_days_watched">
+        <item quantity="one">%1$s dzień oglądania</item>
+        <item quantity="few">%1$s dni oglądania</item>
+        <item quantity="many">%1$s dni oglądania</item>
+        <item quantity="other">%1$s dni oglądania</item>
+    </plurals>
+    <plurals name="profile_previous_names_count">
+        <item quantity="one">%1$d poprzednia nazwa</item>
+        <item quantity="few">%1$d poprzednie nazwy</item>
+        <item quantity="many">%1$d poprzednich nazw</item>
+        <item quantity="other">%1$d poprzednich nazw</item>
+    </plurals>
+    <plurals name="profile_favorites_count_staff">
+        <item quantity="one">%1$s twórca</item>
+        <item quantity="few">%1$s twórców</item>
+        <item quantity="many">%1$s twórców</item>
+        <item quantity="other">%1$s twórców</item>
+    </plurals>
+    <plurals name="profile_compare_their_tens">
+        <item quantity="one">%1$s tytuł który %2$s ocenił na 10, nie jest na twojej liście</item>
+        <item quantity="few">%1$s tytuły które %2$s ocenił na 10, nie jest na twojej liście</item>
+        <item quantity="many">%1$s tytułów które %2$s ocenił na 10, nie jest na twojej liście</item>
+        <item quantity="other">%1$s tytułów które %2$s ocenił na 10, nie jest na twojej liście</item>
+    </plurals>
+    <plurals name="profile_compare_yours_not_theirs">
+        <item quantity="one">Masz %1$s którego %2$s nie dodał</item>
+        <item quantity="few">Masz %1$s których %2$s nie dodał</item>
+        <item quantity="many">Masz %1$s których %2$s nie dodał</item>
+        <item quantity="other">Masz %1$s których %2$s nie dodał</item>
+    </plurals>
 </resources>
