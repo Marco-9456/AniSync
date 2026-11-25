@@ -46,9 +46,9 @@
         <item quantity="other">%1$s capítulos lidos</item>
     </plurals>
     <plurals name="stats_hero_stale">
-        <item quantity="one">O AniList recalcula isso a cada dois dias mais ou menos, então uma alteração desta semana ainda não aparece.</item>
-        <item quantity="many">O AniList recalcula isso a cada dois dias mais ou menos, então as %d alterações desta semana ainda não aparecem.</item>
-        <item quantity="other">O AniList recalcula isso a cada dois dias mais ou menos, então as %d alterações desta semana ainda não aparecem.</item>
+        <item quantity="one">O AniList recalcula esses dados a cada dois dias mais ou menos, então uma alteração desta semana ainda não aparece.</item>
+        <item quantity="many">O AniList recalcula esses dados a cada dois dias mais ou menos, então as %d alterações desta semana ainda não aparecem.</item>
+        <item quantity="other">O AniList recalcula esses dados a cada dois dias mais ou menos, então as %d alterações desta semana ainda não aparecem.</item>
     </plurals>
     <plurals name="stats_day_streak">
         <item quantity="one">dia seguido</item>
