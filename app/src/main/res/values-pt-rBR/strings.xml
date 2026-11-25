@@ -1918,7 +1918,7 @@
     <string name="stats_teaser_genre_count">%1$s %2$s</string>
     <string name="stats_teaser_score_prompt">Avalie cinco títulos para ver sua distribuição</string>
     <string name="stats_teaser_score_prompt_other">A distribuição aparece assim que o usuário avaliar cinco títulos</string>
-    <string name="stats_teaser_format_share">primeiro, %1$s</string>
+    <string name="stats_teaser_format_share">em primeiro, %1$s</string>
     <string name="stats_teaser_finish_rate">Você termina %1$s do que você começa.</string>
     <string name="stats_teaser_finish_rate_other">O usuário termina %1$s do que começa.</string>
     <string name="stats_teaser_one_country">Até agora, todos os títulos vêm de %1$s.</string>
@@ -1933,7 +1933,7 @@
     <string name="stats_weekdays_friday">Sextas-feiras</string>
     <string name="stats_weekdays_saturday">Sábados</string>
     <string name="stats_weekdays_sunday">Domingos</string>
-    <string name="stats_activity_recount_note">O AniList recalcula isso a cada 48 horas, então os últimos dois dias serão preenchidos mais tarde.</string>
+    <string name="stats_activity_recount_note">O AniList recalcula esses dados a cada 48 horas, então os últimos dois dias serão preenchidos mais tarde.</string>
     <string name="stats_streak_every_kept_day">Todos os dias que o AniList mantém, o que dá cerca de seis meses.</string>
     <string name="stats_streak_none">Não há dois dias seguidos ainda.</string>
     <string name="stats_streak_range">%1$s a %2$s.</string>
