@@ -112,7 +112,7 @@
         <item quantity="other">%1$s · %2$s 人認為值得參考</item>
     </plurals>
     <plurals name="share_recap_finished_word">
-        <item quantity="other">看完了</item>
+        <item quantity="other">部看完了</item>
     </plurals>
     <plurals name="share_recap_hour_count">
         <item quantity="other">%1$s 小時</item>
@@ -182,5 +182,92 @@
     </plurals>
     <plurals name="share_progress_episodes_of">
         <item quantity="other">看到了第 %1$s/%2$s 集</item>
+    </plurals>
+    <plurals name="support_thanks_people">
+        <item quantity="other">位支持者</item>
+    </plurals>
+    <plurals name="settings_sponsors_count">
+        <item quantity="other">感謝這 %1$d 位支持者</item>
+    </plurals>
+    <plurals name="recap_settings_stored_desc">
+        <item quantity="other">已存有 %1$s 個月，共 %2$s，清空後查看回顧時將再次從 AniList 構建</item>
+    </plurals>
+    <plurals name="share_stats_title_count">
+        <item quantity="other">%1$s 部作品</item>
+    </plurals>
+    <plurals name="recap_days_in_a_row">
+        <item quantity="other">最長連續了 %1$s 天</item>
+    </plurals>
+    <plurals name="recap_opener_franchise">
+        <item quantity="other">總計有%2$s，共%1$s，其中整整有%3$s部是 %4$s</item>
+    </plurals>
+    <plurals name="recap_franchise_named_took">
+        <item quantity="other">其中 %1$s 在你的 %3$s 部作品中整整佔了%2$s部</item>
+    </plurals>
+    <plurals name="recap_more_finished">
+        <item quantity="other">還有額外 %1$s 部，從 %2$s 到 %3$s 都有</item>
+    </plurals>
+    <plurals name="recap_days_with_anime">
+        <item quantity="other">動畫共陪伴了你 %1$s 天</item>
+    </plurals>
+    <plurals name="recap_of_your_episodes">
+        <item quantity="other">在你的 %2$s 集中整整佔了 %1$s 集</item>
+    </plurals>
+    <plurals name="recap_started_count">
+        <item quantity="other">同時你還看上了 %1$s 部</item>
+    </plurals>
+    <plurals name="profile_list_titles">
+        <item quantity="other">%1$s 部作品</item>
+    </plurals>
+    <plurals name="profile_days_watched">
+        <item quantity="other">共看了 %1$s 天</item>
+    </plurals>
+    <plurals name="profile_favorites_count_titles">
+        <item quantity="other">%1$s 部作品</item>
+    </plurals>
+    <plurals name="profile_favorites_count_characters">
+        <item quantity="other">%1$s 個角色</item>
+    </plurals>
+    <plurals name="profile_favorites_count_staff">
+        <item quantity="other">%1$s 位工作人員</item>
+    </plurals>
+    <plurals name="profile_favorites_count_studios">
+        <item quantity="other">%1$s 個工作室</item>
+    </plurals>
+    <plurals name="profile_row_episodes">
+        <item quantity="other">%d 集</item>
+    </plurals>
+    <plurals name="profile_row_chapters">
+        <item quantity="other">%d 章</item>
+    </plurals>
+    <plurals name="profile_row_rewatched">
+        <item quantity="other">重看了 %d 次</item>
+    </plurals>
+    <plurals name="profile_row_reread">
+        <item quantity="other">重讀了 %d 次</item>
+    </plurals>
+    <plurals name="profile_metric_days">
+        <item quantity="other">天數</item>
+    </plurals>
+    <plurals name="profile_compare_shared_anime">
+        <item quantity="other">部你的動畫在 %2$s 的清單上（你的動畫清單共有 %1$s 部）</item>
+    </plurals>
+    <plurals name="profile_compare_shared_anime_too">
+        <item quantity="other">部動畫也同在 %2$s 的清單上（你的動畫清單共有 %1$s 部）</item>
+    </plurals>
+    <plurals name="profile_compare_theirs_not_yours_anime">
+        <item quantity="other">%1$s 共有 %2$s 部動畫沒在你的清單上</item>
+    </plurals>
+    <plurals name="profile_compare_yours_not_theirs">
+        <item quantity="other">你共有 %1$s 部動畫沒在 %2$s 的清單上</item>
+    </plurals>
+    <plurals name="profile_compare_their_tens">
+        <item quantity="other">%1$s 部被 %2$s 打滿分的作品沒在你的清單上</item>
+    </plurals>
+    <plurals name="profile_compare_theirs_not_yours_manga">
+        <item quantity="other">%1$s 共有 %2$s 部漫畫沒在你的清單上</item>
+    </plurals>
+    <plurals name="profile_people_count">
+        <item quantity="other">共 %1$s 人</item>
     </plurals>
 </resources>
